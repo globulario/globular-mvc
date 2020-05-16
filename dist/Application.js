@@ -196,7 +196,8 @@ export { Account };
 var Application = /** @class */ (function (_super) {
     __extends(Application, _super);
     /**
-     *
+     * Create a new application with a given name. The view
+     * can be any ApplicationView or derived ApplicationView class.
      * @param name The name of the application.
      */
     function Application(name, view) {

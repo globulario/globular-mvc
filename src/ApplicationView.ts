@@ -1,9 +1,13 @@
 import { View } from "./View";
 import * as M from "materialize-css";
 import "materialize-css/sass/materialize.scss";
-import { Layout } from "./components/Layout";
 import { Account } from "./Application";
 import { Model } from "./Model";
+
+// web-components.
+import { Layout } from "./components/Layout";
+import { Login } from "./components/Login";
+import "../css/Application.css"
 
 /**
  * Application view made use of Web-component and Materialyse to create a basic application
@@ -13,6 +17,9 @@ export class ApplicationView extends View {
     
     /** The application view component. */
     private layout: Layout
+
+    /** The login panel */
+    private login_: Login
 
     /** various listener's */
     private login_event_listener: string
@@ -29,18 +36,14 @@ export class ApplicationView extends View {
             document.body.appendChild(this.layout)
         }
 
-
-
+        // Set the login box...
+        this.login_ = new Login();
+        this.layout.toolbar().appendChild(this.login_)
+        
     }
 
-    ///////////////////////////////////////////////////////////////////////////////////////
-    // Application action's
-    ///////////////////////////////////////////////////////////////////////////////////////
-
-    // Must be call by the model when after initialisation.
+    // Must be call by the model when after it initialisation was done.
     init(){
-        // Event listner's
-
         // Logout event
         Model.eventHub.subscribe("logout_event",
             (uuid: string) => {
@@ -59,6 +62,10 @@ export class ApplicationView extends View {
                 this.onLogin(accountId)
             }, false)
     }
+
+    ///////////////////////////////////////////////////////////////////////////////////////
+    // Application action's
+    ///////////////////////////////////////////////////////////////////////////////////////
 
     /**
      * Free ressource here.

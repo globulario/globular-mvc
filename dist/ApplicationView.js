@@ -14,8 +14,10 @@ var __extends = (this && this.__extends) || (function () {
 import { View } from "./View";
 import * as M from "materialize-css";
 import "materialize-css/sass/materialize.scss";
-import { Layout } from "./components/Layout";
 import { Model } from "./Model";
+// web-components.
+import { Layout } from "./components/Layout";
+import { Login } from "./components/Login";
 /**
  * Application view made use of Web-component and Materialyse to create a basic application
  * layout that can be use as starting point to any web-application.
@@ -32,7 +34,14 @@ var ApplicationView = /** @class */ (function (_super) {
             _this.layout = new Layout();
             document.body.appendChild(_this.layout);
         }
-        // Event listner's
+        // Set the login box...
+        _this.login_ = new Login();
+        _this.layout.toolbar().appendChild(_this.login_);
+        return _this;
+    }
+    // Must be call by the model when after it initialisation was done.
+    ApplicationView.prototype.init = function () {
+        var _this = this;
         // Logout event
         Model.eventHub.subscribe("logout_event", function (uuid) {
             _this.logout_event_listener = uuid;
@@ -45,8 +54,7 @@ var ApplicationView = /** @class */ (function (_super) {
         }, function (accountId) {
             _this.onLogin(accountId);
         }, false);
-        return _this;
-    }
+    };
     ///////////////////////////////////////////////////////////////////////////////////////
     // Application action's
     ///////////////////////////////////////////////////////////////////////////////////////

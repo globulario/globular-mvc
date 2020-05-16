@@ -42,7 +42,17 @@ var Layout = /** @class */ (function (_super) {
     // The connection callback.
     Layout.prototype.connectedCallback = function () {
         // Innitialisation of the layout.
-        this.shadowRoot.innerHTML = "\n        <style>\n          app-header {\n            background-color: #00897B;\n            color: #fff;\n          }\n          paper-icon-button {\n            --paper-icon-button-ink-color: white;\n          }\n          app-drawer-layout:not([narrow]) [drawer-toggle] {\n            display: none;\n          }\n        </style>\n    \n        <app-drawer-layout>\n          <app-drawer slot=\"drawer\">\n            <app-toolbar>\n                <slot name=\"side-menu\"></slot>\n            </app-toolbar>\n          </app-drawer>\n          <app-header-layout>\n            <app-header slot=\"header\" reveals fixed effects=\"waterfall\">\n              <app-toolbar>\n                <paper-icon-button icon=\"menu\" drawer-toggle></paper-icon-button>\n                <div main-title><slot name=\"toolbar\"></slot></div>\n              </app-toolbar>\n            </app-header>\n            <slot id=\"workspace\" name=\"content\"></slot>\n          </app-header-layout>\n        </app-drawer-layout>\n    ";
+        this.shadowRoot.innerHTML = "\n          <style>\n            app-header {\n              background-color: #00897B;\n              color: #fff;\n            }\n            paper-icon-button {\n              --paper-icon-button-ink-color: white;\n            }\n            app-drawer-layout:not([narrow]) [drawer-toggle] {\n              display: none;\n            }\n          </style>\n      \n          <app-drawer-layout id=\"layout\" fullbleed force-narrow >\n            <app-drawer slot=\"drawer\">\n              <app-toolbar>\n                  <slot id=\"side-menu\" name=\"side-menu\"></slot>\n              </app-toolbar>\n            </app-drawer>\n            <app-header-layout>\n              <app-header slot=\"header\" reveals fixed effects=\"waterfall\">\n                <app-toolbar>\n                  <paper-icon-button icon=\"menu\" drawer-toggle></paper-icon-button>\n                  <div main-title><div id=\"toolbar\" name=\"toolbar\"></div></div>\n                </app-toolbar>\n              </app-header>\n              <slot id=\"workspace\" name=\"content\"></slot>\n            </app-header-layout>\n          </app-drawer-layout>\n      ";
+    };
+    // Get layout zone.
+    Layout.prototype.toolbar = function () {
+        return this.shadowRoot.getElementById("toolbar");
+    };
+    Layout.prototype.sideMenu = function () {
+        return this.shadowRoot.getElementById("side-menu");
+    };
+    Layout.prototype.workspace = function () {
+        return this.shadowRoot.getElementById("workspace");
     };
     return Layout;
 }(HTMLElement));

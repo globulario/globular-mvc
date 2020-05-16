@@ -25,6 +25,6 @@ export class View {
 
     // Display a user message.
     displayMessage(msg: any, delay?: number){
-        console.log(msg)
+
     }
 }

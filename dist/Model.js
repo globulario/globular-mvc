@@ -46,10 +46,6 @@ var Model = /** @class */ (function () {
             AdminProxy: adminProxy,
             Services: {} // empty for start.
         };
-        // init the globular object from the configuration retreived.
-        Model.globular = new GlobularWebClient.Globular(this.config);
-        // init the event hub from the object retreive.
-        Model.eventHub = new GlobularWebClient.EventHub(Model.globular.eventService);
         // So here I will initilyse the server connection.
         var globular = new GlobularWebClient.Globular(this.config);
         var rqst = new GetConfigRequest();
@@ -59,13 +55,20 @@ var Model = /** @class */ (function () {
             }).then(function (rsp) {
                 // set back config with all it values.
                 _this.config = JSON.parse(rsp.getResult());
+                // init the globular object from the configuration retreived.
+                Model.globular = new GlobularWebClient.Globular(_this.config);
+                // init the event hub from the object retreive.
+                Model.eventHub = new GlobularWebClient.EventHub(Model.globular.eventService);
+                // Initialyse the view.
+                if (_this.view != undefined) {
+                    _this.view.init();
+                }
                 // Call init callback.
                 initCallback();
             }).catch(function (err) {
+                errorCallback(err);
             });
         }
-        // Call the init callback function.
-        initCallback();
     };
     return Model;
 }());

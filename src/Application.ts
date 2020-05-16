@@ -129,7 +129,7 @@ export class Account extends Model {
                 this.lastName = data["lastName_"];
                 this.middleName = data["middleName_"];
                 this.profilPicture = data["profilPicture_"];
-                if(callback != undefined){
+                if (callback != undefined) {
                     callback(this);
                 }
             },
@@ -207,6 +207,10 @@ export class Application extends Model {
     private name: string;
     private account: Account;
 
+    // Event listener's
+    private login_event_listener: string
+    private register_event_listener: string
+
     /**
      * Create a new application with a given name. The view 
      * can be any ApplicationView or derived ApplicationView class.
@@ -219,6 +223,60 @@ export class Application extends Model {
         this.name = name;
         Model.application = this.name; // set the application in model.
         this.view = view;
+    }
+
+    /**
+     * Connect the listner's and call the initcallback.
+     * @param initCallback 
+     * @param errorCallback 
+     * @param adminPort 
+     * @param adminProxy 
+     */
+    init(initCallback: () => void, errorCallback: (err: any) => void, adminPort: number = 10001, adminProxy: number = 10002) {
+        super.init(() => {
+            // Here I will connect the listener's
+
+            // The login event.
+            Model.eventHub.subscribe("login_event_",
+                (uuid: string) => {
+                    this.login_event_listener = uuid
+                },
+                (evt: any) => {
+                    // Here I will try to login the user.
+                    this.login(evt.userId, evt.pwd,
+                        (data: any) => {
+                            console.log("--> login succeed!", data)
+                        },
+                        (err: any) => {
+                            this.view.displayMessage(err, 4000)
+                        })
+
+                }, true)
+            if (initCallback != undefined) {
+                initCallback();
+            }
+
+            // The register event.
+            Model.eventHub.subscribe("register_event_",
+                (uuid: string) => {
+                    this.register_event_listener = uuid
+                },
+                (evt: any) => {
+                    // Here I will try to login the user.
+                    this.register(evt.userId, evt.email, evt.pwd, evt.repwd,
+                        (data: any) => {
+                            console.log("--> register succeed!", data)
+                        },
+                        (err: any) => {
+                            this.view.displayMessage(err, 4000)
+                        })
+
+                }, true)
+            if (initCallback != undefined) {
+                initCallback();
+            }
+
+        }, errorCallback, adminPort, adminProxy)
     }
 
     /////////////////////////////////////////////////////
@@ -416,6 +474,10 @@ export class Application extends Model {
         if (this.view != undefined) {
             this.view.close()
         }
+
+        // Close the listener's
+        Model.eventHub.unSubscribe("login_event_", this.login_event_listener)
+        Model.eventHub.unSubscribe("register_event_", this.register_event_listener)
 
         // remove token informations
         localStorage.removeItem("remember_me");
