@@ -12,6 +12,8 @@ import '@polymer/app-layout/app-toolbar/app-toolbar.js';
 import '@polymer/app-layout/demo/sample-content.js';
 import '@polymer/paper-button/paper-button.js';
 
+import { Model } from '../Model';
+
 /**
  * This is a web-component.
  */
@@ -35,16 +37,16 @@ export class Layout extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
           <style>
-            
+
             app-header {
-              background-color: #00897B;
+              background-color: var(--google-blue-700);
               color: #fff;
             }
+
             paper-icon-button {
               --paper-icon-button-ink-color: white;
             }
-            
-
+   
             app-drawer-layout:not([narrow]) [drawer-toggle] {
               display: none;
             }
@@ -65,18 +67,10 @@ export class Layout extends HTMLElement {
 
           </style>
       
-          <app-drawer-layout id="layout" fullbleed force-narrow >
-            <app-drawer slot="drawer">
-              <app-toolbar>
-                  <div id="side-menu" name="side-menu"></div>
-              </app-toolbar>
-            </app-drawer>
+          <app-drawer-layout id="layout" fullbleed>
             <app-header-layout>
-              <app-header slot="header" reveals fixed effects="waterfall">
+              <app-header slot="header" fixed effects="waterfall">
                 <app-toolbar>
-                  <paper-icon-button icon="menu" drawer-toggle>
-                    <paper-ripple class="circle" recenters></paper-ripple>
-                  </paper-icon-button>
                   <div id="main-title">
                     <div id="title">Globular</div>
                     <div id="toolbar" name="toolbar"></div>
@@ -87,9 +81,25 @@ export class Layout extends HTMLElement {
             </app-header-layout>
           </app-drawer-layout>
       `
+
     }
 
     // Get layout zone.
+    init(){
+      // Connect the event listener's
+
+      // Here I will connect the event listener's
+      Model.eventHub.subscribe("login_event", 
+      (uuid)=>{
+        /** nothing to do here. */
+      }, 
+      (data)=>{
+        // Here the user is log in...
+        
+      }, true)
+
+
+    }
 
     toolbar(){
       return this.shadowRoot.getElementById("toolbar")
@@ -103,6 +113,7 @@ export class Layout extends HTMLElement {
     workspace(){
       return this.shadowRoot.getElementById("workspace")
     }
+
 }
 
 customElements.define('globular-application', Layout)

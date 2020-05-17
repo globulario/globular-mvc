@@ -14,7 +14,7 @@ import "../css/Application.css"
  * layout that can be use as starting point to any web-application.
  */
 export class ApplicationView extends View {
-    
+
     /** The application view component. */
     private layout: Layout
 
@@ -39,28 +39,33 @@ export class ApplicationView extends View {
         // Set the login box...
         this.login_ = new Login();
         this.layout.toolbar().appendChild(this.login_)
-        
+
     }
 
     // Must be call by the model when after it initialisation was done.
-    init(){
+    init() {
+
+        // init listener's in the layout.
+        this.layout.init()
+        this.login_.init()
+
         // Logout event
         Model.eventHub.subscribe("logout_event",
             (uuid: string) => {
                 this.logout_event_listener = uuid;
             },
-            (accountId: string) => {
-                this.onLogout(accountId)
-            }, false)
+            () => {
+                this.onLogout()
+            }, true)
 
         // Login event.
         Model.eventHub.subscribe("login_event",
             (uuid: string) => {
                 this.login_event_listener = uuid;
             },
-            (accountId: string) => {
-                this.onLogin(accountId)
-            }, false)
+            (account: Account) => {
+                this.onLogin(account)
+            }, true)
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////
@@ -81,22 +86,6 @@ export class ApplicationView extends View {
      */
     update() {
 
-    }
-
-    /**
-     * Call by the model when user is login
-     * @param account 
-     */
-    login(account: Account) {
-        /** Implement it as needed */
-    }
-
-    /**
-     * Call by the model when the user is logout.
-     * @param account 
-     */
-    logout(account: Account) {
-        /** Implement it as needed */
     }
 
     /**
@@ -142,7 +131,7 @@ export class ApplicationView extends View {
      * Login event handler
      * @param accountId The id of the user
      */
-    onLogin(accountId: string) {
+    onLogin(account: Account) {
         /** implement it as needed */
     }
 
@@ -150,7 +139,7 @@ export class ApplicationView extends View {
      * Logout event handler
      * @param accountId 
      */
-    onLogout(accountId: string) {
+    onLogout() {
         /** implement it as needed */
     }
 

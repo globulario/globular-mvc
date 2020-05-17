@@ -135,6 +135,9 @@ export class Account extends Model {
             },
             (err: any) => {
                 this.hasData = false;
+                if (callback != undefined) {
+                    callback(this);
+                }
                 onError(err);
             }
         );
@@ -210,6 +213,7 @@ export class Application extends Model {
     // Event listener's
     private login_event_listener: string
     private register_event_listener: string
+    private logout_event_listener: string
 
     /**
      * Create a new application with a given name. The view 
@@ -244,17 +248,25 @@ export class Application extends Model {
                 (evt: any) => {
                     // Here I will try to login the user.
                     this.login(evt.userId, evt.pwd,
-                        (data: any) => {
-                            console.log("--> login succeed!", data)
+                        (account: Account) => {
+                            console.log("--> login succeed!", account)
+                            // Here I will send a login success.
+                            Model.eventHub.publish("login_event", account, true)
                         },
                         (err: any) => {
                             this.view.displayMessage(err, 4000)
                         })
 
                 }, true)
-            if (initCallback != undefined) {
-                initCallback();
-            }
+
+            Model.eventHub.subscribe("logout_event_",
+                (uuid: string) => {
+                    this.logout_event_listener = uuid
+                },
+                (evt: any) => {
+                    // Here I will try to login the user.
+                    this.logout()
+                }, true)
 
             // The register event.
             Model.eventHub.subscribe("register_event_",
@@ -272,10 +284,11 @@ export class Application extends Model {
                         })
 
                 }, true)
+
+
             if (initCallback != undefined) {
                 initCallback();
             }
-
         }, errorCallback, adminPort, adminProxy)
     }
 
@@ -430,11 +443,6 @@ export class Application extends Model {
 
                 this.account = new Account(userName, email);
 
-                // call login on the view.
-                if (this.view != undefined) {
-                    (<ApplicationView>this.view).login(this.account)
-                }
-
                 // Send network event.
                 Model.eventHub.publish("login_event", this.account.id, false);
 
@@ -451,18 +459,18 @@ export class Application extends Model {
      */
     logout() {
 
-        // exit from the application.
-        this.exit()
-
-        // Send network event.
-        Model.eventHub.publish("logout_event", this.account.id, false);
-
-        if (this.view != undefined) {
-            (<ApplicationView>this.view).logout(this.account)
-        }
+        // Send local event.
+        Model.eventHub.publish("logout_event", this.account, true);
 
         // Set room to undefined.
         this.account = undefined;
+
+        // remove token informations
+        localStorage.removeItem("remember_me");
+        localStorage.removeItem("user_token");
+        localStorage.removeItem("user_name");
+        localStorage.removeItem("useremail_");
+        localStorage.removeItem("token_expired");
     }
 
     /**
@@ -477,6 +485,7 @@ export class Application extends Model {
 
         // Close the listener's
         Model.eventHub.unSubscribe("login_event_", this.login_event_listener)
+        Model.eventHub.unSubscribe("logout_event_", this.logout_event_listener)
         Model.eventHub.unSubscribe("register_event_", this.register_event_listener)
 
         // remove token informations
