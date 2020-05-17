@@ -1,3 +1,8 @@
 body{
     background-color: rgb(248, 249, 250);
 }
+
+#workspace{
+    display: flex;
+    justify-content: center;
+}

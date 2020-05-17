@@ -35,6 +35,7 @@ export class Layout extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
           <style>
+            
             app-header {
               background-color: #00897B;
               color: #fff;
@@ -42,6 +43,8 @@ export class Layout extends HTMLElement {
             paper-icon-button {
               --paper-icon-button-ink-color: white;
             }
+            
+
             app-drawer-layout:not([narrow]) [drawer-toggle] {
               display: none;
             }
