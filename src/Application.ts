@@ -4,6 +4,7 @@ import * as jwt from "jwt-decode";
 import { ApplicationView } from "./ApplicationView"
 import * as persistence from "globular-web-client/lib/persistence/persistencepb/persistence_pb";
 
+
 /**
  * Basic account class that contain the user id and email.
  */
@@ -36,6 +37,7 @@ export class Account extends Model {
     public get profilPicture(): string {
         return this.profilPicture_;
     }
+
     public set profilPicture(value: string) {
         this.profilPicture_ = value;
     }
@@ -135,9 +137,6 @@ export class Account extends Model {
             },
             (err: any) => {
                 this.hasData = false;
-                if (callback != undefined) {
-                    callback(this);
-                }
                 onError(err);
             }
         );
@@ -208,25 +207,32 @@ export class Account extends Model {
  */
 export class Application extends Model {
     private name: string;
+    private title: string;
     private account: Account;
 
     // Event listener's
     private login_event_listener: string
     private register_event_listener: string
     private logout_event_listener: string
+    private update_profile_picture_listener: string
 
     /**
      * Create a new application with a given name. The view 
      * can be any ApplicationView or derived ApplicationView class.
      * @param name The name of the application.
      */
-    constructor(name: string, view: ApplicationView) {
+    constructor(name: string, title: string, view: ApplicationView) {
         super()
 
         // The application name.
         this.name = name;
         Model.application = this.name; // set the application in model.
         this.view = view;
+
+        if (document.getElementsByTagName("title").length > 0) {
+            document.getElementsByTagName("title")[0].innerHTML = title;
+            view.setTitle(title)
+        }
     }
 
     /**
@@ -285,10 +291,56 @@ export class Application extends Model {
 
                 }, true)
 
+            // The update profile picuture event.
+            Model.eventHub.subscribe("update_profile_picture_event_",
+            (uuid: string) => {
+                this.update_profile_picture_listener = uuid
+            },
+            (dataUrl: string) => {
+                // Here I will try to login the user.
+                this.account.changeProfilImage(
+                    dataUrl, 
+                    ()=>{
+                        /** Nothing here. */
+                    }, 
+                    (err:any)=>{
+                        this.view.displayMessage(err, 3000);
+                    })
+
+            }, true)
+                
 
             if (initCallback != undefined) {
                 initCallback();
             }
+
+            // Connect automatically...
+            let rememberMe = localStorage.getItem("remember_me");
+            if (rememberMe) {
+                // Here I will renew the last token...
+                let userId = localStorage.getItem("user_name");
+                this.view.wait("<div>log in</div><div>" + userId + "</div><div>...</div>")
+
+                this.refreshToken(
+                    (account: Account) => {
+                        // send a login event.
+                        Model.eventHub.publish("login_event", account, true);
+                        this.view.resume()
+                    },
+                    (err: any) => {
+                        this.view.displayMessage(err, 2000);
+                        this.view.resume()
+                    }
+                );
+            } else {
+                // simply remove invalid token and user infos.
+                localStorage.removeItem("remember_me");
+                localStorage.removeItem("user_token");
+                localStorage.removeItem("user_name");
+                localStorage.removeItem("user_email");
+                localStorage.removeItem("token_expired");
+            }
+
         }, errorCallback, adminPort, adminProxy)
     }
 
@@ -300,7 +352,8 @@ export class Application extends Model {
      * Refresh the token and open a new session if the token is valid.
      */
     private refreshToken(
-        onError: (err: any, account: Account) => void
+        initCallback: (account: Account) => void,
+        onError: (err: any) => void
     ) {
         let rqst = new ressource.RefreshTokenRqst();
         rqst.setToken(localStorage.getItem("user_token"));
@@ -324,10 +377,16 @@ export class Application extends Model {
                 this.account = new Account(userName, email)
 
                 // Set the account infos...
-                this.account.initData(undefined, (err: any) => {
-                    // call the error callback.
-                    onError(err, this.account)
-                })
+                this.account.initData(
+                    initCallback,
+                    (err: any) => { 
+                        localStorage.removeItem("remember_me");
+                        localStorage.removeItem("user_token");
+                        localStorage.removeItem("user_name");
+                        localStorage.removeItem("useremail_");
+                        localStorage.removeItem("token_expired");
+                        onError(err);
+                    })
 
             })
             .catch(err => {
@@ -337,7 +396,7 @@ export class Application extends Model {
                 localStorage.removeItem("user_name");
                 localStorage.removeItem("useremail_");
                 localStorage.removeItem("token_expired");
-                onError(err, this.account);
+                onError(err);
             });
     }
 
@@ -348,10 +407,14 @@ export class Application extends Model {
         setInterval(() => {
             let isExpired = parseInt(localStorage.getItem("token_expired"), 10) < Math.floor(Date.now() / 1000);
             if (isExpired) {
-                this.refreshToken((err: any) => {
-                    // simply display the error on the view.
-                    this.view.displayMessage(err)
-                })
+                this.refreshToken(
+                    (account: Account) => {
+
+                    },
+                    (err: any) => {
+                        // simply display the error on the view.
+                        this.view.displayMessage(err)
+                    })
             }
         }, 1000)
     }
@@ -381,6 +444,7 @@ export class Application extends Model {
         account.setName(name);
         rqst.setAccount(account);
 
+        this.view.wait("<div>register account </div><div>" + name + "</div><div>...</div>")
         // Register a new account.
         Model.globular.ressourceService
             .registerAccount(rqst)
@@ -397,11 +461,23 @@ export class Application extends Model {
 
                 // Callback on login.
                 this.account = new Account(name, email);
-                onRegister(this.account);
+                this.account.initData(
+                    (account: Account) => {
+                        Model.eventHub.publish("login_event", account, false);
+                        this.view.resume()
+                        onRegister(this.account);
+                    },
+                    (err: any) => {
+                        Model.eventHub.publish("login_event", this.account, false);
+                        onRegister(this.account);
+                        this.view.resume()
+                        onError(err)
+                    })
 
                 this.startRefreshToken()
             })
             .catch((err: any) => {
+                this.view.resume()
                 onError(err);
             });
 
@@ -423,6 +499,8 @@ export class Application extends Model {
         let rqst = new ressource.AuthenticateRqst();
         rqst.setName(email);
         rqst.setPassword(password);
+        this.view.wait("<div>log in</div><div>" + email + "</div><div>...</div>")
+
         Model.globular.ressourceService
             .authenticate(rqst)
             .then((rsp: ressource.AuthenticateRsp) => {
@@ -443,13 +521,22 @@ export class Application extends Model {
 
                 this.account = new Account(userName, email);
 
-                // Send network event.
-                Model.eventHub.publish("login_event", this.account.id, false);
-
                 // Init the user data...
-                this.account.initData(onLogin, onError)
+                this.account.initData(
+                    (account: Account) => {
+                        Model.eventHub.publish("login_event", account, false);
+                        onLogin(account)
+                        this.view.resume()
+                    },
+                    (err: any) => {
+                        Model.eventHub.publish("login_event", this.account, false);
+                        onLogin(this.account)
+                        this.view.resume()
+                        onError(err)
+                    })
             })
             .catch(err => {
+                this.view.resume()
                 onError(err);
             });
     }
@@ -487,7 +574,8 @@ export class Application extends Model {
         Model.eventHub.unSubscribe("login_event_", this.login_event_listener)
         Model.eventHub.unSubscribe("logout_event_", this.logout_event_listener)
         Model.eventHub.unSubscribe("register_event_", this.register_event_listener)
-
+        Model.eventHub.unSubscribe("update_profile_picture_event_", this.update_profile_picture_listener)
+        
         // remove token informations
         localStorage.removeItem("remember_me");
         localStorage.removeItem("user_token");

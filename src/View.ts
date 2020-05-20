@@ -27,4 +27,14 @@ export class View {
     displayMessage(msg: any, delay?: number){
 
     }
+
+    // Block user input
+    wait(msg:string){
+
+    }
+
+    // Resume user input.
+    resume(){
+
+    }
 }

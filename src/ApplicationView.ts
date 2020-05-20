@@ -4,10 +4,19 @@ import "materialize-css/sass/materialize.scss";
 import { Account } from "./Application";
 import { Model } from "./Model";
 
+
 // web-components.
 import { Layout } from "./components/Layout";
 import { Login } from "./components/Login";
+
+// Import css styles.
 import "../css/Application.css"
+
+import { AccountMenu } from "./components/Account";
+import { NotificationMenu } from "./components/Notification";
+import { OverflowMenu } from "./components/Menu";
+
+
 
 /**
  * Application view made use of Web-component and Materialyse to create a basic application
@@ -21,9 +30,20 @@ export class ApplicationView extends View {
     /** The login panel */
     private login_: Login
 
+    /** The account panel */
+    private accountMenu: AccountMenu
+
+    /** The  overflow menu*/
+    private overFlowMenu: OverflowMenu
+
+    /** The nofitication panel */
+    private notificationMenu: NotificationMenu
+
     /** various listener's */
     private login_event_listener: string
     private logout_event_listener: string
+
+    private isLogin: boolean;
 
     constructor() {
         super()
@@ -36,9 +56,22 @@ export class ApplicationView extends View {
             document.body.appendChild(this.layout)
         }
 
+        // set it to false.
+        this.isLogin = false;
+
         // Set the login box...
         this.login_ = new Login();
         this.layout.toolbar().appendChild(this.login_)
+
+
+        // This contain account informations.
+        this.accountMenu = new AccountMenu();
+
+        // This contain account/application notification
+        this.notificationMenu = new NotificationMenu();
+
+        // The overflow menu is use to hide menu that dosen't fix in the visual.
+        this.overFlowMenu = new OverflowMenu()
 
     }
 
@@ -48,6 +81,7 @@ export class ApplicationView extends View {
         // init listener's in the layout.
         this.layout.init()
         this.login_.init()
+        this.accountMenu.init()
 
         // Logout event
         Model.eventHub.subscribe("logout_event",
@@ -66,6 +100,40 @@ export class ApplicationView extends View {
             (account: Account) => {
                 this.onLogin(account)
             }, true)
+
+
+        /**
+         * The resize listener.
+         */
+        window.addEventListener('resize', (evt: any) => {
+            
+            let w = this.layout.width()
+            
+            if(w <= 500){
+                if(this.isLogin){
+                    this.overFlowMenu.show()
+                    this.overFlowMenu.getMenuDiv().appendChild(this.notificationMenu)
+                    this.notificationMenu.getMenuDiv().classList.remove("bottom")
+                    this.notificationMenu.getMenuDiv().classList.add("left")
+                    this.overFlowMenu.getMenuDiv().appendChild(this.accountMenu)
+                    this.accountMenu.getMenuDiv().classList.remove("bottom")
+                    this.accountMenu.getMenuDiv().classList.add("left")
+                }
+            }else{
+                if(this.isLogin){
+                    this.overFlowMenu.hide()
+                    this.layout.toolbar().appendChild(this.notificationMenu)
+                    this.notificationMenu.getMenuDiv().classList.remove("left")
+                    this.notificationMenu.getMenuDiv().classList.add("bottom")
+                    this.layout.toolbar().appendChild(this.accountMenu)
+                    this.accountMenu.getMenuDiv().classList.remove("left")
+                    this.accountMenu.getMenuDiv().classList.add("bottom")
+                }
+            }
+
+        });
+
+        window.dispatchEvent(new Event('resize'));
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////
@@ -86,6 +154,14 @@ export class ApplicationView extends View {
      */
     update() {
 
+    }
+
+    /**
+     * The title of the application
+     * @param title The title.
+     */
+    setTitle(title: string) {
+        this.layout.title().innerHTML = title;
     }
 
     /**
@@ -122,6 +198,15 @@ export class ApplicationView extends View {
         return M.toast({ html: this.getErrorMessage(err), displayLength: duration });
     }
 
+    // Block user input
+    wait(msg: string = "wait ...") {
+        this.layout.wait(msg)
+    }
+
+    // Resume user input.
+    resume() {
+        this.layout.resume()
+    }
 
     //////////////////////////////////////////////////////////////////////////////////////////
     // Event listener's
@@ -132,7 +217,23 @@ export class ApplicationView extends View {
      * @param accountId The id of the user
      */
     onLogin(account: Account) {
+        this.isLogin = true;
+
         /** implement it as needed */
+        this.login_.parentNode.removeChild(this.login_)
+
+        this.layout.toolbar().appendChild(this.notificationMenu)
+        this.layout.toolbar().appendChild(this.accountMenu)
+
+        // Append the over flow menu.
+        this.layout.toolbar().appendChild(this.overFlowMenu)
+
+        this.overFlowMenu.hide() // not show it at first.
+
+        this.notificationMenu.setAccount(account)
+        this.accountMenu.setAccount(account)
+
+        window.dispatchEvent(new Event('resize'));
     }
 
     /**
@@ -140,7 +241,18 @@ export class ApplicationView extends View {
      * @param accountId 
      */
     onLogout() {
+        this.isLogin = false;
+
+        this.overFlowMenu.hide() // not show it at first.
+
         /** implement it as needed */
+        this.layout.toolbar().appendChild(this.login_)
+
+        // Remove notification menu and account.
+        this.accountMenu.parentNode.removeChild(this.notificationMenu)
+        this.accountMenu.parentNode.removeChild(this.accountMenu)
+
+        window.dispatchEvent(new Event('resize'));
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////

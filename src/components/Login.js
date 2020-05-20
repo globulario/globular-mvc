@@ -3,14 +3,12 @@
 // layout because materialyse dosen't react to well with the shadow doom.
 import '@polymer/iron-icons/iron-icons.js';
 import '@polymer/paper-icon-button/paper-icon-button.js';
-import '@polymer/paper-ripple/paper-ripple.js';
 import '@polymer/paper-input/paper-input.js';
 import '@polymer/paper-card/paper-card.js';
 import '@polymer/paper-button/paper-button.js';
 import '@polymer/paper-checkbox/paper-checkbox.js';
 
 import { Model } from '../Model';
-import { GetThumbnailsRequest } from 'globular-web-client/lib/file/filepb/file_pb';
 
 /**
  * Login/Register functionality.
@@ -58,11 +56,8 @@ export class Login extends HTMLElement {
         <span id="login_div">
             <paper-button id="register_btn">register</paper-button>
             <paper-button id="login_btn">login</paper-button>
-            <paper-button id="logout_btn">logout</paper-button>
         </span>
       `
-
-
         // The login panel.
         this.shadowRoot.getElementById("login_btn").onclick = () => {
             if(this.registerBox.parentNode != undefined){
@@ -83,43 +78,11 @@ export class Login extends HTMLElement {
         this.loginDiv = this.shadowRoot.getElementById("login_div")
         this.registerBtn = this.shadowRoot.getElementById("register_btn")
         this.loginBtn = this.shadowRoot.getElementById("login_btn")
-        this.logoutBtn = this.shadowRoot.getElementById("logout_btn")
-
-        this.loginDiv.removeChild(this.logoutBtn)
-        this.logoutBtn.onclick = ()=>{
-            Model.eventHub.publish("logout_event_", {}, true)
-        }
     }
 
     init(){
 
         // Here I will connect the event listener's
-
-        // The login event.
-        Model.eventHub.subscribe("login_event", 
-        (uuid)=>{
-            /** nothing to do here. */
-        }, 
-        (data)=>{
-            // Here I will remove the component from it parent.
-            this.loginDiv.removeChild(this.loginBtn)
-            this.loginDiv.removeChild(this.registerBtn)
-            this.loginDiv.appendChild(this.logoutBtn)
-            
-        }, true)
-
-        // The logout event.
-        Model.eventHub.subscribe("logout_event", 
-        (uuid)=>{
-            /** nothing to do here. */
-        }, 
-        (data)=>{
-            console.log("---> logout_event", data)
-            // Here I will remove the component from it parent.
-            this.loginDiv.appendChild(this.registerBtn)
-            this.loginDiv.appendChild(this.loginBtn)
-            this.loginDiv.removeChild(this.logoutBtn)
-        }, true)
     }
 }
 
