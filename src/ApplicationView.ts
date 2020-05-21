@@ -1,7 +1,7 @@
 import { View } from "./View";
 import * as M from "materialize-css";
 import "materialize-css/sass/materialize.scss";
-import { Account } from "./Application";
+import { Account } from "./Account";
 import { Model } from "./Model";
 
 
@@ -230,7 +230,6 @@ export class ApplicationView extends View {
 
         this.overFlowMenu.hide() // not show it at first.
 
-        this.notificationMenu.setAccount(account)
         this.accountMenu.setAccount(account)
 
         window.dispatchEvent(new Event('resize'));

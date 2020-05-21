@@ -23,6 +23,81 @@ export class NotificationMenu extends Menu {
     constructor() {
         super("notification", "social:notifications-none")
 
+        // The div inner panel.
+        let html = `
+        <style>
+            #notifications{
+                display: flex;
+                flex-direction: column;
+            }
+
+            #notifications-config{
+                flex-grow: 1;
+
+            }
+
+            #application-notifications #user-nofitications{
+                display: flex;
+                flex-direction: column;
+            }
+
+            .header{
+                display: flex;
+                font-size: 12pt;
+                align-items: center;
+                padding: .5rem;
+                border-bottom: 1px solid #e8e8e8;
+            }
+
+            .body{
+                min-width: 256px;
+                min-height: 100px;
+            }
+
+            .btn_div{
+                display: flex; 
+                flex-grow: 1; 
+                justify-content: 
+                flex-end;
+            }
+
+            .btn {
+                position: relative;
+            }
+
+            .btn:hover{
+                cursor: pointer;
+            }
+
+        </style>
+
+        <div>
+            <div class="header" style="">
+                <div>Notifications</div>
+                <div class="btn_div">
+                    <div class="btn">
+                        <iron-icon id="notifications-config" icon="settings"></iron-icon>
+                        <paper-ripple class="circle" recenters></paper-ripple>
+                    </div>
+                </div>
+            </div>
+
+            <div id="application-notifications">
+                <div class="header">Application</div>
+                <div class="body">
+                </div>
+            </div>
+            <div id="user-nofitications">
+                <div class="header" style="border-top: 1px solid #e8e8e8;">User</div>
+                <div class="body">
+                </div>
+            </div>
+
+        </div>
+        `
+        let range = document.createRange()
+        this.getMenuDiv().appendChild(range.createContextualFragment(html));
+        
     }
 
     init(){
@@ -32,13 +107,28 @@ export class NotificationMenu extends Menu {
             /** nothing to do here. */
         }, 
         (data)=>{
-            console.log("---> logout_event", data)
+            this.clear()
         }, true)
+        
     }
 
-    // Set account information.
-    setAccount(account){
+    // clear the notifications.
+    clear(){
+        
     }
+
+    // Set user notifications
+    setUserNofications(notifications){
+        // Here I will get the user notification.
+
+    }
+
+    // Set the application notifications.
+    setApplicationNofications(notifications){
+        // Here I will get the user notification.
+
+    }
+
 }
 
 customElements.define('globular-notification-menu', NotificationMenu)

@@ -29,7 +29,7 @@ export class Menu extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-
+            
             #${this.id}_div {
                 display: flex;
                 position: relative;
@@ -39,12 +39,17 @@ export class Menu extends HTMLElement {
                 font-size: 1rem;
             }
 
+            .menu-btn{
+                margin: 0px 5px 0px 5px;
+            }
+
             .btn{
                 height: 40px;
                 width: 40px;
                 display: flex;
                 justify-content: center;
                 align-items: center;
+                position: relative;
             }
 
             .btn:hover{
@@ -52,7 +57,7 @@ export class Menu extends HTMLElement {
             }
 
             .left{
-                right: 42px;
+                right: 47px;
                 top: 0px;
             }
 
@@ -82,7 +87,7 @@ export class Menu extends HTMLElement {
 
         </style>
 
-        <div id="${this.id}_div">
+        <div id="${this.id}_div" class="menu-btn">
             <div id="${this.id}_picture_div" class="btn">
                 <iron-icon id="${this.id}_icon" icon="${this.icon}"></iron-icon>
                 <img id="${this.id}_img"></img>
@@ -225,7 +230,6 @@ export class OverflowMenu extends Menu {
     init() {
         /** Nothing to do here. */
     }
-
 }
 
 customElements.define('globular-overflow-menu', OverflowMenu)
