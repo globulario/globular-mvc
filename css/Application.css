@@ -29,6 +29,8 @@ html {
   --dark-theme-divider-color: #3c3c3c;
   --text-primary-color: var(--dark-theme-text-color);
   --default-primary-color: var(--primary-color);
+  --paper-badge-background: var(--paper-red-300);
+
 }
 body {
   background-color: var(--md-background-color);

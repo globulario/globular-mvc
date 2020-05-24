@@ -166,6 +166,10 @@ export class NotificationMenu extends Menu {
                 this.notificationCount.parentNode.removeChild(this.notificationCount)
                 this.notificationCount = undefined
             }
+
+            let now = new Date().getTime()
+            localStorage.setItem("notifications_read_date", now.toString())
+
         })
 
         this.shadowRoot.removeChild(this.getMenuDiv())
@@ -177,9 +181,9 @@ export class NotificationMenu extends Menu {
             (uuid) => {
                 /** nothing to do here. */
             },
-            (data) => {
+            (account) => {
                 this.clearUserNotifications()
-                Model.eventHub.unSubscribe(account.id + "_notification_event", this.account_notification_listener)
+                Model.eventHub.unSubscribe(account._id + "_notification_event", this.account_notification_listener)
             }, true)
 
         // The logout event.
@@ -188,7 +192,7 @@ export class NotificationMenu extends Menu {
                 /** nothing to do here. */
             },
             (account) => {
-                Model.eventHub.subscribe(account.id + "_notification_event",
+                Model.eventHub.subscribe(account._id + "_notification_event",
                     (uuid) => {
                         this.account_notification_listener = uuid
                     },
@@ -210,7 +214,6 @@ export class NotificationMenu extends Menu {
                 /** nothing to do here. */
             },
             (notifications) => {
-                this.setNotificationCount()
                 this.setUserNofications(notifications)
             }, true)
 
@@ -221,7 +224,9 @@ export class NotificationMenu extends Menu {
             },
             (notification) => {
                 this.setNotificationCount()
-                this.appendNofication(this.applicationNotificationsPanel, JSON.parse(notification))
+                notification = JSON.parse(notification)
+                notification._date = new Date(notification._date)
+                this.appendNofication(this.applicationNotificationsPanel, notification)
             }, false)
 
     }
@@ -243,12 +248,13 @@ export class NotificationMenu extends Menu {
         if (this.notificationCount == undefined) {
             let html = `
             <style>
+
                 .notification-count{
                     position: absolute;
                     display: flex;
                     top: 0px;
-                    right: 0px;
-                    background-color: red;
+                    right: -5px;
+                    background-color: var(--paper-badge-background);
                     border-radius: 10px;
                     width: 20px;
                     height: 20px;
@@ -268,10 +274,6 @@ export class NotificationMenu extends Menu {
             iconDiv.appendChild(range.createContextualFragment(html));
             this.notificationCount = this.shadowRoot.getElementById("notification-count")
         }
-
-        let count = parseInt(this.notificationCount.innerHTML)
-        count++
-        this.notificationCount.innerHTML = count.toString()
     }
 
     // Set user notifications
@@ -335,6 +337,26 @@ export class NotificationMenu extends Menu {
         if (isHidden) {
             this.shadowRoot.removeChild(this.getMenuDiv())
         }
+
+        // Now the new notification count badge.
+        let count = 0;
+        let notifications_read_date = 0;
+        if (localStorage.getItem("notifications_read_date") != undefined) {
+            notifications_read_date = parseInt(localStorage.getItem("notifications_read_date"))
+        }
+
+        if (notification._date.getTime() > notifications_read_date) {
+
+            if (this.notificationCount != undefined) {
+                count = parseInt(this.notificationCount.innerHTML)
+            } else {
+                this.setNotificationCount()
+            }
+            
+            count++
+            this.notificationCount.innerHTML = count.toString()
+        }
+
     }
 
 }

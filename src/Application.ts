@@ -5,10 +5,13 @@ import { ApplicationView } from "./ApplicationView"
 import { Account } from './Account';
 import { NotificationType, Notification } from './Notification'
 import { InsertOneRqst, FindRqst, FindResp } from "globular-web-client/lib/persistence/persistencepb/persistence_pb";
+import { v4 as uuidv4 } from "uuid";
+
 /**
  * That class can be use to create any other application.
  */
 export class Application extends Model {
+    public static uuid: string; 
     private name: string;
     private title: string;
     private account: Account;
@@ -27,6 +30,14 @@ export class Application extends Model {
     constructor(name: string, title: string, view: ApplicationView) {
         super()
 
+        // generate client uuid, this is use to set information about a client.
+        if(localStorage.getItem("globular_client_uuid") == undefined){
+            Application.uuid = uuidv4();
+            localStorage.setItem("globular_client_uuid", Application.uuid)
+        }else{
+            Application.uuid = localStorage.getItem("globular_client_uuid")
+        }
+        
         // The application name.
         this.name = name;
         Model.application = this.name; // set the application in model.
@@ -36,6 +47,14 @@ export class Application extends Model {
             document.getElementsByTagName("title")[0].innerHTML = title;
             view.setTitle(title)
         }
+    }
+
+    /**
+     * Return partial information only.
+     */
+    toString(): string {
+        let obj = {"name":this.name, "title":this.title, "icon":""}
+        return JSON.stringify(obj)
     }
 
     /**
@@ -119,9 +138,7 @@ export class Application extends Model {
 
             // Initialyse application notifications.
             this.getNotifications(NotificationType.Application, (notifications: Array<Notification>) => {
-                //console.log(notifications)
                 Model.eventHub.publish("set_application_notifications_event", notifications, true)
-                
             }, errorCallback)
 
             // Connect automatically...
@@ -182,7 +199,7 @@ export class Application extends Model {
                 localStorage.setItem("user_token", token);
                 localStorage.setItem("token_expired", (<any>decoded).exp);
                 localStorage.setItem("user_name", userName);
-                localStorage.setItem("useremail_", email);
+                localStorage.setItem("user_email", email);
 
                 // Set the account
                 this.account = new Account(userName, email)
@@ -194,7 +211,7 @@ export class Application extends Model {
                         localStorage.removeItem("remember_me");
                         localStorage.removeItem("user_token");
                         localStorage.removeItem("user_name");
-                        localStorage.removeItem("useremail_");
+                        localStorage.removeItem("user_email");
                         localStorage.removeItem("token_expired");
                         onError(err);
                     })
@@ -205,7 +222,7 @@ export class Application extends Model {
                 localStorage.removeItem("remember_me");
                 localStorage.removeItem("user_token");
                 localStorage.removeItem("user_name");
-                localStorage.removeItem("useremail_");
+                localStorage.removeItem("user_email");
                 localStorage.removeItem("token_expired");
                 onError(err);
             });
@@ -268,7 +285,7 @@ export class Application extends Model {
                 localStorage.setItem("user_token", token);
                 localStorage.setItem("user_name", (<any>decoded).username);
                 localStorage.setItem("token_expired", (<any>decoded).exp);
-                localStorage.setItem("useremail_", (<any>decoded).email);
+                localStorage.setItem("user_email", (<any>decoded).email);
 
                 // Callback on login.
                 this.account = new Account(name, email);
@@ -324,7 +341,7 @@ export class Application extends Model {
                 // here I will save the user token and user_name in the local storage.
                 localStorage.setItem("user_token", token);
                 localStorage.setItem("token_expired", (<any>decoded).exp);
-                localStorage.setItem("useremail_", email);
+                localStorage.setItem("user_email", email);
                 localStorage.setItem("user_name", userName);
 
                 // Start refresh as needed.
@@ -367,8 +384,12 @@ export class Application extends Model {
         let db: string
         if (notification.type == NotificationType.Application) {
             db = Model.application + "_db"
+            notification.sender = this.toString()
         } else {
             db = this.account.id + "_db"
+
+            // attach account informations.
+            notification.sender = this.account.toString()
         }
 
         // Insert the notification in the db.
@@ -376,6 +397,7 @@ export class Application extends Model {
         rqst.setId(db)
         rqst.setDatabase(db)
         rqst.setCollection("Notifications")
+
         rqst.setJsonstr(notification.toString())
 
         // Save the nofiction on the server.
@@ -475,7 +497,7 @@ export class Application extends Model {
         localStorage.removeItem("remember_me");
         localStorage.removeItem("user_token");
         localStorage.removeItem("user_name");
-        localStorage.removeItem("useremail_");
+        localStorage.removeItem("user_email");
         localStorage.removeItem("token_expired");
     }
 
@@ -499,7 +521,7 @@ export class Application extends Model {
         localStorage.removeItem("remember_me");
         localStorage.removeItem("user_token");
         localStorage.removeItem("user_name");
-        localStorage.removeItem("useremail_");
+        localStorage.removeItem("user_email");
         localStorage.removeItem("token_expired");
     }
 }
