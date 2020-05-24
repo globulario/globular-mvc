@@ -147,7 +147,7 @@ export class Account extends Model {
     changeProfilImage(
         dataUrl: string,
         onSaveAccount: (account: Account) => void,
-        onError: (err: any, account: Account) => void
+        onError: (err: any) => void
     ) {
         this.profilPicture_ = dataUrl;
         this.save(onSaveAccount, onError);
@@ -159,7 +159,7 @@ export class Account extends Model {
      */
     save(
         callback: (account: Account) => void,
-        onError: (err: any, account: Account) => void
+        onError: (err: any) => void
     ) {
         let userName = this.id;
         let database = userName + "_db";
@@ -186,14 +186,7 @@ export class Account extends Model {
                 callback(this);
             })
             .catch((err: any) => {
-                onError(err, this);
+                onError(err);
             });
-    }
-
-    /**
-     * Return the json string of the class. That will be use to save user data into the database.
-     */
-    toString(): string {
-        return JSON.stringify(this)
     }
 }

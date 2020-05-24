@@ -82,6 +82,8 @@ export class ApplicationView extends View {
         this.layout.init()
         this.login_.init()
         this.accountMenu.init()
+        this.notificationMenu.init()
+        
 
         // Logout event
         Model.eventHub.subscribe("logout_event",
@@ -101,6 +103,7 @@ export class ApplicationView extends View {
                 this.onLogin(account)
             }, true)
 
+        
 
         /**
          * The resize listener.
@@ -258,5 +261,11 @@ export class ApplicationView extends View {
     // Gui function's
     //////////////////////////////////////////////////////////////////////////////////////////
 
+    /**
+     * The workspace div where the application draw it content.
+     */
+    getWorkspace(){
+        return this.layout.workspace()
+    }
 
 }

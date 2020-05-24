@@ -1,6 +1,6 @@
 import { Model } from "./Model";
 
-enum NotificationType{
+export enum NotificationType{
     Application = 1,
     User =2
 }
@@ -35,6 +35,14 @@ export class Notification  extends Model{
         this._recipient = value;
     }
 
+    private _sender: string;
+    public get sender(): string {
+        return this._sender;
+    }
+    public set sender(value: string) {
+        this._sender = value;
+    }
+
     private _text: string;
     public get text(): string {
         return this._text;
@@ -57,12 +65,13 @@ export class Notification  extends Model{
      * @param recipient 
      * @param text 
      */
-    constructor(type:NotificationType, recipient: string, text: string, date?:Date){
+    constructor(type?:NotificationType, recipient?: string, sender?:string, text?: string, date?:Date){
         super();
 
         this._recipient = recipient;
         this._type = type;
         this._text = text;
+        this._sender = sender;
 
         // set the date or create it...
         if(date!=undefined){
@@ -72,5 +81,31 @@ export class Notification  extends Model{
         }
         
         this._id = this._date.getTime().toString(); // I will use the date a id.
+    }
+
+    /**
+     * Initialyse model from json object.
+     * @param json The class data.
+     */
+    fromString(json: string){
+        this.fromObject(JSON.parse(json))
+    }
+
+    /**
+     * Initialyse the notification from object.
+     * @param obj 
+     */
+    fromObject(obj: any){
+        this._id = obj._id
+        this._text = obj._text
+        this._recipient = obj._recipient
+        this._sender = obj._sender
+        
+        if(this._type == 1){
+            this._type = NotificationType.Application
+        }else{
+            this._type = NotificationType.User
+        }
+        this._date = new Date(obj._date)
     }
 }

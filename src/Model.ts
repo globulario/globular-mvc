@@ -42,6 +42,28 @@ export class Model {
     }
 
     /**
+     * Return the json string of the class. That will be use to save user data into the database.
+     */
+    toString(): string {
+        return JSON.stringify(this)
+    }
+
+    /**
+     * Initialyse model from json object.
+     * @param json The class data.
+     */
+    fromString(json: string) {
+
+    }
+
+    /**
+     * Initialyse the notification from object.
+     * @param obj 
+     */
+    fromObject(obj: any) {
+    }
+
+    /**
      * Connect with the backend and get the initial configuration.
      * @param initCallback On success callback
      * @param errorCallback On error callback
@@ -77,9 +99,9 @@ export class Model {
                 Model.eventHub = new GlobularWebClient.EventHub(
                     Model.globular.eventService
                 );
-                
+
                 // Initialyse the view.
-                if(this.view != undefined){
+                if (this.view != undefined) {
                     this.view.init()
                 }
 

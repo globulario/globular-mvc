@@ -199,7 +199,7 @@ export class Layout extends HTMLElement {
     let waitingDiv = this.shadowRoot.getElementById("waiting_div")
     waitingDiv.parentNode.removeChild(waitingDiv)
   }
-
+  
 }
 
 customElements.define('globular-application', Layout)

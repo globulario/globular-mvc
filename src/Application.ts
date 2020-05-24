@@ -3,7 +3,8 @@ import * as ressource from "globular-web-client/lib/ressource/ressource_pb";
 import * as jwt from "jwt-decode";
 import { ApplicationView } from "./ApplicationView"
 import { Account } from './Account';
-
+import { NotificationType, Notification } from './Notification'
+import { InsertOneRqst, FindRqst, FindResp } from "globular-web-client/lib/persistence/persistencepb/persistence_pb";
 /**
  * That class can be use to create any other application.
  */
@@ -72,7 +73,7 @@ export class Application extends Model {
                     this.logout_event_listener = uuid
                 },
                 (evt: any) => {
-                    // Here I will try to login the user.
+                    
                     this.logout()
                 }, true)
 
@@ -95,26 +96,33 @@ export class Application extends Model {
 
             // The update profile picuture event.
             Model.eventHub.subscribe("update_profile_picture_event_",
-            (uuid: string) => {
-                this.update_profile_picture_listener = uuid
-            },
-            (dataUrl: string) => {
-                // Here I will try to login the user.
-                this.account.changeProfilImage(
-                    dataUrl, 
-                    ()=>{
-                        /** Nothing here. */
-                    }, 
-                    (err:any)=>{
-                        this.view.displayMessage(err, 3000);
-                    })
+                (uuid: string) => {
+                    this.update_profile_picture_listener = uuid
+                },
+                (dataUrl: string) => {
+                    // Here I will try to login the user.
+                    this.account.changeProfilImage(
+                        dataUrl,
+                        () => {
+                            /** Nothing here. */
+                        },
+                        (err: any) => {
+                            this.view.displayMessage(err, 3000);
+                        })
 
-            }, true)
-                
+                }, true)
+
 
             if (initCallback != undefined) {
                 initCallback();
             }
+
+            // Initialyse application notifications.
+            this.getNotifications(NotificationType.Application, (notifications: Array<Notification>) => {
+                //console.log(notifications)
+                Model.eventHub.publish("set_application_notifications_event", notifications, true)
+                
+            }, errorCallback)
 
             // Connect automatically...
             let rememberMe = localStorage.getItem("remember_me");
@@ -128,6 +136,7 @@ export class Application extends Model {
                         // send a login event.
                         Model.eventHub.publish("login_event", account, true);
                         this.view.resume()
+                        this.startRefreshToken()
                     },
                     (err: any) => {
                         this.view.displayMessage(err, 2000);
@@ -181,7 +190,7 @@ export class Application extends Model {
                 // Set the account infos...
                 this.account.initData(
                     initCallback,
-                    (err: any) => { 
+                    (err: any) => {
                         localStorage.removeItem("remember_me");
                         localStorage.removeItem("user_token");
                         localStorage.removeItem("user_name");
@@ -353,59 +362,101 @@ export class Application extends Model {
      * Send application notifications.
      * @param notification The notification can contain html text.
      */
-    sendApplicationNotifications(notification: Notification){
+    sendNotifications(notification: Notification, callback: () => void, onError: (err: any) => void) {
+        // first of all I will save the notificaiton.
+        let db: string
+        if (notification.type == NotificationType.Application) {
+            db = Model.application + "_db"
+        } else {
+            db = this.account.id + "_db"
+        }
 
+        // Insert the notification in the db.
+        let rqst = new InsertOneRqst
+        rqst.setId(db)
+        rqst.setDatabase(db)
+        rqst.setCollection("Notifications")
+        rqst.setJsonstr(notification.toString())
+
+        // Save the nofiction on the server.
+        Model.globular.persistenceService.insertOne(rqst, {
+            token: localStorage.getItem("user_token"),
+            application: Model.application,
+            domain: Model.domain
+        }).then(() => {
+
+            // Here I will throw a network event...
+            Model.eventHub.publish(notification.recipient + "_notification_event", notification.toString(), false)
+            if (callback != undefined) {
+                callback();
+            }
+
+        }).catch((err: any) => {
+            onError(err);
+        });
     }
 
     /**
-     *  Retreive the list of nofitications for the application
+     *  Retreive the list of nofitications
      * @param callback The success callback with the list of notifications.
      * @param errorCallback The error callback with the error message.
      */
-    getApplicationNotifications(callback:(notifications:Array<Notification>)=>void, errorCallback:(err: any)=>void){
+    getNotifications(type: NotificationType, callback: (notifications: Array<Notification>) => void, errorCallback: (err: any) => void) {
 
+        // So here I will get the list of notification for the given type.
+        let db: string
+        let query: string
+
+        if (type == NotificationType.Application) {
+            db = Model.application + "_db"
+            query = `{"_recipient":"${Model.application}"}`
+        } else {
+            db = this.account.id + "_db"
+            query = `{"_recipient":"${this.account.id}"}`
+        }
+
+        // Insert the notification in the db.
+        let rqst = new FindRqst
+        rqst.setId(db)
+        rqst.setDatabase(db)
+        rqst.setCollection("Notifications")
+        
+        rqst.setQuery(query)
+
+        let stream = Model.globular.persistenceService.find(rqst, {
+            token: localStorage.getItem("user_token"),
+            application: Model.application,
+            domain: Model.domain
+        });
+
+        let notifications = new Array<Notification>();
+        stream.on("data", (rsp: FindResp) => {
+            let data = JSON.parse(rsp.getJsonstr())
+            for(let i=0; i < data.length; i++){
+               let n = new Notification
+               n.fromObject(data[i])
+               notifications.push(n)
+            }
+        });
+
+        stream.on("status", status => {
+            if (status.code != 0) {
+                console.log(status.details)
+                errorCallback(status.details)
+            }else{
+                callback(notifications)
+            }
+        })
     }
 
-    removeApplicationNotification(notification: Notification){
+    removeNotification(notification: Notification) {
 
     }
 
     /**
-     * Remove all notification for a given user.
+     * Remove all notification.
      */
-    clearApplicationNotifications(){
-
-    }
-
-    /**
-     * send user notification.
-     * @param notification 
-     */
-    sendUserNotifications(notification: Notification){
-
-    }
-
-    /**
-     * Get notifications related to a given user.
-     * @param callback The success callback with the list of notifications
-     * @param errorCallback The error callback
-     */
-    getUserNotifications(callback:(notifications:Array<Notification>)=>void, errorCallback:(err: any)=>void){
-
-    }
-
-    /**
-     * Remove a given user notification
-     * @param notification The notification to remove.
-     */
-    removeUserNotification(notification: Notification){
-
-    }
-
-    /**
-     * Remove all notification for a given user.
-     */
-    clearUserNotifications(){
+    clearNotifications(type: NotificationType) {
 
     }
 
@@ -443,7 +494,7 @@ export class Application extends Model {
         Model.eventHub.unSubscribe("logout_event_", this.logout_event_listener)
         Model.eventHub.unSubscribe("register_event_", this.register_event_listener)
         Model.eventHub.unSubscribe("update_profile_picture_event_", this.update_profile_picture_listener)
-        
+
         // remove token informations
         localStorage.removeItem("remember_me");
         localStorage.removeItem("user_token");

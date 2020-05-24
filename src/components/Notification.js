@@ -1,14 +1,9 @@
 // I will made use of polymer instead of materialyze for the main
 // layout because materialyse dosen't react to well with the shadow doom.
 import '@polymer/iron-icon/iron-icon.js';
-import '@polymer/iron-icons/social-icons'
 import '@polymer/iron-icons/iron-icons.js';
-import '@polymer/paper-icon-button/paper-icon-button.js';
 import '@polymer/paper-ripple/paper-ripple.js';
-import '@polymer/paper-input/paper-input.js';
-import '@polymer/paper-card/paper-card.js';
-import '@polymer/paper-button/paper-button.js';
-import '@polymer/paper-checkbox/paper-checkbox.js';
+import '@polymer/iron-collapse/iron-collapse.js';
 
 import { Model } from '../Model';
 import { Menu } from './Menu';
@@ -43,15 +38,22 @@ export class NotificationMenu extends Menu {
 
             .header{
                 display: flex;
+                min-width: 256px;
+                position: relative;
                 font-size: 12pt;
                 align-items: center;
                 padding: .5rem;
-                border-bottom: 1px solid #e8e8e8;
+            }
+
+            .header:hover{
+                cursor: pointer;
             }
 
             .body{
                 min-width: 256px;
                 min-height: 100px;
+                max-height: 30rem;
+                overflow-y: auto;
             }
 
             .btn_div{
@@ -69,10 +71,25 @@ export class NotificationMenu extends Menu {
                 cursor: pointer;
             }
 
+            iron-collapse{
+                border-bottom: 1px solid #e8e8e8;
+                border-top: 1px solid #e8e8e8;
+            }
+
+            iron-collapse{
+                border-bottom: 1px solid #e8e8e8;
+                border-top: 1px solid #e8e8e8;
+            }
+
+            .notification_panel{
+                display: flex; 
+                padding: .75rem; 
+                font-size: 12pt;
+            }
         </style>
 
         <div>
-            <div class="header" style="">
+            <div class="header" style="border-bottom: 1px solid #e8e8e8;">
                 <div>Notifications</div>
                 <div class="btn_div">
                     <div class="btn">
@@ -83,50 +100,241 @@ export class NotificationMenu extends Menu {
             </div>
 
             <div id="application-notifications">
-                <div class="header">Application</div>
-                <div class="body">
+                <div class="header" id="application-notifications-btn">Application
+                    <paper-ripple recenters></paper-ripple>
                 </div>
+                <iron-collapse id="application-notifications-collapse" opened = "[[opened]]">
+                    <div id="application-nofitications-panel" class="body"></div>
+                </iron-collapse>
             </div>
+
             <div id="user-nofitications">
-                <div class="header" style="border-top: 1px solid #e8e8e8;">User</div>
-                <div class="body">
+                <div class="header" id="user-notifications-btn">User 
+                    <paper-ripple recenters></paper-ripple>
                 </div>
+                <iron-collapse  id="user-notifications-collapse" style="">
+                    <div id="user-nofitications-panel" class="body"></div>
+                </iron-collapse>
             </div>
 
         </div>
         `
+
         let range = document.createRange()
         this.getMenuDiv().appendChild(range.createContextualFragment(html));
-        
+
+        // Action's
+        this.shadowRoot.appendChild(this.getMenuDiv())
+
+        this.userNotificationsBtn = this.shadowRoot.getElementById("user-notifications-btn")
+        this.applicationNotificationBtn = this.shadowRoot.getElementById("application-notifications-btn")
+
+        let userNotificationsCollapse = this.shadowRoot.getElementById("user-notifications-collapse");
+        let applicationNotificationsCollapse = this.shadowRoot.getElementById("application-notifications-collapse");
+        this.applicationNotificationsPanel = this.shadowRoot.getElementById("application-nofitications-panel")
+        this.userNotificationsPanel = this.shadowRoot.getElementById("user-nofitications-panel")
+
+        // Now I will set the animation
+        this.userNotificationsBtn.onclick = () => {
+            userNotificationsCollapse.toggle()
+            if (applicationNotificationsCollapse.opened) {
+                applicationNotificationsCollapse.toggle()
+            }
+            if (userNotificationsCollapse.opened == true) {
+                this.userNotificationsBtn.style.borderTop = "1px solid #e8e8e8"
+            } else {
+                this.userNotificationsBtn.style.borderTop = ""
+            }
+        }
+
+        // Now I will set the animation
+        this.applicationNotificationBtn.onclick = () => {
+            applicationNotificationsCollapse.toggle()
+            if (userNotificationsCollapse.opened) {
+                userNotificationsCollapse.toggle()
+            }
+            if (userNotificationsCollapse.opened == true) {
+                this.userNotificationsBtn.style.borderTop = "1px solid #e8e8e8"
+            } else {
+                this.userNotificationsBtn.style.borderTop = ""
+            }
+        }
+
+        this.getIconDiv().addEventListener("click", () => {
+            // reset the notification count.
+            if (this.notificationCount != undefined) {
+                this.notificationCount.parentNode.removeChild(this.notificationCount)
+                this.notificationCount = undefined
+            }
+        })
+
+        this.shadowRoot.removeChild(this.getMenuDiv())
     }
 
-    init(){
+    init() {
         // The logout event.
-        Model.eventHub.subscribe("logout_event", 
-        (uuid)=>{
-            /** nothing to do here. */
-        }, 
-        (data)=>{
-            this.clear()
-        }, true)
-        
+        Model.eventHub.subscribe("logout_event",
+            (uuid) => {
+                /** nothing to do here. */
+            },
+            (data) => {
+                this.clearUserNotifications()
+                Model.eventHub.unSubscribe(account.id + "_notification_event", this.account_notification_listener)
+            }, true)
+
+        // The logout event.
+        Model.eventHub.subscribe("login_event",
+            (uuid) => {
+                /** nothing to do here. */
+            },
+            (account) => {
+                Model.eventHub.subscribe(account.id + "_notification_event",
+                    (uuid) => {
+                        this.account_notification_listener = uuid
+                    },
+                    (notification) => {
+                        this.appendNofication(this.userNotificationsPanel, JSON.parse(notification))
+                    }, false)
+            }, true)
+
+        Model.eventHub.subscribe("set_application_notifications_event",
+            (uuid) => {
+                /** nothing to do here. */
+            },
+            (notifications) => {
+                this.setApplicationNofications(notifications)
+            }, true)
+
+        Model.eventHub.subscribe("set_user_notifications_event",
+            (uuid) => {
+                /** nothing to do here. */
+            },
+            (notifications) => {
+                this.setNotificationCount()
+                this.setUserNofications(notifications)
+            }, true)
+
+        // Network event.
+        Model.eventHub.subscribe(Model.application + "_notification_event",
+            (uuid) => {
+                /** nothing to do here. */
+            },
+            (notification) => {
+                this.setNotificationCount()
+                this.appendNofication(this.applicationNotificationsPanel, JSON.parse(notification))
+            }, false)
+
     }
 
     // clear the notifications.
-    clear(){
-        
+    clear() {
+
+    }
+
+    setNotificationCount() {
+        let iconDiv = this.getIconDiv()
+        for (var i = 0; i < iconDiv.children.length; i++) {
+            if (iconDiv.children[i].id == "notification-count") {
+                this.notificationCount = iconDiv.children[i]
+                break
+            }
+        }
+
+        if (this.notificationCount == undefined) {
+            let html = `
+            <style>
+                .notification-count{
+                    position: absolute;
+                    display: flex;
+                    top: 0px;
+                    right: 0px;
+                    background-color: red;
+                    border-radius: 10px;
+                    width: 20px;
+                    height: 20px;
+                    justify-content: center;
+                    align-items: center;
+                    font-size: 8pt;
+                }
+            </style>
+            <div id="notification-count" class="notification-count">
+                0
+            </div>
+            `
+            // Set icon.
+            this.getIcon().icon = "social:notifications"
+
+            let range = document.createRange()
+            iconDiv.appendChild(range.createContextualFragment(html));
+            this.notificationCount = this.shadowRoot.getElementById("notification-count")
+        }
+
+        let count = parseInt(this.notificationCount.innerHTML)
+        count++
+        this.notificationCount.innerHTML = count.toString()
     }
 
     // Set user notifications
-    setUserNofications(notifications){
-        // Here I will get the user notification.
+    setUserNofications(notifications) {
+        for (var i = 0; i < notifications.length; i++) {
+            let notification = notifications[i]
+            this.appendNofication(this.userNotificationsPanel, notification)
+        }
+    }
 
+    // Clear all user notifications.
+    clearUserNotifications() {
+        this.userNotificationsPanel.innerHTML = ""
     }
 
     // Set the application notifications.
-    setApplicationNofications(notifications){
-        // Here I will get the user notification.
+    setApplicationNofications(notifications) {
+        for (var i = 0; i < notifications.length; i++) {
+            let notification = notifications[i]
+            this.appendNofication(this.applicationNotificationsPanel, notification)
+        }
+    }
 
+    clearApplicationNotifications() {
+        this.applicationNotificationsPanel.innerHTML = ""
+    }
+
+    // Create the notification panel.
+    appendNofication(parent, notification) {
+
+        let html = `
+        <div id="${notification._id}" class="notification_panel">
+            <div "${notification._id}_recipient">
+            </div>
+            <div style="display: flex; flex-direction: column;">
+                <div id="${notification._id}_text" style="">
+                </div>
+                <div id="${notification._id}_date" style="font-size: 10pt;">
+                </div>
+            </div>
+        </div>
+        `
+        // Set icon.
+        this.getIcon().icon = "social:notifications"
+
+        let range = document.createRange()
+        parent.appendChild(range.createContextualFragment(html));
+
+        let isHidden = this.shadowRoot.getElementById(notification._id) == undefined
+        // Action's
+        if (isHidden) {
+            this.shadowRoot.appendChild(this.getMenuDiv())
+        }
+
+        this.shadowRoot.getElementById(notification._id + "_text").innerHTML = notification._text
+
+        let date = new Date(notification._date)
+
+        this.shadowRoot.getElementById(notification._id + "_date").innerHTML = date.toLocaleDateString()
+
+        if (isHidden) {
+            this.shadowRoot.removeChild(this.getMenuDiv())
+        }
     }
 
 }
