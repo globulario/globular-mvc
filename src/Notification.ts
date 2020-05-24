@@ -65,13 +65,12 @@ export class Notification  extends Model{
      * @param recipient 
      * @param text 
      */
-    constructor(type?:NotificationType, recipient?: string, sender?:string, text?: string, date?:Date){
+    constructor(type?:NotificationType, recipient?: string, text?: string, date?:Date){
         super();
 
         this._recipient = recipient;
         this._type = type;
         this._text = text;
-        this._sender = sender;
 
         // set the date or create it...
         if(date!=undefined){

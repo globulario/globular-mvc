@@ -38,7 +38,7 @@ export class NotificationMenu extends Menu {
 
             .header{
                 display: flex;
-                min-width: 256px;
+                min-width: 375px;
                 position: relative;
                 font-size: 12pt;
                 align-items: center;
@@ -50,7 +50,7 @@ export class NotificationMenu extends Menu {
             }
 
             .body{
-                min-width: 256px;
+                min-width: 375px;
                 min-height: 100px;
                 max-height: 30rem;
                 overflow-y: auto;
@@ -82,9 +82,17 @@ export class NotificationMenu extends Menu {
             }
 
             .notification_panel{
+                position: relative;
                 display: flex; 
                 padding: .75rem; 
                 font-size: 12pt;
+                transition: background 0.2s ease,padding 0.8s linear;
+            }
+
+            .notification_panel img {
+                height: 48px;
+                width: 48px;
+                border-radius: 24px;
             }
         </style>
 
@@ -167,8 +175,33 @@ export class NotificationMenu extends Menu {
                 this.notificationCount = undefined
             }
 
-            let now = new Date().getTime()
-            localStorage.setItem("notifications_read_date", now.toString())
+            let isHidden = this.getMenuDiv().parentNode == null
+            if (isHidden) {
+                this.shadowRoot.appendChild(this.getMenuDiv())
+            }
+
+            let now = new Date()
+            let dateTimeDivs = this.shadowRoot.querySelectorAll(".notification_date")
+            for (var i = 0; i < dateTimeDivs.length; i++) {
+                let date = dateTimeDivs[i].date;
+                let delay =  Math.floor((now.getTime() - date.getTime()) / 1000);
+                let div = dateTimeDivs[i]
+                if (delay < 60) {
+                    div.innerHTML = delay + " seconds ago"
+                } else if (delay < 60 * 60) {
+                    div.innerHTML = Math.floor(delay / (60)) + " minutes ago"
+                } else if (delay < 60 * 60 * 24) {
+                    div.innerHTML = Math.floor(delay / (60 * 60))+ " hours ago"
+                } else {
+                    div.innerHTML = Math.floor(delay / (60 * 60 * 24)) + " days ago"
+                } 
+            }
+
+            localStorage.setItem("notifications_read_date", now.getTime().toString())
+
+            if (isHidden) {
+                this.shadowRoot.removeChild(this.getMenuDiv())
+            }
 
         })
 
@@ -197,7 +230,10 @@ export class NotificationMenu extends Menu {
                         this.account_notification_listener = uuid
                     },
                     (notification) => {
-                        this.appendNofication(this.userNotificationsPanel, JSON.parse(notification))
+                        this.setNotificationCount()
+                        notification = JSON.parse(notification)
+                        notification._date = new Date(notification._date)
+                        this.appendNofication(this.userNotificationsPanel, notification)
                     }, false)
             }, true)
 
@@ -248,7 +284,6 @@ export class NotificationMenu extends Menu {
         if (this.notificationCount == undefined) {
             let html = `
             <style>
-
                 .notification-count{
                     position: absolute;
                     display: flex;
@@ -306,13 +341,14 @@ export class NotificationMenu extends Menu {
 
         let html = `
         <div id="${notification._id}" class="notification_panel">
-            <div "${notification._id}_recipient">
+            <paper-ripple recenters></paper-ripple>
+            <div id="${notification._id}_recipient"  style="display: flex; flex-direction: column; padding: 5px; align-items: center;">
+                <img id="${notification._id}_img"></img>
+                <span id="${notification._id}_span" style="font-size: 10pt;"></span>
+                <div id="${notification._id}_date" class="notification_date" style="font-size: 10pt;"></div>
             </div>
-            <div style="display: flex; flex-direction: column;">
-                <div id="${notification._id}_text" style="">
-                </div>
-                <div id="${notification._id}_date" style="font-size: 10pt;">
-                </div>
+            <div style="display: flex; flex-direction: column; padding:5px; flex-grow: 1;">
+                <div id="${notification._id}_text" style="flex-grow: 1; display: flex;"></div>
             </div>
         </div>
         `
@@ -320,9 +356,11 @@ export class NotificationMenu extends Menu {
         this.getIcon().icon = "social:notifications"
 
         let range = document.createRange()
-        parent.appendChild(range.createContextualFragment(html));
+
+        parent.insertBefore(range.createContextualFragment(html), parent.firstChild);
 
         let isHidden = this.shadowRoot.getElementById(notification._id) == undefined
+
         // Action's
         if (isHidden) {
             this.shadowRoot.appendChild(this.getMenuDiv())
@@ -330,9 +368,41 @@ export class NotificationMenu extends Menu {
 
         this.shadowRoot.getElementById(notification._id + "_text").innerHTML = notification._text
 
-        let date = new Date(notification._date)
 
-        this.shadowRoot.getElementById(notification._id + "_date").innerHTML = date.toLocaleDateString()
+        let notificationDiv = this.shadowRoot.getElementById(notification._id)
+        notificationDiv.onmouseover = () => {
+            notificationDiv.style.backgroundColor = "#dbdbdb"
+            notificationDiv.style.transition
+            notificationDiv.style.cursor = "pointer"
+        }
+
+        notificationDiv.onmouseleave = () => {
+            notificationDiv.style.backgroundColor = ""
+            notificationDiv.style.cursor = "default"
+        }
+
+        if (notification._type == 1) {
+
+        } else if (notification._type == 2) {
+            let account = JSON.parse(notification._sender)
+            this.shadowRoot.getElementById(notification._id + "_img").src = account.profilPicture_
+            this.shadowRoot.getElementById(notification._id + "_span").innerHTML = account._id
+        }
+
+        let date = new Date(notification._date)
+        let now = new Date()
+        let delay =  Math.floor((now.getTime() - date.getTime()) / 1000);
+        let div = this.shadowRoot.getElementById(notification._id + "_date")
+        div.date = date
+        if (delay < 60) {
+            div.innerHTML = delay + " seconds ago"
+        } else if (delay < 60 * 60) {
+            div.innerHTML = Math.floor(delay / (60)) + " minutes ago"
+        } else if (delay < 60 * 60 * 24) {
+            div.innerHTML = Math.floor(delay / (60 * 60))  + " hours ago"
+        } else {
+            div.innerHTML = Math.floor(delay / (60 * 60 * 24)) + " days ago"
+        } 
 
         if (isHidden) {
             this.shadowRoot.removeChild(this.getMenuDiv())
@@ -352,7 +422,7 @@ export class NotificationMenu extends Menu {
             } else {
                 this.setNotificationCount()
             }
-            
+
             count++
             this.notificationCount.innerHTML = count.toString()
         }
