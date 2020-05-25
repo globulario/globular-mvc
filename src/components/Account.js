@@ -140,8 +140,19 @@ export class AccountMenu extends Menu {
             var r = new FileReader();
             var file = evt.target.files[0];
             r.onload = () => {
-                Model.eventHub.publish("update_profile_picture_event_", r.result.toString(), true)
-                this.setProfilePicture(r.result.toString())
+                // Here I will set the image to a size of 64x64 pixel instead of keep the original size.
+                var img = new Image();
+                img.onload = ()=> {
+                    var thumbSize = 64;
+                    var canvas = document.createElement("canvas");
+                    canvas.width = thumbSize;
+                    canvas.height = thumbSize;
+                    var c = canvas.getContext("2d");
+                    c.drawImage(img, 0, 0, thumbSize, thumbSize);
+                    Model.eventHub.publish("update_profile_picture_event_",  canvas.toDataURL("image/png"), true)
+                    this.setProfilePicture(canvas.toDataURL("image/png"))
+                };
+                img.src = r.result.toString();
             };
 
             try{

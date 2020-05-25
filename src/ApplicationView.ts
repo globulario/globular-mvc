@@ -15,8 +15,7 @@ import "../css/Application.css"
 import { AccountMenu } from "./components/Account";
 import { NotificationMenu } from "./components/Notification";
 import { OverflowMenu } from "./components/Menu";
-
-
+import { ApplicationsMenu } from "./components/Applications";
 
 /**
  * Application view made use of Web-component and Materialyse to create a basic application
@@ -38,6 +37,9 @@ export class ApplicationView extends View {
 
     /** The nofitication panel */
     private notificationMenu: NotificationMenu
+
+    /** The applications menu */
+    private applicationsMenu: ApplicationsMenu
 
     /** various listener's */
     private login_event_listener: string
@@ -73,6 +75,9 @@ export class ApplicationView extends View {
         // The overflow menu is use to hide menu that dosen't fix in the visual.
         this.overFlowMenu = new OverflowMenu()
 
+        // The applicaiton menu
+        this.applicationsMenu = new ApplicationsMenu()
+
     }
 
     // Must be call by the model when after it initialisation was done.
@@ -82,9 +87,9 @@ export class ApplicationView extends View {
         this.layout.init()
         this.login_.init()
         this.accountMenu.init()
+        this.applicationsMenu.init()
         this.notificationMenu.init()
         
-
         // Logout event
         Model.eventHub.subscribe("logout_event",
             (uuid: string) => {
@@ -115,9 +120,15 @@ export class ApplicationView extends View {
             if(w <= 500){
                 if(this.isLogin){
                     this.overFlowMenu.show()
+
+                    this.overFlowMenu.getMenuDiv().appendChild(this.applicationsMenu)
+                    this.applicationsMenu.getMenuDiv().classList.remove("bottom")
+                    this.applicationsMenu.getMenuDiv().classList.add("left")
+
                     this.overFlowMenu.getMenuDiv().appendChild(this.notificationMenu)
                     this.notificationMenu.getMenuDiv().classList.remove("bottom")
                     this.notificationMenu.getMenuDiv().classList.add("left")
+
                     this.overFlowMenu.getMenuDiv().appendChild(this.accountMenu)
                     this.accountMenu.getMenuDiv().classList.remove("bottom")
                     this.accountMenu.getMenuDiv().classList.add("left")
@@ -125,9 +136,15 @@ export class ApplicationView extends View {
             }else{
                 if(this.isLogin){
                     this.overFlowMenu.hide()
+
+                    this.layout.toolbar().appendChild(this.applicationsMenu)
+                    this.applicationsMenu.getMenuDiv().classList.remove("left")
+                    this.applicationsMenu.getMenuDiv().classList.add("bottom")
+
                     this.layout.toolbar().appendChild(this.notificationMenu)
                     this.notificationMenu.getMenuDiv().classList.remove("left")
                     this.notificationMenu.getMenuDiv().classList.add("bottom")
+
                     this.layout.toolbar().appendChild(this.accountMenu)
                     this.accountMenu.getMenuDiv().classList.remove("left")
                     this.accountMenu.getMenuDiv().classList.add("bottom")
@@ -164,7 +181,21 @@ export class ApplicationView extends View {
      * @param title The title.
      */
     setTitle(title: string) {
-        this.layout.title().innerHTML = title;
+        this.layout.title().innerHTML = "<span>" + title + "</span>";
+    }
+
+    setIcon(imgUrl: string){
+        let icon = document.createElement("img")
+        icon.src = imgUrl
+        icon.style.height = "24px"
+        icon.style.width = "24px"
+        icon.style.marginRight = "10px" 
+        icon.style.marginLeft = "10px" 
+
+        let title = this.layout.title()
+        title.style.display = "flex";
+
+        title.insertBefore(icon, title.firstChild)
     }
 
     /**

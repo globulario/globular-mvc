@@ -1,13 +1,15 @@
-import { Model } from "./Model";
+import { Model } from './Model';
 import * as ressource from "globular-web-client/lib/ressource/ressource_pb";
 import * as jwt from "jwt-decode";
 import { ApplicationView } from "./ApplicationView";
 import { Account } from "./Account";
-import { NotificationType, Notification } from "./Notification";
+import { NotificationType, Notification } from './Notification';
 import {
   InsertOneRqst,
   FindRqst,
   FindResp,
+  DeleteOneRqst,
+  FindOneRqst,
 } from "globular-web-client/lib/persistence/persistencepb/persistence_pb";
 import { v4 as uuidv4 } from "uuid";
 
@@ -16,6 +18,7 @@ import { v4 as uuidv4 } from "uuid";
  */
 export class Application extends Model {
   public static uuid: string;
+  private static infos:Map<string, any>;
   private name: string;
   private title: string;
   private account: Account;
@@ -25,6 +28,7 @@ export class Application extends Model {
   private register_event_listener: string;
   private logout_event_listener: string;
   private update_profile_picture_listener: string;
+  private delete_notification_event_listener: string;
 
   /**
    * Create a new application with a given name. The view
@@ -52,7 +56,6 @@ export class Application extends Model {
       view.setTitle(title);
     }
   }
-
 
   /**
    * Connect the listner's and call the initcallback.
@@ -151,9 +154,50 @@ export class Application extends Model {
           true
         );
 
-        if (initCallback != undefined) {
-          initCallback();
-        }
+        // Delete user notification.
+        Model.eventHub.subscribe(
+          "delete_notification_event_",
+          (uuid: string) => {
+            this.delete_notification_event_listener = uuid;
+          },
+          (notification: any) => {
+            notification = Notification.fromObject(notification)
+            let rqst = new DeleteOneRqst();
+            let db = this.account.id + "_db";
+            rqst.setId(db);
+            rqst.setDatabase(db);
+            rqst.setCollection("Notifications");
+            rqst.setQuery(`{"_id":"${notification.id}"}`);
+            Model.globular.persistenceService
+              .deleteOne(rqst, {
+                token: localStorage.getItem("user_token"),
+                application: Model.application,
+                domain: Model.domain,
+              })
+              .then(() => {
+                // The notification is not deleted so I will send network event to remove it from 
+                // the display.
+                Model.eventHub.publish(
+
+                  notification.id + "_delete_notification_event",
+                  notification.toString(),
+                  false
+                );
+              })
+              .catch((err: any) => {
+                this.view.displayMessage(err);
+              });
+          },
+          true
+        );
+
+        // Get backend application infos.
+        Application.getAllApplicationInfo((infos:Array<any>)=>{
+          if (initCallback != undefined) {
+            initCallback();
+            (<ApplicationView>this.view).setIcon(Application.getApplicationInfo(this.name).icon)
+          }
+        }, (err:any)=>{console.log(err)})
 
         // Connect automatically...
         let rememberMe = localStorage.getItem("remember_me");
@@ -192,27 +236,39 @@ export class Application extends Model {
   }
 
   /**
+   * Return the list of all applicaitons informations.
+   * @param callback 
+   * @param errorCallback 
+   */
+  static getAllApplicationInfo(callback:(infos:Array<any>)=>void, errorCallback:(err:any)=>void){
+    let rqst = new ressource.GetAllApplicationsInfoRqst
+    
+    Model.globular.ressourceService.getAllApplicationsInfo(rqst, {})
+    .then((rsp:ressource.GetAllApplicationsInfoRsp)=>{
+      let infos = JSON.parse(rsp.getResult())
+      Application.infos = new Map<string, any>();
+      for(var i=0; i < infos.length; i++){
+        Application.infos.set(infos[i]._id, infos[i]);
+      }
+      callback(infos)
+    })
+    .catch(errorCallback)
+  }
+
+  /**
+   * Return application infos.
+   * @param id 
+   */
+  static getApplicationInfo(id: string): any{
+    return Application.infos.get(id)
+  }
+
+  /**
    * Return partial information only.
    */
   toString(): string {
     let obj = { name: this.name, title: this.title, icon: "" };
     return JSON.stringify(obj);
-  }
-
-  /**
-   * The path of the application icon.
-   * @param path 
-   */
-  public setIcon(path: string){
-    console.log()
-  }
-
-  /**
-   * 
-   * @param path The path of the icon to use as favicon
-   */
-  public setFavicon(path: string){
-    console.log()
   }
 
   /////////////////////////////////////////////////////
@@ -272,7 +328,7 @@ export class Application extends Model {
    * Refresh the token to keep it usable.
    */
   private startRefreshToken() {
-
+    this.initNotifications();
     setInterval(() => {
       let isExpired =
         parseInt(localStorage.getItem("token_expired"), 10) <
@@ -281,7 +337,6 @@ export class Application extends Model {
         this.refreshToken(
           (account: Account) => {
             this.account = account;
-            this.initNotifications();
           },
           (err: any) => {
             // simply display the error on the view.
@@ -390,10 +445,10 @@ export class Application extends Model {
         localStorage.setItem("user_email", email);
         localStorage.setItem("user_name", userName);
 
+        this.account = new Account(userName, email);
+
         // Start refresh as needed.
         this.startRefreshToken();
-
-        this.account = new Account(userName, email);
 
         // Init the user data...
         this.account.initData(
@@ -419,8 +474,8 @@ export class Application extends Model {
 
   ///////////////////////////////////////////////////////////////
   // Application close funtions.
-  ////////////////////////////////////////////////////////////// 
-  
+  //////////////////////////////////////////////////////////////
+
   /**
    * Close the current session explicitelty.
    */
@@ -456,6 +511,10 @@ export class Application extends Model {
       "update_profile_picture_event_",
       this.update_profile_picture_listener
     );
+    Model.eventHub.unSubscribe(
+      "delete_notification_event_",
+      this.delete_notification_event_listener
+    );
 
     // remove token informations
     localStorage.removeItem("remember_me");
@@ -483,24 +542,24 @@ export class Application extends Model {
           true
         );
       },
-      (err:any)=>{
-        this.view.displayMessage(err)
+      (err: any) => {
+        this.view.displayMessage(err);
       }
     );
 
     this.getNotifications(
-        NotificationType.User,
-        (notifications: Array<Notification>) => {
-          Model.eventHub.publish(
-            "set_user_notifications_event",
-            notifications,
-            true
-          );
-        },
-        (err:any)=>{
-          this.view.displayMessage(err)
-        }
-      );
+      NotificationType.User,
+      (notifications: Array<Notification>) => {
+        Model.eventHub.publish(
+          "set_user_notifications_event",
+          notifications,
+          true
+        );
+      },
+      (err: any) => {
+        this.view.displayMessage(err);
+      }
+    );
   }
 
   /**
@@ -516,7 +575,8 @@ export class Application extends Model {
     let db: string;
     if (notification.type == NotificationType.Application) {
       db = Model.application + "_db";
-      notification.sender = this.toString();
+      console.log(Application.getApplicationInfo(this.name))
+      notification.sender = JSON.stringify(Application.getApplicationInfo(this.name))
     } else {
       db = this.account.id + "_db";
       // attach account informations.
@@ -594,8 +654,7 @@ export class Application extends Model {
     stream.on("data", (rsp: FindResp) => {
       let data = JSON.parse(rsp.getJsonstr());
       for (let i = 0; i < data.length; i++) {
-        let n = new Notification();
-        n.fromObject(data[i]);
+        let n = Notification.fromObject(data[i]);
         notifications.push(n);
       }
     });
@@ -610,14 +669,10 @@ export class Application extends Model {
     });
   }
 
-  removeNotification(notification: Notification) {
-
-  }
+  removeNotification(notification: Notification) {}
 
   /**
    * Remove all notification.
    */
   clearNotifications(type: NotificationType) {}
-
-
 }

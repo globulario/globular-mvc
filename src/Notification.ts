@@ -86,25 +86,27 @@ export class Notification  extends Model{
      * Initialyse model from json object.
      * @param json The class data.
      */
-    fromString(json: string){
-        this.fromObject(JSON.parse(json))
+    static fromString(json: string):any{
+        return Notification.fromObject(JSON.parse(json))
     }
 
     /**
      * Initialyse the notification from object.
      * @param obj 
      */
-    fromObject(obj: any){
-        this._id = obj._id
-        this._text = obj._text
-        this._recipient = obj._recipient
-        this._sender = obj._sender
+    static fromObject(obj: any): any{
+        let notification = new Notification()
+        notification._id = obj._id
+        notification._text = obj._text
+        notification._recipient = obj._recipient
+        notification._sender = obj._sender
         
-        if(this._type == 1){
-            this._type = NotificationType.Application
+        if(obj._type == 1){
+            notification._type = NotificationType.Application
         }else{
-            this._type = NotificationType.User
+            notification._type = NotificationType.User
         }
-        this._date = new Date(obj._date)
+        notification._date = new Date(obj._date)
+        return notification;
     }
 }

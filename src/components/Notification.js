@@ -2,8 +2,10 @@
 // layout because materialyse dosen't react to well with the shadow doom.
 import '@polymer/iron-icon/iron-icon.js';
 import '@polymer/iron-icons/iron-icons.js';
+import '@polymer/paper-icon-button/paper-icon-button.js';
 import '@polymer/paper-ripple/paper-ripple.js';
 import '@polymer/iron-collapse/iron-collapse.js';
+import '@polymer/paper-badge/paper-badge.js';
 
 import { Model } from '../Model';
 import { Menu } from './Menu';
@@ -31,7 +33,7 @@ export class NotificationMenu extends Menu {
 
             }
 
-            #application-notifications #user-nofitications{
+            #application-notifications #user-notifications{
                 display: flex;
                 flex-direction: column;
             }
@@ -107,21 +109,23 @@ export class NotificationMenu extends Menu {
                 </div>
             </div>
 
-            <div id="application-notifications">
-                <div class="header" id="application-notifications-btn">Application
+            <div id="application-notifications" style="display: none;">
+                <div class="header" id="application-notifications-btn">
+                    <span>Application</span>
                     <paper-ripple recenters></paper-ripple>
                 </div>
                 <iron-collapse id="application-notifications-collapse" opened = "[[opened]]">
-                    <div id="application-nofitications-panel" class="body"></div>
+                    <div id="application-notifications-panel" class="body"></div>
                 </iron-collapse>
             </div>
 
-            <div id="user-nofitications">
-                <div class="header" id="user-notifications-btn">User 
+            <div id="user-notifications" style="display: none;">
+                <div class="header" id="user-notifications-btn">
+                    <span>User</span>
                     <paper-ripple recenters></paper-ripple>
                 </div>
                 <iron-collapse  id="user-notifications-collapse" style="">
-                    <div id="user-nofitications-panel" class="body"></div>
+                    <div id="user-notifications-panel" class="body"></div>
                 </iron-collapse>
             </div>
 
@@ -134,21 +138,24 @@ export class NotificationMenu extends Menu {
         // Action's
         this.shadowRoot.appendChild(this.getMenuDiv())
 
+        this.applicationNotificationsDiv = this.shadowRoot.getElementById("application-notifications")
+        this.userNotificationsDiv = this.shadowRoot.getElementById("user-notifications")
+
         this.userNotificationsBtn = this.shadowRoot.getElementById("user-notifications-btn")
         this.applicationNotificationBtn = this.shadowRoot.getElementById("application-notifications-btn")
 
-        let userNotificationsCollapse = this.shadowRoot.getElementById("user-notifications-collapse");
-        let applicationNotificationsCollapse = this.shadowRoot.getElementById("application-notifications-collapse");
-        this.applicationNotificationsPanel = this.shadowRoot.getElementById("application-nofitications-panel")
-        this.userNotificationsPanel = this.shadowRoot.getElementById("user-nofitications-panel")
+        this.userNotificationsCollapse = this.shadowRoot.getElementById("user-notifications-collapse");
+        this.applicationNotificationsCollapse = this.shadowRoot.getElementById("application-notifications-collapse");
+        this.applicationNotificationsPanel = this.shadowRoot.getElementById("application-notifications-panel")
+        this.userNotificationsPanel = this.shadowRoot.getElementById("user-notifications-panel")
 
         // Now I will set the animation
         this.userNotificationsBtn.onclick = () => {
-            userNotificationsCollapse.toggle()
-            if (applicationNotificationsCollapse.opened) {
-                applicationNotificationsCollapse.toggle()
+            this.userNotificationsCollapse.toggle()
+            if ( this.applicationNotificationsCollapse.opened) {
+                this.applicationNotificationsCollapse.toggle()
             }
-            if (userNotificationsCollapse.opened == true) {
+            if ( this.userNotificationsCollapse.opened == true) {
                 this.userNotificationsBtn.style.borderTop = "1px solid #e8e8e8"
             } else {
                 this.userNotificationsBtn.style.borderTop = ""
@@ -157,11 +164,11 @@ export class NotificationMenu extends Menu {
 
         // Now I will set the animation
         this.applicationNotificationBtn.onclick = () => {
-            applicationNotificationsCollapse.toggle()
-            if (userNotificationsCollapse.opened) {
-                userNotificationsCollapse.toggle()
+            this.applicationNotificationsCollapse.toggle()
+            if ( this.userNotificationsCollapse.opened) {
+                this.userNotificationsCollapse.toggle()
             }
-            if (userNotificationsCollapse.opened == true) {
+            if ( this.userNotificationsCollapse.opened == true) {
                 this.userNotificationsBtn.style.borderTop = "1px solid #e8e8e8"
             } else {
                 this.userNotificationsBtn.style.borderTop = ""
@@ -184,17 +191,17 @@ export class NotificationMenu extends Menu {
             let dateTimeDivs = this.shadowRoot.querySelectorAll(".notification_date")
             for (var i = 0; i < dateTimeDivs.length; i++) {
                 let date = dateTimeDivs[i].date;
-                let delay =  Math.floor((now.getTime() - date.getTime()) / 1000);
+                let delay = Math.floor((now.getTime() - date.getTime()) / 1000);
                 let div = dateTimeDivs[i]
                 if (delay < 60) {
                     div.innerHTML = delay + " seconds ago"
                 } else if (delay < 60 * 60) {
                     div.innerHTML = Math.floor(delay / (60)) + " minutes ago"
                 } else if (delay < 60 * 60 * 24) {
-                    div.innerHTML = Math.floor(delay / (60 * 60))+ " hours ago"
+                    div.innerHTML = Math.floor(delay / (60 * 60)) + " hours ago"
                 } else {
                     div.innerHTML = Math.floor(delay / (60 * 60 * 24)) + " days ago"
-                } 
+                }
             }
 
             localStorage.setItem("notifications_read_date", now.getTime().toString())
@@ -234,6 +241,9 @@ export class NotificationMenu extends Menu {
                         notification = JSON.parse(notification)
                         notification._date = new Date(notification._date)
                         this.appendNofication(this.userNotificationsPanel, notification)
+                        if ( !this.userNotificationsCollapse.opened) {
+                            this.userNotificationsCollapse.toggle()
+                        }
                     }, false)
             }, true)
 
@@ -263,6 +273,9 @@ export class NotificationMenu extends Menu {
                 notification = JSON.parse(notification)
                 notification._date = new Date(notification._date)
                 this.appendNofication(this.applicationNotificationsPanel, notification)
+                if ( !this.applicationNotificationsCollapse.opened) {
+                    this.applicationNotificationsCollapse.toggle()
+                }
             }, false)
 
     }
@@ -317,6 +330,13 @@ export class NotificationMenu extends Menu {
             let notification = notifications[i]
             this.appendNofication(this.userNotificationsPanel, notification)
         }
+
+        // open the user notifications...
+        if(this.applicationNotificationsPanel.children.length == 0){
+            if ( !this.userNotificationsCollapse.opened) {
+                this.userNotificationsCollapse.toggle()
+            }
+        }
     }
 
     // Clear all user notifications.
@@ -330,6 +350,11 @@ export class NotificationMenu extends Menu {
             let notification = notifications[i]
             this.appendNofication(this.applicationNotificationsPanel, notification)
         }
+        if(this.userNotificationsPanel.children.length == 0){
+            if ( !this.applicationNotificationsCollapse.opened) {
+                this.applicationNotificationsCollapse.toggle()
+            }
+        }
     }
 
     clearApplicationNotifications() {
@@ -342,6 +367,7 @@ export class NotificationMenu extends Menu {
         let html = `
         <div id="${notification._id}" class="notification_panel">
             <paper-ripple recenters></paper-ripple>
+            <paper-icon-button id="${notification._id}_close_btn" icon="close" style="display: none; position: absolute; top: 0px; right: 0px;"></paper-icon-button>
             <div id="${notification._id}_recipient"  style="display: flex; flex-direction: column; padding: 5px; align-items: center;">
                 <img id="${notification._id}_img"></img>
                 <span id="${notification._id}_span" style="font-size: 10pt;"></span>
@@ -370,28 +396,66 @@ export class NotificationMenu extends Menu {
 
 
         let notificationDiv = this.shadowRoot.getElementById(notification._id)
+        let closeBtn = this.shadowRoot.getElementById(notification._id + "_close_btn")
+        closeBtn.onclick = () => {
+            Model.eventHub.publish("delete_notification_event_", notification, true)
+        }
+
         notificationDiv.onmouseover = () => {
             notificationDiv.style.backgroundColor = "#dbdbdb"
             notificationDiv.style.transition
             notificationDiv.style.cursor = "pointer"
+            if (notification._type == 2) {
+                closeBtn.style.display = "block"
+            }
         }
 
         notificationDiv.onmouseleave = () => {
             notificationDiv.style.backgroundColor = ""
             notificationDiv.style.cursor = "default"
+            if (notification._type == 2) {
+                closeBtn.style.display = "none"
+            }
         }
 
         if (notification._type == 1) {
-
+            this.applicationNotificationsDiv.style.display = ""
+            let application = JSON.parse(notification._sender)
+            this.shadowRoot.getElementById(notification._id + "_img").src = application.icon
+            this.shadowRoot.getElementById(notification._id + "_img").style.borderRadius = "0px"
+            this.shadowRoot.getElementById(notification._id + "_img").style.width = "24px"
+            this.shadowRoot.getElementById(notification._id + "_img").style.height = "24px"
         } else if (notification._type == 2) {
+            this.userNotificationsDiv.style.display = ""
             let account = JSON.parse(notification._sender)
             this.shadowRoot.getElementById(notification._id + "_img").src = account.profilPicture_
             this.shadowRoot.getElementById(notification._id + "_span").innerHTML = account._id
+            let deleteNotificationListener
+            Model.eventHub.subscribe(
+                notification._id + "_delete_notification_event",
+                (uuid) => {
+                    deleteNotificationListener = uuid
+                },
+                (notification) => {
+                    notification = JSON.parse(notification)
+                    notification._date = new Date(notification._date)
+                    notificationDiv.parentNode.removeChild(notificationDiv)
+                    Model.eventHub.unSubscribe(notification._id + "_delete_notification_event", deleteNotificationListener)
+                    if(this.userNotificationsPanel.children.length == 0 && this.applicationNotificationsPanel.children.length == 0){
+                        this.getIcon().icon = "social:notifications-none"
+                    }
+
+                    if(this.userNotificationsPanel.children.length == 0 ){
+                        this.userNotificationsDiv.style.display = "none"
+                    }
+                },
+                false
+            );
         }
 
         let date = new Date(notification._date)
         let now = new Date()
-        let delay =  Math.floor((now.getTime() - date.getTime()) / 1000);
+        let delay = Math.floor((now.getTime() - date.getTime()) / 1000);
         let div = this.shadowRoot.getElementById(notification._id + "_date")
         div.date = date
         if (delay < 60) {
@@ -399,10 +463,10 @@ export class NotificationMenu extends Menu {
         } else if (delay < 60 * 60) {
             div.innerHTML = Math.floor(delay / (60)) + " minutes ago"
         } else if (delay < 60 * 60 * 24) {
-            div.innerHTML = Math.floor(delay / (60 * 60))  + " hours ago"
+            div.innerHTML = Math.floor(delay / (60 * 60)) + " hours ago"
         } else {
             div.innerHTML = Math.floor(delay / (60 * 60 * 24)) + " days ago"
-        } 
+        }
 
         if (isHidden) {
             this.shadowRoot.removeChild(this.getMenuDiv())

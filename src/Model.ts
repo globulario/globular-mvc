@@ -52,7 +52,7 @@ export class Model {
      * Initialyse model from json object.
      * @param json The class data.
      */
-    fromString(json: string) {
+    static fromString(json: string):any {
 
     }
 
@@ -60,7 +60,7 @@ export class Model {
      * Initialyse the notification from object.
      * @param obj 
      */
-    fromObject(obj: any) {
+    static fromObject(obj: any):any {
     }
 
     /**
