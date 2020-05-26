@@ -32,7 +32,7 @@ export class ApplicationsMenu extends Menu {
                     display: flex;
                     flex-wrap: wrap;
                     padding: 10px;
-                    width: 290px;
+                    width: 300px;
                 }
             </style>
             <div id="applications-div">

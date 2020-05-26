@@ -1,6 +1,6 @@
 {
   "name": "globular-mvc",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Generic template to create web-application that made use of globular as backend and materialize as css (wrap in web-component's)",
   "main": "index.js",
   "scripts": {

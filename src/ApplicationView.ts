@@ -47,6 +47,8 @@ export class ApplicationView extends View {
 
     private isLogin: boolean;
 
+    private icon: any;
+
     constructor() {
         super()
 
@@ -186,6 +188,8 @@ export class ApplicationView extends View {
 
     setIcon(imgUrl: string){
         let icon = document.createElement("img")
+        icon.id = "application_icon"
+
         icon.src = imgUrl
         icon.style.height = "24px"
         icon.style.width = "24px"
@@ -196,6 +200,14 @@ export class ApplicationView extends View {
         title.style.display = "flex";
 
         title.insertBefore(icon, title.firstChild)
+        this.icon = icon;
+    }
+
+    /**
+     * The icon
+     */
+    getIcon(){
+        return this.icon
     }
 
     /**
@@ -295,8 +307,57 @@ export class ApplicationView extends View {
     /**
      * The workspace div where the application draw it content.
      */
-    getWorkspace(){
+    getWorkspace(): any{
         return this.layout.workspace()
     }
 
+    /**
+     * The side menu that contain application actions.
+     */
+    getSideMenu():any{
+        let sideMenu = this.layout.sideMenu()
+        sideMenu.style.display = "flex";
+        sideMenu.style.flexDirection = "column";
+        sideMenu.style.width = "100%";
+        return sideMenu
+    }
+
+    hideSideMenu(){
+        (<any>this.layout.appDrawer).toggle();
+    }
+
+    /**
+     * Create a side menu button div.
+     */
+    createSideMenuButton(id: string, text:string, icon:string):any{
+        let html = `
+        <style>
+            .side_menu_btn{
+                display: flex;
+                position: relative;
+                align-items: center;
+                font-family: Roboto,RobotoDraft,Helvetica,Arial,sans-serif;
+                font-size: 1rem;
+                letter-spacing: .2px;
+                color: #202124;
+                text-shadow: none;
+            }
+
+            .side_menu_btn:hover{
+                cursor: pointer;
+            }
+
+        </style>
+        <div id="${id}" class="side_menu_btn">
+            <paper-ripple recenters></paper-ripple>
+            <paper-icon-button id="${id}_close_btn" icon="${icon}"></paper-icon-button>
+            <span style="flex-grow: 1;">${text}</span>
+        </div>
+        `
+
+        let range = document.createRange()
+        this.getSideMenu().insertBefore(range.createContextualFragment(html), this.getSideMenu().firstChild);
+
+        return document.getElementById(id)
+    }
 }

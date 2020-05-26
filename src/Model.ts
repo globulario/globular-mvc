@@ -100,11 +100,6 @@ export class Model {
                     Model.globular.eventService
                 );
 
-                // Initialyse the view.
-                if (this.view != undefined) {
-                    this.view.init()
-                }
-
                 // Call init callback.
                 initCallback()
 

@@ -156,10 +156,16 @@ export class Layout extends HTMLElement {
     return document.getElementById("toolbar")
   }
 
+  /**
+   * Return the side menu
+   */
   sideMenu() {
     return document.getElementById("side-menu")
   }
 
+  /**
+   * Return the workspace
+   */
   workspace() {
     return document.getElementById("workspace")
   }

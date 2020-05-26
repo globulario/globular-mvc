@@ -22,7 +22,7 @@ export class AccountMenu extends Menu {
 
     // Create the applicaiton view.
     constructor() {
-        super("account", "account-circle", "user session menu")
+        super("account", "account-circle", "session")
     }
 
     init() {

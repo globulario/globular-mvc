@@ -19,9 +19,9 @@ import { v4 as uuidv4 } from "uuid";
 export class Application extends Model {
   public static uuid: string;
   private static infos:Map<string, any>;
-  private name: string;
-  private title: string;
-  private account: Account;
+  protected name: string;
+  protected title: string;
+  protected account: Account;
 
   // Event listener's
   private login_event_listener: string;
@@ -194,8 +194,9 @@ export class Application extends Model {
         // Get backend application infos.
         Application.getAllApplicationInfo((infos:Array<any>)=>{
           if (initCallback != undefined) {
-            initCallback();
             (<ApplicationView>this.view).setIcon(Application.getApplicationInfo(this.name).icon)
+            this.view.init()
+            initCallback();
           }
         }, (err:any)=>{console.log(err)})
 
