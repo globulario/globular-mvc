@@ -18,7 +18,7 @@ export class NotificationMenu extends Menu {
 
     // Create the applicaiton view.
     constructor() {
-        super("notification", "social:notifications-none")
+        super("notification", "social:notifications-none", "Notifications")
 
         // The div inner panel.
         let html = `
@@ -152,10 +152,10 @@ export class NotificationMenu extends Menu {
         // Now I will set the animation
         this.userNotificationsBtn.onclick = () => {
             this.userNotificationsCollapse.toggle()
-            if ( this.applicationNotificationsCollapse.opened) {
+            if (this.applicationNotificationsCollapse.opened) {
                 this.applicationNotificationsCollapse.toggle()
             }
-            if ( this.userNotificationsCollapse.opened == true) {
+            if (this.userNotificationsCollapse.opened == true) {
                 this.userNotificationsBtn.style.borderTop = "1px solid #e8e8e8"
             } else {
                 this.userNotificationsBtn.style.borderTop = ""
@@ -165,10 +165,10 @@ export class NotificationMenu extends Menu {
         // Now I will set the animation
         this.applicationNotificationBtn.onclick = () => {
             this.applicationNotificationsCollapse.toggle()
-            if ( this.userNotificationsCollapse.opened) {
+            if (this.userNotificationsCollapse.opened) {
                 this.userNotificationsCollapse.toggle()
             }
-            if ( this.userNotificationsCollapse.opened == true) {
+            if (this.userNotificationsCollapse.opened == true) {
                 this.userNotificationsBtn.style.borderTop = "1px solid #e8e8e8"
             } else {
                 this.userNotificationsBtn.style.borderTop = ""
@@ -241,7 +241,7 @@ export class NotificationMenu extends Menu {
                         notification = JSON.parse(notification)
                         notification._date = new Date(notification._date)
                         this.appendNofication(this.userNotificationsPanel, notification)
-                        if ( !this.userNotificationsCollapse.opened) {
+                        if (!this.userNotificationsCollapse.opened) {
                             this.userNotificationsCollapse.toggle()
                         }
                     }, false)
@@ -273,7 +273,7 @@ export class NotificationMenu extends Menu {
                 notification = JSON.parse(notification)
                 notification._date = new Date(notification._date)
                 this.appendNofication(this.applicationNotificationsPanel, notification)
-                if ( !this.applicationNotificationsCollapse.opened) {
+                if (!this.applicationNotificationsCollapse.opened) {
                     this.applicationNotificationsCollapse.toggle()
                 }
             }, false)
@@ -332,10 +332,8 @@ export class NotificationMenu extends Menu {
         }
 
         // open the user notifications...
-        if(this.applicationNotificationsPanel.children.length == 0){
-            if ( !this.userNotificationsCollapse.opened) {
-                this.userNotificationsCollapse.toggle()
-            }
+        if (notifications.length > 0) {
+            this.userNotificationsCollapse.toggle()
         }
     }
 
@@ -350,10 +348,9 @@ export class NotificationMenu extends Menu {
             let notification = notifications[i]
             this.appendNofication(this.applicationNotificationsPanel, notification)
         }
-        if(this.userNotificationsPanel.children.length == 0){
-            if ( !this.applicationNotificationsCollapse.opened) {
-                this.applicationNotificationsCollapse.toggle()
-            }
+        // open the user notifications...
+        if (notifications.length > 0) {
+            this.applicationNotificationsCollapse.toggle()
         }
     }
 
@@ -441,11 +438,11 @@ export class NotificationMenu extends Menu {
                     notification._date = new Date(notification._date)
                     notificationDiv.parentNode.removeChild(notificationDiv)
                     Model.eventHub.unSubscribe(notification._id + "_delete_notification_event", deleteNotificationListener)
-                    if(this.userNotificationsPanel.children.length == 0 && this.applicationNotificationsPanel.children.length == 0){
+                    if (this.userNotificationsPanel.children.length == 0 && this.applicationNotificationsPanel.children.length == 0) {
                         this.getIcon().icon = "social:notifications-none"
                     }
 
-                    if(this.userNotificationsPanel.children.length == 0 ){
+                    if (this.userNotificationsPanel.children.length == 0) {
                         this.userNotificationsDiv.style.display = "none"
                     }
                 },

@@ -35,6 +35,7 @@
     "@polymer/paper-input": "^3.2.1",
     "@polymer/paper-ripple": "^3.0.2",
     "@polymer/paper-spinner": "^3.0.2",
+    "@polymer/paper-tooltip": "^3.0.1",
     "@types/materialize-css": "^1.0.7",
     "@types/uuid": "^8.0.0",
     "globular-web-client": "^1.1.28",

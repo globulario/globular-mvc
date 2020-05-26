@@ -22,7 +22,7 @@ export class ApplicationsMenu extends Menu {
 
     // Create the applicaiton view.
     constructor() {
-        super("applications", "apps")
+        super("applications", "apps", "Applications")
     }
 
     init() {
@@ -114,7 +114,7 @@ export class ApplicationsMenu extends Menu {
                 let title = this.shadowRoot.getElementById(applicaiton._id + "_span")
                 img.src = applicaiton.icon;
                 title.innerHTML = applicaiton._id;
-                div_.title = applicaiton._id;
+                title.title = applicaiton._id;
                 
                 div_.onclick = ()=>{
                     lnk.click()

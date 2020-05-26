@@ -8,7 +8,7 @@ import '@polymer/paper-input/paper-input.js';
 import '@polymer/paper-card/paper-card.js';
 import '@polymer/paper-button/paper-button.js';
 import '@polymer/paper-checkbox/paper-checkbox.js';
-
+import '@polymer/paper-tooltip/paper-tooltip.js';
 
 /**
  * Login/Register functionality.
@@ -17,7 +17,7 @@ export class Menu extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor(id, icon) {
+    constructor(id, icon, text) {
         super()
         this.id = id;
         this.icon = icon;
@@ -93,6 +93,7 @@ export class Menu extends HTMLElement {
                 <img id="${this.id}_img"></img>
                 <paper-ripple class="circle" recenters></paper-ripple>
             </div>
+            <paper-tooltip id="${this.id}_tooltip" for="${this.id}_picture_div" style="font-size: 10pt;">${text}</paper-tooltip>
             <paper-card id="${this.id}_menu_div" class="menu-div bottom">
                 <slot name="${this.id}"></slot>
             </paper-card>
@@ -223,7 +224,7 @@ export class OverflowMenu extends Menu {
 
     // Create the applicaiton view.
     constructor() {
-        super("overflow", "more-vert")
+        super("overflow", "more-vert", "Application menus")
         this.keepOpen = true;
     }
 

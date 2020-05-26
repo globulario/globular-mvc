@@ -118,12 +118,12 @@ export class ApplicationView extends View {
             let w = this.layout.width()
             
             if(w <= 500){
+                this.overFlowMenu.getMenuDiv().insertBefore(this.applicationsMenu, this.overFlowMenu.getMenuDiv().firstChild)
+                this.applicationsMenu.getMenuDiv().classList.remove("bottom")
+                this.applicationsMenu.getMenuDiv().classList.add("left")
+
                 if(this.isLogin){
                     this.overFlowMenu.show()
-
-                    this.overFlowMenu.getMenuDiv().appendChild(this.applicationsMenu)
-                    this.applicationsMenu.getMenuDiv().classList.remove("bottom")
-                    this.applicationsMenu.getMenuDiv().classList.add("left")
 
                     this.overFlowMenu.getMenuDiv().appendChild(this.notificationMenu)
                     this.notificationMenu.getMenuDiv().classList.remove("bottom")
@@ -134,12 +134,12 @@ export class ApplicationView extends View {
                     this.accountMenu.getMenuDiv().classList.add("left")
                 }
             }else{
+                this.layout.toolbar().insertBefore(this.applicationsMenu, this.layout.toolbar().firstChild)
+                this.applicationsMenu.getMenuDiv().classList.remove("left")
+                this.applicationsMenu.getMenuDiv().classList.add("bottom")
+
                 if(this.isLogin){
                     this.overFlowMenu.hide()
-
-                    this.layout.toolbar().appendChild(this.applicationsMenu)
-                    this.applicationsMenu.getMenuDiv().classList.remove("left")
-                    this.applicationsMenu.getMenuDiv().classList.add("bottom")
 
                     this.layout.toolbar().appendChild(this.notificationMenu)
                     this.notificationMenu.getMenuDiv().classList.remove("left")
