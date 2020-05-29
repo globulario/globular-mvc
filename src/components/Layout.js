@@ -12,6 +12,7 @@ import '@polymer/app-layout/app-toolbar/app-toolbar.js';
 import '@polymer/app-layout/demo/sample-content.js';
 import '@polymer/paper-button/paper-button.js';
 import '@polymer/paper-spinner/paper-spinner.js';
+import '@polymer/iron-selector/iron-selector.js';
 
 import { Model } from '../Model';
 
@@ -188,9 +189,9 @@ export class Layout extends HTMLElement {
             text-align: center;
           }
         </style>
-        <div id="waiting_div" style="position: fixed; background-color: rgba(0, 0, 0, 0.2); top:0px; left: 0px; right: 0px; bottom:0px; display: flex; flex-direction: column; align-items: center; justify-content: center;  ">
+        <div id="waiting_div" style="position: fixed; background-color: rgba(0, 0, 0, 0.2); top:0px; left: 0px; right: 0px; bottom:0px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
           <paper-spinner style="width: 4.5rem; height: 4.5rem;" active></paper-spinner>
-          <span id="waiting_div_text" style="margin-top: 4.5rem; font-size: 1.2rem; display: flex; flex-direction: column; justify-content: center;">${msg}</span>
+          <span id="waiting_div_text" style="margin-top: 4.5rem; font-size: 1.2rem; display: flex; flex-direction: column; justify-content: center; align-items: center;">${msg}</span>
         </div>
       `
       this.shadowRoot.appendChild(document.createRange().createContextualFragment(html))

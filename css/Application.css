@@ -30,6 +30,7 @@ html {
   --text-primary-color: var(--dark-theme-text-color);
   --default-primary-color: var(--primary-color);
   --paper-badge-background: var(--paper-red-300);
+  --cr-link-color: var(--md-toolbar-color);
 
 }
 body {

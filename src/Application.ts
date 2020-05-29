@@ -8,8 +8,7 @@ import {
   InsertOneRqst,
   FindRqst,
   FindResp,
-  DeleteOneRqst,
-  FindOneRqst,
+  DeleteOneRqst
 } from "globular-web-client/lib/persistence/persistencepb/persistence_pb";
 import { v4 as uuidv4 } from "uuid";
 

@@ -2,6 +2,7 @@
 // layout because materialyse dosen't react to well with the shadow doom.
 import '@polymer/iron-icon/iron-icon.js';
 import '@polymer/iron-icons/social-icons'
+import '@polymer/iron-icons/editor-icons'
 import '@polymer/iron-icons/iron-icons.js';
 import '@polymer/paper-icon-button/paper-icon-button.js';
 import '@polymer/paper-ripple/paper-ripple.js';
@@ -11,7 +12,6 @@ import '@polymer/paper-button/paper-button.js';
 import '@polymer/paper-checkbox/paper-checkbox.js';
 
 import { Menu } from './Menu';
-import { Model } from '../Model';
 import { Application } from '../Application';
 
 /**

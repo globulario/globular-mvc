@@ -171,7 +171,6 @@ export class AccountMenu extends Menu {
      */
     setProfilePicture(dataUrl){
        
-
         this.getIcon().style.display = "none"
         this.getImage().style.display = "block"
         this.getImage().src = dataUrl

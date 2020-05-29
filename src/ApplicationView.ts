@@ -297,6 +297,8 @@ export class ApplicationView extends View {
         this.accountMenu.parentNode.removeChild(this.notificationMenu)
         this.accountMenu.parentNode.removeChild(this.accountMenu)
 
+        this.getWorkspace().innerHTML = ""
+
         window.dispatchEvent(new Event('resize'));
     }
 
@@ -319,6 +321,7 @@ export class ApplicationView extends View {
         sideMenu.style.display = "flex";
         sideMenu.style.flexDirection = "column";
         sideMenu.style.width = "100%";
+        sideMenu.style.marginTop = "24px";
         return sideMenu
     }
 

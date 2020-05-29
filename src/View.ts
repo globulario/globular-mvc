@@ -37,4 +37,12 @@ export class View {
     resume(){
 
     }
+
+    show(){
+       
+    }
+
+    hide(){
+
+    }
 }

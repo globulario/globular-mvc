@@ -169,8 +169,12 @@ export class LoginBox extends HTMLElement {
         `
 
         // give the focus to the input.
-        let userInput = this.shadowRoot.getElementById("user_input")
-        userInput.focus()
+        let userInput = this.shadowRoot.getElementById("user_input")     
+ 
+        setTimeout(()=>{
+            userInput.focus()
+        }, 100)
+        
 
         let passwordInput = this.shadowRoot.getElementById("pwd_input")
         let cancelBtn = this.shadowRoot.getElementById("cancel_btn")
@@ -300,7 +304,11 @@ export class RegisterBox extends HTMLElement {
         let cancelBtn = this.shadowRoot.getElementById("cancel_btn")
         let registerBtn = this.shadowRoot.getElementById("register_btn")
         let userInput = this.shadowRoot.getElementById("user_input")
-        userInput.focus()
+
+        setTimeout(()=>{
+            userInput.focus()
+        }, 100)
+  
         let emailInput = this.shadowRoot.getElementById("email_input")
 
         let passwordInput = this.shadowRoot.getElementById("pwd_input")
