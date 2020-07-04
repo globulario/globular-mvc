@@ -5,6 +5,8 @@ import { View } from "./View";
 
 export class Model {
 
+    protected listeners: Array<any>;
+
     // Static class.
     protected static globular: GlobularWebClient.Globular;
 
@@ -39,6 +41,20 @@ export class Model {
         // Set the application name.
         // The domain will be set with the hostname.
         Model.domain = window.location.hostname
+        this.listeners = new Array<any>();
+    }
+
+    // Append a listener.
+    appendListener(name: string, uuid: string){
+        this.listeners.push({name:name, uuid:uuid})
+    }
+
+    // Explicitly close the view.
+    close() {
+        // Close all listeners.
+        this.listeners.forEach((listener: any) => {
+            Model.eventHub.unSubscribe(listener.name, listener.uuid)
+        })
     }
 
     /**
@@ -46,6 +62,14 @@ export class Model {
      */
     toString(): string {
         return JSON.stringify(this)
+    }
+
+    /**
+     * Set the view.
+     * @param view 
+     */
+    setView(view:View){
+        this.view = view;
     }
 
     /**

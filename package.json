@@ -25,6 +25,7 @@
   "homepage": "https://github.com/davecourtois/globular-mvc#readme",
   "dependencies": {
     "@polymer/app-layout": "^3.1.0",
+    "@polymer/iron-autogrow-textarea": "^3.0.3",
     "@polymer/iron-collapse": "^3.0.1",
     "@polymer/iron-icons": "^3.0.1",
     "@polymer/iron-selector": "^3.0.1",
@@ -39,7 +40,7 @@
     "@polymer/paper-tooltip": "^3.0.1",
     "@types/materialize-css": "^1.0.7",
     "@types/uuid": "^8.0.0",
-    "globular-web-client": "^1.1.28",
+    "globular-web-client": "^1.1.29",
     "materialize-css": "^1.0.0",
     "uuid": "^8.1.0"
   },

@@ -17,6 +17,9 @@ import { NotificationMenu } from "./components/Notification";
 import { OverflowMenu } from "./components/Menu";
 import { ApplicationsMenu } from "./components/Applications";
 
+// This variable is there to give acces to wait and resume...
+export let applicationView: ApplicationView;
+
 /**
  * Application view made use of Web-component and Materialyse to create a basic application
  * layout that can be use as starting point to any web-application.
@@ -45,9 +48,18 @@ export class ApplicationView extends View {
     private login_event_listener: string
     private logout_event_listener: string
 
-    private isLogin: boolean;
+    private _isLogin: boolean;
+    public get isLogin(): boolean {
+        return this._isLogin;
+    }
+    public set isLogin(value: boolean) {
+        this._isLogin = value;
+    }
 
     private icon: any;
+
+    /** The current displayed view... */
+    protected activeView: View;
 
     constructor() {
         super()
@@ -80,6 +92,9 @@ export class ApplicationView extends View {
         // The applicaiton menu
         this.applicationsMenu = new ApplicationsMenu()
 
+        // set the global varialbe...
+        applicationView = this
+
     }
 
     // Must be call by the model when after it initialisation was done.
@@ -91,7 +106,7 @@ export class ApplicationView extends View {
         this.accountMenu.init()
         this.applicationsMenu.init()
         this.notificationMenu.init()
-        
+
         // Logout event
         Model.eventHub.subscribe("logout_event",
             (uuid: string) => {
@@ -110,21 +125,21 @@ export class ApplicationView extends View {
                 this.onLogin(account)
             }, true)
 
-        
+
 
         /**
          * The resize listener.
          */
         window.addEventListener('resize', (evt: any) => {
-            
+
             let w = this.layout.width()
-            
-            if(w <= 500){
+
+            if (w <= 500) {
                 this.overFlowMenu.getMenuDiv().insertBefore(this.applicationsMenu, this.overFlowMenu.getMenuDiv().firstChild)
                 this.applicationsMenu.getMenuDiv().classList.remove("bottom")
                 this.applicationsMenu.getMenuDiv().classList.add("left")
 
-                if(this.isLogin){
+                if (this.isLogin) {
                     this.overFlowMenu.show()
 
                     this.overFlowMenu.getMenuDiv().appendChild(this.notificationMenu)
@@ -135,12 +150,12 @@ export class ApplicationView extends View {
                     this.accountMenu.getMenuDiv().classList.remove("bottom")
                     this.accountMenu.getMenuDiv().classList.add("left")
                 }
-            }else{
+            } else {
                 this.layout.toolbar().insertBefore(this.applicationsMenu, this.layout.toolbar().firstChild)
                 this.applicationsMenu.getMenuDiv().classList.remove("left")
                 this.applicationsMenu.getMenuDiv().classList.add("bottom")
 
-                if(this.isLogin){
+                if (this.isLogin) {
                     this.overFlowMenu.hide()
 
                     this.layout.toolbar().appendChild(this.notificationMenu)
@@ -169,6 +184,17 @@ export class ApplicationView extends View {
         // Disconnect event listener's
         Model.eventHub.unSubscribe("login_event", this.login_event_listener)
         Model.eventHub.unSubscribe("logout_event", this.logout_event_listener)
+        super.close()
+    }
+
+    /**
+     * Clear the workspace.
+     */
+    clear() {
+        this.getWorkspace().innerHTML = ""
+        if (this.activeView != null) {
+            this.activeView.hide()
+        }
     }
 
     /**
@@ -186,15 +212,15 @@ export class ApplicationView extends View {
         this.layout.title().innerHTML = "<span>" + title + "</span>";
     }
 
-    setIcon(imgUrl: string){
+    setIcon(imgUrl: string) {
         let icon = document.createElement("img")
         icon.id = "application_icon"
 
         icon.src = imgUrl
         icon.style.height = "24px"
         icon.style.width = "24px"
-        icon.style.marginRight = "10px" 
-        icon.style.marginLeft = "10px" 
+        icon.style.marginRight = "10px"
+        icon.style.marginLeft = "10px"
 
         let title = this.layout.title()
         title.style.display = "flex";
@@ -206,7 +232,7 @@ export class ApplicationView extends View {
     /**
      * The icon
      */
-    getIcon(){
+    getIcon() {
         return this.icon
     }
 
@@ -309,14 +335,14 @@ export class ApplicationView extends View {
     /**
      * The workspace div where the application draw it content.
      */
-    getWorkspace(): any{
+    getWorkspace(): any {
         return this.layout.workspace()
     }
 
     /**
      * The side menu that contain application actions.
      */
-    getSideMenu():any{
+    getSideMenu(): any {
         let sideMenu = this.layout.sideMenu()
         sideMenu.style.display = "flex";
         sideMenu.style.flexDirection = "column";
@@ -325,14 +351,20 @@ export class ApplicationView extends View {
         return sideMenu
     }
 
-    hideSideMenu(){
+
+    // In case of application view 
+    setView(view: View) {
+        this.activeView = view;
+    }
+
+    hideSideMenu() {
         (<any>this.layout.appDrawer).toggle();
     }
 
     /**
      * Create a side menu button div.
      */
-    createSideMenuButton(id: string, text:string, icon:string):any{
+    createSideMenuButton(id: string, text: string, icon: string): any {
         let html = `
         <style>
             .side_menu_btn{

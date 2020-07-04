@@ -1,48 +1,67 @@
+import { Modal } from "materialize-css";
+import { Model } from "./Model";
 
 /**
  * That class made use of the web-component applcation view.
  */
 export class View {
 
-    constructor() {
+    protected listeners: Array<any>;
 
+    constructor() {
+        this.listeners = new Array<any>();
     }
 
     // Refresh the view.
-    update(){
+    update() {
 
     }
 
     // Initialyse view listener and other stuff. Must be call after model is init.
-    init(){
-        
+    init() {
+
+    }
+
+    appendListener(name: string, uuid: string){
+        this.listeners.push({name:name, uuid:uuid})
     }
 
     // Explicitly close the view.
-    close(){
-
+    close() {
+        // Close the project.
+        this.listeners.forEach((listener: any) => {
+            Model.eventHub.unSubscribe(listener.name, listener.uuid)
+        })
     }
 
     // Display a user message.
-    displayMessage(msg: any, delay?: number){
+    displayMessage(msg: any, delay?: number) {
 
     }
 
     // Block user input
-    wait(msg:string){
+    wait(msg: string) {
 
     }
 
     // Resume user input.
-    resume(){
+    resume() {
 
     }
 
-    show(){
-       
+    clear() {
+
     }
 
-    hide(){
+    show() {
+
+    }
+
+    hide() {
+
+    }
+
+    getWorkspace(): any {
 
     }
 }

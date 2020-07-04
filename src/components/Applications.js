@@ -10,6 +10,7 @@ import '@polymer/paper-input/paper-input.js';
 import '@polymer/paper-card/paper-card.js';
 import '@polymer/paper-button/paper-button.js';
 import '@polymer/paper-checkbox/paper-checkbox.js';
+import '@polymer/iron-autogrow-textarea/iron-autogrow-textarea.js';
 
 import { Menu } from './Menu';
 import { Application } from '../Application';

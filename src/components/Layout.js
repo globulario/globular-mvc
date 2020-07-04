@@ -204,7 +204,9 @@ export class Layout extends HTMLElement {
    */
   resume() {
     let waitingDiv = this.shadowRoot.getElementById("waiting_div")
-    waitingDiv.parentNode.removeChild(waitingDiv)
+    if(waitingDiv!=undefined){
+      waitingDiv.parentNode.removeChild(waitingDiv)
+    }
   }
   
 }
