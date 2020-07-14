@@ -35,37 +35,62 @@ export class Layout extends HTMLElement {
     this.shadowRoot.innerHTML = `
           <style>
 
-            app-header {
-              background-color: var(--md-toolbar-color);
-              color: #fff;
-            }
-
-            paper-icon-button {
-              --paper-icon-button-ink-color: white;
-            }
-   
-            app-drawer-layout:not([narrow]) [drawer-toggle] {
-              display: none;
-            }
-
-            #header-toolbar{
-              height: var(--md-toolbar-height);
-            }  
-
-            #main-title{
-              display:flex;
-              width: 100%;
-              align-items: center;
-            }
-
-            #toolbar{
-              display:flex;
-            }
-
-            #title{
-              flex-grow: 1;
-            }
-
+          app-header {
+            background-color: var(--md-toolbar-color);
+            color: var(--md-toolbar-text-color)
+          }
+          
+          app-drawer app-toolbar{ 
+              background-color: var(--primary-background-color);
+              color: var(--primary-text-color);
+              height: 100vh;
+              display: flex;
+              flex-direction: column;
+              overflow-y: auto;
+          }
+          
+          paper-icon-button {
+            --paper-icon-button-ink-color: white;
+          }
+          
+          app-drawer-layout:not([narrow]) [drawer-toggle] {
+            display: none;
+          }
+          
+          #contentContainer {
+              min-height: calc(100vh - var(--md-toolbar-height));
+              background-color: var(--primary-background-color);
+              color: var(--primary-text-color);
+          }
+          
+          #header-toolbar {
+            height: var(--md-toolbar-height);
+          }
+          
+          #main-title {
+            display: flex;
+            width: 100%;
+            align-items: center;
+          }
+          
+          #toolbar {
+            display: flex;
+          }
+          
+          #title {
+            flex-grow: 1;
+          }
+          
+          #workspace {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+          }
+          
+          #waiting_div_text div{
+            text-align: center;
+          }
           </style>
       
           <app-drawer-layout id="layout" fullbleed force-narrow>
@@ -139,14 +164,14 @@ export class Layout extends HTMLElement {
 
   }
 
-  width(){
+  width() {
     return this.shadowRoot.getElementById("layout").offsetWidth
   }
 
   /**
    * That contain the application title.
    */
-  title(){
+  title() {
     return document.getElementById("title")
   }
 
@@ -204,11 +229,11 @@ export class Layout extends HTMLElement {
    */
   resume() {
     let waitingDiv = this.shadowRoot.getElementById("waiting_div")
-    if(waitingDiv!=undefined){
+    if (waitingDiv != undefined) {
       waitingDiv.parentNode.removeChild(waitingDiv)
     }
   }
-  
+
 }
 
 customElements.define('globular-application', Layout)

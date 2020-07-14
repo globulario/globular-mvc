@@ -31,7 +31,6 @@ html {
   --default-primary-color: var(--primary-color);
   --paper-badge-background: var(--paper-red-300);
   --cr-link-color: var(--md-toolbar-color);
-
 }
 body {
   background-color: var(--md-background-color);
@@ -41,7 +40,9 @@ globular-application {
 }
 #workspace {
   display: flex;
+  flex-direction: column;
   justify-content: center;
+  align-items: center;
 }
 #toolbar {
   display: flex;
@@ -51,7 +52,7 @@ globular-application {
   justify-content: flex-end;
 }
 #title {
-  font-family: \"Roboto Mono\", monospace;
+  font-family: \\\"Roboto Mono\\\", monospace;
   font-size: 1rem;
   font-weight: 400;
   line-height: 1.5;
@@ -59,4 +60,18 @@ globular-application {
 }
 #title:hover {
   cursor: pointer;
+}
+paper-card,
+globular-login-box,
+globular-register-box {
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 20px;
+}
+globular-login-box,
+globular-register-box {
+  top: 50%;
+  transform: translate(-50%, -50%);
+  position: fixed;
+  left: 50%;
 }

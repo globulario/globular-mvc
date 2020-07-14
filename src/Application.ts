@@ -177,7 +177,6 @@ export class Application extends Model {
                 // The notification is not deleted so I will send network event to remove it from 
                 // the display.
                 Model.eventHub.publish(
-
                   notification.id + "_delete_notification_event",
                   notification.toString(),
                   false
