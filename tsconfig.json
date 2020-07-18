@@ -1,13 +1,14 @@
 {
-    "compilerOptions": {
-      "outDir": "./dist/",
-      "sourceMap": true,
-      "noImplicitAny": true,
-      "moduleResolution": "node",
-      "module": "es6",
-      "target": "es5",
-      "allowJs": true,
-      "typeRoots": ["node_modules/@types"],
-      "lib": ["es2018", "dom"]
-    }
-  }
+  "compilerOptions": {
+    "target": "es6",
+    "lib": ["es6", "dom"],
+    "module": "commonjs",
+    "declaration": true,
+    "allowJs": true,
+    "rootDir": "./",
+    "outDir": "./lib",
+    "strict": false
+  },
+  "include": ["**/*.ts"],
+  "exclude": ["node_modules", "**/__tests__/*", "lib"]
+}

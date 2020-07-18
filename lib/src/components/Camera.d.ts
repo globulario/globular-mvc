@@ -8,11 +8,11 @@ export class Camera extends HTMLElement {
     _closebutton: HTMLElement;
     _width_inupt: HTMLElement;
     _width: any;
-    _height: number;
     streaming: boolean;
     _stream: MediaStream;
     set width(arg: any);
     get width(): any;
+    _height: number;
     get height(): number;
     connectedCallback(): void;
     _streaming: boolean;
@@ -21,5 +21,8 @@ export class Camera extends HTMLElement {
      * Clear the canvas.
      */
     clearphoto(): void;
+    /**
+     * When the web component is disconnect.
+     */
     disconnectedCallback(): void;
 }

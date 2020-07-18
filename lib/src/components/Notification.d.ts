@@ -11,7 +11,7 @@ export class NotificationMenu extends Menu {
     applicationNotificationsPanel: HTMLElement;
     userNotificationsPanel: HTMLElement;
     notificationCount: Element;
-    account_notification_listener: any;
+    account_notification_listener: string;
     clear(): void;
     setNotificationCount(): void;
     setUserNofications(notifications: any): void;

@@ -8,7 +8,7 @@ export class Model {
     protected listeners: Array<any>;
 
     // Static class.
-    protected static globular: GlobularWebClient.Globular;
+    public static globular: GlobularWebClient.Globular;
 
     // This is the controller.
     public static eventHub: GlobularWebClient.EventHub;

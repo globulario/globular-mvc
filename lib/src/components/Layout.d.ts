@@ -1,3 +1,4 @@
+export let theme: string;
 /**
  * This is a web-component.
  */

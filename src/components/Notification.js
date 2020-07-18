@@ -9,6 +9,7 @@ import '@polymer/paper-badge/paper-badge.js';
 
 import { Model } from '../Model';
 import { Menu } from './Menu';
+import { theme } from './Layout';
 
 /**
  * Login/Register functionality.
@@ -23,80 +24,86 @@ export class NotificationMenu extends Menu {
         // The div inner panel.
         let html = `
         <style>
-            #notifications{
-                display: flex;
-                flex-direction: column;
-            }
+        ${theme}
 
-            #notifications-config{
-                flex-grow: 1;
+        #notifications{
+            display: flex;
+            flex-direction: column;
+        }
 
-            }
+        #notifications-config{
+            flex-grow: 1;
 
-            #application-notifications #user-notifications{
-                display: flex;
-                flex-direction: column;
-            }
+        }
 
-            .header{
-                display: flex;
-                min-width: 375px;
-                position: relative;
-                font-size: 12pt;
-                align-items: center;
-                padding: .5rem;
-            }
+        #application-notifications #user-notifications{
+            display: flex;
+            flex-direction: column;
+        }
 
-            .header:hover{
-                cursor: pointer;
-            }
+        .header{
+            display: flex;
+            min-width: 375px;
+            position: relative;
+            font-size: 12pt;
+            align-items: center;
+            padding: .5rem;
+            background-color: var(--palette-background-paper);
+            color: var(--palette-text-primary);
+        }
 
-            .body{
-                min-width: 375px;
-                min-height: 100px;
-                max-height: 30rem;
-                overflow-y: auto;
-            }
+        .header:hover{
+            cursor: pointer;
+        }
 
-            .btn_div{
-                display: flex; 
-                flex-grow: 1; 
-                justify-content: 
-                flex-end;
-            }
+        .body{
+            min-width: 375px;
+            min-height: 100px;
+            max-height: 30rem;
+            overflow-y: auto;
+        }
 
-            .btn {
-                position: relative;
-            }
+        .btn_div{
+            display: flex; 
+            flex-grow: 1; 
+            justify-content: 
+            flex-end;
+        }
 
-            .btn:hover{
-                cursor: pointer;
-            }
+        .btn {
+            position: relative;
+        }
 
-            iron-collapse{
-                border-bottom: 1px solid #e8e8e8;
-                border-top: 1px solid #e8e8e8;
-            }
+        .btn:hover{
+            cursor: pointer;
+        }
 
-            iron-collapse{
-                border-bottom: 1px solid #e8e8e8;
-                border-top: 1px solid #e8e8e8;
-            }
+        iron-collapse{
+            border-bottom: 1px solid #e8e8e8;
+            border-top: 1px solid #e8e8e8;
+        }
 
-            .notification_panel{
-                position: relative;
-                display: flex; 
-                padding: .75rem; 
-                font-size: 12pt;
-                transition: background 0.2s ease,padding 0.8s linear;
-            }
+        iron-collapse{
+            border-bottom: 1px solid #e8e8e8;
+            border-top: 1px solid #e8e8e8;
+        }
 
-            .notification_panel img {
-                height: 48px;
-                width: 48px;
-                border-radius: 24px;
-            }
-        </style>
+        .notification_panel{
+            position: relative;
+            display: flex; 
+            padding: .75rem; 
+            font-size: 12pt;
+            transition: background 0.2s ease,padding 0.8s linear;
+            background-color: var(--palette-background-paper);
+            color: var(--palette-text-primary);
+        }
+
+        .notification_panel img {
+            height: 48px;
+            width: 48px;
+            border-radius: 24px;
+        }
+    </style>
 
         <div>
             <div class="header" style="border-bottom: 1px solid #e8e8e8;">
@@ -302,7 +309,7 @@ export class NotificationMenu extends Menu {
                     display: flex;
                     top: 0px;
                     right: -5px;
-                    background-color: var(--paper-badge-background);
+                    background-color: var(--palette-secondary-main);
                     border-radius: 10px;
                     width: 20px;
                     height: 20px;

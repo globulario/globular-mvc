@@ -2,7 +2,7 @@ import * as GlobularWebClient from "globular-web-client";
 import { View } from "./View";
 export declare class Model {
     protected listeners: Array<any>;
-    protected static globular: GlobularWebClient.Globular;
+    static globular: GlobularWebClient.Globular;
     static eventHub: GlobularWebClient.EventHub;
     static domain: string;
     static application: string;

@@ -1,10 +1,17 @@
 {
   "name": "globular-mvc",
-  "version": "1.0.1",
+  "version": "1.0.42",
   "description": "Generic template to create web-application that made use of globular as backend and materialize as css (wrap in web-component's)",
-  "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "pack": "webpack --env production",
+    "format": "prettier --write \"src/**/*.ts\" \"src/**/*.js\"",
+    "lint": "tslint -p tsconfig.json",
+    "prepare": "npm run build",
+    "preversion": "npm run lint",
+    "version": "npm run format && git add -A src",
+    "postversion": "git push && git push --tags"
   },
   "repository": {
     "type": "git",

@@ -183,7 +183,7 @@ export class Application extends Model {
                 );
               })
               .catch((err: any) => {
-                this.view.displayMessage(err);
+                this.view.displayMessage(err, 4000);
               });
           },
           true
@@ -215,7 +215,7 @@ export class Application extends Model {
               this.startRefreshToken();
             },
             (err: any) => {
-              this.view.displayMessage(err, 2000);
+              this.view.displayMessage(err, 4000);
               this.view.resume();
             }
           );
@@ -339,7 +339,7 @@ export class Application extends Model {
           },
           (err: any) => {
             // simply display the error on the view.
-            this.view.displayMessage(err);
+            this.view.displayMessage(err, 4000);
           }
         );
       }
@@ -542,7 +542,7 @@ export class Application extends Model {
         );
       },
       (err: any) => {
-        this.view.displayMessage(err);
+        this.view.displayMessage(err, 4000);
       }
     );
 
@@ -556,7 +556,7 @@ export class Application extends Model {
         );
       },
       (err: any) => {
-        this.view.displayMessage(err);
+        this.view.displayMessage(err, 4000);
       }
     );
   }

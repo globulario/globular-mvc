@@ -8,14 +8,11 @@ import { Model } from "./Model";
 // web-components.
 import { Layout } from "./components/Layout";
 import { Login } from "./components/Login";
-
-// Import css styles.
-import "../css/Application.css"
-
 import { AccountMenu } from "./components/Account";
 import { NotificationMenu } from "./components/Notification";
 import { OverflowMenu } from "./components/Menu";
 import { ApplicationsMenu } from "./components/Applications";
+import {Camera} from "./components/Camera";
 
 // This variable is there to give acces to wait and resume...
 export let applicationView: ApplicationView;
@@ -43,6 +40,9 @@ export class ApplicationView extends View {
 
     /** The applications menu */
     private applicationsMenu: ApplicationsMenu
+
+    /** The camera */
+    private camera: Camera;
 
     /** various listener's */
     private login_event_listener: string
@@ -91,6 +91,9 @@ export class ApplicationView extends View {
 
         // The applicaiton menu
         this.applicationsMenu = new ApplicationsMenu()
+
+        // The camera.
+        this.camera = new Camera();
 
         // set the global varialbe...
         applicationView = this

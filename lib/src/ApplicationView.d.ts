@@ -1,7 +1,7 @@
 import { View } from "./View";
+import * as M from "materialize-css";
 import "materialize-css/sass/materialize.scss";
 import { Account } from "./Account";
-import "../css/Application.css";
 export declare let applicationView: ApplicationView;
 /**
  * Application view made use of Web-component and Materialyse to create a basic application
@@ -20,6 +20,8 @@ export declare class ApplicationView extends View {
     private notificationMenu;
     /** The applications menu */
     private applicationsMenu;
+    /** The camera */
+    private camera;
     /** various listener's */
     private login_event_listener;
     private logout_event_listener;
@@ -62,7 +64,7 @@ export declare class ApplicationView extends View {
      * Display a message to the user.
      * @param msg The message to display in toast!
      */
-    displayMessage(err: any, duration: number): any;
+    displayMessage(err: any, duration: number): M.Toast;
     wait(msg?: string): void;
     resume(): void;
     /**
