@@ -6,10 +6,26 @@ import '@polymer/iron-icons/image-icons';
 import '@polymer/paper-input/paper-input.js';
 import { theme } from './Layout';
 
+const constraints = {
+    video: {
+        width: {
+            min: 1280,
+            ideal: 1920,
+            max: 2560,
+        },
+        height: {
+            min: 720,
+            ideal: 1080,
+            max: 1440
+        },
+    }
+};
+
 export class Camera extends HTMLElement {
 
     constructor() {
         super()
+        this._device = null;
         this._camera = null;
         this._video = null;
         this._canvas = null;
@@ -20,6 +36,7 @@ export class Camera extends HTMLElement {
         this._width_inupt = null;
         this._savebutton = null;
         this._deletebutton = null;
+        this._camera_options = null;
 
         // Set default attribute values.
         this._width = 640;
@@ -49,6 +66,7 @@ export class Camera extends HTMLElement {
         this._video.setAttribute('height', this._height);
         this._canvas.setAttribute('width', this._width);
         this._canvas.setAttribute('height', this._height);
+
         this._width_inupt.value = this._width;
     }
 
@@ -65,10 +83,15 @@ export class Camera extends HTMLElement {
                 ${theme}
 
                 .camera {
+                    position: relative;
                 }
 
                 .camera .card-actions{
                     display: flex;
+                }
+
+                .camera .card-content{
+                    padding-top: 24px;
                 }
 
                 .output{
@@ -77,6 +100,18 @@ export class Camera extends HTMLElement {
                     justify-items: center;
                     align-items: center;
                 }
+
+                #camera_options{
+                    position: absolute;
+                    z-index: 1;
+                    top: 4px;
+                    left: 5px;
+                    border: none;
+                    outline: none;
+                    scroll-behavior: smooth;
+                }
+
+                
 
                 #close_btn{
                     
@@ -87,6 +122,7 @@ export class Camera extends HTMLElement {
             <paper-icon-button id="openbutton" icon="image:camera-alt"></paper-icon-button>
 
             <paper-card id="camera" class="camera" style="display: none;">
+                <select  id="camera_options"></select >
                 <div class="card-content">
                     <video id="video"></video>
                     <img id="photo" style="display: none;">
@@ -120,13 +156,52 @@ export class Camera extends HTMLElement {
         this._camera = this.shadowRoot.getElementById('camera');
         this._savebutton = this.shadowRoot.getElementById('savebutton');
         this._deletebutton = this.shadowRoot.getElementById('deletebutton');
+        this._camera_options = this.shadowRoot.getElementById('camera_options');
 
+        // get the list of available cameras.
+        const getCameraSelection = async () => {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const videoDevices = devices.filter(device => device.kind === 'videoinput');
+            const options = videoDevices.map(videoDevice => {
+                if (this._device == null) {
+                    this._device = videoDevice.deviceId;
+                }
+                return `<option value="${videoDevice.deviceId}">${videoDevice.label}</option>`;
+            });
+            this._camera_options.innerHTML = options.join('');
+        };
+
+        // Set the list of camera.
+        getCameraSelection()
+
+        this._camera_options.onchange = () => {
+            this._device = this._camera_options.value
+            // stop actual camera
+            // close existing stream
+            if (this._stream != undefined) {
+                this._stream.getTracks().forEach(track => {
+                    track.stop();
+                });
+            }
+
+            navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: this._device } }, audio: false })
+                .then((stream) => {
+                    this._stream = stream;
+                    this._video.srcObject = stream;
+                    this._video.play()
+                })
+                .catch(function (err) {
+                    console.log("An error occurred: " + err);
+                });
+
+        };
 
         let play = (ev) => {
             if (!this._streaming) {
                 this._streaming = true;
             }
         }
+
 
         /**
          * Display the camera.
@@ -142,7 +217,7 @@ export class Camera extends HTMLElement {
              * receive each frame of video from the camera and react when the button is clicked 
              * to capture an image.
              */
-            navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+            navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: this._device } }, audio: false })
                 .then((stream) => {
                     this._stream = stream;
                     this._video.srcObject = stream;
@@ -172,7 +247,7 @@ export class Camera extends HTMLElement {
             this.clearphoto()
         }
 
-        this._deletebutton.onclick = ()=>{
+        this._deletebutton.onclick = () => {
             this.clearphoto()
         }
 
