@@ -6,21 +6,6 @@ import '@polymer/iron-icons/image-icons';
 import '@polymer/paper-input/paper-input.js';
 import { theme } from './Layout';
 
-const constraints = {
-    video: {
-        width: {
-            min: 1280,
-            ideal: 1920,
-            max: 2560,
-        },
-        height: {
-            min: 720,
-            ideal: 1080,
-            max: 1440
-        },
-    }
-};
-
 export class Camera extends HTMLElement {
 
     constructor() {
@@ -42,6 +27,10 @@ export class Camera extends HTMLElement {
         this._width = 640;
         this.streaming = false;
         this._stream = null;
+
+        // save callback.
+        this.onsave = null;
+        this.onsaved = null;
 
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
@@ -105,16 +94,10 @@ export class Camera extends HTMLElement {
                     position: absolute;
                     z-index: 1;
                     top: 4px;
-                    left: 5px;
+                    left: 16px;
                     border: none;
                     outline: none;
                     scroll-behavior: smooth;
-                }
-
-                
-
-                #close_btn{
-                    
                 }
 
             </style>
@@ -174,6 +157,15 @@ export class Camera extends HTMLElement {
         // Set the list of camera.
         getCameraSelection()
 
+        this._savebutton.onclick = ()=>{
+            // create event that save the image.
+            if(this.onsave != undefined){
+                this.onsave({image:this._photo})
+            }
+            // delete the picture.
+            this._deletebutton.click()
+        }
+
         this._camera_options.onchange = () => {
             this._device = this._camera_options.value
             // stop actual camera
@@ -201,7 +193,6 @@ export class Camera extends HTMLElement {
                 this._streaming = true;
             }
         }
-
 
         /**
          * Display the camera.

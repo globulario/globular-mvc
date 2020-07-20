@@ -14,6 +14,8 @@ export class Camera extends HTMLElement {
     _width: any;
     streaming: boolean;
     _stream: MediaStream;
+    onsave: any;
+    onsaved: any;
     set width(arg: any);
     get width(): any;
     _height: number;

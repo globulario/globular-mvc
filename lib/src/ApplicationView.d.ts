@@ -2,6 +2,7 @@ import { View } from "./View";
 import * as M from "materialize-css";
 import "materialize-css/sass/materialize.scss";
 import { Account } from "./Account";
+import { Camera } from "./components/Camera";
 export declare let applicationView: ApplicationView;
 /**
  * Application view made use of Web-component and Materialyse to create a basic application
@@ -21,7 +22,8 @@ export declare class ApplicationView extends View {
     /** The applications menu */
     private applicationsMenu;
     /** The camera */
-    private camera;
+    private _camera;
+    get camera(): Camera;
     /** various listener's */
     private login_event_listener;
     private logout_event_listener;
