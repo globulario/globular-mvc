@@ -45,8 +45,8 @@ export class Model {
     }
 
     // Append a listener.
-    appendListener(name: string, uuid: string){
-        this.listeners.push({name:name, uuid:uuid})
+    appendListener(name: string, uuid: string) {
+        this.listeners.push({ name: name, uuid: uuid })
     }
 
     // Explicitly close the view.
@@ -68,7 +68,7 @@ export class Model {
      * Set the view.
      * @param view 
      */
-    setView(view:View){
+    setView(view: View) {
         this.view = view;
     }
 
@@ -76,7 +76,7 @@ export class Model {
      * Initialyse model from json object.
      * @param json The class data.
      */
-    static fromString(json: string):any {
+    static fromString(json: string): any {
 
     }
 
@@ -84,7 +84,7 @@ export class Model {
      * Initialyse the notification from object.
      * @param obj 
      */
-    static fromObject(obj: any):any {
+    static fromObject(obj: any): any {
     }
 
     /**

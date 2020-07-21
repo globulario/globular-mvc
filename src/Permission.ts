@@ -64,7 +64,7 @@ export class ActionPermission extends Permission {
 }
 
 /**
- * Ressource permission it's use to manage who can access ressource on the server.
+ * Ressource permissions are use to manage who can access ressource on the server.
  */
 export class RessourcePermission extends Permission {
     // The path of the permission.

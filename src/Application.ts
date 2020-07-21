@@ -16,6 +16,7 @@ import { v4 as uuidv4 } from "uuid";
  * That class can be use to create any other application.
  */
 export class Application extends Model {
+  
   public static uuid: string;
   private static infos:Map<string, any>;
   protected name: string;

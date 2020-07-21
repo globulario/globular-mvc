@@ -1,27 +1,34 @@
 import { Model } from './Model';
-import { ActionPermission } from './Permission';
-import { RessourcePermission } from 'globular-web-client/lib/ressource/ressource_pb';
+import { Permission } from './Permission';
+import { getRessourceOwners, getRessourcePermissions } from 'globular-web-client/lib/api';
+
 
 /**
  * A ressource is a recursive data structure. File (from file service), Persistent object (from persistence service), 
  * Stored object (form storage service) can be use as ressource. 
  */
-class Ressource extends Model{
+export class Ressource extends Model {
 
     /**
      * A unique identifier.
      */
-    protected id: string;
+    private _id: string;
+    public get id(): string {
+        return this._id;
+    }
 
     /**
-     * The ressource parent, must also be a ressource.
+     * The path of the ressource.
      */
-    protected _parent: Ressource;
+    private _path: string;
+    public get path(): string {
+        return this._path;
+    }
 
     /**
      * The modified date
      */
-    protected _modified: Date;
+    private _modified: Date;
     public get modified(): Date {
         return this._modified;
     }
@@ -29,41 +36,26 @@ class Ressource extends Model{
     /**
      * The size of the ressource on the server.
      */
-    protected _size: number;
+    private _size: number;
     public get size(): number {
         return this._size;
     }
 
     /**
-     * Action permission are set by ressource type (class derived from that class)
+     * The ressource constructor.
+     * @param path The path of the ressource must be unique.
+     * @param id The unique identifier
+     * @param modified The last modified time
+     * @param size The size of the ressource on the server.
      */
-    protected static actionPermissions = new Array<ActionPermission>();
-
-
-    /**
-     * Contain the list of permission asscociated with that ressouce.
-     */
-    protected permissions: Array<RessourcePermission>;
-
-    constructor(id?: string,  modified?: Date, size?:number,  parent?: Ressource){
+    constructor(path: string, id?: string, modified?: Date, size?: number) {
         super();
 
         // Set attribues if ther is one.
-        this.id = id;
-        this._parent = parent;
+        this._id = id;
         this._modified = modified;
         this._size = size;
-
-        // The list of permission asscociated with that ressource.
-        this.permissions = new Array<RessourcePermission>();
-    }
-
-    /**
-     * 
-     * @param calback 
-     */
-    init(calback:()=>void){
-        /** Not implemented here. */
+        this._path = path;
     }
 
     /**
@@ -71,29 +63,42 @@ class Ressource extends Model{
      * @param callback The succes callback
      * @param errorCallback 
      */
-    save(callback: (ressource: Ressource)=>void, errorCallback: (err:any)=>void){
-        /** Must be implemented by derived classes */
+    save(callback: (ressource: Ressource) => void, errorCallback: (err: any) => void) {
+        if(this._id == undefined){
+            
+        }else{
+
+        }
     }
 
-    delete(callback: ()=>void, errorCallback: (err:any)=>void){
-        /** Must be implemented by derived classes */
+    delete(callback: () => void, errorCallback: (err: any) => void) {
+
     }
 
-    read(callback: ()=>void, errorCallback: (err:any)=>void){
-        /** Must be implemented by derived classes */
+    /**
+     * Return the list of permission define for that ressource.
+     * @param callback 
+     * @param errorCallback 
+     */
+    getPermissions(callback: (permissions: Array<Permission>) => void, errorCallback: (err: any) => void) {
+        getRessourcePermissions(Model.globular, Model.application, Model.domain, this.path,
+            (data: Array<any>) => {
+                /** TODO tranform data here */
+                console.log(data)
+            }, errorCallback)
     }
 
-    get parent():Ressource{
-        return this.parent;
-    }
-
-}
-
-/**
- * That class is use to manage files and directory access.
- */
-export class FileRessource extends Ressource{
-    constructor(id?: string, modified?: Date, size?:number,  parent?: FileRessource){
-        super(id, modified, size, parent)
+    /**
+     * Return the list of account that can own the ressource.
+     * @param callback 
+     * @param errorCallback 
+     */
+    getOwners(callback: (accounts: Array<Account>) => void, errorCallback: (err: any) => void) {
+        getRessourceOwners(Model.globular, Model.application, Model.domain, this.path,
+            (data: Array<any>) => {
+                /** TODO tranform data here */
+                console.log(data)
+                
+            }, errorCallback)
     }
 }
