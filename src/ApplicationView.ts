@@ -13,7 +13,8 @@ import { NotificationMenu } from "./components/Notification";
 import { OverflowMenu } from "./components/Menu";
 import { ApplicationsMenu } from "./components/Applications";
 
-import {Camera} from "./components/Camera";
+import { Camera } from "./components/Camera";
+import { FileExplorer } from './File';
 
 // This variable is there to give acces to wait and resume...
 export let applicationView: ApplicationView;
@@ -47,6 +48,9 @@ export class ApplicationView extends View {
     public get camera(): Camera {
         return this._camera;
     }
+
+    /** The file explorer */
+    private _fileExplorer: FileExplorer
 
     /** various listener's */
     private login_event_listener: string
@@ -100,17 +104,18 @@ export class ApplicationView extends View {
         this._camera = new Camera();
 
         // That function will be call when the file is saved.
-        this._camera.onsaved = (path: string, name: string)=>{
+        this._camera.onsaved = (path: string, name: string) => {
             console.log("----> save success!")
         }
 
         // Now the save funciton..
-        this._camera.onsave = (picture: any)=>{
+        this._camera.onsave = (picture: any) => {
             // save image from the picture.
             console.log("save picture:", picture)
-
-            this._camera.onsaved("/toto/titi", "vagin.jpg")
         }
+
+        // The file explorer object.
+        this._fileExplorer = new FileExplorer(this, "/test");
 
         // set the global varialbe...
         applicationView = this
@@ -126,6 +131,8 @@ export class ApplicationView extends View {
         this.accountMenu.init()
         this.applicationsMenu.init()
         this.notificationMenu.init()
+        // The file explorer object.
+        this._fileExplorer.init();
 
         // Logout event
         Model.eventHub.subscribe("logout_event",

@@ -1,98 +1,227 @@
-import { Model } from "./Model";
-import { FileRessource } from "./Ressource";
+import { Model } from './Model';
+import { Ressource } from "./Ressource";
 import { View } from "./View";
+import { readDir } from "globular-web-client/lib/api";
+import { ApplicationView, applicationView } from './ApplicationView';
 
-
-
-/**
- * Thumbnail can be use to scale down image or create icon a file 
- * content.
- */
-export class Thumbnail {
-    /** The file path */
-    private filePath: string;
-
-    /** The data url it cantain the image of the file type. */
-    private dataUrl: string;
-
-    /** The image height */
-    private height: number;
-
-    /** The image width */
-    private width: number;
-
-    constructor(filePath: string, height: number, width: number){
-        this.filePath = filePath;
-        this.height = height;
-        this.width = width;
-    }
-
-    /**
-     * Read the data from the server and initialyse dataUrl.
-     * @param callback Return when dataUrl is initialysed
-     * @param errorCallback Error if something wrong append.
-     */
-    init(callback:()=>void, errorCallback: (err:any)=>void){
-
-    }
-
-
-}
 
 /**
  * Server side file accessor. That 
  */
-export class File extends Model{
+export class File extends Model {
 
-    /** The ressource */
-    private ressource: FileRessource;
+    /** A file image preview */
+    private _thumbnail: string
+    public get thumbnail(): string {
+        return this._thumbnail;
+    }
+    public set thumbnail(value: string) {
+        this._thumbnail = value;
+    }
 
     /** The file path */
-    private path: string;
+    private _path: string;
+    public get path(): string {
+        return this._path;
+    }
+    public set path(value: string) {
+        this._path = value;
+    }
 
     /** The name */
-    private name: string;
+    private _name: string;
+    public get name(): string {
+        return this._name;
+    }
+    public set name(value: string) {
+        this._name = value;
+    }
+
+    /** The size */
+    private _size: number;
+    public get size(): number {
+        return this._size;
+    }
+    public set size(value: number) {
+        this._size = value;
+    }
+
+    /** The Mode */
+    private _mode: number;
+    public get mode(): number {
+        return this._mode;
+    }
+    public set mode(value: number) {
+        this._mode = value;
+    }
+
+    /** The mode time */
+    private _modTime: Date;
+    public get modTime(): Date {
+        return this._modTime;
+    }
+    public set modTime(value: Date) {
+        this._modTime = value;
+    }
+
+    /** The Mime type */
+    private _mime: string;
+    public get mime(): string {
+        return this._mime;
+    }
+    public set mime(value: string) {
+        this._mime = value;
+    }
+
+    /** is dir */
+    private _isDir: boolean;
+    public get isDir(): boolean {
+        return this._isDir;
+    }
+    public set isDir(value: boolean) {
+        this._isDir = value;
+    }
+
+    private _files: File[];
+    public get files(): File[] {
+        return this._files;
+    }
+    public set files(value: File[]) {
+        this._files = value;
+    }
+
 
     /** The file  */
-    constructor(name:string, path:string){
+    constructor(name: string, path: string) {
         super();
 
         /** Here I will initialyse the ressource. */
+        this.files = new Array<File>();
+
+    }
+
+    /**
+     * Create instance of File class from JSON object.
+     * @param obj The JSON object.
+     */
+    static fromObject(obj: any): any {
+        const file = new File(obj.Name, obj.path)
+        file.isDir = obj.IsDir
+        file.mime = obj.Mime
+        file.modTime = new Date(obj.ModTime)
+        file.mode = obj.Mode
+        file.size = obj.Size
+        file.thumbnail = obj.Thumbnail
+
+        // Now the sub-file.
+        if (file.isDir && obj.Files != null) {
+            for (let o of obj.Files) {
+                let f = <File>File.fromObject(o)
+                file.files.push(f)
+            }
+        }
+
+        return file
+    }
+
+    /**
+     * Create instance of File from string.
+     * @param str 
+     */
+    static fromString(str: string): any {
+        let file = File.fromObject(JSON.parse(str))
+        return file
+    }
+
+    /**
+     * Set back the file to JSON object.
+     */
+    toObject(): any {
+        let obj = {
+            IsDir: this.isDir,
+            Mime: this.mime,
+            ModTime: this.modTime.toISOString(),
+            Mode: this.mode,
+            Name: this.name,
+            Path: this.path,
+            Size: this.size,
+            Thumbnail: this.thumbnail,
+            Files: new Array<any>()
+        }
         
+        for(let f of this.files){
+            obj.Files.push(f.toObject())
+        }
+    }
+
+    /**
+     * Stringnify a file.
+     */
+    toString(): string {
+        let obj = this.toObject()
+        return JSON.stringify(obj)
     }
 
     /**
      * Return the file path.
      */
-    get filePath() : string{
-        if(this.name == ""){
+    get filePath(): string {
+        if (this.name == "") {
             return "/"
         }
 
         return this.path + "/" + this.name
     }
 
-}
-
-/**
- * The file view is use to display a file infomation.
- */
-class FileView extends View{
-
-    private file: File;
-
-    constructor(file: File){
-        super()
-    }
-
     /**
-     * Return the thumbnail of the file.
+     * Static function's
      */
-    getThumbnail(height: number, width: number, callback:(thumbnail: Thumbnail)=>{}, errorCallback:(err:any)=>void){
-        let thumbnail = new Thumbnail(this.file.filePath, height, width)
-        thumbnail.init(()=>{
-            callback(thumbnail)
+    static readDir(path: string, callback: (dir: File) => void, errorCallback: (err: any) => void) {
+        readDir(Model.globular, path, (data: any) => {
+            callback(File.fromObject(data))
         }, errorCallback)
     }
 }
 
+/**
+ * The file view is use to display a files infomations.
+ */
+export class FileExplorer extends View {
+
+    private applicationView: ApplicationView;
+
+    // The actual path of the file explorer.
+    private path: string
+
+    // Create a file explorer.
+    constructor(applicationView: ApplicationView, path?: string) {
+        // The path i
+        super()
+
+        // The parent applicaiton
+        this.applicationView = applicationView
+
+        // read the root dir if not path is given.
+        if (path == undefined) {
+            path = "/"
+        }
+
+        // set the path.
+        this.path = path
+    }
+
+    // display the message.
+    displayMessage(msg: string, delay: number) {
+        this.applicationView.displayMessage(msg, delay)
+    }
+
+    init() {
+        // Read the fd
+        File.readDir(this.path, (dir: File) => {
+            console.log("--------> read dir ", dir)
+        }, (err: any) => {
+            this.displayMessage(err.message, 4000)
+        })
+    }
+
+}

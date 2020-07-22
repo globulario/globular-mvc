@@ -81,7 +81,7 @@ export class Ressource extends Model {
      * @param errorCallback 
      */
     getPermissions(callback: (permissions: Array<Permission>) => void, errorCallback: (err: any) => void) {
-        getRessourcePermissions(Model.globular, Model.application, Model.domain, this.path,
+        getRessourcePermissions(Model.globular, this.path,
             (data: Array<any>) => {
                 /** TODO tranform data here */
                 console.log(data)
@@ -94,7 +94,7 @@ export class Ressource extends Model {
      * @param errorCallback 
      */
     getOwners(callback: (accounts: Array<Account>) => void, errorCallback: (err: any) => void) {
-        getRessourceOwners(Model.globular, Model.application, Model.domain, this.path,
+        getRessourceOwners(Model.globular, this.path,
             (data: Array<any>) => {
                 /** TODO tranform data here */
                 console.log(data)

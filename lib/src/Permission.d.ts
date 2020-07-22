@@ -36,7 +36,7 @@ export declare class ActionPermission extends Permission {
     delete(callback: () => void, errorCallback: (err: any) => void): void;
 }
 /**
- * Ressource permission it's use to manage who can access ressource on the server.
+ * Ressource permissions are use to manage who can access ressource on the server.
  */
 export declare class RessourcePermission extends Permission {
     private path;

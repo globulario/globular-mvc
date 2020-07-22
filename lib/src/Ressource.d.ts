@@ -1,43 +1,38 @@
 import { Model } from './Model';
-import { ActionPermission } from './Permission';
-import { RessourcePermission } from 'globular-web-client/lib/ressource/ressource_pb';
+import { Permission } from './Permission';
 /**
  * A ressource is a recursive data structure. File (from file service), Persistent object (from persistence service),
  * Stored object (form storage service) can be use as ressource.
  */
-declare class Ressource extends Model {
+export declare class Ressource extends Model {
     /**
      * A unique identifier.
      */
-    protected id: string;
+    private _id;
+    get id(): string;
     /**
-     * The ressource parent, must also be a ressource.
+     * The path of the ressource.
      */
-    protected _parent: Ressource;
+    private _path;
+    get path(): string;
     /**
      * The modified date
      */
-    protected _modified: Date;
+    private _modified;
     get modified(): Date;
     /**
      * The size of the ressource on the server.
      */
-    protected _size: number;
+    private _size;
     get size(): number;
     /**
-     * Action permission are set by ressource type (class derived from that class)
+     * The ressource constructor.
+     * @param path The path of the ressource must be unique.
+     * @param id The unique identifier
+     * @param modified The last modified time
+     * @param size The size of the ressource on the server.
      */
-    protected static actionPermissions: ActionPermission[];
-    /**
-     * Contain the list of permission asscociated with that ressouce.
-     */
-    protected permissions: Array<RessourcePermission>;
-    constructor(id?: string, modified?: Date, size?: number, parent?: Ressource);
-    /**
-     *
-     * @param calback
-     */
-    init(calback: () => void): void;
+    constructor(path: string, id?: string, modified?: Date, size?: number);
     /**
      * Save (create/update) a ressource on the server.
      * @param callback The succes callback
@@ -45,13 +40,16 @@ declare class Ressource extends Model {
      */
     save(callback: (ressource: Ressource) => void, errorCallback: (err: any) => void): void;
     delete(callback: () => void, errorCallback: (err: any) => void): void;
-    read(callback: () => void, errorCallback: (err: any) => void): void;
-    get parent(): Ressource;
+    /**
+     * Return the list of permission define for that ressource.
+     * @param callback
+     * @param errorCallback
+     */
+    getPermissions(callback: (permissions: Array<Permission>) => void, errorCallback: (err: any) => void): void;
+    /**
+     * Return the list of account that can own the ressource.
+     * @param callback
+     * @param errorCallback
+     */
+    getOwners(callback: (accounts: Array<Account>) => void, errorCallback: (err: any) => void): void;
 }
-/**
- * That class is use to manage files and directory access.
- */
-export declare class FileRessource extends Ressource {
-    constructor(id?: string, modified?: Date, size?: number, parent?: FileRessource);
-}
-export {};

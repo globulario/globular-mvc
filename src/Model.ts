@@ -10,7 +10,7 @@ export class Model {
     // Static class.
     public static globular: GlobularWebClient.Globular;
 
-    // This is the controller.
+    // This is the event controller.
     public static eventHub: GlobularWebClient.EventHub;
 
     // The domain of the application.
@@ -33,6 +33,7 @@ export class Model {
     protected get view(): View {
         return this._view;
     }
+    
     protected set view(value: View) {
         this._view = value;
     }
@@ -41,6 +42,7 @@ export class Model {
         // Set the application name.
         // The domain will be set with the hostname.
         Model.domain = window.location.hostname
+        Model.application = window.location.pathname.split('/')[1]
         this.listeners = new Array<any>();
     }
 
