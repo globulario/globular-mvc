@@ -12,9 +12,8 @@ import { AccountMenu } from "./components/Account";
 import { NotificationMenu } from "./components/Notification";
 import { OverflowMenu } from "./components/Menu";
 import { ApplicationsMenu } from "./components/Applications";
-
 import { Camera } from "./components/Camera";
-import { FileExplorer } from './File';
+import { FileExplorer} from "./components/File"
 
 // This variable is there to give acces to wait and resume...
 export let applicationView: ApplicationView;
@@ -51,6 +50,9 @@ export class ApplicationView extends View {
 
     /** The file explorer */
     private _fileExplorer: FileExplorer
+    public get fileExplorer(): FileExplorer {
+        return this._fileExplorer
+    }
 
     /** various listener's */
     private login_event_listener: string
@@ -115,7 +117,12 @@ export class ApplicationView extends View {
         }
 
         // The file explorer object.
-        this._fileExplorer = new FileExplorer(this, "/test");
+        this._fileExplorer = new FileExplorer();
+
+        // Set the onerror callback for the component.
+        this._fileExplorer.onerror = (err:any)=>{
+            this.displayMessage(err, 4000)
+        }
 
         // set the global varialbe...
         applicationView = this
@@ -277,14 +284,15 @@ export class ApplicationView extends View {
             }
 
             if (errObj.ErrorMsg != undefined) {
-                console.log(errObj)
                 return errObj.ErrorMsg
             } else {
                 return err
             }
 
         } catch{
-            console.log(err)
+            if (err.message != undefined){
+                return err.message
+            }
             return err;
         }
     }

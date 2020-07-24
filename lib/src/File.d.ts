@@ -1,40 +1,69 @@
-import { Model } from "./Model";
-/**
- * Thumbnail can be use to scale down image or create icon a file
- * content.
- */
-export declare class Thumbnail {
-    /** The file path */
-    private filePath;
-    /** The data url it cantain the image of the file type. */
-    private dataUrl;
-    /** The image height */
-    private height;
-    /** The image width */
-    private width;
-    constructor(filePath: string, height: number, width: number);
-    /**
-     * Read the data from the server and initialyse dataUrl.
-     * @param callback Return when dataUrl is initialysed
-     * @param errorCallback Error if something wrong append.
-     */
-    init(callback: () => void, errorCallback: (err: any) => void): void;
-}
+import { Model } from './Model';
 /**
  * Server side file accessor. That
  */
 export declare class File extends Model {
-    /** The ressource */
-    private ressource;
+    /** A file image preview */
+    private _thumbnail;
+    get thumbnail(): string;
+    set thumbnail(value: string);
     /** The file path */
-    private path;
+    private _path;
+    get path(): string;
+    set path(value: string);
     /** The name */
-    private name;
+    private _name;
+    get name(): string;
+    set name(value: string);
+    /** The size */
+    private _size;
+    get size(): number;
+    set size(value: number);
+    /** The Mode */
+    private _mode;
+    get mode(): number;
+    set mode(value: number);
+    /** The mode time */
+    private _modTime;
+    get modTime(): Date;
+    set modTime(value: Date);
+    /** The Mime type */
+    private _mime;
+    get mime(): string;
+    set mime(value: string);
+    /** is dir */
+    private _isDir;
+    get isDir(): boolean;
+    set isDir(value: boolean);
+    private _files;
+    get files(): File[];
+    set files(value: File[]);
     /** The file  */
     constructor(name: string, path: string);
-    init(callback: () => void, errorCallback: (err: any) => void): void;
+    /**
+     * Create instance of File class from JSON object.
+     * @param obj The JSON object.
+     */
+    static fromObject(obj: any): any;
+    /**
+     * Create instance of File from string.
+     * @param str
+     */
+    static fromString(str: string): any;
+    /**
+     * Set back the file to JSON object.
+     */
+    toObject(): any;
+    /**
+     * Stringnify a file.
+     */
+    toString(): string;
     /**
      * Return the file path.
      */
     get filePath(): string;
+    /**
+     * Static function's
+     */
+    static readDir(path: string, callback: (dir: File) => void, errorCallback: (err: any) => void): void;
 }

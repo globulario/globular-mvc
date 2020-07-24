@@ -1,9 +1,5 @@
 import { Model } from './Model';
-import { Ressource } from "./Ressource";
-import { View } from "./View";
 import { readDir } from "globular-web-client/lib/api";
-import { ApplicationView, applicationView } from './ApplicationView';
-
 
 /**
  * Server side file accessor. That 
@@ -95,6 +91,9 @@ export class File extends Model {
     constructor(name: string, path: string) {
         super();
 
+        this._name = name;
+        this._path = path.split("//").join("/");
+
         /** Here I will initialyse the ressource. */
         this.files = new Array<File>();
 
@@ -105,7 +104,7 @@ export class File extends Model {
      * @param obj The JSON object.
      */
     static fromObject(obj: any): any {
-        const file = new File(obj.Name, obj.path)
+        const file = new File(obj.Name, obj.Path)
         file.isDir = obj.IsDir
         file.mime = obj.Mime
         file.modTime = new Date(obj.ModTime)
@@ -169,7 +168,6 @@ export class File extends Model {
         if (this.name == "") {
             return "/"
         }
-
         return this.path + "/" + this.name
     }
 
@@ -181,47 +179,4 @@ export class File extends Model {
             callback(File.fromObject(data))
         }, errorCallback)
     }
-}
-
-/**
- * The file view is use to display a files infomations.
- */
-export class FileExplorer extends View {
-
-    private applicationView: ApplicationView;
-
-    // The actual path of the file explorer.
-    private path: string
-
-    // Create a file explorer.
-    constructor(applicationView: ApplicationView, path?: string) {
-        // The path i
-        super()
-
-        // The parent applicaiton
-        this.applicationView = applicationView
-
-        // read the root dir if not path is given.
-        if (path == undefined) {
-            path = "/"
-        }
-
-        // set the path.
-        this.path = path
-    }
-
-    // display the message.
-    displayMessage(msg: string, delay: number) {
-        this.applicationView.displayMessage(msg, delay)
-    }
-
-    init() {
-        // Read the fd
-        File.readDir(this.path, (dir: File) => {
-            console.log("--------> read dir ", dir)
-        }, (err: any) => {
-            this.displayMessage(err.message, 4000)
-        })
-    }
-
 }
