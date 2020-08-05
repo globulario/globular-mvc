@@ -81,6 +81,65 @@ export class FilesView extends HTMLElement {
             <style>
                 ${theme}
 
+                table th,
+                table td {
+                  /* Apply a left border on the first <td> or <th> in a row */
+                  border-right: 1px solid  var(--palette-action-disabled);
+                }
+
+                table th:last-child,
+                table td:last-child {
+                  /* Apply a left border on the first <td> or <th> in a row */
+                  border-right: none;
+                }
+                
+                thead {
+                    display: table-header-group;
+                    vertical-align: middle;
+                    border-color: inherit;
+                }
+
+                tbody {
+                    display: table-row-group;
+                    vertical-align: middle;
+                    border-color: inherit;
+                }
+
+                tr {
+                    display: table-row;
+                    vertical-align: inherit;
+                    border-color: inherit;
+                    color: var(--palette-text-primary);
+                }
+
+                td {
+                    display: table-cell;
+                    vertical-align: inherit;
+                }
+
+                th, td {
+                    padding: 0.25rem;
+                    min-width: 150px;
+                }
+                 
+                th {
+                    z-index: 100;
+                    padding-left: 5px;
+                    position: sticky;
+                    background-color: var(--palette-background-paper);
+                    top: 0; /* Don't forget this, required for the stickiness */
+                    /*box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4);*/
+                }
+
+                .files-list-view-header {
+                    padding-left: 5px;
+                    padding-right: 5px;
+                }
+
+                .files-list-view-info {
+                    padding: 2px;
+                }
+
                 .files-view-div{
                     display: flex;
                     flex-direction: column;
@@ -101,6 +160,20 @@ export class FilesView extends HTMLElement {
             `
         // get the div.
         this.div = this.shadowRoot.getElementById(id)
+        this.div.onscroll = ()=>{
+            console.log("vagin!")
+
+            const headers = this.div.getElementsByClassName("files-list-view-header")
+            if(this.div.scrollTop > 0){
+                for(var h of headers){
+                    h.style.boxShadow = "0 2px 2px -1px rgba(0, 0, 0, 0.4)"
+                }
+            }else{
+                for(var h of headers){
+                    h.style.boxShadow = ""
+                }
+            }
+        }
     }
 }
 
@@ -120,66 +193,24 @@ export class FilesListView extends FilesView {
         this.div.innerHTML = "";
         let id = uuidv4().split("-").join("_");
         let html = `
-            <style>
-                 ${theme}
-                .files-list-view-header {
-                    display: flex;
-                    padding: 2px;
-                }
-
-                .files-list-view-header div{
-                    padding: 5px;
-                    padding-left: 10px;
-                }
-
-                .name_header_div {
-                    min-width: 200px;
-                    color: var(--palette-text-primary);
-                    border-right: 1px solid  var(--palette-action-disabled);
-                }
-
-                .modified_header_div {
-                    min-width: 180px;
-                    color: var(--palette-text-primary);
-                    border-right: 1px solid  var(--palette-action-disabled);
-                }
-
-                .mime_header_div {
-                    min-width: 125px;
-                    color: var(--palette-text-primary);
-                    border-right: 1px solid  var(--palette-action-disabled);
-                }
-
-                .size_header_div {
-                    min-width: 100px;
-                    color: var(--palette-text-primary);
-                }
-
-                .files-list-view-info {
-                    display: flex;
-                    flex-direction: column;
-                    flex-grow: 1;
-                    padding: 2px;
-                }
-
-            </style>
-            <div class="files-list-view-header">
-                <div class="name_header_div">Nom</div>
-                <div class="modified_header_div">Modifié le</div>
-                <div class="mime_header_div">Type</div>
-                <div class="size_header_div">Taille</div>
-            </div>
-            <div id=${id}"_files_list_view_info" class="files-list-view-info">
-                <div id=${id}"_files_list_view_info_dirs" class="files_list_view_info_dirs" style="display: table;"></div>
-                <div id=${id}"_files_list_view_info_files" class="files_list_view_info_files" style="display: table;"></div>
-            </div>
+            <table>
+                <thead class="files-list-view-header">
+                    <tr>
+                        <th class="name_header_div files-list-view-header">Nom</th>
+                        <th class="modified_header_div files-list-view-header">Modifié le</th>
+                        <th class="mime_header_div files-list-view-header">Type</th>
+                        <th class="size_header_div files-list-view-header">Taille</th>
+                    </tr>
+                </thead>
+                <tbody id=${id}"_files_list_view_info" class="files-list-view-info"></tbody>
+            </table>
         `
 
         // Create the header.
         this.div.innerHTML = html
 
         // get the info div that will contain the information.
-        let divInfos = this.div.getElementsByClassName("files_list_view_info_dirs")[0]
+        let fileListView = this.div.getElementsByClassName("files-list-view-info")[0]
         let range = document.createRange()
 
         for (let f of dir.files) {
@@ -213,17 +244,19 @@ export class FilesListView extends FilesView {
 
             // Set the text.
             let html = `
-            <div style="display: table-row;">
-                <div style="display: table-cell; min-width: 200px; padding: 0px 5px 0px 5px;">
-                    <iron-icon id="${id}_icon" class="file-lnk-ico" style="height: 18px;" icon="${icon}"></iron-icon> ${f.name}
-                </div>
-                <div style="display: table-cell; min-width: 180px; padding: 0px 5px 0px 10px;">${f.modTime.toLocaleString()}</div>
-                <div style="display: table-cell; min-width: 125px; padding: 0px 5px 0px 10px;">${mime}</div>
-                <div style="display: table-cell; min-width: 100px; padding: 0px 5px 0px 10px;">${size}</div>
-            </div>
+                <td>
+                    <iron-icon id="${id}_icon" class="file-lnk-ico" style="height: 18px;" icon="${icon}"></iron-icon> 
+                    <span> ${f.name} </span>
+                </td>
+                <td>${f.modTime.toLocaleString()}</td>
+                <td>${mime}</td>
+                <td>${size}</td>
             `
+            let row = document.createElement("tr")
+            row.innerHTML = html;
+
             if (f.isDir) {
-                divInfos.insertBefore(range.createContextualFragment(html), divInfos.firstChild);
+                fileListView.insertBefore(row, fileListView.firstChild);
                 let lnk = this.div.getElementsByClassName("file-lnk-ico")[0]
                 lnk.onclick = () => {
                     Model.eventHub.publish("set_dir_event", _dirs[f._path], true)
@@ -238,7 +271,7 @@ export class FilesListView extends FilesView {
                 }
 
             } else {
-                divInfos.appendChild(range.createContextualFragment(html));
+                fileListView.appendChild(row);
 
                 // TODO create the code for open file.
             }
@@ -699,6 +732,11 @@ export class FileExplorer extends HTMLElement {
         }, this.onerror)
     }
 
+    setRoot(root){
+        this.root = root
+        this.init()
+    }
+
     setDir(dir){
 
         this.backNavigationBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
@@ -869,7 +907,7 @@ export class FileExplorer extends HTMLElement {
                     <div  id="file-selection-panel" style="position: relative;">
                         <globular-files-list-view id="globular-files-list-view" ></globular-files-list-view>
                         <globular-files-icon-view id="globular-files-icon-view"  style="display:none;"></globular-files-icon-view>
-                        <div style="position: absolute; bottom: 17px; right: 0px; display: flex; background-color:var(--palette-background-default)" >
+                        <div style="position: absolute; bottom: 8px; right: 8px; display: flex; background-color:var(--palette-background-default)" >
                             <paper-icon-button id="files-list-btn" icon="icons:view-list" style="--iron-icon-fill-color: var(--palette-action-active);"></paper-icon-button>
                             <paper-icon-button id="files-icon-btn" icon="icons:view-module" style="--iron-icon-fill-color: var(--palette-action-disabled);"></paper-icon-button>
                         </div>
