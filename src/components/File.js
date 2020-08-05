@@ -129,21 +129,25 @@ export class FilesListView extends FilesView {
 
                 .files-list-view-header div{
                     padding: 5px;
+                    padding-left: 10px;
                 }
 
                 .name_header_div {
                     min-width: 200px;
                     color: var(--palette-text-primary);
+                    border-right: 1px solid  var(--palette-action-disabled);
                 }
 
                 .modified_header_div {
                     min-width: 180px;
                     color: var(--palette-text-primary);
+                    border-right: 1px solid  var(--palette-action-disabled);
                 }
 
                 .mime_header_div {
                     min-width: 125px;
                     color: var(--palette-text-primary);
+                    border-right: 1px solid  var(--palette-action-disabled);
                 }
 
                 .size_header_div {
@@ -213,9 +217,9 @@ export class FilesListView extends FilesView {
                 <div style="display: table-cell; min-width: 200px; padding: 0px 5px 0px 5px;">
                     <iron-icon id="${id}_icon" class="file-lnk-ico" style="height: 18px;" icon="${icon}"></iron-icon> ${f.name}
                 </div>
-                <div style="display: table-cell; min-width: 180px; padding: 0px 5px 0px 5px;">${f.modTime.toLocaleString()}</div>
-                <div style="display: table-cell; min-width: 125px; padding: 0px 5px 0px 5px;">${mime}</div>
-                <div style="display: table-cell; min-width: 100px; padding: 0px 5px 0px 5px;">${size}</div>
+                <div style="display: table-cell; min-width: 180px; padding: 0px 5px 0px 10px;">${f.modTime.toLocaleString()}</div>
+                <div style="display: table-cell; min-width: 125px; padding: 0px 5px 0px 10px;">${mime}</div>
+                <div style="display: table-cell; min-width: 100px; padding: 0px 5px 0px 10px;">${size}</div>
             </div>
             `
             if (f.isDir) {
@@ -765,12 +769,14 @@ export class FileExplorer extends HTMLElement {
 
                 navigationLine.onmouseover = ()=>{
                     navigationLine.style.cursor = "pointer"
+                    navigationLine.style.setProperty("background-color", "var(--palette-background-default)")
                     navigationLine.children[0].style.setProperty("background-color", "var(--palette-background-default)")
                     navigationLine.children[1].style.setProperty("background-color", "var(--palette-background-default)")
                 }
 
                 navigationLine.onmouseleave = ()=>{
                     navigationLine.style.cursor = "default"
+                    navigationLine.style.setProperty("background-color", "var(--palette-background-paper)")
                     navigationLine.children[0].style.setProperty("background-color", "var(--palette-background-paper)")
                     navigationLine.children[1].style.setProperty("background-color", "var(--palette-background-paper)")
                 }

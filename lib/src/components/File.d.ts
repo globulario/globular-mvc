@@ -42,8 +42,11 @@ export class FileNavigator extends HTMLElement {
  * File explorer.
  */
 export class FileExplorer extends HTMLElement {
-    path: string;
+    path: any;
+    root: string;
+    navigations: any[];
     init(): void;
+    setDir(dir: any): void;
     getWorkspace(): HTMLElement;
     connectedCallback(): void;
     fileExplorerBox: HTMLElement;
@@ -55,4 +58,9 @@ export class FileExplorer extends HTMLElement {
     fileNavigator: HTMLElement;
     filesListBtn: HTMLElement;
     fileIconBtn: HTMLElement;
+    refreshBtn: HTMLElement;
+    backNavigationBtn: HTMLElement;
+    fowardNavigationBtn: HTMLElement;
+    upwardNavigationBtn: HTMLElement;
+    lstNavigationBtn: HTMLElement;
 }
