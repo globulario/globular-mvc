@@ -43,9 +43,10 @@ export class FileNavigator extends HTMLElement {
  */
 export class FileExplorer extends HTMLElement {
     path: any;
-    root: string;
+    root: any;
     navigations: any[];
     init(): void;
+    setRoot(root: any): void;
     setDir(dir: any): void;
     getWorkspace(): HTMLElement;
     connectedCallback(): void;

@@ -19,6 +19,8 @@ import { Model } from '../Model';
 export let theme = `:host{
 
   --toolbar-height: 64px;
+  --searchbox-height: 44px;
+
 
   /** Material design (default theme is light)  */
   /** colors **/
@@ -91,6 +93,8 @@ export let theme = `:host{
   --paper-checkbox-checked-ink-color: var(--palette-primary-main);
   --paper-checkbox-label-checked-color: var(--palette-text-primary);
   --paper-checkbox-error-color: var(--palette-error-main);
+
+  --dark-mode-shadow: 0 1px 3px 0 rgba(0, 0, 0, .3), 0 4px 8px 3px rgba(0, 0, 0, .15);
 }
 
 /** The dark theme. **/

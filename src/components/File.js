@@ -81,6 +81,13 @@ export class FilesView extends HTMLElement {
             <style>
                 ${theme}
 
+                table {
+                    text-align: left;
+                    position: relative;
+                    border-collapse: separate; /* Don't collapse */
+                    border-spacing: 0;
+                }
+                
                 table th,
                 table td {
                   /* Apply a left border on the first <td> or <th> in a row */
@@ -120,15 +127,14 @@ export class FilesView extends HTMLElement {
                 th, td {
                     padding: 0.25rem;
                     min-width: 150px;
+                    padding-left: 5px;
                 }
                  
                 th {
                     z-index: 100;
-                    padding-left: 5px;
                     position: sticky;
                     background-color: var(--palette-background-paper);
                     top: 0; /* Don't forget this, required for the stickiness */
-                    /*box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4);*/
                 }
 
                 .files-list-view-header {

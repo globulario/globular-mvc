@@ -4,6 +4,7 @@ import "materialize-css/sass/materialize.scss";
 import { Account } from "./Account";
 import { Camera } from "./components/Camera";
 import { FileExplorer } from "./components/File";
+import { SearchBar } from "./components/Search";
 export declare let applicationView: ApplicationView;
 /**
  * Application view made use of Web-component and Materialyse to create a basic application
@@ -28,6 +29,9 @@ export declare class ApplicationView extends View {
     /** The file explorer */
     private _fileExplorer;
     get fileExplorer(): FileExplorer;
+    /** The seach bar */
+    private _searchBar;
+    get searchBar(): SearchBar;
     /** various listener's */
     private login_event_listener;
     private logout_event_listener;

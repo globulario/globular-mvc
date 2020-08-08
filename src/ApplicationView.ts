@@ -14,6 +14,7 @@ import { OverflowMenu } from "./components/Menu";
 import { ApplicationsMenu } from "./components/Applications";
 import { Camera } from "./components/Camera";
 import { FileExplorer} from "./components/File"
+import { SearchBar} from "./components/Search"
 
 // This variable is there to give acces to wait and resume...
 export let applicationView: ApplicationView;
@@ -52,6 +53,12 @@ export class ApplicationView extends View {
     private _fileExplorer: FileExplorer
     public get fileExplorer(): FileExplorer {
         return this._fileExplorer
+    }
+
+    /** The seach bar */
+    private _searchBar: SearchBar;
+    public get searchBar(): SearchBar {
+        return this._searchBar;
     }
 
     /** various listener's */
@@ -104,6 +111,9 @@ export class ApplicationView extends View {
 
         // The camera can be use to take picture.
         this._camera = new Camera();
+
+        // The search bar to give end user the power to search almost anything...
+        this._searchBar = new SearchBar();
 
         // That function will be call when the file is saved.
         this._camera.onsaved = (path: string, name: string) => {
