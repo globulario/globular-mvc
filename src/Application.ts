@@ -18,10 +18,13 @@ import { v4 as uuidv4 } from "uuid";
 export class Application extends Model {
   
   public static uuid: string;
+  public static language: string;
   private static infos:Map<string, any>;
+
   protected name: string;
   protected title: string;
   protected account: Account;
+  
 
   // Event listener's
   private login_event_listener: string;

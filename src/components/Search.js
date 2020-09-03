@@ -1,5 +1,7 @@
 import '@polymer/iron-icons/iron-icons.js';
 import '@polymer/paper-icon-button/paper-icon-button.js';
+import { searchDocuments } from "globular-web-client/lib/api";
+
 import { Model } from '../Model';
 import { theme } from './Layout';
 
@@ -81,6 +83,29 @@ export class SearchBar extends HTMLElement {
             div.style.boxShadow = ""
         }
 
+        searchInput.onkeydown = (evt)=>{
+            if(evt.keyCode == 13){
+                let paths = ["/tmp/dir_db"]
+                let fields = []
+                let offset = 0
+                let pageSize = 10
+                let snippetLenght = 50
+                let language = "english"
+                this.search(searchInput.value, paths, fields, language, offset, pageSize, snippetLenght)
+            }
+        }
+    }
+
+    // Call search event.
+    search(query, paths, fields, language, offset, pageSize, snippetLenght ){
+        searchDocuments(Model.globular, paths, query, language, fields, offset, pageSize, snippetLenght,
+            (results)=>{
+                for(const v of results){
+                    console.log(v._snippetsList)
+                }
+            }, (err)=>{
+                console.log("---> err ", err)
+            })
     }
 }
 

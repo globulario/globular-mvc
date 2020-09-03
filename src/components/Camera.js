@@ -143,6 +143,7 @@ export class Camera extends HTMLElement {
 
         // get the list of available cameras.
         const getCameraSelection = async () => {
+            await navigator.mediaDevices.getUserMedia({audio: true, video: true});   
             const devices = await navigator.mediaDevices.enumerateDevices();
             const videoDevices = devices.filter(device => device.kind === 'videoinput');
             const options = videoDevices.map(videoDevice => {

@@ -7,6 +7,7 @@ import { NotificationType, Notification } from './Notification';
  */
 export declare class Application extends Model {
     static uuid: string;
+    static language: string;
     private static infos;
     protected name: string;
     protected title: string;
