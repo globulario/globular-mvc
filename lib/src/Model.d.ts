@@ -35,11 +35,17 @@ export declare class Model {
      */
     static fromObject(obj: any): any;
     /**
+     * Get the configuration from the configuration port.
+     * @param configurationPort
+     * @param callback
+     */
+    getConfig(callback: (config: any) => void): void;
+    /**
      * Connect with the backend and get the initial configuration.
      * @param initCallback On success callback
      * @param errorCallback On error callback
      * @param adminPort The admin service port
      * @param adminProxy The admin service proxy
      */
-    init(initCallback: () => void, errorCallback: (err: any) => void, adminPort?: number, adminProxy?: number): void;
+    init(initCallback: () => void, errorCallback: (err: any) => void): void;
 }

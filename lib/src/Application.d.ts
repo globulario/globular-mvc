@@ -27,10 +27,9 @@ export declare class Application extends Model {
      * Connect the listner's and call the initcallback.
      * @param initCallback
      * @param errorCallback
-     * @param adminPort
-     * @param adminProxy
+     * @param configurationPort
      */
-    init(initCallback: () => void, errorCallback: (err: any) => void, adminPort?: number, adminProxy?: number): void;
+    init(initCallback: () => void, errorCallback: (err: any) => void): void;
     /**
      * Return the list of all applicaitons informations.
      * @param callback
