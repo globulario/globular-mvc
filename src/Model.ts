@@ -90,23 +90,20 @@ export class Model {
     }
 
     /**
-     * Get the configuration from the configuration port.
-     * @param configurationPort 
-     * @param callback 
+     * Get the configuration from the configuration address 'config'
+     * @param callback
      */
-    getConfig(callback: (config: any) => void) {
+    getConfig(callback) {
         var xhttp = new XMLHttpRequest();
         xhttp.onreadystatechange = function () {
-            if (this.readyState == 4 && this.status == 200) {
+            if (this.readyState == 4 && this.status == 201) {
                 // Typical action to be performed when the document is ready:
-                let jsonStr = xhttp.responseText;
-                let config = JSON.stringify(jsonStr)
-                callback(config)
+                callback(JSON.parse(xhttp.responseText));
             }
         };
-
         // Get the configuration value.
-        xhttp.open("GET", "config", true);
+        xhttp.open("GET", window.location.protocol + "//" + window.location.host+ "/config", true);
+        xhttp.setRequestHeader("Content-Type", "application/json");
         xhttp.send();
     }
 
@@ -119,7 +116,7 @@ export class Model {
      */
     init(initCallback: () => void, errorCallback: (err: any) => void) {
         this.getConfig((config_: any) => {
-            
+
             // Set the basic informations.
             this.config = {
                 Protocol: window.location.protocol.replace(":", ""),

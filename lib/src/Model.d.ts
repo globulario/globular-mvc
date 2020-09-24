@@ -35,11 +35,10 @@ export declare class Model {
      */
     static fromObject(obj: any): any;
     /**
-     * Get the configuration from the configuration port.
-     * @param configurationPort
+     * Get the configuration from the configuration address 'config'
      * @param callback
      */
-    getConfig(callback: (config: any) => void): void;
+    getConfig(callback: any): void;
     /**
      * Connect with the backend and get the initial configuration.
      * @param initCallback On success callback
