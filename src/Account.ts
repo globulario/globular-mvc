@@ -1,5 +1,5 @@
 import { Model } from "./Model";
-import { FindOneRqst, ReplaceOneRqst, ReplaceOneRsp } from "globular-web-client/lib/persistence/persistencepb/persistence_pb";
+import { FindOneRqst, ReplaceOneRqst, ReplaceOneRsp } from "globular-web-client/lib/persistence/persistence_pb";
 
 /**
  * Basic account class that contain the user id and email.

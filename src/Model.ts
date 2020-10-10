@@ -33,7 +33,7 @@ export class Model {
     protected get view(): View {
         return this._view;
     }
-    
+
     protected set view(value: View) {
         this._view = value;
     }
@@ -90,48 +90,69 @@ export class Model {
     }
 
     /**
+     * Get the configuration from the configuration address 'config'
+     * @param callback
+     */
+    getConfig(callback) {
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function () {
+            if (this.readyState == 4 && this.status == 201) {
+                // Typical action to be performed when the document is ready:
+                callback(JSON.parse(xhttp.responseText));
+            }
+        };
+        // Get the configuration value.
+        xhttp.open("GET", window.location.protocol + "//" + window.location.host+ "/config", true);
+        xhttp.setRequestHeader("Content-Type", "application/json");
+        xhttp.send();
+    }
+
+    /**
      * Connect with the backend and get the initial configuration.
      * @param initCallback On success callback
      * @param errorCallback On error callback
      * @param adminPort The admin service port
      * @param adminProxy The admin service proxy
      */
-    init(initCallback: () => void, errorCallback: (err: any) => void, adminPort: number = 10001, adminProxy: number = 10002) {
+    init(initCallback: () => void, errorCallback: (err: any) => void) {
+        this.getConfig((config_: any) => {
 
-        this.config = {
-            Protocol: window.location.protocol.replace(":", ""),
-            Domain: window.location.hostname,
-            PortHttp: parseInt(window.location.port),
-            AdminPort: adminPort,
-            AdminProxy: adminProxy,
-            Services: {} // empty for start.
-        };
+            // Set the basic informations.
+            this.config = {
+                Protocol: window.location.protocol.replace(":", ""),
+                Domain: window.location.hostname,
+                PortHttp: parseInt(window.location.port),
+                AdminPort: config_.AdminPort,
+                AdminProxy: config_.AdminProxy,
+                Services: {} // empty for start.
+            };
 
-        // So here I will initilyse the server connection.
-        let globular = new GlobularWebClient.Globular(this.config);
+            // So here I will initilyse the server connection.
+            let globular = new GlobularWebClient.Globular(this.config);
 
-        let rqst = new GetConfigRequest();
-        if (globular.adminService !== undefined) {
-            globular.adminService.getConfig(rqst, {
-                domain: Model.domain
-            }).then((rsp: GetConfigResponse) => {
-                // set back config with all it values.
-                this.config = JSON.parse(rsp.getResult())
+            let rqst = new GetConfigRequest();
+            if (globular.adminService !== undefined) {
+                globular.adminService.getConfig(rqst, {
+                    domain: Model.domain
+                }).then((rsp: GetConfigResponse) => {
+                    // set back config with all it values.
+                    this.config = JSON.parse(rsp.getResult())
 
-                // init the globular object from the configuration retreived.
-                Model.globular = new GlobularWebClient.Globular(this.config);
+                    // init the globular object from the configuration retreived.
+                    Model.globular = new GlobularWebClient.Globular(this.config);
 
-                // init the event hub from the object retreive.
-                Model.eventHub = new GlobularWebClient.EventHub(
-                    Model.globular.eventService
-                );
+                    // init the event hub from the object retreive.
+                    Model.eventHub = new GlobularWebClient.EventHub(
+                        Model.globular.eventService
+                    );
 
-                // Call init callback.
-                initCallback()
+                    // Call init callback.
+                    initCallback()
 
-            }).catch((err: any) => {
-                errorCallback(err)
-            })
-        }
+                }).catch((err: any) => {
+                    errorCallback(err)
+                })
+            }
+        })
     }
 }

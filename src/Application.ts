@@ -9,7 +9,7 @@ import {
   FindRqst,
   FindResp,
   DeleteOneRqst
-} from "globular-web-client/lib/persistence/persistencepb/persistence_pb";
+} from "globular-web-client/lib/persistence/persistence_pb";
 import { v4 as uuidv4 } from "uuid";
 
 /**
@@ -65,14 +65,11 @@ export class Application extends Model {
    * Connect the listner's and call the initcallback.
    * @param initCallback
    * @param errorCallback
-   * @param adminPort
-   * @param adminProxy
+   * @param configurationPort
    */
   init(
     initCallback: () => void,
-    errorCallback: (err: any) => void,
-    adminPort: number = 10002,
-    adminProxy: number = 10003
+    errorCallback: (err: any) => void
   ) {
     super.init(
       () => {
@@ -233,9 +230,7 @@ export class Application extends Model {
           localStorage.removeItem("token_expired");
         }
       },
-      errorCallback,
-      adminPort,
-      adminProxy
+      errorCallback
     );
   }
 
