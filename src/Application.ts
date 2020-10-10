@@ -60,6 +60,7 @@ export class Application extends Model {
     }
   }
 
+
   /**
    * Connect the listner's and call the initcallback.
    * @param initCallback
@@ -70,8 +71,8 @@ export class Application extends Model {
   init(
     initCallback: () => void,
     errorCallback: (err: any) => void,
-    adminPort: number = 10001,
-    adminProxy: number = 10002
+    adminPort: number = 10002,
+    adminProxy: number = 10003
   ) {
     super.init(
       () => {

@@ -168,21 +168,21 @@ export class LoginBox extends HTMLElement {
         </style>
 
         <paper-card id="login_box">
-                <h2 class="card-title">LOGIN</h2>
-                <div class="card-content">
-                    <paper-input id="user_input" label="user/email">
-                        <iron-icon icon="account-circle" slot="prefix"></iron-icon>
-                    </paper-input>
-                    <paper-input id="pwd_input" type="password" label="password">
-                        <iron-icon icon="lock" slot="prefix"></iron-icon>
-                    </paper-input>
-                    <paper-checkbox id="remember_me">Remember me</paper-checkbox>
-                </div>
-                <div class="card-actions">
-                    <paper-button id="login_btn">login</paper-button>
-                    <paper-button id="cancel_btn">cancel</paper-button>
-                </div>
-            </paper-card>
+            <h2 class="card-title">LOGIN</h2>
+            <div class="card-content">
+                <paper-input id="user_input" label="user/email">
+                    <iron-icon icon="account-circle" slot="prefix"></iron-icon>
+                </paper-input>
+                <paper-input id="pwd_input" type="password" label="password">
+                    <iron-icon icon="lock" slot="prefix"></iron-icon>
+                </paper-input>
+                <paper-checkbox id="remember_me">Remember me</paper-checkbox>
+            </div>
+            <div class="card-actions">
+                <paper-button id="login_btn">login</paper-button>
+                <paper-button id="cancel_btn">cancel</paper-button>
+            </div>
+        </paper-card>
         `
 
         // give the focus to the input.

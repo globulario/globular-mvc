@@ -21,7 +21,6 @@ export let theme = `:host{
   --toolbar-height: 64px;
   --searchbox-height: 44px;
 
-
   /** Material design (default theme is light)  */
   /** colors **/
   --palette-primary-accent: #1976d2;
@@ -123,6 +122,10 @@ export let theme = `:host{
 
 }
 
+div, span, h1, h2, h3{
+  font-family: var(--font-family);
+}
+
 paper-card div{
   background-color: var(--palette-background-paper);
   color: var(--palette-text-primary);
@@ -217,7 +220,7 @@ export class Layout extends HTMLElement {
             
             ::slotted(#title) {
               display: flex;
-              font-family: \\\"Roboto Mono\\\", monospace;
+              font-family: var(--font-familly);
               font-size: 1rem;
               font-weight: 400;
               line-height: 1.5;
