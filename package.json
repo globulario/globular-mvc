@@ -1,11 +1,11 @@
 {
   "name": "globular-mvc",
-  "version": "1.0.47",
+  "version": "1.0.54",
   "description": "Generic template to create web-application that made use of globular as backend and materialize as css (wrap in web-component's)",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc",
-    "pack": "webpack --env production",
+    "build_": "tsc && cp package.json dist/ ",
+    "build": "",
     "format": "prettier --write \"src/**/*.ts\" \"src/**/*.js\"",
     "lint": "tslint -p tsconfig.json",
     "prepare": "npm run build",
@@ -51,7 +51,7 @@
     "@polymer/paper-tooltip": "^3.0.1",
     "@types/materialize-css": "^1.0.7",
     "@types/uuid": "^8.0.0",
-    "globular-web-client": "^1.1.42",
+    "globular-web-client": "^1.1.52",
     "materialize-css": "^1.0.0",
     "uuid": "^8.1.0",
     "web-animations-js": "^2.3.2"

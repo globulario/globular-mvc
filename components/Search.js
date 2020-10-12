@@ -1,6 +1,6 @@
 import '@polymer/iron-icons/iron-icons.js';
 import '@polymer/paper-icon-button/paper-icon-button.js';
-import { searchDocuments } from "globular-web-client/lib/api";
+import { searchDocuments } from "globular-web-client/api";
 
 import { Model } from '../Model';
 import { theme } from './Layout';

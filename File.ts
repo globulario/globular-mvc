@@ -1,5 +1,5 @@
 import { Model } from './Model';
-import { readDir } from "globular-web-client/lib/api";
+import { readDir } from "globular-web-client/api";
 
 /**
  * Server side file accessor. That 

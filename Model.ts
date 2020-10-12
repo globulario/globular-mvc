@@ -1,6 +1,6 @@
 // Globular conneciton.
 import * as GlobularWebClient from "globular-web-client";
-import { GetConfigResponse, GetConfigRequest } from "globular-web-client/lib/admin/admin_pb";
+import { GetConfigResponse, GetConfigRequest } from "globular-web-client/admin/admin_pb";
 import { View } from "./View";
 
 export class Model {
@@ -93,7 +93,7 @@ export class Model {
      * Get the configuration from the configuration address 'config'
      * @param callback
      */
-    getConfig(callback) {
+    static getConfig(callback:any) {
         var xhttp = new XMLHttpRequest();
         xhttp.onreadystatechange = function () {
             if (this.readyState == 4 && this.status == 201) {
@@ -115,7 +115,7 @@ export class Model {
      * @param adminProxy The admin service proxy
      */
     init(initCallback: () => void, errorCallback: (err: any) => void) {
-        this.getConfig((config_: any) => {
+        Model.getConfig((config_: any) => {
 
             // Set the basic informations.
             this.config = {
@@ -147,9 +147,11 @@ export class Model {
                     );
 
                     // Call init callback.
+                    console.log(this.config)
                     initCallback()
 
                 }).catch((err: any) => {
+                    console.log(err)
                     errorCallback(err)
                 })
             }

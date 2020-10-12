@@ -1,6 +1,6 @@
 import { Model } from './Model';
 import { Permission } from './Permission';
-import { getRessourceOwners, getRessourcePermissions } from 'globular-web-client/lib/api';
+import { getRessourceOwners, getRessourcePermissions } from 'globular-web-client/api';
 
 
 /**

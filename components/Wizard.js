@@ -7,12 +7,7 @@ import '@polymer/paper-checkbox/paper-checkbox.js';
 import '@polymer/paper-badge/paper-badge.js';
 
 import { theme } from './Layout';
-
-function parseHTML(html) {
-    var t = document.createElement('template');
-    t.innerHTML = html;
-    return t.content.cloneNode(true);
-}
+import { Model } from '../Model';
 
 /**
  * Search Box
@@ -53,8 +48,17 @@ export class Wizard extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
             ${theme}
+            paper-card h3 {
+                margin-block-end: 0px;
+            }
+
             paper-input iron-icon{
                 margin-right: 10px;
+            }
+
+            paper-tooltip p{
+                min-width:200px; 
+                font-size: 1.35em;
             }
 
             .card-title{
@@ -151,7 +155,7 @@ export class Wizard extends HTMLElement {
                 <div id="step-numbers" style="display: flex; flex-grow: 1;"></div>
                 <paper-button id="previous_btn" style="display:none">previous</paper-button>
                 <paper-button id="next_btn">next</paper-button>
-                <paper-button id="close_btn" style="display:none">close</paper-button>
+                <paper-button id="close_btn" style="display:none">Done</paper-button>
             </div>
         </paper-card>
         `
@@ -273,7 +277,7 @@ export class Wizard extends HTMLElement {
      * Display the next page.
      */
     next() {
-
+        
         if (this.index < this.pages.length - 1) {
             this.index++
             this.nexBtn.style.display = "block"
@@ -300,6 +304,10 @@ export class Wizard extends HTMLElement {
         }
 
         this.stepsButton[this.index].classList.add("active")
+
+        // publish local event.
+        Model.eventHub.publish("wizard_next_page_evt", {index: this.index, nextBtn: this.stepsButton[this.index]}, true)
+
     }
 
     previous() {

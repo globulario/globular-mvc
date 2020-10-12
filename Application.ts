@@ -1,5 +1,5 @@
 import { Model } from './Model';
-import * as ressource from "globular-web-client/lib/ressource/ressource_pb";
+import * as ressource from "globular-web-client/ressource/ressource_pb";
 import * as jwt from "jwt-decode";
 import { ApplicationView } from "./ApplicationView";
 import { Account } from "./Account";
@@ -9,22 +9,22 @@ import {
   FindRqst,
   FindResp,
   DeleteOneRqst
-} from "globular-web-client/lib/persistence/persistence_pb";
+} from "globular-web-client/persistence/persistence_pb";
 import { v4 as uuidv4 } from "uuid";
 
 /**
  * That class can be use to create any other application.
  */
 export class Application extends Model {
-  
+
   public static uuid: string;
   public static language: string;
-  private static infos:Map<string, any>;
+  private static infos: Map<string, any>;
 
   protected name: string;
   protected title: string;
   protected account: Account;
-  
+
 
   // Event listener's
   private login_event_listener: string;
@@ -192,13 +192,16 @@ export class Application extends Model {
         );
 
         // Get backend application infos.
-        Application.getAllApplicationInfo((infos:Array<any>)=>{
+        Application.getAllApplicationInfo((infos: Array<any>) => {
           if (initCallback != undefined) {
             (<ApplicationView>this.view).setIcon(Application.getApplicationInfo(this.name).icon)
             this.view.init()
             initCallback();
           }
-        }, (err:any)=>{console.log(err)})
+        }, (err: any) => {
+          console.log(err)
+          initCallback();
+        })
 
         // Connect automatically...
         let rememberMe = localStorage.getItem("remember_me");
@@ -239,26 +242,26 @@ export class Application extends Model {
    * @param callback 
    * @param errorCallback 
    */
-  static getAllApplicationInfo(callback:(infos:Array<any>)=>void, errorCallback:(err:any)=>void){
+  static getAllApplicationInfo(callback: (infos: Array<any>) => void, errorCallback: (err: any) => void) {
     let rqst = new ressource.GetAllApplicationsInfoRqst
-    
+
     Model.globular.ressourceService.getAllApplicationsInfo(rqst, {})
-    .then((rsp:ressource.GetAllApplicationsInfoRsp)=>{
-      let infos = JSON.parse(rsp.getResult())
-      Application.infos = new Map<string, any>();
-      for(var i=0; i < infos.length; i++){
-        Application.infos.set(infos[i]._id, infos[i]);
-      }
-      callback(infos)
-    })
-    .catch(errorCallback)
+      .then((rsp: ressource.GetAllApplicationsInfoRsp) => {
+        let infos = JSON.parse(rsp.getResult())
+        Application.infos = new Map<string, any>();
+        for (var i = 0; i < infos.length; i++) {
+          Application.infos.set(infos[i]._id, infos[i]);
+        }
+        callback(infos)
+      })
+      .catch(errorCallback)
   }
 
   /**
    * Return application infos.
    * @param id 
    */
-  static getApplicationInfo(id: string): any{
+  static getApplicationInfo(id: string): any {
     return Application.infos.get(id)
   }
 
@@ -668,10 +671,10 @@ export class Application extends Model {
     });
   }
 
-  removeNotification(notification: Notification) {}
+  removeNotification(notification: Notification) { }
 
   /**
    * Remove all notification.
    */
-  clearNotifications(type: NotificationType) {}
+  clearNotifications(type: NotificationType) { }
 }
