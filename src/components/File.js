@@ -167,8 +167,6 @@ export class FilesView extends HTMLElement {
         // get the div.
         this.div = this.shadowRoot.getElementById(id)
         this.div.onscroll = ()=>{
-            console.log("vagin!")
-
             const headers = this.div.getElementsByClassName("files-list-view-header")
             if(this.div.scrollTop > 0){
                 for(var h of headers){
@@ -245,8 +243,6 @@ export class FilesListView extends FilesView {
                 }
                 mime = f.mime.split(";")[0].split("/")
             }
-
-
 
             // Set the text.
             let html = `
@@ -530,6 +526,12 @@ export class FileNavigator extends HTMLElement {
 
         // The root div.
         this.div = null
+
+        // That control the heigth of the file navigator.
+        this.height = 640
+
+        // The control width
+        this.width = 250
     }
 
 
@@ -668,7 +670,7 @@ export class FileNavigator extends HTMLElement {
                 ${theme}
             </style>
 
-            <div id="file-navigator-div">
+            <div id="file-navigator-div" style="max-width: ${this.width}px; min-width: ${this.width}px; max-height: ${this.height}px; min-height: ${this.height}px; overflow: auto;">
                 
             </div>
             `
@@ -883,7 +885,6 @@ export class FileExplorer extends HTMLElement {
                 display: flex;
                 flex-direction: column;
                 min-width: 800px;
-                min-height: 640px;
             }
 
             .card-actions{

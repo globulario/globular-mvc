@@ -93,7 +93,7 @@ export class Model {
      * Get the configuration from the configuration address 'config'
      * @param callback
      */
-    getConfig(callback) {
+    getConfig(callback: any) {
         var xhttp = new XMLHttpRequest();
         xhttp.onreadystatechange = function () {
             if (this.readyState == 4 && this.status == 201) {
