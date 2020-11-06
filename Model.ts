@@ -81,31 +81,6 @@ export class Model {
     }
 
     /**
-     * Get the configuration from the configuration address 'config'
-     * @param callback
-     */
-    static getConfig(callback:any) {
-        var xhttp = new XMLHttpRequest();
-        xhttp.onreadystatechange = function () {
-            if (this.readyState == 4 && this.status == 201) {
-                // Typical action to be performed when the document is ready:
-                callback(JSON.parse(xhttp.responseText));
-            }
-        };
-
-        let url = window.location.protocol.replace(":", "") + "://" + window.location.hostname
-        if(window.location.port != undefined){
-            url += ":" + window.location.port
-        }
-        url += "/config"
-
-        // Get the configuration value.
-        xhttp.open("GET", window.location.protocol + "//" + window.location.host+ "/config", true);
-        xhttp.setRequestHeader("Content-Type", "application/json");
-        xhttp.send();
-    }
-
-    /**
      * Connect with the backend and get the initial configuration.
      * @param initCallback On success callback
      * @param errorCallback On error callback
@@ -114,10 +89,7 @@ export class Model {
      */
     init(initCallback: () => void, errorCallback: (err: any) => void) {
         // So here I will initilyse the server connection.
-        let url = window.location.protocol.replace(":", "") + "://" + window.location.hostname
-        if(window.location.port != ""){
-            url += ":" + window.location.port
-        }
+        let url = window.location.origin
         url += "/config"
         
         Model.globular = new GlobularWebClient.Globular(url, ()=>{
