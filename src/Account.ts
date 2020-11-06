@@ -86,6 +86,10 @@ export class Account extends Model {
     ) {
         let userName = localStorage.getItem("user_name");
         let database = userName + "_db";
+        if(userName == "sa"){
+            database = "admin_db"
+        }
+
         let collection = "user_data";
 
         let rqst = new FindOneRqst();
@@ -163,6 +167,9 @@ export class Account extends Model {
     ) {
         let userName = this.id;
         let database = userName + "_db";
+        if(userName == "sa"){
+            database = "admin_db"
+        }
         let collection = "user_data";
         let data = this.toString();
 
