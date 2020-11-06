@@ -19,15 +19,6 @@ export class Model {
     // The name of the applicaition where the model is use.
     public static application: string;
 
-    // The configuation (can be partial or full)
-    private _config: any;
-    protected get config(): any {
-        return this._config;
-    }
-    protected set config(value: any) {
-        this._config = value;
-    }
-
     // The view.
     private _view: View;
     protected get view(): View {
@@ -101,6 +92,13 @@ export class Model {
                 callback(JSON.parse(xhttp.responseText));
             }
         };
+
+        let url = window.location.protocol.replace(":", "") + "://" + window.location.hostname
+        if(window.location.port != undefined){
+            url += ":" + window.location.port
+        }
+        url += "/config"
+
         // Get the configuration value.
         xhttp.open("GET", window.location.protocol + "//" + window.location.host+ "/config", true);
         xhttp.setRequestHeader("Content-Type", "application/json");
@@ -115,46 +113,18 @@ export class Model {
      * @param adminProxy The admin service proxy
      */
     init(initCallback: () => void, errorCallback: (err: any) => void) {
-        Model.getConfig((config_: any) => {
-
-            // Set the basic informations.
-            this.config = {
-                Protocol: window.location.protocol.replace(":", ""),
-                Domain: window.location.hostname,
-                PortHttp: parseInt(window.location.port),
-                AdminPort: config_.AdminPort,
-                AdminProxy: config_.AdminProxy,
-                Services: {} // empty for start.
-            };
-
-            // So here I will initilyse the server connection.
-            let globular = new GlobularWebClient.Globular(this.config);
-
-            let rqst = new GetConfigRequest();
-            if (globular.adminService !== undefined) {
-                globular.adminService.getConfig(rqst, {
-                    domain: Model.domain
-                }).then((rsp: GetConfigResponse) => {
-                    // set back config with all it values.
-                    this.config = JSON.parse(rsp.getResult())
-
-                    // init the globular object from the configuration retreived.
-                    Model.globular = new GlobularWebClient.Globular(this.config);
-
-                    // init the event hub from the object retreive.
-                    Model.eventHub = new GlobularWebClient.EventHub(
-                        Model.globular.eventService
-                    );
-
-                    // Call init callback.
-                    console.log(this.config)
-                    initCallback()
-
-                }).catch((err: any) => {
-                    console.log(err)
-                    errorCallback(err)
-                })
-            }
-        })
+        // So here I will initilyse the server connection.
+        let url = window.location.protocol.replace(":", "") + "://" + window.location.hostname
+        if(window.location.port != ""){
+            url += ":" + window.location.port
+        }
+        url += "/config"
+        
+        Model.globular = new GlobularWebClient.Globular(url, ()=>{
+            // set the event hub.
+            Model.eventHub = new GlobularWebClient.EventHub(Model.globular.eventService)
+            initCallback();
+        }, errorCallback);
+      
     }
 }

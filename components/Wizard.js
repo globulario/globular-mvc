@@ -5,7 +5,11 @@ import '@polymer/paper-card/paper-card.js';
 import '@polymer/paper-button/paper-button.js';
 import '@polymer/paper-checkbox/paper-checkbox.js';
 import '@polymer/paper-badge/paper-badge.js';
-
+import '@polymer/paper-tooltip/paper-tooltip.js';
+import '@polymer/paper-radio-button/paper-radio-button.js';
+import '@polymer/paper-radio-group/paper-radio-group.js';
+import '@polymer/paper-toggle-button/paper-toggle-button.js';
+import '@polymer/paper-spinner/paper-spinner.js';
 import { theme } from './Layout';
 import { Model } from '../Model';
 
@@ -14,7 +18,6 @@ import { Model } from '../Model';
  */
 export class Wizard extends HTMLElement {
     // attributes.
-
 
     // Create the applicaiton view.
     constructor() {
@@ -34,11 +37,20 @@ export class Wizard extends HTMLElement {
         // the div where action are listed.
         this.stepsDiv = null;
 
+        // the last page to display before closing the wizard
+        this.summaryPage = null;
+
         // the initial width
         this.width = 500;
 
         // the current index.
         this.index = 0;
+
+        // A function pointer call we the all is done
+        this.ondone = null;
+
+        // A function call before close the wizard
+        this.onclose = null;
     }
 
     // The connection callback.
@@ -149,13 +161,15 @@ export class Wizard extends HTMLElement {
 
             <div class="card-content" id="card-content">
                 <div id="pages"></div>
+                <div id="summary_page"></div>
             </div>
 
             <div class="card-actions" id="card-actions">
                 <div id="step-numbers" style="display: flex; flex-grow: 1;"></div>
                 <paper-button id="previous_btn" style="display:none">previous</paper-button>
                 <paper-button id="next_btn">next</paper-button>
-                <paper-button id="close_btn" style="display:none">Done</paper-button>
+                <paper-button id="done_btn" style="display:none">Done</paper-button>
+                <paper-button id="close_btn" style="display:none">Close</paper-button>
             </div>
         </paper-card>
         `
@@ -171,6 +185,7 @@ export class Wizard extends HTMLElement {
         // Action 
         this.nexBtn = this.shadowRoot.getElementById("next_btn")
         this.previousBtn = this.shadowRoot.getElementById("previous_btn")
+        this.doneBtn = this.shadowRoot.getElementById("done_btn")
         this.closeBtn = this.shadowRoot.getElementById("close_btn")
 
         // go to next page.
@@ -180,6 +195,35 @@ export class Wizard extends HTMLElement {
 
         this.previousBtn.onclick = () => {
             this.previous()
+        }
+
+
+        this.doneBtn.onclick = () =>{
+            // hide the content.
+            this.nexBtn.style.display = "none"
+            this.previousBtn.style.display = "none"
+            this.doneBtn.style.display = "none"
+            this.stepsNumberDiv.style.display = "none"
+            this.pagesDiv.style.display = "none"
+            this.pagesDiv.style.transform = `translate(0px)`
+            // Show the close btn.
+            this.closeBtn.style.display = "block"
+
+            // append the summary page.
+            if(this.summaryPage != undefined){
+                this.getElementById("summary_page").appendChild(this.summaryPage)
+            }
+            if(this.ondone != null){
+                this.ondone()
+            }
+        }
+
+        // Close the wizard.
+        this.closeBtn.onclick = ()=>{
+            this.parentNode.removeChild(this)
+            if(this.onclose != null){
+                this.onclose()
+            }
         }
     }
 
@@ -191,6 +235,20 @@ export class Wizard extends HTMLElement {
     // Use it to get elment from inside wizard dom.
     getElementById(id) {
         return this.shadowRoot.getElementById(id)
+    }
+
+    // Return list of element by their classname.
+    getElementsByClassName(className) {
+        return this.shadowRoot.querySelectorAll("." + className)
+    }
+
+    // Set the summary page.
+    setSummaryPage(content){
+        this.summaryPage = document.createElement("div")
+        content.style.padding = "15px"
+        this.summaryPage.style.minWidth = this.width + "px"
+        this.summaryPage.style.maxWidth = this.width + "px"
+        this.summaryPage.appendChild(content)
     }
 
     // Append a configuration page.
@@ -250,9 +308,9 @@ export class Wizard extends HTMLElement {
             // show the close button
             if (this.index == this.pages.length - 1) {
                 this.nexBtn.style.display = "none"
-                this.closeBtn.style.display = "block"
+                this.doneBtn.style.display = "block"
             }else{
-                this.closeBtn.style.display = "none"
+                this.doneBtn.style.display = "none"
             }
 
             // show the previous button
@@ -287,7 +345,7 @@ export class Wizard extends HTMLElement {
         // show the close button
         if (this.index == this.pages.length - 1) {
             this.nexBtn.style.display = "none"
-            this.closeBtn.style.display = "block"
+            this.doneBtn.style.display = "block"
         }
 
         // show the previous button
@@ -306,7 +364,9 @@ export class Wizard extends HTMLElement {
         this.stepsButton[this.index].classList.add("active")
 
         // publish local event.
-        Model.eventHub.publish("wizard_next_page_evt", {index: this.index, nextBtn: this.stepsButton[this.index]}, true)
+        if (!this.stepsButton[this.index].classList.contains("disable")) {
+            Model.eventHub.publish("wizard_next_page_evt", {index: this.index, nextBtn: this.stepsButton[this.index]}, true)
+        }
 
     }
 
@@ -322,9 +382,9 @@ export class Wizard extends HTMLElement {
 
         if (this.pages.length > 1 && this.index < this.pages.length - 1) {
             this.nexBtn.style.display = "block";
-            this.closeBtn.style.display = "none"
+            this.doneBtn.style.display = "none"
         } else {
-            this.closeBtn.style.display = "block"
+            this.doneBtn.style.display = "block"
         }
 
         for (var i = 0; i < this.pages.length; i++) {
@@ -333,9 +393,11 @@ export class Wizard extends HTMLElement {
                 this.stepsButton[i].classList.add("disable")
             }
         }
-
+        this.enableNextBtn()
         this.stepsButton[this.index].classList.add("active")
     }
+
+    
 }
 
 customElements.define('globular-wizard', Wizard)
