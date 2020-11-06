@@ -1,11 +1,11 @@
 {
   "name": "globular-mvc",
-  "version": "1.0.47",
+  "version": "1.0.63",
   "description": "Generic template to create web-application that made use of globular as backend and materialize as css (wrap in web-component's)",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc",
-    "pack": "webpack --env production",
+    "build_": "tsc && cp package.json dist/ ",
+    "build": "",
     "format": "prettier --write \"src/**/*.ts\" \"src/**/*.js\"",
     "lint": "tslint -p tsconfig.json",
     "prepare": "npm run build",
@@ -46,12 +46,19 @@
     "@polymer/paper-input": "^3.2.1",
     "@polymer/paper-item": "^3.0.1",
     "@polymer/paper-listbox": "^3.0.1",
+    "@polymer/paper-radio-button": "^3.0.1",
+    "@polymer/paper-radio-group": "^3.0.1",
     "@polymer/paper-ripple": "^3.0.2",
     "@polymer/paper-spinner": "^3.0.2",
+    "@polymer/paper-toggle-button": "^3.0.1",
     "@polymer/paper-tooltip": "^3.0.1",
     "@types/materialize-css": "^1.0.7",
     "@types/uuid": "^8.0.0",
+<<<<<<< HEAD
     "globular-web-client": "^1.1.73",
+=======
+    "globular-web-client": "^1.1.69",
+>>>>>>> 9c05b5bebd05f896ec3181fb2bb88b0ebb7e213c
     "materialize-css": "^1.0.0",
     "uuid": "^8.1.0",
     "web-animations-js": "^2.3.2"

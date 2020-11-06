@@ -8,7 +8,11 @@ import {
   InsertOneRqst,
   FindRqst,
   FindResp,
+<<<<<<< HEAD:src/Application.ts
   DeleteOneRqst,
+=======
+  DeleteOneRqst
+>>>>>>> 9c05b5bebd05f896ec3181fb2bb88b0ebb7e213c:Application.ts
 } from "globular-web-client/persistence/persistence_pb";
 import { v4 as uuidv4 } from "uuid";
 
@@ -682,10 +686,10 @@ export class Application extends Model {
     });
   }
 
-  removeNotification(notification: Notification) {}
+  removeNotification(notification: Notification) { }
 
   /**
    * Remove all notification.
    */
-  clearNotifications(type: NotificationType) {}
+  clearNotifications(type: NotificationType) { }
 }

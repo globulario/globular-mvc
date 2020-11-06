@@ -15,6 +15,7 @@ import { ApplicationsMenu } from "./components/Applications";
 import { Camera } from "./components/Camera";
 import { FileExplorer} from "./components/File"
 import { SearchBar} from "./components/Search"
+import { Wizard} from "./components/Wizard"
 
 // This variable is there to give acces to wait and resume...
 export let applicationView: ApplicationView;
