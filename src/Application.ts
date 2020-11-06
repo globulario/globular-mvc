@@ -1,5 +1,5 @@
 import { Model } from "./Model";
-import * as ressource from "globular-web-client/lib/ressource/ressource_pb";
+import * as ressource from "globular-web-client/ressource/ressource_pb";
 import * as jwt from "jwt-decode";
 import { ApplicationView } from "./ApplicationView";
 import { Account } from "./Account";
@@ -9,7 +9,7 @@ import {
   FindRqst,
   FindResp,
   DeleteOneRqst,
-} from "globular-web-client/lib/persistence/persistence_pb";
+} from "globular-web-client/persistence/persistence_pb";
 import { v4 as uuidv4 } from "uuid";
 
 /**
@@ -60,12 +60,13 @@ export class Application extends Model {
 
   /**
    * Connect the listner's and call the initcallback.
+   * @param url the backend url.
    * @param initCallback
    * @param errorCallback
    * @param configurationPort
    */
-  init(initCallback: () => void, errorCallback: (err: any) => void) {
-    super.init(() => {
+  init( url:string, initCallback: () => void, errorCallback: (err: any) => void) {
+    super.init(url, () => {
       // Here I will connect the listener's
 
       // The login event.
