@@ -87,10 +87,10 @@ export class Model {
      * @param adminPort The admin service port
      * @param adminProxy The admin service proxy
      */
-    init(initCallback: () => void, errorCallback: (err: any) => void) {
+    init(url:string , initCallback: () => void, errorCallback: (err: any) => void) {
         // So here I will initilyse the server connection.
-        let url = window.location.origin
-        url += "/config"
+        // let url = window.location.origin
+        // url += "/config"
         
         Model.globular = new GlobularWebClient.Globular(url, ()=>{
             // set the event hub.

@@ -54,11 +54,7 @@
     "@polymer/paper-tooltip": "^3.0.1",
     "@types/materialize-css": "^1.0.7",
     "@types/uuid": "^8.0.0",
-<<<<<<< HEAD
     "globular-web-client": "^1.1.73",
-=======
-    "globular-web-client": "^1.1.69",
->>>>>>> 9c05b5bebd05f896ec3181fb2bb88b0ebb7e213c
     "materialize-css": "^1.0.0",
     "uuid": "^8.1.0",
     "web-animations-js": "^2.3.2"

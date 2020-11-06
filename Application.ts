@@ -8,11 +8,7 @@ import {
   InsertOneRqst,
   FindRqst,
   FindResp,
-<<<<<<< HEAD:src/Application.ts
-  DeleteOneRqst,
-=======
   DeleteOneRqst
->>>>>>> 9c05b5bebd05f896ec3181fb2bb88b0ebb7e213c:Application.ts
 } from "globular-web-client/persistence/persistence_pb";
 import { v4 as uuidv4 } from "uuid";
 
@@ -69,7 +65,7 @@ export class Application extends Model {
    * @param errorCallback
    * @param configurationPort
    */
-  init( url:string, initCallback: () => void, errorCallback: (err: any) => void) {
+  init(url:string, initCallback: () => void, errorCallback: (err: any) => void) {
     super.init(url, () => {
       // Here I will connect the listener's
 
