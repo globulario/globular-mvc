@@ -8,7 +8,7 @@ import {
   InsertOneRqst,
   FindRqst,
   FindResp,
-  DeleteOneRqst
+  DeleteOneRqst,
 } from "globular-web-client/persistence/persistence_pb";
 import { v4 as uuidv4 } from "uuid";
 
@@ -65,172 +65,187 @@ export class Application extends Model {
    * @param errorCallback
    * @param configurationPort
    */
-  init(url:string, initCallback: () => void, errorCallback: (err: any) => void) {
-    super.init(url, () => {
-      // Here I will connect the listener's
+  init(
+    url: string,
+    initCallback: () => void,
+    errorCallback: (err: any) => void
+  ) {
+    super.init(
+      url,
+      () => {
+        // Here I will connect the listener's
 
-      // The login event.
-      Model.eventHub.subscribe(
-        "login_event_",
-        (uuid: string) => {
-          this.login_event_listener = uuid;
-        },
-        (evt: any) => {
-          // Here I will try to login the user.
-          this.login(
-            evt.userId,
-            evt.pwd,
-            (account: Account) => {
-              console.log("--> login succeed!", account);
-              // Here I will send a login success.
-              Model.eventHub.publish("login_event", account, true);
-            },
-            (err: any) => {
-              this.view.displayMessage(err, 4000);
-            }
-          );
-        },
-        true
-      );
-
-      Model.eventHub.subscribe(
-        "logout_event_",
-        (uuid: string) => {
-          this.logout_event_listener = uuid;
-        },
-        (evt: any) => {
-          this.logout();
-        },
-        true
-      );
-
-      // The register event.
-      Model.eventHub.subscribe(
-        "register_event_",
-        (uuid: string) => {
-          this.register_event_listener = uuid;
-        },
-        (evt: any) => {
-          // Here I will try to login the user.
-          this.register(
-            evt.userId,
-            evt.email,
-            evt.pwd,
-            evt.repwd,
-            (data: any) => {
-              console.log("--> register succeed!", data);
-            },
-            (err: any) => {
-              this.view.displayMessage(err, 4000);
-            }
-          );
-        },
-        true
-      );
-
-      // The update profile picuture event.
-      Model.eventHub.subscribe(
-        "update_profile_picture_event_",
-        (uuid: string) => {
-          this.update_profile_picture_listener = uuid;
-        },
-        (dataUrl: string) => {
-          // Here I will try to login the user.
-          this.account.changeProfilImage(
-            dataUrl,
-            () => {
-              /** Nothing here. */
-            },
-            (err: any) => {
-              this.view.displayMessage(err, 3000);
-            }
-          );
-        },
-        true
-      );
-
-      // Delete user notification.
-      Model.eventHub.subscribe(
-        "delete_notification_event_",
-        (uuid: string) => {
-          this.delete_notification_event_listener = uuid;
-        },
-        (notification: any) => {
-          notification = Notification.fromObject(notification);
-          let rqst = new DeleteOneRqst();
-          let db = this.account.id + "_db";
-          rqst.setId(db);
-          rqst.setDatabase(db);
-          rqst.setCollection("Notifications");
-          rqst.setQuery(`{"_id":"${notification.id}"}`);
-          Model.globular.persistenceService
-            .deleteOne(rqst, {
-              token: localStorage.getItem("user_token"),
-              application: Model.application,
-              domain: Model.domain,
-            })
-            .then(() => {
-              // The notification is not deleted so I will send network event to remove it from
-              // the display.
-              Model.eventHub.publish(
-                notification.id + "_delete_notification_event",
-                notification.toString(),
-                false
-              );
-            })
-            .catch((err: any) => {
-              this.view.displayMessage(err, 4000);
-            });
-        },
-        true
-      );
-
-      // Get backend application infos.
-      Application.getAllApplicationInfo(
-        (infos: Array<any>) => {
-          if (initCallback != undefined) {
-            (<ApplicationView>this.view).setIcon(
-              Application.getApplicationInfo(this.name).icon
+        // The login event.
+        Model.eventHub.subscribe(
+          "login_event_",
+          (uuid: string) => {
+            this.login_event_listener = uuid;
+          },
+          (evt: any) => {
+            // Here I will try to login the user.
+            this.login(
+              evt.userId,
+              evt.pwd,
+              (account: Account) => {
+                console.log("--> login succeed!", account);
+                // Here I will send a login success.
+                Model.eventHub.publish("login_event", account, true);
+              },
+              (err: any) => {
+                this.view.displayMessage(err, 4000);
+              }
             );
-            this.view.init();
-            initCallback();
-          }
-        },
-        (err: any) => {
-          console.log(err);
-        }
-      );
-
-      // Connect automatically...
-      let rememberMe = localStorage.getItem("remember_me");
-      if (rememberMe) {
-        // Here I will renew the last token...
-        let userId = localStorage.getItem("user_name");
-        this.view.wait(
-          "<div>log in</div><div>" + userId + "</div><div>...</div>"
+          },
+          true
         );
 
-        this.refreshToken(
-          (account: Account) => {
-            // send a login event.
-            Model.eventHub.publish("login_event", account, true);
-            this.view.resume();
-            this.startRefreshToken();
+        Model.eventHub.subscribe(
+          "logout_event_",
+          (uuid: string) => {
+            this.logout_event_listener = uuid;
+          },
+          (evt: any) => {
+            this.logout();
+          },
+          true
+        );
+
+        // The register event.
+        Model.eventHub.subscribe(
+          "register_event_",
+          (uuid: string) => {
+            this.register_event_listener = uuid;
+          },
+          (evt: any) => {
+            // Here I will try to login the user.
+            this.register(
+              evt.userId,
+              evt.email,
+              evt.pwd,
+              evt.repwd,
+              (data: any) => {
+                console.log("--> register succeed!", data);
+              },
+              (err: any) => {
+                this.view.displayMessage(err, 4000);
+              }
+            );
+          },
+          true
+        );
+
+        // The update profile picuture event.
+        Model.eventHub.subscribe(
+          "update_profile_picture_event_",
+          (uuid: string) => {
+            this.update_profile_picture_listener = uuid;
+          },
+          (dataUrl: string) => {
+            // Here I will try to login the user.
+            this.account.changeProfilImage(
+              dataUrl,
+              () => {
+                /** Nothing here. */
+              },
+              (err: any) => {
+                this.view.displayMessage(err, 3000);
+              }
+            );
+          },
+          true
+        );
+
+        // Delete user notification.
+        Model.eventHub.subscribe(
+          "delete_notification_event_",
+          (uuid: string) => {
+            this.delete_notification_event_listener = uuid;
+          },
+          (notification: any) => {
+            notification = Notification.fromObject(notification);
+            let rqst = new DeleteOneRqst();
+            let db = this.account.id + "_db";
+            rqst.setId(db);
+            rqst.setDatabase(db);
+            rqst.setCollection("Notifications");
+            rqst.setQuery(`{"_id":"${notification.id}"}`);
+            Model.globular.persistenceService
+              .deleteOne(rqst, {
+                token: localStorage.getItem("user_token"),
+                application: Model.application,
+                domain: Model.domain,
+              })
+              .then(() => {
+                // The notification is not deleted so I will send network event to remove it from
+                // the display.
+                Model.eventHub.publish(
+                  notification.id + "_delete_notification_event",
+                  notification.toString(),
+                  false
+                );
+              })
+              .catch((err: any) => {
+                this.view.displayMessage(err, 4000);
+              });
+          },
+          true
+        );
+
+        // Get backend application infos.
+        Application.getAllApplicationInfo(
+          (infos: Array<any>) => {
+            if (initCallback != undefined) {
+              let appInfo = Application.getApplicationInfo(this.name);
+              if (appInfo != undefined) {
+                (<ApplicationView>this.view).setIcon(
+                  Application.getApplicationInfo(this.name).icon
+                );
+                this.view.init();
+                
+              }else{
+                console.log("no application information found for ", this.name)
+              }
+              
+              initCallback();
+            }
           },
           (err: any) => {
-            this.view.displayMessage(err, 4000);
-            this.view.resume();
+            console.log(err);
           }
         );
-      } else {
-        // simply remove invalid token and user infos.
-        localStorage.removeItem("remember_me");
-        localStorage.removeItem("user_token");
-        localStorage.removeItem("user_name");
-        localStorage.removeItem("user_email");
-        localStorage.removeItem("token_expired");
-      }
-    }, errorCallback);
+
+        // Connect automatically...
+        let rememberMe = localStorage.getItem("remember_me");
+        if (rememberMe) {
+          // Here I will renew the last token...
+          let userId = localStorage.getItem("user_name");
+          this.view.wait(
+            "<div>log in</div><div>" + userId + "</div><div>...</div>"
+          );
+
+          this.refreshToken(
+            (account: Account) => {
+              // send a login event.
+              Model.eventHub.publish("login_event", account, true);
+              this.view.resume();
+              this.startRefreshToken();
+            },
+            (err: any) => {
+              this.view.displayMessage(err, 4000);
+              this.view.resume();
+            }
+          );
+        } else {
+          // simply remove invalid token and user infos.
+          localStorage.removeItem("remember_me");
+          localStorage.removeItem("user_token");
+          localStorage.removeItem("user_name");
+          localStorage.removeItem("user_email");
+          localStorage.removeItem("token_expired");
+        }
+      },
+      errorCallback
+    );
   }
 
   /**
@@ -337,9 +352,9 @@ export class Application extends Model {
   private startRefreshToken() {
     this.initNotifications();
     setInterval(() => {
-      let isExpired =
-        parseInt(localStorage.getItem("token_expired"), 10) <
-        Math.floor(Date.now() / 1000);
+      let isExpired = true;
+      /*parseInt(localStorage.getItem("token_expired"), 10) <
+        Math.floor(Date.now() / 1000);*/
       if (isExpired) {
         this.refreshToken(
           (account: Account) => {
@@ -461,20 +476,20 @@ export class Application extends Model {
 
         // Init the user data...
 
-          this.account.initData(
-            (account: Account) => {
-              Model.eventHub.publish("login_event", account, false);
-              onLogin(account);
-              this.view.resume();
-              // Now I will set the application and user notification.
-            },
-            (err: any) => {
-              Model.eventHub.publish("login_event", this.account, false);
-              onLogin(this.account);
-              this.view.resume();
-              onError(err);
-            }
-          );
+        this.account.initData(
+          (account: Account) => {
+            Model.eventHub.publish("login_event", account, false);
+            onLogin(account);
+            this.view.resume();
+            // Now I will set the application and user notification.
+          },
+          (err: any) => {
+            Model.eventHub.publish("login_event", this.account, false);
+            onLogin(this.account);
+            this.view.resume();
+            onError(err);
+          }
+        );
       })
       .catch((err) => {
         this.view.resume();
@@ -682,10 +697,10 @@ export class Application extends Model {
     });
   }
 
-  removeNotification(notification: Notification) { }
+  removeNotification(notification: Notification) {}
 
   /**
    * Remove all notification.
    */
-  clearNotifications(type: NotificationType) { }
+  clearNotifications(type: NotificationType) {}
 }
