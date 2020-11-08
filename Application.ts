@@ -205,7 +205,7 @@ export class Application extends Model {
               }else{
                 console.log("no application information found for ", this.name)
               }
-              
+
               initCallback();
             }
           },
@@ -352,9 +352,8 @@ export class Application extends Model {
   private startRefreshToken() {
     this.initNotifications();
     setInterval(() => {
-      let isExpired = true;
-      /*parseInt(localStorage.getItem("token_expired"), 10) <
-        Math.floor(Date.now() / 1000);*/
+      let isExpired = parseInt(localStorage.getItem("token_expired"), 10) <
+        Math.floor(Date.now() / 1000);
       if (isExpired) {
         this.refreshToken(
           (account: Account) => {
