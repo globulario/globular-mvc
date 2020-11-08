@@ -110,7 +110,12 @@ export class Account extends Model {
                 successCallback(JSON.parse(rsp.getJsonstr()));
             })
             .catch((err: any) => {
-                errorCallback(err);
+                if(err.code == 13){
+                    // empty user data...
+                    successCallback({});
+                }else{
+                    errorCallback(err);
+                }
             });
     }
 
@@ -137,7 +142,12 @@ export class Account extends Model {
             },
             (err: any) => {
                 this.hasData = false;
-                onError(err);
+                // onError(err);
+                console.log("no data found at this time for user ", userName)
+                // Call success callback ...
+                if (callback != undefined) {
+                    callback(this);
+                }
             }
         );
     }

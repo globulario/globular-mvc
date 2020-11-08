@@ -165,6 +165,9 @@ export class Application extends Model {
             notification = Notification.fromObject(notification);
             let rqst = new DeleteOneRqst();
             let db = this.account.id + "_db";
+            if (this.account.id == "sa") {
+              db = "admin_db";
+            }
             rqst.setId(db);
             rqst.setDatabase(db);
             rqst.setCollection("Notifications");
@@ -201,11 +204,11 @@ export class Application extends Model {
                   Application.getApplicationInfo(this.name).icon
                 );
                 this.view.init();
-                
-              }else{
-                console.log("no application information found for ", this.name)
+              } else {
+                console.log("no application information found for ", this.name, " make sure your application has the correct name in your class derived from Application!");
               }
 
+             
               initCallback();
             }
           },
@@ -352,7 +355,8 @@ export class Application extends Model {
   private startRefreshToken() {
     this.initNotifications();
     setInterval(() => {
-      let isExpired = parseInt(localStorage.getItem("token_expired"), 10) <
+      let isExpired =
+        parseInt(localStorage.getItem("token_expired"), 10) <
         Math.floor(Date.now() / 1000);
       if (isExpired) {
         this.refreshToken(
@@ -605,6 +609,9 @@ export class Application extends Model {
       );
     } else {
       db = this.account.id + "_db";
+      if (this.account.id == "sa") {
+        db = "admin_db";
+      }
       // attach account informations.
       notification.sender = this.account.toString();
     }
@@ -659,6 +666,9 @@ export class Application extends Model {
       query = `{"_recipient":"${Model.application}"}`;
     } else {
       db = this.account.id + "_db";
+      if (this.account.id == "sa") {
+        db = "admin_db";
+      }
       query = `{"_recipient":"${this.account.id}"}`;
     }
 
