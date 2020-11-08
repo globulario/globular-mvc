@@ -94,7 +94,7 @@ export class Model {
         
         Model.globular = new GlobularWebClient.Globular(url, ()=>{
             // set the event hub.
-            Model.eventHub = new GlobularWebClient.EventHub(Model.globular.eventService)
+            Model.eventHub = Model.globular.eventHub;
             initCallback();
         }, errorCallback);
       
