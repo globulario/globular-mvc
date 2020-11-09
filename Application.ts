@@ -87,8 +87,8 @@ export class Application extends Model {
               evt.userId,
               evt.pwd,
               (account: Account) => {
-                console.log("--> login succeed!", account);
                 // Here I will send a login success.
+                console.log("=====> Application send login_event")
                 Model.eventHub.publish("login_event", account, true);
               },
               (err: any) => {
@@ -164,12 +164,16 @@ export class Application extends Model {
           (notification: any) => {
             notification = Notification.fromObject(notification);
             let rqst = new DeleteOneRqst();
-            let db = this.account.id + "_db";
+ 
             if (this.account.id == "sa") {
-              db = "admin_db";
+              rqst.setId("local_ressource");
+              rqst.setDatabase("local_ressource");
+            }else{
+              let db = this.account.id + "_db";
+              rqst.setId(db);
+              rqst.setDatabase(db);
             }
-            rqst.setId(db);
-            rqst.setDatabase(db);
+
             rqst.setCollection("Notifications");
             rqst.setQuery(`{"_id":"${notification.id}"}`);
             Model.globular.persistenceService
@@ -207,8 +211,6 @@ export class Application extends Model {
               } else {
                 console.log("no application information found for ", this.name, " make sure your application has the correct name in your class derived from Application!");
               }
-
-             
               initCallback();
             }
           },
@@ -229,8 +231,10 @@ export class Application extends Model {
           this.refreshToken(
             (account: Account) => {
               // send a login event.
+              console.log("=====> refresh token send login_event")
               Model.eventHub.publish("login_event", account, true);
               this.view.resume();
+
               this.startRefreshToken();
             },
             (err: any) => {
@@ -303,13 +307,25 @@ export class Application extends Model {
     onError: (err: any) => void
   ) {
     let rqst = new ressource.RefreshTokenRqst();
-    rqst.setToken(localStorage.getItem("user_token"));
+    let existingToken = localStorage.getItem("user_token")
+    if(existingToken == undefined){
+      onError("No token found to be refresh!")
+      return
+    }
+    if(existingToken.length == 0){
+      onError("Invalid token found!")
+      localStorage.removeItem("user_token")
+      return
+    }
+
+    rqst.setToken(existingToken);
 
     Model.globular.ressourceService
       .refreshToken(rqst)
       .then((rsp: ressource.RefreshTokenRsp) => {
         // Refresh the token at session timeout
         let token = rsp.getToken();
+ 
         let decoded = jwt(token);
         let userName = (<any>decoded).username;
         let email = (<any>decoded).email;
@@ -324,27 +340,20 @@ export class Application extends Model {
         this.account = new Account(userName, email);
 
         // Set the account infos...
-        if (userName != "sa") {
-          this.account.initData(initCallback, (err: any) => {
-            localStorage.removeItem("remember_me");
-            localStorage.removeItem("user_token");
-            localStorage.removeItem("user_name");
-            localStorage.removeItem("user_email");
-            localStorage.removeItem("token_expired");
-            onError(err);
-          });
-        } else {
+        this.account.initData(()=>{
           // sa is not a real account it's a role so it has no database
           initCallback(this.account);
-        }
+        }, onError);
+        
       })
       .catch((err) => {
         // remove old information in that case.
-        localStorage.removeItem("remember_me");
         localStorage.removeItem("user_token");
         localStorage.removeItem("user_name");
         localStorage.removeItem("user_email");
         localStorage.removeItem("token_expired");
+        localStorage.removeItem("remember_me");
+        console.log("fail to refesh token!")
         onError(err);
       });
   }
@@ -354,9 +363,9 @@ export class Application extends Model {
    */
   private startRefreshToken() {
     this.initNotifications();
-    setInterval(() => {
-      let isExpired =
-        parseInt(localStorage.getItem("token_expired"), 10) <
+
+    let __setInterval = setInterval(() => {
+      let isExpired = parseInt(localStorage.getItem("token_expired"), 10) <
         Math.floor(Date.now() / 1000);
       if (isExpired) {
         this.refreshToken(
@@ -366,6 +375,9 @@ export class Application extends Model {
           (err: any) => {
             // simply display the error on the view.
             this.view.displayMessage(err, 4000);
+            // Stop runing...
+            clearInterval(__setInterval)
+
           }
         );
       }
@@ -415,14 +427,16 @@ export class Application extends Model {
 
         // Callback on login.
         this.account = new Account(name, email);
-        if (name == "sa") {
+        if (name != "sa") {
           this.account.initData(
             (account: Account) => {
+              console.log("=====> Register send login_event")
               Model.eventHub.publish("login_event", account, false);
               this.view.resume();
               onRegister(this.account);
             },
             (err: any) => {
+              console.log("=====> Register send login_event")
               Model.eventHub.publish("login_event", this.account, false);
               onRegister(this.account);
               this.view.resume();
@@ -481,12 +495,14 @@ export class Application extends Model {
 
         this.account.initData(
           (account: Account) => {
+            
             Model.eventHub.publish("login_event", account, false);
             onLogin(account);
             this.view.resume();
             // Now I will set the application and user notification.
           },
           (err: any) => {
+            
             Model.eventHub.publish("login_event", this.account, false);
             onLogin(this.account);
             this.view.resume();
@@ -600,26 +616,33 @@ export class Application extends Model {
     onError: (err: any) => void
   ) {
     // first of all I will save the notificaiton.
-    let db: string;
+    
+        // Insert the notification in the db.
+        let rqst = new InsertOneRqst();
+
     if (notification.type == NotificationType.Application) {
+      let db: string;
       db = Model.application + "_db";
       console.log(Application.getApplicationInfo(this.name));
       notification.sender = JSON.stringify(
         Application.getApplicationInfo(this.name)
       );
+      rqst.setId(db);
+      rqst.setDatabase(db);
     } else {
-      db = this.account.id + "_db";
       if (this.account.id == "sa") {
-        db = "admin_db";
+        rqst.setId("local_ressource");
+        rqst.setDatabase("local_ressource");
+      }else{
+        let db = this.account.id + "_db";
+        rqst.setId(db);
+        rqst.setDatabase(db);
       }
       // attach account informations.
       notification.sender = this.account.toString();
     }
 
-    // Insert the notification in the db.
-    let rqst = new InsertOneRqst();
-    rqst.setId(db);
-    rqst.setDatabase(db);
+
     rqst.setCollection("Notifications");
 
     rqst.setJsonstr(notification.toString());
@@ -661,21 +684,27 @@ export class Application extends Model {
     let db: string;
     let query: string;
 
+    // Insert the notification in the db.
+    let rqst = new FindRqst();
+
     if (type == NotificationType.Application) {
       db = Model.application + "_db";
       query = `{"_recipient":"${Model.application}"}`;
+      rqst.setId(db);
+      rqst.setDatabase(db);
     } else {
-      db = this.account.id + "_db";
       if (this.account.id == "sa") {
-        db = "admin_db";
+        rqst.setId("local_ressource");
+        rqst.setDatabase("local_ressource");
+      }else{
+        let db = this.account.id + "_db";
+        rqst.setId(db);
+        rqst.setDatabase(db);
       }
       query = `{"_recipient":"${this.account.id}"}`;
     }
 
-    // Insert the notification in the db.
-    let rqst = new FindRqst();
-    rqst.setId(db);
-    rqst.setDatabase(db);
+
     rqst.setCollection("Notifications");
 
     rqst.setQuery(query);
