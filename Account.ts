@@ -1,5 +1,5 @@
 import { Model } from "./Model";
-import { FindOneRqst, ReplaceOneRqst, ReplaceOneRsp } from "globular-web-client/lib/persistence/persistence_pb";
+import { FindOneRqst, ReplaceOneRqst, ReplaceOneRsp } from "globular-web-client/persistence/persistence_pb";
 
 /**
  * Basic account class that contain the user id and email.
@@ -85,12 +85,18 @@ export class Account extends Model {
         errorCallback: (err: any) => void
     ) {
         let userName = localStorage.getItem("user_name");
-        let database = userName + "_db";
-        let collection = "user_data";
 
         let rqst = new FindOneRqst();
-        rqst.setId(database);
-        rqst.setDatabase(database);
+        if (userName == "sa") {
+            rqst.setId("local_ressource");
+            rqst.setDatabase("local_ressource");
+          }else{
+            let db = userName + "_db";
+            rqst.setId(db);
+            rqst.setDatabase(db);
+          }
+
+        let collection = "user_data";
         rqst.setCollection(collection);
         rqst.setQuery(query);
         rqst.setOptions("");
@@ -103,10 +109,18 @@ export class Account extends Model {
                 domain: Model.domain
             })
             .then((rsp: any) => {
-                successCallback(JSON.parse(rsp.getJsonstr()));
+                let data = JSON.parse(rsp.getJsonstr())
+                console.log(data)
+                successCallback(data);
             })
             .catch((err: any) => {
-                errorCallback(err);
+                console.log(err)
+                if(err.code == 13){
+                    // empty user data...
+                    successCallback({});
+                }else{
+                    errorCallback(err);
+                }
             });
     }
 
@@ -132,8 +146,14 @@ export class Account extends Model {
                 }
             },
             (err: any) => {
+                console.log(err)
                 this.hasData = false;
-                onError(err);
+                // onError(err);
+                console.log("no data found at this time for user ", userName)
+                // Call success callback ...
+                if (callback != undefined) {
+                    callback(this);
+                }
             }
         );
     }
@@ -162,13 +182,19 @@ export class Account extends Model {
         onError: (err: any) => void
     ) {
         let userName = this.id;
-        let database = userName + "_db";
+  
+        let rqst = new ReplaceOneRqst();
+        if (userName == "sa") {
+            rqst.setId("local_ressource");
+            rqst.setDatabase("local_ressource");
+          }else{
+            let db = userName+ "_db";
+            rqst.setId(db);
+            rqst.setDatabase(db);
+          }
+
         let collection = "user_data";
         let data = this.toString();
-
-        let rqst = new ReplaceOneRqst();
-        rqst.setId(database);
-        rqst.setDatabase(database);
         rqst.setCollection(collection);
         rqst.setQuery(`{"_id":"` + userName + `"}`);
         rqst.setValue(data);

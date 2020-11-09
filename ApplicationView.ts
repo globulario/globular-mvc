@@ -15,6 +15,7 @@ import { ApplicationsMenu } from "./components/Applications";
 import { Camera } from "./components/Camera";
 import { FileExplorer} from "./components/File"
 import { SearchBar} from "./components/Search"
+import { Wizard} from "./components/Wizard"
 
 // This variable is there to give acces to wait and resume...
 export let applicationView: ApplicationView;
@@ -337,7 +338,9 @@ export class ApplicationView extends View {
         this.isLogin = true;
 
         /** implement it as needed */
-        this.login_.parentNode.removeChild(this.login_)
+        if(this.login_.parentNode != null){
+            this.login_.parentNode.removeChild(this.login_)
+        }
 
         this.layout.toolbar().appendChild(this.notificationMenu)
         this.layout.toolbar().appendChild(this.accountMenu)
@@ -345,8 +348,7 @@ export class ApplicationView extends View {
         // Append the over flow menu.
         this.layout.toolbar().appendChild(this.overFlowMenu)
 
-        this.overFlowMenu.hide() // not show it at first.
-
+        this.overFlowMenu.hide() // not show it at first. 
         this.accountMenu.setAccount(account)
 
         window.dispatchEvent(new Event('resize'));

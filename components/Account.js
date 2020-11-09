@@ -77,6 +77,10 @@ export class AccountMenu extends Menu {
                     cursor: pointer;
                 }
 
+                #profile-icon {
+                    fill: var(--palette-primary-accent);
+                }
+
             </style>
 
             <div class="card-content">
