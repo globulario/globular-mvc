@@ -354,6 +354,7 @@ export class Application extends Model {
         localStorage.removeItem("token_expired");
         localStorage.removeItem("remember_me");
         console.log("fail to refesh token!")
+        console.log(err)
         onError(err);
       });
   }
@@ -381,7 +382,7 @@ export class Application extends Model {
           }
         );
       }
-    }, 1000);
+    }, 1000 * 190);
   }
 
   /**
