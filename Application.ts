@@ -382,7 +382,7 @@ export class Application extends Model {
           }
         );
       }
-    }, 1000 * 190);
+    }, 1000);
   }
 
   /**
@@ -431,13 +431,11 @@ export class Application extends Model {
         if (name != "sa") {
           this.account.initData(
             (account: Account) => {
-              console.log("=====> Register send login_event")
               Model.eventHub.publish("login_event", account, false);
               this.view.resume();
               onRegister(this.account);
             },
             (err: any) => {
-              console.log("=====> Register send login_event")
               Model.eventHub.publish("login_event", this.account, false);
               onRegister(this.account);
               this.view.resume();
