@@ -558,10 +558,10 @@
 50578 silly gunzTarPerm modified mode [ 'gyp/pylib/gyp/MSVSVersion.py', 420, 436 ]
 50579 silly gunzTarPerm extractEntry test/extract.js
 50580 silly gunzTarPerm modified mode [ 'test/extract.js', 420, 436 ]
-50581 silly gunzTarPerm extractEntry lib/ressource/ressource_grpc_web_pb.js
-50582 silly gunzTarPerm modified mode [ 'lib/ressource/ressource_grpc_web_pb.js', 511, 509 ]
-50583 silly gunzTarPerm extractEntry lib/ressource/ressource_pb.js
-50584 silly gunzTarPerm modified mode [ 'lib/ressource/ressource_pb.js', 511, 509 ]
+50581 silly gunzTarPerm extractEntry lib/resource/resource_grpc_web_pb.js
+50582 silly gunzTarPerm modified mode [ 'lib/resource/resource_grpc_web_pb.js', 511, 509 ]
+50583 silly gunzTarPerm extractEntry lib/resource/resource_pb.js
+50584 silly gunzTarPerm modified mode [ 'lib/resource/resource_pb.js', 511, 509 ]
 50585 silly gunzTarPerm extractEntry lib/dependencies/ContextDependency.js
 50586 silly gunzTarPerm modified mode [ 'lib/dependencies/ContextDependency.js', 438, 436 ]
 50587 silly gunzTarPerm extractEntry lib/dependencies/ContextDependencyHelpers.js
@@ -654,10 +654,10 @@
 50672 silly gunzTarPerm modified mode [ 'lib/dependencies/ContextElementDependency.js', 438, 436 ]
 50673 silly gunzTarPerm extractEntry lib/ContextExclusionPlugin.js
 50674 silly gunzTarPerm modified mode [ 'lib/ContextExclusionPlugin.js', 438, 436 ]
-50675 silly gunzTarPerm extractEntry lib/ressource/ressource_grpc_web_pb.d.ts
-50676 silly gunzTarPerm modified mode [ 'lib/ressource/ressource_grpc_web_pb.d.ts', 511, 509 ]
-50677 silly gunzTarPerm extractEntry lib/ressource/ressource_pb.d.ts
-50678 silly gunzTarPerm modified mode [ 'lib/ressource/ressource_pb.d.ts', 511, 509 ]
+50675 silly gunzTarPerm extractEntry lib/resource/resource_grpc_web_pb.d.ts
+50676 silly gunzTarPerm modified mode [ 'lib/resource/resource_grpc_web_pb.d.ts', 511, 509 ]
+50677 silly gunzTarPerm extractEntry lib/resource/resource_pb.d.ts
+50678 silly gunzTarPerm modified mode [ 'lib/resource/resource_pb.d.ts', 511, 509 ]
 50679 silly gunzTarPerm extractEntry app-header/demo/blend-background-3.html
 50680 silly gunzTarPerm modified mode [ 'app-header/demo/blend-background-3.html', 420, 436 ]
 50681 silly gunzTarPerm extractEntry app-header/demo/contacts.html

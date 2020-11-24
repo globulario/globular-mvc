@@ -13,8 +13,8 @@ export enum PermissionType {
 
 /**
  * Permission are use to manage ressouces and action access. If no permission are define on action
- * or ressource it make the ressource open and accessible or executable by any user or application.
- * At the moment permission are define on a ressource it became managed and protected by globular.
+ * or resource it make the resource open and accessible or executable by any user or application.
+ * At the moment permission are define on a resource it became managed and protected by globular.
  */
 export class Permission extends Model {
 
@@ -26,13 +26,13 @@ export class Permission extends Model {
         super()
     }
 
-    /** Save a ressource */
+    /** Save a resource */
     public save(callback: () => void, errorCallback: (err: any) => void) {
         /** nothing here. */
 
     }
 
-    /** Delete a ressource */
+    /** Delete a resource */
     public delete(callback: () => void, errorCallback: (err: any) => void) {
         /** nothing here. */
     }
@@ -50,13 +50,13 @@ export class ActionPermission extends Permission {
         this.action = action;
     }
 
-    /** Save a ressource */
+    /** Save a resource */
     public save(callback: () => void, errorCallback: (err: any) => void) {
         // Dispatch event on the network.
         Model.eventHub.publish("action_permission_change_event", { id: this.id, permission: this.permission }, false)
     }
 
-    /** Delete a ressource */
+    /** Delete a resource */
     public delete(callback: () => void, errorCallback: (err: any) => void) {
         // Dispatch event on the network.
         Model.eventHub.publish("action_permission_delete_event", this.id, false)
@@ -64,9 +64,9 @@ export class ActionPermission extends Permission {
 }
 
 /**
- * Ressource permissions are use to manage who can access ressource on the server.
+ * Resource permissions are use to manage who can access resource on the server.
  */
-export class RessourcePermission extends Permission {
+export class ResourcePermission extends Permission {
     // The path of the permission.
     private path: string;
 
@@ -79,12 +79,12 @@ export class RessourcePermission extends Permission {
         this.owner = owner;
     }
 
-    /** Save a ressource */
+    /** Save a resource */
     public save(callback: () => void, errorCallback: (err: any) => void) {
-        Model.eventHub.publish("ressource_permission_change_event", { id: this.id, permission: this.permission }, false)
+        Model.eventHub.publish("resource_permission_change_event", { id: this.id, permission: this.permission }, false)
     }
 
-    /** Delete a ressource */
+    /** Delete a resource */
     public delete(callback: () => void, errorCallback: (err: any) => void) {
         Model.eventHub.publish("delete_permission_delete_event", this.id, false)
     }

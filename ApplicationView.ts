@@ -223,7 +223,7 @@ export class ApplicationView extends View {
     ///////////////////////////////////////////////////////////////////////////////////////
 
     /**
-     * Free ressource here.
+     * Free resource here.
      */
     close() {
         // Disconnect event listener's

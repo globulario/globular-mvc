@@ -88,8 +88,8 @@ export class Account extends Model {
 
         let rqst = new FindOneRqst();
         if (userName == "sa") {
-            rqst.setId("local_ressource");
-            rqst.setDatabase("local_ressource");
+            rqst.setId("local_resource");
+            rqst.setDatabase("local_resource");
           }else{
             let db = userName + "_db";
             rqst.setId(db);
@@ -185,8 +185,8 @@ export class Account extends Model {
   
         let rqst = new ReplaceOneRqst();
         if (userName == "sa") {
-            rqst.setId("local_ressource");
-            rqst.setDatabase("local_ressource");
+            rqst.setId("local_resource");
+            rqst.setDatabase("local_resource");
           }else{
             let db = userName+ "_db";
             rqst.setId(db);

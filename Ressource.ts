@@ -1,13 +1,13 @@
 import { Model } from './Model';
 import { Permission } from './Permission';
-import { getRessourceOwners, getRessourcePermissions } from 'globular-web-client/api';
+import { getResourceOwners, getResourcePermissions } from 'globular-web-client/api';
 
 
 /**
- * A ressource is a recursive data structure. File (from file service), Persistent object (from persistence service), 
- * Stored object (form storage service) can be use as ressource. 
+ * A resource is a recursive data structure. File (from file service), Persistent object (from persistence service), 
+ * Stored object (form storage service) can be use as resource. 
  */
-export class Ressource extends Model {
+export class Resource extends Model {
 
     /**
      * A unique identifier.
@@ -18,7 +18,7 @@ export class Ressource extends Model {
     }
 
     /**
-     * The path of the ressource.
+     * The path of the resource.
      */
     private _path: string;
     public get path(): string {
@@ -34,7 +34,7 @@ export class Ressource extends Model {
     }
 
     /**
-     * The size of the ressource on the server.
+     * The size of the resource on the server.
      */
     private _size: number;
     public get size(): number {
@@ -42,11 +42,11 @@ export class Ressource extends Model {
     }
 
     /**
-     * The ressource constructor.
-     * @param path The path of the ressource must be unique.
+     * The resource constructor.
+     * @param path The path of the resource must be unique.
      * @param id The unique identifier
      * @param modified The last modified time
-     * @param size The size of the ressource on the server.
+     * @param size The size of the resource on the server.
      */
     constructor(path: string, id?: string, modified?: Date, size?: number) {
         super();
@@ -59,11 +59,11 @@ export class Ressource extends Model {
     }
 
     /**
-     * Save (create/update) a ressource on the server.
+     * Save (create/update) a resource on the server.
      * @param callback The succes callback
      * @param errorCallback 
      */
-    save(callback: (ressource: Ressource) => void, errorCallback: (err: any) => void) {
+    save(callback: (resource: Resource) => void, errorCallback: (err: any) => void) {
         if(this._id == undefined){
             
         }else{
@@ -76,12 +76,12 @@ export class Ressource extends Model {
     }
 
     /**
-     * Return the list of permission define for that ressource.
+     * Return the list of permission define for that resource.
      * @param callback 
      * @param errorCallback 
      */
     getPermissions(callback: (permissions: Array<Permission>) => void, errorCallback: (err: any) => void) {
-        getRessourcePermissions(Model.globular, this.path,
+        getResourcePermissions(Model.globular, this.path,
             (data: Array<any>) => {
                 /** TODO tranform data here */
                 console.log(data)
@@ -89,12 +89,12 @@ export class Ressource extends Model {
     }
 
     /**
-     * Return the list of account that can own the ressource.
+     * Return the list of account that can own the resource.
      * @param callback 
      * @param errorCallback 
      */
     getOwners(callback: (accounts: Array<Account>) => void, errorCallback: (err: any) => void) {
-        getRessourceOwners(Model.globular, this.path,
+        getResourceOwners(Model.globular, this.path,
             (data: Array<any>) => {
                 /** TODO tranform data here */
                 console.log(data)

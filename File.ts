@@ -94,7 +94,7 @@ export class File extends Model {
         this._name = name;
         this._path = path.split("//").join("/");
 
-        /** Here I will initialyse the ressource. */
+        /** Here I will initialyse the resource. */
         this.files = new Array<File>();
 
     }

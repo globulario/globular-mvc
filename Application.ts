@@ -1,5 +1,5 @@
 import { Model } from "./Model";
-import * as ressource from "globular-web-client/ressource/ressource_pb";
+import * as resource from "globular-web-client/resource/resource_pb";
 import * as jwt from "jwt-decode";
 import { ApplicationView } from "./ApplicationView";
 import { Account } from "./Account";
@@ -166,8 +166,8 @@ export class Application extends Model {
             let rqst = new DeleteOneRqst();
  
             if (this.account.id == "sa") {
-              rqst.setId("local_ressource");
-              rqst.setDatabase("local_ressource");
+              rqst.setId("local_resource");
+              rqst.setDatabase("local_resource");
             }else{
               let db = this.account.id + "_db";
               rqst.setId(db);
@@ -264,11 +264,11 @@ export class Application extends Model {
     callback: (infos: Array<any>) => void,
     errorCallback: (err: any) => void
   ) {
-    let rqst = new ressource.GetAllApplicationsInfoRqst();
+    let rqst = new resource.GetAllApplicationsInfoRqst();
 
-    Model.globular.ressourceService
+    Model.globular.resourceService
       .getAllApplicationsInfo(rqst, {})
-      .then((rsp: ressource.GetAllApplicationsInfoRsp) => {
+      .then((rsp: resource.GetAllApplicationsInfoRsp) => {
         let infos = JSON.parse(rsp.getResult());
         Application.infos = new Map<string, any>();
         for (var i = 0; i < infos.length; i++) {
@@ -306,7 +306,7 @@ export class Application extends Model {
     initCallback: (account: Account) => void,
     onError: (err: any) => void
   ) {
-    let rqst = new ressource.RefreshTokenRqst();
+    let rqst = new resource.RefreshTokenRqst();
     let existingToken = localStorage.getItem("user_token")
     if(existingToken == undefined){
       onError("No token found to be refresh!")
@@ -320,9 +320,9 @@ export class Application extends Model {
 
     rqst.setToken(existingToken);
 
-    Model.globular.ressourceService
+    Model.globular.resourceService
       .refreshToken(rqst)
-      .then((rsp: ressource.RefreshTokenRsp) => {
+      .then((rsp: resource.RefreshTokenRsp) => {
         // Refresh the token at session timeout
         let token = rsp.getToken();
  
@@ -399,11 +399,11 @@ export class Application extends Model {
     onError: (err: any) => void
   ): Account {
     // Create the register request.
-    let rqst = new ressource.RegisterAccountRqst();
+    let rqst = new resource.RegisterAccountRqst();
     rqst.setPassword(password);
     rqst.setConfirmPassword(confirmPassord);
 
-    let account = new ressource.Account();
+    let account = new resource.Account();
     account.setEmail(email);
     account.setName(name);
     rqst.setAccount(account);
@@ -412,9 +412,9 @@ export class Application extends Model {
       "<div>register account </div><div>" + name + "</div><div>...</div>"
     );
     // Register a new account.
-    Model.globular.ressourceService
+    Model.globular.resourceService
       .registerAccount(rqst)
-      .then((rsp: ressource.RegisterAccountRsp) => {
+      .then((rsp: resource.RegisterAccountRsp) => {
         // Here I will set the token in the localstorage.
         let token = rsp.getResult();
         let decoded = jwt(token);
@@ -466,14 +466,14 @@ export class Application extends Model {
     onLogin: (account: Account) => void,
     onError: (err: any) => void
   ) {
-    let rqst = new ressource.AuthenticateRqst();
+    let rqst = new resource.AuthenticateRqst();
     rqst.setName(email);
     rqst.setPassword(password);
     this.view.wait("<div>log in</div><div>" + email + "</div><div>...</div>");
 
-    Model.globular.ressourceService
+    Model.globular.resourceService
       .authenticate(rqst)
-      .then((rsp: ressource.AuthenticateRsp) => {
+      .then((rsp: resource.AuthenticateRsp) => {
         // Here I will set the token in the localstorage.
         let token = rsp.getToken();
         let decoded = jwt(token);
@@ -631,8 +631,8 @@ export class Application extends Model {
       rqst.setDatabase(db);
     } else {
       if (this.account.id == "sa") {
-        rqst.setId("local_ressource");
-        rqst.setDatabase("local_ressource");
+        rqst.setId("local_resource");
+        rqst.setDatabase("local_resource");
       }else{
         let db = this.account.id + "_db";
         rqst.setId(db);
@@ -694,8 +694,8 @@ export class Application extends Model {
       rqst.setDatabase(db);
     } else {
       if (this.account.id == "sa") {
-        rqst.setId("local_ressource");
-        rqst.setDatabase("local_ressource");
+        rqst.setId("local_resource");
+        rqst.setDatabase("local_resource");
       }else{
         let db = this.account.id + "_db";
         rqst.setId(db);
