@@ -354,6 +354,7 @@ export class Application extends Model {
         localStorage.removeItem("token_expired");
         localStorage.removeItem("remember_me");
         console.log("fail to refesh token!")
+        console.log(err)
         onError(err);
       });
   }
@@ -430,13 +431,11 @@ export class Application extends Model {
         if (name != "sa") {
           this.account.initData(
             (account: Account) => {
-              console.log("=====> Register send login_event")
               Model.eventHub.publish("login_event", account, false);
               this.view.resume();
               onRegister(this.account);
             },
             (err: any) => {
-              console.log("=====> Register send login_event")
               Model.eventHub.publish("login_event", this.account, false);
               onRegister(this.account);
               this.view.resume();

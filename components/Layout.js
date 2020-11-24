@@ -1,20 +1,19 @@
-
 // I will made use of polymer instead of materialyze for the main
 // layout because materialyse dosen't react to well with the shadow doom.
-import '@polymer/iron-icons/iron-icons.js';
-import '@polymer/paper-icon-button/paper-icon-button.js';
-import '@polymer/app-layout/app-drawer-layout/app-drawer-layout.js';
-import '@polymer/app-layout/app-drawer/app-drawer.js';
-import '@polymer/app-layout/app-scroll-effects/app-scroll-effects.js';
-import '@polymer/app-layout/app-header/app-header.js';
-import '@polymer/app-layout/app-header-layout/app-header-layout.js';
-import '@polymer/app-layout/app-toolbar/app-toolbar.js';
-import '@polymer/app-layout/demo/sample-content.js';
-import '@polymer/paper-button/paper-button.js';
-import '@polymer/paper-spinner/paper-spinner.js';
-import '@polymer/iron-selector/iron-selector.js';
+import "@polymer/iron-icons/iron-icons.js";
+import "@polymer/paper-icon-button/paper-icon-button.js";
+import "@polymer/app-layout/app-drawer-layout/app-drawer-layout.js";
+import "@polymer/app-layout/app-drawer/app-drawer.js";
+import "@polymer/app-layout/app-scroll-effects/app-scroll-effects.js";
+import "@polymer/app-layout/app-header/app-header.js";
+import "@polymer/app-layout/app-header-layout/app-header-layout.js";
+import "@polymer/app-layout/app-toolbar/app-toolbar.js";
+import "@polymer/app-layout/demo/sample-content.js";
+import "@polymer/paper-button/paper-button.js";
+import "@polymer/paper-spinner/paper-spinner.js";
+import "@polymer/iron-selector/iron-selector.js";
 
-import { Model } from '../Model';
+import { Model } from "../Model";
 
 export let theme = `:host{
 
@@ -152,17 +151,17 @@ paper-card div{
  * This is a web-component.
  */
 export class Layout extends HTMLElement {
-    // attributes.
-    // Create the applicaiton view.
-    constructor() {
-        super();
-        // Set the shadow dom.
-        this.attachShadow({ mode: 'open' });
-    }
-    // The connection callback.
-    connectedCallback() {
-        // Innitialisation of the layout.
-        this.shadowRoot.innerHTML = `
+  // attributes.
+  // Create the applicaiton view.
+  constructor() {
+    super();
+    // Set the shadow dom.
+    this.attachShadow({ mode: "open" });
+  }
+  // The connection callback.
+  connectedCallback() {
+    // Innitialisation of the layout.
+    this.shadowRoot.innerHTML = `
           <style>
             ${theme}
 
@@ -265,85 +264,120 @@ export class Layout extends HTMLElement {
                 </app-toolbar>
               </app-header>
               <div id="content">
+                <div id="left-side-menu" style="position: fixed;"></div>
                 <slot id="workspace" name="workspace"></slot>
+                <div id="right-side-menu"></div>
               </div>
             </app-header-layout>
           </app-drawer-layout>
       `;
-        // keep reference of left 
-        this.appDrawer = this.shadowRoot.getElementById("app-drawer");
-        this.menuBtn = this.shadowRoot.getElementById("menu-btn");
+    // keep reference of left
+    this.appDrawer = this.shadowRoot.getElementById("app-drawer");
+    this.menuBtn = this.shadowRoot.getElementById("menu-btn");
+    this.layout = this.shadowRoot.getElementById("layout");
+    this.hamburger = this.shadowRoot.getElementById("menu-btn");
+    this.leftSideMenu = this.shadowRoot.getElementById("left-side-menu");
+
+    this.hideSideBar();
+
+    window.addEventListener("resize", () => {
+      if (this.layout.offsetWidth > 1024) {
+        this.hamburger.style.display = "none";
+        this.leftSideMenu.style.top = this.toolbar().offsetHeight + 5 + "px"
+        while (this.sideMenu().childNodes.length > 0) {
+          this.leftSideMenu.appendChild(this.sideMenu().childNodes[0]);
+        }
+        this.workspace().style.marginLeft = this.leftSideMenu.offsetWidth + "px"
+        // Here I will take the content of the
+      } else {
+        this.hamburger.style.display = "";
+        while (this.leftSideMenu.childNodes.length > 0) {
+          this.sideMenu().appendChild(this.leftSideMenu.childNodes[0]);
+        }
+        this.workspace().style.marginLeft = "0px"
+      }
+    });
+
+    window.dispatchEvent(new Event("resize"));
+  }
+  showSideBar() {
+    // Set the side menu.
+    let layout = this.shadowRoot.getElementById("layout");
+    layout.insertBefore(this.appDrawer, layout.firstChild);
+    // Set the menu button
+    let toolbar = this.shadowRoot.getElementById("header-toolbar");
+    toolbar.insertBefore(this.menuBtn, toolbar.firstChild);
+  }
+  hideSideBar() {
+    this.menuBtn.parentNode.removeChild(this.menuBtn);
+    this.appDrawer.parentNode.removeChild(this.appDrawer);
+  }
+  // Get layout zone.
+  init() {
+    // Connect the event listener's
+    // Here I will connect the event listener's
+    Model.eventHub.subscribe(
+      "login_event",
+      (uuid) => {
+        /** nothing to do here. */
+      },
+      (data) => {
+        // Here the user is log in...
+        this.showSideBar();
+      },
+      true
+    );
+    Model.eventHub.subscribe(
+      "logout_event",
+      (uuid) => {
+        /** nothing to do here. */
+      },
+      (data) => {
+        // Here the user is log out...
         this.hideSideBar();
+      },
+      true
+    );
+  }
+  width() {
+    return this.shadowRoot.getElementById("layout").offsetWidth;
+  }
+  /**
+   * That contain the application title.
+   */
+  title() {
+    return document.getElementById("title");
+  }
+  /**
+   * The toolbar contain the application menu.
+   */
+  toolbar() {
+    return document.getElementById("toolbar");
+  }
+  /**
+   * Return the side menu
+   */
+  sideMenu() {
+    return document.getElementById("side-menu");
+  }
+  /**
+   * Return the workspace
+   */
+  workspace() {
+    return document.getElementById("workspace");
+  }
+  /**
+   * Block user input and wait until resume.
+   * @param {*} msg
+   */
+  wait(msg) {
+    if (msg == undefined) {
+      msg = "wait...";
     }
-    showSideBar() {
-        // Set the side menu.
-        let layout = this.shadowRoot.getElementById("layout");
-        layout.insertBefore(this.appDrawer, layout.firstChild);
-        // Set the menu button
-        let toolbar = this.shadowRoot.getElementById("header-toolbar");
-        toolbar.insertBefore(this.menuBtn, toolbar.firstChild);
-    }
-    hideSideBar() {
-        this.menuBtn.parentNode.removeChild(this.menuBtn);
-        this.appDrawer.parentNode.removeChild(this.appDrawer);
-    }
-    // Get layout zone.
-    init() {
-        // Connect the event listener's
-        // Here I will connect the event listener's
-        Model.eventHub.subscribe("login_event", (uuid) => {
-            /** nothing to do here. */
-        }, (data) => {
-            // Here the user is log in...
-            this.showSideBar();
-        }, true);
-        Model.eventHub.subscribe("logout_event", (uuid) => {
-            /** nothing to do here. */
-        }, (data) => {
-            // Here the user is log out...
-            this.hideSideBar();
-        }, true);
-    }
-    width() {
-        return this.shadowRoot.getElementById("layout").offsetWidth;
-    }
-    /**
-     * That contain the application title.
-     */
-    title() {
-        return document.getElementById("title");
-    }
-    /**
-     * The toolbar contain the application menu.
-     */
-    toolbar() {
-        return document.getElementById("toolbar");
-    }
-    /**
-     * Return the side menu
-     */
-    sideMenu() {
-        return document.getElementById("side-menu");
-    }
-    /**
-     * Return the workspace
-     */
-    workspace() {
-        return document.getElementById("workspace");
-    }
-    /**
-     * Block user input and wait until resume.
-     * @param {*} msg
-     */
-    wait(msg) {
-        if (msg == undefined) {
-            msg = "wait...";
-        }
-        if (this.shadowRoot.getElementById("waiting_div") != undefined) {
-            this.shadowRoot.getElementById("waiting_div_text").innerHTML = msg;
-        }
-        else {
-            let html = `
+    if (this.shadowRoot.getElementById("waiting_div") != undefined) {
+      this.shadowRoot.getElementById("waiting_div_text").innerHTML = msg;
+    } else {
+      let html = `
         <style>
           #waiting_div_text div{
             text-align: center;
@@ -355,19 +389,20 @@ export class Layout extends HTMLElement {
           <span id="waiting_div_text" style="margin-top: 4.5rem; font-size: 1.2rem; display: flex; flex-direction: column; justify-content: center; align-items: center;">${msg}</span>
         </div>
       `;
-            this.shadowRoot.appendChild(document.createRange().createContextualFragment(html));
-        }
+      this.shadowRoot.appendChild(
+        document.createRange().createContextualFragment(html)
+      );
     }
-    /**
-     * Remove the waiting div.
-     */
-    resume() {
-        let waitingDiv = this.shadowRoot.getElementById("waiting_div");
-        if (waitingDiv != undefined) {
-            waitingDiv.parentNode.removeChild(waitingDiv);
-        }
+  }
+  /**
+   * Remove the waiting div.
+   */
+  resume() {
+    let waitingDiv = this.shadowRoot.getElementById("waiting_div");
+    if (waitingDiv != undefined) {
+      waitingDiv.parentNode.removeChild(waitingDiv);
     }
+  }
 }
 
-customElements.define('globular-application', Layout)
-
+customElements.define("globular-application", Layout);
