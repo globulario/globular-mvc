@@ -12,6 +12,32 @@ import {
 } from "globular-web-client/persistence/persistence_pb";
 import { v4 as uuidv4 } from "uuid";
 
+
+function mergeTypedArrays(a: any, b: any) {
+  // Checks for truthy values on both arrays
+  if (!a && !b) throw 'Please specify valid arguments for parameters a and b.';
+
+  // Checks for truthy values or empty arrays on each argument
+  // to avoid the unnecessary construction of a new array and
+  // the type comparison
+  if (!b || b.length === 0) return a;
+  if (!a || a.length === 0) return b;
+
+  // Make sure that both typed arrays are of the same type
+  if (Object.prototype.toString.call(a) !== Object.prototype.toString.call(b))
+    throw 'The types of the two arguments passed for parameters a and b do not match.';
+
+  var c = new a.constructor(a.length + b.length);
+  c.set(a);
+  c.set(b, a.length);
+
+  return c;
+}
+
+function uint8arrayToStringMethod(myUint8Arr) {
+  return String.fromCharCode.apply(null, myUint8Arr);
+}
+
 /**
  * That class can be use to create any other application.
  */
@@ -164,11 +190,11 @@ export class Application extends Model {
           (notification: any) => {
             notification = Notification.fromObject(notification);
             let rqst = new DeleteOneRqst();
- 
+
             if (this.account.id == "sa") {
               rqst.setId("local_resource");
               rqst.setDatabase("local_resource");
-            }else{
+            } else {
               let db = this.account.id + "_db";
               rqst.setId(db);
               rqst.setDatabase(db);
@@ -308,11 +334,11 @@ export class Application extends Model {
   ) {
     let rqst = new resource.RefreshTokenRqst();
     let existingToken = localStorage.getItem("user_token")
-    if(existingToken == undefined){
+    if (existingToken == undefined) {
       onError("No token found to be refresh!")
       return
     }
-    if(existingToken.length == 0){
+    if (existingToken.length == 0) {
       onError("Invalid token found!")
       localStorage.removeItem("user_token")
       return
@@ -325,7 +351,7 @@ export class Application extends Model {
       .then((rsp: resource.RefreshTokenRsp) => {
         // Refresh the token at session timeout
         let token = rsp.getToken();
- 
+
         let decoded = jwt(token);
         let userName = (<any>decoded).username;
         let email = (<any>decoded).email;
@@ -340,11 +366,11 @@ export class Application extends Model {
         this.account = new Account(userName, email);
 
         // Set the account infos...
-        this.account.initData(()=>{
+        this.account.initData(() => {
           // sa is not a real account it's a role so it has no database
           initCallback(this.account);
         }, onError);
-        
+
       })
       .catch((err) => {
         // remove old information in that case.
@@ -494,14 +520,14 @@ export class Application extends Model {
 
         this.account.initData(
           (account: Account) => {
-            
+
             Model.eventHub.publish("login_event", account, false);
             onLogin(account);
             this.view.resume();
             // Now I will set the application and user notification.
           },
           (err: any) => {
-            
+
             Model.eventHub.publish("login_event", this.account, false);
             onLogin(this.account);
             this.view.resume();
@@ -615,9 +641,9 @@ export class Application extends Model {
     onError: (err: any) => void
   ) {
     // first of all I will save the notificaiton.
-    
-        // Insert the notification in the db.
-        let rqst = new InsertOneRqst();
+
+    // Insert the notification in the db.
+    let rqst = new InsertOneRqst();
 
     if (notification.type == NotificationType.Application) {
       let db: string;
@@ -632,7 +658,7 @@ export class Application extends Model {
       if (this.account.id == "sa") {
         rqst.setId("local_resource");
         rqst.setDatabase("local_resource");
-      }else{
+      } else {
         let db = this.account.id + "_db";
         rqst.setId(db);
         rqst.setDatabase(db);
@@ -644,7 +670,7 @@ export class Application extends Model {
 
     rqst.setCollection("Notifications");
 
-    rqst.setJsonstr(notification.toString());
+    rqst.setData(notification.toString());
 
     // Save the nofiction on the server.
     Model.globular.persistenceService
@@ -695,7 +721,7 @@ export class Application extends Model {
       if (this.account.id == "sa") {
         rqst.setId("local_resource");
         rqst.setDatabase("local_resource");
-      }else{
+      } else {
         let db = this.account.id + "_db";
         rqst.setId(db);
         rqst.setDatabase(db);
@@ -714,30 +740,28 @@ export class Application extends Model {
       domain: Model.domain,
     });
 
-    let notifications = new Array<Notification>();
+    //let notifications = new Array<Notification>();
+    let data = [];
+
     stream.on("data", (rsp: FindResp) => {
-      let data = JSON.parse(rsp.getJsonstr());
-      for (let i = 0; i < data.length; i++) {
-        let n = Notification.fromObject(data[i]);
-        notifications.push(n);
-      }
+      data = mergeTypedArrays(data, rsp.getData())
     });
 
     stream.on("status", (status) => {
       if (status.code != 0) {
         console.log(status.details);
-        //errorCallback(status.details);
+        let notifications = JSON.parse(uint8arrayToStringMethod(data));
         callback(notifications);
       } else {
-        callback(notifications);
+        callback([]);
       }
     });
   }
 
-  removeNotification(notification: Notification) {}
+  removeNotification(notification: Notification) { }
 
   /**
    * Remove all notification.
    */
-  clearNotifications(type: NotificationType) {}
+  clearNotifications(type: NotificationType) { }
 }

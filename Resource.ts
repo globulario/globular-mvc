@@ -1,6 +1,5 @@
 import { Model } from './Model';
 import { Permission } from './Permission';
-import { getResourceOwners, getResourcePermissions } from 'globular-web-client/api';
 
 
 /**
@@ -81,11 +80,7 @@ export class Resource extends Model {
      * @param errorCallback 
      */
     getPermissions(callback: (permissions: Array<Permission>) => void, errorCallback: (err: any) => void) {
-        getResourcePermissions(Model.globular, this.path,
-            (data: Array<any>) => {
-                /** TODO tranform data here */
-                console.log(data)
-            }, errorCallback)
+        errorCallback("Not implemented!")
     }
 
     /**
@@ -94,11 +89,6 @@ export class Resource extends Model {
      * @param errorCallback 
      */
     getOwners(callback: (accounts: Array<Account>) => void, errorCallback: (err: any) => void) {
-        getResourceOwners(Model.globular, this.path,
-            (data: Array<any>) => {
-                /** TODO tranform data here */
-                console.log(data)
-                
-            }, errorCallback)
+        errorCallback("Not implemented")
     }
 }

@@ -80,11 +80,11 @@ export let theme = `:host{
   --paper-input-container-focus-color:  var(--palette-primary-light);
   --paper-input-container-input-color: var(--palette-text-primary);
 
-  /*--paper-checkbox-unchecked-background-color: var(--palette-action-disabled);*/
-  /*--paper-checkbox-unchecked-color: var(--palette-action-disabled);*/
-  /*--paper-checkbox-unchecked-ink-color: var(--palette-action-disabled);*/
+  --paper-checkbox-unchecked-background-color: var(--palette-action-disabled);
+  --paper-checkbox-unchecked-color: var(--palette-action-disabled);
+  --paper-checkbox-unchecked-ink-color: var(--palette-action-disabled);
   /**/
-  /*--paper-checkbox-checkmark-color: var(--palette-text-accent);*/
+  --paper-checkbox-checkmark-color: var(--palette-text-accent);
 
   --paper-checkbox-label-color: rgb(195, 195, 195));
   --paper-checkbox-checked-color: var(--palette-primary-main);
@@ -283,7 +283,7 @@ export class Layout extends HTMLElement {
     window.addEventListener("resize", () => {
       if (this.layout.offsetWidth > 1024) {
         this.hamburger.style.display = "none";
-        this.leftSideMenu.style.top = this.toolbar().offsetHeight + 5 + "px"
+        this.leftSideMenu.style.top = this.toolbar().offsetHeight + 24 +  5 + "px"
         while (this.sideMenu().childNodes.length > 0) {
           this.leftSideMenu.appendChild(this.sideMenu().childNodes[0]);
         }
