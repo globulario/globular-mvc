@@ -34,7 +34,7 @@ function mergeTypedArrays(a: any, b: any) {
   return c;
 }
 
-function uint8arrayToStringMethod(myUint8Arr) {
+function uint8arrayToStringMethod(myUint8Arr: any) {
   return String.fromCharCode.apply(null, myUint8Arr);
 }
 
@@ -741,7 +741,8 @@ export class Application extends Model {
     });
 
     //let notifications = new Array<Notification>();
-    let data = [];
+    let data:any
+    data = [];
 
     stream.on("data", (rsp: FindResp) => {
       data = mergeTypedArrays(data, rsp.getData())
