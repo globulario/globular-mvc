@@ -166,14 +166,14 @@ export class FilesView extends HTMLElement {
             `
         // get the div.
         this.div = this.shadowRoot.getElementById(id)
-        this.div.onscroll = ()=>{
+        this.div.onscroll = () => {
             const headers = this.div.getElementsByClassName("files-list-view-header")
-            if(this.div.scrollTop > 0){
-                for(var h of headers){
+            if (this.div.scrollTop > 0) {
+                for (var h of headers) {
                     h.style.boxShadow = "0 2px 2px -1px rgba(0, 0, 0, 0.4)"
                 }
-            }else{
-                for(var h of headers){
+            } else {
+                for (var h of headers) {
                     h.style.boxShadow = ""
                 }
             }
@@ -729,40 +729,52 @@ export class FileExplorer extends HTMLElement {
         // Read the fd
         _readDir(this.root, (dir) => {
             // set interface with the given directory.
-            this.fileNavigator.setDir(dir)
-            this.pathNavigator.setDir(dir)
-            this.filesListView.setDir(dir)
-            this.filesIconView.setDir(dir)
-
+            if (this.fileNavigator != null) {
+                this.fileNavigator.setDir(dir)
+            }
+            if (this.pathNavigator != null) {
+                this.pathNavigator.setDir(dir)
+            }
+            if (this.filesListView != null) {
+                this.filesListView.setDir(dir)
+            }
+            if (this.filesIconView) {
+                this.filesIconView.setDir(dir)
+            }
             this.setDir(dir)
-            
+
 
         }, this.onerror)
     }
 
-    setRoot(root){
+    setRoot(root) {
         this.root = root
         this.init()
     }
 
-    setDir(dir){
+    setDir(dir) {
+        if (this.backNavigationBtn != null) {
+            this.backNavigationBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
+        }
+        if (this.fowardNavigationBtn != null) {
+            this.fowardNavigationBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
+        }
+        if (this.upwardNavigationBtn != null) {
+            this.upwardNavigationBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
+        }
 
-        this.backNavigationBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
-        this.fowardNavigationBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
-        this.upwardNavigationBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
 
-    
- 
+
         // Append the dir in the list of 
-        if(this.navigations.indexOf(dir.path) == -1){
+        if (this.navigations.indexOf(dir.path) == -1) {
             this.navigations.push(dir.path) // set the path in the navigation.
         }
 
-        if(this.navigations.length > 2){
+        if (this.navigations.length > 2) {
             this.lstNavigationBtn.style.display = "block"
             let navigationLst = null
             console.log(this.lstNavigationBtn.parentNode.childNodes)
-            if(this.lstNavigationBtn.parentNode.children.length == 1){
+            if (this.lstNavigationBtn.parentNode.children.length == 1) {
                 // Here I will set the navigation list.
                 navigationLst = document.createElement("paper-card")
                 navigationLst.className = "directories-selector"
@@ -776,77 +788,77 @@ export class FileExplorer extends HTMLElement {
                 navigationLst.style.backgroundColor = "var(--palette-background-paper)"
                 navigationLst.style.color = "var(--palette-text-primary)"
                 this.lstNavigationBtn.parentNode.appendChild(navigationLst)
-                this.lstNavigationBtn.onclick = ()=>{
-                    if(navigationLst.style.display == "flex"){
+                this.lstNavigationBtn.onclick = () => {
+                    if (navigationLst.style.display == "flex") {
                         navigationLst.style.display = "none"
-                    }else{
+                    } else {
                         navigationLst.style.display = "flex"
                     }
                 }
 
-                navigationLst.onmouseleave = ()=> {
+                navigationLst.onmouseleave = () => {
                     navigationLst.style.display = "none"
                 }
 
-            }else{
+            } else {
                 navigationLst = this.lstNavigationBtn.parentNode.children[1]
             }
 
             navigationLst.innerHTML = "";
             let range = document.createRange()
-        
-            for(let path of this.navigations){
-                let html =`
+
+            for (let path of this.navigations) {
+                let html = `
                     <div style="display: flex; align-items: center;">
                         <iron-icon style="height: 16px;"></iron-icon><div> ${path.split("/").pop()} </div>
                     </div>
                 `
                 navigationLst.appendChild(range.createContextualFragment(html));
-                let index = navigationLst.children.length -1
+                let index = navigationLst.children.length - 1
                 let navigationLine = navigationLst.children[index]
-                let _index =  this.navigations.indexOf(dir.path)
-                if(index < _index){
+                let _index = this.navigations.indexOf(dir.path)
+                if (index < _index) {
                     navigationLine.children[0].icon = "icons:arrow-back"
-                }else if(index > _index){
+                } else if (index > _index) {
                     navigationLine.children[0].icon = "icons:arrow-forward"
-                }else{
+                } else {
                     navigationLine.children[0].icon = "icons:check"
                 }
 
-                navigationLine.onmouseover = ()=>{
+                navigationLine.onmouseover = () => {
                     navigationLine.style.cursor = "pointer"
                     navigationLine.style.setProperty("background-color", "var(--palette-background-default)")
                     navigationLine.children[0].style.setProperty("background-color", "var(--palette-background-default)")
                     navigationLine.children[1].style.setProperty("background-color", "var(--palette-background-default)")
                 }
 
-                navigationLine.onmouseleave = ()=>{
+                navigationLine.onmouseleave = () => {
                     navigationLine.style.cursor = "default"
                     navigationLine.style.setProperty("background-color", "var(--palette-background-paper)")
                     navigationLine.children[0].style.setProperty("background-color", "var(--palette-background-paper)")
                     navigationLine.children[1].style.setProperty("background-color", "var(--palette-background-paper)")
                 }
 
-                navigationLine.onclick = ()=>{
+                navigationLine.onclick = () => {
                     navigationLst.style.display = "none"
-                    Model.eventHub.publish("set_dir_event", _dirs[ this.navigations[index]], true)
+                    Model.eventHub.publish("set_dir_event", _dirs[this.navigations[index]], true)
                 }
             }
 
 
             let index = this.navigations.indexOf(dir.path)
-            if(index > 0){
+            if (index > 0) {
                 this.backNavigationBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-active)")
             }
 
-            if(index < this.navigations.length - 1){
+            if (index < this.navigations.length - 1) {
                 this.fowardNavigationBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-active)")
             }
         }
 
         this.path = dir.path;
 
-        if(this.path.split("/").length > 2){
+        if (this.path.split("/").length > 2) {
             this.upwardNavigationBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-active)")
         }
     }
@@ -956,25 +968,25 @@ export class FileExplorer extends HTMLElement {
         this.upwardNavigationBtn = this.shadowRoot.getElementById("navigation-upward-btn")
         this.lstNavigationBtn = this.shadowRoot.getElementById("navigation-lst-btn")
 
-        this.backNavigationBtn.onclick = ()=>{
+        this.backNavigationBtn.onclick = () => {
             let index = this.navigations.indexOf(this.path)
             index--
-            if(index < this.navigations.length  && index > -1){
-                Model.eventHub.publish("set_dir_event", _dirs[ this.navigations[index]], true)
+            if (index < this.navigations.length && index > -1) {
+                Model.eventHub.publish("set_dir_event", _dirs[this.navigations[index]], true)
             }
         }
 
-        this.fowardNavigationBtn.onclick = ()=>{
+        this.fowardNavigationBtn.onclick = () => {
             let index = this.navigations.indexOf(this.path)
             index++
-            if(index < this.navigations.length  && index > -1){
-                Model.eventHub.publish("set_dir_event", _dirs[ this.navigations[index]], true)
+            if (index < this.navigations.length && index > -1) {
+                Model.eventHub.publish("set_dir_event", _dirs[this.navigations[index]], true)
             }
         }
 
-        this.upwardNavigationBtn.onclick = ()=>{
-  
-            if(this.path.split("/").length > 2){
+        this.upwardNavigationBtn.onclick = () => {
+
+            if (this.path.split("/").length > 2) {
                 this.path = this.path.substring(0, this.path.lastIndexOf("/"))
                 Model.eventHub.publish("set_dir_event", _dirs[this.path], true)
             }

@@ -281,6 +281,9 @@ export class Layout extends HTMLElement {
     this.hideSideBar();
 
     window.addEventListener("resize", () => {
+      if (this.sideMenu() == null || this.sideMenu() == null) {
+        return;
+      }
       if (this.layout.offsetWidth > 1024) {
         this.hamburger.style.display = "none";
         this.leftSideMenu.style.top = this.toolbar().offsetHeight + 24 +  5 + "px"
