@@ -128,12 +128,14 @@ export class ApplicationView extends View {
         }
 
         // The file explorer object.
+        
         this._fileExplorer = new FileExplorer();
 
         // Set the onerror callback for the component.
         this._fileExplorer.onerror = (err:any)=>{
-            this.displayMessage(err, 4000)
+            //this.displayMessage(err, 4000)
         }
+        
 
         // set the global varialbe...
         applicationView = this

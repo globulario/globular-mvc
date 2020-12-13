@@ -86,7 +86,7 @@ export let theme = `:host{
   /**/
   --paper-checkbox-checkmark-color: var(--palette-text-accent);
 
-  --paper-checkbox-label-color: rgb(195, 195, 195));
+  --paper-checkbox-label-color: rgb(195, 195, 195);
   --paper-checkbox-checked-color: var(--palette-primary-main);
   --paper-checkbox-checked-ink-color: var(--palette-primary-main);
   --paper-checkbox-label-checked-color: var(--palette-text-primary);
