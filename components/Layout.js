@@ -86,7 +86,7 @@ export let theme = `:host{
   /**/
   --paper-checkbox-checkmark-color: var(--palette-text-accent);
 
-  --paper-checkbox-label-color: rgb(195, 195, 195);
+  --paper-checkbox-label-color: rgb(195, 195, 195));
   --paper-checkbox-checked-color: var(--palette-primary-main);
   --paper-checkbox-checked-ink-color: var(--palette-primary-main);
   --paper-checkbox-label-checked-color: var(--palette-text-primary);
@@ -281,21 +281,29 @@ export class Layout extends HTMLElement {
     this.hideSideBar();
 
     window.addEventListener("resize", () => {
-      if (this.sideMenu() == null || this.sideMenu() == null) {
+      if(this.workspace()== null){
         return;
       }
       if (this.layout.offsetWidth > 1024) {
         this.hamburger.style.display = "none";
-        this.leftSideMenu.style.top = this.toolbar().offsetHeight + 24 +  5 + "px"
+        if(this.toolbar() != null){
+          this.leftSideMenu.style.top = this.toolbar().offsetHeight + 24 +  5 + "px"
+        }
+        if(this.sideMenu() != null){
         while (this.sideMenu().childNodes.length > 0) {
           this.leftSideMenu.appendChild(this.sideMenu().childNodes[0]);
         }
-        this.workspace().style.marginLeft = this.leftSideMenu.offsetWidth + "px"
+        }
+        if(this.leftSideMenu != null &&  this.workspace() != null){
+          this.workspace().style.marginLeft = this.leftSideMenu.offsetWidth + "px"
+        }
         // Here I will take the content of the
       } else {
         this.hamburger.style.display = "";
-        while (this.leftSideMenu.childNodes.length > 0) {
-          this.sideMenu().appendChild(this.leftSideMenu.childNodes[0]);
+        if(this.sideMenu() != null && this.leftSideMenu != null){
+          while (this.leftSideMenu.childNodes.length > 0) {
+            this.sideMenu().appendChild(this.leftSideMenu.childNodes[0]);
+          }
         }
         this.workspace().style.marginLeft = "0px"
       }
