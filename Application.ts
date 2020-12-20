@@ -326,6 +326,13 @@ export class Application extends Model {
   /////////////////////////////////////////////////////
 
   /**
+   * Display true if a session is open.
+   */
+  public get isLogged(): boolean{
+    return this.account != null;
+  }
+
+  /**
    * Refresh the token and open a new session if the token is valid.
    */
   private refreshToken(
@@ -427,10 +434,10 @@ export class Application extends Model {
   ): Account {
     // Create the register request.
     let rqst = new resource.RegisterAccountRqst();
-    rqst.setPassword(password);
     rqst.setConfirmPassword(confirmPassord);
 
     let account = new resource.Account();
+    account.setPassword(password);
     account.setEmail(email);
     account.setName(name);
     rqst.setAccount(account);

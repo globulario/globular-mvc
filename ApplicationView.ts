@@ -15,6 +15,8 @@ import { ApplicationsMenu } from "./components/Applications";
 import { Camera } from "./components/Camera";
 import { FileExplorer} from "./components/File"
 import { SearchBar} from "./components/Search"
+import { ContactPanel} from "./components/Contact"
+import { ConversationPanel} from "./components/Conversation"
 import { Wizard} from "./components/Wizard"
 
 // This variable is there to give acces to wait and resume...
@@ -65,6 +67,18 @@ export class ApplicationView extends View {
     /** various listener's */
     private login_event_listener: string
     private logout_event_listener: string
+
+    /** The conversation panel */
+    private _conversation_panel: ConversationPanel;
+    public get conversation_panel(): ConversationPanel {
+        return this._conversation_panel;
+    }
+
+    /** the contact panel */
+    private _contact_panel: ContactPanel;
+    public get contact_panel(): ContactPanel {
+        return this._contact_panel;
+    }
 
     private _isLogin: boolean;
     public get isLogin(): boolean {
@@ -136,6 +150,11 @@ export class ApplicationView extends View {
             //this.displayMessage(err, 4000)
         }
         
+        // Initialyse contact panel.
+        this._contact_panel = new ContactPanel();
+
+        // Initialyse conversation panel.
+        this._conversation_panel = new ConversationPanel();
 
         // set the global varialbe...
         applicationView = this

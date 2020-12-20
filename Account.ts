@@ -65,6 +65,28 @@ export class Account extends Model {
         this.middleName_ = value;
     }
 
+    // Keep list of participants for further chat.
+    private contacts: Array<Account>;
+
+    /**
+     * Append a new contanct in the list of contact.
+     * @param contact The contact to append.
+     */
+    addContact(contact: Account) {
+        let existing = this.contacts.find(x => x.email == this.email)
+        if (existing == null) {
+            this.contacts.push(contact)
+        }
+    }
+
+    /**
+     * Remove a contact from the list of contact.
+     * @param contact The contact to remove
+     */
+    removeContact(contact: Account) {
+        this.contacts = this.contacts.filter(obj => obj !== contact);
+    }
+
     constructor(id: string, email: string) {
         super();
 
@@ -109,7 +131,8 @@ export class Account extends Model {
                 domain: Model.domain
             })
             .then((rsp: any) => {
-                let data = JSON.parse(rsp.getJsonstr())
+                let data = rsp.getResult().toJavaScript();
+                
                 console.log(data)
                 successCallback(data);
             })
