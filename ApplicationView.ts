@@ -15,7 +15,7 @@ import { ApplicationsMenu } from "./components/Applications";
 import { Camera } from "./components/Camera";
 import { FileExplorer} from "./components/File"
 import { SearchBar} from "./components/Search"
-import { ContactPanel} from "./components/Contact"
+import { ContactsMenu} from "./components/Contact"
 import { ConversationPanel} from "./components/Conversation"
 import { Wizard} from "./components/Wizard"
 
@@ -46,6 +46,9 @@ export class ApplicationView extends View {
     /** The applications menu */
     private applicationsMenu: ApplicationsMenu
 
+    /** The contact menu */
+    private contactsMenu: ContactsMenu
+
     /** The camera */
     private _camera: Camera;
     public get camera(): Camera {
@@ -72,12 +75,6 @@ export class ApplicationView extends View {
     private _conversation_panel: ConversationPanel;
     public get conversation_panel(): ConversationPanel {
         return this._conversation_panel;
-    }
-
-    /** the contact panel */
-    private _contact_panel: ContactPanel;
-    public get contact_panel(): ContactPanel {
-        return this._contact_panel;
     }
 
     private _isLogin: boolean;
@@ -122,7 +119,10 @@ export class ApplicationView extends View {
         this.overFlowMenu = new OverflowMenu()
 
         // The applicaiton menu
-        this.applicationsMenu = new ApplicationsMenu()
+        this.applicationsMenu = new ApplicationsMenu();
+
+        // The concact menu
+        this.contactsMenu = new ContactsMenu();
 
         // The camera can be use to take picture.
         this._camera = new Camera();
@@ -150,9 +150,6 @@ export class ApplicationView extends View {
             //this.displayMessage(err, 4000)
         }
         
-        // Initialyse contact panel.
-        this._contact_panel = new ContactPanel();
-
         // Initialyse conversation panel.
         this._conversation_panel = new ConversationPanel();
 
@@ -170,6 +167,13 @@ export class ApplicationView extends View {
         this.accountMenu.init()
         this.applicationsMenu.init()
         this.notificationMenu.init()
+        this.contactsMenu.init()
+
+        // Here I will set contact menu actions.
+        this.contactsMenu.onInviteConctact = (email:string) =>{
+            this.displayMessage("<iron-icon icon='send' style='margin-right: 10px;'></iron-icon><div>Invitation was sent to "+ email + "</div>", 3000)
+        }
+
         // The file explorer object.
         this._fileExplorer.init();
 
@@ -208,6 +212,10 @@ export class ApplicationView extends View {
                 if (this.isLogin) {
                     this.overFlowMenu.show()
 
+                    this.overFlowMenu.getMenuDiv().appendChild(this.contactsMenu)
+                    this.contactsMenu.getMenuDiv().classList.remove("bottom")
+                    this.contactsMenu.getMenuDiv().classList.add("left")
+
                     this.overFlowMenu.getMenuDiv().appendChild(this.notificationMenu)
                     this.notificationMenu.getMenuDiv().classList.remove("bottom")
                     this.notificationMenu.getMenuDiv().classList.add("left")
@@ -223,6 +231,10 @@ export class ApplicationView extends View {
 
                 if (this.isLogin) {
                     this.overFlowMenu.hide()
+                    
+                    this.layout.toolbar().appendChild(this.contactsMenu)
+                    this.contactsMenu.getMenuDiv().classList.remove("left")
+                    this.contactsMenu.getMenuDiv().classList.add("bottom")
 
                     this.layout.toolbar().appendChild(this.notificationMenu)
                     this.notificationMenu.getMenuDiv().classList.remove("left")

@@ -295,10 +295,14 @@ export class Application extends Model {
     Model.globular.resourceService
       .getAllApplicationsInfo(rqst, {})
       .then((rsp: resource.GetAllApplicationsInfoRsp) => {
-        let infos = JSON.parse(rsp.getResult());
+
+        let infos = [];
         Application.infos = new Map<string, any>();
-        for (var i = 0; i < infos.length; i++) {
-          Application.infos.set(infos[i]._id, infos[i]);
+        for (var i = 0; i < rsp.getApplicationsList().length; i++) {
+          let info = rsp.getApplicationsList()[i].toJavaScript();
+          let id = <string>info["_id"]
+          Application.infos.set(id, info);
+          infos.push(info)
         }
         callback(infos);
       })
