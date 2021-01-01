@@ -13,11 +13,11 @@ import { NotificationMenu } from "./components/Notification";
 import { OverflowMenu } from "./components/Menu";
 import { ApplicationsMenu } from "./components/Applications";
 import { Camera } from "./components/Camera";
-import { FileExplorer} from "./components/File"
-import { SearchBar} from "./components/Search"
-import { ContactsMenu} from "./components/Contact"
-import { ConversationPanel} from "./components/Conversation"
-import { Wizard} from "./components/Wizard"
+import { FileExplorer } from "./components/File"
+import { SearchBar } from "./components/Search"
+import { ContactsMenu } from "./components/Contact"
+import { ConversationPanel } from "./components/Conversation"
+import { Wizard } from "./components/Wizard"
 
 // This variable is there to give acces to wait and resume...
 export let applicationView: ApplicationView;
@@ -142,14 +142,14 @@ export class ApplicationView extends View {
         }
 
         // The file explorer object.
-        
+
         this._fileExplorer = new FileExplorer();
 
         // Set the onerror callback for the component.
-        this._fileExplorer.onerror = (err:any)=>{
+        this._fileExplorer.onerror = (err: any) => {
             //this.displayMessage(err, 4000)
         }
-        
+
         // Initialyse conversation panel.
         this._conversation_panel = new ConversationPanel();
 
@@ -170,8 +170,12 @@ export class ApplicationView extends View {
         this.contactsMenu.init()
 
         // Here I will set contact menu actions.
-        this.contactsMenu.onInviteConctact = (email:string) =>{
-            this.displayMessage("<iron-icon icon='send' style='margin-right: 10px;'></iron-icon><div>Invitation was sent to "+ email + "</div>", 3000)
+        this.contactsMenu.onInviteConctact = (contact: Account) => {
+            // Display the message to the user.
+            this.displayMessage("<iron-icon icon='send' style='margin-right: 10px;'></iron-icon><div>Invitation was sent to " + contact.email + "</div>", 3000)
+
+            // So here I will create a notification.
+            Model.eventHub.publish("invite_contact_event_", contact, true)
         }
 
         // The file explorer object.
@@ -231,7 +235,7 @@ export class ApplicationView extends View {
 
                 if (this.isLogin) {
                     this.overFlowMenu.hide()
-                    
+
                     this.layout.toolbar().appendChild(this.contactsMenu)
                     this.contactsMenu.getMenuDiv().classList.remove("left")
                     this.contactsMenu.getMenuDiv().classList.add("bottom")
@@ -333,8 +337,8 @@ export class ApplicationView extends View {
                 return err
             }
 
-        } catch{
-            if (err.message != undefined){
+        } catch {
+            if (err.message != undefined) {
                 return err.message
             }
             return err;
@@ -371,7 +375,7 @@ export class ApplicationView extends View {
         this.isLogin = true;
 
         /** implement it as needed */
-        if(this.login_.parentNode != null){
+        if (this.login_.parentNode != null) {
             this.login_.parentNode.removeChild(this.login_)
         }
 

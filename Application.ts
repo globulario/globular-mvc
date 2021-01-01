@@ -4,6 +4,8 @@ import * as jwt from "jwt-decode";
 import { ApplicationView } from "./ApplicationView";
 import { Account } from "./Account";
 import { NotificationType, Notification } from "./Notification";
+import { AcceptDeclineContactBtns } from './components/Contact'
+
 import {
   InsertOneRqst,
   FindRqst,
@@ -34,7 +36,7 @@ function mergeTypedArrays(a: any, b: any) {
   return c;
 }
 
-function uint8arrayToStringMethod(myUint8Arr: any) {
+export function uint8arrayToStringMethod(myUint8Arr: any) {
   return String.fromCharCode.apply(null, myUint8Arr);
 }
 
@@ -56,6 +58,7 @@ export class Application extends Model {
   private logout_event_listener: string;
   private update_profile_picture_listener: string;
   private delete_notification_event_listener: string;
+  private invite_contact_listener: string;
 
   /**
    * Create a new application with a given name. The view
@@ -114,7 +117,6 @@ export class Application extends Model {
               evt.pwd,
               (account: Account) => {
                 // Here I will send a login success.
-                console.log("=====> Application send login_event")
                 Model.eventHub.publish("login_event", account, true);
               },
               (err: any) => {
@@ -156,6 +158,19 @@ export class Application extends Model {
                 this.view.displayMessage(err, 4000);
               }
             );
+          },
+          true
+        );
+
+        // Invite contact event.
+        Model.eventHub.subscribe(
+          "invite_contact_event_",
+          (uuid: string) => {
+            this.invite_contact_listener = uuid;
+          },
+          (contact: Account) => {
+            // Here I will try to login the user.
+            this.onInviteContact(contact)
           },
           true
         );
@@ -332,7 +347,7 @@ export class Application extends Model {
   /**
    * Display true if a session is open.
    */
-  public get isLogged(): boolean{
+  public get isLogged(): boolean {
     return this.account != null;
   }
 
@@ -587,6 +602,8 @@ export class Application extends Model {
     Model.eventHub.unSubscribe("login_event_", this.login_event_listener);
     Model.eventHub.unSubscribe("logout_event_", this.logout_event_listener);
     Model.eventHub.unSubscribe("register_event_", this.register_event_listener);
+    Model.eventHub.unSubscribe("invite_contact_event_", this.invite_contact_listener);
+
     Model.eventHub.unSubscribe(
       "update_profile_picture_event_",
       this.update_profile_picture_listener
@@ -670,7 +687,7 @@ export class Application extends Model {
         rqst.setId("local_resource");
         rqst.setDatabase("local_resource");
       } else {
-        let db = this.account.id + "_db";
+        let db = notification.recipient + "_db";
         rqst.setId(db);
         rqst.setDatabase(db);
       }
@@ -744,15 +761,13 @@ export class Application extends Model {
     rqst.setCollection("Notifications");
 
     rqst.setQuery(query);
-
     let stream = Model.globular.persistenceService.find(rqst, {
       token: localStorage.getItem("user_token"),
       application: Model.application,
       domain: Model.domain,
     });
 
-    //let notifications = new Array<Notification>();
-    let data:any
+    let data: any
     data = [];
 
     stream.on("data", (rsp: FindResp) => {
@@ -760,11 +775,15 @@ export class Application extends Model {
     });
 
     stream.on("status", (status) => {
-      if (status.code != 0) {
-        console.log(status.details);
-        let notifications = JSON.parse(uint8arrayToStringMethod(data));
+      if (status.code == 0) {
+        let objects = JSON.parse(uint8arrayToStringMethod(data));
+        let notifications = new Array<Notification>();
+        for(var i=0; i < objects.length; i++){
+          notifications.push(Notification.fromObject(objects[i]))
+        }
         callback(notifications);
       } else {
+        // In case of error I will return an empty array
         callback([]);
       }
     });
@@ -776,4 +795,42 @@ export class Application extends Model {
    * Remove all notification.
    */
   clearNotifications(type: NotificationType) { }
+
+
+  ///////////////////////////////////////////////////////////////////
+  // Contacts.
+  ///////////////////////////////////////////////////////////////////
+
+  // Invite a new contact.
+  onInviteContact(contact: Account) {
+
+    // Create a user notification.
+    let notification = new Notification(
+      NotificationType.User, contact.id, `
+      <div style="display: flex; flex-direction: column;">
+        <p>
+          ${this.account.id} want to invite you as a contact!
+        </p>
+        <globular-accept-decline-contact-btns style="align-self: flex-end;" contact="${this.account.id}"></globular-accept-decline-contact-btns>
+      </div>`
+    )
+
+    // Send the notification.
+    this.sendNotifications(notification, ()=>{}, (err:any)=>{
+      this.view.displayMessage(err, 3000)
+    })
+  }
+
+  // Accept contact.
+  onAcceptContactInvitation(contact: string){
+
+  }
+
+  // Decline contact invitation.
+  onDeclineContactInvitation(contact: string){
+    
+  }
+
 }
+
+

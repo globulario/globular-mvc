@@ -79,9 +79,13 @@ export class ApplicationsMenu extends Menu {
                         transition: background 0.2s ease,padding 0.8s linear;
                     }
 
+                    .application-div img{
+                        filter: invert(0%);
+                    }
                     .application-div:hover{
                         cursor: pointer;
-                        background-color: #dbdbdb;
+                        -webkit-filter: invert(10%);
+                        filter: invert(10%);
                     }
 
                     .application-div img{

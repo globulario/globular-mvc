@@ -102,7 +102,13 @@ export class NotificationMenu extends Menu {
             height: 48px;
             width: 48px;
             border-radius: 24px;
+            filter: invert(0%);
         }
+        
+        .notification_panel:hover {
+            filter: invert(10%);
+        }
+
     </style>
 
         <div>
@@ -370,7 +376,6 @@ export class NotificationMenu extends Menu {
 
         let html = `
         <div id="${notification._id}" class="notification_panel">
-            <paper-ripple recenters></paper-ripple>
             <paper-icon-button id="${notification._id}_close_btn" icon="close" style="display: none; position: absolute; top: 0px; right: 0px;"></paper-icon-button>
             <div id="${notification._id}_recipient"  style="display: flex; flex-direction: column; padding: 5px; align-items: center;">
                 <img id="${notification._id}_img"></img>
@@ -406,7 +411,6 @@ export class NotificationMenu extends Menu {
         }
 
         notificationDiv.onmouseover = () => {
-            notificationDiv.style.backgroundColor = "#dbdbdb"
             notificationDiv.style.transition
             notificationDiv.style.cursor = "pointer"
             if (notification._type == 2) {

@@ -1,5 +1,6 @@
 import { Model } from "./Model";
 import { FindOneRqst, ReplaceOneRqst, ReplaceOneRsp } from "globular-web-client/persistence/persistence_pb";
+import * as RessourceService from "globular-web-client/resource/resource_pb";
 
 /**
  * Basic account class that contain the user id and email.
@@ -101,22 +102,21 @@ export class Account extends Model {
     /**
      * Read user data one result at time.
      */
-    private readOneUserData(
+    private static readOneUserData(
         query: string,
+        userName: string,
         successCallback: (results: any) => void,
         errorCallback: (err: any) => void
     ) {
-        let userName = localStorage.getItem("user_name");
-
         let rqst = new FindOneRqst();
+        rqst.setId("local_resource");
+
         if (userName == "sa") {
-            rqst.setId("local_resource");
             rqst.setDatabase("local_resource");
-          }else{
+        } else {
             let db = userName + "_db";
-            rqst.setId(db);
             rqst.setDatabase(db);
-          }
+        }
 
         let collection = "user_data";
         rqst.setCollection(collection);
@@ -132,16 +132,16 @@ export class Account extends Model {
             })
             .then((rsp: any) => {
                 let data = rsp.getResult().toJavaScript();
-                
+
                 console.log(data)
                 successCallback(data);
             })
             .catch((err: any) => {
                 console.log(err)
-                if(err.code == 13){
+                if (err.code == 13) {
                     // empty user data...
                     successCallback({});
-                }else{
+                } else {
                     errorCallback(err);
                 }
             });
@@ -154,31 +154,48 @@ export class Account extends Model {
      */
     initData(callback: (account: Account) => void, onError: (err: any) => void) {
         let userName = this.id
-
-        // Retreive user data...
-        this.readOneUserData(
-            `{"_id":"` + userName + `"}`,
-            (data: any) => {
-                this.hasData = true;
-                this.firstName = data["firstName_"];
-                this.lastName = data["lastName_"];
-                this.middleName = data["middleName_"];
-                this.profilPicture = data["profilPicture_"];
-                if (callback != undefined) {
-                    callback(this);
+        
+        let jsonStr = localStorage.getItem(userName + "_user_data")
+        if(jsonStr == null){
+            // Retreive user data...
+            Account.readOneUserData(
+                `{"_id":"` + userName + `"}`, 
+                userName, // The database to search into 
+                (data: any) => {
+                    this.hasData = true;
+                    this.firstName = data["firstName_"];
+                    this.lastName = data["lastName_"];
+                    this.middleName = data["middleName_"];
+                    this.profilPicture = data["profilPicture_"];
+                    jsonStr = JSON.stringify(data)
+                    localStorage.setItem(userName + "_user_data", jsonStr)
+                    if (callback != undefined) {
+                        callback(this);
+                    }
+                },
+                (err: any) => {
+                    console.log(err)
+                    this.hasData = false;
+                    // onError(err);
+                    console.log("no data found at this time for user ", userName)
+                    // Call success callback ...
+                    if (callback != undefined) {
+                        callback(this);
+                    }
                 }
-            },
-            (err: any) => {
-                console.log(err)
-                this.hasData = false;
-                // onError(err);
-                console.log("no data found at this time for user ", userName)
-                // Call success callback ...
-                if (callback != undefined) {
-                    callback(this);
-                }
+            );
+        }else{
+            // parse the data string and init the account from it.
+            let data = JSON.parse(jsonStr)
+            this.hasData = true;
+            this.firstName = data["firstName_"];
+            this.lastName = data["lastName_"];
+            this.middleName = data["middleName_"];
+            this.profilPicture = data["profilPicture_"];
+            if (callback != undefined) {
+                callback(this);
             }
-        );
+        }
     }
 
     /**
@@ -205,16 +222,16 @@ export class Account extends Model {
         onError: (err: any) => void
     ) {
         let userName = this.id;
-  
+
         let rqst = new ReplaceOneRqst();
         if (userName == "sa") {
             rqst.setId("local_resource");
             rqst.setDatabase("local_resource");
-          }else{
-            let db = userName+ "_db";
+        } else {
+            let db = userName + "_db";
             rqst.setId(db);
             rqst.setDatabase(db);
-          }
+        }
 
         let collection = "user_data";
         let data = this.toString();
@@ -237,5 +254,54 @@ export class Account extends Model {
             .catch((err: any) => {
                 onError(err);
             });
+    }
+
+    // Get the list of contacts.
+    static getContacts(query: string, callback: (accounts: Array<Account>) => void, errorCallback: (err: any) => void) {
+        let rqst = new RessourceService.GetAccountsRqst
+        rqst.setQuery(query)
+
+        let stream = Model.globular.resourceService.getAccounts(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+
+        let accounts_ = new Array<RessourceService.Account>();
+
+        stream.on("data", (rsp) => {
+            accounts_ = accounts_.concat(rsp.getAccountsList())
+        });
+
+        stream.on("status", (status) => {
+            if (status.code == 0) {
+                let accounts = new Array<Account>();
+
+                if (accounts_.length == 0) {
+                    callback(accounts);
+                }
+
+                let initAccountData = () => {
+                    let a_ = accounts_.pop()
+                    let a = new Account(a_.getId(), a_.getEmail())
+                    if (accounts_.length > 0) {
+                        a.initData(() => {
+                            accounts.push(a)
+                            initAccountData()
+                        }, errorCallback)
+                    } else {
+                        a.initData(
+                            () => {
+                                accounts.push(a)
+                                callback(accounts)
+                            }, errorCallback)
+                    }
+                }
+
+                // intialyse the account data.
+                initAccountData();
+
+            } else {
+                // In case of error I will return an empty array
+                errorCallback(status.details)
+            }
+        });
+
     }
 }
