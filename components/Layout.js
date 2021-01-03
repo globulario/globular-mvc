@@ -247,7 +247,7 @@ export class Layout extends HTMLElement {
       
           <app-drawer-layout id="layout" fullbleed force-narrow>
             <app-drawer id="app-drawer" slot="drawer">
-              <app-toolbar>
+              <app-toolbar id="app-toolbar-side-menu">
                   <slot id="side-menu" name="side-menu"></slot>
               </app-toolbar>
             </app-drawer>
@@ -264,48 +264,51 @@ export class Layout extends HTMLElement {
                 </app-toolbar>
               </app-header>
               <div id="content">
-                <div id="left-side-menu" style="position: fixed;"></div>
                 <slot id="workspace" name="workspace"></slot>
-                <div id="right-side-menu"></div>
               </div>
             </app-header-layout>
           </app-drawer-layout>
       `;
     // keep reference of left
     this.appDrawer = this.shadowRoot.getElementById("app-drawer");
+    this.appToolbar = this.shadowRoot.getElementById("app-toolbar-side-menu");
     this.menuBtn = this.shadowRoot.getElementById("menu-btn");
     this.layout = this.shadowRoot.getElementById("layout");
     this.hamburger = this.shadowRoot.getElementById("menu-btn");
-    this.leftSideMenu = this.shadowRoot.getElementById("left-side-menu");
+    this.content = this.shadowRoot.getElementById("content");
+    this.sideMenuSlot = this.shadowRoot.getElementById("side-menu");
 
     this.hideSideBar();
 
     window.addEventListener("resize", () => {
-      if(this.workspace()== null){
+      if (this.workspace() == null) {
         return;
       }
+      // Set side menu div style.
+      let sideMenu_ = document.getElementById("side-menu");
+
+
+
       if (this.layout.offsetWidth > 1024) {
         this.hamburger.style.display = "none";
-        if(this.toolbar() != null){
-          this.leftSideMenu.style.top = this.toolbar().offsetHeight + 24 +  5 + "px"
-        }
-        if(this.sideMenu() != null){
-        while (this.sideMenu().childNodes.length > 0) {
-          this.leftSideMenu.appendChild(this.sideMenu().childNodes[0]);
-        }
-        }
-        if(this.leftSideMenu != null &&  this.workspace() != null){
-          this.workspace().style.marginLeft = this.leftSideMenu.offsetWidth + "px"
-        }
+        this.content.insertBefore(this.sideMenuSlot, this.content.firstChild);
+        sideMenu_.style.top = "70px";
+        sideMenu_.style.position = "fixed";
+        sideMenu_.style.left = "10px";
+        sideMenu_.style.marginTop = "0px";
+        sideMenu_.style.width = "auto";
+        sideMenu_.style.display = "block";
+
         // Here I will take the content of the
       } else {
+        this.appToolbar.appendChild(this.sideMenuSlot);
         this.hamburger.style.display = "";
-        if(this.sideMenu() != null && this.leftSideMenu != null){
-          while (this.leftSideMenu.childNodes.length > 0) {
-            this.sideMenu().appendChild(this.leftSideMenu.childNodes[0]);
-          }
-        }
-        this.workspace().style.marginLeft = "0px"
+        sideMenu_.style.top = "0px";
+        sideMenu_.style.position = "";
+        sideMenu_.style.display = "flex";
+        sideMenu_.style.flexDirection = "column";
+        sideMenu_.style.width = "100%";
+        sideMenu_.style.marginTop = "24px";
       }
     });
 
@@ -365,18 +368,35 @@ export class Layout extends HTMLElement {
   toolbar() {
     return document.getElementById("toolbar");
   }
+
   /**
    * Return the side menu
    */
   sideMenu() {
     return document.getElementById("side-menu");
   }
+
+  /**
+   * Clear the side menu
+   */
+  clearSideMenu() {
+    document.getElementById("side-menu").innerHTML = "";
+  }
+
   /**
    * Return the workspace
    */
   workspace() {
     return document.getElementById("workspace");
   }
+
+  /**
+   * Clear the workspace
+   */
+  clearWorkspace() {
+    this.workspace().innerHTML = "";
+  }
+
   /**
    * Block user input and wait until resume.
    * @param {*} msg

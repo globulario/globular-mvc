@@ -4,7 +4,7 @@ import * as jwt from "jwt-decode";
 import { ApplicationView } from "./ApplicationView";
 import { Account } from "./Account";
 import { NotificationType, Notification } from "./Notification";
-import { AcceptDeclineContactBtns } from './components/Contact'
+import { AcceptDeclineContactBtns } from "./components/Contact";
 
 import {
   InsertOneRqst,
@@ -14,10 +14,9 @@ import {
 } from "globular-web-client/persistence/persistence_pb";
 import { v4 as uuidv4 } from "uuid";
 
-
 function mergeTypedArrays(a: any, b: any) {
   // Checks for truthy values on both arrays
-  if (!a && !b) throw 'Please specify valid arguments for parameters a and b.';
+  if (!a && !b) throw "Please specify valid arguments for parameters a and b.";
 
   // Checks for truthy values or empty arrays on each argument
   // to avoid the unnecessary construction of a new array and
@@ -27,7 +26,7 @@ function mergeTypedArrays(a: any, b: any) {
 
   // Make sure that both typed arrays are of the same type
   if (Object.prototype.toString.call(a) !== Object.prototype.toString.call(b))
-    throw 'The types of the two arguments passed for parameters a and b do not match.';
+    throw "The types of the two arguments passed for parameters a and b do not match.";
 
   var c = new a.constructor(a.length + b.length);
   c.set(a);
@@ -59,7 +58,7 @@ export class Application extends Model {
   private update_profile_picture_listener: string;
   private delete_notification_event_listener: string;
   private invite_contact_listener: string;
-
+  private settings_event_listener: string;
   /**
    * Create a new application with a given name. The view
    * can be any ApplicationView or derived ApplicationView class.
@@ -137,6 +136,18 @@ export class Application extends Model {
           },
           true
         );
+        
+        // The register event.
+        Model.eventHub.subscribe(
+          "settings_event_",
+          (uuid: string) => {
+            this.settings_event_listener = uuid;
+          },
+          (evt: any) => {
+            this.settings();
+          },
+          true
+        );
 
         // The register event.
         Model.eventHub.subscribe(
@@ -170,7 +181,7 @@ export class Application extends Model {
           },
           (contact: Account) => {
             // Here I will try to login the user.
-            this.onInviteContact(contact)
+            this.onInviteContact(contact);
           },
           true
         );
@@ -250,7 +261,11 @@ export class Application extends Model {
                 );
                 this.view.init();
               } else {
-                console.log("no application information found for ", this.name, " make sure your application has the correct name in your class derived from Application!");
+                console.log(
+                  "no application information found for ",
+                  this.name,
+                  " make sure your application has the correct name in your class derived from Application!"
+                );
               }
               initCallback();
             }
@@ -272,7 +287,7 @@ export class Application extends Model {
           this.refreshToken(
             (account: Account) => {
               // send a login event.
-              console.log("=====> refresh token send login_event")
+              console.log("=====> refresh token send login_event");
               Model.eventHub.publish("login_event", account, true);
               this.view.resume();
 
@@ -310,14 +325,13 @@ export class Application extends Model {
     Model.globular.resourceService
       .getAllApplicationsInfo(rqst, {})
       .then((rsp: resource.GetAllApplicationsInfoRsp) => {
-
         let infos = [];
         Application.infos = new Map<string, any>();
         for (var i = 0; i < rsp.getApplicationsList().length; i++) {
           let info = rsp.getApplicationsList()[i].toJavaScript();
-          let id = <string>info["_id"]
+          let id = <string>info["_id"];
           Application.infos.set(id, info);
-          infos.push(info)
+          infos.push(info);
         }
         callback(infos);
       })
@@ -359,15 +373,15 @@ export class Application extends Model {
     onError: (err: any) => void
   ) {
     let rqst = new resource.RefreshTokenRqst();
-    let existingToken = localStorage.getItem("user_token")
+    let existingToken = localStorage.getItem("user_token");
     if (existingToken == undefined) {
-      onError("No token found to be refresh!")
-      return
+      onError("No token found to be refresh!");
+      return;
     }
     if (existingToken.length == 0) {
-      onError("Invalid token found!")
-      localStorage.removeItem("user_token")
-      return
+      onError("Invalid token found!");
+      localStorage.removeItem("user_token");
+      return;
     }
 
     rqst.setToken(existingToken);
@@ -396,7 +410,6 @@ export class Application extends Model {
           // sa is not a real account it's a role so it has no database
           initCallback(this.account);
         }, onError);
-
       })
       .catch((err) => {
         // remove old information in that case.
@@ -405,8 +418,8 @@ export class Application extends Model {
         localStorage.removeItem("user_email");
         localStorage.removeItem("token_expired");
         localStorage.removeItem("remember_me");
-        console.log("fail to refesh token!")
-        console.log(err)
+        console.log("fail to refesh token!");
+        console.log(err);
         onError(err);
       });
   }
@@ -418,7 +431,8 @@ export class Application extends Model {
     this.initNotifications();
 
     let __setInterval = setInterval(() => {
-      let isExpired = parseInt(localStorage.getItem("token_expired"), 10) <
+      let isExpired =
+        parseInt(localStorage.getItem("token_expired"), 10) <
         Math.floor(Date.now() / 1000);
       if (isExpired) {
         this.refreshToken(
@@ -429,8 +443,7 @@ export class Application extends Model {
             // simply display the error on the view.
             this.view.displayMessage(err, 4000);
             // Stop runing...
-            clearInterval(__setInterval)
-
+            clearInterval(__setInterval);
           }
         );
       }
@@ -546,14 +559,12 @@ export class Application extends Model {
 
         this.account.initData(
           (account: Account) => {
-
             Model.eventHub.publish("login_event", account, false);
             onLogin(account);
             this.view.resume();
             // Now I will set the application and user notification.
           },
           (err: any) => {
-
             Model.eventHub.publish("login_event", this.account, false);
             onLogin(this.account);
             this.view.resume();
@@ -602,7 +613,10 @@ export class Application extends Model {
     Model.eventHub.unSubscribe("login_event_", this.login_event_listener);
     Model.eventHub.unSubscribe("logout_event_", this.logout_event_listener);
     Model.eventHub.unSubscribe("register_event_", this.register_event_listener);
-    Model.eventHub.unSubscribe("invite_contact_event_", this.invite_contact_listener);
+    Model.eventHub.unSubscribe(
+      "invite_contact_event_",
+      this.invite_contact_listener
+    );
 
     Model.eventHub.unSubscribe(
       "update_profile_picture_event_",
@@ -621,6 +635,12 @@ export class Application extends Model {
     localStorage.removeItem("token_expired");
   }
 
+  /**
+   * Settings application.
+   */
+  settings() {
+    console.log("----------->settings");
+  }
   ///////////////////////////////////////////////////////////////////////////////////////////
   // Notifications
   ///////////////////////////////////////////////////////////////////////////////////////////
@@ -695,7 +715,6 @@ export class Application extends Model {
       notification.sender = this.account.toString();
     }
 
-
     rqst.setCollection("Notifications");
 
     rqst.setData(notification.toString());
@@ -757,7 +776,6 @@ export class Application extends Model {
       query = `{"_recipient":"${this.account.id}"}`;
     }
 
-
     rqst.setCollection("Notifications");
 
     rqst.setQuery(query);
@@ -767,19 +785,19 @@ export class Application extends Model {
       domain: Model.domain,
     });
 
-    let data: any
+    let data: any;
     data = [];
 
     stream.on("data", (rsp: FindResp) => {
-      data = mergeTypedArrays(data, rsp.getData())
+      data = mergeTypedArrays(data, rsp.getData());
     });
 
     stream.on("status", (status) => {
       if (status.code == 0) {
         let objects = JSON.parse(uint8arrayToStringMethod(data));
         let notifications = new Array<Notification>();
-        for(var i=0; i < objects.length; i++){
-          notifications.push(Notification.fromObject(objects[i]))
+        for (var i = 0; i < objects.length; i++) {
+          notifications.push(Notification.fromObject(objects[i]));
         }
         callback(notifications);
       } else {
@@ -789,13 +807,12 @@ export class Application extends Model {
     });
   }
 
-  removeNotification(notification: Notification) { }
+  removeNotification(notification: Notification) {}
 
   /**
    * Remove all notification.
    */
-  clearNotifications(type: NotificationType) { }
-
+  clearNotifications(type: NotificationType) {}
 
   ///////////////////////////////////////////////////////////////////
   // Contacts.
@@ -803,34 +820,32 @@ export class Application extends Model {
 
   // Invite a new contact.
   onInviteContact(contact: Account) {
-
     // Create a user notification.
     let notification = new Notification(
-      NotificationType.User, contact.id, `
+      NotificationType.User,
+      contact.id,
+      `
       <div style="display: flex; flex-direction: column;">
         <p>
           ${this.account.id} want to invite you as a contact!
         </p>
         <globular-accept-decline-contact-btns style="align-self: flex-end;" contact="${this.account.id}"></globular-accept-decline-contact-btns>
       </div>`
-    )
+    );
 
     // Send the notification.
-    this.sendNotifications(notification, ()=>{}, (err:any)=>{
-      this.view.displayMessage(err, 3000)
-    })
+    this.sendNotifications(
+      notification,
+      () => {},
+      (err: any) => {
+        this.view.displayMessage(err, 3000);
+      }
+    );
   }
 
   // Accept contact.
-  onAcceptContactInvitation(contact: string){
-
-  }
+  onAcceptContactInvitation(contact: string) {}
 
   // Decline contact invitation.
-  onDeclineContactInvitation(contact: string){
-    
-  }
-
+  onDeclineContactInvitation(contact: string) {}
 }
-
-

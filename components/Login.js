@@ -155,7 +155,6 @@ export class LoginBox extends HTMLElement {
                 text-transform: uppercase;
 
                 color: var(--cr-primary-text-color);
-                font-size: 108%;
                 font-weight: 400;
                 letter-spacing: .25px;
                 margin-bottom: 12px;
@@ -163,6 +162,10 @@ export class LoginBox extends HTMLElement {
                 outline: none;
                 padding-bottom: 4px;
                 padding-top: 8px;
+            }
+
+            .card-actions{
+                font-size: 1.1rem;
             }
 
         </style>
