@@ -284,32 +284,36 @@ export class Layout extends HTMLElement {
       if (this.workspace() == null) {
         return;
       }
-      // Set side menu div style.
-      let sideMenu_ = document.getElementById("side-menu");
-
-
-
-      if (this.layout.offsetWidth > 1024) {
-        this.hamburger.style.display = "none";
-        this.content.insertBefore(this.sideMenuSlot, this.content.firstChild);
-        sideMenu_.style.top = "70px";
-        sideMenu_.style.position = "fixed";
-        sideMenu_.style.left = "10px";
-        sideMenu_.style.marginTop = "0px";
-        sideMenu_.style.width = "auto";
-        sideMenu_.style.display = "block";
-
-        // Here I will take the content of the
-      } else {
-        this.appToolbar.appendChild(this.sideMenuSlot);
-        this.hamburger.style.display = "";
-        sideMenu_.style.top = "0px";
-        sideMenu_.style.position = "";
-        sideMenu_.style.display = "flex";
-        sideMenu_.style.flexDirection = "column";
-        sideMenu_.style.width = "100%";
-        sideMenu_.style.marginTop = "24px";
-      }
+       // Set side menu div style.
+       let sideMenu_ = document.getElementById("side-menu");
+      
+       let sticky_side_menu = false
+       if(sideMenu_.getAttribute("sticky")!=undefined){
+         sticky_side_menu = true
+       }
+ 
+       if (this.layout.offsetWidth > 1024 && !stiky_side_menu) {
+         // Here I will take the content of the
+         this.hamburger.style.display = "none";
+         this.content.insertBefore(this.sideMenuSlot, this.content.firstChild);
+         sideMenu_.style.top = "70px";
+         sideMenu_.style.position = "fixed";
+         sideMenu_.style.left = "10px";
+         sideMenu_.style.marginTop = "0px";
+         sideMenu_.style.width = "auto";
+         sideMenu_.style.display = "block";
+ 
+       } else {
+         // Set the menu in the toolbar.
+         this.appToolbar.appendChild(this.sideMenuSlot);
+         this.hamburger.style.display = "";
+         sideMenu_.style.top = "0px";
+         sideMenu_.style.position = "";
+         sideMenu_.style.display = "flex";
+         sideMenu_.style.flexDirection = "column";
+         sideMenu_.style.width = "100%";
+         sideMenu_.style.marginTop = "24px";
+       }
     });
 
     window.dispatchEvent(new Event("resize"));

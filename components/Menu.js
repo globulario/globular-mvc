@@ -72,7 +72,6 @@ export class Menu extends HTMLElement {
             #${this.id}_menu_div{
                 display: flex;
                 flex-direction: column;
-                background-color: var(--palette-primary-accent);
                 color: var(--palette-text-accent);
                 position: absolute;
             }

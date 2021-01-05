@@ -35,7 +35,7 @@ function mergeTypedArrays(a: any, b: any) {
   return c;
 }
 
-export function uint8arrayToStringMethod(myUint8Arr: any) {
+function uint8arrayToStringMethod(myUint8Arr: any) {
   return String.fromCharCode.apply(null, myUint8Arr);
 }
 

@@ -275,6 +275,7 @@ export class Account extends Model {
 
                 if (accounts_.length == 0) {
                     callback(accounts);
+                    return;
                 }
 
                 let initAccountData = () => {
