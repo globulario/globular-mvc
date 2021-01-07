@@ -292,7 +292,7 @@ export class Layout extends HTMLElement {
          sticky_side_menu = true
        }
  
-       if (this.layout.offsetWidth > 1024 && !stiky_side_menu) {
+       if (this.layout.offsetWidth > 1024 && !sticky_side_menu) {
          // Here I will take the content of the
          this.hamburger.style.display = "none";
          this.content.insertBefore(this.sideMenuSlot, this.content.firstChild);
