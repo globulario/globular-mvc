@@ -36,6 +36,7 @@ export class Menu extends HTMLElement {
                 display: flex;
                 position: relative;
                 --iron-icon-fill-color: var(--palette-text-accent);
+                background: transparent;
             }
 
             #${this.id}_div paper-button {

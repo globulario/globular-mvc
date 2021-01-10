@@ -39,6 +39,7 @@ export class ContactsMenu extends Menu {
                 flex-wrap: wrap;
                 padding: 10px;
                 width: 300px;
+                height: 100%;
             }
             </style>
             <div id="Contacts-div">
