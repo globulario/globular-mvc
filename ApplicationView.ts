@@ -2,6 +2,7 @@ import { View } from "./View";
 import * as M from "materialize-css";
 import "materialize-css/sass/materialize.scss";
 import { Account } from "./Account";
+import {UserSettings} from "./Settings"
 import { Model } from "./Model";
 
 // web-components.
@@ -161,6 +162,8 @@ export class ApplicationView extends View {
 
     // Create the setting components.
     this.settingsMenu = new SettingsMenu();
+    this.settingsMenu.id = "setting_menu";
+
     this.settingsPanel = new SettingsPanel();
 
     // set the global varialbe...
@@ -177,40 +180,13 @@ export class ApplicationView extends View {
     this.notificationMenu.init();
     this.contactsMenu.init();
 
-    // Create the settings menu and panel here
-    this.settingsMenu.appendSettingsMenuItem("account-box", "User");
-    let userSettingsPage = <any> this.settingsPanel.appendSettingsPage("User");
-    let passwordSettings = userSettingsPage.appendSettings("Set Password")
-
-    // Ceci est un test pour le contenu d'un setting.
-    const html_ = `
-    <div> 
-        Ceci est le contenu a afficher
-    </div>`
-
-    let range = document.createRange()
-    passwordSettings.appendChild(range.createContextualFragment(html_))
-
-    userSettingsPage.appendSettings("Contacts")
-
-    this.settingsMenu.appendSettingsMenuItem(
-      "settings-applications",
-      "Application"
-    );
-    this.settingsPanel.appendSettingsPage("Application");
-    this.settingsMenu.appendSettingsMenuItem(
-      "social:notifications-none",
-      "Notification"
-    );
-    this.settingsPanel.appendSettingsPage("Notification");
-
     // Here I will set contact menu actions.
     this.contactsMenu.onInviteConctact = (contact: Account) => {
       // Display the message to the user.
       this.displayMessage(
         "<iron-icon icon='send' style='margin-right: 10px;'></iron-icon><div>Invitation was sent to " +
-          contact.email +
-          "</div>",
+        contact.email +
+        "</div>",
         3000
       );
 
@@ -346,7 +322,7 @@ export class ApplicationView extends View {
   /**
    * Refresh various component.
    */
-  update() {}
+  update() { }
 
   /**
    * The title of the application
@@ -452,6 +428,33 @@ export class ApplicationView extends View {
     this.overFlowMenu.hide(); // not show it at first.
     this.accountMenu.setAccount(account);
 
+    // Set the settings...
+    this.settingsMenu.clear();
+    
+    // Create the settings menu and panel here
+    this.settingsMenu.appendSettingsMenuItem("account-box", "User");
+
+    // Create General informations setting's
+    let userSettingsPage = <any>this.settingsPanel.appendSettingsPage("User");
+
+    // Create user settings ...
+    let userSettings = new UserSettings(account, userSettingsPage.appendSettings("General"), userSettingsPage.appendSettings("Security"));
+
+    // The application settings...
+    this.settingsMenu.appendSettingsMenuItem(
+      "settings-applications",
+      "Application"
+    );
+
+    this.settingsPanel.appendSettingsPage("Application");
+
+
+    this.settingsMenu.appendSettingsMenuItem(
+      "social:notifications-none",
+      "Notification"
+    );
+
+
     window.dispatchEvent(new Event("resize"));
   }
 
@@ -471,15 +474,18 @@ export class ApplicationView extends View {
     this.accountMenu.parentNode.removeChild(this.notificationMenu);
     this.accountMenu.parentNode.removeChild(this.accountMenu);
 
-    this.getWorkspace().innerHTML = "";
+    this.clearWorkspace();
+    this.clearSideMenu();
 
     window.dispatchEvent(new Event("resize"));
   }
 
   onSettings() {
-    console.log("------>Onsettings");
-    this.getSideMenu().appendChild(this.settingsMenu);
-    this.getWorkspace().appendChild(this.settingsPanel);
+      this.clearSideMenu();
+      
+      this.getSideMenu().appendChild(this.settingsMenu);
+      this.getWorkspace().appendChild(this.settingsPanel);
+    
   }
 
   //////////////////////////////////////////////////////////////////////////////////////////

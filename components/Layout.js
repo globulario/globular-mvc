@@ -125,6 +125,10 @@ div, span, h1, h2, h3{
   font-family: var(--font-family);
 }
 
+paper-card{
+  background-color: transparent;
+}
+
 paper-card div{
   background-color: var(--palette-background-paper);
   color: var(--palette-text-primary);

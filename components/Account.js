@@ -114,8 +114,7 @@ export class AccountMenu extends Menu {
         </style>
         <div class="card-actions">
                 <paper-button id="settings_btn" >settings
-                <iron-icon style="padding-left: 5px;" icon="settings"></iron-icon>
-                <paper-ripple class="circle" recenters></paper-ripple>
+                  <iron-icon style="padding-left: 5px;" icon="settings"></iron-icon>
                 </paper-button> 
                 <paper-button id="logout_btn" >logout 
                     <iron-icon style="padding-left: 5px;" icon="exit-to-app"></iron-icon> 

@@ -35,6 +35,10 @@ export class SettingsMenu extends HTMLElement {
     this.container = this.shadowRoot.getElementById("container")
   }
 
+  clear(){
+    this.container.innerHTML = '';
+  }
+
   appendSettingsMenuItem(icon, title) {
     const html = `<globular-settings-side-menu-item id="${title}_settings_menu_item" icon="${icon}" title="${title}"> </globular-settings-side-menu-item>`; 
     const range = document.createRange()
@@ -96,8 +100,10 @@ export class SettingsSideMenuItem extends HTMLElement {
         <div id="title-div">${title}</div>
     </div>
     `;
+  }
 
-
+  clear(){
+    this.container.innerHTML = '';
   }
 
   // attach event here.
@@ -163,6 +169,9 @@ export class SettingsPanel extends HTMLElement {
     this.container = this.shadowRoot.getElementById("container")
   }
 
+  clear(){
+    this.container.innerHTML = '';
+  }
 
   appendSettingsPage(title) {
     const html = `<globular-settings-page id="${title}_settings_page" title="${title}"></globular-settings-page>`; 
@@ -203,6 +212,10 @@ export class SettingsPage extends HTMLElement {
     `;
 
     this.container = this.shadowRoot.getElementById("container")
+  }
+
+  clear(){
+    this.container.innerHTML = '';
   }
 
   connectedCallback() {
@@ -293,6 +306,11 @@ export class Settings extends HTMLElement {
     this.container = this.shadowRoot.getElementById("container")
 
   }
+
+  clear(){
+    this.container.innerHTML = '';
+  }
+  
 }
 
 customElements.define("globular-settings", Settings);
