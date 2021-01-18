@@ -2,7 +2,7 @@ import { View } from "./View";
 import * as M from "materialize-css";
 import "materialize-css/sass/materialize.scss";
 import { Account } from "./Account";
-import {UserSettings} from "./Settings"
+import {ApplicationSettings, UserSettings} from "./Settings"
 import { Model } from "./Model";
 
 // web-components.
@@ -19,6 +19,7 @@ import { ContactsMenu } from "./components/Contact";
 import { ConversationPanel } from "./components/Conversation";
 import { Wizard } from "./components/Wizard";
 import { SettingsMenu, SettingsPanel } from "./components/Settings";
+import { Application } from "./Application";
 
 // This variable is there to give acces to wait and resume...
 export let applicationView: ApplicationView;
@@ -28,6 +29,16 @@ export let applicationView: ApplicationView;
  * layout that can be use as starting point to any web-application.
  */
 export class ApplicationView extends View {
+
+  private _application: Application;
+  
+  public get application(): Application {
+    return this._application;
+  }
+  public set application(value: Application) {
+    this._application = value;
+  }
+
   /** The application view component. */
   private layout: Layout;
 
@@ -440,13 +451,16 @@ export class ApplicationView extends View {
     // Create user settings ...
     let userSettings = new UserSettings(account, userSettingsPage.appendSettings("General", "Those information's can be view by other's user's"), userSettingsPage.appendSettings("Security"));
 
+
     // The application settings...
     this.settingsMenu.appendSettingsMenuItem(
       "settings-applications",
       "Application"
     );
 
-    this.settingsPanel.appendSettingsPage("Application");
+    let applicationSettingPage = <any>this.settingsPanel.appendSettingsPage("Application");
+
+    let applicationSettings = new ApplicationSettings(this.application, applicationSettingPage.appendSettings("General", "General application settings."), userSettingsPage.appendSettings("Security", "Perssions and access settings."));
 
 
     this.settingsMenu.appendSettingsMenuItem(

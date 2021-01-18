@@ -47,7 +47,15 @@ export class Application extends Model {
   public static language: string;
   private static infos: Map<string, any>;
 
-  protected name: string;
+  private _name: string;
+  
+  public get name(): string {
+    return this._name;
+  }
+  public set name(value: string) {
+    this._name = value;
+  }
+
   protected title: string;
   protected account: Account;
 
