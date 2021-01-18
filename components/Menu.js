@@ -35,7 +35,6 @@ export class Menu extends HTMLElement {
             #${this.id}_div {
                 display: flex;
                 position: relative;
-                --iron-icon-fill-color: var(--palette-text-accent);
                 background: transparent;
             }
 
@@ -68,6 +67,10 @@ export class Menu extends HTMLElement {
             .bottom{
                 right: 0px;
                 top: 40px;
+            }
+
+            #overflow_menu_div{
+                background-color: var(--palette-background-default);
             }
 
             #${this.id}_menu_div{

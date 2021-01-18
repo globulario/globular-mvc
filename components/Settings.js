@@ -1,5 +1,6 @@
 import { theme } from "./Layout";
-import "@polymer/iron-selector/iron-selector.js";
+import '@polymer/iron-icon/iron-icon.js';
+import '@polymer/iron-icons/iron-icons.js';
 import { Model } from "../Model";
 
 /**
@@ -24,7 +25,7 @@ export class SettingsMenu extends HTMLElement {
        }
 
        globular-settings-side-menu-item.active{
-            color: var(--palette-warning-dark);
+          color: var(--palette-warning-dark);
        }
 
     </style>
@@ -198,6 +199,7 @@ export class SettingsPage extends HTMLElement {
     this.attachShadow({ mode: "open" });
 
     this.title = this.getAttribute("title")
+    this.subtitle = this.getAttribute("subtitle")
 
     // Connect to event.
     this.shadowRoot.innerHTML = `
@@ -233,8 +235,8 @@ export class SettingsPage extends HTMLElement {
       })
   }
 
-  appendSettings(title) {
-    const html = `<globular-settings id="${title}_settings" title="${title}"></globular-settings>`; 
+  appendSettings(title, subtitle) {
+    const html = `<globular-settings id="${title}_settings" title="${title}" subtitle="${subtitle}"></globular-settings>`; 
     const range = document.createRange()
     this.container.appendChild(range.createContextualFragment(html))
     const settings = this.shadowRoot.getElementById(title + "_settings")
@@ -258,11 +260,19 @@ export class Settings extends HTMLElement {
     this.attachShadow({ mode: "open" });
 
     this.title = this.getAttribute("title")
+    this.subtitle = "";
+
+    if(this.hasAttribute("subtitle")){
+      this.subtitle = this.getAttribute("subtitle")
+    }
 
     // Connect to event.
     this.shadowRoot.innerHTML = `
     <style>
        ${theme}
+
+
+
        #container {
            display: flex;
            flex-direction: column;
@@ -272,16 +282,30 @@ export class Settings extends HTMLElement {
 
        .card-content{
             min-width: 680px;
-            min-height: 200px;
+            padding: 12px;
         }
 
-        
+        ::slotted(globular-setting:not(:last-child)) {
+          border-bottom: 1px solid #e0e0e0;
+        }
+
+        @media only screen and (max-width: 800px) {
+          .card-content{
+            min-width: 580px;
+          }
+        }
+
+        @media only screen and (max-width: 600px) {
+          .card-content{
+            min-width: 380px;
+          }
+        }
+
         .card-title{
             position: absolute;
             top: -40px;
             font-size: 1rem;
             text-transform: uppercase;
-
             color: var(--cr-primary-text-color);
             font-weight: 400;
             letter-spacing: .25px;
@@ -292,10 +316,24 @@ export class Settings extends HTMLElement {
             padding-top: 8px;
         }
 
+        .card-subtitle{
+          padding: 24px;
+          letter-spacing: .01428571em;
+          font-family: Roboto,Arial,sans-serif;
+          font-size: .875rem;
+          font-weight: 400;
+          line-height: 1.25rem;
+          hyphens: auto;
+          word-break: break-word;
+          word-wrap: break-word;
+          color: var(--cr-primary-text-color);
+        }
+
     </style>
     <div id="container">
        <paper-card id="${this.title}_settings">
             <h2 class="card-title">${this.title}</h2>
+            <div class="card-subtitle">${this.subtitle}</div>
             <div class="card-content">
                 <slot></slot>
             </div>
@@ -307,6 +345,10 @@ export class Settings extends HTMLElement {
 
   }
 
+  addSetting(setting){
+    this.container.appendChild(setting)
+  }
+
   clear(){
     this.container.innerHTML = '';
   }
@@ -314,3 +356,76 @@ export class Settings extends HTMLElement {
 }
 
 customElements.define("globular-settings", Settings);
+
+/**
+ * The user general settings.
+ */
+export class Setting extends HTMLElement {
+  constructor(name, value) {
+    super();
+
+    this.container = null;
+
+    // Set the shadow dom.
+    this.attachShadow({ mode: "open" });
+    if(this.hasAttribute("name")){
+      name = this.getAttribute("name")
+    }
+
+    // Connect to event.
+    this.shadowRoot.innerHTML = `
+    <style>
+       ${theme}
+
+      .setting-name{
+         line-height: 1rem;
+         font-size: .6875rem;
+         font-weight: 500;
+         flex-basis: 156px;
+         letter-spacing: .07272727em;
+         text-transform: uppercase;
+         hyphens: auto;
+         word-break: break-word;
+         word-wrap: break-word;
+       }
+
+      .setting-value{
+        font-size: 1rem;
+        flex-basis: 328px;
+        flex-grow: 1;
+        letter-spacing: .00625em;
+        font-size: 1rem;
+        font-weight: 400;
+        line-height: 1.5rem;
+        hyphens: auto;
+        word-break: break-word;
+        word-wrap: break-word;
+      }
+    </style>
+
+      <div class="setting-name">${name}</div>
+      <div class="setting-value">${value}</div>
+      <div>
+        <slot id="action-btn-slot"></slot>
+        <iron-icon id="action-btn" icon="chevron-right"></iron-icon>
+      </div>
+    `;
+
+    // Set style property of the component itself.
+    this.style.display = "flex"
+    this.style.color = "var(--cr-primary-text-color)"
+    this.style.fontFamily = "Roboto,Arial,sans-serif"
+    this.style.alignItems = "center"
+    this.style.padding = "15px 12px 16px 12px"
+
+    this.actionBtn = this.shadowRoot.getElementById("action-btn");
+    //this.actionBtn.onclick = onChangeSetting;
+  }
+
+  clear(){
+    this.shadowRoot.innerHTML = '';
+  }
+  
+}
+
+customElements.define("globular-setting", Setting);

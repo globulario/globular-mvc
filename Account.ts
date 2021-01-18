@@ -66,6 +66,15 @@ export class Account extends Model {
         this.middleName_ = value;
     }
 
+    public get userName() : string {
+        let name = this.firstName;
+        if(this.middleName.length > 0) {
+            name += " " + this.middleName;
+        }
+
+        return name + " " + this.lastName;
+    }
+
     // Keep list of participants for further chat.
     private contacts: Array<Account>;
 
@@ -166,6 +175,9 @@ export class Account extends Model {
                     this.firstName = data["firstName_"];
                     this.lastName = data["lastName_"];
                     this.middleName = data["middleName_"];
+                    if(this.middleName == undefined){
+                        this.middleName = "";
+                    }
                     this.profilPicture = data["profilPicture_"];
                     jsonStr = JSON.stringify(data)
                     localStorage.setItem(userName + "_user_data", jsonStr)
@@ -191,6 +203,9 @@ export class Account extends Model {
             this.firstName = data["firstName_"];
             this.lastName = data["lastName_"];
             this.middleName = data["middleName_"];
+            if(this.middleName == undefined){
+                this.middleName = "";
+            }
             this.profilPicture = data["profilPicture_"];
             if (callback != undefined) {
                 callback(this);

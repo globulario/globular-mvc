@@ -121,12 +121,26 @@ export let theme = `:host{
 
 }
 
+/* if the icon are in the toolbar */
+:host-context(#toolbar){
+  --iron-icon-fill-color: var(--palette-text-accent);
+}
+
+/* if the icon are in the overflow menu */
+:host-context(#overflow_menu_div){
+  --iron-icon-fill-color: var(--palette-text-primary);
+}
+
 div, span, h1, h2, h3{
   font-family: var(--font-family);
 }
 
 paper-card{
   background-color: transparent;
+}
+
+paper-button iron-icon{
+  --iron-icon-fill-color: var(--palette-text-primary);
 }
 
 paper-card div{

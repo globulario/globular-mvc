@@ -162,7 +162,6 @@ export class ApplicationView extends View {
 
     // Create the setting components.
     this.settingsMenu = new SettingsMenu();
-    this.settingsMenu.id = "setting_menu";
 
     this.settingsPanel = new SettingsPanel();
 
@@ -271,6 +270,7 @@ export class ApplicationView extends View {
             this.applicationsMenu,
             this.layout.toolbar().firstChild
           );
+          
         this.applicationsMenu.getMenuDiv().classList.remove("left");
         this.applicationsMenu.getMenuDiv().classList.add("bottom");
 
@@ -428,7 +428,7 @@ export class ApplicationView extends View {
     this.overFlowMenu.hide(); // not show it at first.
     this.accountMenu.setAccount(account);
 
-    // Set the settings...
+    this.settingsPanel.clear();
     this.settingsMenu.clear();
     
     // Create the settings menu and panel here
@@ -438,7 +438,7 @@ export class ApplicationView extends View {
     let userSettingsPage = <any>this.settingsPanel.appendSettingsPage("User");
 
     // Create user settings ...
-    let userSettings = new UserSettings(account, userSettingsPage.appendSettings("General"), userSettingsPage.appendSettings("Security"));
+    let userSettings = new UserSettings(account, userSettingsPage.appendSettings("General", "Those information's can be vue by other's"), userSettingsPage.appendSettings("Security"));
 
     // The application settings...
     this.settingsMenu.appendSettingsMenuItem(
