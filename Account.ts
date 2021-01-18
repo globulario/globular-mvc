@@ -173,7 +173,13 @@ export class Account extends Model {
                 (data: any) => {
                     this.hasData = true;
                     this.firstName = data["firstName_"];
+                    if(this.firstName == undefined){
+                        this.firstName = ""
+                    }
                     this.lastName = data["lastName_"];
+                    if(this.lastName == undefined){
+                        this.lastName = ""
+                    }
                     this.middleName = data["middleName_"];
                     if(this.middleName == undefined){
                         this.middleName = "";
@@ -201,7 +207,13 @@ export class Account extends Model {
             let data = JSON.parse(jsonStr)
             this.hasData = true;
             this.firstName = data["firstName_"];
+            if(this.firstName == undefined){
+                this.firstName = ""
+            }
             this.lastName = data["lastName_"];
+            if(this.lastName == undefined){
+                this.lastName = ""
+            }
             this.middleName = data["middleName_"];
             if(this.middleName == undefined){
                 this.middleName = "";

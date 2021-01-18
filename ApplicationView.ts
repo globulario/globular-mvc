@@ -438,7 +438,7 @@ export class ApplicationView extends View {
     let userSettingsPage = <any>this.settingsPanel.appendSettingsPage("User");
 
     // Create user settings ...
-    let userSettings = new UserSettings(account, userSettingsPage.appendSettings("General", "Those information's can be vue by other's"), userSettingsPage.appendSettings("Security"));
+    let userSettings = new UserSettings(account, userSettingsPage.appendSettings("General", "Those information's can be view by other's user's"), userSettingsPage.appendSettings("Security"));
 
     // The application settings...
     this.settingsMenu.appendSettingsMenuItem(

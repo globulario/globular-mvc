@@ -590,7 +590,7 @@ export class Application extends Model {
     Model.eventHub.publish("logout_event", this.account, true);
 
     // Set room to undefined.
-    this.account = undefined;
+    this.account = null;
 
     // remove token informations
     localStorage.removeItem("remember_me");
