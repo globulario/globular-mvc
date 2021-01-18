@@ -460,7 +460,7 @@ export class ApplicationView extends View {
 
     let applicationSettingPage = <any>this.settingsPanel.appendSettingsPage("Application");
 
-    let applicationSettings = new ApplicationSettings(this.application, applicationSettingPage.appendSettings("General", "General application settings."), userSettingsPage.appendSettings("Security", "Perssions and access settings."));
+    let applicationSettings = new ApplicationSettings(this.application, applicationSettingPage.appendSettings("General", "General application settings."), applicationSettingPage.appendSettings("Security", "Perssions and access settings."));
 
 
     this.settingsMenu.appendSettingsMenuItem(

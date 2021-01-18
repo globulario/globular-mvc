@@ -6,6 +6,15 @@ export class Settings {
     constructor() {
 
     }
+
+    // Those functions must be impletmented.
+    public load(){
+        console.log("Load settings...")
+    }
+
+    public save(){
+        console.log("Save settings...")
+    }
 }
 /**
  * Model for user settings.
