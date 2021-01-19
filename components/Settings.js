@@ -405,10 +405,6 @@ export class Setting extends HTMLElement {
 
       <div class="setting-name">${name}</div>
       <div class="setting-value">${value}</div>
-      <div>
-        <slot id="action-btn-slot"></slot>
-        <iron-icon id="action-btn" icon="chevron-right"></iron-icon>
-      </div>
     `;
 
     // Set style property of the component itself.
@@ -425,7 +421,43 @@ export class Setting extends HTMLElement {
   clear(){
     this.shadowRoot.innerHTML = '';
   }
+
+  getValue(){}
+  
+}
+/*
+
+      <div>
+        <slot id="action-btn-slot"></slot>
+        <iron-icon id="action-btn" icon="chevron-right"></iron-icon>
+      </div>
+*/
+customElements.define("globular-setting", Setting);
+
+export class ComplexSetting extends Setting {
+  constructor(name, value) {
+    super(name, value);
+
+    this.shadowRoot.appendChild(`<div>
+      <slot id="action-btn-slot"></slot>
+      <iron-icon id="action-btn" icon="chevron-right"></iron-icon>
+    </div>
+    `)
+  }
+}
+customElements.define("globular-complex-setting", ComplexSetting);
+
+export class StringSetting extends Setting {
+  constructor(name, value) {
+    super(name, value);
+
+    this.shadowRoot.querySelector('.setting-value').innerHTML = `<input id="value" type="text" placeholder="${value}"></input>`
+  }
+
+  getValue() {
+    return this.shadowRoot.getElementById('value').value
+  }
   
 }
 
-customElements.define("globular-setting", Setting);
+customElements.define("globular-string-setting", StringSetting);
