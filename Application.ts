@@ -56,7 +56,15 @@ export class Application extends Model {
     this._name = value;
   }
 
-  protected title: string;
+  private _title: string;
+
+  public get title(): string {
+    return this._title;
+  }
+  public set title(value: string) {
+    this._title = value;
+  }
+
   protected account: Account;
 
   // Event listener's
@@ -85,12 +93,14 @@ export class Application extends Model {
 
     // The application name.
     this.name = name;
+    this.title = title;
+
     Model.application = this.name; // set the application in model.
     this.view = view;
 
     if (document.getElementsByTagName("title").length > 0) {
-      document.getElementsByTagName("title")[0].innerHTML = title;
-      view.setTitle(title);
+      document.getElementsByTagName("title")[0].innerHTML = this.title;
+      view.setTitle(this.title);
     }
   }
 

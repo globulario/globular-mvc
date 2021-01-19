@@ -61,10 +61,10 @@ export class ApplicationView extends View {
   private contactsMenu: ContactsMenu;
 
   /** The settings Menu */
-  private settingsMenu: SettingsMenu;
+  protected settingsMenu: SettingsMenu;
 
   /** The settings Panel */
-  private settingsPanel: SettingsPanel;
+  protected settingsPanel: SettingsPanel;
 
   /** The camera */
   private _camera: Camera;
@@ -443,32 +443,11 @@ export class ApplicationView extends View {
     this.settingsMenu.clear();
     
     // Create the settings menu and panel here
-    this.settingsMenu.appendSettingsMenuItem("account-box", "User");
-
-    // Create General informations setting's
-    let userSettingsPage = <any>this.settingsPanel.appendSettingsPage("User");
-
-    // Create user settings ...
-    let userSettings = new UserSettings(account, userSettingsPage.appendSettings("General", "Those information's can be view by other's user's"), userSettingsPage.appendSettings("Security"));
-
+    let userSettings = new UserSettings(account, this.settingsMenu, this.settingsPanel);
 
     // The application settings...
-    this.settingsMenu.appendSettingsMenuItem(
-      "settings-applications",
-      "Application"
-    );
-
-    let applicationSettingPage = <any>this.settingsPanel.appendSettingsPage("Application");
-
-    let applicationSettings = new ApplicationSettings(this.application, applicationSettingPage.appendSettings("General", "General application settings."), applicationSettingPage.appendSettings("Security", "Perssions and access settings."));
-
-
-    this.settingsMenu.appendSettingsMenuItem(
-      "social:notifications-none",
-      "Notification"
-    );
-
-
+    let applicationSettings = new ApplicationSettings(this.application, this.settingsMenu, this.settingsPanel);
+    
     window.dispatchEvent(new Event("resize"));
   }
 
