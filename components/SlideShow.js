@@ -1,3 +1,6 @@
+
+import '@polymer/paper-card/paper-card.js';
+
 const shownClass = 'shown';
 const hiddenClass = 'hidden';
 const slideSelector = '.slide';
@@ -36,12 +39,7 @@ export class SlideShow extends HTMLElement {
                 --offScreen: -1080px;
                 --offScreenRight: var(--slidewidth);
             }
-            
-            body {
-                margin: 0;
-                font-family: Calibri, Candara, Segoe, Segoe UI, Optima, Arial, sans-serif;
-            }
-            
+ 
             .row {
                 display: flex;
                 -ms-flex-wrap: wrap;
@@ -78,6 +76,11 @@ export class SlideShow extends HTMLElement {
                 animation: slideIn 0.5s ease forwards;
                 z-index: 1
             }
+
+            #container{
+                display: flex;
+                flex-direction: column;
+            }
             
             @keyframes slideIn {
                 0% { 
@@ -97,9 +100,9 @@ export class SlideShow extends HTMLElement {
                 }
             }
         </style>
-        <div class="container">
+        <paper-card class="container">
             <slot name="slides"></slot>
-        </div>
+        </paper-card>
         `
         this.shadowRoot.appendChild(template.content.cloneNode(true));
 

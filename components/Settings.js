@@ -165,6 +165,9 @@ export class SettingsPanel extends HTMLElement {
     </style>
     <div id="container">
     </div>
+    <div style="display: flex;">
+       Ceci est un test.
+    </div>
     `;
 
     this.container = this.shadowRoot.getElementById("container")
