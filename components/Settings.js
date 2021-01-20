@@ -441,7 +441,8 @@ export class ComplexSetting extends Setting {
   constructor(name, value) {
     super(name, value);
 
-    this.shadowRoot.appendChild(`<div>
+    this.shadowRoot.appendChild(`
+    <div>
       <slot id="action-btn-slot"></slot>
       <iron-icon id="action-btn" icon="chevron-right"></iron-icon>
     </div>
