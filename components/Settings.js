@@ -36,23 +36,23 @@ export class SettingsMenu extends HTMLElement {
     this.container = this.shadowRoot.getElementById("container")
   }
 
-  clear(){
+  clear() {
     this.container.innerHTML = '';
   }
 
   appendSettingsMenuItem(icon, title) {
-    const html = `<globular-settings-side-menu-item id="${title}_settings_menu_item" icon="${icon}" title="${title}"> </globular-settings-side-menu-item>`; 
+    const html = `<globular-settings-side-menu-item id="${title}_settings_menu_item" icon="${icon}" title="${title}"> </globular-settings-side-menu-item>`;
     const range = document.createRange()
     this.container.appendChild(range.createContextualFragment(html))
 
     let item = this.shadowRoot.getElementById(title + "_settings_menu_item")
 
-    item.onclick = ()=>{
-        let elements = this.shadowRoot.querySelectorAll(".active")
-        elements.forEach((element)=>{
-            element.classList.remove("active")
-        })
-        item.classList.add("active")
+    item.onclick = () => {
+      let elements = this.shadowRoot.querySelectorAll(".active")
+      elements.forEach((element) => {
+        element.classList.remove("active")
+      })
+      item.classList.add("active")
     }
   }
 
@@ -73,7 +73,7 @@ export class SettingsSideMenuItem extends HTMLElement {
     const title = this.getAttribute("title")
 
     this.container = null;
-    this.titleDiv= null;
+    this.titleDiv = null;
 
     this.shadowRoot.innerHTML = `
     <style>
@@ -103,7 +103,7 @@ export class SettingsSideMenuItem extends HTMLElement {
     `;
   }
 
-  clear(){
+  clear() {
     this.container.innerHTML = '';
   }
 
@@ -111,15 +111,15 @@ export class SettingsSideMenuItem extends HTMLElement {
   connectedCallback() {
     this.container = this.shadowRoot.getElementById("container")
     this.titleDiv = this.shadowRoot.getElementById("title-div")
-  
+
     // Create the actions here.
-    this.titleDiv.onclick = ()=>{
-       
+    this.titleDiv.onclick = () => {
+
     }
 
-    this.titleDiv.onclick = ()=>{
+    this.titleDiv.onclick = () => {
 
-        Model.eventHub.publish("set-settings-page", this.titleDiv.innerText, true)
+      Model.eventHub.publish("set-settings-page", this.titleDiv.innerText, true)
     }
   }
 
@@ -170,12 +170,12 @@ export class SettingsPanel extends HTMLElement {
     this.container = this.shadowRoot.getElementById("container")
   }
 
-  clear(){
+  clear() {
     this.container.innerHTML = '';
   }
 
   appendSettingsPage(title) {
-    const html = `<globular-settings-page id="${title}_settings_page" title="${title}"></globular-settings-page>`; 
+    const html = `<globular-settings-page id="${title}_settings_page" title="${title}"></globular-settings-page>`;
     const range = document.createRange()
     this.container.appendChild(range.createContextualFragment(html))
     const page = this.shadowRoot.getElementById(title + "_settings_page")
@@ -216,7 +216,7 @@ export class SettingsPage extends HTMLElement {
     this.container = this.shadowRoot.getElementById("container")
   }
 
-  clear(){
+  clear() {
     this.container.innerHTML = '';
   }
 
@@ -225,18 +225,18 @@ export class SettingsPage extends HTMLElement {
   }
 
   // Model.eventHub must be init.
-  init(){
-      Model.eventHub.subscribe("set-settings-page", (uuid)=>{}, (pageId)=>{
-          if(this.title == pageId){
-              this.container.style.display = "flex"
-          }else{
-              this.container.style.display = "none"
-          }
-      })
+  init() {
+    Model.eventHub.subscribe("set-settings-page", (uuid) => { }, (pageId) => {
+      if (this.title == pageId) {
+        this.container.style.display = "flex"
+      } else {
+        this.container.style.display = "none"
+      }
+    })
   }
 
   appendSettings(title, subtitle) {
-    const html = `<globular-settings id="${title}_settings" title="${title}" subtitle="${subtitle}"></globular-settings>`; 
+    const html = `<globular-settings id="${title}_settings" title="${title}" subtitle="${subtitle}"></globular-settings>`;
     const range = document.createRange()
     this.container.appendChild(range.createContextualFragment(html))
     const settings = this.shadowRoot.getElementById(title + "_settings")
@@ -262,7 +262,7 @@ export class Settings extends HTMLElement {
     this.title = this.getAttribute("title")
     this.subtitle = "";
 
-    if(this.hasAttribute("subtitle")){
+    if (this.hasAttribute("subtitle")) {
       this.subtitle = this.getAttribute("subtitle")
     }
 
@@ -345,14 +345,14 @@ export class Settings extends HTMLElement {
 
   }
 
-  addSetting(setting){
+  addSetting(setting) {
     this.container.appendChild(setting)
   }
 
-  clear(){
+  clear() {
     this.container.innerHTML = '';
   }
-  
+
 }
 
 customElements.define("globular-settings", Settings);
@@ -368,7 +368,7 @@ export class Setting extends HTMLElement {
 
     // Set the shadow dom.
     this.attachShadow({ mode: "open" });
-    if(this.hasAttribute("name")){
+    if (this.hasAttribute("name")) {
       name = this.getAttribute("name")
     }
 
@@ -418,12 +418,12 @@ export class Setting extends HTMLElement {
     //this.actionBtn.onclick = onChangeSetting;
   }
 
-  clear(){
+  clear() {
     this.shadowRoot.innerHTML = '';
   }
 
-  getValue(){}
-  
+  getValue() { }
+
 }
 /*
 
@@ -438,26 +438,29 @@ export class ComplexSetting extends Setting {
   constructor(name, value) {
     super(name, value);
 
-    this.shadowRoot.appendChild(`<div>
-      <slot id="action-btn-slot"></slot>
-      <iron-icon id="action-btn" icon="chevron-right"></iron-icon>
-    </div>
-    `)
+    let chevron = document.createElement('div')
+    chevron.innerHTML = `<div>
+    <slot id="action-btn-slot"></slot>
+    <iron-icon id="action-btn" icon="chevron-right"></iron-icon>
+  </div>
+  `
+    // this.container.appendChild(chevron)
+    this.shadowRoot.appendChild(chevron)
   }
 }
 customElements.define("globular-complex-setting", ComplexSetting);
 
-export class StringSetting extends Setting {
-  constructor(name, value) {
+export class InputSetting extends Setting {
+  constructor(name, value, type) {
     super(name, value);
 
-    this.shadowRoot.querySelector('.setting-value').innerHTML = `<input id="value" type="text" placeholder="${value}"></input>`
+    this.shadowRoot.querySelector('.setting-value').innerHTML = `<input id="value" type="${type}" placeholder="${value}"></input>`
   }
 
   getValue() {
     return this.shadowRoot.getElementById('value').value
   }
-  
+
 }
 
-customElements.define("globular-string-setting", StringSetting);
+customElements.define("globular-input-setting", InputSetting);
