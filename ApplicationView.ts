@@ -20,6 +20,7 @@ import { ConversationPanel } from "./components/Conversation";
 import { Wizard } from "./components/Wizard";
 import { SettingsMenu, SettingsPanel } from "./components/Settings";
 import { Application } from "./Application";
+import {SlideShow} from "./components/SlideShow";
 
 // This variable is there to give acces to wait and resume...
 export let applicationView: ApplicationView;

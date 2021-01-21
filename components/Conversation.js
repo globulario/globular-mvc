@@ -3,7 +3,7 @@ import '@polymer/paper-icon-button/paper-icon-button.js';
 import '@polymer/paper-card/paper-card.js';
 
 import { Model } from '../Model';
-import { theme } from './Layout';
+import { theme } from "./Theme";
 
 /**
  * Search Box

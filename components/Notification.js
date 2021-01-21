@@ -9,7 +9,7 @@ import '@polymer/paper-badge/paper-badge.js';
 
 import { Model } from '../Model';
 import { Menu } from './Menu';
-import { theme } from './Layout';
+import { theme } from "./Theme";
 
 /**
  * Login/Register functionality.

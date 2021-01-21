@@ -3,22 +3,11 @@ import '@polymer/paper-card/paper-card.js';
 import '@polymer/paper-ripple/paper-ripple.js';
 import '@polymer/paper-icon-button/paper-icon-button.js';
 import "@polymer/iron-icons/av-icons";
-
-import { isThisTypeNode } from 'typescript';
-//import { theme } from "./Layout";
-const shownClass = 'shown';
-const hiddenClass = 'hidden';
-const slideSelector = '.slide';
+import { theme } from "./Theme";
 
 export class SlideShow extends HTMLElement {
     constructor() {
         super()
-        this.slides;
-        this.slideCount = 0;
-        this.rotate = true;
-        this.defaultInterval = 30;
-        this.slideInterval;
-        this.slidesClasses = [];
         this.attachShadow({ mode: 'open' });
         this.timeout = null;
         this.isRunning = false;
@@ -28,6 +17,7 @@ export class SlideShow extends HTMLElement {
 
         this.shadowRoot.innerHTML = `
         <style>
+        ${theme}
             :host {
                 --slidewidth: 1080px;
                 --footerHeight: 40px;
@@ -76,7 +66,7 @@ export class SlideShow extends HTMLElement {
             }
        
         </style>
-        <paper-card class="container slides-container">
+        <paper-card id="container" class="container slides-container">
             <slot id="slides" name="slides"></slot>
             <footer id="footer">
                 <paper-icon-button id="start-btn" style="display: none;" icon="av:play-circle-filled"></paper-icon-button>
@@ -95,6 +85,10 @@ export class SlideShow extends HTMLElement {
         this.delay = 1000 * 15
         if(this.hasAttribute("delay")){
             this.delay = parseInt(this.getAttribute("delay")) * 1000
+        }
+
+        if(this.hasAttribute(backgroundColor)){
+            this.shadowRoot.getElementById("start-btn").getElementById("container").style.backgroundColor = this.getAttribute("backgroundColor")
         }
     }
 
@@ -122,7 +116,6 @@ export class SlideShow extends HTMLElement {
         this.shadowRoot.getElementById("footer").appendChild(marker)
 
         marker.onclick = () => {
-            console.log("---> show slide! and stop auto motion...")
             this.stop();
             // Here I will rotate the slide.
             while(document.getElementById("slides").childNodes[1].id != marker.id){
@@ -241,12 +234,13 @@ export class Slide extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
+        ${theme}
         :host {
             --offWhite: white;
             --slidewidth: 1080px;
             --footerHeight: 40px;
-            --slideContainerHeight: 1920px; 
-            --slideHeight: calc(var(--slideContainerHeight) - var(--footerHeight));
+            --slideContainerHeight: 1970px; 
+            --slideHeight: var(--slideContainerHeight);
             --offScreen: -1080px;
             --offScreenRight: var(--slidewidth);
         }

@@ -14,7 +14,7 @@ import '@polymer/iron-autogrow-textarea/iron-autogrow-textarea.js';
 
 import { Menu } from './Menu';
 import { Application } from '../Application';
-import { theme } from './Layout';
+import { theme } from "./Theme";
 
 /**
  * Login/Register functionality.

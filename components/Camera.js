@@ -4,8 +4,7 @@ import '@polymer/paper-icon-button/paper-icon-button.js';
 import '@polymer/iron-icons/iron-icons.js';
 import '@polymer/iron-icons/image-icons';
 import '@polymer/paper-input/paper-input.js';
-import { theme } from './Layout';
-
+import { theme } from "./Theme";
 export class Camera extends HTMLElement {
 
     constructor() {

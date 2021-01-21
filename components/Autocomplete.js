@@ -1,8 +1,7 @@
 import '@polymer/iron-icons/iron-icons.js';
 import '@polymer/paper-icon-button/paper-icon-button.js';
 
-import { theme } from './Layout';
-
+import { theme } from "./Theme";
 /**
  * Autocomplete
  */

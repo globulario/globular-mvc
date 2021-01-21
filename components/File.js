@@ -9,7 +9,7 @@ import '@polymer/iron-icons/editor-icons.js'
 
 import { Model } from '../Model';
 import { File } from "../File";
-import { theme } from './Layout';
+import { theme } from './Theme';
 import { v4 as uuidv4 } from "uuid";
 
 // contain list of dir localy

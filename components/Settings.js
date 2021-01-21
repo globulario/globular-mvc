@@ -1,4 +1,4 @@
-import { theme } from "./Layout";
+import { theme } from "./Theme";
 import '@polymer/iron-icon/iron-icon.js';
 import '@polymer/iron-icons/iron-icons.js';
 import { Model } from "../Model";

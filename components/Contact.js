@@ -14,7 +14,7 @@ import '@polymer/iron-autogrow-textarea/iron-autogrow-textarea.js';
 import { Autocomplete } from './Autocomplete'
 
 import { Menu } from './Menu';
-import { theme } from './Layout';
+import { theme } from "./Theme";
 import { Account } from "../Account"
 
 /**

@@ -3,7 +3,7 @@ import '@polymer/paper-icon-button/paper-icon-button.js';
 import { searchDocuments } from "globular-web-client/api";
 
 import { Model } from '../Model';
-import { theme } from './Layout';
+import { theme } from "./Theme";
 
 /**
  * Search Box

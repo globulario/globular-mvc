@@ -10,7 +10,7 @@ import '@polymer/paper-radio-button/paper-radio-button.js';
 import '@polymer/paper-radio-group/paper-radio-group.js';
 import '@polymer/paper-toggle-button/paper-toggle-button.js';
 import '@polymer/paper-spinner/paper-spinner.js';
-import { theme } from './Layout';
+import { theme } from "./Theme";
 import { Model } from '../Model';
 
 /**

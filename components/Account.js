@@ -12,7 +12,7 @@ import "@polymer/paper-checkbox/paper-checkbox.js";
 
 import { Menu } from "./Menu";
 import { Model } from "../Model";
-import { theme } from "./Layout";
+import { theme } from "./Theme";
 
 /**
  * Login/Register functionality.

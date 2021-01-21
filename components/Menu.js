@@ -9,7 +9,7 @@ import '@polymer/paper-card/paper-card.js';
 import '@polymer/paper-button/paper-button.js';
 import '@polymer/paper-checkbox/paper-checkbox.js';
 import '@polymer/paper-tooltip/paper-tooltip.js';
-import { theme } from './Layout';
+import { theme } from "./Theme";
 
 /**
  * Login/Register functionality.
