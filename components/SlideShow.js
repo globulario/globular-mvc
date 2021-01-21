@@ -1,5 +1,9 @@
 
 import '@polymer/paper-card/paper-card.js';
+import '@polymer/paper-ripple/paper-ripple.js';
+import '@polymer/paper-icon-button/paper-icon-button.js';
+import "@polymer/iron-icons/av-icons";
+
 import { isThisTypeNode } from 'typescript';
 //import { theme } from "./Layout";
 const shownClass = 'shown';
@@ -16,6 +20,8 @@ export class SlideShow extends HTMLElement {
         this.slideInterval;
         this.slidesClasses = [];
         this.attachShadow({ mode: 'open' });
+        this.timeout = null;
+        this.isRunning = false;
     }
 
     connectedCallback() {
@@ -23,14 +29,6 @@ export class SlideShow extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
             :host {
-                --offWhite: white;
-                --darkModerateCyan: #52828f;
-                --purple: #901054;
-                --darkBlue: #1f497d;
-                --lightBlue: #0070c0;
-                --yellow: #c5d21c;
-                --darkGray: gray;
-                --bleuPoudre: #43b5e7;
                 --slidewidth: 1080px;
                 --footerHeight: 40px;
                 --slideContainerHeight: 1920px; 
@@ -68,30 +66,36 @@ export class SlideShow extends HTMLElement {
                 margin: 0 1rem;
             }
             
-            footer > span:first-child {
-                border-color: var(--darkModerateCyan)
-            }
-            
-            footer > span:nth-child(2) {
-                border-color: var(--purple)
-            }
-            
-            footer > span:last-child {
-                border-color: var(--yellow)
-            }
-
             #container{
                 display: flex;
                 flex-direction: column;
+            }
+
+            .marker:hover {
+                cursor: pointer;
             }
        
         </style>
         <paper-card class="container slides-container">
             <slot id="slides" name="slides"></slot>
             <footer id="footer">
+                <paper-icon-button id="start-btn" style="display: none;" icon="av:play-circle-filled"></paper-icon-button>
             </footer>
+            
         </paper-card>
         `
+
+        let startBtn = this.shadowRoot.getElementById("start-btn")
+        startBtn.onclick = ()=>{
+            this.start()
+            startBtn.style.display = "none"
+        }
+
+        // default is fiteen seconds.
+        this.delay = 1000 * 15
+        if(this.hasAttribute("delay")){
+            this.delay = parseInt(this.getAttribute("delay")) * 1000
+        }
     }
 
     /**
@@ -106,12 +110,27 @@ export class SlideShow extends HTMLElement {
         document.getElementById("slides").style.display = "relative"
         document.getElementById("slides").appendChild(slide)
 
-        let marker = document.createElement("span")
-        marker.id =  document.getElementById("slides").lastChild.id
+        let marker = document.createElement("span");
+        marker.style.position = "relative";
+        let ripple = document.createElement("paper-ripple");
+        ripple.classList.add("circle")
+        ripple.setAttribute("recenters", "")
+        marker.appendChild(ripple)
+        marker.classList.add("marker")
+        marker.id = document.getElementById("slides").lastChild.id
+        marker.style.borderColor = document.getElementById("slides").lastChild.marker
         this.shadowRoot.getElementById("footer").appendChild(marker)
 
         marker.onclick = () => {
             console.log("---> show slide! and stop auto motion...")
+            this.stop();
+            // Here I will rotate the slide.
+            while(document.getElementById("slides").childNodes[1].id != marker.id){
+                let firstChild = document.getElementById("slides").firstChild
+                document.getElementById("slides").removeChild(firstChild)
+                document.getElementById("slides").appendChild(firstChild)
+            }
+            this.orderSlides();
         }
 
         // Set the slide order...
@@ -120,19 +139,18 @@ export class SlideShow extends HTMLElement {
     }
 
     // set slice position
-    orderSlides(){
+    orderSlides() {
         let slides = this.getSlides();
         for (var i = 0; i < slides.length; i++) {
             let s = slides[i]
             s.style.left = (i - 1) * s.offsetWidth + "px"
             let marker = this.shadowRoot.getElementById(s.id)
-            if(i==1){
+            if (i == 1) {
                 console.log(marker.style)
                 marker.style.backgroundColor = "lightgray";
-            }else{
+            } else {
                 marker.style.backgroundColor = ""
             }
-            
         }
 
     }
@@ -146,46 +164,55 @@ export class SlideShow extends HTMLElement {
         return []; // empty array
     }
 
+
+    // Rotate the slide to one position
     rotateSlide() {
+
+        this.orderSlides();
+        // rotate the slides.
+        let firstChild = document.getElementById("slides").firstChild
+        let w = firstChild.offsetWidth;
+
+        document.getElementById("slides").style.transition = "all 1s ease-out"
+        document.getElementById("slides").style.transform = `translateX(${-1 * w}px)`
+
+        // Wait the time of animation delay and set back the div at it start position.
         setTimeout(() => {
- 
+            document.getElementById("slides").style.transition = 'none';
+            document.getElementById("slides").style.transform = `none`;
+
+            document.getElementById("slides").removeChild(firstChild)
+            document.getElementById("slides").appendChild(firstChild)
             this.orderSlides();
-            // rotate the slides.
-            let firstChild = document.getElementById("slides").firstChild
-            let w = firstChild.offsetWidth;
-
-            document.getElementById("slides").style.transition = "all 1s ease-out"
-            document.getElementById("slides").style.transform = `translateX(${-1*w}px)`
-
-            // Wait the time of animation delay and set back the div at it start position.
-            setTimeout(() => {
-                document.getElementById("slides").style.transition = 'none';
-                document.getElementById("slides").style.transform = `none`;
-
-                document.getElementById("slides").removeChild(firstChild)
-                document.getElementById("slides").appendChild(firstChild)
-                this.orderSlides();
-            }, 1000)
-
-
-            // rotate again...
-            this.rotateSlide()
-        }, 3000)
+        }, 1000)
     }
 
     /**
      * Start the slide show
      */
     start() {
-
-        this.rotateSlide();
+        this.isRunning = true;
+        this.timeout = setTimeout(() => {
+            if(this.isRunning){
+                this.rotateSlide();
+                this.start()
+            }
+        }, this.delay)
     }
 
     /**
      * Stop the slideshow
      */
     stop() {
-
+        // Stop the running loop.
+        if (this.timeout != null) {
+            clearTimeout(this.timeout)
+            this.timeout = null
+            this.isRunning = false
+            let startBtn = this.shadowRoot.getElementById("start-btn")
+            startBtn.style.display = "block";
+        }
+        console.log("the side show is now stopped!")
     }
 
 
@@ -205,6 +232,7 @@ export class Slide extends HTMLElement {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
+        this.marker = "";
     }
 
     // The connection callback.
@@ -234,6 +262,7 @@ export class Slide extends HTMLElement {
         this.style.zIndex = "0"
         this.style.width = "var(--slidewidth)"
         this.style.height = "var(--slideHeight)"
+        this.marker = this.getAttribute("marker")
     }
 }
 
