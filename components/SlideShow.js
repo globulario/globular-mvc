@@ -4,6 +4,7 @@ import '@polymer/paper-ripple/paper-ripple.js';
 import '@polymer/paper-icon-button/paper-icon-button.js';
 import "@polymer/iron-icons/av-icons";
 import { theme } from "./Theme";
+import "./Countdown"
 
 export class SlideShow extends HTMLElement {
     constructor() {
@@ -15,6 +16,11 @@ export class SlideShow extends HTMLElement {
     }
 
     connectedCallback() {
+        // default is fiteen seconds.
+        this.delay = 1000 * 15
+        if(this.hasAttribute("delay")){
+            this.delay = parseInt(this.getAttribute("delay")) * 1000
+        }
 
         this.shadowRoot.innerHTML = `
         <style>
@@ -53,7 +59,7 @@ export class SlideShow extends HTMLElement {
                 height: 32px;
                 width: 32px;
                 border-radius: 2rem;
-                border: 3px solid white;
+                border: 2.5px solid white;
                 margin: 0 1rem;
             }
             
@@ -63,9 +69,7 @@ export class SlideShow extends HTMLElement {
             }
 
             #countdown{
-                align-self: flex-end;
-                font-size: 1.5em;
-                color: #000000ab;
+                margin: 0 1rem;
             }
 
             .marker:hover {
@@ -76,7 +80,7 @@ export class SlideShow extends HTMLElement {
         <paper-card id="container" class="container slides-container">
             <slot id="slides" name="slides"></slot>
             <footer id="footer">
-                <div id="countdown"></div>
+                <globular-count-down id="countdown" countdown="${this.delay / 1000}" diameter="38" ></globular-count-down>
                 <paper-icon-button id="start-btn" style="display: none;" icon="av:play-circle-filled"></paper-icon-button>
             </footer>
             
@@ -90,11 +94,7 @@ export class SlideShow extends HTMLElement {
             startBtn.style.display = "none"
         }
 
-        // default is fiteen seconds.
-        this.delay = 1000 * 15
-        if(this.hasAttribute("delay")){
-            this.delay = parseInt(this.getAttribute("delay")) * 1000
-        }
+
 
         if(this.hasAttribute("backgroundColor")){
             this.shadowRoot.getElementById("start-btn").getElementById("container").style.backgroundColor = this.getAttribute("backgroundColor")
@@ -198,13 +198,7 @@ export class SlideShow extends HTMLElement {
         // Display the countdown...
         let countdown = this.shadowRoot.getElementById("countdown")
         countdown.style.display = "block"
-        let delay =  this.delay/1000
-        countdown.innerHTML = delay +"s.";
-        this.interval = setInterval(()=>{
-            delay -=1
-            countdown.innerHTML = delay + "s."
-        }, 1000)
-
+        countdown.start();
         this.timeout = setTimeout(() => {
             // Remove the previous inteval...
             clearInterval(this.interval)
@@ -222,6 +216,7 @@ export class SlideShow extends HTMLElement {
         // Stop the running loop.
         let countdown = this.shadowRoot.getElementById("countdown")
         countdown.style.display = "none"
+        countdown.stop()
 
         if (this.timeout != null) {
             clearTimeout(this.timeout)
