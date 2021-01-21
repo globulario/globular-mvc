@@ -10,6 +10,7 @@ export class SlideShow extends HTMLElement {
         super()
         this.attachShadow({ mode: 'open' });
         this.timeout = null;
+        this.interval = null;
         this.isRunning = false;
     }
 
@@ -61,6 +62,12 @@ export class SlideShow extends HTMLElement {
                 flex-direction: column;
             }
 
+            #countdown{
+                align-self: flex-end;
+                font-size: 1.5em;
+                color: #000000ab;
+            }
+
             .marker:hover {
                 cursor: pointer;
             }
@@ -69,6 +76,7 @@ export class SlideShow extends HTMLElement {
         <paper-card id="container" class="container slides-container">
             <slot id="slides" name="slides"></slot>
             <footer id="footer">
+                <div id="countdown"></div>
                 <paper-icon-button id="start-btn" style="display: none;" icon="av:play-circle-filled"></paper-icon-button>
             </footer>
             
@@ -76,6 +84,7 @@ export class SlideShow extends HTMLElement {
         `
 
         let startBtn = this.shadowRoot.getElementById("start-btn")
+       
         startBtn.onclick = ()=>{
             this.start()
             startBtn.style.display = "none"
@@ -87,7 +96,7 @@ export class SlideShow extends HTMLElement {
             this.delay = parseInt(this.getAttribute("delay")) * 1000
         }
 
-        if(this.hasAttribute(backgroundColor)){
+        if(this.hasAttribute("backgroundColor")){
             this.shadowRoot.getElementById("start-btn").getElementById("container").style.backgroundColor = this.getAttribute("backgroundColor")
         }
     }
@@ -185,7 +194,20 @@ export class SlideShow extends HTMLElement {
      */
     start() {
         this.isRunning = true;
+
+        // Display the countdown...
+        let countdown = this.shadowRoot.getElementById("countdown")
+        countdown.style.display = "block"
+        let delay =  this.delay/1000
+        countdown.innerHTML = delay +"s.";
+        this.interval = setInterval(()=>{
+            delay -=1
+            countdown.innerHTML = delay + "s."
+        }, 1000)
+
         this.timeout = setTimeout(() => {
+            // Remove the previous inteval...
+            clearInterval(this.interval)
             if(this.isRunning){
                 this.rotateSlide();
                 this.start()
@@ -198,8 +220,12 @@ export class SlideShow extends HTMLElement {
      */
     stop() {
         // Stop the running loop.
+        let countdown = this.shadowRoot.getElementById("countdown")
+        countdown.style.display = "none"
+
         if (this.timeout != null) {
             clearTimeout(this.timeout)
+            clearInterval(this.interval)
             this.timeout = null
             this.isRunning = false
             let startBtn = this.shadowRoot.getElementById("start-btn")

@@ -428,13 +428,7 @@ export class Setting extends HTMLElement {
   getValue() { }
 
 }
-/*
 
-      <div>
-        <slot id="action-btn-slot"></slot>
-        <iron-icon id="action-btn" icon="chevron-right"></iron-icon>
-      </div>
-*/
 customElements.define("globular-setting", Setting);
 
 export class ComplexSetting extends Setting {
@@ -442,10 +436,11 @@ export class ComplexSetting extends Setting {
     super(name, value);
 
     let chevron = document.createElement('div')
-    chevron.innerHTML = `<div>
-    <slot id="action-btn-slot"></slot>
-    <iron-icon id="action-btn" icon="chevron-right"></iron-icon>
-  </div>
+    chevron.innerHTML = `
+    <div>
+      <slot id="action-btn-slot"></slot>
+      <iron-icon id="action-btn" icon="chevron-right"></iron-icon>
+    </div>
   `
     // this.container.appendChild(chevron)
     this.shadowRoot.appendChild(chevron)
