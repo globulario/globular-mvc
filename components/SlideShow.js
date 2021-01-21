@@ -1,6 +1,7 @@
 
 import '@polymer/paper-card/paper-card.js';
-
+import { isThisTypeNode } from 'typescript';
+//import { theme } from "./Layout";
 const shownClass = 'shown';
 const hiddenClass = 'hidden';
 const slideSelector = '.slide';
@@ -9,7 +10,6 @@ export class SlideShow extends HTMLElement {
     constructor() {
         super()
         this.slides;
-        this.currentSlide = this.getSlideParam();
         this.slideCount = 0;
         this.rotate = true;
         this.defaultInterval = 30;
@@ -19,10 +19,10 @@ export class SlideShow extends HTMLElement {
     }
 
     connectedCallback() {
-        const template = document.createElement('template');
+
         this.shadowRoot.innerHTML = `
         <style>
-            :root {
+            :host {
                 --offWhite: white;
                 --darkModerateCyan: #52828f;
                 --purple: #901054;
@@ -39,15 +39,8 @@ export class SlideShow extends HTMLElement {
                 --offScreen: -1080px;
                 --offScreenRight: var(--slidewidth);
             }
- 
-            .row {
-                display: flex;
-                -ms-flex-wrap: wrap;
-                flex-wrap: wrap;
-                margin-right: -1rem;
-                margin-left: -1rem;
-            }
-            
+
+
             .slides-container {
                 position: relative;
                 width: var(--slidewidth);
@@ -56,142 +49,192 @@ export class SlideShow extends HTMLElement {
                 margin: 0 auto;
             }
             
-            .slide {
+            footer {
+                display: flex;
+                justify-content: center;
                 position: absolute;
-                width: var(--slidewidth);
-                height: var(--slideHeight);
-                background-color: var(--offWhite);
-                box-sizing: border-box;
-                padding-bottom: 10px;
-                animation: slideOut 0.5s ease forwards;
-                z-index: 0;
+                bottom: 20px;
+                left: 0;
+                width: 100%;
+                height: var(--footerHeight);
+                z-index: 99;
             }
             
-            .slide.hidden {
-                position: absolute;
-                right: var(--offScreen);
+            footer > span {
+                height: 32px;
+                width: 32px;
+                border-radius: 2rem;
+                border: 3px solid white;
+                margin: 0 1rem;
             }
             
-            .slide.shown {
-                animation: slideIn 0.5s ease forwards;
-                z-index: 1
+            footer > span:first-child {
+                border-color: var(--darkModerateCyan)
+            }
+            
+            footer > span:nth-child(2) {
+                border-color: var(--purple)
+            }
+            
+            footer > span:last-child {
+                border-color: var(--yellow)
             }
 
             #container{
                 display: flex;
                 flex-direction: column;
             }
-            
-            @keyframes slideIn {
-                0% { 
-                    transform: translate(var(--offScreen));
-                }
-                100% { 
-                    transform: translate(var(--inScreen));
-                }
-            }
-            
-            @keyframes slideOut {
-                0% { 
-                    transform: translate(var(--inScreen));
-                }
-                100% { 
-                    transform: translate(var(--offScreenRight)); 
-                }
-            }
+       
         </style>
-        <paper-card class="container">
-            <slot name="slides"></slot>
+        <paper-card class="container slides-container">
+            <slot id="slides" name="slides"></slot>
+            <footer id="footer">
+            </footer>
         </paper-card>
         `
-        this.shadowRoot.appendChild(template.content.cloneNode(true));
-
-        this.slides = document.querySelectorAll(slideSelector);
-        this.setSlidesClassesList();
-        this.staticSlideClass = this.slidesClasses[0];
-        this.setRotate();
-        if (this.rotate) {
-            this.setSlideCount();
-            this.initSlidesShow();
-        } else {
-            this.showSlide(this.staticSlideClass);
-        }
     }
 
     /**
-     * set slide list with selector located in second position of the slide class
-     * * * @example class="slide qualite-possible"
-     **/
-    setSlidesClassesList() {
-        Array.from(this.slides).forEach(slide => {
-            this.slidesClasses.push(`.${slide.classList.item(1)}`);
-        })
+     * Append a slide into the slideshow.
+     * @param {*} html 
+     */
+    appendSlide(html) {
+
+        // Here I will create the slide.
+        let range = document.createRange()
+        let slide = range.createContextualFragment(html)
+        document.getElementById("slides").style.display = "relative"
+        document.getElementById("slides").appendChild(slide)
+
+        let marker = document.createElement("span")
+        marker.id =  document.getElementById("slides").lastChild.id
+        this.shadowRoot.getElementById("footer").appendChild(marker)
+
+        marker.onclick = () => {
+            console.log("---> show slide! and stop auto motion...")
+        }
+
+        // Set the slide order...
+        this.orderSlides();
+
+    }
+
+    // set slice position
+    orderSlides(){
+        let slides = this.getSlides();
+        for (var i = 0; i < slides.length; i++) {
+            let s = slides[i]
+            s.style.left = (i - 1) * s.offsetWidth + "px"
+            let marker = this.shadowRoot.getElementById(s.id)
+            if(i==1){
+                console.log(marker.style)
+                marker.style.backgroundColor = "lightgray";
+            }else{
+                marker.style.backgroundColor = ""
+            }
+            
+        }
+
+    }
+
+    getSlides() {
+        if (document.getElementById("slides") != undefined) {
+            if (document.getElementById("slides").childNodes) {
+                return document.getElementById("slides").childNodes
+            }
+        }
+        return []; // empty array
+    }
+
+    rotateSlide() {
+        setTimeout(() => {
+ 
+            this.orderSlides();
+            // rotate the slides.
+            let firstChild = document.getElementById("slides").firstChild
+            let w = firstChild.offsetWidth;
+
+            document.getElementById("slides").style.transition = "all 1s ease-out"
+            document.getElementById("slides").style.transform = `translateX(${-1*w}px)`
+
+            // Wait the time of animation delay and set back the div at it start position.
+            setTimeout(() => {
+                document.getElementById("slides").style.transition = 'none';
+                document.getElementById("slides").style.transform = `none`;
+
+                document.getElementById("slides").removeChild(firstChild)
+                document.getElementById("slides").appendChild(firstChild)
+                this.orderSlides();
+            }, 1000)
+
+
+            // rotate again...
+            this.rotateSlide()
+        }, 3000)
     }
 
     /**
-     * use to whow a specifc slide whithout rotation
-     * * @example ?rotate=false&slide=3
-     * *use to whow a set rotation speed 
-     * * @example ?interval=1
-     **/
-    setRotate() {
-        const url = new URL(window.location.href);
-        const rotateParam = url.searchParams.get('rotate')
-        const paramSlide = Number(url.searchParams.get('slide'));
-        const rotation = rotateParam === 'false' ? false: true;
-        const paramInterval = Number(url.searchParams.get('interval'));
-        if (!rotation) this.rotate = rotation;
-        if (!this.rotate) this.staticSlideClass = this.slidesClasses[paramSlide - 1];
-        this.setSlideInterval(paramInterval || this.defaultInterval);
+     * Start the slide show
+     */
+    start() {
+
+        this.rotateSlide();
     }
 
-    getSlideParam() {
-        const url = new URL(window.location.href);
-        const slideNumber = url.searchParams.get('slide');
-        return slideNumber ? slideNumber - 1 : 0;
+    /**
+     * Stop the slideshow
+     */
+    stop() {
+
     }
 
-    setSlideInterval(interval) {
-        this.slideInterval = interval * 1000; // secondes en millisecondes
-    }
 
-    initSlidesShow() {
-        this.showCurrentSlide();
-        setInterval(() => {
-            this.showNextSlide()
-        }, this.slideInterval);
-    }
-
-    showNextSlide() {
-        Array.from(this.slides).forEach(slide => {
-            slide.classList.remove(shownClass);
-        });
-        this.showCurrentSlide();
-    }
-
-    showCurrentSlide() {
-        if (this.currentSlide === this.slideCount) this.currentSlide = 0;
-        this.currentSlide = ++this.currentSlide;
-        if (this.slidesClasses.length) {
-            sessionStorage.setItem('currentSlide', this.currentSlide);
-            this.showSlide(this.slidesClasses[this.currentSlide - 1]);
-        }
-    }
-
-    showSlide(currentSlideClass) {
-        const slide = document.querySelector(currentSlideClass);
-        slide.classList.remove(hiddenClass);
-        slide.classList.add(shownClass);
-        this.addClassToBody(currentSlideClass);
-    }
-
-    addClassToBody(currentSlideClass) {
-        document.body.classList.value = currentSlideClass.replace('.', '');
-    }
-
-    setSlideCount() {
-        this.slideCount = this.slides.length;
-    }
 }
 
 customElements.define('globular-slide-show', SlideShow);
+
+
+/**
+ * Accept contact button.
+ */
+export class Slide extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor() {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+    }
+
+    // The connection callback.
+    connectedCallback() {
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+        :host {
+            --offWhite: white;
+            --slidewidth: 1080px;
+            --footerHeight: 40px;
+            --slideContainerHeight: 1920px; 
+            --slideHeight: calc(var(--slideContainerHeight) - var(--footerHeight));
+            --offScreen: -1080px;
+            --offScreenRight: var(--slidewidth);
+        }
+           
+        </style>
+
+        <slot name="content"></slot>
+        `
+
+        this.style.position = "absolute";
+        this.style.backgroundColor = "var(--offWhite)";
+        this.style.boxSizing = "border-box";
+        this.style.zIndex = "0"
+        this.style.width = "var(--slidewidth)"
+        this.style.height = "var(--slideHeight)"
+    }
+}
+
+customElements.define('globular-slide', Slide)
