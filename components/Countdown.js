@@ -17,6 +17,11 @@ export class Countdown extends HTMLElement {
             this.diameter = parseInt(this.getAttribute("diameter"))
         }
 
+        this.stroke = 3;
+        if(this.hasAttribute("stroke")){
+            this.stroke = parseInt(this.getAttribute("stroke"))
+        }
+
         // Connect to event.
         this.shadowRoot.innerHTML = `
       <style>
@@ -48,7 +53,7 @@ export class Countdown extends HTMLElement {
             stroke-dasharray: 113px;
             stroke-dashoffset: 0px;
             stroke-linecap: round;
-            stroke-width: 2.5px;
+            stroke-width: ${this.stroke}px;
             stroke: var(--palette-text-primary);
             fill: none;
             animation: countdown ${this.countdown}s linear infinite forwards;
@@ -67,7 +72,7 @@ export class Countdown extends HTMLElement {
       <div id="countdown">
         <div id="countdown-number"></div>
         <svg>
-            <circle r="${this.diameter/2 - 2}" cx="${this.diameter/2}" cy="${this.diameter/2}"></circle>
+            <circle r="${(this.diameter - this.stroke)/2}" cx="${this.diameter/2}" cy="${this.diameter/2}"></circle>
         </svg>
       </div>
       `;
