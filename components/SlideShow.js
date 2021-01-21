@@ -13,6 +13,8 @@ export class SlideShow extends HTMLElement {
         this.timeout = null;
         this.interval = null;
         this.isRunning = false;
+        this.countdown = null;
+        this.startBtn = null;
     }
 
     connectedCallback() {
@@ -47,6 +49,7 @@ export class SlideShow extends HTMLElement {
             footer {
                 display: flex;
                 justify-content: center;
+                align-items: center;
                 position: absolute;
                 bottom: 20px;
                 left: 0;
@@ -56,10 +59,12 @@ export class SlideShow extends HTMLElement {
             }
             
             footer > span {
-                height: 32px;
-                width: 32px;
+                position: relative;
+                height: 40px;
+                width: 40px;
                 border-radius: 2rem;
-                border: 2.5px solid white;
+                border: solid white;
+                border-width: 3px;
                 margin: 0 1rem;
             }
             
@@ -69,32 +74,44 @@ export class SlideShow extends HTMLElement {
             }
 
             #countdown{
-                margin: 0 1rem;
+                position: absolute;
+                top: 1px;
+                left: 1px;
             }
 
             .marker:hover {
                 cursor: pointer;
+            }
+
+            #start-btn{
+                display: none;
+                position: absolute;
             }
        
         </style>
         <paper-card id="container" class="container slides-container">
             <slot id="slides" name="slides"></slot>
             <footer id="footer">
-                <globular-count-down id="countdown" countdown="${this.delay / 1000}" diameter="38" ></globular-count-down>
-                <paper-icon-button id="start-btn" style="display: none;" icon="av:play-circle-filled"></paper-icon-button>
+                <globular-count-down id="countdown" countdown="${this.delay / 1000}" diameter="38" stroke="3" ></globular-count-down>
+                <paper-icon-button id="start-btn" icon="av:play-circle-filled"></paper-icon-button>
             </footer>
             
         </paper-card>
         `
 
-        let startBtn = this.shadowRoot.getElementById("start-btn")
+        this.startBtn = this.shadowRoot.getElementById("start-btn")
+        this.countdown = this.shadowRoot.getElementById("countdown")
        
-        startBtn.onclick = ()=>{
+        this.startBtn.onclick = (evt)=>{
+            evt.stopPropagation();
+            this.startBtn.style.display = "none"
+            this.startBtn.parentNode.removeChild(this.startBtn)
+            let markers = this.shadowRoot.querySelectorAll(".marker")
+            for(var i=0; i < markers.length; i++){
+                markers[i].style.backgroundColor = "";
+            }
             this.start()
-            startBtn.style.display = "none"
         }
-
-
 
         if(this.hasAttribute("backgroundColor")){
             this.shadowRoot.getElementById("start-btn").getElementById("container").style.backgroundColor = this.getAttribute("backgroundColor")
@@ -123,15 +140,29 @@ export class SlideShow extends HTMLElement {
         marker.id = document.getElementById("slides").lastChild.id
         marker.style.borderColor = document.getElementById("slides").lastChild.marker
         this.shadowRoot.getElementById("footer").appendChild(marker)
+        let markeyId = document.getElementById("slides").lastChild.id
 
         marker.onclick = () => {
             this.stop();
+            
             // Here I will rotate the slide.
-            while(document.getElementById("slides").childNodes[1].id != marker.id){
+            while(document.getElementById("slides").childNodes[1].id != markeyId){
                 let firstChild = document.getElementById("slides").firstChild
                 document.getElementById("slides").removeChild(firstChild)
                 document.getElementById("slides").appendChild(firstChild)
             }
+
+            let markers = this.shadowRoot.querySelectorAll(".marker")
+            for(var i=0; i < markers.length; i++){
+                markers[i].style.backgroundColor = "";
+            }
+
+            let marker = this.shadowRoot.getElementById(markeyId)
+            marker.style.backgroundColor = marker.style.borderColor
+
+            // Here I will append the start button into the marker.
+            marker.appendChild(this.startBtn)
+
             this.orderSlides();
         }
 
@@ -148,10 +179,8 @@ export class SlideShow extends HTMLElement {
             s.style.left = (i - 1) * s.offsetWidth + "px"
             let marker = this.shadowRoot.getElementById(s.id)
             if (i == 1) {
-                console.log(marker.style)
-                marker.style.backgroundColor = "lightgray";
-            } else {
-                marker.style.backgroundColor = ""
+                this.countdown.setColor(marker.style.borderColor);
+                marker.appendChild(this.countdown)
             }
         }
 
@@ -174,18 +203,19 @@ export class SlideShow extends HTMLElement {
         // rotate the slides.
         let firstChild = document.getElementById("slides").firstChild
         let w = firstChild.offsetWidth;
-
         document.getElementById("slides").style.transition = "all 1s ease-out"
         document.getElementById("slides").style.transform = `translateX(${-1 * w}px)`
 
         // Wait the time of animation delay and set back the div at it start position.
         setTimeout(() => {
+            this.countdown.style.display = "none";
             document.getElementById("slides").style.transition = 'none';
             document.getElementById("slides").style.transform = `none`;
-
             document.getElementById("slides").removeChild(firstChild)
             document.getElementById("slides").appendChild(firstChild)
             this.orderSlides();
+            this.countdown.start();
+            this.countdown.style.display = "block";
         }, 1000)
     }
 
@@ -193,15 +223,13 @@ export class SlideShow extends HTMLElement {
      * Start the slide show
      */
     start() {
-        this.isRunning = true;
-
-        // Display the countdown...
-        let countdown = this.shadowRoot.getElementById("countdown")
-        countdown.style.display = "block"
-        countdown.start();
+        if(!this.isRunning){
+            this.countdown.style.display = "block"
+            this.isRunning = true;
+            this.countdown.start();
+        }
         this.timeout = setTimeout(() => {
             // Remove the previous inteval...
-            clearInterval(this.interval)
             if(this.isRunning){
                 this.rotateSlide();
                 this.start()
@@ -214,17 +242,15 @@ export class SlideShow extends HTMLElement {
      */
     stop() {
         // Stop the running loop.
-        let countdown = this.shadowRoot.getElementById("countdown")
-        countdown.style.display = "none"
-        countdown.stop()
+        this.countdown.stop()
+        this.countdown.style.display = "none"
+        this.countdown.parentNode.removeChild(this.countdown);
 
         if (this.timeout != null) {
             clearTimeout(this.timeout)
-            clearInterval(this.interval)
             this.timeout = null
             this.isRunning = false
-            let startBtn = this.shadowRoot.getElementById("start-btn")
-            startBtn.style.display = "block";
+            this.startBtn.style.display = "block";
         }
         console.log("the side show is now stopped!")
     }

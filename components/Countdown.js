@@ -22,7 +22,7 @@ export class Countdown extends HTMLElement {
             this.stroke = parseInt(this.getAttribute("stroke"))
         }
 
-        this.color = "var(--palette-text-primary)"
+        this.color = "var(--palette-text-accent)"
         if(this.hasAttribute("color")){
             this.stroke = parseInt(this.getAttribute("color"))
         }
@@ -77,7 +77,7 @@ export class Countdown extends HTMLElement {
       <div id="countdown">
         <div id="countdown-number"></div>
         <svg>
-            <circle r="${(this.diameter - this.stroke)/2}" cx="${this.diameter/2}" cy="${this.diameter/2}"></circle>
+            <circle id="circle" r="${(this.diameter - this.stroke)/2}" cx="${this.diameter/2}" cy="${this.diameter/2}"></circle>
         </svg>
       </div>
       `;
@@ -96,8 +96,20 @@ export class Countdown extends HTMLElement {
         }
         this.interval = setInterval(function () {
             countdown = --countdown <= 0 ? this.countdown : countdown;
-            countdownNumberEl.textContent = countdown;
+            if(countdown <= 0){
+                countdownNumberEl.textContent = "";
+            }else{
+                countdownNumberEl.textContent = countdown
+            }
         }, 1000);
+    }
+
+    // setColor =  var countdownNumberEl = this.shadowRoot.getElementById('countdown-number');
+    setColor(color){
+        var countdownNumberEl = this.shadowRoot.getElementById('countdown-number');
+        countdownNumberEl.style.color = color;
+        var circle = this.shadowRoot.getElementById('circle');
+        circle.style.stroke = color;
     }
 
     stop() {
