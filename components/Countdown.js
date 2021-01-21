@@ -22,6 +22,11 @@ export class Countdown extends HTMLElement {
             this.stroke = parseInt(this.getAttribute("stroke"))
         }
 
+        this.color = "var(--palette-text-primary)"
+        if(this.hasAttribute("color")){
+            this.stroke = parseInt(this.getAttribute("color"))
+        }
+
         // Connect to event.
         this.shadowRoot.innerHTML = `
       <style>
@@ -35,7 +40,7 @@ export class Countdown extends HTMLElement {
           }
           
           #countdown-number {
-            color: var(--palette-text-primary);
+            color: ${this.color};
             display: inline-block;
             line-height: ${this.diameter}px;
           }
@@ -54,7 +59,7 @@ export class Countdown extends HTMLElement {
             stroke-dashoffset: 0px;
             stroke-linecap: round;
             stroke-width: ${this.stroke}px;
-            stroke: var(--palette-text-primary);
+            stroke: ${this.color};
             fill: none;
             animation: countdown ${this.countdown}s linear infinite forwards;
           }
