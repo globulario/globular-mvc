@@ -1,6 +1,6 @@
 import { Account } from "./Account";
 import { Application } from "./Application";
-import { Setting, SettingsMenu, SettingsPanel } from "./components/Settings";
+import { Setting, SettingsMenu, SettingsPanel, ComplexSetting, EmailSetting, StringSetting } from "./components/Settings";
 
 export class Settings {
 
@@ -47,15 +47,16 @@ export class UserSettings extends Settings {
         let generalSettings = userSettingsPage.appendSettings("General", "Those information's can be view by other's user's");
 
         // The profile picture.
-        let userPictureSetting = new Setting("Photo", "Change profile picture.")
+        let userPictureSetting = new ComplexSetting("Photo", "Change profile picture.")
         generalSettings.appendChild(userPictureSetting)
 
         // The user name.
-        let userNameSetting = new Setting("Name", this.account.userName)
+        let userNameSetting = new ComplexSetting("Name", "Change the user name")
         generalSettings.appendChild(userNameSetting)
 
         // The user email address.
-        let userEmailSetting = new Setting("Email", this.account.email)
+        let userEmailSetting = new EmailSetting("Email", "Change the user email")
+        userEmailSetting.setValue(account.email)
         generalSettings.appendChild(userEmailSetting)
 
     }
@@ -81,14 +82,16 @@ export class ApplicationSettings extends Settings {
         let generalSettings =  applicationSettingPage.appendSettings("General", "General application settings.");
 
         // The application icon
-        let applicationSetting = new Setting("Icon", "Change application icon")
+        let applicationSetting = new ComplexSetting("Icon", "Change application icon")
         generalSettings.appendChild(applicationSetting)
 
         // The application name.
-        let applicationNameSetting = new Setting("Name", application.name)
+        let applicationNameSetting = new StringSetting("Name", "Change the application name")
+        applicationNameSetting.setValue(application.name)
         generalSettings.appendChild(applicationNameSetting)
 
-        let applicationTitleSetting = new Setting("Title", application.title)
+        let applicationTitleSetting = new StringSetting("Title", "Change the application")
+        applicationTitleSetting.setValue(application.title)
         generalSettings.appendChild(applicationTitleSetting)
 
         let securitySettings = applicationSettingPage.appendSettings("Security", "Permissions and access settings.")

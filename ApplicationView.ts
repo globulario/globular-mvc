@@ -2,7 +2,7 @@ import { View } from "./View";
 import * as M from "materialize-css";
 import "materialize-css/sass/materialize.scss";
 import { Account } from "./Account";
-import {ApplicationSettings, UserSettings} from "./Settings"
+import { ApplicationSettings, UserSettings } from "./Settings"
 import { Model } from "./Model";
 
 // web-components.
@@ -20,7 +20,7 @@ import { ConversationPanel } from "./components/Conversation";
 import { Wizard } from "./components/Wizard";
 import { SettingsMenu, SettingsPanel } from "./components/Settings";
 import { Application } from "./Application";
-import {SlideShow} from "./components/SlideShow";
+import { SlideShow } from "./components/SlideShow";
 
 // This variable is there to give acces to wait and resume...
 export let applicationView: ApplicationView;
@@ -31,8 +31,11 @@ export let applicationView: ApplicationView;
  */
 export class ApplicationView extends View {
 
+  private _workspace_childnodes: Array<any>;
+  private _sidemenu_childnodes: Array<any>;
+
   private _application: Application;
-  
+
   public get application(): Application {
     return this._application;
   }
@@ -89,6 +92,7 @@ export class ApplicationView extends View {
   private login_event_listener: string;
   private logout_event_listener: string;
   private settings_event_listener: string;
+  private save_settings_event_listener: string;
 
   /** The conversation panel */
   private _conversation_panel: ConversationPanel;
@@ -172,10 +176,7 @@ export class ApplicationView extends View {
     // Initialyse conversation panel.
     this._conversation_panel = new ConversationPanel();
 
-    // Create the setting components.
-    this.settingsMenu = new SettingsMenu();
 
-    this.settingsPanel = new SettingsPanel();
 
     // set the global varialbe...
     applicationView = this;
@@ -183,6 +184,12 @@ export class ApplicationView extends View {
 
   // Must be call by the model when after it initialisation was done.
   init() {
+
+    // Create the setting components.
+    this.settingsMenu = new SettingsMenu();
+
+    this.settingsPanel = new SettingsPanel();
+
     // init listener's in the layout.
     this.layout.init();
     this.login_.init();
@@ -237,9 +244,23 @@ export class ApplicationView extends View {
       "settings_event_",
       (uuid: string) => {
         this.settings_event_listener = uuid;
+
       },
       () => {
         this.onSettings();
+      },
+      true
+    );
+
+    // Settings event
+    Model.eventHub.subscribe(
+      "save_settings_evt",
+      (uuid: string) => {
+        this.save_settings_event_listener = uuid;
+      },
+      (saveSetting: boolean) => {
+        this.onSaveSettings(saveSetting)
+
       },
       true
     );
@@ -282,7 +303,7 @@ export class ApplicationView extends View {
             this.applicationsMenu,
             this.layout.toolbar().firstChild
           );
-          
+
         this.applicationsMenu.getMenuDiv().classList.remove("left");
         this.applicationsMenu.getMenuDiv().classList.add("bottom");
 
@@ -325,7 +346,7 @@ export class ApplicationView extends View {
    * Clear the workspace.
    */
   clear() {
-    this.getWorkspace().innerHTML = "";
+    this.clearWorkspace();
     if (this.activeView != null) {
       this.activeView.hide();
     }
@@ -442,13 +463,13 @@ export class ApplicationView extends View {
 
     this.settingsPanel.clear();
     this.settingsMenu.clear();
-    
+
     // Create the settings menu and panel here
     let userSettings = new UserSettings(account, this.settingsMenu, this.settingsPanel);
 
     // The application settings...
     let applicationSettings = new ApplicationSettings(this.application, this.settingsMenu, this.settingsPanel);
-    
+
     window.dispatchEvent(new Event("resize"));
   }
 
@@ -475,11 +496,54 @@ export class ApplicationView extends View {
   }
 
   onSettings() {
-      this.clearSideMenu();
-      
-      this.getSideMenu().appendChild(this.settingsMenu);
-      this.getWorkspace().appendChild(this.settingsPanel);
-    
+    if (this.getWorkspace().childNodes.length > 0) {
+      if (this.getWorkspace().childNodes[0].nodeName == "GLOBULAR-SETTINGS-PANEL") {
+        return
+      }
+    }
+
+    this._sidemenu_childnodes = new Array<any>();
+    this._workspace_childnodes = new Array<any>();
+
+    // Keep the content of the workspace.
+    for (var i = 0; i < this.getWorkspace().childNodes.length; i++) {
+      let node = this.getWorkspace().childNodes[i]
+      this._workspace_childnodes.push(node)
+      node.parentNode.removeChild(node)
+    }
+
+    // Keep the content of the side menu
+    for (var i = 0; i < this.getSideMenu().childNodes.length; i++) {
+      let node = this.getSideMenu().childNodes[i]
+      this._sidemenu_childnodes.push(node)
+      node.parentNode.removeChild(node)
+    }
+
+    this.getSideMenu().appendChild(this.settingsMenu);
+    this.getWorkspace().appendChild(this.settingsPanel);
+
+  }
+
+  onSaveSettings(saveSetting: boolean) {
+    this.settingsMenu.parentNode.removeChild(this.settingsMenu)
+    this.settingsPanel.parentNode.removeChild(this.settingsPanel)
+    if (saveSetting) {
+
+    } else {
+
+    }
+
+    // restore the workspace
+    for (var i = 0; i < this._workspace_childnodes.length; i++) {
+      this.getWorkspace().appendChild(this._workspace_childnodes[i])
+    }
+
+
+    // restore the side menu
+    for (var i = 0; i < this._sidemenu_childnodes.length; i++) {
+      this.getSideMenu().appendChild(this._sidemenu_childnodes[i])
+    }
+
   }
 
   //////////////////////////////////////////////////////////////////////////////////////////

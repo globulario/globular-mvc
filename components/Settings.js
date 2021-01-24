@@ -1,6 +1,8 @@
 import { theme } from "./Theme";
 import '@polymer/iron-icon/iron-icon.js';
 import '@polymer/iron-icons/iron-icons.js';
+import '@polymer/paper-button/paper-button.js';
+import '@polymer/paper-input/paper-input.js';
 import { Model } from "../Model";
 
 /**
@@ -34,10 +36,13 @@ export class SettingsMenu extends HTMLElement {
     `;
 
     this.container = this.shadowRoot.getElementById("container")
+
   }
 
   clear() {
     this.container.innerHTML = '';
+    let item = this.appendSettingsMenuItem("exit-to-app", "Exit")
+    item.style.order = 1; // That set the item at last position.
   }
 
   appendSettingsMenuItem(icon, title) {
@@ -54,6 +59,7 @@ export class SettingsMenu extends HTMLElement {
       })
       item.classList.add("active")
     }
+    return item;
   }
 
 }
@@ -71,7 +77,6 @@ export class SettingsSideMenuItem extends HTMLElement {
 
     const icon = this.getAttribute("icon")
     const title = this.getAttribute("title")
-
     this.container = null;
     this.titleDiv = null;
 
@@ -165,9 +170,6 @@ export class SettingsPanel extends HTMLElement {
     </style>
     <div id="container">
     </div>
-    <div style="display: flex;">
-       Ceci est un test.
-    </div>
     `;
 
     this.container = this.shadowRoot.getElementById("container")
@@ -175,6 +177,19 @@ export class SettingsPanel extends HTMLElement {
 
   clear() {
     this.container.innerHTML = '';
+    let section = this.appendSettingsPage("Exit").appendSettings("Exit", "Exit and go back to the applicaiton.")
+    let yesNoSetting = new YesNoSetting("", "Do you want to save setting's", 
+      ()=>{
+        // Save the setting's
+        Model.eventHub.publish("save_settings_evt", true, true)
+        console.log("--------> save settings")
+      }, 
+      ()=>{
+        // Not save the setting's
+        Model.eventHub.publish("save_settings_evt", false, true)
+        console.log("--------> not save settings")
+      })
+    section.appendChild(yesNoSetting)
   }
 
   appendSettingsPage(title) {
@@ -274,8 +289,6 @@ export class Settings extends HTMLElement {
     <style>
        ${theme}
 
-
-
        #container {
            display: flex;
            flex-direction: column;
@@ -289,6 +302,19 @@ export class Settings extends HTMLElement {
         }
 
         ::slotted(globular-setting:not(:last-child)) {
+          border-bottom: 1px solid #e0e0e0;
+        }
+
+        ::slotted(globular-complex-setting:not(:last-child)) {
+          border-bottom: 1px solid #e0e0e0;
+        }
+
+        ::slotted(globular-string-setting:not(:last-child)) {
+          border-bottom: 1px solid #e0e0e0;
+        }
+
+
+        ::slotted(globular-email-setting:not(:last-child)) {
           border-bottom: 1px solid #e0e0e0;
         }
 
@@ -364,15 +390,21 @@ customElements.define("globular-settings", Settings);
  * The user general settings.
  */
 export class Setting extends HTMLElement {
-  constructor(name, value) {
+  constructor(name, description, icon) {
     super();
 
     this.container = null;
 
     // Set the shadow dom.
     this.attachShadow({ mode: "open" });
+
     if (this.hasAttribute("name")) {
       name = this.getAttribute("name")
+    }
+
+    // set icon to empty icon by default.
+    if (icon == undefined) {
+      icon = ""
     }
 
     // Connect to event.
@@ -392,7 +424,7 @@ export class Setting extends HTMLElement {
          word-wrap: break-word;
        }
 
-      .setting-value{
+      .setting-description{
         font-size: 1rem;
         flex-basis: 328px;
         flex-grow: 1;
@@ -404,10 +436,16 @@ export class Setting extends HTMLElement {
         word-break: break-word;
         word-wrap: break-word;
       }
-    </style>
 
-      <div class="setting-name">${name}</div>
-      <div class="setting-value">${value}</div>
+      #icon-left, icon-right {
+        display: none;
+      }
+
+    </style>
+    <iron-icon id="icon-left" icon="${icon}"></iron-icon>
+    <div  id="name-div" class="setting-name">${name}</div>
+    <div id = "description-div" class="setting-description">${description}</div>
+    <iron-icon id="icon-right" icon=""></iron-icon>
     `;
 
     // Set style property of the component itself.
@@ -417,8 +455,12 @@ export class Setting extends HTMLElement {
     this.style.alignItems = "center"
     this.style.padding = "15px 12px 16px 12px"
 
-    this.actionBtn = this.shadowRoot.getElementById("action-btn");
-    //this.actionBtn.onclick = onChangeSetting;
+    // The name (label) div
+    this.name = this.shadowRoot.getElementById("name-div")
+
+    // The description...
+    this.description = this.shadowRoot.getElementById("description-div")
+
   }
 
   clear() {
@@ -428,37 +470,131 @@ export class Setting extends HTMLElement {
   getValue() { }
 
 }
-
 customElements.define("globular-setting", Setting);
 
-export class ComplexSetting extends Setting {
-  constructor(name, value) {
-    super(name, value);
 
-    let chevron = document.createElement('div')
-    chevron.innerHTML = `
-    <div>
-      <slot id="action-btn-slot"></slot>
-      <iron-icon id="action-btn" icon="chevron-right"></iron-icon>
-    </div>
-  `
-    // this.container.appendChild(chevron)
-    this.shadowRoot.appendChild(chevron)
+/**
+ * That class must be use for setting that need more informations.
+ */
+export class ComplexSetting extends Setting {
+  constructor(name, description, icon) {
+    super(name, description);
+    let range = document.createRange()
+    let html = `
+      <style>
+      ${theme}
+        #icon-right:hover{
+          cursor: pointer;
+        }
+      </style>
+    `
+    this.shadowRoot.appendChild(range.createContextualFragment(html))
+    this.actionBtn = this.shadowRoot.getElementById("icon-right")
+    this.actionBtn.icon = "chevron-right"
+    this.actionBtn.style.display = "block";
+
+    this.actionBtn.onclick = () => {
+      console.log("go to next page!")
+    }
   }
 }
+
 customElements.define("globular-complex-setting", ComplexSetting);
 
-export class InputSetting extends Setting {
-  constructor(name, value, type) {
-    super(name, value);
+/**
+ * Set string setting...
+ */
+export class StringSetting extends Setting {
+  constructor(name, description) {
+    super(name, description);
 
-    this.shadowRoot.querySelector('.setting-value').innerHTML = `<input id="value" type="${type}" placeholder="${value}"></input>`
+    let html = `
+      <style>
+      ${theme}
+        #setting-input{
+         flex-grow: 1;
+        }
+      </style>
+      <paper-input id="setting-input" label="" no-label-float></paper-input>
+    `
+    let range = document.createRange();
+    this.title = description;
+
+    this.shadowRoot.insertBefore(range.createContextualFragment(html), this.description)
+    this.input = this.shadowRoot.getElementById("setting-input");
+
+    this.description.style.display = "none";
+    this.setAttribute("title", "")
+    if (description.length > 0) {
+      this.input.label = description;
+    }
+    this.input.setAttribute("title", description);
+
   }
 
   getValue() {
-    return this.shadowRoot.getElementById('value').value
+    return this.input.value
+  }
+
+  setValue(value) {
+    this.input.value = value;
   }
 
 }
 
-customElements.define("globular-input-setting", InputSetting);
+customElements.define("globular-string-setting", StringSetting);
+
+/**
+ * Add email validation to the string setting.
+ */
+export class EmailSetting extends StringSetting {
+  constructor(name, description) {
+    super(name, description)
+
+    // email need's validation so here's I will set it.
+
+  }
+}
+
+customElements.define("globular-email-setting", EmailSetting);
+
+
+/**
+ * Simple yes no button's
+ */
+export class YesNoSetting extends Setting {
+  constructor(name, description, onYes, onNo) {
+    super(name, description)
+
+    let html = `
+    <style>
+    ${theme}
+      #yes-no-div{
+       display: flex;
+      }
+
+      #yes-no-div paper-button{
+        font-size: .85rem;
+        height: fit-content;
+        border: none;
+        color: var(--palette-text-accent);
+        background: var(--palette-primary-accent);
+        max-height: 32px;
+      }
+
+    </style>
+    <div id="yes-no-div">
+      <paper-button id="yes-btn" raised>Yes</paper-button>
+      <paper-button id="no-btn" raised>No</paper-button>
+    </div>
+  `
+    let range = document.createRange();
+    this.shadowRoot.appendChild(range.createContextualFragment(html))
+    this.onyes = onYes;
+    this.onno= onNo;
+    this.shadowRoot.getElementById("yes-btn").onclick = this.onyes;
+    this.shadowRoot.getElementById("no-btn").onclick = this.onno;
+  }
+}
+
+customElements.define("globular-yes-no-setting", YesNoSetting);

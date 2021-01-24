@@ -83,6 +83,9 @@ export class Application extends Model {
   constructor(name: string, title: string, view: ApplicationView) {
     super();
 
+    // set the application view in it model.
+    view.application = this;
+
     // generate client uuid, this is use to set information about a client.
     if (localStorage.getItem("globular_client_uuid") == undefined) {
       Application.uuid = uuidv4();
