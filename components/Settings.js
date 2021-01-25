@@ -261,7 +261,6 @@ export class SettingsPage extends HTMLElement {
     const settings = this.shadowRoot.getElementById(title + "_settings")
     return settings
   }
-  //add a setting array or a get settings
 }
 
 
@@ -373,15 +372,18 @@ export class Settings extends HTMLElement {
     `;
 
     this.container = this.shadowRoot.getElementById("container")
+    this.settingsArray = []
 
   }
 
   addSetting(setting) {
     this.shadowRoot.querySelector(".card-content").appendChild(setting)
+    this.settingsArray.push(setting)
   }
 
   clear() {
-    this.container.innerHTML = '';
+    this.container.innerHTML = ''
+    this.settingsArray.length = 0
   }
 
 }
