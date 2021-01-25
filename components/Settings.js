@@ -39,15 +39,6 @@ export class SettingsMenu extends HTMLElement {
 
   }
 
-  connectedCallback() {
-    // Set the first item after the Exit menu of course.
-    if(this.container.childNodes.length > 1){
-      this.container.childNodes[1].click()
-    }else{
-      this.container.firstChild.click()
-    }
-  }
-
   clear() {
     this.container.innerHTML = '';
     let item = this.appendSettingsMenuItem("exit-to-app", "Exit")
@@ -67,7 +58,6 @@ export class SettingsMenu extends HTMLElement {
         element.classList.remove("active")
       })
       item.classList.add("active")
-      Model.eventHub.publish("set-settings-page", title, true)
     }
     return item;
   }
@@ -129,7 +119,12 @@ export class SettingsSideMenuItem extends HTMLElement {
 
     // Create the actions here.
     this.titleDiv.onclick = () => {
-      //Model.eventHub.publish("set-settings-page", this.titleDiv.innerText, true)
+
+    }
+
+    this.titleDiv.onclick = () => {
+
+      Model.eventHub.publish("set-settings-page", this.titleDiv.innerText, true)
     }
   }
 
@@ -207,7 +202,6 @@ export class SettingsPanel extends HTMLElement {
     return page
   }
 
-  // Bubble up the array of setting arrays
 }
 
 customElements.define("globular-settings-panel", SettingsPanel);
@@ -239,7 +233,6 @@ export class SettingsPage extends HTMLElement {
     `;
 
     this.container = this.shadowRoot.getElementById("container")
-    this.settingsArray = []
   }
 
   clear() {
@@ -266,11 +259,9 @@ export class SettingsPage extends HTMLElement {
     const range = document.createRange()
     this.container.appendChild(range.createContextualFragment(html))
     const settings = this.shadowRoot.getElementById(title + "_settings")
-    this.settingsArray.push(settings)
     return settings
   }
-
-  // Bubble up the setting array from Settings to here.
+  //add a setting array or a get settings
 }
 
 
@@ -382,18 +373,15 @@ export class Settings extends HTMLElement {
     `;
 
     this.container = this.shadowRoot.getElementById("container")
-    this.settingArray = []
 
   }
 
   addSetting(setting) {
     this.shadowRoot.querySelector(".card-content").appendChild(setting)
-    this.settingArray.push(setting)
   }
 
   clear() {
-    this.container.innerHTML = ''
-    this.settingArray.length = 0
+    this.container.innerHTML = '';
   }
 
 }
