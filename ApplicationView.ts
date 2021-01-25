@@ -510,7 +510,6 @@ export class ApplicationView extends View {
       let node = this.getWorkspace().childNodes[this.getWorkspace().childNodes.length - 1]
       this._workspace_childnodes.push(node)
       this.getWorkspace().removeChild(node)
-      console.log(node)
     }
 
     // Keep the content of the side menu
@@ -522,6 +521,8 @@ export class ApplicationView extends View {
 
     this.getSideMenu().appendChild(this.settingsMenu);
     this.getWorkspace().appendChild(this.settingsPanel);
+
+    
 
   }
 

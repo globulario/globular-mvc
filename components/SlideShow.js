@@ -111,7 +111,11 @@ export class SlideShow extends HTMLElement {
                     #start-btn{
                         display: none;
                         position: absolute;
+                        color: var(--palette-text-accent);
+                        --paper-icon-button-ink-color: var(--palette-text-accent);
                     }
+
+                    
                
                 </style>
         
