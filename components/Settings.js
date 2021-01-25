@@ -176,9 +176,7 @@ export class SettingsPanel extends HTMLElement {
   }
 
   clear() {
-    this.container.innerHTML = '';
-    let section = this.appendSettingsPage("Exit").appendSettings("Exit", "Exit and go back to the applicaiton.")
-    let yesNoSetting = new YesNoSetting("", "Do you want to save setting's", 
+    let yesNoSetting = new YesNoSetting("", "Do you wish to save your settings?", 
       ()=>{
         // Save the setting's
         Model.eventHub.publish("save_settings_evt", true, true)
@@ -189,6 +187,9 @@ export class SettingsPanel extends HTMLElement {
         Model.eventHub.publish("save_settings_evt", false, true)
         console.log("--------> not save settings")
       })
+      
+    this.container.innerHTML = '';
+    let section = this.appendSettingsPage("Exit").appendSettings("Exit", "Returning to the application...")
     section.appendChild(yesNoSetting)
   }
 
@@ -260,6 +261,7 @@ export class SettingsPage extends HTMLElement {
     const settings = this.shadowRoot.getElementById(title + "_settings")
     return settings
   }
+  //add a setting array or a get settings
 }
 
 
@@ -375,7 +377,7 @@ export class Settings extends HTMLElement {
   }
 
   addSetting(setting) {
-    this.container.appendChild(setting)
+    this.shadowRoot.querySelector(".card-content").appendChild(setting)
   }
 
   clear() {
@@ -515,7 +517,7 @@ export class StringSetting extends Setting {
          flex-grow: 1;
         }
       </style>
-      <paper-input id="setting-input" label="" no-label-float></paper-input>
+      <paper-input id="setting-input" label="" raised></paper-input>
     `
     let range = document.createRange();
     this.title = description;
