@@ -5,6 +5,7 @@ import '@polymer/paper-icon-button/paper-icon-button.js';
 import "@polymer/iron-icons/av-icons";
 import { theme } from "./Theme";
 import "./Countdown"
+import { Model } from '../Model';
 
 export class SlideShow extends HTMLElement {
     constructor() {
@@ -15,107 +16,143 @@ export class SlideShow extends HTMLElement {
         this.isRunning = false;
         this.countdown = null;
         this.startBtn = null;
-    }
+        this.lastActiveSlide = null;
 
-    connectedCallback() {
+        // Settings event
+        Model.eventHub.subscribe(
+            "settings_event_",
+            (uuid) => {
+                this.settings_event_listener = uuid;
+
+            },
+            () => {
+                this.stop();
+            },
+            true
+        );
+
+        // Settings event
+        Model.eventHub.subscribe(
+            "save_settings_evt",
+            (uuid) => {
+                this.save_settings_event_listener = uuid;
+            },
+            (saveSetting) => {
+                this.start()
+            },
+            true
+        );
+
         // default is fiteen seconds.
         this.delay = 1000 * 15
-        if(this.hasAttribute("delay")){
+        if (this.hasAttribute("delay")) {
             this.delay = parseInt(this.getAttribute("delay")) * 1000
         }
 
         this.shadowRoot.innerHTML = `
-        <style>
-        ${theme}
-            :host {
-                --slidewidth: 1080px;
-                --footerHeight: 40px;
-                --slideContainerHeight: 1920px; 
-                --slideHeight: calc(var(--slideContainerHeight) - var(--footerHeight));
-                --inScreen: 0px;
-                --offScreen: -1080px;
-                --offScreenRight: var(--slidewidth);
-            }
+                <style>
+                ${theme}
+                    :host {
+                        --slidewidth: 1080px;
+                        --footerHeight: 40px;
+                        --slideContainerHeight: 1920px; 
+                        --slideHeight: calc(var(--slideContainerHeight) - var(--footerHeight));
+                        --inScreen: 0px;
+                        --offScreen: -1080px;
+                        --offScreenRight: var(--slidewidth);
+                    }
+        
+        
+                    .slides-container {
+                        position: relative;
+                        width: var(--slidewidth);
+                        height: var(--slideContainerHeight);
+                        overflow: hidden;
+                        margin: 0 auto;
+                    }
+                    
+                    footer {
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        position: absolute;
+                        bottom: 20px;
+                        left: 0;
+                        width: 100%;
+                        height: var(--footerHeight);
+                        z-index: 99;
+                    }
+                    
+                    footer > span {
+                        position: relative;
+                        height: 40px;
+                        width: 40px;
+                        border-radius: 2rem;
+                        border: solid white;
+                        border-width: 3px;
+                        margin: 0 1rem;
+                    }
+                    
+                    #container{
+                        display: flex;
+                        flex-direction: column;
+                    }
+        
+                    #countdown{
+                        position: absolute;
+                        top: 1px;
+                        left: 1px;
+                    }
+        
+                    .marker:hover {
+                        cursor: pointer;
+                    }
+        
+                    #start-btn{
+                        display: none;
+                        position: absolute;
+                        color: var(--palette-text-accent);
+                        --paper-icon-button-ink-color: var(--palette-text-accent);
+                    }
 
-
-            .slides-container {
-                position: relative;
-                width: var(--slidewidth);
-                height: var(--slideContainerHeight);
-                overflow: hidden;
-                margin: 0 auto;
-            }
-            
-            footer {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                position: absolute;
-                bottom: 20px;
-                left: 0;
-                width: 100%;
-                height: var(--footerHeight);
-                z-index: 99;
-            }
-            
-            footer > span {
-                position: relative;
-                height: 40px;
-                width: 40px;
-                border-radius: 2rem;
-                border: solid white;
-                border-width: 3px;
-                margin: 0 1rem;
-            }
-            
-            #container{
-                display: flex;
-                flex-direction: column;
-            }
-
-            #countdown{
-                position: absolute;
-                top: 1px;
-                left: 1px;
-            }
-
-            .marker:hover {
-                cursor: pointer;
-            }
-
-            #start-btn{
-                display: none;
-                position: absolute;
-            }
-       
-        </style>
-        <paper-card id="container" class="container slides-container">
-            <slot id="slides" name="slides"></slot>
-            <footer id="footer">
+                    
+               
+                </style>
+        
                 <globular-count-down id="countdown" countdown="${this.delay / 1000}" diameter="38" stroke="3" ></globular-count-down>
                 <paper-icon-button id="start-btn" icon="av:play-circle-filled"></paper-icon-button>
-            </footer>
-            
-        </paper-card>
-        `
+        
+                <paper-card id="container" class="container slides-container">
+                    <slot id="slides" name="slides"></slot>
+                    <footer id="footer">
+                    </footer>
+                </paper-card>
+                `
 
         this.startBtn = this.shadowRoot.getElementById("start-btn")
+        this.startBtn.parentNode.removeChild(this.startBtn)
+
         this.countdown = this.shadowRoot.getElementById("countdown")
-       
-        this.startBtn.onclick = (evt)=>{
+        this.countdown.parentNode.removeChild(this.countdown)
+
+        this.startBtn.onclick = (evt) => {
             evt.stopPropagation();
             this.startBtn.style.display = "none"
             this.startBtn.parentNode.removeChild(this.startBtn)
             let markers = this.shadowRoot.querySelectorAll(".marker")
-            for(var i=0; i < markers.length; i++){
+            for (var i = 0; i < markers.length; i++) {
                 markers[i].style.backgroundColor = "";
             }
             this.start()
         }
 
-        if(this.hasAttribute("backgroundColor")){
+        if (this.hasAttribute("backgroundColor")) {
             this.shadowRoot.getElementById("start-btn").getElementById("container").style.backgroundColor = this.getAttribute("backgroundColor")
         }
+    }
+
+    connectedCallback() {
+
     }
 
     /**
@@ -144,16 +181,16 @@ export class SlideShow extends HTMLElement {
 
         marker.onclick = () => {
             this.stop();
-            
+
             // Here I will rotate the slide.
-            while(document.getElementById("slides").childNodes[1].id != markeyId){
+            while (document.getElementById("slides").childNodes[1].id != markeyId) {
                 let firstChild = document.getElementById("slides").firstChild
                 document.getElementById("slides").removeChild(firstChild)
                 document.getElementById("slides").appendChild(firstChild)
             }
 
             let markers = this.shadowRoot.querySelectorAll(".marker")
-            for(var i=0; i < markers.length; i++){
+            for (var i = 0; i < markers.length; i++) {
                 markers[i].style.backgroundColor = "";
             }
 
@@ -198,8 +235,12 @@ export class SlideShow extends HTMLElement {
 
     // Rotate the slide to one position
     rotateSlide() {
+        if (document.getElementById("slides") == undefined) {
+            return
+        }
 
         this.orderSlides();
+
         // rotate the slides.
         let firstChild = document.getElementById("slides").firstChild
         let w = firstChild.offsetWidth;
@@ -208,6 +249,9 @@ export class SlideShow extends HTMLElement {
 
         // Wait the time of animation delay and set back the div at it start position.
         setTimeout(() => {
+            if (document.getElementById("slides") == undefined) {
+                return
+            }
             this.countdown.style.display = "none";
             document.getElementById("slides").style.transition = 'none';
             document.getElementById("slides").style.transform = `none`;
@@ -217,20 +261,28 @@ export class SlideShow extends HTMLElement {
             this.countdown.start();
             this.countdown.style.display = "block";
         }, 1000)
+
     }
 
     /**
      * Start the slide show
      */
     start() {
-        if(!this.isRunning){
+        if (!this.isRunning) {
+            if(this.startBtn.parentNode != undefined){
+                return;
+            }
+
             this.countdown.style.display = "block"
             this.isRunning = true;
+            if(this.countdown.parentNode == undefined && this.lastActiveSlide != undefined){
+                this.lastActiveSlide.appendChild(this.countdown);
+            }
             this.countdown.start();
         }
         this.timeout = setTimeout(() => {
             // Remove the previous inteval...
-            if(this.isRunning){
+            if (this.isRunning) {
                 this.rotateSlide();
                 this.start()
             }
@@ -241,10 +293,14 @@ export class SlideShow extends HTMLElement {
      * Stop the slideshow
      */
     stop() {
+
         // Stop the running loop.
         this.countdown.stop()
         this.countdown.style.display = "none"
-        this.countdown.parentNode.removeChild(this.countdown);
+        if (this.countdown.parentNode != undefined) {
+            this.lastActiveSlide = this.countdown.parentNode;
+            this.countdown.parentNode.removeChild(this.countdown);
+        }
 
         if (this.timeout != null) {
             clearTimeout(this.timeout)

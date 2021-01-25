@@ -506,21 +506,23 @@ export class ApplicationView extends View {
     this._workspace_childnodes = new Array<any>();
 
     // Keep the content of the workspace.
-    for (var i = 0; i < this.getWorkspace().childNodes.length; i++) {
-      let node = this.getWorkspace().childNodes[i]
+    while (this.getWorkspace().childNodes.length > 0) {
+      let node = this.getWorkspace().childNodes[this.getWorkspace().childNodes.length - 1]
       this._workspace_childnodes.push(node)
-      node.parentNode.removeChild(node)
+      this.getWorkspace().removeChild(node)
     }
 
     // Keep the content of the side menu
-    for (var i = 0; i < this.getSideMenu().childNodes.length; i++) {
-      let node = this.getSideMenu().childNodes[i]
+    while (this.getSideMenu().childNodes.length > 0) {
+      let node = this.getSideMenu().childNodes[ this.getSideMenu().childNodes.length - 1]
       this._sidemenu_childnodes.push(node)
-      node.parentNode.removeChild(node)
+      this.getSideMenu().removeChild(node)
     }
 
     this.getSideMenu().appendChild(this.settingsMenu);
     this.getWorkspace().appendChild(this.settingsPanel);
+
+    
 
   }
 
@@ -535,7 +537,9 @@ export class ApplicationView extends View {
 
     // restore the workspace
     for (var i = 0; i < this._workspace_childnodes.length; i++) {
-      this.getWorkspace().appendChild(this._workspace_childnodes[i])
+      let node = this._workspace_childnodes[i]
+      this.getWorkspace().appendChild(node)
+      console.log(node)
     }
 
 

@@ -39,6 +39,15 @@ export class SettingsMenu extends HTMLElement {
 
   }
 
+  connectedCallback() {
+    // Set the first item after the Exit menu of course.
+    if(this.container.childNodes.length > 1){
+      this.container.childNodes[1].click()
+    }else{
+      this.container.firstChild.click()
+    }
+  }
+
   clear() {
     this.container.innerHTML = '';
     let item = this.appendSettingsMenuItem("exit-to-app", "Exit")
@@ -58,6 +67,7 @@ export class SettingsMenu extends HTMLElement {
         element.classList.remove("active")
       })
       item.classList.add("active")
+      Model.eventHub.publish("set-settings-page", title, true)
     }
     return item;
   }
@@ -119,12 +129,7 @@ export class SettingsSideMenuItem extends HTMLElement {
 
     // Create the actions here.
     this.titleDiv.onclick = () => {
-
-    }
-
-    this.titleDiv.onclick = () => {
-
-      Model.eventHub.publish("set-settings-page", this.titleDiv.innerText, true)
+      //Model.eventHub.publish("set-settings-page", this.titleDiv.innerText, true)
     }
   }
 
