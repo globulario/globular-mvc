@@ -572,6 +572,49 @@ export class StringSetting extends Setting {
 customElements.define("globular-string-setting", StringSetting);
 
 /**
+ * Set string setting...
+ */
+export class NumberSetting extends Setting {
+  constructor(name, description) {
+    super(name, description);
+
+    let html = `
+      <style>
+      ${theme}
+        #setting-input{
+         flex-grow: 1;
+        }
+      </style>
+      <paper-input type="number" id="setting-input" label="" raised></paper-input>
+    `
+    let range = document.createRange();
+    this.title = description;
+
+    this.shadowRoot.insertBefore(range.createContextualFragment(html), this.description)
+    this.input = this.shadowRoot.getElementById("setting-input");
+
+    this.description.style.display = "none";
+    this.setAttribute("title", "")
+    if (description.length > 0) {
+      this.input.label = description;
+    }
+    this.input.setAttribute("title", description);
+
+  }
+
+  getValue() {
+    return this.input.value
+  }
+
+  setValue(value) {
+    this.input.value = value;
+  }
+
+}
+
+customElements.define("globular-number-setting", NumberSetting);
+
+/**
  * Add email validation to the string setting.
  */
 export class EmailSetting extends StringSetting {
