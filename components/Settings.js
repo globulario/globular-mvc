@@ -360,20 +360,45 @@ export class Settings extends HTMLElement {
           color: var(--cr-primary-text-color);
         }
 
+        paper-button{
+          display: flex;
+          font-size: .85rem;
+          border: none;
+          color: var(--palette-text-accent);
+          background: var(--palette-primary-accent);
+          max-height: 32px;
+        }
+
     </style>
     <div id="container">
        <paper-card id="${this.title}_settings">
             <h2 class="card-title">${this.title}</h2>
             <div class="card-subtitle">${this.subtitle}</div>
+            <paper-button id="hide-btn" raised>Hide</paper-button>
             <div class="card-content">
                 <slot></slot>
             </div>
         </paper-card>
     </div>
     `;
+    this.shadowRoot.getElementById("hide-btn").onclick = this.hideSettings.bind(this);
 
     this.container = this.shadowRoot.getElementById("container")
 
+  }
+
+  hideSettings() {
+    let button = this.shadowRoot.getElementById("hide-btn")
+    let content = this.shadowRoot.querySelector(".card-content")
+    if (button && content) {
+      if(content.style.display === "none") {
+        content.style.display = "block"
+        button.textContent = "Hide"
+      } else {
+        content.style.display = "none"
+        button.textContent = "Show"
+      }
+    }
   }
 
   addSetting(setting) {
