@@ -20,7 +20,7 @@ export class SlideShow extends HTMLElement {
     connectedCallback() {
         // default is fiteen seconds.
         this.delay = 1000 * 15
-        if(this.hasAttribute("delay")){
+        if (this.hasAttribute("delay")) {
             this.delay = parseInt(this.getAttribute("delay")) * 1000
         }
 
@@ -101,19 +101,19 @@ export class SlideShow extends HTMLElement {
 
         this.startBtn = this.shadowRoot.getElementById("start-btn")
         this.countdown = this.shadowRoot.getElementById("countdown")
-       
-        this.startBtn.onclick = (evt)=>{
+
+        this.startBtn.onclick = (evt) => {
             evt.stopPropagation();
             this.startBtn.style.display = "none"
             this.startBtn.parentNode.removeChild(this.startBtn)
             let markers = this.shadowRoot.querySelectorAll(".marker")
-            for(var i=0; i < markers.length; i++){
+            for (var i = 0; i < markers.length; i++) {
                 markers[i].style.backgroundColor = "";
             }
             this.start()
         }
 
-        if(this.hasAttribute("backgroundColor")){
+        if (this.hasAttribute("backgroundColor")) {
             this.shadowRoot.getElementById("start-btn").getElementById("container").style.backgroundColor = this.getAttribute("backgroundColor")
         }
     }
@@ -144,16 +144,16 @@ export class SlideShow extends HTMLElement {
 
         marker.onclick = () => {
             this.stop();
-            
+
             // Here I will rotate the slide.
-            while(document.getElementById("slides").childNodes[1].id != markeyId){
+            while (document.getElementById("slides").childNodes[1].id != markeyId) {
                 let firstChild = document.getElementById("slides").firstChild
                 document.getElementById("slides").removeChild(firstChild)
                 document.getElementById("slides").appendChild(firstChild)
             }
 
             let markers = this.shadowRoot.querySelectorAll(".marker")
-            for(var i=0; i < markers.length; i++){
+            for (var i = 0; i < markers.length; i++) {
                 markers[i].style.backgroundColor = "";
             }
 
@@ -198,8 +198,12 @@ export class SlideShow extends HTMLElement {
 
     // Rotate the slide to one position
     rotateSlide() {
+        if (document.getElementById("slides") == undefined) {
+            return
+        }
 
         this.orderSlides();
+
         // rotate the slides.
         let firstChild = document.getElementById("slides").firstChild
         let w = firstChild.offsetWidth;
@@ -208,6 +212,9 @@ export class SlideShow extends HTMLElement {
 
         // Wait the time of animation delay and set back the div at it start position.
         setTimeout(() => {
+            if (document.getElementById("slides") == undefined) {
+                return
+            }
             this.countdown.style.display = "none";
             document.getElementById("slides").style.transition = 'none';
             document.getElementById("slides").style.transform = `none`;
@@ -217,20 +224,21 @@ export class SlideShow extends HTMLElement {
             this.countdown.start();
             this.countdown.style.display = "block";
         }, 1000)
+
     }
 
     /**
      * Start the slide show
      */
     start() {
-        if(!this.isRunning){
+        if (!this.isRunning) {
             this.countdown.style.display = "block"
             this.isRunning = true;
             this.countdown.start();
         }
         this.timeout = setTimeout(() => {
             // Remove the previous inteval...
-            if(this.isRunning){
+            if (this.isRunning) {
                 this.rotateSlide();
                 this.start()
             }
