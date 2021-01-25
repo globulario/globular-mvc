@@ -202,6 +202,7 @@ export class SettingsPanel extends HTMLElement {
     return page
   }
 
+  // Bubble up the array of setting arrays
 }
 
 customElements.define("globular-settings-panel", SettingsPanel);
@@ -233,6 +234,7 @@ export class SettingsPage extends HTMLElement {
     `;
 
     this.container = this.shadowRoot.getElementById("container")
+    this.settingsArray = []
   }
 
   clear() {
@@ -259,8 +261,11 @@ export class SettingsPage extends HTMLElement {
     const range = document.createRange()
     this.container.appendChild(range.createContextualFragment(html))
     const settings = this.shadowRoot.getElementById(title + "_settings")
+    this.settingsArray.push(settings)
     return settings
   }
+
+  // Bubble up the setting array from Settings to here.
 }
 
 
@@ -372,18 +377,18 @@ export class Settings extends HTMLElement {
     `;
 
     this.container = this.shadowRoot.getElementById("container")
-    this.settingsArray = []
+    this.settingArray = []
 
   }
 
   addSetting(setting) {
     this.shadowRoot.querySelector(".card-content").appendChild(setting)
-    this.settingsArray.push(setting)
+    this.settingArray.push(setting)
   }
 
   clear() {
     this.container.innerHTML = ''
-    this.settingsArray.length = 0
+    this.settingArray.length = 0
   }
 
 }
