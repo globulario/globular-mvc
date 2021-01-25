@@ -510,6 +510,7 @@ export class ApplicationView extends View {
       let node = this.getWorkspace().childNodes[this.getWorkspace().childNodes.length - 1]
       this._workspace_childnodes.push(node)
       this.getWorkspace().removeChild(node)
+      console.log(node)
     }
 
     // Keep the content of the side menu
@@ -535,7 +536,9 @@ export class ApplicationView extends View {
 
     // restore the workspace
     for (var i = 0; i < this._workspace_childnodes.length; i++) {
-      this.getWorkspace().appendChild(this._workspace_childnodes[i])
+      let node = this._workspace_childnodes[i]
+      this.getWorkspace().appendChild(node)
+      console.log(node)
     }
 
 

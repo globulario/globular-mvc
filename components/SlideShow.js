@@ -5,6 +5,7 @@ import '@polymer/paper-icon-button/paper-icon-button.js';
 import "@polymer/iron-icons/av-icons";
 import { theme } from "./Theme";
 import "./Countdown"
+import { Model } from '../Model';
 
 export class SlideShow extends HTMLElement {
     constructor() {
@@ -15,9 +16,33 @@ export class SlideShow extends HTMLElement {
         this.isRunning = false;
         this.countdown = null;
         this.startBtn = null;
-    }
+        this.lastActiveSlide = null;
 
-    connectedCallback() {
+        // Settings event
+        Model.eventHub.subscribe(
+            "settings_event_",
+            (uuid) => {
+                this.settings_event_listener = uuid;
+
+            },
+            () => {
+                this.stop();
+            },
+            true
+        );
+
+        // Settings event
+        Model.eventHub.subscribe(
+            "save_settings_evt",
+            (uuid) => {
+                this.save_settings_event_listener = uuid;
+            },
+            (saveSetting) => {
+                this.start()
+            },
+            true
+        );
+
         // default is fiteen seconds.
         this.delay = 1000 * 15
         if (this.hasAttribute("delay")) {
@@ -25,82 +50,86 @@ export class SlideShow extends HTMLElement {
         }
 
         this.shadowRoot.innerHTML = `
-        <style>
-        ${theme}
-            :host {
-                --slidewidth: 1080px;
-                --footerHeight: 40px;
-                --slideContainerHeight: 1920px; 
-                --slideHeight: calc(var(--slideContainerHeight) - var(--footerHeight));
-                --inScreen: 0px;
-                --offScreen: -1080px;
-                --offScreenRight: var(--slidewidth);
-            }
-
-
-            .slides-container {
-                position: relative;
-                width: var(--slidewidth);
-                height: var(--slideContainerHeight);
-                overflow: hidden;
-                margin: 0 auto;
-            }
-            
-            footer {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                position: absolute;
-                bottom: 20px;
-                left: 0;
-                width: 100%;
-                height: var(--footerHeight);
-                z-index: 99;
-            }
-            
-            footer > span {
-                position: relative;
-                height: 40px;
-                width: 40px;
-                border-radius: 2rem;
-                border: solid white;
-                border-width: 3px;
-                margin: 0 1rem;
-            }
-            
-            #container{
-                display: flex;
-                flex-direction: column;
-            }
-
-            #countdown{
-                position: absolute;
-                top: 1px;
-                left: 1px;
-            }
-
-            .marker:hover {
-                cursor: pointer;
-            }
-
-            #start-btn{
-                display: none;
-                position: absolute;
-            }
-       
-        </style>
-        <paper-card id="container" class="container slides-container">
-            <slot id="slides" name="slides"></slot>
-            <footer id="footer">
+                <style>
+                ${theme}
+                    :host {
+                        --slidewidth: 1080px;
+                        --footerHeight: 40px;
+                        --slideContainerHeight: 1920px; 
+                        --slideHeight: calc(var(--slideContainerHeight) - var(--footerHeight));
+                        --inScreen: 0px;
+                        --offScreen: -1080px;
+                        --offScreenRight: var(--slidewidth);
+                    }
+        
+        
+                    .slides-container {
+                        position: relative;
+                        width: var(--slidewidth);
+                        height: var(--slideContainerHeight);
+                        overflow: hidden;
+                        margin: 0 auto;
+                    }
+                    
+                    footer {
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        position: absolute;
+                        bottom: 20px;
+                        left: 0;
+                        width: 100%;
+                        height: var(--footerHeight);
+                        z-index: 99;
+                    }
+                    
+                    footer > span {
+                        position: relative;
+                        height: 40px;
+                        width: 40px;
+                        border-radius: 2rem;
+                        border: solid white;
+                        border-width: 3px;
+                        margin: 0 1rem;
+                    }
+                    
+                    #container{
+                        display: flex;
+                        flex-direction: column;
+                    }
+        
+                    #countdown{
+                        position: absolute;
+                        top: 1px;
+                        left: 1px;
+                    }
+        
+                    .marker:hover {
+                        cursor: pointer;
+                    }
+        
+                    #start-btn{
+                        display: none;
+                        position: absolute;
+                    }
+               
+                </style>
+        
                 <globular-count-down id="countdown" countdown="${this.delay / 1000}" diameter="38" stroke="3" ></globular-count-down>
                 <paper-icon-button id="start-btn" icon="av:play-circle-filled"></paper-icon-button>
-            </footer>
-            
-        </paper-card>
-        `
+        
+                <paper-card id="container" class="container slides-container">
+                    <slot id="slides" name="slides"></slot>
+                    <footer id="footer">
+                    </footer>
+                </paper-card>
+                `
 
         this.startBtn = this.shadowRoot.getElementById("start-btn")
+        this.startBtn.parentNode.removeChild(this.startBtn)
+
         this.countdown = this.shadowRoot.getElementById("countdown")
+        this.countdown.parentNode.removeChild(this.countdown)
 
         this.startBtn.onclick = (evt) => {
             evt.stopPropagation();
@@ -116,6 +145,10 @@ export class SlideShow extends HTMLElement {
         if (this.hasAttribute("backgroundColor")) {
             this.shadowRoot.getElementById("start-btn").getElementById("container").style.backgroundColor = this.getAttribute("backgroundColor")
         }
+    }
+
+    connectedCallback() {
+
     }
 
     /**
@@ -232,8 +265,15 @@ export class SlideShow extends HTMLElement {
      */
     start() {
         if (!this.isRunning) {
+            if(this.startBtn.parentNode != undefined){
+                return;
+            }
+
             this.countdown.style.display = "block"
             this.isRunning = true;
+            if(this.countdown.parentNode == undefined && this.lastActiveSlide != undefined){
+                this.lastActiveSlide.appendChild(this.countdown);
+            }
             this.countdown.start();
         }
         this.timeout = setTimeout(() => {
@@ -249,10 +289,14 @@ export class SlideShow extends HTMLElement {
      * Stop the slideshow
      */
     stop() {
+
         // Stop the running loop.
         this.countdown.stop()
         this.countdown.style.display = "none"
-        this.countdown.parentNode.removeChild(this.countdown);
+        if (this.countdown.parentNode != undefined) {
+            this.lastActiveSlide = this.countdown.parentNode;
+            this.countdown.parentNode.removeChild(this.countdown);
+        }
 
         if (this.timeout != null) {
             clearTimeout(this.timeout)
