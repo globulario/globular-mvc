@@ -40,6 +40,7 @@ export class SettingsMenu extends HTMLElement {
   }
 
   connectedCallback() {
+    
     // Set the first item after the Exit menu of course.
     if(this.container.childNodes.length > 1){
       this.container.childNodes[1].click()
