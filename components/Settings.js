@@ -3,6 +3,7 @@ import '@polymer/iron-icon/iron-icon.js';
 import '@polymer/iron-icons/iron-icons.js';
 import '@polymer/paper-button/paper-button.js';
 import '@polymer/paper-input/paper-input.js';
+import '@polymer/iron-collapse/iron-collapse.js';
 import { Model } from "../Model";
 
 /**
@@ -359,6 +360,12 @@ export class Settings extends HTMLElement {
           word-break: break-word;
           word-wrap: break-word;
           color: var(--cr-primary-text-color);
+          flex-grow: 1;
+        }
+
+        .card-content{
+          display: flex;
+          flex-direction: column;
         }
 
         paper-button{
@@ -370,35 +377,41 @@ export class Settings extends HTMLElement {
           max-height: 32px;
         }
 
+        #hide-btn{
+          align-self: center;
+        }
+
     </style>
     <div id="container">
        <paper-card id="${this.title}_settings">
             <h2 class="card-title">${this.title}</h2>
-            <div class="card-subtitle">${this.subtitle}</div>
-            <paper-button id="hide-btn" raised>Hide</paper-button>
+            <div style="display: flex;">
+              <div class="card-subtitle">${this.subtitle}</div>
+              <paper-icon-button id="hide-btn"  icon="unfold-less"></paper-icon-button>
+            </div>
             <div class="card-content">
-                <slot></slot>
+              <iron-collapse class="card-collapse"  opened = "[[opened]]">
+                  <slot></slot>
+              </iron-collapse>
             </div>
         </paper-card>
     </div>
     `;
+
     this.shadowRoot.getElementById("hide-btn").onclick = this.hideSettings.bind(this);
-
     this.container = this.shadowRoot.getElementById("container")
-
   }
-
+  
   hideSettings() {
     let button = this.shadowRoot.getElementById("hide-btn")
-    let content = this.shadowRoot.querySelector(".card-content")
+    let content = this.shadowRoot.querySelector(".card-collapse")
     if (button && content) {
-      if(content.style.display === "none") {
-        content.style.display = "block"
-        button.textContent = "Hide"
+      if(!content.opened) {
+        button.icon = "unfold-less"
       } else {
-        content.style.display = "none"
-        button.textContent = "Show"
+        button.icon = "unfold-more"
       }
+      content.toggle();
     }
   }
 
