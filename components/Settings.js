@@ -391,7 +391,7 @@ export class Settings extends HTMLElement {
             </div>
             <div class="card-content">
               <iron-collapse class="card-collapse"  opened = "[[opened]]">
-                  <slot></slot>
+                  <slot id="card-content"></slot>
               </iron-collapse>
             </div>
         </paper-card>
@@ -416,7 +416,7 @@ export class Settings extends HTMLElement {
   }
 
   addSetting(setting) {
-    this.shadowRoot.querySelector(".card-content").appendChild(setting)
+    this.shadowRoot.querySelector("#card-content").appendChild(setting)
   }
 
   clear() {
