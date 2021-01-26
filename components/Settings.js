@@ -127,11 +127,6 @@ export class SettingsSideMenuItem extends HTMLElement {
   connectedCallback() {
     this.container = this.shadowRoot.getElementById("container")
     this.titleDiv = this.shadowRoot.getElementById("title-div")
-
-    // Create the actions here.
-    this.titleDiv.onclick = () => {
-      //Model.eventHub.publish("set-settings-page", this.titleDiv.innerText, true)
-    }
   }
 
 
@@ -182,9 +177,7 @@ export class SettingsPanel extends HTMLElement {
   }
 
   clear() {
-    this.container.innerHTML = '';
-    let section = this.appendSettingsPage("Exit").appendSettings("Exit", "Exit and go back to the applicaiton.")
-    let yesNoSetting = new YesNoSetting("", "Do you want to save setting's", 
+    let yesNoSetting = new YesNoSetting("", "Do you wish to save your settings?", 
       ()=>{
         // Save the setting's
         Model.eventHub.publish("save_settings_evt", true, true)
@@ -195,6 +188,9 @@ export class SettingsPanel extends HTMLElement {
         Model.eventHub.publish("save_settings_evt", false, true)
         console.log("--------> not save settings")
       })
+      
+    this.container.innerHTML = '';
+    let section = this.appendSettingsPage("Exit").appendSettings("Exit", "Returning to the application...")
     section.appendChild(yesNoSetting)
   }
 
@@ -266,6 +262,7 @@ export class SettingsPage extends HTMLElement {
     const settings = this.shadowRoot.getElementById(title + "_settings")
     return settings
   }
+  //add a setting array or a get settings
 }
 
 
@@ -364,24 +361,49 @@ export class Settings extends HTMLElement {
           color: var(--cr-primary-text-color);
         }
 
+        paper-button{
+          display: flex;
+          font-size: .85rem;
+          border: none;
+          color: var(--palette-text-accent);
+          background: var(--palette-primary-accent);
+          max-height: 32px;
+        }
+
     </style>
     <div id="container">
        <paper-card id="${this.title}_settings">
             <h2 class="card-title">${this.title}</h2>
             <div class="card-subtitle">${this.subtitle}</div>
+            <paper-button id="hide-btn" raised>Hide</paper-button>
             <div class="card-content">
                 <slot></slot>
             </div>
         </paper-card>
     </div>
     `;
+    this.shadowRoot.getElementById("hide-btn").onclick = this.hideSettings.bind(this);
 
     this.container = this.shadowRoot.getElementById("container")
 
   }
 
+  hideSettings() {
+    let button = this.shadowRoot.getElementById("hide-btn")
+    let content = this.shadowRoot.querySelector(".card-content")
+    if (button && content) {
+      if(content.style.display === "none") {
+        content.style.display = "block"
+        button.textContent = "Hide"
+      } else {
+        content.style.display = "none"
+        button.textContent = "Show"
+      }
+    }
+  }
+
   addSetting(setting) {
-    this.container.appendChild(setting)
+    this.shadowRoot.querySelector(".card-content").appendChild(setting)
   }
 
   clear() {
@@ -521,7 +543,7 @@ export class StringSetting extends Setting {
          flex-grow: 1;
         }
       </style>
-      <paper-input id="setting-input" label="" no-label-float></paper-input>
+      <paper-input id="setting-input" label="" raised></paper-input>
     `
     let range = document.createRange();
     this.title = description;
@@ -549,6 +571,49 @@ export class StringSetting extends Setting {
 }
 
 customElements.define("globular-string-setting", StringSetting);
+
+/**
+ * Set string setting...
+ */
+export class NumberSetting extends Setting {
+  constructor(name, description) {
+    super(name, description);
+
+    let html = `
+      <style>
+      ${theme}
+        #setting-input{
+         flex-grow: 1;
+        }
+      </style>
+      <paper-input type="number" id="setting-input" label="" raised></paper-input>
+    `
+    let range = document.createRange();
+    this.title = description;
+
+    this.shadowRoot.insertBefore(range.createContextualFragment(html), this.description)
+    this.input = this.shadowRoot.getElementById("setting-input");
+
+    this.description.style.display = "none";
+    this.setAttribute("title", "")
+    if (description.length > 0) {
+      this.input.label = description;
+    }
+    this.input.setAttribute("title", description);
+
+  }
+
+  getValue() {
+    return this.input.value
+  }
+
+  setValue(value) {
+    this.input.value = value;
+  }
+
+}
+
+customElements.define("globular-number-setting", NumberSetting);
 
 /**
  * Add email validation to the string setting.
