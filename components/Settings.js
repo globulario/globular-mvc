@@ -41,11 +41,11 @@ export class SettingsMenu extends HTMLElement {
   }
 
   connectedCallback() {
-    
+
     // Set the first item after the Exit menu of course.
-    if(this.container.childNodes.length > 1){
+    if (this.container.childNodes.length > 1) {
       this.container.childNodes[1].click()
-    }else{
+    } else {
       this.container.firstChild.click()
     }
   }
@@ -178,18 +178,18 @@ export class SettingsPanel extends HTMLElement {
   }
 
   clear() {
-    let yesNoSetting = new YesNoSetting("", "Do you wish to save your settings?", 
-      ()=>{
+    let yesNoSetting = new YesNoSetting("", "Do you wish to save your settings?",
+      () => {
         // Save the setting's
         Model.eventHub.publish("save_settings_evt", true, true)
         console.log("--------> save settings")
-      }, 
-      ()=>{
+      },
+      () => {
         // Not save the setting's
         Model.eventHub.publish("save_settings_evt", false, true)
         console.log("--------> not save settings")
       })
-      
+
     this.container.innerHTML = '';
     let section = this.appendSettingsPage("Exit").appendSettings("Exit", "Returning to the application...")
     section.appendChild(yesNoSetting)
@@ -377,6 +377,14 @@ export class Settings extends HTMLElement {
           max-height: 32px;
         }
 
+        .complex_setting_panel{
+          display: none;
+        }
+
+        .complex_setting_panel #back-btn{
+          display: block;
+        }
+
         #hide-btn{
           align-self: center;
         }
@@ -407,12 +415,12 @@ export class Settings extends HTMLElement {
     this.container = this.shadowRoot.getElementById("container")
     this.backBtn = this.shadowRoot.getElementById("back-btn")
   }
-  
+
   hideSettings() {
     let button = this.shadowRoot.getElementById("hide-btn")
     let content = this.shadowRoot.querySelector(".card-collapse")
     if (button && content) {
-      if(!content.opened) {
+      if (!content.opened) {
         button.icon = "unfold-less"
       } else {
         button.icon = "unfold-more"
@@ -518,7 +526,7 @@ export class Setting extends HTMLElement {
 
   getName() { return this.name.innerText; }
 
-  getDescription(){ return this.description.innerText; }
+  getDescription() { return this.description.innerText; }
 
 }
 customElements.define("globular-setting", Setting);
@@ -542,15 +550,15 @@ export class ComplexSetting extends Setting {
     this.actionBtn = this.shadowRoot.getElementById("icon-right")
     this.actionBtn.icon = "chevron-right"
     this.actionBtn.style.display = "block";
-    
+
     this._parentSettingsPage = null;
     this._container = null;
-    this._parentSettingsPageChildnodes=[]; // temporaly keep the content of the page.
+    this._parentSettingsPageChildnodes = []; // temporaly keep the content of the page.
     this._panel = null;
     this._settings = {};
 
     this.actionBtn.onclick = () => {
-      for(var i=0; i <  this._parentSettingsPageChildnodes.length; i++){
+      for (var i = 0; i < this._parentSettingsPageChildnodes.length; i++) {
         let node = this._parentSettingsPageChildnodes[i];
         node.style.display = "none"
       }
@@ -567,34 +575,38 @@ export class ComplexSetting extends Setting {
   }
 
   connectedCallback() {
-    this._parentSettingsPage =  this.parentNode.parentNode.parentNode.host;
-    this._parentSettingsPageChildnodes = this.parentNode.parentNode.childNodes;
-    
-    this._panel = this._parentSettingsPage.appendSettings(this.name.innerText, this.description.innerText)
-    this._panel.style.display = "none"
-    this._panel.backBtn.style.display = "block"
-    this._panel.classList.add("complex_setting_panel")
+    // did it onces...
+    if (this._parentSettingsPage == null) {
+      this._parentSettingsPage = this.parentNode.parentNode.parentNode.host;
+      this._parentSettingsPageChildnodes = this.parentNode.parentNode.childNodes;
 
-    // hide the panel and display back the content of the page.
-    this._panel.backBtn.onclick = ()=>{
-      for(var i=0; i <  this._parentSettingsPageChildnodes.length; i++){
-        let node = this._parentSettingsPageChildnodes[i];
-        if(!node.classList.contains("complex_setting_panel")){
-          node.style.display = "block"
+      this._panel = this._parentSettingsPage.appendSettings(this.name.innerText, this.description.innerText)
+      this._panel.style.display = "none"
+      this._panel.backBtn.style.display = "block"
+      this._panel.classList.add("complex_setting_panel")
+
+      // hide the panel and display back the content of the page.
+      this._panel.backBtn.onclick = () => {
+        for (var i = 0; i < this._parentSettingsPageChildnodes.length; i++) {
+          let node = this._parentSettingsPageChildnodes[i];
+          if (!node.classList.contains("complex_setting_panel")) {
+            node.style.display = "block"
+          }
         }
+
+        // display the settings.
+        this._panel.style.display = "none"
       }
 
-      // display the settings.
-      this._panel.style.display = "none"
-    }
+      // add the settings.
 
-    // add the settings.
-    for(var name in this._settings){
-      this._panel.addSetting(this._settings[name])
+      for (var name in this._settings) {
+        this._panel.addSetting(this._settings[name])
+      }
     }
   }
 
-  getSetting(name){ return this._settings[name] }
+  getSetting(name) { return this._settings[name] }
 }
 
 customElements.define("globular-complex-setting", ComplexSetting);
@@ -790,7 +802,7 @@ export class YesNoSetting extends Setting {
     let range = document.createRange();
     this.shadowRoot.appendChild(range.createContextualFragment(html))
     this.onyes = onYes;
-    this.onno= onNo;
+    this.onno = onNo;
     this.shadowRoot.getElementById("yes-btn").onclick = this.onyes;
     this.shadowRoot.getElementById("no-btn").onclick = this.onno;
   }
