@@ -711,8 +711,7 @@ export class ImageSetting extends Setting {
   }
 
   getValue() {
-    return fetch(this.shadowRoot.getElementById("image-display").src).then(r => r.blob());
-    // return this.input.value
+    return this.shadowRoot.getElementById("image-display").src;
   }
 
   /**
