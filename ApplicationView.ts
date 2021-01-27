@@ -17,9 +17,11 @@ import { FileExplorer } from "./components/File";
 import { SearchBar } from "./components/Search";
 import { ContactsMenu } from "./components/Contact";
 import { ConversationPanel } from "./components/Conversation";
-import { Wizard } from "./components/Wizard";
 import { SettingsMenu, SettingsPanel } from "./components/Settings";
 import { Application } from "./Application";
+
+// Not directly use here but must be include anyways
+import { Wizard } from "./components/Wizard";
 import { SlideShow } from "./components/SlideShow";
 
 // This variable is there to give acces to wait and resume...

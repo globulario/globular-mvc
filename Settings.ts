@@ -48,6 +48,8 @@ export class UserSettings extends Settings {
 
         // The profile picture.
         let userPictureSetting = new ComplexSetting("Photo", "Change profile picture.")
+        userPictureSetting.innerHTML = "<div>this is the end my friend!</div>"
+
         generalSettings.appendChild(userPictureSetting)
 
         // The user name.

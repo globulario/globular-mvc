@@ -527,17 +527,44 @@ export class ComplexSetting extends Setting {
         #icon-right:hover{
           cursor: pointer;
         }
+
+        #content{
+          /* display: none;*/
+        }
+
       </style>
+
+      <div id="content">
+        <slot></slot>
+      </div>
     `
     this.shadowRoot.appendChild(range.createContextualFragment(html))
     this.actionBtn = this.shadowRoot.getElementById("icon-right")
     this.actionBtn.icon = "chevron-right"
     this.actionBtn.style.display = "block";
+    
+    this._parentSettingsPage = null;
+    this._parentSettingsPageChildnodes=[]; // temporaly keep the content of the page.
 
     this.actionBtn.onclick = () => {
-      console.log("go to next page!")
+      for(var i=0; i <  this._parentSettingsPageChildnodes.length; i++){
+        let node = this._parentSettingsPageChildnodes[i];
+        node.parentNode.removeChild(node)
+      }
+      console.log("--------> ", this._content)
+      this._parentSettingsPage.appendChild(this._content);
     }
   }
+
+  connectedCallback() {
+    
+    this._content = this.shadowRoot.getElementById("content")
+    console.log("--------> ", this._content.slot)
+    this._parentSettingsPage =  this.parentNode.parentNode;
+    this._parentSettingsPageChildnodes = this._parentSettingsPage.childNodes;
+
+  }
+
 }
 
 customElements.define("globular-complex-setting", ComplexSetting);
