@@ -643,7 +643,7 @@ export class StringSetting extends Setting {
 customElements.define("globular-string-setting", StringSetting);
 
 /**
- * Set string setting...
+ * Set number setting...
  */
 export class NumberSetting extends Setting {
   constructor(name, description) {
@@ -684,6 +684,64 @@ export class NumberSetting extends Setting {
 }
 
 customElements.define("globular-number-setting", NumberSetting);
+
+/**
+ * Set image setting...
+ */
+export class ImageSetting extends Setting {
+  constructor(name, description) {
+    super(name, description);
+
+    let html = `
+      <style>
+      ${theme}
+        #setting-input{
+         flex-grow: 1;
+        }
+      </style>
+      <paper-input type="file" id="setting-input" label="" raised></paper-input>
+      <img id="image-display" src="#" alt="Image's preview..."/>
+    `
+    let range = document.createRange();
+    this.title = description;
+
+    this.shadowRoot.insertBefore(range.createContextualFragment(html), this.description)
+    this.input = this.shadowRoot.getElementById("setting-input");
+    this.shadowRoot.getElementById("setting-input").onchange = this.readFile.bind(this);
+
+    this.description.style.display = "none";
+    this.setAttribute("title", "")
+    if (description.length > 0) {
+      this.input.label = description;
+    }
+    this.input.setAttribute("title", description);
+
+  }
+
+  readFile(input) {
+    let files = input.target.inputElement.inputElement.files
+    if (files && files[0]) {
+      let reader = new FileReader()
+
+      reader.onload = (e) => {
+        this.shadowRoot.getElementById("image-display").src = e.target.result
+      }
+
+      reader.readAsDataURL(files[0])
+    }
+  }
+
+  getValue() {
+    return this.input.value
+  }
+
+  setValue(value) {
+    this.input.value = value;
+  }
+
+}
+
+customElements.define("globular-image-setting", ImageSetting);
 
 /**
  * Add email validation to the string setting.
