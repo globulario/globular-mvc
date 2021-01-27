@@ -668,6 +668,12 @@ export class ImageSetting extends Setting {
         #setting-input{
          flex-grow: 1;
         }
+        img {
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          padding: 5px;
+          width: 150px;
+        }
       </style>
       <paper-input type="file" id="setting-input" label="" raised></paper-input>
       <img id="image-display" src="#" alt="Image's preview..."/>
@@ -699,14 +705,22 @@ export class ImageSetting extends Setting {
 
       reader.readAsDataURL(files[0])
     }
+
+    console.log(this.shadowRoot.getElementById("image-display").src)
+    console.log(input.target.inputElement.inputElement.files)
   }
 
   getValue() {
-    return this.input.value
+    return fetch(this.shadowRoot.getElementById("image-display").src).then(r => r.blob());
+    // return this.input.value
   }
 
+  /**
+   * This must be a blob or something acceptable by an img tag
+   * @param {*} value 
+   */
   setValue(value) {
-    this.input.value = value;
+    this.shadowRoot.getElementById("image-display").src = value
   }
 
 }
