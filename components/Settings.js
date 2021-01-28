@@ -665,8 +665,22 @@ export class ImageSetting extends Setting {
     let html = `
       <style>
       ${theme}
-        #setting-input{
-         flex-grow: 1;
+        .custom-file-upload{
+          flex-grow: 1;
+          font: bold 11px Arial;
+          text-decoration: none;
+          background-color: #EEEEEE;
+          color: #333333;
+          padding: 2px 6px 2px 6px;
+          border-top: 1px solid #CCCCCC;
+          border-right: 1px solid #333333;
+          border-bottom: 1px solid #333333;
+          border-left: 1px solid #CCCCCC;
+        }
+        input[type="file"] {
+          opacity: 0;
+          position: absolute;
+          z-index: -1;
         }
         img {
           border: 1px solid #ddd;
@@ -675,7 +689,11 @@ export class ImageSetting extends Setting {
           width: 150px;
         }
       </style>
-      <paper-input type="file" id="setting-input" label="" raised></paper-input>
+      <label for="setting-input" class="custom-file-upload">
+        <i class="fa fa-cloud-upload"></i> Upload Image
+      </label>
+      
+      <input type="file" id="setting-input"></input>
       <img id="image-display" src="#" alt="Image's preview..."/>
     `
     let range = document.createRange();
@@ -705,9 +723,6 @@ export class ImageSetting extends Setting {
 
       reader.readAsDataURL(files[0])
     }
-
-    console.log(this.shadowRoot.getElementById("image-display").src)
-    console.log(input.target.inputElement.inputElement.files)
   }
 
   getValue() {
