@@ -551,15 +551,15 @@ export class ComplexSetting extends Setting {
     this.actionBtn.icon = "chevron-right"
     this.actionBtn.style.display = "block";
 
-    this._parentSettingsPage = null;
+    this._parentNode = null;
     this._container = null;
-    this._parentSettingsPageChildnodes = []; // temporaly keep the content of the page.
+    this._childNodes = []; // temporaly keep the content of the page.
     this._panel = null;
     this._settings = {};
 
     this.actionBtn.onclick = () => {
-      for (var i = 0; i < this._parentSettingsPageChildnodes.length; i++) {
-        let node = this._parentSettingsPageChildnodes[i];
+      for (var i = 0; i < this._childNodes.length; i++) {
+        let node = this._childNodes[i];
         node.style.display = "none"
       }
 
@@ -576,19 +576,23 @@ export class ComplexSetting extends Setting {
 
   connectedCallback() {
     // did it onces...
-    if (this._parentSettingsPage == null) {
-      this._parentSettingsPage = this.parentNode.parentNode.parentNode.host;
-      this._parentSettingsPageChildnodes = this.parentNode.parentNode.childNodes;
+    if (this._parentNode == null) {
+      this._parentNode = this.parentNode.parentNode.parentNode.host;
+      this._childNodes = this.parentNode.parentNode.childNodes;
 
-      this._panel = this._parentSettingsPage.appendSettings(this.name.innerText, this.description.innerText)
+      if(this._parentNode == undefined){
+        this._parentNode = this.parentNode.parentNode.parentNode;
+      }
+      
+      this._panel = this._parentNode.appendSettings(this.name.innerText, this.description.innerText)
       this._panel.style.display = "none"
       this._panel.backBtn.style.display = "block"
       this._panel.classList.add("complex_setting_panel")
 
       // hide the panel and display back the content of the page.
       this._panel.backBtn.onclick = () => {
-        for (var i = 0; i < this._parentSettingsPageChildnodes.length; i++) {
-          let node = this._parentSettingsPageChildnodes[i];
+        for (var i = 0; i < this._childNodes.length; i++) {
+          let node = this._childNodes[i];
           if (!node.classList.contains("complex_setting_panel")) {
             node.style.display = "block"
           }
