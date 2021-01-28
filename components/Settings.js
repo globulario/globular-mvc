@@ -41,11 +41,11 @@ export class SettingsMenu extends HTMLElement {
   }
 
   connectedCallback() {
-    
+
     // Set the first item after the Exit menu of course.
-    if(this.container.childNodes.length > 1){
+    if (this.container.childNodes.length > 1) {
       this.container.childNodes[1].click()
-    }else{
+    } else {
       this.container.firstChild.click()
     }
   }
@@ -178,18 +178,18 @@ export class SettingsPanel extends HTMLElement {
   }
 
   clear() {
-    let yesNoSetting = new YesNoSetting("", "Do you wish to save your settings?", 
-      ()=>{
+    let yesNoSetting = new YesNoSetting("", "Do you wish to save your settings?",
+      () => {
         // Save the setting's
         Model.eventHub.publish("save_settings_evt", true, true)
         console.log("--------> save settings")
-      }, 
-      ()=>{
+      },
+      () => {
         // Not save the setting's
         Model.eventHub.publish("save_settings_evt", false, true)
         console.log("--------> not save settings")
       })
-      
+
     this.container.innerHTML = '';
     let section = this.appendSettingsPage("Exit").appendSettings("Exit", "Returning to the application...")
     section.appendChild(yesNoSetting)
@@ -377,8 +377,20 @@ export class Settings extends HTMLElement {
           max-height: 32px;
         }
 
+        .complex_setting_panel{
+          display: none;
+        }
+
+        .complex_setting_panel #back-btn{
+          display: block;
+        }
+
         #hide-btn{
           align-self: center;
+        }
+
+        #back-btn{
+          display: none;
         }
 
     </style>
@@ -386,6 +398,7 @@ export class Settings extends HTMLElement {
        <paper-card id="${this.title}_settings">
             <h2 class="card-title">${this.title}</h2>
             <div style="display: flex;">
+              <paper-icon-button id="back-btn"  icon="arrow-back"></paper-icon-button>
               <div class="card-subtitle">${this.subtitle}</div>
               <paper-icon-button id="hide-btn"  icon="unfold-less"></paper-icon-button>
             </div>
@@ -400,13 +413,14 @@ export class Settings extends HTMLElement {
 
     this.shadowRoot.getElementById("hide-btn").onclick = this.hideSettings.bind(this);
     this.container = this.shadowRoot.getElementById("container")
+    this.backBtn = this.shadowRoot.getElementById("back-btn")
   }
-  
+
   hideSettings() {
     let button = this.shadowRoot.getElementById("hide-btn")
     let content = this.shadowRoot.querySelector(".card-collapse")
     if (button && content) {
-      if(!content.opened) {
+      if (!content.opened) {
         button.icon = "unfold-less"
       } else {
         button.icon = "unfold-more"
@@ -508,7 +522,11 @@ export class Setting extends HTMLElement {
     this.shadowRoot.innerHTML = '';
   }
 
-  getValue() { }
+  getValue() { return null; }
+
+  getName() { return this.name.innerText; }
+
+  getDescription() { return this.description.innerText; }
 
 }
 customElements.define("globular-setting", Setting);
@@ -527,44 +545,72 @@ export class ComplexSetting extends Setting {
         #icon-right:hover{
           cursor: pointer;
         }
-
-        #content{
-          /* display: none;*/
-        }
-
-      </style>
-
-      <div id="content">
-        <slot></slot>
-      </div>
     `
     this.shadowRoot.appendChild(range.createContextualFragment(html))
     this.actionBtn = this.shadowRoot.getElementById("icon-right")
     this.actionBtn.icon = "chevron-right"
     this.actionBtn.style.display = "block";
-    
-    this._parentSettingsPage = null;
-    this._parentSettingsPageChildnodes=[]; // temporaly keep the content of the page.
+
+    this._parentNode = null;
+    this._container = null;
+    this._childNodes = []; // temporaly keep the content of the page.
+    this._panel = null;
+    this._settings = {};
 
     this.actionBtn.onclick = () => {
-      for(var i=0; i <  this._parentSettingsPageChildnodes.length; i++){
-        let node = this._parentSettingsPageChildnodes[i];
-        node.parentNode.removeChild(node)
+      for (var i = 0; i < this._childNodes.length; i++) {
+        let node = this._childNodes[i];
+        node.style.display = "none"
       }
-      console.log("--------> ", this._content)
-      this._parentSettingsPage.appendChild(this._content);
+
+      // display the settings.
+      this._panel.style.display = "block"
     }
+
+  }
+
+  // add settings...
+  addSetting(setting) {
+    this._settings[setting.getName()] = setting;
   }
 
   connectedCallback() {
-    
-    this._content = this.shadowRoot.getElementById("content")
-    console.log("--------> ", this._content.slot)
-    this._parentSettingsPage =  this.parentNode.parentNode;
-    this._parentSettingsPageChildnodes = this._parentSettingsPage.childNodes;
+    // did it onces...
+    if (this._parentNode == null) {
+      this._parentNode = this.parentNode.parentNode.parentNode.host;
+      this._childNodes = this.parentNode.parentNode.childNodes;
 
+      if(this._parentNode == undefined){
+        this._parentNode = this.parentNode.parentNode.parentNode;
+      }
+      
+      this._panel = this._parentNode.appendSettings(this.name.innerText, this.description.innerText)
+      this._panel.style.display = "none"
+      this._panel.backBtn.style.display = "block"
+      this._panel.classList.add("complex_setting_panel")
+
+      // hide the panel and display back the content of the page.
+      this._panel.backBtn.onclick = () => {
+        for (var i = 0; i < this._childNodes.length; i++) {
+          let node = this._childNodes[i];
+          if (!node.classList.contains("complex_setting_panel")) {
+            node.style.display = "block"
+          }
+        }
+
+        // display the settings.
+        this._panel.style.display = "none"
+      }
+
+      // add the settings.
+
+      for (var name in this._settings) {
+        this._panel.addSetting(this._settings[name])
+      }
+    }
   }
 
+  getSetting(name) { return this._settings[name] }
 }
 
 customElements.define("globular-complex-setting", ComplexSetting);
@@ -788,7 +834,7 @@ export class YesNoSetting extends Setting {
     let range = document.createRange();
     this.shadowRoot.appendChild(range.createContextualFragment(html))
     this.onyes = onYes;
-    this.onno= onNo;
+    this.onno = onNo;
     this.shadowRoot.getElementById("yes-btn").onclick = this.onyes;
     this.shadowRoot.getElementById("no-btn").onclick = this.onno;
   }

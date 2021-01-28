@@ -47,15 +47,17 @@ export class UserSettings extends Settings {
         let generalSettings = userSettingsPage.appendSettings("General", "Those information's can be view by other's user's");
 
         // The profile picture.
-        let userPictureSetting = new ComplexSetting("Photo", "Change profile picture.")
-        userPictureSetting.innerHTML = "<div>this is the end my friend!</div>"
-
+        let userPictureSetting = new ComplexSetting("Photo", "Change profile picture.")        
         generalSettings.appendChild(userPictureSetting)
 
         // The user name.
         let userNameSetting = new ComplexSetting("Name", "Change the user name")
-        generalSettings.appendChild(userNameSetting)
+        // Set the user setting complex content.
+        userNameSetting.addSetting(new StringSetting("First Name", "Enter your first name here."))
+        userNameSetting.addSetting(new StringSetting("Last Name", "Enter your Last name here."))
 
+        generalSettings.appendChild(userNameSetting)
+        
         // The user email address.
         let userEmailSetting = new EmailSetting("Email", "Change the user email")
         userEmailSetting.setValue(account.email)
