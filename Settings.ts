@@ -48,20 +48,21 @@ export class UserSettings extends Settings {
 
         // The profile picture.
         let userPictureSetting = new ComplexSetting("Photo", "Change profile picture.")        
-        generalSettings.appendChild(userPictureSetting)
+        generalSettings.addSetting(userPictureSetting)
 
         // The user name.
         let userNameSetting = new ComplexSetting("Name", "Change the user name")
+        
         // Set the user setting complex content.
         userNameSetting.addSetting(new StringSetting("First Name", "Enter your first name here."))
         userNameSetting.addSetting(new StringSetting("Last Name", "Enter your Last name here."))
 
-        generalSettings.appendChild(userNameSetting)
+        generalSettings.addSetting(userNameSetting)
         
         // The user email address.
         let userEmailSetting = new EmailSetting("Email", "Change the user email")
         userEmailSetting.setValue(account.email)
-        generalSettings.appendChild(userEmailSetting)
+        generalSettings.addSetting(userEmailSetting)
 
     }
 }
@@ -87,16 +88,16 @@ export class ApplicationSettings extends Settings {
 
         // The application icon
         let applicationSetting = new ComplexSetting("Icon", "Change application icon")
-        generalSettings.appendChild(applicationSetting)
+        generalSettings.addSetting(applicationSetting)
 
         // The application name.
         let applicationNameSetting = new StringSetting("Name", "Change the application name")
         applicationNameSetting.setValue(application.name)
-        generalSettings.appendChild(applicationNameSetting)
+        generalSettings.addSetting(applicationNameSetting)
 
         let applicationTitleSetting = new StringSetting("Title", "Change the application")
         applicationTitleSetting.setValue(application.title)
-        generalSettings.appendChild(applicationTitleSetting)
+        generalSettings.addSetting(applicationTitleSetting)
 
         let securitySettings = applicationSettingPage.appendSettings("Security", "Permissions and access settings.")
     }

@@ -158,6 +158,7 @@ export class SettingsPanel extends HTMLElement {
   constructor() {
     super();
     this.container = null;
+
     // Set the shadow dom.
     this.attachShadow({ mode: "open" });
 
@@ -171,6 +172,7 @@ export class SettingsPanel extends HTMLElement {
        }
     </style>
     <div id="container">
+      <slot></slot>
     </div>
     `;
 
@@ -190,7 +192,6 @@ export class SettingsPanel extends HTMLElement {
         console.log("--------> not save settings")
       })
 
-    this.container.innerHTML = '';
     let section = this.appendSettingsPage("Exit").appendSettings("Exit", "Returning to the application...")
     section.appendChild(yesNoSetting)
   }
@@ -198,8 +199,10 @@ export class SettingsPanel extends HTMLElement {
   appendSettingsPage(title) {
     const html = `<globular-settings-page id="${title}_settings_page" title="${title}"></globular-settings-page>`;
     const range = document.createRange()
-    this.container.appendChild(range.createContextualFragment(html))
-    const page = this.shadowRoot.getElementById(title + "_settings_page")
+    //this.container.appendChild(range.createContextualFragment(html))
+    this.appendChild(range.createContextualFragment(html))
+    // const page = this.shadowRoot.querySelector("#" + title + "_settings_page")
+    const page = this.querySelector("#" + title + "_settings_page")
     page.init()
     return page
   }
@@ -231,14 +234,16 @@ export class SettingsPage extends HTMLElement {
            flex-direction: column;
        }
     </style>
-    <div id="container"></div>
+    <div id="container">
+      <slot></slot>
+    </div>
     `;
 
     this.container = this.shadowRoot.getElementById("container")
   }
 
-  clear() {
-    this.container.innerHTML = '';
+  getSettings(){
+    return this.container.childNodes;
   }
 
   connectedCallback() {
@@ -259,8 +264,8 @@ export class SettingsPage extends HTMLElement {
   appendSettings(title, subtitle) {
     const html = `<globular-settings id="${title}_settings" title="${title}" subtitle="${subtitle}"></globular-settings>`;
     const range = document.createRange()
-    this.container.appendChild(range.createContextualFragment(html))
-    const settings = this.shadowRoot.getElementById(title + "_settings")
+    this.appendChild(range.createContextualFragment(html))
+    const settings = this.querySelector("#" + title + "_settings")
     return settings
   }
   //add a setting array or a get settings
@@ -302,7 +307,7 @@ export class Settings extends HTMLElement {
 
        .card-content{
             min-width: 680px;
-            padding: 12px;
+            padding: 0px;
         }
 
         ::slotted(globular-setting:not(:last-child)) {
@@ -430,13 +435,9 @@ export class Settings extends HTMLElement {
   }
 
   addSetting(setting) {
-    this.shadowRoot.querySelector("#card-content").appendChild(setting)
+    this.appendChild(setting)
+    console.log(setting)
   }
-
-  clear() {
-    this.container.innerHTML = '';
-  }
-
 }
 
 customElements.define("globular-settings", Settings);
@@ -497,10 +498,12 @@ export class Setting extends HTMLElement {
       }
 
     </style>
+
     <iron-icon id="icon-left" icon="${icon}"></iron-icon>
     <div  id="name-div" class="setting-name">${name}</div>
     <div id = "description-div" class="setting-description">${description}</div>
     <iron-icon id="icon-right" icon=""></iron-icon>
+
     `;
 
     // Set style property of the component itself.
@@ -508,7 +511,7 @@ export class Setting extends HTMLElement {
     this.style.color = "var(--cr-primary-text-color)"
     this.style.fontFamily = "Roboto,Arial,sans-serif"
     this.style.alignItems = "center"
-    this.style.padding = "15px 12px 16px 12px"
+    this.style.padding = "15px 16px 16px 16px"
 
     // The name (label) div
     this.name = this.shadowRoot.getElementById("name-div")
@@ -518,9 +521,7 @@ export class Setting extends HTMLElement {
 
   }
 
-  clear() {
-    this.shadowRoot.innerHTML = '';
-  }
+  getElement(){ return null; }
 
   getValue() { return null; }
 
@@ -529,6 +530,7 @@ export class Setting extends HTMLElement {
   getDescription() { return this.description.innerText; }
 
 }
+
 customElements.define("globular-setting", Setting);
 
 
@@ -551,15 +553,15 @@ export class ComplexSetting extends Setting {
     this.actionBtn.icon = "chevron-right"
     this.actionBtn.style.display = "block";
 
-    this._parentNode = null;
+    this._parentPage = null;
+    this._parentPage = null;
     this._container = null;
-    this._childNodes = []; // temporaly keep the content of the page.
     this._panel = null;
     this._settings = {};
 
     this.actionBtn.onclick = () => {
-      for (var i = 0; i < this._childNodes.length; i++) {
-        let node = this._childNodes[i];
+      for (var i = 0; i < this._parentPage.childNodes.length; i++) {
+        let node = this._parentPage.childNodes[i];
         node.style.display = "none"
       }
 
@@ -569,30 +571,40 @@ export class ComplexSetting extends Setting {
 
   }
 
+  getElement(){
+    return this._panel;
+  }
+
   // add settings...
   addSetting(setting) {
     this._settings[setting.getName()] = setting;
   }
 
+  // Get the parent page of the complex settings.
+  getParentPage(node){
+    if(node.parentNode != undefined){
+      if(node.parentNode.tagName == "GLOBULAR-SETTINGS-PAGE"){
+        return node.parentNode
+      }
+      return this.getParentPage(node.parentNode);
+    }
+    return null;
+  }
+
   connectedCallback() {
     // did it onces...
-    if (this._parentNode == null) {
-      this._parentNode = this.parentNode.parentNode.parentNode.host;
-      this._childNodes = this.parentNode.parentNode.childNodes;
-
-      if(this._parentNode == undefined){
-        this._parentNode = this.parentNode.parentNode.parentNode;
-      }
+    if (this._parentPage == null) {
+      this._parentPage = this.getParentPage(this);
       
-      this._panel = this._parentNode.appendSettings(this.name.innerText, this.description.innerText)
+      this._panel = this._parentPage.appendSettings(this.name.innerText, this.description.innerText)
       this._panel.style.display = "none"
       this._panel.backBtn.style.display = "block"
       this._panel.classList.add("complex_setting_panel")
 
       // hide the panel and display back the content of the page.
       this._panel.backBtn.onclick = () => {
-        for (var i = 0; i < this._childNodes.length; i++) {
-          let node = this._childNodes[i];
+        for (var i = 0; i < this._parentPage.childNodes.length; i++) {
+          let node = this._parentPage.childNodes[i];
           if (!node.classList.contains("complex_setting_panel")) {
             node.style.display = "block"
           }
@@ -603,10 +615,10 @@ export class ComplexSetting extends Setting {
       }
 
       // add the settings.
-
       for (var name in this._settings) {
         this._panel.addSetting(this._settings[name])
       }
+
     }
   }
 
@@ -625,7 +637,7 @@ export class StringSetting extends Setting {
     let html = `
       <style>
       ${theme}
-        #setting-input{
+      #setting-input{
          flex-grow: 1;
         }
       </style>
@@ -643,7 +655,19 @@ export class StringSetting extends Setting {
       this.input.label = description;
     }
     this.input.setAttribute("title", description);
+  }
 
+  connectedCallback(){
+    this.input.onkeyup = (evt)=>{
+      if(evt.key == "Enter"){
+        
+      }
+      console.log(evt.key)
+    }
+  }
+
+  getElement(){
+    return this.input;
   }
 
   getValue() {
@@ -659,44 +683,15 @@ export class StringSetting extends Setting {
 customElements.define("globular-string-setting", StringSetting);
 
 /**
- * Set number setting...
+ * Add email validation to the string setting.
  */
-export class NumberSetting extends Setting {
+export class NumberSetting extends StringSetting {
   constructor(name, description) {
-    super(name, description);
+    super(name, description)
 
-    let html = `
-      <style>
-      ${theme}
-        #setting-input{
-         flex-grow: 1;
-        }
-      </style>
-      <paper-input type="number" id="setting-input" label="" raised></paper-input>
-    `
-    let range = document.createRange();
-    this.title = description;
-
-    this.shadowRoot.insertBefore(range.createContextualFragment(html), this.description)
-    this.input = this.shadowRoot.getElementById("setting-input");
-
-    this.description.style.display = "none";
-    this.setAttribute("title", "")
-    if (description.length > 0) {
-      this.input.label = description;
-    }
-    this.input.setAttribute("title", description);
-
+    // email need's validation so here's I will set it.
+    this.getElement().type = "number"
   }
-
-  getValue() {
-    return this.input.value
-  }
-
-  setValue(value) {
-    this.input.value = value;
-  }
-
 }
 
 customElements.define("globular-number-setting", NumberSetting);
