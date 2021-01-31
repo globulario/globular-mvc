@@ -1,6 +1,6 @@
 import { Account } from "./Account";
 import { Application } from "./Application";
-import { Setting, SettingsMenu, SettingsPanel, ComplexSetting, EmailSetting, StringSetting } from "./components/Settings";
+import { ImageSetting, SettingsMenu, SettingsPanel, ComplexSetting, EmailSetting, StringSetting } from "./components/Settings";
 
 export class Settings {
 
@@ -88,7 +88,11 @@ export class ApplicationSettings extends Settings {
 
         // The application icon
         let applicationSetting = new ComplexSetting("Icon", "Change application icon")
+        let iconSetting = new ImageSetting("Icon", "Select the icon")
+        applicationSetting.addSetting(iconSetting);
+        
         generalSettings.addSetting(applicationSetting)
+
 
         // The application name.
         let applicationNameSetting = new StringSetting("Name", "Change the application name")

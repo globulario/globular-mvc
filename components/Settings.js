@@ -4,6 +4,7 @@ import '@polymer/iron-icons/iron-icons.js';
 import '@polymer/paper-button/paper-button.js';
 import '@polymer/paper-input/paper-input.js';
 import '@polymer/iron-collapse/iron-collapse.js';
+import "@polymer/iron-icons/image-icons";
 import { Model } from "../Model";
 
 /**
@@ -242,7 +243,7 @@ export class SettingsPage extends HTMLElement {
     this.container = this.shadowRoot.getElementById("container")
   }
 
-  getSettings(){
+  getSettings() {
     return this.container.childNodes;
   }
 
@@ -435,8 +436,12 @@ export class Settings extends HTMLElement {
   }
 
   addSetting(setting) {
+    let e = setting.getElement()
+    if (e != null) {
+      e.tabIndex = this.childNodes.length
+    }
     this.appendChild(setting)
-    console.log(setting)
+    console.log(this.childNodes)
   }
 }
 
@@ -521,7 +526,7 @@ export class Setting extends HTMLElement {
 
   }
 
-  getElement(){ return null; }
+  getElement() { return null; }
 
   getValue() { return null; }
 
@@ -567,11 +572,18 @@ export class ComplexSetting extends Setting {
 
       // display the settings.
       this._panel.style.display = "block"
+      if (this._panel.childNodes.length > 0) {
+        let e = this._panel.childNodes[0].getElement()
+        if (e != undefined) {
+          e.focus()
+        }
+      }
+
     }
 
   }
 
-  getElement(){
+  getElement() {
     return this._panel;
   }
 
@@ -581,9 +593,9 @@ export class ComplexSetting extends Setting {
   }
 
   // Get the parent page of the complex settings.
-  getParentPage(node){
-    if(node.parentNode != undefined){
-      if(node.parentNode.tagName == "GLOBULAR-SETTINGS-PAGE"){
+  getParentPage(node) {
+    if (node.parentNode != undefined) {
+      if (node.parentNode.tagName == "GLOBULAR-SETTINGS-PAGE") {
         return node.parentNode
       }
       return this.getParentPage(node.parentNode);
@@ -595,7 +607,7 @@ export class ComplexSetting extends Setting {
     // did it onces...
     if (this._parentPage == null) {
       this._parentPage = this.getParentPage(this);
-      
+
       this._panel = this._parentPage.appendSettings(this.name.innerText, this.description.innerText)
       this._panel.style.display = "none"
       this._panel.backBtn.style.display = "block"
@@ -657,16 +669,7 @@ export class StringSetting extends Setting {
     this.input.setAttribute("title", description);
   }
 
-  connectedCallback(){
-    this.input.onkeyup = (evt)=>{
-      if(evt.key == "Enter"){
-        
-      }
-      console.log(evt.key)
-    }
-  }
-
-  getElement(){
+  getElement() {
     return this.input;
   }
 
@@ -706,43 +709,123 @@ export class ImageSetting extends Setting {
     let html = `
       <style>
       ${theme}
-        .custom-file-upload{
+        #custom-file-upload{
+           display: flex;
+           flex-grow: 1;
+        }
+
+        #custom-file-upload span{
           flex-grow: 1;
-          font: bold 11px Arial;
-          text-decoration: none;
-          background-color: #EEEEEE;
-          color: #333333;
-          padding: 2px 6px 2px 6px;
-          border-top: 1px solid #CCCCCC;
-          border-right: 1px solid #333333;
-          border-bottom: 1px solid #333333;
-          border-left: 1px solid #CCCCCC;
         }
+
+        #custom-file-upload iron-icon{
+          padding-right: 15px;
+        }
+
+        #custom-file-upload div{
+          display: flex;
+          align-items: flex-end;
+          border-bottom: 1px solid var(--palette-text-primary);
+          font-size: 1rem;
+          flex-basis: 100%;
+          letter-spacing: .00625em;
+          font-weight: 400;
+          line-height: 1.5rem;
+          word-break: break-word;
+          margin-right: 10px;
+          margin-top: 10px;
+        }
+
+        #custom-file-upload div:hover{
+          cursor: pointer;
+          border-bottom: 2px solid var(--palette-primary-accent);
+        }
+
         input[type="file"] {
-          opacity: 0;
-          position: absolute;
-          z-index: -1;
+          display: none;
         }
+
         img {
-          border: 1px solid #ddd;
-          border-radius: 4px;
           padding: 5px;
-          width: 150px;
+          max-width: 128px;
+          max-height: 128px;
         }
+
+        #image-display-div{
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          min-width: 64px;
+          min-height: 64px;
+          
+        }
+
+        #no-image-display{
+          --iron-icon-height: 48px;
+          --iron-icon-width: 48px;
+          --iron-icon-fill-color: lightgray;
+          border: 1px solid lightgray;
+          border-radius: 3px;
+        }
+
+        #image-display{
+          display: none;
+          border: 1px solid lightgray;
+          border-radius: 3px;
+        }
+
+        #container{
+          flex-grow: 1;
+          display: flex;
+          align-items: baseline;
+        }
+
+        @media only screen and (max-width: 800px) {
+          #container{
+            flex-direction: column-reverse;
+          }
+        }
+
       </style>
-      <label for="setting-input" class="custom-file-upload">
-        <i class="fa fa-cloud-upload"></i> Upload Image
-      </label>
-      
+      <div id="container">
+        <div id="custom-file-upload">
+          <div>
+            <iron-icon icon="cloud-upload"> </iron-icon>
+            <span>${description}</span>
+          </div>
+        </div>
+        <div id="image-display-div">
+          <img id="image-display" src="#" />
+          <iron-icon id="no-image-display" icon="image:photo"></iron-icon>
+        </div>
+      </div>
+
       <input type="file" id="setting-input"></input>
-      <img id="image-display" src="#" alt="Image's preview..."/>
     `
     let range = document.createRange();
     this.title = description;
 
     this.shadowRoot.insertBefore(range.createContextualFragment(html), this.description)
     this.input = this.shadowRoot.getElementById("setting-input");
-    this.shadowRoot.getElementById("setting-input").onchange = this.readFile.bind(this);
+    this.input.onchange = (evt) => {
+      let files = evt.target.files;
+      if (files && files[0]) {
+        let reader = new FileReader()
+        reader.onload = (e) => {
+          let img = this.shadowRoot.getElementById("image-display")
+          let ico = this.shadowRoot.getElementById("no-image-display")
+          img.src = e.target.result
+          img.style.display = "block";
+          ico.style.display = "none";
+
+        }
+        reader.readAsDataURL(files[0])
+      }
+    }
+
+    this.shadowRoot.getElementById("custom-file-upload").onclick = () => {
+      this.input.click();
+    }
 
     this.description.style.display = "none";
     this.setAttribute("title", "")
@@ -751,19 +834,6 @@ export class ImageSetting extends Setting {
     }
     this.input.setAttribute("title", description);
 
-  }
-
-  readFile(input) {
-    let files = input.target.inputElement.inputElement.files
-    if (files && files[0]) {
-      let reader = new FileReader()
-
-      reader.onload = (e) => {
-        this.shadowRoot.getElementById("image-display").src = e.target.result
-      }
-
-      reader.readAsDataURL(files[0])
-    }
   }
 
   getValue() {
