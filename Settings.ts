@@ -88,9 +88,9 @@ export class ApplicationSettings extends Settings {
 
         // The application icon
         let applicationSetting = new ComplexSetting("Icon", "Change application icon")
-        let iconSetting = new ImageSetting("Icon", "Select the icon")
+        let iconSetting = new ImageSetting("Icon", "Click here to change " + application.name + " icon")
         applicationSetting.addSetting(iconSetting);
-        
+
         generalSettings.addSetting(applicationSetting)
 
 

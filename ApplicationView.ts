@@ -463,8 +463,10 @@ export class ApplicationView extends View {
     this.overFlowMenu.hide(); // not show it at first.
     this.accountMenu.setAccount(account);
 
-    this.settingsPanel.clear();
-    this.settingsMenu.clear();
+    this.settingsPanel.innerHTML = ""; // remove the content of the setting panel.
+    this.settingsPanel.clear(); // clear various stuff...
+    this.settingsMenu.clear(); 
+
 
     // Create the settings menu and panel here
     let userSettings = new UserSettings(account, this.settingsMenu, this.settingsPanel);

@@ -192,7 +192,7 @@ export class SettingsPanel extends HTMLElement {
         Model.eventHub.publish("save_settings_evt", false, true)
         console.log("--------> not save settings")
       })
-
+    this.shadowRoot.getElementById("container").innerHTML = "<slot></slot>";
     let section = this.appendSettingsPage("Exit").appendSettings("Exit", "Returning to the application...")
     section.appendChild(yesNoSetting)
   }
