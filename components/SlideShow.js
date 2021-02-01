@@ -115,7 +115,9 @@ export class SlideShow extends HTMLElement {
                         --paper-icon-button-ink-color: var(--palette-text-accent);
                     }
 
-                    
+                    #slides{
+                        position: relative;
+                    }
                
                 </style>
         
@@ -123,7 +125,9 @@ export class SlideShow extends HTMLElement {
                 <paper-icon-button id="start-btn" icon="av:play-circle-filled"></paper-icon-button>
         
                 <paper-card id="container" class="container slides-container">
-                    <slot id="slides" name="slides"></slot>
+                    <div id="slides" >
+                        <slot></slot>
+                    </div>
                     <footer id="footer">
                     </footer>
                 </paper-card>
@@ -164,9 +168,9 @@ export class SlideShow extends HTMLElement {
         // Here I will create the slide.
         let range = document.createRange()
         let slide = range.createContextualFragment(html)
-        document.getElementById("slides").style.display = "relative"
-        document.getElementById("slides").appendChild(slide)
-
+        let id = slide.children[0].id
+        this.appendChild(slide)
+   
         let marker = document.createElement("span");
         marker.style.position = "relative";
         let ripple = document.createElement("paper-ripple");
@@ -174,19 +178,17 @@ export class SlideShow extends HTMLElement {
         ripple.setAttribute("recenters", "")
         marker.appendChild(ripple)
         marker.classList.add("marker")
-        marker.id = document.getElementById("slides").lastChild.id
-        marker.style.borderColor = document.getElementById("slides").lastChild.marker
+        marker.id = id
+        marker.style.borderColor = this.lastChild.marker
         this.shadowRoot.getElementById("footer").appendChild(marker)
-        let markeyId = document.getElementById("slides").lastChild.id
-
         marker.onclick = () => {
             this.stop();
 
             // Here I will rotate the slide.
-            while (document.getElementById("slides").childNodes[1].id != markeyId) {
-                let firstChild = document.getElementById("slides").firstChild
-                document.getElementById("slides").removeChild(firstChild)
-                document.getElementById("slides").appendChild(firstChild)
+            while (this.childNodes[1].id != id) {
+                let firstChild = this.firstChild
+                this.removeChild(firstChild)
+                this.appendChild(firstChild)
             }
 
             let markers = this.shadowRoot.querySelectorAll(".marker")
@@ -194,7 +196,7 @@ export class SlideShow extends HTMLElement {
                 markers[i].style.backgroundColor = "";
             }
 
-            let marker = this.shadowRoot.getElementById(markeyId)
+            let marker = this.shadowRoot.getElementById(id)
             marker.style.backgroundColor = marker.style.borderColor
 
             // Here I will append the start button into the marker.
@@ -205,7 +207,6 @@ export class SlideShow extends HTMLElement {
 
         // Set the slide order...
         this.orderSlides();
-
     }
 
     // set slice position
@@ -224,39 +225,35 @@ export class SlideShow extends HTMLElement {
     }
 
     getSlides() {
-        if (document.getElementById("slides") != undefined) {
-            if (document.getElementById("slides").childNodes) {
-                return document.getElementById("slides").childNodes
-            }
-        }
-        return []; // empty array
+        return this.children; // empty array
     }
 
 
     // Rotate the slide to one position
     rotateSlide() {
-        if (document.getElementById("slides") == undefined) {
+        if (this.children.length == 0) {
             return
         }
 
         this.orderSlides();
 
         // rotate the slides.
-        let firstChild = document.getElementById("slides").firstChild
+        let firstChild = this.firstElementChild
         let w = firstChild.offsetWidth;
-        document.getElementById("slides").style.transition = "all 1s ease-out"
-        document.getElementById("slides").style.transform = `translateX(${-1 * w}px)`
+        this.shadowRoot.getElementById("slides").style.transition = "all 1s ease-out"
+        this.shadowRoot.getElementById("slides").style.transform = `translateX(${-1 * w}px)`
 
         // Wait the time of animation delay and set back the div at it start position.
         setTimeout(() => {
-            if (document.getElementById("slides") == undefined) {
+            if (this.children.length == 0) {
                 return
             }
+
             this.countdown.style.display = "none";
-            document.getElementById("slides").style.transition = 'none';
-            document.getElementById("slides").style.transform = `none`;
-            document.getElementById("slides").removeChild(firstChild)
-            document.getElementById("slides").appendChild(firstChild)
+            this.shadowRoot.getElementById("slides").style.transition = 'none';
+            this.shadowRoot.getElementById("slides").style.transform = `none`;
+            this.removeChild(firstChild)
+            this.appendChild(firstChild)
             this.orderSlides();
             this.countdown.start();
             this.countdown.style.display = "block";
