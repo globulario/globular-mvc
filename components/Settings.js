@@ -3,6 +3,7 @@ import '@polymer/iron-icon/iron-icon.js';
 import '@polymer/iron-icons/iron-icons.js';
 import '@polymer/paper-button/paper-button.js';
 import '@polymer/paper-input/paper-input.js';
+import '@polymer/paper-dropdown-menu/paper-dropdown-menu.js'
 import '@polymer/iron-collapse/iron-collapse.js';
 import "@polymer/iron-icons/image-icons";
 import { Model } from "../Model";
@@ -443,7 +444,6 @@ export class Settings extends HTMLElement {
       e.tabIndex = this.childNodes.length
     }
     this.appendChild(setting)
-    console.log(this.childNodes)
   }
 }
 
@@ -853,6 +853,60 @@ export class ImageSetting extends Setting {
 }
 
 customElements.define("globular-image-setting", ImageSetting);
+
+export class DropdownSetting extends Setting {
+  constructor(name, description) {
+    super(name, description);
+
+    this.itemsArray = []
+
+    let html = `
+      <style>
+      ${theme}
+      #setting-input{
+         flex-grow: 1;
+        }
+      </style>
+      <paper-dropdown-menu id="setting-input" label="The best day ever" raised>
+        <paper-listbox class ="dropdown-content">
+          <template is="dom-repeat" items="{{itemsArray}}">
+            <paper-item>{{item}}</paper-item>
+          </template>
+        </paper-listbox>
+      </paper-dropdown-menu>
+    `
+    let range = document.createRange();
+    this.title = description;
+
+    this.shadowRoot.insertBefore(range.createContextualFragment(html), this.description)
+    this.input = this.shadowRoot.getElementById("setting-input");
+
+    this.description.style.display = "none";
+    this.setAttribute("title", "")
+    if (description.length > 0) {
+      this.input.label = description;
+    }
+    this.input.setAttribute("title", description);
+  }
+
+  getElement() {
+    return this.input;
+  }
+
+  getValue() {
+    return this.input.value
+  }
+
+  setValue(value) {
+    this.input.value = value;
+  }
+
+  setDropdownList(valueArray) {
+    this.itemsArray = valueArray
+  }
+}
+
+customElements.define("globular-dropdown-setting", DropdownSetting);
 
 /**
  * Add email validation to the string setting.
