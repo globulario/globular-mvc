@@ -263,10 +263,12 @@ export class SettingsPage extends HTMLElement {
   }
 
   appendSettings(title, subtitle) {
-    const html = `<globular-settings id="${title}_settings" title="${title}" subtitle="${subtitle}"></globular-settings>`;
+    const id = title.split(" ").join("");
+
+    const html = `<globular-settings id="${id}_settings" title="${title}" subtitle="${subtitle}"></globular-settings>`;
     const range = document.createRange()
     this.appendChild(range.createContextualFragment(html))
-    const settings = this.querySelector("#" + title + "_settings")
+    const settings = this.querySelector("#" + id + "_settings")
     return settings
   }
   //add a setting array or a get settings
