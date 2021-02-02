@@ -137,6 +137,8 @@ export class Application extends Model {
               evt.pwd,
               (account: Account) => {
                 // Here I will send a login success.
+                console.log("login_event")
+                // TODO the login will be publish later when the user data will be init
                 Model.eventHub.publish("login_event", account, true);
               },
               (err: any) => {
@@ -308,8 +310,7 @@ export class Application extends Model {
           this.refreshToken(
             (account: Account) => {
               // send a login event.
-              console.log("=====> refresh token send login_event");
-              Model.eventHub.publish("login_event", account, true);
+              Model.eventHub.publish("refresh_token_event", account, true);
               this.view.resume();
 
               this.startRefreshToken();
@@ -517,12 +518,12 @@ export class Application extends Model {
         if (name != "sa") {
           this.account.initData(
             (account: Account) => {
-              Model.eventHub.publish("login_event", account, false);
+              Model.eventHub.publish("refresh_account_event", account, false);
               this.view.resume();
               onRegister(this.account);
             },
             (err: any) => {
-              Model.eventHub.publish("login_event", this.account, false);
+              Model.eventHub.publish("refresh_account_event", this.account, false);
               onRegister(this.account);
               this.view.resume();
               onError(err);
@@ -580,13 +581,15 @@ export class Application extends Model {
 
         this.account.initData(
           (account: Account) => {
-            Model.eventHub.publish("login_event", account, false);
+            console.log("login_event")
+            Model.eventHub.publish("refresh_account_event", account, false);
             onLogin(account);
             this.view.resume();
             // Now I will set the application and user notification.
           },
           (err: any) => {
-            Model.eventHub.publish("login_event", this.account, false);
+            console.log("login_event")
+            Model.eventHub.publish("refresh_account_event", this.account, false);
             onLogin(this.account);
             this.view.resume();
             onError(err);
