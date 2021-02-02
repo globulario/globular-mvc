@@ -169,8 +169,17 @@ export class SlideShow extends HTMLElement {
         let range = document.createRange()
         let slide = range.createContextualFragment(html)
         let id = slide.children[0].id
+
+        // In the case of existing slide I will only set 
+        // the slide itself.
+        if(this.querySelector("#" + id)!=undefined){
+            let toDelete = this.querySelector("#" + id)
+            this.insertBefore(slide, toDelete);
+            this.removeChild(toDelete)
+            return;
+        }
+
         this.appendChild(slide)
-   
         let marker = document.createElement("span");
         marker.style.position = "relative";
         let ripple = document.createElement("paper-ripple");
