@@ -3,6 +3,9 @@ import '@polymer/iron-icon/iron-icon.js';
 import '@polymer/iron-icons/iron-icons.js';
 import '@polymer/paper-button/paper-button.js';
 import '@polymer/paper-input/paper-input.js';
+import '@polymer/paper-listbox/paper-listbox.js';
+import '@polymer/paper-item/paper-item.js';
+import '@polymer/paper-input/paper-textarea.js';
 import '@polymer/paper-dropdown-menu/paper-dropdown-menu.js'
 import '@polymer/iron-collapse/iron-collapse.js';
 import "@polymer/iron-icons/image-icons";
@@ -686,6 +689,52 @@ export class StringSetting extends Setting {
 }
 
 customElements.define("globular-string-setting", StringSetting);
+
+/**
+ * Set string setting...
+ */
+export class TextAreaSetting extends Setting {
+  constructor(name, description) {
+    super(name, description);
+
+    let html = `
+      <style>
+      ${theme}
+      #setting-input{
+         flex-grow: 1;
+        }
+      </style>
+      <paper-textarea id="setting-input" label="" raised></paper-textarea>
+    `
+    let range = document.createRange();
+    this.title = description;
+
+    this.shadowRoot.insertBefore(range.createContextualFragment(html), this.description)
+    this.input = this.shadowRoot.getElementById("setting-input");
+
+    this.description.style.display = "none";
+    this.setAttribute("title", "")
+    if (description.length > 0) {
+      this.input.label = description;
+    }
+    this.input.setAttribute("title", description);
+  }
+
+  getElement() {
+    return this.input;
+  }
+
+  getValue() {
+    return this.input.value
+  }
+
+  setValue(value) {
+    this.input.value = value;
+  }
+
+}
+
+customElements.define("globular-textarea-setting", TextAreaSetting);
 
 /**
  * Add email validation to the string setting.
