@@ -707,6 +707,7 @@ customElements.define("globular-number-setting", NumberSetting);
 export class ImageSetting extends Setting {
   constructor(name, description) {
     super(name, description);
+    this.onchange = null;
 
     let html = `
       <style>
@@ -806,20 +807,25 @@ export class ImageSetting extends Setting {
     `
     let range = document.createRange();
     this.title = description;
-
     this.shadowRoot.insertBefore(range.createContextualFragment(html), this.description)
+
+    // Init the interface component here.
+    this.image = this.shadowRoot.getElementById("image-display");
+    this.icon = this.shadowRoot.getElementById("no-image-display");
     this.input = this.shadowRoot.getElementById("setting-input");
+
     this.input.onchange = (evt) => {
       let files = evt.target.files;
       if (files && files[0]) {
         let reader = new FileReader()
         reader.onload = (e) => {
-          let img = this.shadowRoot.getElementById("image-display")
-          let ico = this.shadowRoot.getElementById("no-image-display")
-          img.src = e.target.result
-          img.style.display = "block";
-          ico.style.display = "none";
-
+          this.image.src = e.target.result
+          // Set the change event.
+          if(this.onchange!=null){
+            this.onchange(this.image.src) // event...
+          }
+          this.image.style.display = "block";
+          this.icon.style.display = "none";
         }
         reader.readAsDataURL(files[0])
       }
@@ -834,12 +840,12 @@ export class ImageSetting extends Setting {
     if (description.length > 0) {
       this.input.label = description;
     }
-    this.input.setAttribute("title", description);
 
+    this.input.setAttribute("title", description);
   }
 
   getValue() {
-    return this.shadowRoot.getElementById("image-display").src;
+    return this.image.src;
   }
 
   /**
@@ -847,7 +853,9 @@ export class ImageSetting extends Setting {
    * @param {*} value 
    */
   setValue(value) {
-    this.shadowRoot.getElementById("image-display").src = value
+    this.image.src = value
+    this.image.style.display = "block";
+    this.icon.style.display = "none";
   }
 
 }
