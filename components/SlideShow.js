@@ -174,8 +174,8 @@ export class SlideShow extends HTMLElement {
         // the slide itself.
         if(this.querySelector("#" + id)!=undefined){
             let toDelete = this.querySelector("#" + id)
-            this.insertBefore(slide, toDelete);
-            this.removeChild(toDelete)
+            this.replaceChild(slide, toDelete)
+            this.orderSlides();
             return;
         }
 
