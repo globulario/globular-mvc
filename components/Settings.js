@@ -518,6 +518,7 @@ export class Setting extends HTMLElement {
     `;
 
     // Set style property of the component itself.
+    this.style.position = "relative"
     this.style.display = "flex"
     this.style.color = "var(--cr-primary-text-color)"
     this.style.fontFamily = "Roboto,Arial,sans-serif"
@@ -526,7 +527,6 @@ export class Setting extends HTMLElement {
 
     const resizeObserver = new ResizeObserver(entries => {
       for (let entry of entries) {
-        console.log(entry)
         let w = entry.contentRect.width
         this.style.flexDirection = "row";
         this.style.alignItems = "flex-start"
@@ -536,10 +536,21 @@ export class Setting extends HTMLElement {
         if (textArea != undefined) {
           textArea.style.width = "0px"
         }
+        let paperInput = this.shadowRoot.querySelector("paper-input")
+        if(paperInput != undefined){
+          paperInput.style.width = ""
+        }
+
+        let nextPageBtn = this.shadowRoot.querySelector("#icon-right")
+        nextPageBtn.style.position = "block";
+        nextPageBtn.style.top = "40%";
+        nextPageBtn.style.right = "0px";
+
         if (w < 780) {
           this.shadowRoot.getElementById("name-div").style.flexBasis = "100px";
           this.shadowRoot.getElementById("description-div").style.flexBasis = "200px";
           if (w < 600) {
+            nextPageBtn.style.position = "absolute";
             this.style.flexDirection = "column";
             this.shadowRoot.getElementById("name-div").style.flexBasis = "0px";
             this.shadowRoot.getElementById("description-div").style.flexBasis = "0px";
@@ -547,6 +558,9 @@ export class Setting extends HTMLElement {
             let textArea = this.shadowRoot.querySelector("paper-textarea")
             if (textArea != undefined) {
               textArea.style.width = "335px"
+            }
+            if(paperInput != undefined){
+              paperInput.style.width = "100%"
             }
           }
         }
