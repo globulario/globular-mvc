@@ -8,8 +8,14 @@ import { Model } from '../Model';
 import { Countdown } from './Countdown';
 
 export class SlideShow extends HTMLElement {
-    constructor() {
+    constructor(delay) {
         super()
+
+        // Set the default delay values...
+        if(delay==undefined){
+            delay = 15
+        }
+
         this.attachShadow({ mode: 'open' });
         this.interval = null;
         this.isRunning = false;
@@ -43,7 +49,7 @@ export class SlideShow extends HTMLElement {
         );
 
         // default is fiteen seconds.
-        this.delay = 1000 * 15
+        this.delay = 1000 * delay // transform it in milisecond.
         if (this.hasAttribute("delay")) {
             this.delay = parseInt(this.getAttribute("delay")) * 1000
         }
@@ -119,10 +125,7 @@ export class SlideShow extends HTMLElement {
                     }
                
                 </style>
-        
-                <globular-count-down id="countdown" countdown="${this.delay / 1000}" diameter="38" stroke="3" ></globular-count-down>
                 <paper-icon-button id="start-btn" icon="av:play-circle-filled"></paper-icon-button>
-        
                 <paper-card id="container" class="container slides-container">
                     <div id="slides" >
                         <slot></slot>
@@ -135,17 +138,15 @@ export class SlideShow extends HTMLElement {
         this.startBtn = this.shadowRoot.getElementById("start-btn")
         this.startBtn.parentNode.removeChild(this.startBtn)
 
-        this.countdown = this.shadowRoot.getElementById("countdown")
-        this.countdown.oncountdone = () => {
-            // Remove the previous inteval...
+        // equivalent to <globular-count-down id="countdown" countdown="${this.delay / 1000}" diameter="38" stroke="3" ></globular-count-down>
+        this.countdown = new Countdown(this.delay / 1000, 38, 3)
+        this.countdown.id = "countdown"
+        this.countdown.oncountdone = ()=>{
             if (this.isRunning) {
                 this.rotateSlide();
                 this.start()
             }
         }
-        this.countdown.parentNode.removeChild(this.countdown)
-
-
 
         this.startBtn.onclick = (evt) => {
             evt.stopPropagation();
@@ -165,6 +166,20 @@ export class SlideShow extends HTMLElement {
 
     connectedCallback() {
 
+    }
+
+    setDelay(delay){
+        this.delay = delay * 1000
+
+        // The countdown must be recreate...
+        this.countdown = new Countdown(this.delay / 1000, 38, 3)
+        this.countdown.id = "countdown"
+        this.countdown.oncountdone = ()=>{
+            if (this.isRunning) {
+                this.rotateSlide();
+                this.start()
+            }
+        }
     }
 
     /**

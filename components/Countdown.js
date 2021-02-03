@@ -2,7 +2,7 @@
 import { theme } from "./Theme";
 
 export class Countdown extends HTMLElement {
-  constructor() {
+  constructor(delay, diameter, stroke) {
     super();
 
     this.oncountdone = null;
@@ -15,16 +15,27 @@ export class Countdown extends HTMLElement {
     if (this.hasAttribute("countdown")) {
       this.countdown = parseInt(this.getAttribute("countdown"))
     }
+    if(delay !=undefined){
+      this.countdown = delay;
+    }
 
     this.diameter = 40;
     if (this.hasAttribute("diameter")) {
       this.diameter = parseInt(this.getAttribute("diameter"))
+    }
+    if(diameter !=undefined){
+      this.diameter = diameter
     }
 
     this.stroke = 3;
     if (this.hasAttribute("stroke")) {
       this.stroke = parseInt(this.getAttribute("stroke"))
     }
+    
+    if(stroke != undefined){
+      this.stroke = stroke
+    }
+
 
     this.color = "var(--palette-text-accent)"
     if (this.hasAttribute("color")) {
