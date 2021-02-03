@@ -172,6 +172,11 @@ export class SlideShow extends HTMLElement {
         this.delay = delay * 1000
 
         // The countdown must be recreate...
+        let parentNode = this.countdown.parentNode;
+        if(parentNode != null){
+            parentNode.removeChild(this.countdown)
+        }
+        this.countdown.stop();
         this.countdown = new Countdown(this.delay / 1000, 38, 3)
         this.countdown.id = "countdown"
         this.countdown.oncountdone = ()=>{
@@ -179,6 +184,11 @@ export class SlideShow extends HTMLElement {
                 this.rotateSlide();
                 this.start()
             }
+        }
+
+        if(parentNode != null){
+            parentNode.appendChild(this.countdown)
+            this.countdown.start()
         }
     }
 

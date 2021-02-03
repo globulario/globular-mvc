@@ -738,6 +738,9 @@ export class StringSetting extends Setting {
 
   setValue(value) {
     this.input.value = value;
+    if(this.onchange !=null){
+      this.onchange(value);
+    }
   }
 
 }
