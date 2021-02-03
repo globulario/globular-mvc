@@ -314,6 +314,7 @@ export class Settings extends HTMLElement {
 
        .card-content{
             min-width: 680px;
+            max-width: 680px;
             padding: 0px;
         }
 
@@ -523,12 +524,45 @@ export class Setting extends HTMLElement {
     this.style.alignItems = "center"
     this.style.padding = "15px 16px 16px 16px"
 
+    const resizeObserver = new ResizeObserver(entries => {
+      for (let entry of entries) {
+        console.log(entry)
+        let w = entry.contentRect.width
+        this.style.flexDirection = "row";
+        this.style.alignItems = "flex-start"
+        this.shadowRoot.getElementById("name-div").style.flexBasis = "156px";
+        this.shadowRoot.getElementById("description-div").style.flexBasis = "328px";
+        let textArea = this.shadowRoot.querySelector("paper-textarea")
+        if (textArea != undefined) {
+          textArea.style.width = "0px"
+        }
+        if (w < 780) {
+          this.shadowRoot.getElementById("name-div").style.flexBasis = "100px";
+          this.shadowRoot.getElementById("description-div").style.flexBasis = "200px";
+          if (w < 600) {
+            this.style.flexDirection = "column";
+            this.shadowRoot.getElementById("name-div").style.flexBasis = "0px";
+            this.shadowRoot.getElementById("description-div").style.flexBasis = "0px";
+            this.style.alignItems = "flex-start"
+            let textArea = this.shadowRoot.querySelector("paper-textarea")
+            if (textArea != undefined) {
+              textArea.style.width = "335px"
+            }
+          }
+        }
+      }
+    });
+    resizeObserver.observe(document.body);
+
     // The name (label) div
     this.name = this.shadowRoot.getElementById("name-div")
 
     // The description...
     this.description = this.shadowRoot.getElementById("description-div")
 
+  }
+
+  connectedCallback() {
   }
 
   getElement() { return null; }
@@ -650,6 +684,7 @@ customElements.define("globular-complex-setting", ComplexSetting);
 export class StringSetting extends Setting {
   constructor(name, description) {
     super(name, description);
+    this.onchange = null;
 
     let html = `
       <style>
@@ -672,6 +707,11 @@ export class StringSetting extends Setting {
       this.input.label = description;
     }
     this.input.setAttribute("title", description);
+    this.input.onblur = () => {
+      if (this.onblur != null) {
+        this.onblur()
+      }
+    }
   }
 
   getElement() {
@@ -704,7 +744,7 @@ export class TextAreaSetting extends Setting {
          flex-grow: 1;
         }
       </style>
-      <paper-textarea id="setting-input" label="" raised></paper-textarea>
+      <paper-textarea id="setting-input" style="width: 0px;" label="" raised></paper-textarea>
     `
     let range = document.createRange();
     this.title = description;
@@ -870,7 +910,7 @@ export class ImageSetting extends Setting {
         reader.onload = (e) => {
           this.image.src = e.target.result
           // Set the change event.
-          if(this.onchange!=null){
+          if (this.onchange != null) {
             this.onchange(this.image.src) // event...
           }
           this.image.style.display = "block";

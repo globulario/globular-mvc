@@ -147,5 +147,20 @@ export let theme = `:host{
   {
     background: rgba(0, 0, 0, 0.5);
   }
+  .setting {
+    display: flex;
+    color: var(--cr-primary-text-color);
+    align-items: center;
+    padding: 15px 16px 16px 16px;
+  }
+
+  @media only screen and (max-width: 600px) {
+    .setting{
+      flex-direction: column;
+      align-items: self-start;
+      flex-basis: 0px;
+    }
+  }
+
   `;
   
