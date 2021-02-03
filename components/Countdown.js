@@ -1,34 +1,38 @@
 
 import { theme } from "./Theme";
+
 export class Countdown extends HTMLElement {
-    constructor() {
-        super();
-        this.container = null;
-        // Set the shadow dom.
-        this.attachShadow({ mode: "open" });
-        // Set default values...
-        this.countdown = 10;
-        if (this.hasAttribute("countdown")) {
-            this.countdown = parseInt(this.getAttribute("countdown"))
-        }
+  constructor() {
+    super();
 
-        this.diameter = 40;
-        if(this.hasAttribute("diameter")){
-            this.diameter = parseInt(this.getAttribute("diameter"))
-        }
+    this.oncountdone = null;
+    this.container = null;
 
-        this.stroke = 3;
-        if(this.hasAttribute("stroke")){
-            this.stroke = parseInt(this.getAttribute("stroke"))
-        }
+    // Set the shadow dom.
+    this.attachShadow({ mode: "open" });
+    // Set default values...
+    this.countdown = 10;
+    if (this.hasAttribute("countdown")) {
+      this.countdown = parseInt(this.getAttribute("countdown"))
+    }
 
-        this.color = "var(--palette-text-accent)"
-        if(this.hasAttribute("color")){
-            this.stroke = parseInt(this.getAttribute("color"))
-        }
+    this.diameter = 40;
+    if (this.hasAttribute("diameter")) {
+      this.diameter = parseInt(this.getAttribute("diameter"))
+    }
 
-        // Connect to event.
-        this.shadowRoot.innerHTML = `
+    this.stroke = 3;
+    if (this.hasAttribute("stroke")) {
+      this.stroke = parseInt(this.getAttribute("stroke"))
+    }
+
+    this.color = "var(--palette-text-accent)"
+    if (this.hasAttribute("color")) {
+      this.stroke = parseInt(this.getAttribute("color"))
+    }
+
+    // Connect to event.
+    this.shadowRoot.innerHTML = `
       <style>
          ${theme}
          #countdown {
@@ -77,48 +81,57 @@ export class Countdown extends HTMLElement {
       <div id="countdown">
         <div id="countdown-number"></div>
         <svg>
-            <circle id="circle" r="${(this.diameter - this.stroke)/2}" cx="${this.diameter/2}" cy="${this.diameter/2}"></circle>
+            <circle id="circle" r="${(this.diameter - this.stroke) / 2}" cx="${this.diameter / 2}" cy="${this.diameter / 2}"></circle>
         </svg>
       </div>
       `;
 
+    this.div = this.shadowRoot.getElementById("countdown")
+    this.interval = null;
+  }
 
-        this.interval = null;
+  connectedCallback() {
 
+  }
+
+  start() {
+    this.div.style.display = ""
+    var countdownNumberEl = this.shadowRoot.getElementById('countdown-number');
+    let countdown = this.countdown;
+    countdownNumberEl.textContent = countdown;
+    if (this.interval != null) {
+      clearInterval(this.interval);
     }
-
-    start() {
-        var countdownNumberEl = this.shadowRoot.getElementById('countdown-number');
-        let countdown = this.countdown;
-        countdownNumberEl.textContent = countdown;
-        if (this.interval != null) {
-            clearInterval(this.interval);
+    this.interval = setInterval(() => {
+      countdown--
+      if (countdown == 0) {
+        countdownNumberEl.textContent = "";
+        this.stop();
+        if (this.oncountdone != undefined) {
+          this.oncountdone();
         }
-        this.interval = setInterval(function () {
-            countdown = --countdown <= 0 ? this.countdown : countdown;
-            if(countdown <= 0){
-                countdownNumberEl.textContent = "";
-            }else{
-                countdownNumberEl.textContent = countdown
-            }
-        }, 1000);
-    }
+      } else {
+        countdownNumberEl.textContent = countdown
+      }
+    }, 1000);
+  }
 
-    // setColor =  var countdownNumberEl = this.shadowRoot.getElementById('countdown-number');
-    setColor(color){
-        var countdownNumberEl = this.shadowRoot.getElementById('countdown-number');
-        countdownNumberEl.style.color = color;
-        var circle = this.shadowRoot.getElementById('circle');
-        circle.style.stroke = color;
-    }
+  // setColor =  var countdownNumberEl = this.shadowRoot.getElementById('countdown-number');
+  setColor(color) {
+    var countdownNumberEl = this.shadowRoot.getElementById('countdown-number');
+    countdownNumberEl.style.color = color;
+    var circle = this.shadowRoot.getElementById('circle');
+    circle.style.stroke = color;
+  }
 
-    stop() {
-        clearInterval(this.interval);
-    }
+  stop() {
+    clearInterval(this.interval);
+    this.div.style.display = "none"
+  }
 
-    setCountdown(countdown) {
-        this.countdown = countdown;
-    }
+  setCountdown(countdown) {
+    this.countdown = countdown;
+  }
 
 }
 

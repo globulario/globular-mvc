@@ -4,14 +4,13 @@ import '@polymer/paper-ripple/paper-ripple.js';
 import '@polymer/paper-icon-button/paper-icon-button.js';
 import "@polymer/iron-icons/av-icons";
 import { theme } from "./Theme";
-import "./Countdown"
 import { Model } from '../Model';
+import { Countdown } from './Countdown';
 
 export class SlideShow extends HTMLElement {
     constructor() {
         super()
         this.attachShadow({ mode: 'open' });
-        this.timeout = null;
         this.interval = null;
         this.isRunning = false;
         this.countdown = null;
@@ -137,7 +136,16 @@ export class SlideShow extends HTMLElement {
         this.startBtn.parentNode.removeChild(this.startBtn)
 
         this.countdown = this.shadowRoot.getElementById("countdown")
+        this.countdown.oncountdone = () => {
+            // Remove the previous inteval...
+            if (this.isRunning) {
+                this.rotateSlide();
+                this.start()
+            }
+        }
         this.countdown.parentNode.removeChild(this.countdown)
+
+
 
         this.startBtn.onclick = (evt) => {
             evt.stopPropagation();
@@ -172,7 +180,7 @@ export class SlideShow extends HTMLElement {
 
         // In the case of existing slide I will only set 
         // the slide itself.
-        if(this.querySelector("#" + id)!=undefined){
+        if (this.querySelector("#" + id) != undefined) {
             let toDelete = this.querySelector("#" + id)
             this.replaceChild(slide, toDelete)
             this.orderSlides();
@@ -275,24 +283,18 @@ export class SlideShow extends HTMLElement {
      */
     start() {
         if (!this.isRunning) {
-            if(this.startBtn.parentNode != undefined){
+            if (this.startBtn.parentNode != undefined) {
                 return;
             }
 
             this.countdown.style.display = "block"
             this.isRunning = true;
-            if(this.countdown.parentNode == undefined && this.lastActiveSlide != undefined){
+            if (this.countdown.parentNode == undefined && this.lastActiveSlide != undefined) {
                 this.lastActiveSlide.appendChild(this.countdown);
             }
+
             this.countdown.start();
         }
-        this.timeout = setTimeout(() => {
-            // Remove the previous inteval...
-            if (this.isRunning) {
-                this.rotateSlide();
-                this.start()
-            }
-        }, this.delay)
     }
 
     /**
@@ -308,12 +310,9 @@ export class SlideShow extends HTMLElement {
             this.countdown.parentNode.removeChild(this.countdown);
         }
 
-        if (this.timeout != null) {
-            clearTimeout(this.timeout)
-            this.timeout = null
-            this.isRunning = false
-            this.startBtn.style.display = "block";
-        }
+        this.isRunning = false
+        this.startBtn.style.display = "block";
+
         console.log("the side show is now stopped!")
     }
 
