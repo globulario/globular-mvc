@@ -165,11 +165,11 @@ export class SlideShow extends HTMLElement {
     }
 
     connectedCallback() {
-        // Here I will add each slides....
+        // Here I will add each slides in order to create theire marker...
         for(var i=0; i < this.childNodes.length; i++){
             let slide = this.childNodes[i]
             // That will create the slide marker
-            this.addSlide(slide)
+            this.appendSlide(slide)
         }
     }
 
