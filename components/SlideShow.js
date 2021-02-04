@@ -165,7 +165,12 @@ export class SlideShow extends HTMLElement {
     }
 
     connectedCallback() {
-
+        // Here I will add each slides....
+        for(var i=0; i < this.childNodes.length; i++){
+            let slide = this.childNodes[i]
+            // That will create the slide marker
+            this.addSlide(slide)
+        }
     }
 
     setDelay(delay){
@@ -208,11 +213,24 @@ export class SlideShow extends HTMLElement {
         if (this.querySelector("#" + id) != undefined) {
             let toDelete = this.querySelector("#" + id)
             this.replaceChild(slide, toDelete)
-            this.orderSlides();
-            return;
+        }else{
+            this.appendChild(slide)
         }
 
-        this.appendChild(slide)
+        // Create the marker.
+        this.createMarker(id + "_marker")
+
+
+        // Set the slide order...
+        this.orderSlides();
+    }
+
+    createMarker(id){
+        // if the marker already exist I will do nothing.
+        if( this.shadowRoot.getElementById(id) !=undefined){
+            return
+        }
+
         let marker = document.createElement("span");
         marker.style.position = "relative";
         let ripple = document.createElement("paper-ripple");
@@ -220,7 +238,7 @@ export class SlideShow extends HTMLElement {
         ripple.setAttribute("recenters", "")
         marker.appendChild(ripple)
         marker.classList.add("marker")
-        marker.id = id
+        marker.id =  id 
         marker.style.borderColor = this.lastChild.marker
         this.shadowRoot.getElementById("footer").appendChild(marker)
         marker.onclick = () => {
@@ -246,9 +264,6 @@ export class SlideShow extends HTMLElement {
 
             this.orderSlides();
         }
-
-        // Set the slide order...
-        this.orderSlides();
     }
 
     // set slice position
