@@ -218,7 +218,7 @@ export class SlideShow extends HTMLElement {
         }
 
         // Create the marker.
-        this.createMarker(id + "_marker")
+        this.createMarker(id)
 
 
         // Set the slide order...
