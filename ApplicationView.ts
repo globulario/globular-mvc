@@ -367,6 +367,14 @@ export class ApplicationView extends View {
     this.layout.title().innerHTML = "<span>" + title + "</span>";
   }
 
+  hideHeader(){
+    this.layout.hideHeader();
+  }
+
+  showHeader(){
+    this.layout.showHeader();
+  }
+
   setIcon(imgUrl: string) {
     let icon = document.createElement("img");
     icon.id = "application_icon";

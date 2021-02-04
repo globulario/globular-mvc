@@ -146,6 +146,7 @@ export class Layout extends HTMLElement {
     this.hamburger = this.shadowRoot.getElementById("menu-btn");
     this.content = this.shadowRoot.getElementById("content");
     this.sideMenuSlot = this.shadowRoot.getElementById("side-menu");
+    this.header = this.shadowRoot.querySelector("app-header")
 
     this.hideSideBar();
 
@@ -199,6 +200,15 @@ export class Layout extends HTMLElement {
     this.menuBtn.parentNode.removeChild(this.menuBtn);
     this.appDrawer.parentNode.removeChild(this.appDrawer);
   }
+
+  hideHeader(){
+    this.header.style.display = "none"
+  }
+
+  showHeader(){
+    this.header.style.display = ""
+  }
+
   // Get layout zone.
   init() {
     // Connect the event listener's
