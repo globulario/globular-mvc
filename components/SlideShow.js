@@ -169,7 +169,7 @@ export class SlideShow extends HTMLElement {
         for(var i=0; i < this.childNodes.length; i++){
             let slide = this.childNodes[i]
             // That will create the slide marker
-            this.appendSlide(slide)
+            this.createMarker(slide.id)
         }
     }
 
