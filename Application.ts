@@ -309,7 +309,7 @@ export class Application extends Model {
 
           this.refreshToken(
             (account: Account) => {
-              // send a login event.
+              // send a refresh token event.
               Model.eventHub.publish("refresh_token_event", account, true);
               this.view.resume();
 
