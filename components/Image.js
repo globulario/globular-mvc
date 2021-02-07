@@ -1,212 +1,301 @@
 import { theme } from "./Theme";
+import '@polymer/paper-button/paper-button.js';
+import '@polymer/paper-slider/paper-slider.js';
 
-// Rewritting of into a webcomponent.
-// https://tympanus.net/codrops/2014/10/30/resizing-cropping-images-canvas/
-
-export class ResizableImage extends HTMLElement {
+export class ImageCropper extends HTMLElement {
     constructor() {
         super();
-        this.event_state = {};
-        this.constrain = false;
-        this.min_width = 60;
-        this.min_height = 60;
-        this.max_width = 800;
-        this.max_height = 900;
-        this.resize_canvas = document.createElement('canvas');
-
-
-        // Set the shadow dom.
-        this.attachShadow({ mode: "open" });
+        this.oldSrc = '';
+    }
+    get width() {
+        return this.hasAttribute('width');
     }
 
-    connectedCallback() {
-        this.shadowRoot.innerHTML = `
-        <style>
-            ${theme}
-            
-            /** CSS for image resize container **/
-            .resize-container {
-                position: relative;
-                display: inline-block;
-                cursor: move;
-                margin: 0 auto;
-            }
-            
-            ::slotted(img){
-                outline: 2px dashed rgba(222,60,80,.9);
-            }
+    get height() {
+        return this.hasAttribute('height');
+    }
 
-            /** Resize handel **/
-            .resize-handle-ne,
-            .resize-handle-ne,
-            .resize-handle-se,
-            .resize-handle-nw,
-            .resize-handle-sw {
-                position: absolute;
-                display: block;
-                width: 10px;
-                height: 10px;
-                background: rgba(222,60,80,.9);
-                z-index: 999;
-            }
+    get rounded() {
+        return this.hasAttribute('rounded');
+    }
 
-            .resize-handle-nw {
-                top: -5px;
-                left: -5px;
-                cursor: nw-resize;
-            }
-
-            .resize-handle-sw {
-                bottom: -5px;
-                left: -5px;
-                cursor: sw-resize;
-            }
-
-            .resize-handle-ne {
-                top: -5px;
-                right: -5px;
-                cursor: ne-resize;
-            }
-
-            .resize-handle-se {
-                bottom: -5px;
-                right: -5px;
-                cursor: se-resize;
-            }
-
-            globular-resizable-image {
-                position: relative;
-                padding: 4em;
-                height: 500px;
-                border: 3px solid #49708A;
-                max-width: 901px;
-                overflow: hidden;
-                margin: 0 auto;
-            }
-
-        </style>
-
-        <span class="resize-handle resize-handle-nw"></span>
-        <span class="resize-handle resize-handle-ne"></span>
-        <div class="resize-container">
-            <slot> </slot>
-        </div>
-        <span class="resize-handle resize-handle-se"></span>
-        <span class="resize-handle resize-handle-sw"></span>
-        `
-        this.style.position = "relative";
-        this.container = this.shadowRoot.querySelector(".resize-container");
-
-        this.orig_src = new Image();
-        this.image_target = this.querySelector("img")
-        this.orig_src.src= this.image_target.src;
-
-        // Event listeners...
-        let resizing = (e) => {
-            
-            let mouse = {};
-
-            mouse.x = (e.clientX || e.pageX) + window.scrollX;
-            mouse.y = (e.clientY || e.pageY) + window.scrollY;
-
-            console.log("resizing mouse x", mouse.x, "mouse y", mouse.y)
-
-            let width = mouse.x - this.event_state.container_left;
-            let height = mouse.y - this.event_state.container_top;
-    
-            if (this.constrain || e.shiftKey) {
-                height = width / this.orig_src.width * this.orig_src.height;
-            }
-
-            if (width > this.min_width && height > this.min_height && width < this.max_width && height < this.max_height) {
-                this.resizeImage(width, height);
-
-                //let left = this.event_state.container_left;
-                //let top = this.event_state.container_top;
-                // let offset = this.container.getBoundingClientRect(); // .offset();
-
-                // Without this Firefox will not re-calculate the the image dimensions until drag end
-                // this.container.offset({ 'left': left, 'top': top });
+    loadPic(e) {
+        var reader = new FileReader();
+        this.resetAll();
+        reader.readAsDataURL(e.target.files[0]);
+        reader.cmp = this;
+        reader.onload = function (event) {
+            var shdRoot = event.target.cmp.shadowRoot;
+            shdRoot.querySelector(".resize-image").setAttribute('src', event.target.result);
+            event.target.cmp.oldSrc = event.target.result;
+            shdRoot.querySelector(".resize-image").cmp = shdRoot;
+            shdRoot.querySelector(".resize-image").onload = function (e) {
+                var shdRoot = e.target.cmp;
+                shdRoot.querySelector('.slidecontainer').style.display = 'block';
+                shdRoot.querySelector('.crop').style.display = 'initial';
+                var widthTotal = shdRoot.querySelector(".resize-image").offsetWidth;
+                shdRoot.querySelector(".resize-container").style.width = widthTotal + 'px';
+                shdRoot.querySelector(".resize-image").style.width = widthTotal + 'px';
+                shdRoot.querySelector("#myRange").max = widthTotal + widthTotal;
+                shdRoot.querySelector("#myRange").value = widthTotal;
+                shdRoot.querySelector("#myRange").min = widthTotal - widthTotal;
             }
         }
-
-        let startResize = (e) => {
-            console.log("startResize")
-            e.preventDefault();
-            // e.stopPropagation();
-            this.saveEventState(e);
-            document.addEventListener('mouseup', endResize);
-            document.addEventListener('mousemove', resizing);
-
-        };
-
-        let endResize = (e) => {
-            console.log("endResize")
-            e.preventDefault();
-            document.removeEventListener('mousemove', resizing);
-            document.removeEventListener('mouseup', endResize);
-        };
-
-        //$container.on('mousedown', '.resize-handle', startResize);
-        this.shadowRoot.querySelectorAll(".resize-handle").forEach((handler) => {
-            console.log(handler)
-            handler.onmousedown =  startResize;
-        })
     }
+    dragElement(elmnt) {
+        var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+        elmnt.onmousedown = dragMouseDown;
+        elmnt.ontouchstart = dragMouseDown;
 
-
-    saveEventState(e) {
-        console.log("saveEventState")
-        // Save the initial event details and container state
-        this.event_state.container_width = this.container.offsetWidth;
-        this.event_state.container_height = this.container.offsetHeight;
-        this.event_state.container_left = this.container.offsetLeft;
-        this.event_state.container_top = this.container.offsetTop;
-        this.event_state.mouse_x = (e.clientX || e.pageX) + window.scrollX;
-        this.event_state.mouse_y = (e.clientY || e.pageY) + window.scrollY;
-
-        this.event_state.evnt = e;
+        function dragMouseDown(e) {
+            e.preventDefault();
+            // get the mouse cursor position at startup:
+            pos3 = e.clientX || e.targetTouches[0].pageX;
+            pos4 = e.clientY || e.targetTouches[0].pageY;
+            document.onmouseup = closeDragElement;
+            document.ontouchend = closeDragElement;
+            // call a function whenever the cursor moves:
+            document.onmousemove = elementDrag;
+            document.ontouchmove = elementDrag;
+        }
+        function elementDrag(e) {
+            e = e || window.event;
+            // calculate the new cursor position:
+            pos1 = pos3 - (e.clientX || e.targetTouches[0].pageX);
+            pos2 = pos4 - (e.clientY || e.targetTouches[0].pageY);
+            pos3 = (e.clientX || e.targetTouches[0].pageX);
+            pos4 = (e.clientY || e.targetTouches[0].pageY);
+            // set the element's new position:
+            elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+            elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+        }
+        function closeDragElement() {
+            // stop moving when mouse button is released:
+            document.onmouseup = '';
+            document.ontouchend = '';
+            document.onmousemove = '';
+            document.ontouchmove = '';
+        }
     }
+    crop() {
+        this.shadowRoot.querySelector('.crop').style.display = 'none';
+        this.shadowRoot.querySelector('.reset').style.display = 'initial';
+        this.shadowRoot.querySelector('.save').style.display = 'initial';
+        this.shadowRoot.querySelector('.slidecontainer').style.display = 'none';
+        var image = this.shadowRoot.querySelector('.resize-image');
 
+        var resize_canvas = document.createElement('canvas');
+        resize_canvas.width = image.offsetWidth;
+        resize_canvas.height = image.offsetHeight;
+        resize_canvas.getContext('2d').drawImage(image, 0, 0, image.offsetWidth, image.offsetHeight);
 
-    resizeImage(width, height) {
-        console.log("resizeImage width" + width + "px height " + height + "px");
+        image.setAttribute('src', resize_canvas.toDataURL("image/jepg"));
 
-        this.resize_canvas.width = width;
-        this.resize_canvas.height = height;
-        this.resize_canvas.getContext('2d').drawImage(this.orig_src, 0, 0, width, height);
-        this.image_target.src = this.resize_canvas.toDataURL("image/png");
-        
-    };
-}
+        var imageContainer = this.shadowRoot.querySelector('.resize-container');
+        var centerContainer = this.shadowRoot.querySelector('.center');
+        var left = centerContainer.offsetLeft - imageContainer.offsetLeft;
+        var top = centerContainer.offsetTop - imageContainer.offsetTop;
+        var width = centerContainer.offsetWidth;
+        var height = centerContainer.offsetHeight;
+        var newTop = centerContainer.offsetTop;
+        var newLeft = centerContainer.offsetLeft;
 
+        var crop_canvas = document.createElement('canvas');
+        crop_canvas.width = width;
+        crop_canvas.height = height;
+        crop_canvas.getContext('2d').drawImage(resize_canvas, left, top, width, height, 0, 0, width, height);
 
-
-customElements.define("globular-resizable-image", ResizableImage);
-
-/**
- * A simple image editor that can be use to resize and crop image.
- * Usefull for account image or webpage image.
- */
-export class ImageEditor extends HTMLElement {
-    constructor() {
-        super();
-        this.container = null;
-
-        // Set the shadow dom.
-        this.attachShadow({ mode: "open" });
-
-        // Connect to event.
-        this.shadowRoot.innerHTML = `
+        var imageC = this.shadowRoot.querySelector('.imageCropped');
+        imageC.src = crop_canvas.toDataURL("image/jepg");
+        this.shadowRoot.querySelector('.resize-image').setAttribute('src', '');
+    }
+    slide(w) {
+        this.shadowRoot.querySelector(".resize-container").style.width = (w) + 'px';
+        this.shadowRoot.querySelector(".resize-image").style.width = (w) + 'px';
+    }
+    getCropped() {
+        return this.shadowRoot.querySelector(".imageCropped").getAttribute('src');
+    }
+    resetAll() {
+        this.shadowRoot.querySelector(".reset").style.display = 'none';
+        this.shadowRoot.querySelector(".save").style.display = 'none';
+        this.shadowRoot.querySelector(".crop").style.display = 'none';
+        this.shadowRoot.querySelector(".slidecontainer").style.display = 'none';
+        this.shadowRoot.querySelector(".resize-container").removeAttribute('style');
+        this.shadowRoot.querySelector(".resize-image").setAttribute('src', '');
+        this.shadowRoot.querySelector(".imageCropped").setAttribute('src', '');
+        this.shadowRoot.querySelector(".resize-image").style.width = '100%';
+        this.shadowRoot.querySelector("#myRange").max = 10;
+        this.shadowRoot.querySelector("#myRange").value = 5;
+        this.shadowRoot.querySelector("#myRange").min = 0;
+    }
+    reset() {
+        this.resetAll();
+        this.shadowRoot.querySelector(".resize-image").setAttribute('src', this.oldSrc);
+    }
+    connectedCallback() {
+        let shadowRoot = this.attachShadow({ mode: 'open' });
+        shadowRoot.innerHTML = `
+        <style>
+          ${theme}
+          .slidecontainer {
+            width: 100%;
+            display:none;
+            z-index: 1;
+            position: relative;
+            margin-top:8px;
+          }
+          .slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 15px;
+            border-radius: 5px;
+            background: #d3d3d3;
+            outline: none;
+            opacity: 0.9;
+            -webkit-transition: .2s;
+            transition: opacity .2s;
+          }
+          .slider:hover {
+            opacity: 1;
+          }
+          .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background: #2196F3;
+            cursor: pointer;
+          }
+          .slider::-moz-range-thumb {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background: #2196F3;
+            cursor: pointer;
+            border:none;
+          }
+          .resize-container {
+            position: relative;
+            display: inline-block;
+            cursor: move;
+            margin: 0 auto;
+          }
+          .resize-container img {
+            display: block;
+          }
+          .resize-container:hover img,
+          .resize-container:active img {
+            outline: 2px dashed gray;
+          }
+          .parent{
+            width:99%;
+            height:99%;
+            overflow: hidden;
+            position:absolute;
+            top:0px;
+            left:0px;
+          }
+          .center{
+            position: absolute;
+            width: 150px;
+            height: 150px;
+            top: calc(50% - 150px/2);
+            left: calc(50% - 150px/2);
+            z-index: 2;
+            background: rgba(255, 255, 255, .3);
+            border: 2px solid #cecece;
+          }
+          .imageCropped{
+            position: relative;
+            left: -2px;
+            top: -2px;
+          }
+          .uploader{
+            z-index: 1;
+            position: relative;
+            display:none;
+          }
+          .lb_uploader{
+            z-index: 1;
+            position: relative;
+            cursor:pointer;
+          }
+          .crop, .reset, .save{
+            display:none;
+          }
+          .btn{
+            z-index:1;
+            position: relative;
+            font-size: .85rem;
+            border: none;
+            color: var(--palette-text-accent);
+            background: var(--palette-primary-accent);
+            max-height: 32px;
+            border: none;
+            z-index:1;
+          }
+        </style>
+        <div>
+          <label class='lb_uploader' for='uploader'>
+            <slot name='select'>
+               <paper-button class='btn' toggles raised ><slot name='selectText'>Select</slot></paper-button>
+            </slot>
+          </label>
+          <label class='reset'>
+            <slot name='reset'>
+              <paper-button class='btn' toggles raised ><slot name='resetText'>Reset</slot></paper-button>
+            </slot>
+          </label>
+          <label class='crop'>
+            <slot name='crop'>
+              <paper-button class='btn' toggles raised ><slot name='cropText'>Crop</slot></paper-button>
+            </slot>
+          </label>
+          <label class='save'>
+            <slot name='save'>
+              <paper-button class='btn' toggles raised ><slot name='saveText'>Save</slot></paper-button>
+            </slot>
+          </label>
+          <input type="file" class="uploader" id='uploader'/>
+          <div class="slidecontainer">
+            <paper-slider id="myRange" class="slider"> </paper-slider>
+          </div>
+          <div class='parent'>
+            <div class="resize-container">
+              <img class="resize-image" src="" style='width:100%'>
+            </div>
+            <div class='center'><img class="imageCropped"></div>
+          </div>
+        </div>
         `;
-
-        // Get image...
-        let img = this.shadowRoot.querySelector(".resize-image")
-        let resizableImage = new ResizableImage(img)
-
+        shadowRoot.querySelector('.uploader').addEventListener('change', e => {
+            this.loadPic(e);
+        });
+        shadowRoot.querySelector('#myRange').addEventListener('immediate-value-change', e => {
+            this.slide(e.target.immediateValue);
+        });
+        shadowRoot.querySelector('.crop').addEventListener('click', e => {
+            this.crop();
+        });
+        shadowRoot.querySelector('.reset').addEventListener('click', e => {
+            this.reset();
+        });
+        if (this.width) {
+            shadowRoot.querySelector('.center').style.width = this.getAttribute('width');
+            shadowRoot.querySelector('.center').style.left = 'calc(50% - ' + this.getAttribute('width') + '/2)';
+        }
+        if (this.height) {
+            shadowRoot.querySelector('.center').style.height = this.getAttribute('height');
+            shadowRoot.querySelector('.center').style.top = 'calc(50% - ' + this.getAttribute('height') + '/2)';
+        }
+        if (this.rounded) {
+            shadowRoot.querySelector('.center').style.borderRadius = '200px';
+            shadowRoot.querySelector('.imageCropped').style.borderRadius = '200px';
+        }
+        this.dragElement(shadowRoot.querySelector(".resize-container"));
     }
-
-
 }
 
-customElements.define("globular-image-editor", ImageEditor);
+window.customElements.define('globular-image-cropper', ImageCropper);
