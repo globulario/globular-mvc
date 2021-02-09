@@ -91,7 +91,6 @@ export class Model {
         // So here I will initilyse the server connection.
         // let url = window.location.origin
         // url += "/config"
-        
         Model.globular = new GlobularWebClient.Globular(url, ()=>{
             // set the event hub.
             Model.eventHub = Model.globular.eventHub;
