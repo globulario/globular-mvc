@@ -36,7 +36,6 @@ export class Countdown extends HTMLElement {
       this.stroke = stroke
     }
 
-
     this.color = "var(--palette-text-accent)"
     if (this.hasAttribute("color")) {
       this.stroke = parseInt(this.getAttribute("color"))
