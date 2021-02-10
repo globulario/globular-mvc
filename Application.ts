@@ -369,11 +369,18 @@ export class Application extends Model {
       }
     }
 
+    // Initialise the application configuration from it config.json file.
+    // if no file was found the config is simply set to an empty object.
+    // Config.json must contain only application setting ex backend address
+    // It's preferable to store any application data into it database.
     this.initApplicationConfig((config: any) => {
       // keep the config in appConfig member.
       this.appConfig = config;
-      if(config.GlobularConfigurationAddress != undefined){
-        super.init(config.GlobularConfigurationAddress, init_ ,errorCallback);
+      if(this.appConfig.GlobularConfigurationAddress != undefined){
+        super.init(this.appConfig.GlobularConfigurationAddress, init_ ,errorCallback);
+      }else{
+        // use the default url here in that case.
+        super.init(url, init_ ,errorCallback);
       }
     },
     ()=>{

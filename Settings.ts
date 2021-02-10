@@ -50,6 +50,11 @@ export class UserSettings extends Settings {
         let userPictureSetting = new ComplexSetting("Photo", "Change profile picture.")        
         generalSettings.addSetting(userPictureSetting)
 
+        // Here I will append the image cropper in order for the user to change it profile
+        // picture.
+        let profilePictureSetting = new ImageSetting("Picture", "Change the user picture")
+        userPictureSetting.addSetting(profilePictureSetting)
+
         // The user name.
         let userNameSetting = new ComplexSetting("Name", "Change the user name")
         
