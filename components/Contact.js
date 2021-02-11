@@ -144,7 +144,7 @@ export class ContactsMenu extends Menu {
                     <div style="display: flex; align-items: center; padding: 5px;">   
                         <img style="width: 40px; height: 40px; " src="${value.profilPicture_}"></img>
                         <div style="display: flex; flex-direction: column; font-size: .85em; padding-left: 8px;">
-                            <span>${value._id}</span>
+                            <span>${value.name}</span>
                             <span>${value.email_}</span>
                         </div>
                     </div>
@@ -197,9 +197,7 @@ export class AcceptDeclineContactBtns extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-
             ${theme}
-
         </style>
 
         <div style="display: flex;">

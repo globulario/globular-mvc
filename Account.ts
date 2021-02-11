@@ -17,6 +17,14 @@ export class Account extends Model {
         this._id = value;
     }
 
+    private name_: string;
+    public get name(): string {
+        return this.name_;
+    }
+    public set name(value: string) {
+        this.name_ = value;
+    }
+
     // Must be unique.
     private email_: string;
     public get email(): string {
@@ -97,10 +105,11 @@ export class Account extends Model {
         this.contacts = this.contacts.filter(obj => obj !== contact);
     }
 
-    constructor(id: string, email: string) {
+    constructor(id: string, email: string, name: string) {
         super();
 
         this._id = id;
+        this.name_ = name;
         this.email_ = email;
         this.hasData = false;
         this.firstName_ = "";
@@ -307,7 +316,7 @@ export class Account extends Model {
 
                 let initAccountData = () => {
                     let a_ = accounts_.pop()
-                    let a = new Account(a_.getId(), a_.getEmail())
+                    let a = new Account(a_.getId(), a_.getEmail(), a_.getName())
                     if (accounts_.length > 0) {
                         a.initData(() => {
                             accounts.push(a)

@@ -482,7 +482,7 @@ export class Application extends Model {
         localStorage.setItem("user_email", email);
 
         // Set the account
-        this.account = new Account(userName, email);
+        this.account = new Account(userName, email, userName);
 
         // Set the account infos...
         this.account.initData(() => {
@@ -571,7 +571,7 @@ export class Application extends Model {
         localStorage.setItem("user_email", (<any>decoded).email);
 
         // Callback on login.
-        this.account = new Account(name, email);
+        this.account = new Account(name, email, name);
         if (name != "sa") {
           this.account.initData(
             (account: Account) => {
@@ -629,7 +629,7 @@ export class Application extends Model {
         localStorage.setItem("user_email", email);
         localStorage.setItem("user_name", userName);
 
-        this.account = new Account(userName, email);
+        this.account = new Account(userName, email, userName);
 
         // Start refresh as needed.
         this.startRefreshToken();
