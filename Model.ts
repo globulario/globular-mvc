@@ -1,6 +1,5 @@
 // Globular conneciton.
 import * as GlobularWebClient from "globular-web-client";
-import { GetConfigResponse, GetConfigRequest } from "globular-web-client/admin/admin_pb";
 import { View } from "./View";
 
 export class Model {

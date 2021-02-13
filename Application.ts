@@ -4,12 +4,13 @@ import * as jwt from "jwt-decode";
 import { ApplicationView } from "./ApplicationView";
 import { Account } from "./Account";
 import { NotificationType, Notification } from "./Notification";
-import { AcceptDeclineContactBtns } from "./components/Contact";
 
 import {
   InsertOneRqst,
   FindRqst,
   FindResp,
+  UpdateOneRqst,
+  UpdateOneRsp,
   DeleteOneRqst,
 } from "globular-web-client/persistence/persistence_pb";
 import { v4 as uuidv4 } from "uuid";
@@ -87,8 +88,30 @@ export class Application extends Model {
   public get title(): string {
     return this._title;
   }
+
   public set title(value: string) {
     this._title = value;
+  }
+
+  // those informations are keep in mongo db.
+
+  // The id of the application on mongodb.
+  private _id: string;
+  public get id(): string {
+    return this._id;
+  }
+
+  public set id(value: string) {
+    this._id = value;
+  }
+
+  // The path of the application on the server.
+  private _path: string;
+  public get path(): string {
+    return this._path;
+  }
+  public set path(value: string) {
+    this._path = value;
   }
 
   protected account: Account;
@@ -132,11 +155,7 @@ export class Application extends Model {
       view.setTitle(this.title);
     }
 
-
-
   }
-
-
 
   /**
    * Get value from config.json file if any...
@@ -162,6 +181,7 @@ export class Application extends Model {
     errorCallback: (err: any) => void
   ) {
     let init_ = () => {
+      
       // Here I will connect the listener's
       // The login event.
       Model.eventHub.subscribe(
@@ -322,6 +342,7 @@ export class Application extends Model {
                 Application.getApplicationInfo(this.name).icon
               );
               this.view.init();
+              console.log("-----------------------> ", appInfo)
             } else {
               console.log(
                 "no application information found for ",
@@ -411,7 +432,20 @@ export class Application extends Model {
           let id = <string>info["_id"];
           Application.infos.set(id, info);
           infos.push(info);
+
+          // Keep application info up to date.
+          Application.eventHub.subscribe(`update_application_${id}_settings_evt`, 
+          (uuid:string)=>{
+  
+          }, 
+          (__application_info__:string)=>{
+              // Set the icon...
+              let info = JSON.parse(__application_info__)
+              Application.infos.set(id, info);
+  
+          }, false)
         }
+
         callback(infos);
       })
       .catch(errorCallback);
@@ -722,6 +756,59 @@ export class Application extends Model {
   settings() {
     console.log("----------->settings");
   }
+
+  public displayMessage(msg:any, delay:number){
+    this.view.displayMessage(msg, delay)
+  }
+
+  /**
+   * That function must be use to update application information store
+   * in level db in local_ressource table.
+   * @param id 
+   * @param info 
+   */
+  static saveApplicationInfo(id:string, info:any, successCallback:(infos:any)=>void,errorCallback:(err:any)=>void){
+    let info_ = Application.infos.get(id)
+    let value = ""
+    let i=0;
+    for(var field in info){
+      if(isNaN(info[field])){
+        value += `"$set":{"${field}":"${info[field]}"}`
+      }else{
+        value += `"$set":{"${field}":${info[field]}}`
+      }
+      
+      i++
+      if(i < Object.keys(info).length){
+        value += ", "
+      }
+      info_[field]=info[field]
+      successCallback(info_);
+    }
+    value = "{" + value + "}"
+
+    // Get the actual value and set values from info.
+    const rqst = new UpdateOneRqst
+    rqst.setId("local_resource");
+    rqst.setDatabase("local_resource");
+    rqst.setCollection("Applications");
+    rqst.setQuery(`{"_id":"${id}"}`);
+    rqst.setValue(value);
+    rqst.setOptions(`[{"upsert": true}]`)
+
+    // Update the applaction general informations.
+    Model.globular.persistenceService.updateOne(rqst, {
+      token: localStorage.getItem("user_token"),
+      application: Model.application,
+      domain: Model.domain,
+    }).then((rsp:UpdateOneRsp)=>{
+      console.log("------------> ", rsp)
+    }).catch((err:any)=>{
+      errorCallback(err)
+    })
+  }
+
+
   ///////////////////////////////////////////////////////////////////////////////////////////
   // Notifications
   ///////////////////////////////////////////////////////////////////////////////////////////

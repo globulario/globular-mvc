@@ -6,7 +6,10 @@ export class ImageCropper extends HTMLElement {
     constructor() {
         super();
         this.oldSrc = '';
+        this.onsave = null;
+        this.croppedImage = null;
     }
+
     get width() {
         return this.hasAttribute('width');
     }
@@ -19,9 +22,18 @@ export class ImageCropper extends HTMLElement {
         return this.hasAttribute('rounded');
     }
 
+    setCropImage(dataUrl){
+      this.croppedImage = dataUrl;
+    }
+  
+    // Set the image from data url.
+    setImage(data){
+      this.loadPic({target:{files:[data]}})
+    }
+
     loadPic(e) {
-        var reader = new FileReader();
         this.resetAll();
+        var reader = new FileReader();
         reader.readAsDataURL(e.target.files[0]);
         reader.cmp = this;
         reader.onload = function (event) {
@@ -294,6 +306,20 @@ export class ImageCropper extends HTMLElement {
             shadowRoot.querySelector('.center').style.borderRadius = '200px';
             shadowRoot.querySelector('.imageCropped').style.borderRadius = '200px';
         }
+
+        // Set the save action.
+        this.shadowRoot.querySelector('.save').onclick = ()=>{
+          if(this.onsave != undefined){
+            var imageC = this.shadowRoot.querySelector('.imageCropped');
+            this.onsave(imageC.src)
+          }
+        }
+
+        if(this.croppedImage != null){
+          var imageC = this.shadowRoot.querySelector('.imageCropped');
+          imageC.src = this.croppedImage;
+        }
+
         this.dragElement(shadowRoot.querySelector(".resize-container"));
     }
 }

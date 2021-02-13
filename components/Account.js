@@ -27,6 +27,13 @@ export class AccountMenu extends Menu {
 
   init() {
     //super.init()
+    // Set the data url.
+    Model.eventHub.subscribe("update_profile_picture_event_", 
+      (uuid)=>{}, 
+      (dataUrl)=>{
+        this.setProfilePicture(dataUrl)
+      }, 
+      true)
   }
 
   // Set the account information.
@@ -82,7 +89,6 @@ export class AccountMenu extends Menu {
             </style>
 
             <div class="card-content">
-                <input type="file" style="display: none;" id="profil_picture_selector">
                 <div id="accout-menu-header">
                     <div id="icon-div" title="click here to change profile picture">
                         <iron-icon id="profile-icon" icon="account-circle"></iron-icon>
@@ -136,50 +142,6 @@ export class AccountMenu extends Menu {
     // The logout event.
     this.shadowRoot.getElementById("logout_btn").onclick = () => {
       Model.eventHub.publish("logout_event_", {}, true);
-    };
-
-    // Display the file selection window.
-    this.shadowRoot.getElementById("icon-div").onclick = (evt) => {
-      evt.stopPropagation();
-      this.keepOpen = true;
-      this.shadowRoot.getElementById("profil_picture_selector").click();
-
-      setTimeout(() => {
-        this.keepOpen = false;
-      }, 100);
-    };
-
-    // The profile image selection.
-    this.shadowRoot.getElementById("profil_picture_selector").onchange = (
-      evt
-    ) => {
-      var r = new FileReader();
-      var file = evt.target.files[0];
-      r.onload = () => {
-        // Here I will set the image to a size of 64x64 pixel instead of keep the original size.
-        var img = new Image();
-        img.onload = () => {
-          var thumbSize = 64;
-          var canvas = document.createElement("canvas");
-          canvas.width = thumbSize;
-          canvas.height = thumbSize;
-          var c = canvas.getContext("2d");
-          c.drawImage(img, 0, 0, thumbSize, thumbSize);
-          Model.eventHub.publish(
-            "update_profile_picture_event_",
-            canvas.toDataURL("image/png"),
-            true
-          );
-          this.setProfilePicture(canvas.toDataURL("image/png"));
-        };
-        img.src = r.result.toString();
-      };
-
-      try {
-        r.readAsDataURL(file); // read as BASE64 format
-      } catch (err) {
-        console.log(err);
-      }
     };
 
     this.shadowRoot.removeChild(this.getMenuDiv());

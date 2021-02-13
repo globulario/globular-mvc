@@ -74,9 +74,9 @@ export class Account extends Model {
         this.middleName_ = value;
     }
 
-    public get userName() : string {
+    public get userName(): string {
         let name = this.firstName;
-        if(this.middleName.length > 0) {
+        if (this.middleName.length > 0) {
             name += " " + this.middleName;
         }
 
@@ -172,66 +172,47 @@ export class Account extends Model {
      */
     initData(callback: (account: Account) => void, onError: (err: any) => void) {
         let userName = this.id
-        
-        let jsonStr = localStorage.getItem(userName + "_user_data")
-        if(jsonStr == null){
-            // Retreive user data...
-            Account.readOneUserData(
-                `{"_id":"` + userName + `"}`, 
-                userName, // The database to search into 
-                (data: any) => {
-                    this.hasData = true;
-                    this.firstName = data["firstName_"];
-                    if(this.firstName == undefined){
-                        this.firstName = ""
-                    }
-                    this.lastName = data["lastName_"];
-                    if(this.lastName == undefined){
-                        this.lastName = ""
-                    }
-                    this.middleName = data["middleName_"];
-                    if(this.middleName == undefined){
-                        this.middleName = "";
-                    }
-                    this.profilPicture = data["profilPicture_"];
-                    jsonStr = JSON.stringify(data)
-                    localStorage.setItem(userName + "_user_data", jsonStr)
-                    if (callback != undefined) {
-                        callback(this);
-                    }
-                },
-                (err: any) => {
-                    console.log(err)
-                    this.hasData = false;
-                    // onError(err);
-                    console.log("no data found at this time for user ", userName)
-                    // Call success callback ...
-                    if (callback != undefined) {
-                        callback(this);
-                    }
+
+        // Retreive user data...
+        Account.readOneUserData(
+            `{"_id":"` + userName + `"}`,
+            userName, // The database to search into 
+            (data: any) => {
+                this.hasData = true;
+                this.firstName = data["firstName_"];
+                if (this.firstName == undefined) {
+                    this.firstName = ""
                 }
-            );
-        }else{
-            // parse the data string and init the account from it.
-            let data = JSON.parse(jsonStr)
-            this.hasData = true;
-            this.firstName = data["firstName_"];
-            if(this.firstName == undefined){
-                this.firstName = ""
+                this.lastName = data["lastName_"];
+                if (this.lastName == undefined) {
+                    this.lastName = ""
+                }
+                this.middleName = data["middleName_"];
+                if (this.middleName == undefined) {
+                    this.middleName = "";
+                }
+                this.profilPicture = data["profilPicture_"];
+                Model.eventHub.publish(
+                    "update_profile_picture_event_",
+                    this.profilPicture,
+                    true
+                  );
+                if (callback != undefined) {
+                    callback(this);
+                }
+            },
+            (err: any) => {
+                console.log(err)
+                this.hasData = false;
+                // onError(err);
+                console.log("no data found at this time for user ", userName)
+                // Call success callback ...
+                if (callback != undefined) {
+                    callback(this);
+                }
             }
-            this.lastName = data["lastName_"];
-            if(this.lastName == undefined){
-                this.lastName = ""
-            }
-            this.middleName = data["middleName_"];
-            if(this.middleName == undefined){
-                this.middleName = "";
-            }
-            this.profilPicture = data["profilPicture_"];
-            if (callback != undefined) {
-                callback(this);
-            }
-        }
+        );
+
     }
 
     /**

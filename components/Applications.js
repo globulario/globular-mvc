@@ -134,6 +134,17 @@ export class ApplicationsMenu extends Menu {
                     lnk.click()
                 }
 
+                // Keep the image up to date.
+                Application.eventHub.subscribe(`update_application_${applicaiton._id}_settings_evt`, 
+                (uuid)=>{
+        
+                }, 
+                (__applicationInfoStr__)=>{
+                    // Set the icon...
+                    let applicaiton = JSON.parse(__applicationInfoStr__)
+                    img.src = applicaiton.icon;
+                }, false)
+
             }
             this.shadowRoot.removeChild(this.getMenuDiv())
         }, (err) => {

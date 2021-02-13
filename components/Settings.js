@@ -9,6 +9,8 @@ import '@polymer/paper-input/paper-textarea.js';
 import '@polymer/paper-dropdown-menu/paper-dropdown-menu.js'
 import '@polymer/iron-collapse/iron-collapse.js';
 import "@polymer/iron-icons/image-icons";
+import { ImageCropper } from "./Image";
+import { Camera } from "./Camera";
 import { Model } from "../Model";
 
 /**
@@ -189,12 +191,10 @@ export class SettingsPanel extends HTMLElement {
       () => {
         // Save the setting's
         Model.eventHub.publish("save_settings_evt", true, true)
-        console.log("--------> save settings")
       },
       () => {
         // Not save the setting's
         Model.eventHub.publish("save_settings_evt", false, true)
-        console.log("--------> not save settings")
       })
     this.shadowRoot.getElementById("container").innerHTML = "<slot></slot>";
     let section = this.appendSettingsPage("Exit").appendSettings("Exit", "Returning to the application...")
@@ -537,7 +537,7 @@ export class Setting extends HTMLElement {
           textArea.style.width = "0px"
         }
         let paperInput = this.shadowRoot.querySelector("paper-input")
-        if(paperInput != undefined){
+        if (paperInput != undefined) {
           paperInput.style.width = ""
         }
 
@@ -559,7 +559,7 @@ export class Setting extends HTMLElement {
             if (textArea != undefined) {
               textArea.style.width = "335px"
             }
-            if(paperInput != undefined){
+            if (paperInput != undefined) {
               paperInput.style.width = "100%"
             }
           }
@@ -738,7 +738,7 @@ export class StringSetting extends Setting {
 
   setValue(value) {
     this.input.value = value;
-    if(this.onchange !=null){
+    if (this.onchange != null) {
       this.onchange(value);
     }
   }
@@ -963,10 +963,87 @@ export class ImageSetting extends Setting {
     this.image.style.display = "block";
     this.icon.style.display = "none";
   }
-
 }
 
 customElements.define("globular-image-setting", ImageSetting);
+
+
+/**
+ * Set string setting...
+ */
+export class ImageCropperSetting extends Setting {
+  constructor(name, description, dataUrl) {
+    super(name, description);
+
+    let html = `
+      <style>
+      ${theme}
+      #setting-input{
+         
+      }
+      </style>
+      <div style='width:100%;min-height:450px;position:relative;background-color:var(--palette-background-default);'>
+        <globular-image-cropper id='mycrop' width='200px' height='200px'>
+          <div slot='selectText'>Select image</div>
+          <div slot='cropText'>Crop image</div>
+          <div slot='resetText'>Reset</div>
+          <div slot='saveText'>Set picture</div>
+        </globular-image-cropper>
+        <globular-camera id="polaroid" width="616"></globular-camera>
+      </div>
+    `
+    let range = document.createRange();
+    this.title = description;
+
+    this.shadowRoot.insertBefore(range.createContextualFragment(html), this.description)
+    this.description.style.display = "none"
+    this.name.style.display = "none"
+    this.shadowRoot.getElementById("icon-right").style.display = "none";
+    this.cropper = this.shadowRoot.getElementById("mycrop")
+    this.camera = this.shadowRoot.getElementById("polaroid")
+    this.camera.onpicture = (data)=>{
+      this.camera.close();
+      this.cropper.setImage(data);
+    }
+
+    // Save the cropped image.
+    this.cropper.onsave = (data)=>{
+      /*console.log(data)*/
+      Model.eventHub.publish(
+        "update_profile_picture_event_",
+        data,
+        true
+      );
+    }
+    if(dataUrl != undefined){
+      this.cropper.setCropImage(dataUrl)
+    }
+
+    this.camera.onopen = ()=>{
+      this.cropper.style.display = "none";
+    }
+
+    this.camera.onclose = ()=>{
+      this.cropper.style.display = "";
+    }
+  }
+
+  getElement() {
+    return this.input;
+  }
+
+  getValue() {
+    return ""
+  }
+
+  setValue(value) {
+
+  }
+
+}
+
+customElements.define("globular-image-cropper-setting", ImageCropperSetting);
+
 
 export class DropdownSetting extends Setting {
   constructor(name, description) {

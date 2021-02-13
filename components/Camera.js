@@ -22,8 +22,22 @@ export class Camera extends HTMLElement {
         this._deletebutton = null;
         this._camera_options = null;
 
+        // That event will be call when a picture is taken.
+        // It will return the image.
+        this.onpicture = null;
+
+        // Called When the camera is open
+        this.onopen = null;
+
+        // Called when the camera is close.
+        this.onclose = null;
+        
+
         // Set default attribute values.
         this._width = 640;
+        if(this.hasAttribute("width")){
+            this._width = parseInt(this.getAttribute("width"));
+        }
         this.streaming = false;
         this._stream = null;
 
@@ -221,6 +235,10 @@ export class Camera extends HTMLElement {
                         this.takepicture();
                         ev.preventDefault();
                     }, false);
+
+                    if(this.onopen != undefined){
+                        this.onopen();
+                    }
                 })
                 .catch(function (err) {
                     console.log("An error occurred: " + err);
@@ -236,6 +254,9 @@ export class Camera extends HTMLElement {
             this._video.currentTime = 0;
             this._video.removeEventListener('canplay', play);
             this.clearphoto()
+            if(this.onclose != null){
+                this.onclose();
+            }
         }
 
         this._deletebutton.onclick = () => {
@@ -248,6 +269,10 @@ export class Camera extends HTMLElement {
         this._width_inupt.onchange = () => {
             this.width = this._width_inupt.value;
         }
+    }
+
+    close(){
+        this._closebutton.click(); // close the camera.
     }
 
     takepicture() {
@@ -267,6 +292,11 @@ export class Camera extends HTMLElement {
             // display the save picture button.
             this._savebutton.parentNode.style.display = "flex"
             this._startbutton.parentNode.style.display = "none"
+
+            // Call on picture with the data from the image as blob.
+            if(this.onpicture != undefined){
+                this._canvas.toBlob(this.onpicture)
+            }
 
         }
     }
