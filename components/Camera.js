@@ -47,6 +47,7 @@ export class Camera extends HTMLElement {
 
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
+
     }
 
     get width() {
@@ -269,6 +270,9 @@ export class Camera extends HTMLElement {
         this._width_inupt.onchange = () => {
             this.width = this._width_inupt.value;
         }
+
+
+        this.closebutton.click()
     }
 
     close(){
