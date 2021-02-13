@@ -609,12 +609,12 @@ export class Application extends Model {
         if (name != "sa") {
           this.account.initData(
             (account: Account) => {
-              Model.eventHub.publish("refresh_account_event", account, false);
+              Model.eventHub.publish(`refresh_account_${account.id}_event`, account, false);
               this.view.resume();
               onRegister(this.account);
             },
             (err: any) => {
-              Model.eventHub.publish("refresh_account_event", this.account, false);
+              Model.eventHub.publish(`refresh_account_${this.account.id}_event`, this.account, false);
               onRegister(this.account);
               this.view.resume();
               onError(err);
@@ -672,15 +672,13 @@ export class Application extends Model {
 
         this.account.initData(
           (account: Account) => {
-            console.log("login_event")
-            Model.eventHub.publish("refresh_account_event", account, false);
+            Model.eventHub.publish(`refresh_account_${account.id}_event`, account, false);
             onLogin(account);
             this.view.resume();
             // Now I will set the application and user notification.
           },
           (err: any) => {
-            console.log("login_event")
-            Model.eventHub.publish("refresh_account_event", this.account, false);
+            Model.eventHub.publish(`refresh_account_${this.account.id}_event`, this.account, false);
             onLogin(this.account);
             this.view.resume();
             onError(err);

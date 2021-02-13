@@ -31,11 +31,11 @@ export class Camera extends HTMLElement {
 
         // Called when the camera is close.
         this.onclose = null;
-        
+
 
         // Set default attribute values.
         this._width = 640;
-        if(this.hasAttribute("width")){
+        if (this.hasAttribute("width")) {
             this._width = parseInt(this.getAttribute("width"));
         }
         this.streaming = false;
@@ -156,26 +156,10 @@ export class Camera extends HTMLElement {
         this._camera_options = this.shadowRoot.getElementById('camera_options');
 
         // get the list of available cameras.
-        const getCameraSelection = async () => {
-            await navigator.mediaDevices.getUserMedia({audio: true, video: true});   
-            const devices = await navigator.mediaDevices.enumerateDevices();
-            const videoDevices = devices.filter(device => device.kind === 'videoinput');
-            const options = videoDevices.map(videoDevice => {
-                if (this._device == null) {
-                    this._device = videoDevice.deviceId;
-                }
-                return `<option value="${videoDevice.deviceId}">${videoDevice.label}</option>`;
-            });
-            this._camera_options.innerHTML = options.join('');
-        };
-
-        // Set the list of camera.
-        getCameraSelection()
-
-        this._savebutton.onclick = ()=>{
+        this._savebutton.onclick = () => {
             // create event that save the image.
-            if(this.onsave != undefined){
-                this.onsave({image:this._photo})
+            if (this.onsave != undefined) {
+                this.onsave({ image: this._photo })
             }
             // delete the picture.
             this._deletebutton.click()
@@ -215,35 +199,65 @@ export class Camera extends HTMLElement {
         this._openbutton.onclick = () => {
 
             this._openbutton.style.display = "none"
-            this._video.addEventListener('canplay', play, false);
 
-            /**
-             * This function's job is to request access to the user's webcam, initialize the 
-             * output <img> to a default state, and to establish the event listeners needed to 
-             * receive each frame of video from the camera and react when the button is clicked 
-             * to capture an image.
-             */
-            navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: this._device } }, audio: false })
-                .then((stream) => {
-                    this._stream = stream;
-                    this._video.srcObject = stream;
-                    this.width = this._width;
-                    this._video.play();
-                    this._camera.style.display = ""
 
-                    this._startbutton.addEventListener('click', (ev) => {
-                        this.width = this._width_inupt.value
-                        this.takepicture();
-                        ev.preventDefault();
-                    }, false);
+            const open = () => {
 
-                    if(this.onopen != undefined){
-                        this.onopen();
+                this._video.addEventListener('canplay', play, false);
+
+                /**
+                 * This function's job is to request access to the user's webcam, initialize the 
+                 * output <img> to a default state, and to establish the event listeners needed to 
+                 * receive each frame of video from the camera and react when the button is clicked 
+                 * to capture an image.
+                 */
+                navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: this._device } }, audio: false })
+                    .then((stream) => {
+                        this._stream = stream;
+                        this._video.srcObject = stream;
+                        this.width = this._width;
+                        this._video.play();
+                        this._camera.style.display = ""
+
+                        this._startbutton.addEventListener('click', (ev) => {
+                            this.width = this._width_inupt.value
+                            this.takepicture();
+                            ev.preventDefault();
+                        }, false);
+
+                        if (this.onopen != undefined) {
+                            this.onopen();
+                        }
+                    })
+                    .catch(function (err) {
+                        console.log("An error occurred: " + err);
+                    });
+
+            }
+
+            // Set the list of camera.
+            const getCameraSelection = async () => {
+                await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(device => device.kind === 'videoinput');
+                const options = videoDevices.map(videoDevice => {
+                    if (this._device == null) {
+                        this._device = videoDevice.deviceId;
                     }
-                })
-                .catch(function (err) {
-                    console.log("An error occurred: " + err);
+                    return `<option value="${videoDevice.deviceId}">${videoDevice.label}</option>`;
                 });
+                this._camera_options.innerHTML = options.join('');
+                // Open the display.
+                open();
+            };
+
+            // Create the list of camera if not already exist and open it.
+            if (this._camera_options.innerHTML == "") {
+                getCameraSelection()
+            } else {
+                // simply open the camera...
+                open();
+            }
 
         }
 
@@ -255,7 +269,7 @@ export class Camera extends HTMLElement {
             this._video.currentTime = 0;
             this._video.removeEventListener('canplay', play);
             this.clearphoto()
-            if(this.onclose != null){
+            if (this.onclose != null) {
                 this.onclose();
             }
         }
@@ -270,12 +284,9 @@ export class Camera extends HTMLElement {
         this._width_inupt.onchange = () => {
             this.width = this._width_inupt.value;
         }
-
-
-        this.closebutton.click()
     }
 
-    close(){
+    close() {
         this._closebutton.click(); // close the camera.
     }
 
@@ -298,7 +309,7 @@ export class Camera extends HTMLElement {
             this._startbutton.parentNode.style.display = "none"
 
             // Call on picture with the data from the image as blob.
-            if(this.onpicture != undefined){
+            if (this.onpicture != undefined) {
                 this._canvas.toBlob(this.onpicture)
             }
 

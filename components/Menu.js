@@ -10,6 +10,7 @@ import '@polymer/paper-button/paper-button.js';
 import '@polymer/paper-checkbox/paper-checkbox.js';
 import '@polymer/paper-tooltip/paper-tooltip.js';
 import { theme } from "./Theme";
+import { Model } from '../Model';
 
 /**
  * Login/Register functionality.
@@ -220,6 +221,21 @@ export class Menu extends HTMLElement {
     // Set account information.
     init() {
         /** Nothing to do here... */
+        // On logout I must reset the icon and the image.
+        Model.eventHub.subscribe("logout_event_",
+            (uuid) => { },
+            () => {
+                let ico = this.shadowRoot.getElementById(this.id + "_icon")
+                let img = this.shadowRoot.getElementById(this.id + "_img")
+
+                if (img != undefined) {
+                    img.src = "";
+                    img.style.display = "none";
+                    ico.style.display = "block";
+                }
+
+            },
+            true)
     }
 }
 

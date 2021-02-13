@@ -13,6 +13,7 @@ import "@polymer/paper-checkbox/paper-checkbox.js";
 import { Menu } from "./Menu";
 import { Model } from "../Model";
 import { theme } from "./Theme";
+import { AccountExistRsp } from "globular-web-client/resource/resource_pb";
 
 /**
  * Login/Register functionality.
@@ -23,21 +24,38 @@ export class AccountMenu extends Menu {
   // Create the applicaiton view.
   constructor() {
     super("account", "account-circle", "session");
+    this.ico = null;
+    this.img = null;
   }
 
   init() {
     //super.init()
+    this.account = null;
+
     // Set the data url.
-    Model.eventHub.subscribe("update_profile_picture_event_", 
-      (uuid)=>{}, 
-      (dataUrl)=>{
+    Model.eventHub.subscribe("update_profile_picture_event_",
+      (uuid) => { },
+      (dataUrl) => {
         this.setProfilePicture(dataUrl)
-      }, 
+      },
       true)
+
+    // Reset the account.
+    Model.eventHub.subscribe("logout_event_",
+      (uuid) => { },
+      (dataUrl) => {
+        this.account = null;
+        this.resetProfilePicture()
+      },
+      true)
+
+    // Refresh account event.
+
   }
 
   // Set the account information.
   setAccount(account) {
+    this.account = account;
     let html = `
             <style>
                 ${theme}
@@ -86,6 +104,12 @@ export class AccountMenu extends Menu {
                     fill: var(--palette-text-primary);
                 }
 
+                .card-actions{
+                  display: flex;
+                  justify-content: flex-end;
+                  background-color: var(--palette-background-paper);
+                  color: var(--palette-text-primary);
+                }
             </style>
 
             <div class="card-content">
@@ -104,37 +128,23 @@ export class AccountMenu extends Menu {
                     </div>
                 </div>
             </div>
+            <div class="card-actions">
+              <paper-button id="settings_btn" >settings
+                <iron-icon style="padding-left: 5px;" icon="settings"></iron-icon>
+              </paper-button> 
+              <paper-button id="logout_btn" >logout 
+                  <iron-icon style="padding-left: 5px;" icon="exit-to-app"></iron-icon> 
+              </paper-button>              
+          </div>
         `;
+
     let range = document.createRange();
     this.getMenuDiv().innerHTML = ""; // remove existing elements.
     this.getMenuDiv().appendChild(range.createContextualFragment(html));
 
-    html = ` 
-        <style>
-            .card-actions{
-                display: flex;
-                justify-content: flex-end;
-                background-color: var(--palette-background-paper);
-                color: var(--palette-text-primary);
-            }
-        </style>
-        <div class="card-actions">
-                <paper-button id="settings_btn" >settings
-                  <iron-icon style="padding-left: 5px;" icon="settings"></iron-icon>
-                </paper-button> 
-                <paper-button id="logout_btn" >logout 
-                    <iron-icon style="padding-left: 5px;" icon="exit-to-app"></iron-icon> 
-                </paper-button>              
-            </div>
-        `;
-    this.getMenuDiv().appendChild(range.createContextualFragment(html));
-
-    if (account.profilPicture_ != undefined) {
-      this.setProfilePicture(account.profilPicture_);
-    }
-
     // Action's
     this.shadowRoot.appendChild(this.getMenuDiv());
+
     // The Settings event.
     this.shadowRoot.getElementById("settings_btn").onclick = () => {
       Model.eventHub.publish("settings_event_", {}, true);
@@ -143,8 +153,31 @@ export class AccountMenu extends Menu {
     this.shadowRoot.getElementById("logout_btn").onclick = () => {
       Model.eventHub.publish("logout_event_", {}, true);
     };
+    
+    this.img = this.shadowRoot.getElementById("profile-picture");
+    this.ico = this.shadowRoot.getElementById("profile-icon");
+
+    if (account.profilPicture_ != undefined) {
+      this.setProfilePicture(account.profilPicture_);
+    }
 
     this.shadowRoot.removeChild(this.getMenuDiv());
+  }
+
+  resetProfilePicture() {
+    // reset the display
+    this.getIcon().style.display = "block";
+    this.getImage().style.display = "none";
+    this.getImage().src = "";
+
+    if (this.img != undefined) {
+      this.img.src = "";
+      this.img.style.display = "none";
+    }
+
+    if (this.ico != undefined) {
+      this.ico.style.display = "block";
+    }
   }
 
   /**
@@ -152,6 +185,24 @@ export class AccountMenu extends Menu {
    * @param {*} dataUrl
    */
   setProfilePicture(dataUrl) {
+
+    // The account, and data url must be valid.
+    if (this.account == null) {
+      this.resetProfilePicture()
+      return;
+    }
+
+    if (dataUrl == undefined) {
+      this.resetProfilePicture()
+      return
+    }
+
+    if (dataUrl.length == 0) {
+      this.resetProfilePicture()
+      return;
+    }
+
+    // Here the account has a profile picture.
     this.getIcon().style.display = "none";
     this.getImage().style.display = "block";
     this.getImage().src = dataUrl;
@@ -163,11 +214,14 @@ export class AccountMenu extends Menu {
       this.shadowRoot.appendChild(this.getMenuDiv());
     }
 
-    let img = this.shadowRoot.getElementById("profile-picture");
-    let ico = this.shadowRoot.getElementById("profile-icon");
-    ico.style.display = "none";
-    img.style.display = "block";
-    img.src = dataUrl;
+    if (this.img != undefined) {
+      this.img.src = dataUrl;
+      this.img.style.display = "block";
+    }
+    console.log(this.ico)
+    if (this.ico != undefined) {
+      this.ico.style.display = "none";
+    }
 
     if (isClose) {
       this.shadowRoot.removeChild(this.getMenuDiv());
