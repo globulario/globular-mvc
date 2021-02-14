@@ -6,8 +6,9 @@ export class ImageCropper extends HTMLElement {
     constructor() {
         super();
         this.oldSrc = '';
-        this.onsave = null;
         this.croppedImage = null;
+
+        this.attachShadow({ mode: 'open' });
     }
 
     get width() {
@@ -92,7 +93,6 @@ export class ImageCropper extends HTMLElement {
     crop() {
         this.shadowRoot.querySelector('.crop').style.display = 'none';
         this.shadowRoot.querySelector('.reset').style.display = 'initial';
-        this.shadowRoot.querySelector('.save').style.display = 'initial';
         this.shadowRoot.querySelector('.slidecontainer').style.display = 'none';
         var image = this.shadowRoot.querySelector('.resize-image');
 
@@ -130,7 +130,6 @@ export class ImageCropper extends HTMLElement {
     }
     resetAll() {
         this.shadowRoot.querySelector(".reset").style.display = 'none';
-        this.shadowRoot.querySelector(".save").style.display = 'none';
         this.shadowRoot.querySelector(".crop").style.display = 'none';
         this.shadowRoot.querySelector(".slidecontainer").style.display = 'none';
         this.shadowRoot.querySelector(".resize-container").removeAttribute('style');
@@ -146,8 +145,8 @@ export class ImageCropper extends HTMLElement {
         this.shadowRoot.querySelector(".resize-image").setAttribute('src', this.oldSrc);
     }
     connectedCallback() {
-        let shadowRoot = this.attachShadow({ mode: 'open' });
-        shadowRoot.innerHTML = `
+
+        this.shadowRoot.innerHTML = `
         <style>
           ${theme}
           .slidecontainer {
@@ -234,7 +233,7 @@ export class ImageCropper extends HTMLElement {
             position: relative;
             cursor:pointer;
           }
-          .crop, .reset, .save{
+          .crop, .reset {
             display:none;
           }
           .btn{
@@ -265,11 +264,6 @@ export class ImageCropper extends HTMLElement {
               <paper-button class='btn' toggles raised ><slot name='cropText'>Crop</slot></paper-button>
             </slot>
           </label>
-          <label class='save'>
-            <slot name='save'>
-              <paper-button class='btn' toggles raised ><slot name='saveText'>Save</slot></paper-button>
-            </slot>
-          </label>
           <input type="file" class="uploader" id='uploader'/>
           <div class="slidecontainer">
             <paper-slider id="myRange" class="slider"> </paper-slider>
@@ -282,37 +276,29 @@ export class ImageCropper extends HTMLElement {
           </div>
         </div>
         `;
-        shadowRoot.querySelector('.uploader').addEventListener('change', e => {
+        this.shadowRoot.querySelector('.uploader').addEventListener('change', e => {
             this.loadPic(e);
         });
-        shadowRoot.querySelector('#myRange').addEventListener('immediate-value-change', e => {
+        this.shadowRoot.querySelector('#myRange').addEventListener('immediate-value-change', e => {
             this.slide(e.target.immediateValue);
         });
-        shadowRoot.querySelector('.crop').addEventListener('click', e => {
+        this.shadowRoot.querySelector('.crop').addEventListener('click', e => {
             this.crop();
         });
-        shadowRoot.querySelector('.reset').addEventListener('click', e => {
+        this.shadowRoot.querySelector('.reset').addEventListener('click', e => {
             this.reset();
         });
         if (this.width) {
-            shadowRoot.querySelector('.center').style.width = this.getAttribute('width');
-            shadowRoot.querySelector('.center').style.left = 'calc(50% - ' + this.getAttribute('width') + '/2)';
+          this.shadowRoot.querySelector('.center').style.width = this.getAttribute('width');
+          this.shadowRoot.querySelector('.center').style.left = 'calc(50% - ' + this.getAttribute('width') + '/2)';
         }
         if (this.height) {
-            shadowRoot.querySelector('.center').style.height = this.getAttribute('height');
-            shadowRoot.querySelector('.center').style.top = 'calc(50% - ' + this.getAttribute('height') + '/2)';
+          this.shadowRoot.querySelector('.center').style.height = this.getAttribute('height');
+          this.shadowRoot.querySelector('.center').style.top = 'calc(50% - ' + this.getAttribute('height') + '/2)';
         }
         if (this.rounded) {
-            shadowRoot.querySelector('.center').style.borderRadius = '200px';
-            shadowRoot.querySelector('.imageCropped').style.borderRadius = '200px';
-        }
-
-        // Set the save action.
-        this.shadowRoot.querySelector('.save').onclick = ()=>{
-          if(this.onsave != undefined){
-            var imageC = this.shadowRoot.querySelector('.imageCropped');
-            this.onsave(imageC.src)
-          }
+          this.shadowRoot.querySelector('.center').style.borderRadius = '200px';
+          this.shadowRoot.querySelector('.imageCropped').style.borderRadius = '200px';
         }
 
         if(this.croppedImage != null){
@@ -320,7 +306,7 @@ export class ImageCropper extends HTMLElement {
           imageC.src = this.croppedImage;
         }
 
-        this.dragElement(shadowRoot.querySelector(".resize-container"));
+        this.dragElement(this.shadowRoot.querySelector(".resize-container"));
     }
 }
 

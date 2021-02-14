@@ -51,14 +51,15 @@ export class AccountMenu extends Menu {
     this.account = account;
 
     // Set the data url.
-    Model.eventHub.subscribe(`update_profile_picture_event_`,
+    Model.eventHub.subscribe(`update_account_${account._id}_data_evt`,
       (uuid) => { 
         this.accountUpdateListener = uuid;
       },
-      (dataUrl) => {
-        this.setProfilePicture(dataUrl)
+      (str) => {
+        let data = JSON.parse(str)
+        this.setProfilePicture(data.profilPicture_)
       },
-      true)
+      false)
 
     let html = `
             <style>

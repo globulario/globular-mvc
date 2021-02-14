@@ -6,6 +6,30 @@ import * as RessourceService from "globular-web-client/resource/resource_pb";
  * Basic account class that contain the user id and email.
  */
 export class Account extends Model {
+    private static listeners: any;
+
+    private static getListener(id: string) {
+        if (Account.listeners == undefined) {
+            return null;
+        }
+        return Account.listeners[id];
+    }
+
+    // Keep track of the listener.
+    private static setListener(id: string, uuid: string) {
+        if (Account.listeners == undefined) {
+            Account.listeners = {};
+        }
+        Account.listeners[id] = uuid;
+        return
+    }
+
+    private static unsetListener(id: string) {
+        let uuid = Account.getListener(id);
+        if (uuid != null) {
+            Model.eventHub.unSubscribe(`update_account_${id}_data_evt`, uuid);
+        }
+    }
 
     // Must be unique
     private _id: string;
@@ -165,6 +189,22 @@ export class Account extends Model {
             });
     }
 
+    private setData(data: any) {
+        this.hasData = true;
+        this.firstName = data["firstName_"];
+        if (this.firstName == undefined) {
+            this.firstName = ""
+        }
+        this.lastName = data["lastName_"];
+        if (this.lastName == undefined) {
+            this.lastName = ""
+        }
+        this.middleName = data["middleName_"];
+        if (this.middleName == undefined) {
+            this.middleName = "";
+        }
+        this.profilPicture = data["profilPicture_"];
+    }
 
     /**
      * Must be called once when the session open.
@@ -178,20 +218,21 @@ export class Account extends Model {
             `{"_id":"` + userName + `"}`,
             userName, // The database to search into 
             (data: any) => {
-                this.hasData = true;
-                this.firstName = data["firstName_"];
-                if (this.firstName == undefined) {
-                    this.firstName = ""
+
+                this.setData(data);
+
+                // Here I will keep the Account up-to date.
+                if (Account.getListener(this.id) == undefined) {
+                    // Here I will connect the objet to keep track of accout data change.
+                    Model.eventHub.subscribe(`update_account_${this.id}_data_evt`,
+                        (uuid: string) => {
+                            Account.setListener(this.id, uuid);
+                        },
+                        (str: string) => {
+                            let data = JSON.parse(str);
+                            this.setData(data); // refresh data.
+                        }, false)
                 }
-                this.lastName = data["lastName_"];
-                if (this.lastName == undefined) {
-                    this.lastName = ""
-                }
-                this.middleName = data["middleName_"];
-                if (this.middleName == undefined) {
-                    this.middleName = "";
-                }
-                this.profilPicture = data["profilPicture_"];
 
                 callback(this);
             },
@@ -216,12 +257,9 @@ export class Account extends Model {
      * @param onError The error callback
      */
     changeProfilImage(
-        dataUrl: string,
-        onSaveAccount: (account: Account) => void,
-        onError: (err: any) => void
+        dataUrl: string
     ) {
         this.profilPicture_ = dataUrl;
-        this.save(onSaveAccount, onError);
     }
 
     /**
@@ -260,6 +298,7 @@ export class Account extends Model {
             })
             .then((rsp: ReplaceOneRsp) => {
                 // Here I will return the value with it
+                Model.eventHub.publish(`update_account_${this.id}_data_evt`, data, false)
                 callback(this);
             })
             .catch((err: any) => {

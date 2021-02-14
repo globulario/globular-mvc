@@ -987,7 +987,6 @@ export class ImageCropperSetting extends Setting {
           <div slot='selectText'>Select image</div>
           <div slot='cropText'>Crop image</div>
           <div slot='resetText'>Reset</div>
-          <div slot='saveText'>Set picture</div>
         </globular-image-cropper>
         <globular-camera id="polaroid" width="616"></globular-camera>
       </div>
@@ -1006,15 +1005,6 @@ export class ImageCropperSetting extends Setting {
       this.cropper.setImage(data);
     }
 
-    // Save the cropped image.
-    this.cropper.onsave = (data)=>{
-      /*console.log(data)*/
-      Model.eventHub.publish(
-        `update_profile_picture_event_`,
-        data,
-        true
-      );
-    }
     if(dataUrl != undefined){
       this.cropper.setCropImage(dataUrl)
     }
@@ -1033,11 +1023,11 @@ export class ImageCropperSetting extends Setting {
   }
 
   getValue() {
-    return ""
+    return this.cropper.getCropped()
   }
 
   setValue(value) {
-
+    this.cropper.setCropImage(value)
   }
 
 }

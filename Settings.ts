@@ -1,6 +1,7 @@
 import { Account } from "./Account";
 import { Application } from "./Application";
 import { ImageCropperSetting, ImageSetting, SettingsMenu, SettingsPanel, ComplexSetting, EmailSetting, StringSetting, TextAreaSetting } from "./components/Settings";
+import { Model } from "./Model";
 
 export class Settings {
 
@@ -78,23 +79,32 @@ export class UserSettings extends Settings {
         userEmailSetting.setValue(account.email)
         generalSettings.addSetting(userEmailSetting)
 
-
         Application.eventHub.subscribe("save_settings_evt",
             (uuid: string) => {
 
             },
             (needSave: boolean) => {
                 if(needSave){
+                    // set the change.
                     account.firstName = firstNameSetting.getValue();
                     account.lastName = lastNameSetting.getValue();
                     account.middleName = middleNameSetting.getValue();
+                    account.profilPicture = imageCropperSettings.getValue();
+
                     account.save(
                         () => {
                             console.log("account was saved!")
+                            imageCropperSettings.setValue(account.profilPicture)
                         },
                         (err: any) => {
     
                         })
+                }else{
+                    // revert the change.
+                    firstNameSetting.setValue(account.firstName)
+                    lastNameSetting.setValue(account.lastName)
+                    middleNameSetting.setValue(account.middleName)
+                    imageCropperSettings.setValue(account.profilPicture)
                 }
             }, true)
 

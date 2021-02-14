@@ -126,7 +126,6 @@ export class Application extends Model {
   private login_event_listener: string;
   private register_event_listener: string;
   private logout_event_listener: string;
-  private update_profile_picture_listener: string;
   private delete_notification_event_listener: string;
   private invite_contact_listener: string;
   private settings_event_listener: string;
@@ -270,27 +269,6 @@ export class Application extends Model {
         (contact: Account) => {
           // Here I will try to login the user.
           this.onInviteContact(contact);
-        },
-        true
-      );
-
-      // The update profile picuture event.
-      Model.eventHub.subscribe(
-        `update_profile_picture_event_`,
-        (uuid: string) => {
-          this.update_profile_picture_listener = uuid;
-        },
-        (dataUrl: string) => {
-          // Here I will try to login the user.
-          this.account.changeProfilImage(
-            dataUrl,
-            () => {
-              /** Nothing here. */
-            },
-            (err: any) => {
-              this.view.displayMessage(err, 3000);
-            }
-          );
         },
         true
       );
@@ -678,13 +656,6 @@ export class Application extends Model {
           (account: Account) => {
             onLogin(account);
             this.view.resume();
-            
-            // Now I will set the application and user notification.
-            Model.eventHub.publish(
-              `update_profile_picture_event_`,
-              account.profilPicture,
-              true
-            );
           },
           (err: any) => {
             onLogin(this.account);
@@ -739,10 +710,6 @@ export class Application extends Model {
       this.invite_contact_listener
     );
 
-    Model.eventHub.unSubscribe(
-      `update_profile_picture_event_`,
-      this.update_profile_picture_listener
-    );
     Model.eventHub.unSubscribe(
       "delete_notification_event_",
       this.delete_notification_event_listener
