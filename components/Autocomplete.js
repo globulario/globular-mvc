@@ -19,6 +19,11 @@ export class Autocomplete extends HTMLElement {
 
         // That function will display values.
         this.displayValue = null;
+
+        this.width = 300;
+        if(this.hasAttribute("width")){
+            this.width = parseInt(this.getAttribute("width"))
+        }
     }
 
     // The connection callback.
@@ -34,8 +39,8 @@ export class Autocomplete extends HTMLElement {
         </style>
 
         <div id="autocomplete-div">
-            <paper-input  id='input' type='${type}' label='${label}' style='flex-grow: 1;'></paper-input>
-            <paper-card id="values_div" style="position: absolute; max-height: 200px; overflow-y: auto;"> </paper-card>
+            <paper-input  id='input' type='${type}' label='${label}' style='flex-grow: 1; width:${this.width}px;'></paper-input>
+            <paper-card id="values_div" style="position: absolute; max-height: 350px; overflow-y: auto;  width:${this.width}px;"> </paper-card>
         </div>
         `
         // Action's

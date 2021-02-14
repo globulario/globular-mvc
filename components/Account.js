@@ -26,19 +26,12 @@ export class AccountMenu extends Menu {
     super("account", "account-circle", "session");
     this.ico = null;
     this.img = null;
+    this.accountUpdateListener = null;
   }
 
   init() {
     //super.init()
     this.account = null;
-
-    // Set the data url.
-    Model.eventHub.subscribe("update_profile_picture_event_",
-      (uuid) => { },
-      (dataUrl) => {
-        this.setProfilePicture(dataUrl)
-      },
-      true)
 
     // Reset the account.
     Model.eventHub.subscribe("logout_event_",
@@ -56,6 +49,17 @@ export class AccountMenu extends Menu {
   // Set the account information.
   setAccount(account) {
     this.account = account;
+
+    // Set the data url.
+    Model.eventHub.subscribe(`update_profile_picture_event_`,
+      (uuid) => { 
+        this.accountUpdateListener = uuid;
+      },
+      (dataUrl) => {
+        this.setProfilePicture(dataUrl)
+      },
+      true)
+
     let html = `
             <style>
                 ${theme}
@@ -153,7 +157,7 @@ export class AccountMenu extends Menu {
     this.shadowRoot.getElementById("logout_btn").onclick = () => {
       Model.eventHub.publish("logout_event_", {}, true);
     };
-    
+
     this.img = this.shadowRoot.getElementById("profile-picture");
     this.ico = this.shadowRoot.getElementById("profile-icon");
 

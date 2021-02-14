@@ -44,7 +44,7 @@ function mergeTypedArrays(a: any, b: any) {
 
   // Make sure that both typed arrays are of the same type
   if (Object.prototype.toString.call(a) !== Object.prototype.toString.call(b))
-    throw "The types of the two arguments passed for parameters a and b do not match.";
+      throw "The types of the two arguments passed for parameters a and b do not match.";
 
   var c = new a.constructor(a.length + b.length);
   c.set(a);
@@ -53,8 +53,14 @@ function mergeTypedArrays(a: any, b: any) {
   return c;
 }
 
-function uint8arrayToStringMethod(myUint8Arr: any) {
-  return String.fromCharCode.apply(null, myUint8Arr);
+function uint8arrayToStringMethod(uint8arr: any, callback:(str:any)=>void) {
+  var bb = new Blob([uint8arr]);
+  var f = new FileReader();
+  f.onload = function(e) {
+      callback(e.target.result);
+  };
+  
+  f.readAsText(bb);
 }
 
 /**
@@ -270,7 +276,7 @@ export class Application extends Model {
 
       // The update profile picuture event.
       Model.eventHub.subscribe(
-        "update_profile_picture_event_",
+        `update_profile_picture_event_`,
         (uuid: string) => {
           this.update_profile_picture_listener = uuid;
         },
@@ -342,12 +348,11 @@ export class Application extends Model {
                 Application.getApplicationInfo(this.name).icon
               );
               this.view.init();
-              console.log("-----------------------> ", appInfo)
             } else {
-              console.log(
-                "no application information found for ",
-                this.name,
-                " make sure your application has the correct name in your class derived from Application!"
+              this.displayMessage(
+                "no application information found for " +
+                this.name +
+                " make sure your application has the correct name in your class derived from Application!", 3000
               );
             }
             initCallback();
@@ -370,7 +375,8 @@ export class Application extends Model {
         this.refreshToken(
           (account: Account) => {
             // send a refresh token event.
-            Model.eventHub.publish("refresh_token_event", account, true);
+            // Model.eventHub.publish("refresh_token_event", account, true);
+            Model.eventHub.publish("login_event", account, true);
             this.view.resume();
 
             this.startRefreshToken();
@@ -609,12 +615,10 @@ export class Application extends Model {
         if (name != "sa") {
           this.account.initData(
             (account: Account) => {
-              Model.eventHub.publish(`refresh_account_${account.id}_event`, account, false);
               this.view.resume();
               onRegister(this.account);
             },
             (err: any) => {
-              Model.eventHub.publish(`refresh_account_${this.account.id}_event`, this.account, false);
               onRegister(this.account);
               this.view.resume();
               onError(err);
@@ -672,13 +676,17 @@ export class Application extends Model {
 
         this.account.initData(
           (account: Account) => {
-            Model.eventHub.publish(`refresh_account_${account.id}_event`, account, false);
             onLogin(account);
             this.view.resume();
+            
             // Now I will set the application and user notification.
+            Model.eventHub.publish(
+              `update_profile_picture_event_`,
+              account.profilPicture,
+              true
+            );
           },
           (err: any) => {
-            Model.eventHub.publish(`refresh_account_${this.account.id}_event`, this.account, false);
             onLogin(this.account);
             this.view.resume();
             onError(err);
@@ -732,7 +740,7 @@ export class Application extends Model {
     );
 
     Model.eventHub.unSubscribe(
-      "update_profile_picture_event_",
+      `update_profile_picture_event_`,
       this.update_profile_picture_listener
     );
     Model.eventHub.unSubscribe(
@@ -752,7 +760,7 @@ export class Application extends Model {
    * Settings application.
    */
   settings() {
-    console.log("----------->settings");
+
   }
 
   public displayMessage(msg:any, delay:number){
@@ -960,12 +968,14 @@ export class Application extends Model {
 
     stream.on("status", (status) => {
       if (status.code == 0) {
-        let objects = JSON.parse(uint8arrayToStringMethod(data));
-        let notifications = new Array<Notification>();
-        for (var i = 0; i < objects.length; i++) {
-          notifications.push(Notification.fromObject(objects[i]));
-        }
-        callback(notifications);
+        uint8arrayToStringMethod(data,(str:string)=>{
+          let objects = JSON.parse(str);
+          let notifications = new Array<Notification>();
+          for (var i = 0; i < objects.length; i++) {
+            notifications.push(Notification.fromObject(objects[i]));
+          }
+          callback(notifications);
+        });
       } else {
         // In case of error I will return an empty array
         callback([]);

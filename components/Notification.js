@@ -379,6 +379,7 @@ export class NotificationMenu extends Menu {
             <paper-icon-button id="${notification._id}_close_btn" icon="close" style="display: none; position: absolute; top: 0px; right: 0px;"></paper-icon-button>
             <div id="${notification._id}_recipient"  style="display: flex; flex-direction: column; padding: 5px; align-items: center;">
                 <img id="${notification._id}_img"></img>
+                <iron-icon id="${notification._id}_ico" icon="account-circle"></iron-icon>
                 <span id="${notification._id}_span" style="font-size: 10pt;"></span>
                 <div id="${notification._id}_date" class="notification_date" style="font-size: 10pt;"></div>
             </div>
@@ -429,14 +430,22 @@ export class NotificationMenu extends Menu {
         if (notification._type == 1) {
             this.applicationNotificationsDiv.style.display = ""
             let application = JSON.parse(notification._sender)
-            this.shadowRoot.getElementById(notification._id + "_img").src = application.icon
-            this.shadowRoot.getElementById(notification._id + "_img").style.borderRadius = "0px"
-            this.shadowRoot.getElementById(notification._id + "_img").style.width = "24px"
-            this.shadowRoot.getElementById(notification._id + "_img").style.height = "24px"
+            let img = this.shadowRoot.getElementById(notification._id + "_img")
+            img.src = application.icon
+            img.style.borderRadius = "0px"
+            img.style.width = "24px"
+            img.style.height = "24px"
         } else if (notification._type == 2) {
             this.userNotificationsDiv.style.display = ""
             let account = JSON.parse(notification._sender)
-            this.shadowRoot.getElementById(notification._id + "_img").src = account.profilPicture_
+            if(account.profilPicture_ != undefined){
+                this.shadowRoot.getElementById(notification._id + "_img").style.display = "block"
+                this.shadowRoot.getElementById(notification._id + "_ico").style.display = "none"
+                this.shadowRoot.getElementById(notification._id + "_img").src = account.profilPicture_
+            }else{
+                this.shadowRoot.getElementById(notification._id + "_img").style.display = "none"
+                this.shadowRoot.getElementById(notification._id + "_ico").style.display = "block"
+            }
             this.shadowRoot.getElementById(notification._id + "_span").innerHTML = account._id
             let deleteNotificationListener
             Model.eventHub.subscribe(

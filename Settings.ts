@@ -52,7 +52,7 @@ export class UserSettings extends Settings {
 
         // Here I will append the image cropper in order for the user to change it profile
         // picture.
-        let imageCropperSettings = new ImageCropperSetting("Picture", "Change the user picture", account.profilPicture)
+        let imageCropperSettings = new ImageCropperSetting("Picture", "Change the user picture", account.id, account.profilPicture)
         userPictureSetting.addSetting(imageCropperSettings)
 
         // The user name.
@@ -77,6 +77,7 @@ export class UserSettings extends Settings {
         let userEmailSetting = new EmailSetting("Email", "Change the user email")
         userEmailSetting.setValue(account.email)
         generalSettings.addSetting(userEmailSetting)
+
 
         Application.eventHub.subscribe("save_settings_evt",
             (uuid: string) => {

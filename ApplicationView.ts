@@ -198,21 +198,7 @@ export class ApplicationView extends View {
     this.accountMenu.init();
     this.applicationsMenu.init();
     this.notificationMenu.init();
-    this.contactsMenu.init();
 
-    // Here I will set contact menu actions.
-    this.contactsMenu.onInviteConctact = (contact: Account) => {
-      // Display the message to the user.
-      this.displayMessage(
-        "<iron-icon icon='send' style='margin-right: 10px;'></iron-icon><div>Invitation was sent to " +
-        contact.email +
-        "</div>",
-        3000
-      );
-
-      // So here I will create a notification.
-      Model.eventHub.publish("invite_contact_event_", contact, true);
-    };
 
     // The file explorer object.
     this._fileExplorer.init();
@@ -237,6 +223,24 @@ export class ApplicationView extends View {
       },
       (account: Account) => {
         this.onLogin(account);
+
+        // The contacts will be initialyse at login time only.
+        this.contactsMenu.init();
+
+        // Here I will set contact menu actions.
+        this.contactsMenu.onInviteConctact = (contact: Account) => {
+          // Display the message to the user.
+          this.displayMessage(
+            "<iron-icon icon='send' style='margin-right: 10px;'></iron-icon><div>Invitation was sent to " +
+            contact.email +
+            "</div>",
+            3000
+          );
+    
+          // So here I will create a notification.
+          Model.eventHub.publish("invite_contact_event_", contact, true);
+        };
+        
       },
       true
     );

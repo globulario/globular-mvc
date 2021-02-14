@@ -972,7 +972,7 @@ customElements.define("globular-image-setting", ImageSetting);
  * Set string setting...
  */
 export class ImageCropperSetting extends Setting {
-  constructor(name, description, dataUrl) {
+  constructor(name, description, accountId, dataUrl) {
     super(name, description);
 
     let html = `
@@ -1010,7 +1010,7 @@ export class ImageCropperSetting extends Setting {
     this.cropper.onsave = (data)=>{
       /*console.log(data)*/
       Model.eventHub.publish(
-        "update_profile_picture_event_",
+        `update_profile_picture_event_`,
         data,
         true
       );

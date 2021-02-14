@@ -29,6 +29,15 @@ export class ContactsMenu extends Menu {
 
         // Here is the class members.
         this.onInviteConctact = null;
+        this.width = 350;
+        if (this.hasAttribute("width")) {
+            this.width = parseInt(this.getAttribute("width"));
+        }
+
+        this.height = 500;
+        if (this.hasAttribute("height")) {
+            this.height = parseInt(this.getAttribute("height"));
+        }
     }
 
     init() {
@@ -38,13 +47,12 @@ export class ContactsMenu extends Menu {
                 display: flex;
                 flex-wrap: wrap;
                 padding: 10px;
-                width: 300px;
                 height: 100%;
             }
             </style>
             <div id="Contacts-div">
                 <div style="width: 100%;">
-                    <globular-autocomplete type="email" label="Invite Contact" id="invite_contact_input" style="flex-grow: 1;"></globular-autocomplete>
+                    <globular-autocomplete type="email" label="Invite Contact" id="invite_contact_input" width="${this.width - 10}" style="flex-grow: 1;"></globular-autocomplete>
                 </div>
             </div>
         `
@@ -53,7 +61,7 @@ export class ContactsMenu extends Menu {
         this.getMenuDiv().innerHTML = "" // remove existing elements.
         this.getMenuDiv().appendChild(range.createContextualFragment(html));
 
-        this.getMenuDiv().style.height = "380px";
+        this.getMenuDiv().style.height = this.height + "px";
         this.getMenuDiv().style.overflowY = "auto";
         this.shadowRoot.appendChild(this.getMenuDiv())
 
@@ -109,19 +117,19 @@ export class ContactsMenu extends Menu {
                 });
 
                 // remove user by it id or email.
-                let removeUser = (id)=>{
+                let removeUser = (id) => {
                     if (id.length > 0) {
                         let index = filtered.findIndex((a) => {
                             if (a.email_ == id) {
                                 return true;
                             }
-                            if(a._id == id){
+                            if (a._id == id) {
                                 return true;
                             }
                             return false
                         })
                         if (index != -1) {
-                           return filtered.splice(index, 1)
+                            return filtered.splice(index, 1)
                         }
                         return null
                     }
@@ -140,10 +148,24 @@ export class ContactsMenu extends Menu {
             inviteContactInput.displayValue = (value) => {
 
                 let html = ` 
-                <div style="display: flex; flex-direction: column;">
-                    <div style="display: flex; align-items: center; padding: 5px;">   
-                        <img style="width: 40px; height: 40px; " src="${value.profilPicture_}"></img>
-                        <div style="display: flex; flex-direction: column; font-size: .85em; padding-left: 8px;">
+                <style>
+                    ${theme}
+                    .contact-invitation-div{
+                        transition: background 0.2s ease,padding 0.8s linear;
+                        background-color: var(--palette-background-paper);
+                        color: var(--palette-text-primary);
+                    }
+
+                    .contact-invitation-div:hover{
+                        filter: invert(10%);
+                    }
+
+                </style>
+                <div class="contact-invitation-div" style="display: flex; flex-direction: column;">
+                    <div style="display: flex; align-items: center; padding: 5px;"> 
+                        <img style="width: 40px; height: 40px; display: ${value.profilPicture_ == undefined ? "none" : "block"};" src="${value.profilPicture_}"></img>
+                        <iron-icon  icon="account-circle" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${value.profilPicture_ != undefined ? "none" : "block"};"></iron-icon>
+                        <div style="display: flex; flex-direction: column; width:300px; font-size: .85em; padding-left: 8px;">
                             <span>${value.name}</span>
                             <span>${value.email_}</span>
                         </div>
@@ -154,7 +176,7 @@ export class ContactsMenu extends Menu {
                 let range = document.createRange()
                 let fragment = range.createContextualFragment(html)
                 let inviteBtn = fragment.getElementById(value._id + "_invite_btn")
-                inviteBtn.onclick = ()=>{
+                inviteBtn.onclick = () => {
                     if (this.onInviteConctact != null) {
                         this.onInviteConctact(value)
                     }
@@ -208,14 +230,14 @@ export class AcceptDeclineContactBtns extends HTMLElement {
         `
 
         let acceptContactBtn = this.shadowRoot.getElementById("accept_contact_btn")
-        acceptContactBtn.onclick = ()=>{
+        acceptContactBtn.onclick = () => {
             console.log("", contact)
         }
 
         let declineContactBtn = this.shadowRoot.getElementById("decline_contact_btn")
-        declineContactBtn.onclick = ()=>{
+        declineContactBtn.onclick = () => {
             console.log("", contact)
-            
+
         }
 
     }

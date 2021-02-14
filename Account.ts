@@ -192,14 +192,8 @@ export class Account extends Model {
                     this.middleName = "";
                 }
                 this.profilPicture = data["profilPicture_"];
-                Model.eventHub.publish(
-                    "update_profile_picture_event_",
-                    this.profilPicture,
-                    true
-                  );
-                if (callback != undefined) {
-                    callback(this);
-                }
+
+                callback(this);
             },
             (err: any) => {
                 console.log(err)
