@@ -231,6 +231,8 @@ export class Account extends Model {
                         (str: string) => {
                             let data = JSON.parse(str);
                             this.setData(data); // refresh data.
+                            // Here I will rethrow the event locally...
+                            Model.eventHub.publish(`__update_account_${this.id}_data_evt__`, data, true);
                         }, false)
                 }
 

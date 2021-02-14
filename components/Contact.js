@@ -16,6 +16,7 @@ import { Autocomplete } from './Autocomplete'
 import { Menu } from './Menu';
 import { theme } from "./Theme";
 import { Account } from "../Account"
+import { Model } from '../Model';
 
 /**
  * Login/Register functionality.
@@ -163,8 +164,8 @@ export class ContactsMenu extends Menu {
                 </style>
                 <div class="contact-invitation-div" style="display: flex; flex-direction: column;">
                     <div style="display: flex; align-items: center; padding: 5px;"> 
-                        <img style="width: 40px; height: 40px; display: ${value.profilPicture_ == undefined ? "none" : "block"};" src="${value.profilPicture_}"></img>
-                        <iron-icon  icon="account-circle" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${value.profilPicture_ != undefined ? "none" : "block"};"></iron-icon>
+                        <img id=${value._id + "_img"} style="width: 40px; height: 40px; display: ${value.profilPicture_ == undefined ? "none" : "block"};" src="${value.profilPicture_}"></img>
+                        <iron-icon id=${value._id + "_ico"}   icon="account-circle" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${value.profilPicture_ != undefined ? "none" : "block"};"></iron-icon>
                         <div style="display: flex; flex-direction: column; width:300px; font-size: .85em; padding-left: 8px;">
                             <span>${value.name}</span>
                             <span>${value.email_}</span>
@@ -244,3 +245,16 @@ export class AcceptDeclineContactBtns extends HTMLElement {
 }
 
 customElements.define('globular-accept-decline-contact-btns', AcceptDeclineContactBtns)
+
+// Example of event that will keep the contact uptodate.
+/*
+                // This fuction will keep the value updated in the contact list.
+                Model.eventHub.subscribe(`__update_account_${value._id}_data_evt__`,
+                (uuid) => { 
+                  
+                },
+                (data) => {
+                  console.log("-------------------------> ", data)
+                },
+                true)
+*/
