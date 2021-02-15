@@ -219,6 +219,12 @@ export class LoginBox extends HTMLElement {
             Model.eventHub.publish("login_event_", { userId: userId, pwd: pwd }, true)
         }
 
+        passwordInput.onkeyup = (evt)=>{
+            if(evt.key == "Enter" ){
+                loginBtn.click();
+            }
+        }
+
         // And you remember me, with a lot of rum!
         if (localStorage.getItem("remember_me") != undefined) {
             if (localStorage.getItem("remember_me") != undefined) {

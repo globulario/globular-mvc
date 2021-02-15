@@ -12,15 +12,18 @@ import {
   UpdateOneRqst,
   UpdateOneRsp,
   DeleteOneRqst,
+  ReplaceOneRqst,
+  ReplaceOneRsp,
 } from "globular-web-client/persistence/persistence_pb";
 import { v4 as uuidv4 } from "uuid";
+import { mergeTypedArrays, uint8arrayToStringMethod } from "./Utility";
 
 // Get the configuration from url
 function getFileConfig(url: string, callback: (obj: any) => void, errorcallback: (err: any) => void) {
   var xmlhttp = new XMLHttpRequest();
 
   xmlhttp.onreadystatechange = function () {
-    if (this.readyState == 4 && (this.status == 201||this.status == 200)) {
+    if (this.readyState == 4 && (this.status == 201 || this.status == 200)) {
       var obj = JSON.parse(this.responseText);
       callback(obj);
     } else if (this.readyState == 4) {
@@ -32,36 +35,6 @@ function getFileConfig(url: string, callback: (obj: any) => void, errorcallback:
   xmlhttp.send();
 }
 
-function mergeTypedArrays(a: any, b: any) {
-  // Checks for truthy values on both arrays
-  if (!a && !b) throw "Please specify valid arguments for parameters a and b.";
-
-  // Checks for truthy values or empty arrays on each argument
-  // to avoid the unnecessary construction of a new array and
-  // the type comparison
-  if (!b || b.length === 0) return a;
-  if (!a || a.length === 0) return b;
-
-  // Make sure that both typed arrays are of the same type
-  if (Object.prototype.toString.call(a) !== Object.prototype.toString.call(b))
-      throw "The types of the two arguments passed for parameters a and b do not match.";
-
-  var c = new a.constructor(a.length + b.length);
-  c.set(a);
-  c.set(b, a.length);
-
-  return c;
-}
-
-function uint8arrayToStringMethod(uint8arr: any, callback:(str:any)=>void) {
-  var bb = new Blob([uint8arr]);
-  var f = new FileReader();
-  f.onload = function(e) {
-      callback(e.target.result);
-  };
-  
-  f.readAsText(bb);
-}
 
 /**
  * That class can be use to create any other application.
@@ -166,11 +139,11 @@ export class Application extends Model {
    * Get value from config.json file if any...
    * @param callback 
    */
-  initApplicationConfig(callback: (config: any) => void, errorCallback:(err:any)=>void) {
-    getFileConfig(window.location.toString() + "config.json", 
-    (config: any)=>{
-      callback(config)
-    }, errorCallback)
+  initApplicationConfig(callback: (config: any) => void, errorCallback: (err: any) => void) {
+    getFileConfig(window.location.toString() + "config.json",
+      (config: any) => {
+        callback(config)
+      }, errorCallback)
   }
 
   /**
@@ -186,7 +159,7 @@ export class Application extends Model {
     errorCallback: (err: any) => void
   ) {
     let init_ = () => {
-      
+
       // Here I will connect the listener's
       // The login event.
       Model.eventHub.subscribe(
@@ -381,17 +354,17 @@ export class Application extends Model {
     this.initApplicationConfig((config: any) => {
       // keep the config in appConfig member.
       this.appConfig = config;
-      if(this.appConfig.GlobularConfigurationAddress != undefined){
-        super.init(this.appConfig.GlobularConfigurationAddress, init_ ,errorCallback);
-      }else{
+      if (this.appConfig.GlobularConfigurationAddress != undefined) {
+        super.init(this.appConfig.GlobularConfigurationAddress, init_, errorCallback);
+      } else {
         // use the default url here in that case.
-        super.init(url, init_ ,errorCallback);
+        super.init(url, init_, errorCallback);
       }
     },
-    ()=>{
-      this.appConfig = {};
-      super.init(url, init_,errorCallback);
-    })
+      () => {
+        this.appConfig = {};
+        super.init(url, init_, errorCallback);
+      })
 
   }
 
@@ -418,16 +391,16 @@ export class Application extends Model {
           infos.push(info);
 
           // Keep application info up to date.
-          Application.eventHub.subscribe(`update_application_${id}_settings_evt`, 
-          (uuid:string)=>{
-  
-          }, 
-          (__application_info__:string)=>{
+          Application.eventHub.subscribe(`update_application_${id}_settings_evt`,
+            (uuid: string) => {
+
+            },
+            (__application_info__: string) => {
               // Set the icon...
               let info = JSON.parse(__application_info__)
               Application.infos.set(id, info);
-  
-          }, false)
+
+            }, false)
         }
 
         callback(infos);
@@ -730,7 +703,7 @@ export class Application extends Model {
 
   }
 
-  public displayMessage(msg:any, delay:number){
+  public displayMessage(msg: any, delay: number) {
     this.view.displayMessage(msg, delay)
   }
 
@@ -740,22 +713,22 @@ export class Application extends Model {
    * @param id 
    * @param info 
    */
-  static saveApplicationInfo(id:string, info:any, successCallback:(infos:any)=>void,errorCallback:(err:any)=>void){
+  static saveApplicationInfo(id: string, info: any, successCallback: (infos: any) => void, errorCallback: (err: any) => void) {
     let info_ = Application.infos.get(id)
     let value = ""
-    let i=0;
-    for(var field in info){
-      if(isNaN(info[field])){
+    let i = 0;
+    for (var field in info) {
+      if (isNaN(info[field])) {
         value += `"$set":{"${field}":"${info[field]}"}`
-      }else{
+      } else {
         value += `"$set":{"${field}":${info[field]}}`
       }
-      
+
       i++
-      if(i < Object.keys(info).length){
+      if (i < Object.keys(info).length) {
         value += ", "
       }
-      info_[field]=info[field]
+      info_[field] = info[field]
       successCallback(info_);
     }
     value = "{" + value + "}"
@@ -774,9 +747,9 @@ export class Application extends Model {
       token: localStorage.getItem("user_token"),
       application: Model.application,
       domain: Model.domain,
-    }).then((rsp:UpdateOneRsp)=>{
+    }).then((rsp: UpdateOneRsp) => {
       console.log("------------> ", rsp)
-    }).catch((err:any)=>{
+    }).catch((err: any) => {
       errorCallback(err)
     })
   }
@@ -844,12 +817,11 @@ export class Application extends Model {
       rqst.setId(db);
       rqst.setDatabase(db);
     } else {
+      rqst.setId("local_resource");
       if (this.account.id == "sa") {
-        rqst.setId("local_resource");
         rqst.setDatabase("local_resource");
       } else {
         let db = notification.recipient + "_db";
-        rqst.setId(db);
         rqst.setDatabase(db);
       }
       // attach account informations.
@@ -935,7 +907,7 @@ export class Application extends Model {
 
     stream.on("status", (status) => {
       if (status.code == 0) {
-        uint8arrayToStringMethod(data,(str:string)=>{
+        uint8arrayToStringMethod(data, (str: string) => {
           let objects = JSON.parse(str);
           let notifications = new Array<Notification>();
           for (var i = 0; i < objects.length; i++) {
@@ -979,7 +951,71 @@ export class Application extends Model {
     // Send the notification.
     this.sendNotifications(
       notification,
-      () => { },
+      () => {
+        // So here I will save the contact invitation into pending contact invitation collection...
+        let rqst = new ReplaceOneRqst();
+        rqst.setId("local_resource");
+        if (this.account.id == "sa") {
+          rqst.setDatabase("local_resource");
+        } else {
+          let db = this.account.id + "_db";
+          rqst.setDatabase(db);
+        }
+
+        // Keep track of pending sended invitations.
+        let collection = "SentContactInvitations";
+        rqst.setCollection(collection);
+
+        rqst.setQuery(`{"_id":"${contact.id}"}`);
+        rqst.setValue(`{"_id":"${contact.id}", "invitationTime":${new Date().getTime()}, "status":"pending"}`);
+        rqst.setOptions(`[{"upsert": true}]`);
+
+        // call persist data
+        Model.globular.persistenceService
+          .replaceOne(rqst, {
+            token: localStorage.getItem("user_token"),
+            application: Model.application,
+            domain: Model.domain
+          })
+          .then((rsp: ReplaceOneRsp) => {
+            // Here I will return the value with it
+            let rqst = new ReplaceOneRqst();
+            rqst.setId("local_resource");
+            
+            if ( contact.id == "sa") {
+              rqst.setDatabase("local_resource");
+            } else {
+              let db =  contact.id + "_db";
+              rqst.setDatabase(db);
+            }
+    
+            // Keep track of pending sended invitations.
+            let collection = "ReceivedContactInvitations";
+            rqst.setCollection(collection);
+    
+            rqst.setQuery(`{"_id":"${this.account.id}"}`);
+            rqst.setValue(`{"_id":"${this.account.id}", "invitationTime":${new Date().getTime()}, "status":"pending"}`);
+            rqst.setOptions(`[{"upsert": true}]`);
+    
+            // call persist data
+            Model.globular.persistenceService
+              .replaceOne(rqst, {
+                token: localStorage.getItem("user_token"),
+                application: Model.application,
+                domain: Model.domain
+              })
+              .then((rsp: ReplaceOneRsp) => {
+                // Here I will return the value with it
+                console.log("invitation was sent!");
+              })
+              .catch((err: any) => {
+                this.view.displayMessage(err, 3000);
+              });
+          })
+          .catch((err: any) => {
+            this.view.displayMessage(err, 3000);
+          });
+      },
       (err: any) => {
         this.view.displayMessage(err, 3000);
       }

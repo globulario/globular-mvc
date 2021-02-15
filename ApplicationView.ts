@@ -178,15 +178,12 @@ export class ApplicationView extends View {
     // Initialyse conversation panel.
     this._conversation_panel = new ConversationPanel();
 
-
-
     // set the global varialbe...
     applicationView = this;
   }
 
   // Must be call by the model when after it initialisation was done.
   init() {
-
     // Create the setting components.
     this.settingsMenu = new SettingsMenu();
 
@@ -225,7 +222,7 @@ export class ApplicationView extends View {
         this.onLogin(account);
 
         // The contacts will be initialyse at login time only.
-        this.contactsMenu.init();
+        this.contactsMenu.init(account);
 
         // Here I will set contact menu actions.
         this.contactsMenu.onInviteConctact = (contact: Account) => {

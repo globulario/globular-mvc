@@ -1,35 +1,14 @@
 import { Model } from "./Model";
-import { FindOneRqst, ReplaceOneRqst, ReplaceOneRsp } from "globular-web-client/persistence/persistence_pb";
+import { FindOneRqst, FindResp, FindRqst, ReplaceOneRqst, ReplaceOneRsp } from "globular-web-client/persistence/persistence_pb";
 import * as RessourceService from "globular-web-client/resource/resource_pb";
+import { mergeTypedArrays, uint8arrayToStringMethod } from "./Utility";
 
 /**
  * Basic account class that contain the user id and email.
  */
 export class Account extends Model {
     private static listeners: any;
-
-    private static getListener(id: string) {
-        if (Account.listeners == undefined) {
-            return null;
-        }
-        return Account.listeners[id];
-    }
-
-    // Keep track of the listener.
-    private static setListener(id: string, uuid: string) {
-        if (Account.listeners == undefined) {
-            Account.listeners = {};
-        }
-        Account.listeners[id] = uuid;
-        return
-    }
-
-    private static unsetListener(id: string) {
-        let uuid = Account.getListener(id);
-        if (uuid != null) {
-            Model.eventHub.unSubscribe(`update_account_${id}_data_evt`, uuid);
-        }
-    }
+    private static accounts: any;
 
     // Must be unique
     private _id: string;
@@ -110,6 +89,19 @@ export class Account extends Model {
     // Keep list of participants for further chat.
     private contacts: Array<Account>;
 
+
+    constructor(id: string, email: string, name: string) {
+        super();
+
+        this._id = id;
+        this.name_ = name;
+        this.email_ = email;
+        this.hasData = false;
+        this.firstName_ = "";
+        this.lastName_ = "";
+        this.middleName_ = "";
+    }
+
     /**
      * Append a new contanct in the list of contact.
      * @param contact The contact to append.
@@ -129,16 +121,74 @@ export class Account extends Model {
         this.contacts = this.contacts.filter(obj => obj !== contact);
     }
 
-    constructor(id: string, email: string, name: string) {
-        super();
+    /**
+     * Get an account with a given id.
+     * @param id The id of the account to retreive
+     * @param successCallback Callback when succed
+     * @param errorCallback Error Callback.
+     */
+    private static getAccount(id: string, successCallback: (account: Account) => void, errorCallback: (err: any) => void) {
+        if (Account.accounts != null) {
+            if (Account.accounts[id] != null) {
+                successCallback(Account.accounts[id]);
+                return
+            }
+        }
 
-        this._id = id;
-        this.name_ = name;
-        this.email_ = email;
-        this.hasData = false;
-        this.firstName_ = "";
-        this.lastName_ = "";
-        this.middleName_ = "";
+        let rqst = new FindOneRqst();
+        rqst.setId("local_resource");
+        rqst.setDatabase("local_resource");
+       
+        let collection = "Accounts";
+        rqst.setCollection(collection);
+        rqst.setQuery(`{"_id":"${id}"}`);
+        rqst.setOptions(`[{"Projection":{"_id":0, "email":1, "name":1}}]`);
+
+        // call persist data
+        Model.globular.persistenceService
+            .findOne(rqst, {
+                token: localStorage.getItem("user_token"),
+                application: Model.application,
+                domain: Model.domain
+            })
+            .then((rsp: any) => {
+                let data = rsp.getResult().toJavaScript();
+                let account = new Account(id, data.email, data.name)
+                account.initData(successCallback, errorCallback)
+            })
+            .catch((err: any) => {
+                errorCallback(err);
+            });
+    }
+
+    private static setAccount(a: Account) {
+        if (Account.accounts == null) {
+            Account.accounts = []
+        }
+        Account.accounts[a.id] = a;
+    }
+
+    private static getListener(id: string) {
+        if (Account.listeners == undefined) {
+            return null;
+        }
+        return Account.listeners[id];
+    }
+
+    // Keep track of the listener.
+    private static setListener(id: string, uuid: string) {
+        if (Account.listeners == undefined) {
+            Account.listeners = {};
+        }
+        Account.listeners[id] = uuid;
+        return
+    }
+
+    private static unsetListener(id: string) {
+        let uuid = Account.getListener(id);
+        if (uuid != null) {
+            Model.eventHub.unSubscribe(`update_account_${id}_data_evt`, uuid);
+        }
     }
 
     /**
@@ -236,6 +286,8 @@ export class Account extends Model {
                         }, false)
                 }
 
+                Account.setAccount(this)
+
                 callback(this);
             },
             (err: any) => {
@@ -249,7 +301,6 @@ export class Account extends Model {
                 }
             }
         );
-
     }
 
     /**
@@ -306,6 +357,50 @@ export class Account extends Model {
             .catch((err: any) => {
                 onError(err);
             });
+    }
+
+    static getSentContactInvitations(id: string, callback: (invitations: Array<any>) => void, errorCallback: (err: any) => void) {
+
+        let query: string;
+
+        // Insert the notification in the db.
+        let rqst = new FindRqst();
+        rqst.setId("local_resource");
+
+        if (id == "sa") {
+            rqst.setId("local_resource");
+
+        } else {
+            rqst.setDatabase(id + "_db");
+        }
+
+        query = `{}`;
+        rqst.setCollection("SentContactInvitations");
+
+        rqst.setQuery(query);
+        let stream = Model.globular.persistenceService.find(rqst, {
+            token: localStorage.getItem("user_token"),
+            application: Model.application,
+            domain: Model.domain,
+        });
+
+        let data: any;
+        data = [];
+
+        stream.on("data", (rsp: FindResp) => {
+            data = mergeTypedArrays(data, rsp.getData());
+        });
+
+        stream.on("status", (status) => {
+            if (status.code == 0) {
+                uint8arrayToStringMethod(data, (str: string) => {
+                    callback(JSON.parse(str));
+                });
+            } else {
+                // In case of error I will return an empty array
+                callback([]);
+            }
+        });
     }
 
     // Get the list of contacts.

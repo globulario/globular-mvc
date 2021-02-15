@@ -58,8 +58,11 @@ export class Autocomplete extends HTMLElement {
 
             });
         }
+    }
 
-
+    clear(){
+        let valuesDiv = this.shadowRoot.getElementById("values_div")
+        valuesDiv.innerHTML = ""
     }
 }
 

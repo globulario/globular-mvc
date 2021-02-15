@@ -15,11 +15,13 @@ import { theme } from "./Theme";
  * Login/Register functionality.
  */
 export class NotificationMenu extends Menu {
-    // attributes.
 
     // Create the applicaiton view.
     constructor() {
         super("notification", "social:notifications-none", "Notifications")
+
+        // event handler.
+        this.onclose = null;
 
         // The div inner panel.
         let html = `
@@ -376,7 +378,12 @@ export class NotificationMenu extends Menu {
 
         let html = `
         <div id="${notification._id}" class="notification_panel">
-            <paper-icon-button id="${notification._id}_close_btn" icon="close" style="display: none; position: absolute; top: 0px; right: 0px;"></paper-icon-button>
+            <div style="position: absolute; top: 5px; right: 5px;">
+                <div style="position: relative;">
+                    <iron-icon id="${notification._id}_close_btn"  icon="close" style="display: none; --iron-icon-fill-color:var(--palette-text-primary);"></iron-icon>
+                    <paper-ripple class="circle" recenters></paper-ripple>
+                </div>
+            </div>
             <div id="${notification._id}_recipient"  style="display: flex; flex-direction: column; padding: 5px; align-items: center;">
                 <img id="${notification._id}_img"></img>
                 <iron-icon id="${notification._id}_ico" icon="account-circle"></iron-icon>
@@ -409,6 +416,9 @@ export class NotificationMenu extends Menu {
         let closeBtn = this.shadowRoot.getElementById(notification._id + "_close_btn")
         closeBtn.onclick = () => {
             Model.eventHub.publish("delete_notification_event_", notification, true)
+            if(this.onclose !=undefined){
+                this.onclose(notification);
+            }
         }
 
         notificationDiv.onmouseover = () => {

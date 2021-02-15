@@ -16,7 +16,6 @@ import { Autocomplete } from './Autocomplete'
 import { Menu } from './Menu';
 import { theme } from "./Theme";
 import { Account } from "../Account"
-import { Model } from '../Model';
 
 /**
  * Login/Register functionality.
@@ -41,7 +40,8 @@ export class ContactsMenu extends Menu {
         }
     }
 
-    init() {
+    // Init the contact at login time.
+    init(account) {
         let html = `
             <style>
             #Contacts-div {
@@ -49,6 +49,7 @@ export class ContactsMenu extends Menu {
                 flex-wrap: wrap;
                 padding: 10px;
                 height: 100%;
+                flex-direction: column;
             }
             </style>
             <div id="Contacts-div">
@@ -70,8 +71,13 @@ export class ContactsMenu extends Menu {
         let div = this.shadowRoot.getElementById("Contacts-div")
 
         // The invite contact action.
-        //let inviteContactBtn = this.shadowRoot.getElementById("invite_contact_btn")
         let inviteContactInput = this.shadowRoot.getElementById("invite_contact_input")
+
+        let sentContactInvitations = new SentContactInvitations(account);
+        div.appendChild(sentContactInvitations)
+
+        let receivedContactInvitations = new ReceivedContactInvitations(account);
+        div.appendChild(receivedContactInvitations)
 
         // Get the list of contacts one time and use it many.
         Account.getContacts("{}", (accounts) => {
@@ -79,6 +85,10 @@ export class ContactsMenu extends Menu {
             // set the getValues function that will return the list to be use as filter.
             inviteContactInput.getValues = (value, callback) => {
                 let filtered = [];
+                if (value.length == 0) {
+                    inviteContactInput.clear();
+                    return filtered
+                }
                 for (var i = 0; i < accounts.length; i++) {
                     let a = accounts[i]
                     let contain = false;
@@ -91,6 +101,7 @@ export class ContactsMenu extends Menu {
                     if (!contain && a.email_.toLowerCase().indexOf(value.toLowerCase()) != -1) {
                         filtered.push(a)
                     }
+
                 }
 
                 // return _id value or email if value
@@ -137,13 +148,12 @@ export class ContactsMenu extends Menu {
                 }
 
                 // Remove the logged user from the list
-                let email = localStorage.getItem("user_email")
-                let currentUser = removeUser(email)
-                // TODO remove contacts from the list of potential one.
+                removeUser(account.email)
 
                 // Todo filter with value 
                 callback(filtered)
             }
+
 
             // That function must return the div that display the value that we want.
             inviteContactInput.displayValue = (value) => {
@@ -198,6 +208,165 @@ export class ContactsMenu extends Menu {
 
 customElements.define('globular-contacts-menu', ContactsMenu)
 
+/**
+ * Display Contact (account informations)
+ */
+export class ContactCard extends HTMLElement {
+
+    // Create the applicaiton view.
+    constructor(account) {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+        this.account = account;
+    }
+
+    // The connection callback.
+    connectedCallback() {
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+            ${theme}
+            .contact-invitation-div{
+                transition: background 0.2s ease,padding 0.8s linear;
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
+            }
+
+            .contact-invitation-div:hover{
+                filter: invert(10%);
+            }
+
+            .actions-div{
+                display: flex;
+            }
+        </style>
+        <div class="contact-invitation-div" style="display: flex; flex-direction: column;">
+            <div style="display: flex; align-items: center; padding: 5px;"> 
+                <img id=${this.account._id + "_img"} style="width: 40px; height: 40px; display: ${this.account.profilPicture_ == undefined ? "none" : "block"};" src="${this.account.profilPicture_}"></img>
+                <iron-icon id=${this.account._id + "_ico"}   icon="account-circle" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${this.account.profilPicture_ != undefined ? "none" : "block"};"></iron-icon>
+                <div style="display: flex; flex-direction: column; width:300px; font-size: .85em; padding-left: 8px;">
+                    <span>${this.account.name}</span>
+                    <span>${this.account.email_}</span>
+                </div>
+            </div>
+            <div class="actions-div">
+                <paper-button style="font-size:.65em; width: 20px; align-self: flex-end;" id="${this.account._id}_invite_btn">Invite</paper-button>
+            </div>
+        </div>
+        `
+
+    }
+}
+
+customElements.define('globular-contact-card', ContactCard)
+
+
+/**
+ * Display the list of sent contact invitation. If the invitation was not pending it will be removed.
+ */
+export class SentContactInvitations extends HTMLElement {
+
+    // Create the applicaiton view.
+    constructor(account) {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+
+        this.account = account;
+        this.shadowRoot.innerHTML = `
+        <style>
+            ${theme}
+
+            .contact-invitations{
+                display: flex;
+                flex-direction: column;
+            }
+
+            .contact-invitation-title{
+                font-size: 1rem;
+                text-transform: uppercase;
+                color: var(--cr-primary-text-color);
+                font-weight: 400;
+                letter-spacing: .25px;
+                margin-bottom: 12px;
+                margin-top: var(--cr-section-vertical-margin);
+                outline: none;
+                padding-bottom: 4px;
+                padding-top: 8px;
+            }
+
+            .contact-invitations-list{
+                display: flex;
+                flex-direction: column;
+            }
+
+        </style>
+
+        <div class="contact-invitations">
+            <div class="contact-invitation-title">Sent Invitations</div>
+            <div class="contact-invitations-list"></div>
+        </div>
+        `
+        // So here I will get the list of sent invitation for the account.
+        Account.getSentContactInvitations(this.account._id, (invitations) => {
+            console.log(invitations);
+            let contactLst = this.shadowRoot.querySelector(".contact-invitations-list")
+            for (var i = 0; i < invitations.length; i++) {
+                Account.getAccount(invitations[i]._id,
+                    (contact) => {
+                        let card = new ContactCard(contact)
+                        contactLst.appendChild(card)
+                    },
+                    err => { 
+                        console.log(err)
+                    })
+            }
+        }, err => {
+            console.log(err);
+        })
+    }
+
+    // The connection callback.
+    connectedCallback() {
+
+    }
+}
+
+customElements.define('globular-sent-contact-invitations', SentContactInvitations)
+
+/**
+ * Received contact invitations.
+ */
+export class ReceivedContactInvitations extends HTMLElement {
+
+    // Create the applicaiton view.
+    constructor(account) {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+
+        this.account = account;
+    }
+
+    // The connection callback.
+    connectedCallback() {
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+            ${theme}
+        </style>
+
+        <div style="display: flex;">
+        </div>
+        `
+
+    }
+}
+
+customElements.define('globular-received-contact-invitations', ReceivedContactInvitations)
+
+
 
 /**
  * Accept contact button.
@@ -250,8 +419,8 @@ customElements.define('globular-accept-decline-contact-btns', AcceptDeclineConta
 /*
                 // This fuction will keep the value updated in the contact list.
                 Model.eventHub.subscribe(`__update_account_${value._id}_data_evt__`,
-                (uuid) => { 
-                  
+                (uuid) => {
+
                 },
                 (data) => {
                   console.log("-------------------------> ", data)
