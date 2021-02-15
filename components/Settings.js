@@ -275,7 +275,6 @@ export class SettingsPage extends HTMLElement {
     const settings = this.querySelector("#" + id + "_settings")
     return settings
   }
-  //add a setting array or a get settings
 }
 
 
