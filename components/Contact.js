@@ -157,43 +157,23 @@ export class ContactsMenu extends Menu {
 
             // That function must return the div that display the value that we want.
             inviteContactInput.displayValue = (value) => {
+                let card = new ContactCard(value);
 
                 let html = ` 
-                <style>
-                    ${theme}
-                    .contact-invitation-div{
-                        transition: background 0.2s ease,padding 0.8s linear;
-                        background-color: var(--palette-background-paper);
-                        color: var(--palette-text-primary);
-                    }
-
-                    .contact-invitation-div:hover{
-                        filter: invert(10%);
-                    }
-
-                </style>
-                <div class="contact-invitation-div" style="display: flex; flex-direction: column;">
-                    <div style="display: flex; align-items: center; padding: 5px;"> 
-                        <img id=${value._id + "_img"} style="width: 40px; height: 40px; display: ${value.profilPicture_ == undefined ? "none" : "block"};" src="${value.profilPicture_}"></img>
-                        <iron-icon id=${value._id + "_ico"}   icon="account-circle" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${value.profilPicture_ != undefined ? "none" : "block"};"></iron-icon>
-                        <div style="display: flex; flex-direction: column; width:300px; font-size: .85em; padding-left: 8px;">
-                            <span>${value.name}</span>
-                            <span>${value.email_}</span>
-                        </div>
-                    </div>
                     <paper-button style="font-size:.65em; width: 20px; align-self: flex-end;" id="${value._id}_invite_btn">Invite</paper-button>
-                </div>`
+                `
 
                 let range = document.createRange()
-                let fragment = range.createContextualFragment(html)
-                let inviteBtn = fragment.getElementById(value._id + "_invite_btn")
+                card.appendChild(range.createContextualFragment(html))
+
+                let inviteBtn = card.querySelector("#" + value._id + "_invite_btn")
                 inviteBtn.onclick = () => {
                     if (this.onInviteConctact != null) {
                         this.onInviteConctact(value)
                     }
                 }
 
-                return fragment
+                return card
             }
 
         }, (err) => {
@@ -239,6 +219,7 @@ export class ContactCard extends HTMLElement {
 
             .actions-div{
                 display: flex;
+                justify-content: flex-end;
             }
         </style>
         <div class="contact-invitation-div" style="display: flex; flex-direction: column;">
@@ -251,11 +232,10 @@ export class ContactCard extends HTMLElement {
                 </div>
             </div>
             <div class="actions-div">
-                <paper-button style="font-size:.65em; width: 20px; align-self: flex-end;" id="${this.account._id}_invite_btn">Invite</paper-button>
+                <slot></slot>
             </div>
         </div>
         `
-
     }
 }
 
@@ -316,9 +296,20 @@ export class SentContactInvitations extends HTMLElement {
                 Account.getAccount(invitations[i]._id,
                     (contact) => {
                         let card = new ContactCard(contact)
+                        let html = ` 
+                            <paper-button style="font-size:.65em; width: 20px; align-self: flex-end;" id="${contact._id}_cancel_invite_btn">Cancel</paper-button>
+                        `
+
+                        let range = document.createRange()
+                        card.appendChild(range.createContextualFragment(html))
+
+                        card.querySelector("#" + contact.id + "_cancel_invite_btn").onclick= ()=>{
+                            console.log("Cancel contact invitation!")
+                        }
+
                         contactLst.appendChild(card)
                     },
-                    err => { 
+                    err => {
                         console.log(err)
                     })
             }
