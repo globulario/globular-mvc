@@ -719,9 +719,9 @@ export class Application extends Model {
     let i = 0;
     for (var field in info) {
       if (isNaN(info[field])) {
-        value += `"$set":{"${field}":"${info[field]}"}`
+        value += `"${field}":"${info[field]}"`
       } else {
-        value += `"$set":{"${field}":${info[field]}}`
+        value += `"${field}":${info[field]}`
       }
 
       i++
@@ -729,10 +729,11 @@ export class Application extends Model {
         value += ", "
       }
       info_[field] = info[field]
-      successCallback(info_);
     }
-    value = "{" + value + "}"
 
+    value = `{"$set":{${value}}}`
+
+    console.log(value)
     // Get the actual value and set values from info.
     const rqst = new UpdateOneRqst
     rqst.setId("local_resource");
@@ -749,6 +750,7 @@ export class Application extends Model {
       domain: Model.domain,
     }).then((rsp: UpdateOneRsp) => {
       console.log("------------> ", rsp)
+      successCallback(info_);
     }).catch((err: any) => {
       errorCallback(err)
     })
