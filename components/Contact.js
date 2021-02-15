@@ -11,6 +11,8 @@ import '@polymer/paper-card/paper-card.js';
 import '@polymer/paper-button/paper-button.js';
 import '@polymer/paper-checkbox/paper-checkbox.js';
 import '@polymer/iron-autogrow-textarea/iron-autogrow-textarea.js';
+import '@polymer/paper-tabs/paper-tabs.js';
+import '@polymer/paper-tabs/paper-tab.js';
 import { Autocomplete } from './Autocomplete'
 
 import { Menu } from './Menu';
@@ -55,6 +57,11 @@ export class ContactsMenu extends Menu {
             <div id="Contacts-div">
                 <div style="width: 100%;">
                     <globular-autocomplete type="email" label="Invite Contact" id="invite_contact_input" width="${this.width - 10}" style="flex-grow: 1;"></globular-autocomplete>
+                    <paper-tabs selected="0" scrollable>
+                        <paper-tab>Contacts</paper-tab>
+                        <paper-tab>Sent Invitations</paper-tab>
+                        <paper-tab>Received Invitations</paper-tab>
+                    </paper-tabs>
                 </div>
             </div>
         `
@@ -258,24 +265,6 @@ export class SentContactInvitations extends HTMLElement {
         <style>
             ${theme}
 
-            .contact-invitations{
-                display: flex;
-                flex-direction: column;
-            }
-
-            .contact-invitation-title{
-                font-size: 1rem;
-                text-transform: uppercase;
-                color: var(--cr-primary-text-color);
-                font-weight: 400;
-                letter-spacing: .25px;
-                margin-bottom: 12px;
-                margin-top: var(--cr-section-vertical-margin);
-                outline: none;
-                padding-bottom: 4px;
-                padding-top: 8px;
-            }
-
             .contact-invitations-list{
                 display: flex;
                 flex-direction: column;
@@ -283,10 +272,8 @@ export class SentContactInvitations extends HTMLElement {
 
         </style>
 
-        <div class="contact-invitations">
-            <div class="contact-invitation-title">Sent Invitations</div>
-            <div class="contact-invitations-list"></div>
-        </div>
+        <div class="contact-invitations-list"></div>
+
         `
         // So here I will get the list of sent invitation for the account.
         Account.getSentContactInvitations(this.account._id, (invitations) => {

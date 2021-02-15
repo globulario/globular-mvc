@@ -52,6 +52,7 @@
     "@polymer/paper-ripple": "^3.0.2",
     "@polymer/paper-slider": "^3.0.1",
     "@polymer/paper-spinner": "^3.0.2",
+    "@polymer/paper-tabs": "^3.1.0",
     "@polymer/paper-toggle-button": "^3.0.1",
     "@polymer/paper-tooltip": "^3.0.1",
     "@types/materialize-css": "^1.0.8",
