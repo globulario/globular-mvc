@@ -158,15 +158,15 @@ export class ContactsMenu extends Menu {
             // That function must return the div that display the value that we want.
             inviteContactInput.displayValue = (value) => {
                 let card = new ContactCard(value);
-
+   
                 let html = ` 
-                    <paper-button style="font-size:.65em; width: 20px; align-self: flex-end;" id="${value._id}_invite_btn">Invite</paper-button>
+                    <paper-button style="font-size:.65em; width: 20px; align-self: flex-end;" id="invite_btn">Invite</paper-button>
                 `
 
                 let range = document.createRange()
                 card.appendChild(range.createContextualFragment(html))
 
-                let inviteBtn = card.querySelector("#" + value._id + "_invite_btn")
+                let inviteBtn = card.querySelector("#invite_btn")
                 inviteBtn.onclick = () => {
                     if (this.onInviteConctact != null) {
                         this.onInviteConctact(value)
@@ -224,8 +224,8 @@ export class ContactCard extends HTMLElement {
         </style>
         <div class="contact-invitation-div" style="display: flex; flex-direction: column;">
             <div style="display: flex; align-items: center; padding: 5px;"> 
-                <img id=${this.account._id + "_img"} style="width: 40px; height: 40px; display: ${this.account.profilPicture_ == undefined ? "none" : "block"};" src="${this.account.profilPicture_}"></img>
-                <iron-icon id=${this.account._id + "_ico"}   icon="account-circle" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${this.account.profilPicture_ != undefined ? "none" : "block"};"></iron-icon>
+                <img style="width: 40px; height: 40px; display: ${this.account.profilPicture_ == undefined ? "none" : "block"};" src="${this.account.profilPicture_}"></img>
+                <iron-icon icon="account-circle" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${this.account.profilPicture_ != undefined ? "none" : "block"};"></iron-icon>
                 <div style="display: flex; flex-direction: column; width:300px; font-size: .85em; padding-left: 8px;">
                     <span>${this.account.name}</span>
                     <span>${this.account.email_}</span>
@@ -257,7 +257,6 @@ export class SentContactInvitations extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
             ${theme}
-
             .contact-invitations{
                 display: flex;
                 flex-direction: column;
@@ -290,20 +289,19 @@ export class SentContactInvitations extends HTMLElement {
         `
         // So here I will get the list of sent invitation for the account.
         Account.getSentContactInvitations(this.account._id, (invitations) => {
-            console.log(invitations);
             let contactLst = this.shadowRoot.querySelector(".contact-invitations-list")
             for (var i = 0; i < invitations.length; i++) {
                 Account.getAccount(invitations[i]._id,
                     (contact) => {
                         let card = new ContactCard(contact)
                         let html = ` 
-                            <paper-button style="font-size:.65em; width: 20px; align-self: flex-end;" id="${contact._id}_cancel_invite_btn">Cancel</paper-button>
+                            <paper-button style="font-size:.65em; width: 20px; align-self: flex-end;" id="cancel_invite_btn">Cancel</paper-button>
                         `
 
                         let range = document.createRange()
                         card.appendChild(range.createContextualFragment(html))
 
-                        card.querySelector("#" + contact.id + "_cancel_invite_btn").onclick= ()=>{
+                        card.querySelector("#cancel_invite_btn").onclick= ()=>{
                             console.log("Cancel contact invitation!")
                         }
 

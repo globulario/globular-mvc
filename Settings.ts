@@ -145,7 +145,11 @@ export class ApplicationSettings extends Settings {
 
         // Application name and title must be change by the developper only...
         let descriptionSetting = new TextAreaSetting("Description", "")
-        let description = info.description;
+        let description = "";
+        if(info.description!=undefined){
+            description =info.description;
+        }
+        
         descriptionSetting.setValue(description)
         generalSettings.addSetting(descriptionSetting)
 
@@ -174,11 +178,11 @@ export class ApplicationSettings extends Settings {
                     Application.saveApplicationInfo(application.name, { "icon": iconSetting.getValue(), "description": descriptionSetting.getValue() },
                         (info: any) => {
                             console.log("infos was saved!")
-                            Application.eventHub.publish(`update_application_${info._id}_settings_evt`, JSON.stringify(info), false)
-
+                            const data = JSON.stringify(info)
+                            Application.eventHub.publish(`update_application_${info._id}_settings_evt`, data , false)
+                            console.log(data)
                         },
                         (err: any) => {
-                            //application.view
                             application.displayMessage(err, 3000)
                             iconSetting.setValue(icon) // set back the value...
                             descriptionSetting.setValue(description)
