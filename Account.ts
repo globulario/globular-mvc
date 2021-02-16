@@ -224,12 +224,9 @@ export class Account extends Model {
             })
             .then((rsp: any) => {
                 let data = rsp.getResult().toJavaScript();
-
-                console.log(data)
                 successCallback(data);
             })
             .catch((err: any) => {
-                console.log(err)
                 if (err.code == 13) {
                     // empty user data...
                     successCallback({});
@@ -291,10 +288,8 @@ export class Account extends Model {
                 callback(this);
             },
             (err: any) => {
-                console.log(err)
                 this.hasData = false;
                 // onError(err);
-                console.log("no data found at this time for user ", userName)
                 // Call success callback ...
                 if (callback != undefined) {
                     callback(this);
