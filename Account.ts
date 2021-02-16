@@ -403,6 +403,50 @@ export class Account extends Model {
         });
     }
 
+    static getReceivedContactInvitations(id: string, callback: (invitations: Array<any>) => void, errorCallback: (err: any) => void) {
+
+        let query: string;
+
+        // Insert the notification in the db.
+        let rqst = new FindRqst();
+        rqst.setId("local_resource");
+
+        if (id == "sa") {
+            rqst.setId("local_resource");
+
+        } else {
+            rqst.setDatabase(id + "_db");
+        }
+
+        query = `{}`;
+        rqst.setCollection("ReceivedContactInvitations");
+
+        rqst.setQuery(query);
+        let stream = Model.globular.persistenceService.find(rqst, {
+            token: localStorage.getItem("user_token"),
+            application: Model.application,
+            domain: Model.domain,
+        });
+
+        let data: any;
+        data = [];
+
+        stream.on("data", (rsp: FindResp) => {
+            data = mergeTypedArrays(data, rsp.getData());
+        });
+
+        stream.on("status", (status) => {
+            if (status.code == 0) {
+                uint8arrayToStringMethod(data, (str: string) => {
+                    callback(JSON.parse(str));
+                });
+            } else {
+                // In case of error I will return an empty array
+                callback([]);
+            }
+        });
+    }
+
     // Get the list of contacts.
     static getContacts(query: string, callback: (accounts: Array<Account>) => void, errorCallback: (err: any) => void) {
         let rqst = new RessourceService.GetAccountsRqst

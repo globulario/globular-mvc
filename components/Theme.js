@@ -118,6 +118,16 @@ export let theme = `:host{
   div, span, h1, h2, h3{
     font-family: var(--font-family);
   }
+
+
+  paper-tabs {
+    /* custom CSS property */
+    --paper-tabs-selection-bar-color: var(--palette-primary-main);
+  }
+
+  paper-tab {
+      --paper-tab-ink: var(--palette-text-accent);
+  }
   
   paper-card{
     background-color: transparent;
@@ -163,4 +173,3 @@ export let theme = `:host{
   }
 
   `;
-  
