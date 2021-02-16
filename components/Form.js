@@ -92,8 +92,12 @@ export class FormSection extends HTMLElement {
         this.container.innerHTML = ''
     }
 
-    appendField() {
-        //TODO: Create new field within this
+    appendField(field) {
+        let e = field.getElement()
+        if (e) {
+            e.tabIndex = this.childNodes.length
+        }
+        this.shadowRoot.appendChild(field)
     }
 }
 
@@ -103,9 +107,13 @@ customElements.define("globular-form-section", FormSection);
  * Never create a Field variable. This is meant to be an abstract class tht must be implemented by a derived class in order to be used properly.
  */
 export class Field extends HTMLElement {
-    constructor(name, initialValue, height=1, width=1, x=1, y=1) {
+    constructor(name, initialValue, width=1, height=1, x=1, y=1) {
         super()
-        this.initialValue = initialValue;
+        this.initialValue = initialValue
+        width = (width < 1) ? 1 : width
+        height = (height < 1) ? 1 : height
+        x = (x < 1) ? 1 : x
+        y = (y < 1) ? 1 : y
 
         // Set the shadow dom.
         this.attachShadow({ mode: "open" });
@@ -115,7 +123,7 @@ export class Field extends HTMLElement {
             <style>
                 ${theme}
 
-                .field-label{
+                .field-label {
                    line-height: 1rem;
                    font-size: .6875rem;
                    font-weight: 500;
@@ -125,7 +133,12 @@ export class Field extends HTMLElement {
                    hyphens: auto;
                    word-break: break-word;
                    word-wrap: break-word;
-                 }
+                }
+                
+                #container {
+                    grid-column: ${x} / ${x + width}
+                    grid-row: ${y} / ${y + height}
+                }
           
               </style>
           
@@ -217,6 +230,7 @@ export class Field extends HTMLElement {
 export class StringField extends Field {
     constructor(name, initialValue = "") {
         super(name, initialValue)
+        // Add validation for the input
         let html = `
             <paper-input id="field-input" label="" raised required></paper-input>
             <div id="field-view"></div>
