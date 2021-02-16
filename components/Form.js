@@ -5,15 +5,15 @@ import '@polymer/paper-input/paper-input.js';
 /**
  * 
  * <globular-form >
- *      <globular-form-section sectionWidth="2" sectionHeight="1">
- *          <globular-field>
- *          </globular-field>
- *          <globular-field>
- *          </globular-field>
+ *      <globular-form-section>
+ *          <globular-string-field>
+ *          </globular-string-field>
+ *          <globular-string-field>
+ *          </globular-string-field>
  *      <globular-form-section>
  *      <globular-form-section>
- *          <globular-field>
- *          </globular-field>
+ *          <globular-string-field>
+ *          </globular-string-field>
  *      <globular-form-section>
  * </globular-form>
  */
@@ -60,10 +60,11 @@ customElements.define("globular-form", Form);
 export class FormSection extends HTMLElement {
 
     // Must be defined following the screen size.
-    constructor(title, subtitle, sectionWidth, sectionHeight) {
+    constructor(title, subtitle ) {
         super()
-        sectionHeight = (sectionHeight < 1 ? 1 : sectionHeight)
-        sectionWidth = (sectionWidth < 1 ? 1 : sectionWidth)
+
+        //if very long, but not wide = more rows, less columns //Mostly for mobile
+        //if wide, but not long = more columns, less rows // Large computer displays
 
         // Set the shadow dom.
         this.attachShadow({ mode: "open" });
@@ -102,7 +103,7 @@ customElements.define("globular-form-section", FormSection);
  * Never create a Field variable. This is meant to be an abstract class tht must be implemented by a derived class in order to be used properly.
  */
 export class Field extends HTMLElement {
-    constructor(name, initialValue) {
+    constructor(name, initialValue, height=1, width=1, x=1, y=1) {
         super()
         this.initialValue = initialValue;
 
@@ -151,6 +152,22 @@ export class Field extends HTMLElement {
     show() {
         this.container.style.display = "";
     }
+
+    /**
+     * Reset the value of the view and input elements of the configuration with their initial value.
+     */
+    reset() {
+        this.setValue(this.initialValue)
+    }
+
+    /**
+     * Changes the initial value of the component to the new value. Modifies the current value.
+     * @param {*} v New reset value
+     */
+    set(v) {
+        this.initialValue = v
+        this.setValue(v)
+    }
     
     /**
      * Returns the value of the current input.
@@ -172,43 +189,27 @@ export class Field extends HTMLElement {
     setValue(v) { }
 
     /**
-     * Reset the value of the view and input elements of the configuration with their initial value.
-     *  
+     * Sets the value of the view and input elements to a nill value.
+     * 
      * Abstract method.
      * Must be implemented in derived classes.
      */
-    reset() { }
-
-    /**
-     * Changes the initial value of the component to the new value. Modifies the current value.
-     * 
-     * Abstract method.
-     * Must be reimplemented in derived classes.
-     * @param {*} v New reset value
-     */
-    set(v) {
-        this.setValue(v)
-    }
-
-    /**
-     * Sets the value of the view and input elements to a nill value.
-          * 
-     * Abstract method.
-     * Must be implemented in derived classes.*/
     clear() { }
 
     /**
      * Disables the input element and enables the view element.
      *  
      * Abstract method.
-     * Must be implemented in derived classes.*/
+     * Must be implemented in derived classes.
+     */
     lock() { }
 
     /**
      * Enables the input element and disables the view element.
      * 
      * Abstract method.
-     * Must be implemented in derived classes.*/
+     * Must be implemented in derived classes.
+     */
     unlock() { }
 
 }
@@ -217,13 +218,38 @@ export class StringField extends Field {
     constructor(name, initialValue = "") {
         super(name, initialValue)
         let html = `
-            <paper-input id="field-input" label="" raised></paper-input>
+            <paper-input id="field-input" label="" raised required></paper-input>
             <div id="field-view"></div>
         `
         let range = document.createRange();
         this.shadowRoot.appendChild(range.createContextualFragment(html))
-        console.log(html)
+        this.input = this.shadowRoot.getElementById("field-input");
+        this.view = this.shadowRoot.getElementById("field-view")
     }
+
+    getValue() {
+        return this.input.value
+    }
+
+    setValue(v) {
+        this.input.value = value
+        this.view.innerHTML = value
+    }
+
+    clear() { 
+        this.setValue("")
+    }
+
+    lock() {
+        this.input.style.display = "none"
+        this.view.style.display = ""
+    }
+
+    unlock() {
+        this.input.style.display = ""
+        this.view.style.display = "none"
+    }
+
 }
 
 customElements.define("globular-string-field", StringField);
