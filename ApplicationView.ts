@@ -23,6 +23,7 @@ import { Application } from "./Application";
 // Not directly use here but must be include anyways
 import { Wizard } from "./components/Wizard";
 import { SlideShow } from "./components/SlideShow";
+import { ImageCropper } from "./components/Image";
 
 // This variable is there to give acces to wait and resume...
 export let applicationView: ApplicationView;

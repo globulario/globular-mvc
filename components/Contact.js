@@ -11,6 +11,8 @@ import '@polymer/paper-card/paper-card.js';
 import '@polymer/paper-button/paper-button.js';
 import '@polymer/paper-checkbox/paper-checkbox.js';
 import '@polymer/iron-autogrow-textarea/iron-autogrow-textarea.js';
+import '@polymer/paper-tabs/paper-tabs.js';
+import '@polymer/paper-tabs/paper-tab.js';
 import { Autocomplete } from './Autocomplete'
 
 import { Menu } from './Menu';
@@ -44,6 +46,7 @@ export class ContactsMenu extends Menu {
     init(account) {
         let html = `
             <style>
+            ${theme}
             #Contacts-div {
                 display: flex;
                 flex-wrap: wrap;
@@ -51,10 +54,16 @@ export class ContactsMenu extends Menu {
                 height: 100%;
                 flex-direction: column;
             }
+
             </style>
             <div id="Contacts-div">
                 <div style="width: 100%;">
-                    <globular-autocomplete type="email" label="Invite Contact" id="invite_contact_input" width="${this.width - 10}" style="flex-grow: 1;"></globular-autocomplete>
+                    <globular-autocomplete type="email" label="Search" id="invite_contact_input" width="${this.width - 10}" style="flex-grow: 1;"></globular-autocomplete>
+                    <paper-tabs selected="0">
+                        <paper-tab id="contacts-tab">Contacts</paper-tab>
+                        <paper-tab id="sent-contact-invitations-tab">Sent Invitations</paper-tab>
+                        <paper-tab id="received-contact-invitations-tab">Received Invitations</paper-tab>
+                    </paper-tabs>
                 </div>
             </div>
         `
@@ -70,14 +79,43 @@ export class ContactsMenu extends Menu {
         // Action's
         let div = this.shadowRoot.getElementById("Contacts-div")
 
+        let contactsTab = this.shadowRoot.getElementById("contacts-tab")
+        let sentContactInvitationsTab = this.shadowRoot.getElementById("sent-contact-invitations-tab")
+        let receivedContactInvitationsTab = this.shadowRoot.getElementById("received-contact-invitations-tab")
+
         // The invite contact action.
         let inviteContactInput = this.shadowRoot.getElementById("invite_contact_input")
+
+        let contactList = new ContactList(account)
+        div.appendChild(contactList)
 
         let sentContactInvitations = new SentContactInvitations(account);
         div.appendChild(sentContactInvitations)
 
+
         let receivedContactInvitations = new ReceivedContactInvitations(account);
         div.appendChild(receivedContactInvitations)
+
+        contactsTab.onclick = ()=>{
+            contactList.style.display = "block"
+            receivedContactInvitations.style.display = "none"
+            sentContactInvitations.style.display = "none"
+        }
+
+        sentContactInvitationsTab.onclick = ()=>{
+            contactList.style.display = "none"
+            receivedContactInvitations.style.display = "none"
+            sentContactInvitations.style.display = "block"
+        }
+
+        receivedContactInvitationsTab.onclick = ()=>{
+            contactList.style.display = "none"
+            receivedContactInvitations.style.display = "block"
+            sentContactInvitations.style.display = "none"
+        }
+
+        // set active.
+        contactsTab.click();
 
         // Get the list of contacts one time and use it many.
         Account.getContacts("{}", (accounts) => {
@@ -158,15 +196,15 @@ export class ContactsMenu extends Menu {
             // That function must return the div that display the value that we want.
             inviteContactInput.displayValue = (value) => {
                 let card = new ContactCard(value);
-
+   
                 let html = ` 
-                    <paper-button style="font-size:.65em; width: 20px; align-self: flex-end;" id="${value._id}_invite_btn">Invite</paper-button>
+                    <paper-button style="font-size:.65em; width: 20px; align-self: flex-end;" id="invite_btn">Invite</paper-button>
                 `
 
                 let range = document.createRange()
                 card.appendChild(range.createContextualFragment(html))
 
-                let inviteBtn = card.querySelector("#" + value._id + "_invite_btn")
+                let inviteBtn = card.querySelector("#invite_btn")
                 inviteBtn.onclick = () => {
                     if (this.onInviteConctact != null) {
                         this.onInviteConctact(value)
@@ -224,8 +262,8 @@ export class ContactCard extends HTMLElement {
         </style>
         <div class="contact-invitation-div" style="display: flex; flex-direction: column;">
             <div style="display: flex; align-items: center; padding: 5px;"> 
-                <img id=${this.account._id + "_img"} style="width: 40px; height: 40px; display: ${this.account.profilPicture_ == undefined ? "none" : "block"};" src="${this.account.profilPicture_}"></img>
-                <iron-icon id=${this.account._id + "_ico"}   icon="account-circle" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${this.account.profilPicture_ != undefined ? "none" : "block"};"></iron-icon>
+                <img style="width: 40px; height: 40px; display: ${this.account.profilPicture_ == undefined ? "none" : "block"};" src="${this.account.profilPicture_}"></img>
+                <iron-icon icon="account-circle" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${this.account.profilPicture_ != undefined ? "none" : "block"};"></iron-icon>
                 <div style="display: flex; flex-direction: column; width:300px; font-size: .85em; padding-left: 8px;">
                     <span>${this.account.name}</span>
                     <span>${this.account.email_}</span>
@@ -258,24 +296,6 @@ export class SentContactInvitations extends HTMLElement {
         <style>
             ${theme}
 
-            .contact-invitations{
-                display: flex;
-                flex-direction: column;
-            }
-
-            .contact-invitation-title{
-                font-size: 1rem;
-                text-transform: uppercase;
-                color: var(--cr-primary-text-color);
-                font-weight: 400;
-                letter-spacing: .25px;
-                margin-bottom: 12px;
-                margin-top: var(--cr-section-vertical-margin);
-                outline: none;
-                padding-bottom: 4px;
-                padding-top: 8px;
-            }
-
             .contact-invitations-list{
                 display: flex;
                 flex-direction: column;
@@ -283,27 +303,24 @@ export class SentContactInvitations extends HTMLElement {
 
         </style>
 
-        <div class="contact-invitations">
-            <div class="contact-invitation-title">Sent Invitations</div>
-            <div class="contact-invitations-list"></div>
-        </div>
+        <div class="contact-invitations-list"></div>
+
         `
         // So here I will get the list of sent invitation for the account.
         Account.getSentContactInvitations(this.account._id, (invitations) => {
-            console.log(invitations);
             let contactLst = this.shadowRoot.querySelector(".contact-invitations-list")
             for (var i = 0; i < invitations.length; i++) {
                 Account.getAccount(invitations[i]._id,
                     (contact) => {
                         let card = new ContactCard(contact)
                         let html = ` 
-                            <paper-button style="font-size:.65em; width: 20px; align-self: flex-end;" id="${contact._id}_cancel_invite_btn">Cancel</paper-button>
+                            <paper-button style="font-size:.65em; width: 20px; align-self: flex-end;" id="cancel_invite_btn">Cancel</paper-button>
                         `
 
                         let range = document.createRange()
                         card.appendChild(range.createContextualFragment(html))
 
-                        card.querySelector("#" + contact.id + "_cancel_invite_btn").onclick= ()=>{
+                        card.querySelector("#cancel_invite_btn").onclick= ()=>{
                             console.log("Cancel contact invitation!")
                         }
 
@@ -347,17 +364,74 @@ export class ReceivedContactInvitations extends HTMLElement {
         <style>
             ${theme}
         </style>
-
-        <div style="display: flex;">
-        </div>
+        <div class="contact-invitations-list"></div>
         `
+        // So here I will get the list of sent invitation for the account.
+        Account.getReceivedContactInvitations(this.account._id, (invitations) => {
+            let contactLst = this.shadowRoot.querySelector(".contact-invitations-list")
+            for (var i = 0; i < invitations.length; i++) {
+                Account.getAccount(invitations[i]._id,
+                    (contact) => {
+                        let card = new ContactCard(contact)
+                        let html = ` 
+                            <paper-button style="font-size:.65em; width: 20px; align-self: flex-end;" id="accept_invite_btn">Accept</paper-button>
+                            <paper-button style="font-size:.65em; width: 20px; align-self: flex-end;" id="decline_invite_btn">Decline</paper-button>
+                        `
+                        
+                        let range = document.createRange()
+                        card.appendChild(range.createContextualFragment(html))
 
+                        card.querySelector("#decline_invite_btn").onclick= ()=>{
+                            console.log("decline contact invitation!")
+                        }
+
+                        card.querySelector("#accept_invite_btn").onclick= ()=>{
+                            console.log("accept contact invitation!")
+                        }
+
+                        contactLst.appendChild(card)
+                    },
+                    err => {
+                        console.log(err)
+                    })
+            }
+        }, err => {
+            console.log(err);
+        })
     }
 }
 
 customElements.define('globular-received-contact-invitations', ReceivedContactInvitations)
 
+/**
+ * The contact list.
+ */
+export class ContactList extends HTMLElement {
 
+    // Create the applicaiton view.
+    constructor(account) {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+
+        this.account = account;
+    }
+
+    // The connection callback.
+    connectedCallback() {
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+            ${theme}
+        </style>
+
+        <div style="display: flex;">
+        </div>
+        `
+    }
+}
+
+customElements.define('globular-contact-list', ContactList)
 
 /**
  * Accept contact button.
