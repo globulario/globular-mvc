@@ -86,18 +86,21 @@ export class FormSection extends HTMLElement {
                 
                 @media only screen and (max-width: 1000px) {
                     #container {
+                        display: grid;
                         grid-template-columns: repeat(4, 1fr);
                     }
                 }
 
                 @media only screen and (max-width: 750px) {
                     #container {
+                        display: grid;
                         grid-template-columns: repeat(2, 1fr);
                     }
                 }
 
                 @media only screen and (max-width: 500px) {
                     #container {
+                        display: grid;
                         grid-template-columns: repeat(1, 1fr);
                     }
                 }
@@ -142,9 +145,9 @@ class Field extends HTMLElement {
         super()
         this.initialValue = initialValue
 
+        console.log("label : "+ label+". Other values in order:"+x+", "+y+", "+width+", "+height+".")
         let containerHtml = `#container {
-            `
-
+        `
         if(x && x > 0) {
             containerHtml += `grid-column: ${x}`
             if(width && width > 0) {
@@ -165,7 +168,6 @@ class Field extends HTMLElement {
 
         containerHtml += `}
         `
-
         // Set the shadow dom.
         this.attachShadow({ mode: "open" });
 
@@ -185,15 +187,12 @@ class Field extends HTMLElement {
                    word-break: break-word;
                    word-wrap: break-word;
                 }
-                
-                ${containerHtml}
           
+                ${containerHtml}
               </style>
           
               <div id="container">
                 <div id="name-div" class="field-label">${label}</div>
-                <slot name="field-value"> 
-                </slot>
               <div>
         `
 
@@ -294,7 +293,7 @@ export class StringField extends Field {
             <div id="field-view"></div>
         `
         let range = document.createRange();
-        this.shadowRoot.appendChild(range.createContextualFragment(html))
+        this.container.appendChild(range.createContextualFragment(html))
         this.input = this.shadowRoot.getElementById("field-input");
         this.view = this.shadowRoot.getElementById("field-view")
 
