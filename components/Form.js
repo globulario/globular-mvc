@@ -6,13 +6,13 @@ import '@polymer/paper-input/paper-input.js';
  * 
  * <globular-form >
  *      <globular-form-section>
- *          <globular-string-field>
+ *          <globular-string-field label="grape">
  *          </globular-string-field>
- *          <globular-string-field>
+ *          <globular-string-field label="grapefruit" x="2" y="1">
  *          </globular-string-field>
  *      <globular-form-section>
  *      <globular-form-section>
- *          <globular-string-field>
+ *          <globular-string-field label="Grapefruit Pie" x="1", y="1" width="2" height="3">
  *          </globular-string-field>
  *      <globular-form-section>
  * </globular-form>
@@ -60,11 +60,18 @@ customElements.define("globular-form", Form);
 export class FormSection extends HTMLElement {
 
     // Must be defined following the screen size.
-    constructor(title, subtitle ) {
+    constructor(title, subtitle) {
         super()
 
         //if very long, but not wide = more rows, less columns //Mostly for mobile
         //if wide, but not long = more columns, less rows // Large computer displays
+
+        const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0)
+        const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0)
+
+        let sectionHeight = 5
+        let sectionWidth = 5
+
 
         // Set the shadow dom.
         this.attachShadow({ mode: "open" });
@@ -75,8 +82,8 @@ export class FormSection extends HTMLElement {
                 ${theme}
                 #container {
                     display: grid;
-                    grid-template-columns: repeat(${sectionHeight}, 1 fr);
-                    grid-template-rows: repeat(${sectionWidth}, 1 fr);
+                    grid-template-columns: repeat(${sectionHeight}, 1fr);
+                    grid-template-rows: repeat(${sectionWidth}, 1fr);
                 }
             </style>
             <div id="container">
@@ -93,27 +100,55 @@ export class FormSection extends HTMLElement {
     }
 
     appendField(field) {
-        let e = field.getElement()
-        if (e) {
-            e.tabIndex = this.childNodes.length
+        if (field) {
+            // field.tabIndex = this.childNodes.length
+            this.appendChild(field)
         }
-        this.shadowRoot.appendChild(field)
     }
 }
 
 customElements.define("globular-form-section", FormSection);
 
 /**
- * Never create a Field variable. This is meant to be an abstract class tht must be implemented by a derived class in order to be used properly.
+ * Never instantiate a Field variable. This is meant to be an abstract class that must be implemented by a derived class in order to be used properly.
  */
-export class Field extends HTMLElement {
-    constructor(name, initialValue, width=1, height=1, x=1, y=1) {
+class Field extends HTMLElement {
+    /**
+     * 
+     * @param {*} label 
+     * @param {*} initialValue The initial value that the input will show
+     * @param {*} x The initial position of the Field on the x axis. Starts at 1.
+     * @param {*} y The initial position of the Field on the y axis. Starts at 1.
+     * @param {*} width The width of the Field in grid units.
+     * @param {*} height The height of the Field in grid units.
+     */
+    constructor(label, initialValue, x=0, y=0, width=0, height=0) {
         super()
         this.initialValue = initialValue
-        width = (width < 1) ? 1 : width
-        height = (height < 1) ? 1 : height
-        x = (x < 1) ? 1 : x
-        y = (y < 1) ? 1 : y
+
+        let containerHtml = `#container {
+            `
+
+        if(x && x > 0) {
+            containerHtml += `grid-column: ${x}`
+            if(width && width > 0) {
+                containerHtml += ` / ${x + width}`
+            }
+            containerHtml += `;
+            `
+        }
+
+        if(y && y > 0) {
+            containerHtml += `grid-row: ${y}`
+            if(height && height > 0) {
+                containerHtml += ` / ${y + height}`
+            }
+            containerHtml += `;
+            `
+        }
+
+        containerHtml += `}
+        `
 
         // Set the shadow dom.
         this.attachShadow({ mode: "open" });
@@ -135,15 +170,12 @@ export class Field extends HTMLElement {
                    word-wrap: break-word;
                 }
                 
-                #container {
-                    grid-column: ${x} / ${x + width}
-                    grid-row: ${y} / ${y + height}
-                }
+                ${containerHtml}
           
               </style>
           
               <div id="container">
-                <div id="name-div" class="field-label">${name}</div>
+                <div id="name-div" class="field-label">${label}</div>
                 <slot name="field-value"> 
                 </slot>
               <div>
@@ -228,8 +260,18 @@ export class Field extends HTMLElement {
 }
 
 export class StringField extends Field {
-    constructor(name, initialValue = "") {
-        super(name, initialValue)
+
+    /**
+     * 
+     * @param {*} label 
+     * @param {*} initialValue The initial value that the input will show.
+     * @param {*} x The initial position of the Field on the x axis. Starts at 1.
+     * @param {*} y The initial position of the Field on the y axis. Starts at 1.
+     * @param {*} width The width of the Field in grid units.
+     * @param {*} height The height of the Field in grid units.
+     */
+    constructor(label, initialValue = "", x=0, y=0, width=0, height=0) {
+        super(label, initialValue, x, y, width, height)
         // Add validation for the input
         let html = `
             <paper-input id="field-input" label="" raised required></paper-input>
@@ -239,6 +281,9 @@ export class StringField extends Field {
         this.shadowRoot.appendChild(range.createContextualFragment(html))
         this.input = this.shadowRoot.getElementById("field-input");
         this.view = this.shadowRoot.getElementById("field-view")
+
+        //By default, show the input element and not the input element
+        this.unlock()
     }
 
     getValue() {
@@ -255,6 +300,9 @@ export class StringField extends Field {
     }
 
     lock() {
+        this.view.innerHTML = this.input.value
+
+        // Temporary: Change the method to remove and replace the elements
         this.input.style.display = "none"
         this.view.style.display = ""
     }
