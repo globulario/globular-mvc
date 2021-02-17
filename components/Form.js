@@ -12,7 +12,7 @@ import '@polymer/paper-input/paper-input.js';
  *          </globular-string-field>
  *      <globular-form-section>
  *      <globular-form-section>
- *          <globular-string-field label="Grapefruit Pie" x="1", y="1" width="2" height="3">
+ *          <globular-string-field label="Grapefruit Pie" x="1" y="1" width="2" height="3">
  *          </globular-string-field>
  *      <globular-form-section>
  * </globular-form>
@@ -69,8 +69,6 @@ export class FormSection extends HTMLElement {
         const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0)
         const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0)
 
-        // @media only screen
-
         // Set the shadow dom.
         this.attachShadow({ mode: "open" });
 
@@ -105,8 +103,8 @@ export class FormSection extends HTMLElement {
                     }
                 }
             </style>
-            <div id="container">
-                <slot>
+            <div>
+                <slot id="container">
                 </slot>
             </div>
         `
@@ -120,7 +118,6 @@ export class FormSection extends HTMLElement {
 
     appendField(field) {
         if (field) {
-            // field.tabIndex = this.childNodes.length
             this.appendChild(field)
         }
     }
@@ -141,33 +138,12 @@ class Field extends HTMLElement {
      * @param {*} width The width of the Field in grid units.
      * @param {*} height The height of the Field in grid units.
      */
-    constructor(label, initialValue, x=0, y=0, width=0, height=0) {
+    constructor(label, initialValue, x = 0, y = 0, width = 0, height = 0) {
         super()
         this.initialValue = initialValue
 
-        console.log("label : "+ label+". Other values in order:"+x+", "+y+", "+width+", "+height+".")
-        let containerHtml = `#container {
-        `
-        if(x && x > 0) {
-            containerHtml += `grid-column: ${x}`
-            if(width && width > 0) {
-                containerHtml += ` / ${x + width}`
-            }
-            containerHtml += `;
-            `
-        }
+        let hostHtml = this._setSize(x, y, width, height)
 
-        if(y && y > 0) {
-            containerHtml += `grid-row: ${y}`
-            if(height && height > 0) {
-                containerHtml += ` / ${y + height}`
-            }
-            containerHtml += `;
-            `
-        }
-
-        containerHtml += `}
-        `
         // Set the shadow dom.
         this.attachShadow({ mode: "open" });
 
@@ -188,7 +164,7 @@ class Field extends HTMLElement {
                    word-wrap: break-word;
                 }
           
-                ${containerHtml}
+                ${hostHtml}
               </style>
           
               <div id="container">
@@ -198,7 +174,34 @@ class Field extends HTMLElement {
 
         this.container = this.shadowRoot.getElementById("container")
     }
-    
+
+    _setSize(x, y, width, height) {
+        let hostHtml = `:host {
+            `
+        if (x && x > 0) {
+            hostHtml += `grid-column: ${x}`
+            if (width && width > 0) {
+                hostHtml += ` / ${x + width}`
+            }
+            hostHtml += `;
+                `
+        }
+
+        if (y && y > 0) {
+            hostHtml += `grid-row: ${y}`
+            if (height && height > 0) {
+                hostHtml += ` / ${y + height}`
+            }
+            hostHtml += `;
+                `
+        }
+
+        hostHtml += `}
+            `
+
+        return hostHtml
+    }
+
     /**
      * Hides all the field's elements
      */
@@ -228,7 +231,7 @@ class Field extends HTMLElement {
         this.initialValue = v
         this.setValue(v)
     }
-    
+
     /**
      * Returns the value of the current input.
      * 
@@ -285,7 +288,7 @@ export class StringField extends Field {
      * @param {*} width The width of the Field in grid units.
      * @param {*} height The height of the Field in grid units.
      */
-    constructor(label, initialValue = "", x=0, y=0, width=0, height=0) {
+    constructor(label, initialValue = "", x = 0, y = 0, width = 0, height = 0) {
         super(label, initialValue, x, y, width, height)
         // Add validation for the input
         let html = `
@@ -310,7 +313,7 @@ export class StringField extends Field {
         this.view.innerHTML = value
     }
 
-    clear() { 
+    clear() {
         this.setValue("")
     }
 
