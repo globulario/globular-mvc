@@ -954,69 +954,12 @@ export class Application extends Model {
     this.sendNotifications(
       notification,
       () => {
-        // So here I will save the contact invitation into pending contact invitation collection...
-        let rqst = new ReplaceOneRqst();
-        rqst.setId("local_resource");
-        if (this.account.id == "sa") {
-          rqst.setDatabase("local_resource");
-        } else {
-          let db = this.account.id + "_db";
-          rqst.setDatabase(db);
-        }
-
-        // Keep track of pending sended invitations.
-        let collection = "SentContactInvitations";
-        rqst.setCollection(collection);
-
-        rqst.setQuery(`{"_id":"${contact.id}"}`);
-        rqst.setValue(`{"_id":"${contact.id}", "invitationTime":${new Date().getTime()}, "status":"pending"}`);
-        rqst.setOptions(`[{"upsert": true}]`);
-
-        // call persist data
-        Model.globular.persistenceService
-          .replaceOne(rqst, {
-            token: localStorage.getItem("user_token"),
-            application: Model.application,
-            domain: Model.domain
+        Account.setContact(this.account.id, contact.id,
+          () => {
+            // this.displayMessage(, 3000)
+          }, (err: any) => {
+            this.displayMessage(err, 3000)
           })
-          .then((rsp: ReplaceOneRsp) => {
-            // Here I will return the value with it
-            let rqst = new ReplaceOneRqst();
-            rqst.setId("local_resource");
-            
-            if ( contact.id == "sa") {
-              rqst.setDatabase("local_resource");
-            } else {
-              let db =  contact.id + "_db";
-              rqst.setDatabase(db);
-            }
-    
-            // Keep track of pending sended invitations.
-            let collection = "ReceivedContactInvitations";
-            rqst.setCollection(collection);
-    
-            rqst.setQuery(`{"_id":"${this.account.id}"}`);
-            rqst.setValue(`{"_id":"${this.account.id}", "invitationTime":${new Date().getTime()}, "status":"pending"}`);
-            rqst.setOptions(`[{"upsert": true}]`);
-    
-            // call persist data
-            Model.globular.persistenceService
-              .replaceOne(rqst, {
-                token: localStorage.getItem("user_token"),
-                application: Model.application,
-                domain: Model.domain
-              })
-              .then((rsp: ReplaceOneRsp) => {
-                // Here I will return the value with it
-                console.log("invitation was sent!");
-              })
-              .catch((err: any) => {
-                this.view.displayMessage(err, 3000);
-              });
-          })
-          .catch((err: any) => {
-            this.view.displayMessage(err, 3000);
-          });
       },
       (err: any) => {
         this.view.displayMessage(err, 3000);

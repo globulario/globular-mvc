@@ -61,6 +61,7 @@ export class Autocomplete extends HTMLElement {
     }
 
     clear(){
+        input.value = '';
         let valuesDiv = this.shadowRoot.getElementById("values_div")
         valuesDiv.innerHTML = ""
     }

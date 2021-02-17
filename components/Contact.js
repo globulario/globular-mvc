@@ -18,6 +18,7 @@ import { Autocomplete } from './Autocomplete'
 import { Menu } from './Menu';
 import { theme } from "./Theme";
 import { Account } from "../Account"
+import { Model } from "../Model"
 
 /**
  * Login/Register functionality.
@@ -36,7 +37,7 @@ export class ContactsMenu extends Menu {
             this.width = parseInt(this.getAttribute("width"));
         }
 
-        this.height = 500;
+        this.height = 525;
         if (this.hasAttribute("height")) {
             this.height = parseInt(this.getAttribute("height"));
         }
@@ -53,17 +54,28 @@ export class ContactsMenu extends Menu {
                 padding: 10px;
                 height: 100%;
                 flex-direction: column;
+                overflow: hidden;
+            }
+
+              
+            #Contacts-list{
+                flex: 1;
+                overflow: auto;
+               
             }
 
             </style>
             <div id="Contacts-div">
-                <div style="width: 100%;">
+                <div id="header" style="width: 100%;">
                     <globular-autocomplete type="email" label="Search" id="invite_contact_input" width="${this.width - 10}" style="flex-grow: 1;"></globular-autocomplete>
                     <paper-tabs selected="0">
                         <paper-tab id="contacts-tab">Contacts</paper-tab>
                         <paper-tab id="sent-contact-invitations-tab">Sent Invitations</paper-tab>
                         <paper-tab id="received-contact-invitations-tab">Received Invitations</paper-tab>
                     </paper-tabs>
+                </div>
+                <div id="Contacts-list">
+
                 </div>
             </div>
         `
@@ -78,6 +90,7 @@ export class ContactsMenu extends Menu {
 
         // Action's
         let div = this.shadowRoot.getElementById("Contacts-div")
+        let contactLst = this.shadowRoot.getElementById("Contacts-list")
 
         let contactsTab = this.shadowRoot.getElementById("contacts-tab")
         let sentContactInvitationsTab = this.shadowRoot.getElementById("sent-contact-invitations-tab")
@@ -87,28 +100,28 @@ export class ContactsMenu extends Menu {
         let inviteContactInput = this.shadowRoot.getElementById("invite_contact_input")
 
         let contactList = new ContactList(account)
-        div.appendChild(contactList)
+        contactLst.appendChild(contactList)
 
         let sentContactInvitations = new SentContactInvitations(account);
-        div.appendChild(sentContactInvitations)
+        contactLst.appendChild(sentContactInvitations)
 
 
         let receivedContactInvitations = new ReceivedContactInvitations(account);
-        div.appendChild(receivedContactInvitations)
+        contactLst.appendChild(receivedContactInvitations)
 
-        contactsTab.onclick = ()=>{
+        contactsTab.onclick = () => {
             contactList.style.display = "block"
             receivedContactInvitations.style.display = "none"
             sentContactInvitations.style.display = "none"
         }
 
-        sentContactInvitationsTab.onclick = ()=>{
+        sentContactInvitationsTab.onclick = () => {
             contactList.style.display = "none"
             receivedContactInvitations.style.display = "none"
             sentContactInvitations.style.display = "block"
         }
 
-        receivedContactInvitationsTab.onclick = ()=>{
+        receivedContactInvitationsTab.onclick = () => {
             contactList.style.display = "none"
             receivedContactInvitations.style.display = "block"
             sentContactInvitations.style.display = "none"
@@ -117,8 +130,8 @@ export class ContactsMenu extends Menu {
         // set active.
         contactsTab.click();
 
-        // Get the list of contacts one time and use it many.
-        Account.getContacts("{}", (accounts) => {
+        // Get the list of all accounts (mab).
+        Account.getAccounts("{}", (accounts) => {
 
             // set the getValues function that will return the list to be use as filter.
             inviteContactInput.getValues = (value, callback) => {
@@ -194,28 +207,42 @@ export class ContactsMenu extends Menu {
 
 
             // That function must return the div that display the value that we want.
-            inviteContactInput.displayValue = (value) => {
-                let card = new ContactCard(value);
-   
-                let html = ` 
-                    <paper-button style="font-size:.65em; width: 20px; align-self: flex-end;" id="invite_btn">Invite</paper-button>
-                `
+            inviteContactInput.displayValue = (contact) => {
+                let card = new ContactCard(account, contact);
 
-                let range = document.createRange()
-                card.appendChild(range.createContextualFragment(html))
-
-                let inviteBtn = card.querySelector("#invite_btn")
-                inviteBtn.onclick = () => {
-                    if (this.onInviteConctact != null) {
-                        this.onInviteConctact(value)
-                    }
-                }
+                // Here depending if the contact is in contact list, in received invitation list or in sent invitation
+                // list displayed action will be different.
+                Account.getContacts(account.id, "{}", 
+                    (contacts)=>{
+                        const info = contacts.find(obj => {
+                            return obj._id === contact._id;
+                        })
+        
+                        if (info == undefined) {
+                            card.setInviteButton((contact)=>{
+                                this.onInviteConctact(contact);
+                                inviteContactInput.clear();
+                            })
+                        } else if (info.status == "sent") {
+                            // Here I will display the revoke invitation button.
+                            card.setRevokeButton()
+                        } else if (info.status == "received") {
+                            // Here I will display the accept/decline button.
+                            card.setAcceptDeclineButton()
+                        }
+                    }, 
+                    ()=>{
+                        card.setInviteButton((contact)=>{
+                            this.onInviteConctact(contact);
+                            inviteContactInput.clear();
+                        })
+                    })
+ 
 
                 return card
             }
 
         }, (err) => {
-            console.log(err)
             callback([])
         })
 
@@ -232,11 +259,12 @@ customElements.define('globular-contacts-menu', ContactsMenu)
 export class ContactCard extends HTMLElement {
 
     // Create the applicaiton view.
-    constructor(account) {
+    constructor(account, contact) {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
         this.account = account;
+        this.contact = contact;
     }
 
     // The connection callback.
@@ -262,11 +290,11 @@ export class ContactCard extends HTMLElement {
         </style>
         <div class="contact-invitation-div" style="display: flex; flex-direction: column;">
             <div style="display: flex; align-items: center; padding: 5px;"> 
-                <img style="width: 40px; height: 40px; display: ${this.account.profilPicture_ == undefined ? "none" : "block"};" src="${this.account.profilPicture_}"></img>
-                <iron-icon icon="account-circle" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${this.account.profilPicture_ != undefined ? "none" : "block"};"></iron-icon>
+                <img style="width: 40px; height: 40px; display: ${this.contact.profilPicture_ == undefined ? "none" : "block"};" src="${this.contact.profilPicture_}"></img>
+                <iron-icon icon="account-circle" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${this.contact.profilPicture_ != undefined ? "none" : "block"};"></iron-icon>
                 <div style="display: flex; flex-direction: column; width:300px; font-size: .85em; padding-left: 8px;">
-                    <span>${this.account.name}</span>
-                    <span>${this.account.email_}</span>
+                    <span>${this.contact.name}</span>
+                    <span>${this.contact.email_}</span>
                 </div>
             </div>
             <div class="actions-div">
@@ -274,6 +302,51 @@ export class ContactCard extends HTMLElement {
             </div>
         </div>
         `
+    }
+
+    // Set the invite button...
+    setInviteButton(onInviteConctact) {
+        this.innerHtml = ""
+        let range = document.createRange()
+        this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.65em; width: 20px; align-self: flex-end;" id="invite_btn">Invite</paper-button>`))
+        let inviteBtn = this.querySelector("#invite_btn")
+        inviteBtn.onclick = () => {
+            if (onInviteConctact != null) {
+                onInviteConctact(this.contact)
+            }
+        }
+    }
+
+    // Set the revoke invitation button.
+    setRevokeButton(onRevokeInvitation) {
+        this.innerHtml = ""
+        let range = document.createRange()
+        this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.65em; width: 20px; align-self: flex-end;" id="revoke_invitation_btn">Revoke</paper-button>`))
+
+        this.querySelector("#revoke_invitation_btn").onclick = () => {
+            if (onRevokeInvitation != null) {
+                onRevokeInvitation(this.contact)
+            }
+        }
+    }
+
+    // Set the accept/decline button.
+    setAcceptDeclineButton(onAcceptInvitation, onDeclineInvitation) {
+        this.innerHtml = ""
+        let range = document.createRange()
+        this.appendChild(range.createContextualFragment(`<globular-accept-decline-contact-btns id="accept_decline_btn"></globular-accept-decline-contact-btns>`))
+
+        this.querySelector("#accept_decline_btn").onaccpect = () => {
+            if (onAcceptInvitation != null) {
+                onAcceptInvitation(this.contact)
+            }
+        }
+
+        this.querySelector("#accept_decline_btn").ondecline = () => {
+            if (onDeclineInvitation != null) {
+                onDeclineInvitation(this.contact)
+            }
+        }
     }
 }
 
@@ -292,6 +365,22 @@ export class SentContactInvitations extends HTMLElement {
         this.attachShadow({ mode: 'open' });
 
         this.account = account;
+
+        Model.eventHub.subscribe("sent_invitation_" + account.id + "_evt",
+            (uuid) => { },
+            (evt) => {
+                // So here I will append the account into the list.
+                let invitation = JSON.parse(evt)
+                Account.getAccount(invitation._id,
+                    (contact) => {
+                        this.appendContact(contact)
+                    },
+                    err => {
+                        console.log(err)
+                    })
+            },
+            false)
+
         this.shadowRoot.innerHTML = `
         <style>
             ${theme}
@@ -307,24 +396,12 @@ export class SentContactInvitations extends HTMLElement {
 
         `
         // So here I will get the list of sent invitation for the account.
-        Account.getSentContactInvitations(this.account._id, (invitations) => {
-            let contactLst = this.shadowRoot.querySelector(".contact-invitations-list")
+        Account.getContacts(this.account._id, `{"status":"sent"}`, (invitations) => {
+
             for (var i = 0; i < invitations.length; i++) {
                 Account.getAccount(invitations[i]._id,
                     (contact) => {
-                        let card = new ContactCard(contact)
-                        let html = ` 
-                            <paper-button style="font-size:.65em; width: 20px; align-self: flex-end;" id="cancel_invite_btn">Cancel</paper-button>
-                        `
-
-                        let range = document.createRange()
-                        card.appendChild(range.createContextualFragment(html))
-
-                        card.querySelector("#cancel_invite_btn").onclick= ()=>{
-                            console.log("Cancel contact invitation!")
-                        }
-
-                        contactLst.appendChild(card)
+                        this.appendContact(contact)
                     },
                     err => {
                         console.log(err)
@@ -338,6 +415,17 @@ export class SentContactInvitations extends HTMLElement {
     // The connection callback.
     connectedCallback() {
 
+    }
+
+    appendContact(contact) {
+        let contactLst = this.shadowRoot.querySelector(".contact-invitations-list")
+        let card = new ContactCard(this.account, contact)
+
+        card.setRevokeButton((contact) => {
+            console.log("revoke invitation ", contact)
+        })
+
+        contactLst.appendChild(card)
     }
 }
 
@@ -355,6 +443,20 @@ export class ReceivedContactInvitations extends HTMLElement {
         this.attachShadow({ mode: 'open' });
 
         this.account = account;
+
+        Model.eventHub.subscribe("received_invitation_" + account.id + "_evt",
+            (uuid) => { },
+            (evt) => {
+                let invitation = JSON.parse(evt);
+                Account.getAccount(invitation._id,
+                    (contact) => {
+                        this.appendContact(contact);
+                    },
+                    err => {
+                        console.log(err)
+                    })
+            },
+            false)
     }
 
     // The connection callback.
@@ -367,29 +469,12 @@ export class ReceivedContactInvitations extends HTMLElement {
         <div class="contact-invitations-list"></div>
         `
         // So here I will get the list of sent invitation for the account.
-        Account.getReceivedContactInvitations(this.account._id, (invitations) => {
-            let contactLst = this.shadowRoot.querySelector(".contact-invitations-list")
+        Account.getContacts(this.account._id, `{"status":"received"}`, (invitations) => {
+
             for (var i = 0; i < invitations.length; i++) {
                 Account.getAccount(invitations[i]._id,
                     (contact) => {
-                        let card = new ContactCard(contact)
-                        let html = ` 
-                            <paper-button style="font-size:.65em; width: 20px; align-self: flex-end;" id="accept_invite_btn">Accept</paper-button>
-                            <paper-button style="font-size:.65em; width: 20px; align-self: flex-end;" id="decline_invite_btn">Decline</paper-button>
-                        `
-                        
-                        let range = document.createRange()
-                        card.appendChild(range.createContextualFragment(html))
-
-                        card.querySelector("#decline_invite_btn").onclick= ()=>{
-                            console.log("decline contact invitation!")
-                        }
-
-                        card.querySelector("#accept_invite_btn").onclick= ()=>{
-                            console.log("accept contact invitation!")
-                        }
-
-                        contactLst.appendChild(card)
+                        this.appendContact(contact);
                     },
                     err => {
                         console.log(err)
@@ -398,6 +483,19 @@ export class ReceivedContactInvitations extends HTMLElement {
         }, err => {
             console.log(err);
         })
+    }
+
+    appendContact(contact) {
+        let contactLst = this.shadowRoot.querySelector(".contact-invitations-list")
+        let card = new ContactCard(this.account, contact)
+        card.setAcceptDeclineButton(
+            (account) => {
+                console.log("---------> accept invitation from ", account)
+            },
+            (account) => {
+                console.log("---------> decline invitation from ", account)
+            })
+        contactLst.appendChild(card)
     }
 }
 
@@ -444,6 +542,9 @@ export class AcceptDeclineContactBtns extends HTMLElement {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
+
+        this.onaccpect = null;
+        this.ondecline = null;
     }
 
     // The connection callback.
@@ -466,13 +567,16 @@ export class AcceptDeclineContactBtns extends HTMLElement {
 
         let acceptContactBtn = this.shadowRoot.getElementById("accept_contact_btn")
         acceptContactBtn.onclick = () => {
-            console.log("", contact)
+            if (this.onaccpect != undefined) {
+                this.onaccpect(contact)
+            }
         }
 
         let declineContactBtn = this.shadowRoot.getElementById("decline_contact_btn")
         declineContactBtn.onclick = () => {
-            console.log("", contact)
-
+            if (this.ondecline != undefined) {
+                this.ondecline(contact);
+            }
         }
 
     }
@@ -482,6 +586,8 @@ customElements.define('globular-accept-decline-contact-btns', AcceptDeclineConta
 
 // Example of event that will keep the contact uptodate.
 /*
+
+TODO keep the account card in line with it info
                 // This fuction will keep the value updated in the contact list.
                 Model.eventHub.subscribe(`__update_account_${value._id}_data_evt__`,
                 (uuid) => {
@@ -491,4 +597,39 @@ customElements.define('globular-accept-decline-contact-btns', AcceptDeclineConta
                   console.log("-------------------------> ", data)
                 },
                 true)
+
+// Connect event to keep the contact panel in correct state.
+        // Here I will react to network event to keep the interface in the correct state.
+        Model.eventHub.subscribe("sent_invitation_" + contact.id + "_evt",
+            (uuid) => { },
+            (evt) => {
+                // So here I will append the account into the list.
+                this.setRevokeButton()
+            },
+            false)
+
+        Model.eventHub.subscribe("received_invitation_" + account.id + "_evt",
+            (uuid) => { },
+            (evt) => {
+                // So here I will append the account into the list.
+                this.setAcceptDeclineButton()
+            },
+            false)
+
+        
+        Model.eventHub.subscribe("accepted_invitation_" + contact.id + "_evt",
+            (uuid) => { },
+            (evt) => {
+                // TODO display contact actions...
+                // this.setAcceptDeclineButton()
+                
+            },
+            false)
+
+        Model.eventHub.subscribe("declined_invitation_" + contact.id + "_evt",
+            (uuid) => { },
+            (evt) => {
+                // this.setInviteButton(this.oninvite)
+            },
+            false)
 */

@@ -222,7 +222,7 @@ export class AccountMenu extends Menu {
       this.img.src = dataUrl;
       this.img.style.display = "block";
     }
-    console.log(this.ico)
+
     if (this.ico != undefined) {
       this.ico.style.display = "none";
     }

@@ -10,6 +10,15 @@ export class Account extends Model {
     private static listeners: any;
     private static accounts: any;
 
+    // Set the list of contact informations.
+    private _contacts: Array<any>;
+    public get contacts(): Array<any> {
+        return this._contacts;
+    }
+    public set contacts(value: Array<any>) {
+        this._contacts = value;
+    }
+
     // Must be unique
     private _id: string;
     public get id(): string {
@@ -86,10 +95,6 @@ export class Account extends Model {
         return name + " " + this.lastName;
     }
 
-    // Keep list of participants for further chat.
-    private contacts: Array<Account>;
-
-
     constructor(id: string, email: string, name: string) {
         super();
 
@@ -100,25 +105,6 @@ export class Account extends Model {
         this.firstName_ = "";
         this.lastName_ = "";
         this.middleName_ = "";
-    }
-
-    /**
-     * Append a new contanct in the list of contact.
-     * @param contact The contact to append.
-     */
-    addContact(contact: Account) {
-        let existing = this.contacts.find(x => x.email == this.email)
-        if (existing == null) {
-            this.contacts.push(contact)
-        }
-    }
-
-    /**
-     * Remove a contact from the list of contact.
-     * @param contact The contact to remove
-     */
-    removeContact(contact: Account) {
-        this.contacts = this.contacts.filter(obj => obj !== contact);
     }
 
     /**
@@ -138,7 +124,7 @@ export class Account extends Model {
         let rqst = new FindOneRqst();
         rqst.setId("local_resource");
         rqst.setDatabase("local_resource");
-       
+
         let collection = "Accounts";
         rqst.setCollection(collection);
         rqst.setQuery(`{"_id":"${id}"}`);
@@ -283,9 +269,20 @@ export class Account extends Model {
                         }, false)
                 }
 
+                // Keep in the local map...
                 Account.setAccount(this)
 
-                callback(this);
+                Account.getContacts(this.id, `{}`, 
+                (contacts:[])=>{
+                    // Set the list of contacts (received invitation, sent invitation and actual contact id's)
+                    this.contacts = contacts;
+                    callback(this);
+                }, 
+                (err:any)=>{
+                    callback(this);
+                })
+
+               
             },
             (err: any) => {
                 this.hasData = false;
@@ -354,9 +351,7 @@ export class Account extends Model {
             });
     }
 
-    static getSentContactInvitations(id: string, callback: (invitations: Array<any>) => void, errorCallback: (err: any) => void) {
-
-        let query: string;
+    static getContacts(id: string, query: string, callback: (contacts: Array<any>) => void, errorCallback: (err: any) => void) {
 
         // Insert the notification in the db.
         let rqst = new FindRqst();
@@ -369,9 +364,7 @@ export class Account extends Model {
             rqst.setDatabase(id + "_db");
         }
 
-        query = `{}`;
-        rqst.setCollection("SentContactInvitations");
-
+        rqst.setCollection("Contacts");
         rqst.setQuery(query);
         let stream = Model.globular.persistenceService.find(rqst, {
             token: localStorage.getItem("user_token"),
@@ -398,52 +391,78 @@ export class Account extends Model {
         });
     }
 
-    static getReceivedContactInvitations(id: string, callback: (invitations: Array<any>) => void, errorCallback: (err: any) => void) {
-
-        let query: string;
-
-        // Insert the notification in the db.
-        let rqst = new FindRqst();
+    public static setContact(from: string, to: string, successCallback: () => void, errorCallback: (err: any) => void) {
+        // So here I will save the contact invitation into pending contact invitation collection...
+        let rqst = new ReplaceOneRqst();
         rqst.setId("local_resource");
-
-        if (id == "sa") {
-            rqst.setId("local_resource");
-
+        if (from == "sa") {
+            rqst.setDatabase("local_resource");
         } else {
-            rqst.setDatabase(id + "_db");
+            let db = from + "_db";
+            rqst.setDatabase(db);
         }
 
-        query = `{}`;
-        rqst.setCollection("ReceivedContactInvitations");
+        // Keep track of pending sended invitations.
+        let collection = "Contacts";
+        rqst.setCollection(collection);
 
-        rqst.setQuery(query);
-        let stream = Model.globular.persistenceService.find(rqst, {
-            token: localStorage.getItem("user_token"),
-            application: Model.application,
-            domain: Model.domain,
-        });
+        rqst.setQuery(`{"_id":"${to}"}`);
+        let sentInvitation = `{"_id":"${to}", "invitationTime":${new Date().getTime()}, "status":"sent"}`
+        rqst.setValue(sentInvitation);
+        rqst.setOptions(`[{"upsert": true}]`);
 
-        let data: any;
-        data = [];
+        // call persist data
+        Model.globular.persistenceService
+            .replaceOne(rqst, {
+                token: localStorage.getItem("user_token"),
+                application: Model.application,
+                domain: Model.domain
+            })
+            .then((rsp: ReplaceOneRsp) => {
 
-        stream.on("data", (rsp: FindResp) => {
-            data = mergeTypedArrays(data, rsp.getData());
-        });
+                // So Here I will send network event...
+                Model.eventHub.publish("sent_invitation_" + from + "_evt", sentInvitation, false)
 
-        stream.on("status", (status) => {
-            if (status.code == 0) {
-                uint8arrayToStringMethod(data, (str: string) => {
-                    callback(JSON.parse(str));
-                });
-            } else {
-                // In case of error I will return an empty array
-                callback([]);
-            }
-        });
+                // Here I will return the value with it
+                let rqst = new ReplaceOneRqst();
+                rqst.setId("local_resource");
+
+                if (to == "sa") {
+                    rqst.setDatabase("local_resource");
+                } else {
+                    let db = to + "_db";
+                    rqst.setDatabase(db);
+                }
+
+                // Keep track of pending sended invitations.
+                let collection = "Contacts";
+                rqst.setCollection(collection);
+
+                rqst.setQuery(`{"_id":"${from}"}`);
+                let receivedInvitation = `{"_id":"${from}", "invitationTime":${new Date().getTime()}, "status":"received"}`
+                rqst.setValue(receivedInvitation);
+                rqst.setOptions(`[{"upsert": true}]`);
+
+                // call persist data
+                Model.globular.persistenceService
+                    .replaceOne(rqst, {
+                        token: localStorage.getItem("user_token"),
+                        application: Model.application,
+                        domain: Model.domain
+                    })
+                    .then((rsp: ReplaceOneRsp) => {
+                        // Here I will return the value with it
+                        Model.eventHub.publish("received_invitation_" + to + "_evt", receivedInvitation, false)
+                        successCallback();
+
+                    })
+                    .catch(errorCallback);
+            })
+            .catch(errorCallback);
     }
 
-    // Get the list of contacts.
-    static getContacts(query: string, callback: (accounts: Array<Account>) => void, errorCallback: (err: any) => void) {
+    // Get all account data...
+    static getAccounts(query: string, callback: (accounts: Array<Account>) => void, errorCallback: (err: any) => void) {
         let rqst = new RessourceService.GetAccountsRqst
         rqst.setQuery(query)
 
@@ -489,6 +508,5 @@ export class Account extends Model {
                 errorCallback(status.details)
             }
         });
-
     }
 }
