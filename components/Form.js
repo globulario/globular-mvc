@@ -157,7 +157,7 @@ class Field extends HTMLElement {
     }
 
     _setAllSizes(x, y, width, height, xSmall, ySmall, widthSmall, heightSmall, xPhone, yPhone, widthPhone, heightPhone) {
-        let hostHtml = _setSize(x, y, width, height)
+        let hostHtml = this._setSize(x, y, width, height)
         hostHtml += this._setConditionalSize(800, xSmall, ySmall, widthSmall, heightSmall)
         hostHtml += this._setConditionalSize(500, xPhone, yPhone, widthPhone, heightPhone)
         return hostHtml
