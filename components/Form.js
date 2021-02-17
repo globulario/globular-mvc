@@ -62,6 +62,9 @@ export class FormSection extends HTMLElement {
     constructor(title, subtitle, sectionWidth, sectionHeight) {
         super()
 
+        this.idTitle = title.split(" ").join("_");
+        this.title = title
+        this.subtitle = subtitle
         // Set the shadow dom.
         this.attachShadow({ mode: "open" });
 
@@ -73,12 +76,51 @@ export class FormSection extends HTMLElement {
                     display: grid;
                     grid-template-columns: repeat(${sectionWidth}, 1fr);
                     grid-template-rows: repeat(${sectionHeight}, 1fr);
+                    gap: 1rem 1rem;
                 }
+                
+                .card-title{
+                    position: absolute;
+                    font-size: 1rem;
+                    text-transform: uppercase;
+                    color: var(--cr-primary-text-color);
+                    font-weight: 400;
+                    letter-spacing: .25px;
+                    margin-bottom: .35em;
+                    margin-top: var(--cr-section-vertical-margin);
+                    outline: none;
+                    padding-bottom: .25em;
+                    padding-top: .5em;
+                    padding-left: 2em;
+                }
+
+                .card-subtitle{
+                    padding: 48px;
+                    letter-spacing: .01428571em;
+                    font-family: Roboto,Arial,sans-serif;
+                    font-size: .875rem;
+                    font-weight: 400;
+                    line-height: 1.25rem;
+                    hyphens: auto;
+                    word-break: break-word;
+                    word-wrap: break-word;
+                    color: var(--cr-primary-text-color);
+                    flex-grow: 1;
+                }
+
+                .card {
+                    display:flex;
+                    flex-direction:column;
+                }
+
+
             </style>
-            <div>
+            <paper-card class="card" id="${this.idTitle}_form_section">
+                <h2 class="card-title">${this.title}</h2>
+                <div class="card-subtitle">${this.subtitle}</div>
                 <slot id="container">
                 </slot>
-            </div>
+            </paper-card>
         `
 
         this.container = this.shadowRoot.getElementById("container")
@@ -151,13 +193,17 @@ class Field extends HTMLElement {
                    word-break: break-word;
                    word-wrap: break-word;
                 }
+
+                #container {
+                    
+                }
           
                 ${hostHtml}
               </style>
           
-              <div id="container">
+              <paper-card id="container">
                 <div id="name-div" class="field-label">${label}</div>
-              <div>
+              <paper-card>
         `
 
         this.container = this.shadowRoot.getElementById("container")
