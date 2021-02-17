@@ -12,7 +12,7 @@ import '@polymer/paper-input/paper-input.js';
  *          </globular-string-field>
  *      <globular-form-section>
  *      <globular-form-section>
- *          <globular-string-field label="Grapefruit Pie" x="1" y="1" width="2" height="3">
+ *          <globular-string-field label="Grapefruit Pie" x="1" y="1" width="2" height="3" xsmall ysmall widthsmall heightsmall xlarge ylarge widthlarge heightlarge>
  *          </globular-string-field>
  *      <globular-form-section>
  * </globular-form>
@@ -26,7 +26,6 @@ export class Form extends HTMLElement {
         this.attachShadow({ mode: "open" });
 
         // Setup basic HTML
-        console.log("another test?")
         this.shadowRoot.innerHTML = `
             <style>
                 ${theme}
@@ -60,47 +59,20 @@ customElements.define("globular-form", Form);
 export class FormSection extends HTMLElement {
 
     // Must be defined following the screen size.
-    constructor(title, subtitle) {
+    constructor(title, subtitle, sectionWidth, sectionHeight) {
         super()
-
-        //if very long, but not wide = more rows, less columns //Mostly for mobile
-        //if wide, but not long = more columns, less rows // Large computer displays
-
-        const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0)
-        const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0)
 
         // Set the shadow dom.
         this.attachShadow({ mode: "open" });
 
         // Setup basic HTML
-        // @media only screen and (max-width: ...px) is a css media query which checks the viewport width and applies the css if the query is true
         this.shadowRoot.innerHTML = `
             <style>
                 ${theme}
                 #container {
                     display: grid;
-                    grid-template-columns: repeat(5, 1fr);
-                }
-                
-                @media only screen and (max-width: 1000px) {
-                    #container {
-                        display: grid;
-                        grid-template-columns: repeat(4, 1fr);
-                    }
-                }
-
-                @media only screen and (max-width: 750px) {
-                    #container {
-                        display: grid;
-                        grid-template-columns: repeat(2, 1fr);
-                    }
-                }
-
-                @media only screen and (max-width: 500px) {
-                    #container {
-                        display: grid;
-                        grid-template-columns: repeat(1, 1fr);
-                    }
+                    grid-template-columns: repeat(${sectionWidth}, 1fr);
+                    grid-template-rows: repeat(${sectionHeight}, 1fr);
                 }
             </style>
             <div>
@@ -129,6 +101,7 @@ customElements.define("globular-form-section", FormSection);
  * Never instantiate a Field variable. This is meant to be an abstract class that must be implemented by a derived class in order to be used properly.
  */
 class Field extends HTMLElement {
+
     /**
      * 
      * @param {*} label 
@@ -137,12 +110,20 @@ class Field extends HTMLElement {
      * @param {*} y The initial position of the Field on the y axis. Starts at 1.
      * @param {*} width The width of the Field in grid units.
      * @param {*} height The height of the Field in grid units.
+     * @param {*} xSmall 
+     * @param {*} ySmall 
+     * @param {*} widthSmall 
+     * @param {*} heightSmall 
+     * @param {*} xPhone 
+     * @param {*} yPhone 
+     * @param {*} widthPhone 
+     * @param {*} heightPhone 
      */
-    constructor(label, initialValue, x = 0, y = 0, width = 0, height = 0) {
+    constructor(label, initialValue, x = 0, y = 0, width = 0, height = 0, xSmall = 0, ySmall = 0, widthSmall = 0, heightSmall = 0, xPhone = 0, yPhone = 0, widthPhone = 0, heightPhone = 0) {
         super()
         this.initialValue = initialValue
 
-        let hostHtml = this._setSize(x, y, width, height)
+        let hostHtml = this._setAllSizes(x, y, width, height, xSmall, ySmall, widthSmall, heightSmall, xPhone, yPhone, widthPhone, heightPhone)
 
         // Set the shadow dom.
         this.attachShadow({ mode: "open" });
@@ -175,6 +156,39 @@ class Field extends HTMLElement {
         this.container = this.shadowRoot.getElementById("container")
     }
 
+    _setAllSizes(x, y, width, height, xSmall, ySmall, widthSmall, heightSmall, xPhone, yPhone, widthPhone, heightPhone) {
+        let hostHtml = _setSize(x, y, width, height)
+        hostHtml += this._setConditionalSize(800, xSmall, ySmall, widthSmall, heightSmall)
+        hostHtml += this._setConditionalSize(500, xPhone, yPhone, widthPhone, heightPhone)
+        return hostHtml
+    }
+
+    _setConditionalSize(pixelWidth, x, y, width, height) {
+        let conditionalHtml = ``
+        if(!pixelWidth || pixelWidth < 0){
+            return conditionalHtml
+        }
+        conditionalHtml = `@media only screen and (max-width: ${pixelWidth}px) {
+            ${this._setSize(x, y, width, height)}
+        }`
+
+        return conditionalHtml
+        
+    }
+    
+    /**
+     * Sets the CSS for the size of the host element. 
+     * 
+     * If x or y are 0 or negative, then there cannot be a width or a height since the grid is dependent on initial position. 
+     * The position will also be automatically placed with the grid.
+     * 
+     * If width or height
+     * 
+     * @param {*} x The initial position of the Field on the x axis. Starts at 1.
+     * @param {*} y The initial position of the Field on the y axis. Starts at 1.
+     * @param {*} width The width of the Field in grid units.
+     * @param {*} height The height of the Field in grid units.
+     */
     _setSize(x, y, width, height) {
         let hostHtml = `:host {
             `
@@ -198,7 +212,6 @@ class Field extends HTMLElement {
 
         hostHtml += `}
             `
-
         return hostHtml
     }
 
