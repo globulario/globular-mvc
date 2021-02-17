@@ -69,21 +69,37 @@ export class FormSection extends HTMLElement {
         const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0)
         const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0)
 
-        let sectionHeight = 5
-        let sectionWidth = 5
-
+        // @media only screen
 
         // Set the shadow dom.
         this.attachShadow({ mode: "open" });
 
         // Setup basic HTML
+        // @media only screen and (max-width: ...px) is a css media query which checks the viewport width and applies the css if the query is true
         this.shadowRoot.innerHTML = `
             <style>
                 ${theme}
                 #container {
                     display: grid;
-                    grid-template-columns: repeat(${sectionHeight}, 1fr);
-                    grid-template-rows: repeat(${sectionWidth}, 1fr);
+                    grid-template-columns: repeat(5, 1fr);
+                }
+                
+                @media only screen and (max-width: 1000px) {
+                    #container {
+                        grid-template-columns: repeat(4, 1fr);
+                    }
+                }
+
+                @media only screen and (max-width: 750px) {
+                    #container {
+                        grid-template-columns: repeat(2, 1fr);
+                    }
+                }
+
+                @media only screen and (max-width: 500px) {
+                    #container {
+                        grid-template-columns: repeat(1, 1fr);
+                    }
                 }
             </style>
             <div id="container">
