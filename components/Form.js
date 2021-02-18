@@ -78,6 +78,7 @@ export class FormSection extends HTMLElement {
                     grid-template-columns: repeat(${sectionWidth}, 1fr);
                     grid-template-rows: repeat(${sectionHeight}, 1fr);
                     gap: 1rem 1rem;
+                    paddding: 1rem;
                 }
                 
                 .card-title{
@@ -110,6 +111,7 @@ export class FormSection extends HTMLElement {
                 }
 
                 .card {
+                    padding-top: 50px;
                     display:flex;
                     flex-direction:column;
                 }
@@ -203,6 +205,7 @@ class Field extends HTMLElement {
 
                 #container paper-input {
                     margin-top: auto;
+                    padding: 0.5rem;
                 }
           
                 ${hostHtml}
