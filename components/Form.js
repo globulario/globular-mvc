@@ -151,7 +151,7 @@ class Field extends HTMLElement {
      * If width or height are 0 or negative, then their value will be a default of 1.
      * 
      * The above conditions apply for all variations of those parameters. 
-     * Also, it isn't necessary to have all the different dimensions. It is possible to only have the small dimensions, the phone dimensions or the regular dimensions.
+     * Also, it isn't necessary to have all the different dimensions. It is possible to only have an arbitrary amount of the small dimensions, the phone dimensions or the regular dimensions.
      * 
      * @param {*} label 
      * @param {*} initialValue The initial value that the input will show
@@ -172,7 +172,7 @@ class Field extends HTMLElement {
         super()
         this.initialValue = initialValue
 
-        let hostHtml = this._setAllSizes(x, y, width, height, xSmall, ySmall, widthSmall, heightSmall, xPhone, yPhone, widthPhone, heightPhone)
+        let hostHtml = this._getAllSizes(x, y, width, height, xSmall, ySmall, widthSmall, heightSmall, xPhone, yPhone, widthPhone, heightPhone)
 
         // Set the shadow dom.
         this.attachShadow({ mode: "open" });
@@ -209,20 +209,20 @@ class Field extends HTMLElement {
         this.container = this.shadowRoot.getElementById("container")
     }
 
-    _setAllSizes(x, y, width, height, xSmall, ySmall, widthSmall, heightSmall, xPhone, yPhone, widthPhone, heightPhone) {
-        let hostHtml = this._setSize(x, y, width, height)
-        hostHtml += this._setConditionalSize(800, xSmall, ySmall, widthSmall, heightSmall)
-        hostHtml += this._setConditionalSize(500, xPhone, yPhone, widthPhone, heightPhone)
+    _getAllSizes(x, y, width, height, xSmall, ySmall, widthSmall, heightSmall, xPhone, yPhone, widthPhone, heightPhone) {
+        let hostHtml = this._getSize(x, y, width, height)
+        hostHtml += this._getConditionalSize(800, xSmall, ySmall, widthSmall, heightSmall)
+        hostHtml += this._getConditionalSize(500, xPhone, yPhone, widthPhone, heightPhone)
         return hostHtml
     }
 
-    _setConditionalSize(pixelWidth, x, y, width, height) {
+    _getConditionalSize(pixelWidth, x, y, width, height) {
         let conditionalHtml = ``
         if(!pixelWidth || pixelWidth < 0){
             return conditionalHtml
         }
         conditionalHtml = `@media only screen and (max-width: ${pixelWidth}px) {
-            ${this._setSize(x, y, width, height)}
+            ${this._getSize(x, y, width, height)}
         }`
 
         return conditionalHtml
@@ -230,7 +230,7 @@ class Field extends HTMLElement {
     }
     
     /**
-     * Sets the CSS for the size of the host element. 
+     * Gets the CSS for the size of the host element. 
      * 
      * If x or y are 0 or negative, then there cannot be a width or a height since the grid is dependent on initial position. 
      * The position will also be automatically placed within the grid.
@@ -242,7 +242,7 @@ class Field extends HTMLElement {
      * @param {*} width The width of the Field in grid units.
      * @param {*} height The height of the Field in grid units.
      */
-    _setSize(x, y, width, height) {
+    _getSize(x, y, width, height) {
         let hostHtml = `:host {
             `
         if (x && x > 0) {
@@ -386,6 +386,8 @@ export class StringField extends Field {
 
         //By default, show the input element and not the view element
         this.unlock()
+        this.setValue(this.initialValue)
+
     }
 
     getValue() {
@@ -393,8 +395,8 @@ export class StringField extends Field {
     }
 
     setValue(v) {
-        this.input.value = value
-        this.view.innerHTML = value
+        this.input.value = v
+        this.view.innerHTML = v
     }
 
     clear() {
