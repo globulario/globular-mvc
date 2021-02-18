@@ -6,13 +6,13 @@ import '@polymer/paper-input/paper-input.js';
  * 
  * <globular-form >
  *      <globular-form-section>
- *          <globular-string-field>
+ *          <globular-string-field label="grape">
  *          </globular-string-field>
- *          <globular-string-field>
+ *          <globular-string-field label="grapefruit" x="2" y="1">
  *          </globular-string-field>
  *      <globular-form-section>
  *      <globular-form-section>
- *          <globular-string-field>
+ *          <globular-string-field label="Grapefruit Pie" x="1" y="1" width="2" height="3" xsmall ysmall widthsmall heightsmall xlarge ylarge widthlarge heightlarge>
  *          </globular-string-field>
  *      <globular-form-section>
  * </globular-form>
@@ -26,7 +26,6 @@ export class Form extends HTMLElement {
         this.attachShadow({ mode: "open" });
 
         // Setup basic HTML
-        console.log("another test?")
         this.shadowRoot.innerHTML = `
             <style>
                 ${theme}
@@ -60,12 +59,12 @@ customElements.define("globular-form", Form);
 export class FormSection extends HTMLElement {
 
     // Must be defined following the screen size.
-    constructor(title, subtitle ) {
+    constructor(title, subtitle, sectionWidth, sectionHeight) {
         super()
 
-        //if very long, but not wide = more rows, less columns //Mostly for mobile
-        //if wide, but not long = more columns, less rows // Large computer displays
-
+        this.idTitle = title.split(" ").join("_");
+        this.title = title
+        this.subtitle = subtitle
         // Set the shadow dom.
         this.attachShadow({ mode: "open" });
 
@@ -75,14 +74,53 @@ export class FormSection extends HTMLElement {
                 ${theme}
                 #container {
                     display: grid;
-                    grid-template-columns: repeat(${sectionHeight}, 1 fr);
-                    grid-template-rows: repeat(${sectionWidth}, 1 fr);
+                    grid-template-columns: repeat(${sectionWidth}, 1fr);
+                    grid-template-rows: repeat(${sectionHeight}, 1fr);
+                    gap: 1rem 1rem;
                 }
+                
+                .card-title{
+                    position: absolute;
+                    font-size: 1rem;
+                    text-transform: uppercase;
+                    color: var(--cr-primary-text-color);
+                    font-weight: 400;
+                    letter-spacing: .25px;
+                    margin-bottom: .35em;
+                    margin-top: var(--cr-section-vertical-margin);
+                    outline: none;
+                    padding-bottom: .25em;
+                    padding-top: .5em;
+                    padding-left: 2em;
+                }
+
+                .card-subtitle{
+                    padding: 48px;
+                    letter-spacing: .01428571em;
+                    font-family: Roboto,Arial,sans-serif;
+                    font-size: .875rem;
+                    font-weight: 400;
+                    line-height: 1.25rem;
+                    hyphens: auto;
+                    word-break: break-word;
+                    word-wrap: break-word;
+                    color: var(--cr-primary-text-color);
+                    flex-grow: 1;
+                }
+
+                .card {
+                    display:flex;
+                    flex-direction:column;
+                }
+
+
             </style>
-            <div id="container">
-                <slot>
+            <paper-card class="card" id="${this.idTitle}_form_section">
+                <h2 class="card-title">${this.title}</h2>
+                <div class="card-subtitle">${this.subtitle}</div>
+                <slot id="container">
                 </slot>
-            </div>
+            </paper-card>
         `
 
         this.container = this.shadowRoot.getElementById("container")
@@ -93,27 +131,48 @@ export class FormSection extends HTMLElement {
     }
 
     appendField(field) {
-        let e = field.getElement()
-        if (e) {
-            e.tabIndex = this.childNodes.length
+        if (field) {
+            this.appendChild(field)
         }
-        this.shadowRoot.appendChild(field)
     }
 }
 
 customElements.define("globular-form-section", FormSection);
 
 /**
- * Never create a Field variable. This is meant to be an abstract class tht must be implemented by a derived class in order to be used properly.
+ * Never instantiate a Field variable. This is meant to be an abstract class that must be implemented by a derived class in order to be used properly.
  */
-export class Field extends HTMLElement {
-    constructor(name, initialValue, width=1, height=1, x=1, y=1) {
+class Field extends HTMLElement {
+
+    /**
+     * If x or y are 0 or negative, then there cannot be a width or a height since the grid is dependent on initial position. 
+     * The position will also be automatically placed within the grid.
+     * 
+     * If width or height are 0 or negative, then their value will be a default of 1.
+     * 
+     * The above conditions apply for all variations of those parameters. 
+     * Also, it isn't necessary to have all the different dimensions. It is possible to only have the small dimensions, the phone dimensions or the regular dimensions.
+     * 
+     * @param {*} label 
+     * @param {*} initialValue The initial value that the input will show
+     * @param {*} x The initial position of the Field on the x axis. Starts at 1.
+     * @param {*} y The initial position of the Field on the y axis. Starts at 1.
+     * @param {*} width The width of the Field in grid units.
+     * @param {*} height The height of the Field in grid units.
+     * @param {*} xSmall The position of the Field on the x axis when the screen is small. Starts at 1.
+     * @param {*} ySmall The position of the Field on the y axis when the screen is small. Starts at 1.
+     * @param {*} widthSmall The width of the Field when the screen is small.
+     * @param {*} heightSmall The height of the Field when the screen is small.
+     * @param {*} xPhone The position of the Field on the x axis when the screen is about the size of a phone. Starts at 1.
+     * @param {*} yPhone The position of the Field on the y axis when the screen is about the size of a phone. Starts at 1.
+     * @param {*} widthPhone The width of the Field when the screen is about the size of a phone.
+     * @param {*} heightPhone The height of the Field when the screen is about the size of a phone.
+     */
+    constructor(label, initialValue, x = 0, y = 0, width = 0, height = 0, xSmall = 0, ySmall = 0, widthSmall = 0, heightSmall = 0, xPhone = 0, yPhone = 0, widthPhone = 0, heightPhone = 0) {
         super()
         this.initialValue = initialValue
-        width = (width < 1) ? 1 : width
-        height = (height < 1) ? 1 : height
-        x = (x < 1) ? 1 : x
-        y = (y < 1) ? 1 : y
+
+        let hostHtml = this._setAllSizes(x, y, width, height, xSmall, ySmall, widthSmall, heightSmall, xPhone, yPhone, widthPhone, heightPhone)
 
         // Set the shadow dom.
         this.attachShadow({ mode: "open" });
@@ -134,24 +193,81 @@ export class Field extends HTMLElement {
                    word-break: break-word;
                    word-wrap: break-word;
                 }
-                
+
                 #container {
-                    grid-column: ${x} / ${x + width}
-                    grid-row: ${y} / ${y + height}
+                    
                 }
           
+                ${hostHtml}
               </style>
           
-              <div id="container">
-                <div id="name-div" class="field-label">${name}</div>
-                <slot name="field-value"> 
-                </slot>
-              <div>
+              <paper-card id="container">
+                <div id="name-div" class="field-label">${label}</div>
+              <paper-card>
         `
 
         this.container = this.shadowRoot.getElementById("container")
     }
+
+    _setAllSizes(x, y, width, height, xSmall, ySmall, widthSmall, heightSmall, xPhone, yPhone, widthPhone, heightPhone) {
+        let hostHtml = this._setSize(x, y, width, height)
+        hostHtml += this._setConditionalSize(800, xSmall, ySmall, widthSmall, heightSmall)
+        hostHtml += this._setConditionalSize(500, xPhone, yPhone, widthPhone, heightPhone)
+        return hostHtml
+    }
+
+    _setConditionalSize(pixelWidth, x, y, width, height) {
+        let conditionalHtml = ``
+        if(!pixelWidth || pixelWidth < 0){
+            return conditionalHtml
+        }
+        conditionalHtml = `@media only screen and (max-width: ${pixelWidth}px) {
+            ${this._setSize(x, y, width, height)}
+        }`
+
+        return conditionalHtml
+        
+    }
     
+    /**
+     * Sets the CSS for the size of the host element. 
+     * 
+     * If x or y are 0 or negative, then there cannot be a width or a height since the grid is dependent on initial position. 
+     * The position will also be automatically placed within the grid.
+     * 
+     * If width or height are 0 or negative, then their value will be 1.
+     * 
+     * @param {*} x The initial position of the Field on the x axis. Starts at 1.
+     * @param {*} y The initial position of the Field on the y axis. Starts at 1.
+     * @param {*} width The width of the Field in grid units.
+     * @param {*} height The height of the Field in grid units.
+     */
+    _setSize(x, y, width, height) {
+        let hostHtml = `:host {
+            `
+        if (x && x > 0) {
+            hostHtml += `grid-column: ${x}`
+            if (width && width > 0) {
+                hostHtml += ` / ${x + width}`
+            }
+            hostHtml += `;
+                `
+        }
+
+        if (y && y > 0) {
+            hostHtml += `grid-row: ${y}`
+            if (height && height > 0) {
+                hostHtml += ` / ${y + height}`
+            }
+            hostHtml += `;
+                `
+        }
+
+        hostHtml += `}
+            `
+        return hostHtml
+    }
+
     /**
      * Hides all the field's elements
      */
@@ -181,7 +297,7 @@ export class Field extends HTMLElement {
         this.initialValue = v
         this.setValue(v)
     }
-    
+
     /**
      * Returns the value of the current input.
      * 
@@ -227,18 +343,49 @@ export class Field extends HTMLElement {
 
 }
 
+/**
+ * A simple input field which accepts any string as its input.
+ */
 export class StringField extends Field {
-    constructor(name, initialValue = "") {
-        super(name, initialValue)
+
+    /**
+     * If x or y are 0 or negative, then there cannot be a width or a height since the grid is dependent on initial position. 
+     * The position will also be automatically placed within the grid.
+     * 
+     * If width or height are 0 or negative, then their value will be a default of 1.
+     * 
+     * The above conditions apply for all variations of those parameters. 
+     * Also, it isn't necessary to have all the different dimensions. It is possible to only have the small dimensions, the phone dimensions or the regular dimensions.
+     * 
+     * @param {*} label 
+     * @param {*} initialValue The initial value that the input will show
+     * @param {*} x The initial position of the Field on the x axis. Starts at 1.
+     * @param {*} y The initial position of the Field on the y axis. Starts at 1.
+     * @param {*} width The width of the Field in grid units.
+     * @param {*} height The height of the Field in grid units.
+     * @param {*} xSmall The position of the Field on the x axis when the screen is small. Starts at 1.
+     * @param {*} ySmall The position of the Field on the y axis when the screen is small. Starts at 1.
+     * @param {*} widthSmall The width of the Field when the screen is small.
+     * @param {*} heightSmall The height of the Field when the screen is small.
+     * @param {*} xPhone The position of the Field on the x axis when the screen is about the size of a phone. Starts at 1.
+     * @param {*} yPhone The position of the Field on the y axis when the screen is about the size of a phone. Starts at 1.
+     * @param {*} widthPhone The width of the Field when the screen is about the size of a phone.
+     * @param {*} heightPhone The height of the Field when the screen is about the size of a phone.
+     */
+    constructor(label, initialValue = "", x = 0, y = 0, width = 0, height = 0, xSmall = 0, ySmall = 0, widthSmall = 0, heightSmall = 0, xPhone = 0, yPhone = 0, widthPhone = 0, heightPhone = 0) {
+        super(label, initialValue, x, y, width, height, xSmall, ySmall, widthSmall, heightSmall , xPhone, yPhone, widthPhone, heightPhone)
         // Add validation for the input
         let html = `
             <paper-input id="field-input" label="" raised required></paper-input>
             <div id="field-view"></div>
         `
         let range = document.createRange();
-        this.shadowRoot.appendChild(range.createContextualFragment(html))
+        this.container.appendChild(range.createContextualFragment(html))
         this.input = this.shadowRoot.getElementById("field-input");
         this.view = this.shadowRoot.getElementById("field-view")
+
+        //By default, show the input element and not the view element
+        this.unlock()
     }
 
     getValue() {
@@ -250,11 +397,14 @@ export class StringField extends Field {
         this.view.innerHTML = value
     }
 
-    clear() { 
+    clear() {
         this.setValue("")
     }
 
     lock() {
+        this.view.innerHTML = this.input.value
+
+        // Temporary: Change the method to remove and replace the elements
         this.input.style.display = "none"
         this.view.style.display = ""
     }

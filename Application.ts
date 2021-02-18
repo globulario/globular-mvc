@@ -246,6 +246,54 @@ export class Application extends Model {
         true
       );
 
+      // Revoke contact invitation.
+      Model.eventHub.subscribe(
+        "revoke_contact_invitation_event_",
+        (uuid: string) => {
+        },
+        (contact: Account) => {
+          // Here I will try to login the user.
+          this.onRevokeContactInvitation(contact);
+        },
+        true
+      );
+
+      // Accept contact invitation
+      Model.eventHub.subscribe(
+        "accept_contact_invitation_event_",
+        (uuid: string) => {
+        },
+        (contact: Account) => {
+          // Here I will try to login the user.
+          this.onAcceptContactInvitation(contact);
+        },
+        true
+      );
+
+      // Decline contact invitation
+      Model.eventHub.subscribe(
+        "decline_contact_invitation_event_",
+        (uuid: string) => {
+        },
+        (contact: Account) => {
+          // Here I will try to login the user.
+          this.onDeclineContactInvitation(contact);
+        },
+        true
+      );
+
+      // Decline contact invitation
+      Model.eventHub.subscribe(
+        "delete_contact_event_",
+        (uuid: string) => {
+        },
+        (contact: Account) => {
+          // Here I will try to login the user.
+          this.onDeleteContact(contact);
+        },
+        true
+      );
+
       // Delete user notification.
       Model.eventHub.subscribe(
         "delete_notification_event_",
@@ -948,9 +996,8 @@ export class Application extends Model {
       `
       <div style="display: flex; flex-direction: column;">
         <p>
-          ${this.account.id} want to invite you as a contact!
+          ${this.account.id} want to add you as contact.<br>Click the <iron-icon id="Contacts_icon" icon="social:people" style="--iron-icon-fill-color: var(--palette-primary-main);"></iron-icon> button to accept or decline the invitation.
         </p>
-        <globular-accept-decline-contact-btns style="align-self: flex-end;" contact="${this.account.id}"></globular-accept-decline-contact-btns>
       </div>`
     );
 
@@ -958,7 +1005,7 @@ export class Application extends Model {
     this.sendNotifications(
       notification,
       () => {
-        Account.setContact(this.account.id, contact.id,
+        Account.setContact(this.account.id, "sent", contact.id, "received",
           () => {
             // this.displayMessage(, 3000)
           }, (err: any) => {
@@ -972,8 +1019,127 @@ export class Application extends Model {
   }
 
   // Accept contact.
-  onAcceptContactInvitation(contact: string) { }
+  onAcceptContactInvitation(contact: Account) {
+    // Create a user notification.
+    let notification = new Notification(
+      NotificationType.User,
+      contact.id,
+      `
+      <div style="display: flex; flex-direction: column;">
+        <p>
+          ${this.account.id} accept you as contact.
+          <br>Click the <iron-icon id="Contacts_icon" icon="social:people" style="--iron-icon-fill-color: var(--palette-primary-main);"></iron-icon> button to get more infos.
+        </p>
+      </div>`
+    );
+
+    // Send the notification.
+    this.sendNotifications(
+      notification,
+      () => {
+        Account.setContact(this.account.id, "accepted", contact.id, "accepted",
+          () => {
+            // this.displayMessage(, 3000)
+          }, (err: any) => {
+            this.displayMessage(err, 3000)
+          })
+      },
+      (err: any) => {
+        this.view.displayMessage(err, 3000);
+      }
+    );
+  }
 
   // Decline contact invitation.
-  onDeclineContactInvitation(contact: string) { }
+  onDeclineContactInvitation(contact: Account) {
+    let notification = new Notification(
+      NotificationType.User,
+      contact.id,
+      `
+      <div style="display: flex; flex-direction: column;">
+        <p>
+          Unfortunately ${this.account.id} declined your invitation.
+          <br>Click the <iron-icon id="Contacts_icon" icon="social:people" style="--iron-icon-fill-color: var(--palette-primary-main);"></iron-icon> button to get more infos.
+        </p>
+      </div>`
+    );
+
+    // Send the notification.
+    this.sendNotifications(
+      notification,
+      () => {
+        Account.setContact(this.account.id, "declined", contact.id, "declined",
+          () => {
+            // this.displayMessage(, 3000)
+          }, (err: any) => {
+            this.displayMessage(err, 3000)
+          })
+      },
+      (err: any) => {
+        this.view.displayMessage(err, 3000);
+      }
+    );
+  }
+
+  // Revoke contact invitation.
+  onRevokeContactInvitation(contact: Account) {
+    let notification = new Notification(
+      NotificationType.User,
+      contact.id,
+      `
+      <div style="display: flex; flex-direction: column;">
+        <p>
+          Unfortunately ${this.account.id} revoke the invitation.
+          <br>Click the <iron-icon id="Contacts_icon" icon="social:people" style="--iron-icon-fill-color: var(--palette-primary-main);"></iron-icon> button to get more infos.
+        </p>
+      </div>`
+    );
+
+    // Send the notification.
+    this.sendNotifications(
+      notification,
+      () => {
+        Account.setContact(this.account.id, "revoked", contact.id, "revoked",
+          () => {
+            // this.displayMessage(, 3000)
+          }, (err: any) => {
+            this.displayMessage(err, 3000)
+          })
+      },
+      (err: any) => {
+        this.view.displayMessage(err, 3000);
+      }
+    );
+  }
+
+  // Delete contact invitation.
+  onDeleteContact(contact: Account) {
+    let notification = new Notification(
+      NotificationType.User,
+      contact.id,
+      `
+      <div style="display: flex; flex-direction: column;">
+        <p>
+          You and ${this.account.id} are no more in contact.
+          <br>Click the <iron-icon id="Contacts_icon" icon="social:people" style="--iron-icon-fill-color: var(--palette-primary-main);"></iron-icon> button to get more infos.
+        </p>
+      </div>`
+    );
+
+    // Send the notification.
+    this.sendNotifications(
+      notification,
+      () => {
+        Account.setContact(this.account.id, "deleted", contact.id, "deleted",
+          () => {
+            // this.displayMessage(, 3000)
+          }, (err: any) => {
+            this.displayMessage(err, 3000)
+          })
+      },
+      (err: any) => {
+        this.view.displayMessage(err, 3000);
+      }
+    );
+  }
 }

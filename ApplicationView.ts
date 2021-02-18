@@ -222,10 +222,10 @@ export class ApplicationView extends View {
       (account: Account) => {
         this.onLogin(account);
 
-        // The contacts will be initialyse at login time only.
-        this.contactsMenu.init(account);
 
         // Here I will set contact menu actions.
+
+        // On invite contact action.
         this.contactsMenu.onInviteConctact = (contact: Account) => {
           // Display the message to the user.
           this.displayMessage(
@@ -234,11 +234,64 @@ export class ApplicationView extends View {
             "</div>",
             3000
           );
-    
+
           // So here I will create a notification.
           Model.eventHub.publish("invite_contact_event_", contact, true);
         };
-        
+
+        // On revoke contact invitation action.
+        this.contactsMenu.onRevokeContact = (contact: Account) => {
+
+          this.displayMessage(
+            "<iron-icon icon='send' style='margin-right: 10px;'></iron-icon><div>Invitation to " +
+            contact.email +
+            " was revoked!</div>",
+            3000
+          );
+
+          Model.eventHub.publish("revoke_contact_invitation_event_", contact, true);
+
+        }
+
+        // On accept contact invitation
+        this.contactsMenu.onAcceptContact = (contact: Account) => {
+          this.displayMessage(
+            "<iron-icon icon='send' style='margin-right: 10px;'></iron-icon><div>Invitation from " +
+            contact.email +
+            " was accepted!</div>",
+            3000
+          );
+
+          Model.eventHub.publish("accept_contact_invitation_event_", contact, true);
+        }
+
+        // Decline contact invitation
+        this.contactsMenu.onDeclineContact = (contact: Account) => {
+          this.displayMessage(
+            "<iron-icon icon='send' style='margin-right: 10px;'></iron-icon><div>Invitation from " +
+            contact.email +
+            " was declined!</div>",
+            3000
+          );
+
+          Model.eventHub.publish("decline_contact_invitation_event_", contact, true);
+        }
+
+        // Delete contact.
+        this.contactsMenu.onDeleteContact = (contact: Account) => {
+          this.displayMessage(
+            "<iron-icon icon='send' style='margin-right: 10px;'></iron-icon><div>Contact " +
+            contact.email +
+            " was remove from your contacts!</div>",
+            3000
+          );
+
+          Model.eventHub.publish("delete_contact_event_", contact, true);
+        }
+
+        // The contacts will be initialyse at login time only.
+        this.contactsMenu.init(account);
+
       },
       true
     );
@@ -369,11 +422,11 @@ export class ApplicationView extends View {
     this.layout.title().innerHTML = "<span>" + title + "</span>";
   }
 
-  hideHeader(){
+  hideHeader() {
     this.layout.hideHeader();
   }
 
-  showHeader(){
+  showHeader() {
     this.layout.showHeader();
   }
 
@@ -475,7 +528,7 @@ export class ApplicationView extends View {
 
     this.settingsPanel.innerHTML = ""; // remove the content of the setting panel.
     this.settingsPanel.clear(); // clear various stuff...
-    this.settingsMenu.clear(); 
+    this.settingsMenu.clear();
 
 
     // Create the settings menu and panel here
@@ -528,7 +581,7 @@ export class ApplicationView extends View {
 
     // Keep the content of the side menu
     while (this.getSideMenu().childNodes.length > 0) {
-      let node = this.getSideMenu().childNodes[ this.getSideMenu().childNodes.length - 1]
+      let node = this.getSideMenu().childNodes[this.getSideMenu().childNodes.length - 1]
       this._sidemenu_childnodes.push(node)
       this.getSideMenu().removeChild(node)
     }
@@ -536,7 +589,7 @@ export class ApplicationView extends View {
     this.getSideMenu().appendChild(this.settingsMenu);
     this.getWorkspace().appendChild(this.settingsPanel);
 
-    
+
 
   }
 
