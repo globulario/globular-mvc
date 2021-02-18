@@ -186,7 +186,6 @@ class Field extends HTMLElement {
                    line-height: 1rem;
                    font-size: .6875rem;
                    font-weight: 500;
-                   flex-basis: 156px;
                    letter-spacing: .07272727em;
                    text-transform: uppercase;
                    hyphens: auto;
@@ -197,6 +196,12 @@ class Field extends HTMLElement {
                 #container {
                     width: 100%;
                     height: 100%;
+                    display: flex;
+                    flex-direction: column;
+                }
+
+                #container paper-input {
+                    margin-top: auto;
                 }
           
                 ${hostHtml}
@@ -373,11 +378,11 @@ export class StringField extends Field {
      * @param {*} widthPhone The width of the Field when the screen is about the size of a phone.
      * @param {*} heightPhone The height of the Field when the screen is about the size of a phone.
      */
-    constructor(label, initialValue = "", x = 0, y = 0, width = 0, height = 0, xSmall = 0, ySmall = 0, widthSmall = 0, heightSmall = 0, xPhone = 0, yPhone = 0, widthPhone = 0, heightPhone = 0) {
+    constructor(label, description, initialValue = "", x = 0, y = 0, width = 0, height = 0, xSmall = 0, ySmall = 0, widthSmall = 0, heightSmall = 0, xPhone = 0, yPhone = 0, widthPhone = 0, heightPhone = 0) {
         super(label, initialValue, x, y, width, height, xSmall, ySmall, widthSmall, heightSmall , xPhone, yPhone, widthPhone, heightPhone)
         // Add validation for the input
         let html = `
-            <paper-input id="field-input" label="" raised required></paper-input>
+            <paper-input id="field-input" label="${description}" raised required></paper-input>
             <div id="field-view"></div>
         `
         let range = document.createRange();
