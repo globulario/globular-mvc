@@ -35,7 +35,6 @@ export class Form extends HTMLElement {
                 }    
             </style>
             <div id="container">
-                <span>HELLO SIRS </span>
                 <slot>
                 </slot>
             </div>
@@ -48,8 +47,10 @@ export class Form extends HTMLElement {
         this.container.innerHTML = ''
     }
 
-    appendFormSection() {
-        //TODO: Create a new form section and append it to this item within the container
+    appendFormSection(formSection) {
+        if (formSection) {
+            this.appendChild(formSection)
+        }
         // Create side menu item for each new section which navigates to the new form section.
     }
 }
@@ -77,6 +78,7 @@ export class FormSection extends HTMLElement {
                     grid-template-columns: repeat(${sectionWidth}, 1fr);
                     grid-template-rows: repeat(${sectionHeight}, 1fr);
                     gap: 1rem 1rem;
+                    paddding: 1rem;
                 }
                 
                 .card-title{
@@ -109,6 +111,7 @@ export class FormSection extends HTMLElement {
                 }
 
                 .card {
+                    padding-top: 50px;
                     display:flex;
                     flex-direction:column;
                 }
@@ -151,7 +154,7 @@ class Field extends HTMLElement {
      * If width or height are 0 or negative, then their value will be a default of 1.
      * 
      * The above conditions apply for all variations of those parameters. 
-     * Also, it isn't necessary to have all the different dimensions. It is possible to only have the small dimensions, the phone dimensions or the regular dimensions.
+     * Also, it isn't necessary to have all the different dimensions. It is possible to only have an arbitrary amount of the small dimensions, the phone dimensions or the regular dimensions.
      * 
      * @param {*} label 
      * @param {*} initialValue The initial value that the input will show
@@ -172,7 +175,7 @@ class Field extends HTMLElement {
         super()
         this.initialValue = initialValue
 
-        let hostHtml = this._setAllSizes(x, y, width, height, xSmall, ySmall, widthSmall, heightSmall, xPhone, yPhone, widthPhone, heightPhone)
+        let hostHtml = this._getAllSizes(x, y, width, height, xSmall, ySmall, widthSmall, heightSmall, xPhone, yPhone, widthPhone, heightPhone)
 
         // Set the shadow dom.
         this.attachShadow({ mode: "open" });
@@ -184,9 +187,8 @@ class Field extends HTMLElement {
 
                 .field-label {
                    line-height: 1rem;
-                   font-size: .6875rem;
+                   font-size: .875rem;
                    font-weight: 500;
-                   flex-basis: 156px;
                    letter-spacing: .07272727em;
                    text-transform: uppercase;
                    hyphens: auto;
@@ -195,7 +197,15 @@ class Field extends HTMLElement {
                 }
 
                 #container {
-                    
+                    width: 100%;
+                    height: 100%;
+                    display: flex;
+                    flex-direction: column;
+                }
+
+                #container paper-input {
+                    margin-top: auto;
+                    padding: 0.5rem;
                 }
           
                 ${hostHtml}
@@ -209,20 +219,20 @@ class Field extends HTMLElement {
         this.container = this.shadowRoot.getElementById("container")
     }
 
-    _setAllSizes(x, y, width, height, xSmall, ySmall, widthSmall, heightSmall, xPhone, yPhone, widthPhone, heightPhone) {
-        let hostHtml = this._setSize(x, y, width, height)
-        hostHtml += this._setConditionalSize(800, xSmall, ySmall, widthSmall, heightSmall)
-        hostHtml += this._setConditionalSize(500, xPhone, yPhone, widthPhone, heightPhone)
+    _getAllSizes(x, y, width, height, xSmall, ySmall, widthSmall, heightSmall, xPhone, yPhone, widthPhone, heightPhone) {
+        let hostHtml = this._getSize(x, y, width, height)
+        hostHtml += this._getConditionalSize(800, xSmall, ySmall, widthSmall, heightSmall)
+        hostHtml += this._getConditionalSize(500, xPhone, yPhone, widthPhone, heightPhone)
         return hostHtml
     }
 
-    _setConditionalSize(pixelWidth, x, y, width, height) {
+    _getConditionalSize(pixelWidth, x, y, width, height) {
         let conditionalHtml = ``
         if(!pixelWidth || pixelWidth < 0){
             return conditionalHtml
         }
         conditionalHtml = `@media only screen and (max-width: ${pixelWidth}px) {
-            ${this._setSize(x, y, width, height)}
+            ${this._getSize(x, y, width, height)}
         }`
 
         return conditionalHtml
@@ -230,7 +240,7 @@ class Field extends HTMLElement {
     }
     
     /**
-     * Sets the CSS for the size of the host element. 
+     * Gets the CSS for the size of the host element. 
      * 
      * If x or y are 0 or negative, then there cannot be a width or a height since the grid is dependent on initial position. 
      * The position will also be automatically placed within the grid.
@@ -242,7 +252,7 @@ class Field extends HTMLElement {
      * @param {*} width The width of the Field in grid units.
      * @param {*} height The height of the Field in grid units.
      */
-    _setSize(x, y, width, height) {
+    _getSize(x, y, width, height) {
         let hostHtml = `:host {
             `
         if (x && x > 0) {
@@ -372,11 +382,11 @@ export class StringField extends Field {
      * @param {*} widthPhone The width of the Field when the screen is about the size of a phone.
      * @param {*} heightPhone The height of the Field when the screen is about the size of a phone.
      */
-    constructor(label, initialValue = "", x = 0, y = 0, width = 0, height = 0, xSmall = 0, ySmall = 0, widthSmall = 0, heightSmall = 0, xPhone = 0, yPhone = 0, widthPhone = 0, heightPhone = 0) {
+    constructor(label, description, initialValue = "", x = 0, y = 0, width = 0, height = 0, xSmall = 0, ySmall = 0, widthSmall = 0, heightSmall = 0, xPhone = 0, yPhone = 0, widthPhone = 0, heightPhone = 0) {
         super(label, initialValue, x, y, width, height, xSmall, ySmall, widthSmall, heightSmall , xPhone, yPhone, widthPhone, heightPhone)
         // Add validation for the input
         let html = `
-            <paper-input id="field-input" label="" raised required></paper-input>
+            <paper-input id="field-input" label="${description}" raised required></paper-input>
             <div id="field-view"></div>
         `
         let range = document.createRange();
@@ -386,6 +396,8 @@ export class StringField extends Field {
 
         //By default, show the input element and not the view element
         this.unlock()
+        this.reset()
+
     }
 
     getValue() {
@@ -393,8 +405,8 @@ export class StringField extends Field {
     }
 
     setValue(v) {
-        this.input.value = value
-        this.view.innerHTML = value
+        this.input.value = v
+        this.view.innerHTML = v
     }
 
     clear() {
