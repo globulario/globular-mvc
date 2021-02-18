@@ -228,7 +228,7 @@ export class ContactsMenu extends Menu {
                 Account.getContacts(account.name, "{}",
                     (contacts) => {
                         const info = contacts.find(obj => {
-                            return obj.name === contact.name;
+                            return obj._id === contact.name;
                         })
 
                         if (info == undefined) {
