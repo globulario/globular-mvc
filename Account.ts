@@ -127,8 +127,10 @@ export class Account extends Model {
 
         let collection = "Accounts";
         rqst.setCollection(collection);
-        rqst.setQuery(`{"_id":"${id}"}`);
-        rqst.setOptions(`[{"Projection":{"_id":0, "email":1, "name":1}}]`);
+
+        // Find the account by id or by name... both must be unique in the backend.
+        rqst.setQuery(`{"name":"${id}"}`); // search by name and not id... the id will be retreived.
+        rqst.setOptions(`[{"Projection":{"_id":1, "email":1, "name":1}}]`);
 
         // call persist data
         Model.globular.persistenceService
@@ -139,7 +141,7 @@ export class Account extends Model {
             })
             .then((rsp: any) => {
                 let data = rsp.getResult().toJavaScript();
-                let account = new Account(id, data.email, data.name)
+                let account = new Account(data._id, data.email, data.name)
                 account.initData(successCallback, errorCallback)
             })
             .catch((err: any) => {
@@ -189,10 +191,11 @@ export class Account extends Model {
         let rqst = new FindOneRqst();
         rqst.setId("local_resource");
 
+        // remove unwanted characters
         if (userName == "sa") {
             rqst.setDatabase("local_resource");
         } else {
-            let db = userName + "_db";
+            let db =  userName.split("@").join("_").split(".").join("_") + "_db";
             rqst.setDatabase(db);
         }
 
@@ -244,11 +247,10 @@ export class Account extends Model {
      * @param account 
      */
     initData(callback: (account: Account) => void, onError: (err: any) => void) {
-        let userName = this.id
-
+        let userName = this.name
         // Retreive user data...
         Account.readOneUserData(
-            `{"_id":"` + userName + `"}`,
+            `{"name_":"` + userName + `"}`, // The query is made on the user database and not local_ressource Accounts here so name is name_ here
             userName, // The database to search into 
             (data: any) => {
 
@@ -272,7 +274,7 @@ export class Account extends Model {
                 // Keep in the local map...
                 Account.setAccount(this)
 
-                Account.getContacts(this.id, `{}`, 
+                Account.getContacts(this.name, `{}`, 
                 (contacts:[])=>{
                     // Set the list of contacts (received invitation, sent invitation and actual contact id's)
                     this.contacts = contacts;
@@ -315,14 +317,14 @@ export class Account extends Model {
         callback: (account: Account) => void,
         onError: (err: any) => void
     ) {
-        let userName = this.id;
+        let userName = this.name;
 
         let rqst = new ReplaceOneRqst();
         if (userName == "sa") {
             rqst.setId("local_resource");
             rqst.setDatabase("local_resource");
         } else {
-            let db = userName + "_db";
+            let db = userName.split("@").join("_").split(".").join("_") + "_db";
             rqst.setId(db);
             rqst.setDatabase(db);
         }
@@ -330,7 +332,7 @@ export class Account extends Model {
         let collection = "user_data";
         let data = this.toString();
         rqst.setCollection(collection);
-        rqst.setQuery(`{"_id":"` + userName + `"}`);
+        rqst.setQuery(`{"name":"` + userName + `"}`);
         rqst.setValue(data);
         rqst.setOptions(`[{"upsert": true}]`);
 
@@ -351,17 +353,18 @@ export class Account extends Model {
             });
     }
 
-    static getContacts(id: string, query: string, callback: (contacts: Array<any>) => void, errorCallback: (err: any) => void) {
+    static getContacts(userName: string, query: string, callback: (contacts: Array<any>) => void, errorCallback: (err: any) => void) {
 
         // Insert the notification in the db.
         let rqst = new FindRqst();
         rqst.setId("local_resource");
 
-        if (id == "sa") {
+        if (userName == "sa") {
             rqst.setId("local_resource");
 
         } else {
-            rqst.setDatabase(id + "_db");
+            let db = userName.split("@").join("_").split(".").join("_") + "_db";
+            rqst.setDatabase(db);
         }
 
         rqst.setCollection("Contacts");
@@ -398,7 +401,7 @@ export class Account extends Model {
         if (from == "sa") {
             rqst.setDatabase("local_resource");
         } else {
-            let db = from + "_db";
+            let db = from.split("@").join("_").split(".").join("_") + "_db";
             rqst.setDatabase(db);
         }
 
@@ -430,7 +433,7 @@ export class Account extends Model {
                 if (to == "sa") {
                     rqst.setDatabase("local_resource");
                 } else {
-                    let db = to + "_db";
+                    let db = to.split("@").join("_").split(".").join("_") + "_db";
                     rqst.setDatabase(db);
                 }
 

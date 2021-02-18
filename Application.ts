@@ -308,7 +308,7 @@ export class Application extends Model {
             rqst.setId("local_resource");
             rqst.setDatabase("local_resource");
           } else {
-            let db = this.account.id + "_db";
+            let db = this.account.name.split("@").join("_").split(".").join("_") + "_db";
             rqst.setId(db);
             rqst.setDatabase(db);
           }
@@ -875,7 +875,7 @@ export class Application extends Model {
       if (this.account.id == "sa") {
         rqst.setDatabase("local_resource");
       } else {
-        let db = notification.recipient + "_db";
+        let db = notification.recipient.split("@").join("_").split(".").join("_") + "_db";
         rqst.setDatabase(db);
       }
       // attach account informations.
@@ -936,11 +936,11 @@ export class Application extends Model {
         rqst.setId("local_resource");
         rqst.setDatabase("local_resource");
       } else {
-        let db = this.account.id + "_db";
+        let db = this.account.name.split("@").join("_").split(".").join("_") + "_db";
         rqst.setId(db);
         rqst.setDatabase(db);
       }
-      query = `{"_recipient":"${this.account.id}"}`;
+      query = `{"_recipient":"${this.account.name}"}`;
     }
 
     rqst.setCollection("Notifications");
@@ -992,11 +992,11 @@ export class Application extends Model {
     // Create a user notification.
     let notification = new Notification(
       NotificationType.User,
-      contact.id,
+      contact.name,
       `
       <div style="display: flex; flex-direction: column;">
         <p>
-          ${this.account.id} want to add you as contact.<br>Click the <iron-icon id="Contacts_icon" icon="social:people" style="--iron-icon-fill-color: var(--palette-primary-main);"></iron-icon> button to accept or decline the invitation.
+          ${this.account.name} want to add you as contact.<br>Click the <iron-icon id="Contacts_icon" icon="social:people" style="--iron-icon-fill-color: var(--palette-primary-main);"></iron-icon> button to accept or decline the invitation.
         </p>
       </div>`
     );
@@ -1005,7 +1005,7 @@ export class Application extends Model {
     this.sendNotifications(
       notification,
       () => {
-        Account.setContact(this.account.id, "sent", contact.id, "received",
+        Account.setContact(this.account.name, "sent", contact.name, "received",
           () => {
             // this.displayMessage(, 3000)
           }, (err: any) => {
@@ -1023,11 +1023,11 @@ export class Application extends Model {
     // Create a user notification.
     let notification = new Notification(
       NotificationType.User,
-      contact.id,
+      contact.name,
       `
       <div style="display: flex; flex-direction: column;">
         <p>
-          ${this.account.id} accept you as contact.
+          ${this.account.name} accept you as contact.
           <br>Click the <iron-icon id="Contacts_icon" icon="social:people" style="--iron-icon-fill-color: var(--palette-primary-main);"></iron-icon> button to get more infos.
         </p>
       </div>`
@@ -1037,7 +1037,7 @@ export class Application extends Model {
     this.sendNotifications(
       notification,
       () => {
-        Account.setContact(this.account.id, "accepted", contact.id, "accepted",
+        Account.setContact(this.account.name, "accepted", contact.name, "accepted",
           () => {
             // this.displayMessage(, 3000)
           }, (err: any) => {
@@ -1054,11 +1054,11 @@ export class Application extends Model {
   onDeclineContactInvitation(contact: Account) {
     let notification = new Notification(
       NotificationType.User,
-      contact.id,
+      contact.name,
       `
       <div style="display: flex; flex-direction: column;">
         <p>
-          Unfortunately ${this.account.id} declined your invitation.
+          Unfortunately ${this.account.name} declined your invitation.
           <br>Click the <iron-icon id="Contacts_icon" icon="social:people" style="--iron-icon-fill-color: var(--palette-primary-main);"></iron-icon> button to get more infos.
         </p>
       </div>`
@@ -1068,7 +1068,7 @@ export class Application extends Model {
     this.sendNotifications(
       notification,
       () => {
-        Account.setContact(this.account.id, "declined", contact.id, "declined",
+        Account.setContact(this.account.name, "declined", contact.name, "declined",
           () => {
             // this.displayMessage(, 3000)
           }, (err: any) => {
@@ -1085,11 +1085,11 @@ export class Application extends Model {
   onRevokeContactInvitation(contact: Account) {
     let notification = new Notification(
       NotificationType.User,
-      contact.id,
+      contact.name,
       `
       <div style="display: flex; flex-direction: column;">
         <p>
-          Unfortunately ${this.account.id} revoke the invitation.
+          Unfortunately ${this.account.name} revoke the invitation.
           <br>Click the <iron-icon id="Contacts_icon" icon="social:people" style="--iron-icon-fill-color: var(--palette-primary-main);"></iron-icon> button to get more infos.
         </p>
       </div>`
@@ -1099,7 +1099,7 @@ export class Application extends Model {
     this.sendNotifications(
       notification,
       () => {
-        Account.setContact(this.account.id, "revoked", contact.id, "revoked",
+        Account.setContact(this.account.name, "revoked", contact.name, "revoked",
           () => {
             // this.displayMessage(, 3000)
           }, (err: any) => {
@@ -1116,11 +1116,11 @@ export class Application extends Model {
   onDeleteContact(contact: Account) {
     let notification = new Notification(
       NotificationType.User,
-      contact.id,
+      contact.name,
       `
       <div style="display: flex; flex-direction: column;">
         <p>
-          You and ${this.account.id} are no more in contact.
+          You and ${this.account.name} are no more in contact.
           <br>Click the <iron-icon id="Contacts_icon" icon="social:people" style="--iron-icon-fill-color: var(--palette-primary-main);"></iron-icon> button to get more infos.
         </p>
       </div>`
@@ -1130,7 +1130,7 @@ export class Application extends Model {
     this.sendNotifications(
       notification,
       () => {
-        Account.setContact(this.account.id, "deleted", contact.id, "deleted",
+        Account.setContact(this.account.name, "deleted", contact.name, "deleted",
           () => {
             // this.displayMessage(, 3000)
           }, (err: any) => {
