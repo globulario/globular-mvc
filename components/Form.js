@@ -1,6 +1,12 @@
 import { Model } from "../Model";
 import { theme } from "./Theme";
 import '@polymer/paper-input/paper-input.js';
+import '@polymer/paper-dropdown-menu/paper-dropdown-menu.js'
+import '@polymer/paper-listbox/paper-listbox.js'
+import '@polymer/paper-item/paper-item.js'
+import '@polymer/neon-animation/neon-animation-runner-behavior.js'
+import 'web-animations-js/web-animations-next.min.js'
+// import 'web-animations-js/src/we'
 
 /**
  * 
@@ -51,15 +57,16 @@ export class Form extends HTMLElement {
         if (formSection) {
             this.appendChild(formSection)
         }
-        // Create side menu item for each new section which navigates to the new form section.
+        // TODO: Create side menu item for each new section which navigates to the new form section.
     }
+
+    // TODO: Add save event
 }
 
 customElements.define("globular-form", Form);
 
 export class FormSection extends HTMLElement {
 
-    // Must be defined following the screen size.
     constructor(title, subtitle, sectionWidth, sectionHeight) {
         super()
 
@@ -204,6 +211,11 @@ class Field extends HTMLElement {
                 }
 
                 #container paper-input {
+                    margin-top: auto;
+                    padding: 0.5rem;
+                }
+
+                #container paper-dropdown-menu {
                     margin-top: auto;
                     padding: 0.5rem;
                 }
@@ -368,6 +380,7 @@ export class StringField extends Field {
      * Also, it isn't necessary to have all the different dimensions. It is possible to only have the small dimensions, the phone dimensions or the regular dimensions.
      * 
      * @param {*} label 
+     * @param {*} description
      * @param {*} initialValue The initial value that the input will show
      * @param {*} x The initial position of the Field on the x axis. Starts at 1.
      * @param {*} y The initial position of the Field on the y axis. Starts at 1.
@@ -384,7 +397,7 @@ export class StringField extends Field {
      */
     constructor(label, description, initialValue = "", x = 0, y = 0, width = 0, height = 0, xSmall = 0, ySmall = 0, widthSmall = 0, heightSmall = 0, xPhone = 0, yPhone = 0, widthPhone = 0, heightPhone = 0) {
         super(label, initialValue, x, y, width, height, xSmall, ySmall, widthSmall, heightSmall , xPhone, yPhone, widthPhone, heightPhone)
-        // Add validation for the input
+        // TODO: Add validation for the input
         let html = `
             <paper-input id="field-input" label="${description}" raised required></paper-input>
             <div id="field-view"></div>
@@ -416,7 +429,7 @@ export class StringField extends Field {
     lock() {
         this.view.innerHTML = this.input.value
 
-        // Temporary: Change the method to remove and replace the elements
+        // TODO: Change the method to remove and replace the elements
         this.input.style.display = "none"
         this.view.style.display = ""
     }
@@ -429,3 +442,97 @@ export class StringField extends Field {
 }
 
 customElements.define("globular-string-field", StringField);
+
+export class DropdownField extends Field {
+/**
+     * If x or y are 0 or negative, then there cannot be a width or a height since the grid is dependent on initial position. 
+     * The position will also be automatically placed within the grid.
+     * 
+     * If width or height are 0 or negative, then their value will be a default of 1.
+     * 
+     * The above conditions apply for all variations of those parameters. 
+     * Also, it isn't necessary to have all the different dimensions. It is possible to only have the small dimensions, the phone dimensions or the regular dimensions.
+     * 
+     * @param {*} label 
+     * @param {*} description
+     * @param {*} itemList
+     * @param {*} initialValue The initial value that the input will show
+     * @param {*} x The initial position of the Field on the x axis. Starts at 1.
+     * @param {*} y The initial position of the Field on the y axis. Starts at 1.
+     * @param {*} width The width of the Field in grid units.
+     * @param {*} height The height of the Field in grid units.
+     * @param {*} xSmall The position of the Field on the x axis when the screen is small. Starts at 1.
+     * @param {*} ySmall The position of the Field on the y axis when the screen is small. Starts at 1.
+     * @param {*} widthSmall The width of the Field when the screen is small.
+     * @param {*} heightSmall The height of the Field when the screen is small.
+     * @param {*} xPhone The position of the Field on the x axis when the screen is about the size of a phone. Starts at 1.
+     * @param {*} yPhone The position of the Field on the y axis when the screen is about the size of a phone. Starts at 1.
+     * @param {*} widthPhone The width of the Field when the screen is about the size of a phone.
+     * @param {*} heightPhone The height of the Field when the screen is about the size of a phone.
+     */
+    constructor(label, description, itemList, initialValue = "", x = 0, y = 0, width = 0, height = 0, xSmall = 0, ySmall = 0, widthSmall = 0, heightSmall = 0, xPhone = 0, yPhone = 0, widthPhone = 0, heightPhone = 0) {
+        super(label, initialValue, x, y, width, height, xSmall, ySmall, widthSmall, heightSmall , xPhone, yPhone, widthPhone, heightPhone)
+    
+        this.itemList = itemList
+        let html = `
+            <paper-dropdown-menu id="field-input" label="${description}" raised>
+                <paper-listbox class="dropdown-content">
+                    <template is="dom-repeat repeat items="{{itemList}}">
+                        <paper-item>{{item}}</paper-item>
+                    </template>
+                </paper-listbox>
+            </paper-dropdown-menu>
+            <div id="field-view"></div>
+        `
+
+        console.log(this.itemList)
+        console.log(html)
+        let range = document.createRange();
+        this.container.appendChild(range.createContextualFragment(html))
+        this.input = this.shadowRoot.getElementById("field-input")
+        this.view = this.shadowRoot.getElementById("field-view")
+
+        this.input.addEventListener('select-item-changed', e => { this._setItem(e)})
+        //By default, show the input element and not the view element
+        this.unlock()
+        this.reset()
+    }
+
+    _setItem(e) {
+        const value = e.target.selectedItem
+        if (value) {
+            console.log(value.attributes["value"].value)
+
+        }
+    }
+
+    
+    getValue() {
+        return this.input.value
+    }
+
+    setValue(v) {
+        this.input.value = v
+        this.view.innerHTML = v
+    }
+
+    clear() {
+        this.setValue("")
+    }
+
+    lock() {
+        this.view.innerHTML = this.input.value
+
+        // TODO: Change the method to remove and replace the elements
+        this.input.style.display = "none"
+        this.view.style.display = ""
+    }
+
+    unlock() {
+        this.input.style.display = ""
+        this.view.style.display = "none"
+    }
+}
+
+customElements.define("globular-dropdown-field", DropdownField);
+
