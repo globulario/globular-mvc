@@ -35,7 +35,6 @@ export class Form extends HTMLElement {
                 }    
             </style>
             <div id="container">
-                <span>HELLO SIRS </span>
                 <slot>
                 </slot>
             </div>
@@ -48,8 +47,10 @@ export class Form extends HTMLElement {
         this.container.innerHTML = ''
     }
 
-    appendFormSection() {
-        //TODO: Create a new form section and append it to this item within the container
+    appendFormSection(formSection) {
+        if (formSection) {
+            this.appendChild(formSection)
+        }
         // Create side menu item for each new section which navigates to the new form section.
     }
 }
@@ -184,7 +185,7 @@ class Field extends HTMLElement {
 
                 .field-label {
                    line-height: 1rem;
-                   font-size: .6875rem;
+                   font-size: .875rem;
                    font-weight: 500;
                    letter-spacing: .07272727em;
                    text-transform: uppercase;
@@ -392,7 +393,7 @@ export class StringField extends Field {
 
         //By default, show the input element and not the view element
         this.unlock()
-        this.setValue(this.initialValue)
+        this.reset()
 
     }
 
