@@ -467,7 +467,6 @@ export class Account extends Model {
         rqst.setQuery(query)
 
         let stream = Model.globular.resourceService.getAccounts(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
-
         let accounts_ = new Array<RessourceService.Account>();
 
         stream.on("data", (rsp) => {

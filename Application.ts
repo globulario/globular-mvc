@@ -714,14 +714,19 @@ export class Application extends Model {
    * @param info 
    */
   static saveApplicationInfo(id: string, info: any, successCallback: (infos: any) => void, errorCallback: (err: any) => void) {
+    if(Object.keys(info).length == 0){
+      errorCallback("Nothing has change!")
+      return;
+    }
     let info_ = Application.infos.get(id)
     let value = ""
     let i = 0;
     for (var field in info) {
-      if (isNaN(info[field])) {
-        value += `"${field}":"${info[field]}"`
+      const v = info[field]
+      if (typeof v === 'string' || v instanceof String) {
+        value += `"${field}":"${v}"`
       } else {
-        value += `"${field}":${info[field]}`
+        value += `"${field}":${v}`
       }
 
       i++
@@ -733,7 +738,6 @@ export class Application extends Model {
 
     value = `{"$set":{${value}}}`
 
-    console.log(value)
     // Get the actual value and set values from info.
     const rqst = new UpdateOneRqst
     rqst.setId("local_resource");
