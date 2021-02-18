@@ -391,7 +391,7 @@ export class Account extends Model {
         });
     }
 
-    public static setContact(from: string, to: string, successCallback: () => void, errorCallback: (err: any) => void) {
+    public static setContact(from: string, status_from: string, to: string, status_to: string, successCallback: () => void, errorCallback: (err: any) => void) {
         // So here I will save the contact invitation into pending contact invitation collection...
         let rqst = new ReplaceOneRqst();
         rqst.setId("local_resource");
@@ -407,7 +407,7 @@ export class Account extends Model {
         rqst.setCollection(collection);
 
         rqst.setQuery(`{"_id":"${to}"}`);
-        let sentInvitation = `{"_id":"${to}", "invitationTime":${new Date().getTime()}, "status":"sent"}`
+        let sentInvitation = `{"_id":"${to}", "invitationTime":${new Date().getTime()}, "status":"${status_from}"}`
         rqst.setValue(sentInvitation);
         rqst.setOptions(`[{"upsert": true}]`);
 
@@ -421,7 +421,7 @@ export class Account extends Model {
             .then((rsp: ReplaceOneRsp) => {
 
                 // So Here I will send network event...
-                Model.eventHub.publish("sent_invitation_" + from + "_evt", sentInvitation, false)
+                Model.eventHub.publish( status_from + "_" + from + "_evt", sentInvitation, false)
 
                 // Here I will return the value with it
                 let rqst = new ReplaceOneRqst();
@@ -439,7 +439,7 @@ export class Account extends Model {
                 rqst.setCollection(collection);
 
                 rqst.setQuery(`{"_id":"${from}"}`);
-                let receivedInvitation = `{"_id":"${from}", "invitationTime":${new Date().getTime()}, "status":"received"}`
+                let receivedInvitation = `{"_id":"${from}", "invitationTime":${new Date().getTime()}, "status":"${status_to}"}`
                 rqst.setValue(receivedInvitation);
                 rqst.setOptions(`[{"upsert": true}]`);
 
@@ -452,7 +452,7 @@ export class Account extends Model {
                     })
                     .then((rsp: ReplaceOneRsp) => {
                         // Here I will return the value with it
-                        Model.eventHub.publish("received_invitation_" + to + "_evt", receivedInvitation, false)
+                        Model.eventHub.publish(status_to + "_" + to + "_evt", receivedInvitation, false)
                         successCallback();
 
                     })
@@ -467,7 +467,6 @@ export class Account extends Model {
         rqst.setQuery(query)
 
         let stream = Model.globular.resourceService.getAccounts(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
-
         let accounts_ = new Array<RessourceService.Account>();
 
         stream.on("data", (rsp) => {
