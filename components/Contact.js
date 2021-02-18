@@ -483,19 +483,22 @@ export class SentContactInvitations extends HTMLElement {
     appendContact(contact) {
         let contactLst = this.shadowRoot.querySelector(".contact-invitations-list")
         let card = new ContactCard(this.account, contact)
-        card.id = contact.id + "_pending_invitation"
-
+        let id = "_" + contact.id.split("-").join("_") + "_pending_invitation"
+        card.id = id
         card.setRevokeButton(this.onRevokeContact)
-
         contactLst.appendChild(card)
+        console.log("------->", contactLst.querySelector("#" + id))
     }
 
     removeContact(contact) {
         // simply remove it.
         let contactLst = this.shadowRoot.querySelector(".contact-invitations-list")
-        let card = contactLst.querySelector("#" + contact.id + "_pending_invitation")
+        let id = "_" + contact.id.split("-").join("_") + "_pending_invitation"
+        let card = contactLst.querySelector("#" + id)
         if (card != undefined) {
             contactLst.removeChild(card)
+        }else{
+            console.log("no contact card found with id: ", id)
         }
     }
 }
@@ -606,7 +609,7 @@ export class ReceivedContactInvitations extends HTMLElement {
     appendContact(contact) {
         let contactLst = this.shadowRoot.querySelector(".contact-invitations-list")
         let card = new ContactCard(this.account, contact)
-        card.id = contact.id + "_pending_invitation"
+        card.id = "_" + contact.id.split("-").join("_") + "_pending_invitation"
         card.setAcceptDeclineButton(this.onAcceptContact, this.onDeclineContact)
         contactLst.appendChild(card)
     }
@@ -614,7 +617,7 @@ export class ReceivedContactInvitations extends HTMLElement {
     removeContact(contact) {
         // simply remove it.
         let contactLst = this.shadowRoot.querySelector(".contact-invitations-list")
-        let card = contactLst.querySelector("#" + contact.id + "_pending_invitation")
+        let card = contactLst.querySelector("#" + "_" + contact.id.split("-").join("_") + "_pending_invitation")
         if (card != undefined) {
             contactLst.removeChild(card)
         }
