@@ -225,10 +225,10 @@ export class ContactsMenu extends Menu {
 
                 // Here depending if the contact is in contact list, in received invitation list or in sent invitation
                 // list displayed action will be different.
-                Account.getContacts(account.id, "{}",
+                Account.getContacts(account.name, "{}",
                     (contacts) => {
                         const info = contacts.find(obj => {
-                            return obj._id === contact._id;
+                            return obj.name === contact.name;
                         })
 
                         if (info == undefined) {
@@ -417,7 +417,7 @@ export class SentContactInvitations extends HTMLElement {
 
         `
         // So here I will get the list of sent invitation for the account.
-        Account.getContacts(this.account._id, `{"status":"sent"}`, (invitations) => {
+        Account.getContacts(this.account.name, `{"status":"sent"}`, (invitations) => {
 
             for (var i = 0; i < invitations.length; i++) {
                 Account.getAccount(invitations[i]._id,
@@ -585,7 +585,7 @@ export class ReceivedContactInvitations extends HTMLElement {
         <div class="contact-invitations-list"></div>
         `
         // So here I will get the list of sent invitation for the account.
-        Account.getContacts(this.account._id, `{"status":"received"}`, (invitations) => {
+        Account.getContacts(this.account.name, `{"status":"received"}`, (invitations) => {
 
             for (var i = 0; i < invitations.length; i++) {
                 Account.getAccount(invitations[i]._id,
