@@ -295,8 +295,7 @@ export class SlideShow extends HTMLElement {
         this.orderSlides();
 
         // rotate the slides.
-        let firstChild = this.firstElementChild
-        let w = firstChild.offsetWidth;
+        let w = this.firstElementChild.offsetWidth;
         this.shadowRoot.getElementById("slides").style.transition = "all 1s ease-out"
         this.shadowRoot.getElementById("slides").style.transform = `translateX(${-1 * w}px)`
 
@@ -309,6 +308,7 @@ export class SlideShow extends HTMLElement {
             this.countdown.style.display = "none";
             this.shadowRoot.getElementById("slides").style.transition = 'none';
             this.shadowRoot.getElementById("slides").style.transform = `none`;
+            let firstChild = this.firstElementChild
             this.removeChild(firstChild)
             this.appendChild(firstChild)
             this.orderSlides();
