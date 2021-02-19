@@ -476,21 +476,18 @@ export class DropdownField extends Field {
         this.itemList = itemList
         let html = `
             <paper-dropdown-menu id="field-input" label="${description}" raised>
-                <paper-listbox class="dropdown-content">
-                    <template is="dom-repeat repeat items="{{itemList}}">
-                        <paper-item>{{item}}</paper-item>
-                    </template>
+                <paper-listbox class="dropdown-content" slot="dropdown-content" selected="1">
                 </paper-listbox>
             </paper-dropdown-menu>
             <div id="field-view"></div>
         `
 
-        console.log(this.itemList)
-        console.log(html)
         let range = document.createRange();
         this.container.appendChild(range.createContextualFragment(html))
         this.input = this.shadowRoot.getElementById("field-input")
         this.view = this.shadowRoot.getElementById("field-view")
+        this.shadowRoot.querySelector(".dropdown-content").innerHTML = this._getHtmlArray()
+        console.log(this.shadowRoot.innerHTML)
 
         this.input.addEventListener('select-item-changed', e => { this._setItem(e)})
         //By default, show the input element and not the view element
@@ -504,6 +501,18 @@ export class DropdownField extends Field {
             console.log(value.attributes["value"].value)
 
         }
+    }
+
+    _getHtmlArray() {
+        let htmlArray = ``
+        if (!this.itemList || this.itemList.length < 0) {
+            return htmlArray;
+        }
+        for (let i = 0; i < this.itemList.length; i++)  {
+            htmlArray += `<paper-item value=${this.itemList[i]}>${this.itemList[i]}</paper-item>
+            `
+        }
+        return htmlArray
     }
 
     
