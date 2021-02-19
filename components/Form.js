@@ -511,18 +511,14 @@ export class DropdownField extends Field {
     }
 
     setValue(v) {
-        // let htmlItemlist = this.shadowRoot.querySelector(".dropdown-content").getElementsByTagName("paper-item")
-        // for (let i = 0; i < htmlItemlist.length; i++) {
-        //     if(htmlItemlist[i].getAttribute("selected")) {
-        //         htmlItemlist[i].setAttribute("aria-selected", false)
-        //     }
-
-        //     if (htmlItemlist[i].getAttribute("value") == v) {
-        //         htmlItemlist[i].setAttribute("aria-selected", true)
-        //     }
-        // }
-        // this.view.innerHTML = v
-        return ""
+        let listbox = this.shadowRoot.querySelector(".dropdown-content")
+        let htmlItemlist = listbox.getElementsByTagName("paper-item")
+        for (let i = 0; i < htmlItemlist.length; i++) {
+            if (htmlItemlist[i].getAttribute("value") == v) {
+                listbox.selected = i
+                return
+            }
+        }
     }
 
     clear() {
