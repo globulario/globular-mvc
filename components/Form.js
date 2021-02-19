@@ -487,20 +487,9 @@ export class DropdownField extends Field {
         this.input = this.shadowRoot.getElementById("field-input")
         this.view = this.shadowRoot.getElementById("field-view")
         this.shadowRoot.querySelector(".dropdown-content").innerHTML = this._getHtmlArray()
-        console.log(this.shadowRoot.innerHTML)
-
-        this.input.addEventListener('select-item-changed', e => { this._setItem(e)})
         //By default, show the input element and not the view element
         this.unlock()
         this.reset()
-    }
-
-    _setItem(e) {
-        const value = e.target.selectedItem
-        if (value) {
-            console.log(value.attributes["value"].value)
-
-        }
     }
 
     _getHtmlArray() {
@@ -517,12 +506,23 @@ export class DropdownField extends Field {
 
     
     getValue() {
-        return this.input.value
+        let listbox = this.shadowRoot.querySelector(".dropdown-content")
+        return listbox.getElementsByTagName("paper-item")[listbox.selected].getAttribute("value")
     }
 
     setValue(v) {
-        this.input.value = v
-        this.view.innerHTML = v
+        // let htmlItemlist = this.shadowRoot.querySelector(".dropdown-content").getElementsByTagName("paper-item")
+        // for (let i = 0; i < htmlItemlist.length; i++) {
+        //     if(htmlItemlist[i].getAttribute("selected")) {
+        //         htmlItemlist[i].setAttribute("aria-selected", false)
+        //     }
+
+        //     if (htmlItemlist[i].getAttribute("value") == v) {
+        //         htmlItemlist[i].setAttribute("aria-selected", true)
+        //     }
+        // }
+        // this.view.innerHTML = v
+        return ""
     }
 
     clear() {
@@ -530,7 +530,7 @@ export class DropdownField extends Field {
     }
 
     lock() {
-        this.view.innerHTML = this.input.value
+        this.view.innerHTML = this.getValue()
 
         // TODO: Change the method to remove and replace the elements
         this.input.style.display = "none"
