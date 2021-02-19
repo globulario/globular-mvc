@@ -112,7 +112,7 @@ export class ContactsMenu extends Menu {
         // The invite contact action.
         let inviteContactInput = this.shadowRoot.getElementById("invite_contact_input")
 
-        let contactList = new ContactList(account)
+        let contactList = new ContactList(account, this.onDeleteContact)
         contactLst.appendChild(contactList)
 
         let sentContactInvitations = new SentContactInvitations(account, this.onRevokeContact);
@@ -272,6 +272,25 @@ export class ContactsMenu extends Menu {
 
 customElements.define('globular-contacts-menu', ContactsMenu)
 
+
+
+// Example of event that will keep the contact uptodate.
+/*
+
+TODO keep the account card in line with it info
+                // This fuction will keep the value updated in the contact list.
+                Model.eventHub.subscribe(`__update_account_${value._id}_data_evt__`,
+                (uuid) => {
+
+                },
+                (data) => {
+                  console.log("-------------------------> ", data)
+                },
+                true)
+
+
+*/
+
 /**
  * Display Contact (account informations)
  */
@@ -332,6 +351,18 @@ export class ContactCard extends HTMLElement {
         inviteBtn.onclick = () => {
             if (onInviteConctact != null) {
                 onInviteConctact(this.contact)
+            }
+        }
+    }
+
+    setDeleteButton(onDeleteContact) {
+        this.innerHtml = ""
+        let range = document.createRange()
+        this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.65em; width: 20px; align-self: flex-end;" id="delete_btn">Delete</paper-button>`))
+
+        this.querySelector("#delete_btn").onclick = () => {
+            if (onDeleteContact != null) {
+                onDeleteContact(this.contact)
             }
         }
     }
@@ -632,25 +663,98 @@ customElements.define('globular-received-contact-invitations', ReceivedContactIn
 export class ContactList extends HTMLElement {
 
     // Create the applicaiton view.
-    constructor(account) {
+    // Create the applicaiton view.
+    constructor(account, onDeleteContact) {
         super()
+    
+        // Keep contact card in memory...
+        this.cards = {}
+
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
 
         this.account = account;
-    }
+        this.onDeleteContact = onDeleteContact;
 
-    // The connection callback.
-    connectedCallback() {
+        Model.eventHub.subscribe("accepted_" + account.id + "_evt",
+        (uuid) => { },
+        (evt) => {
+            let invitation = JSON.parse(evt);
+            Account.getAccount(invitation._id,
+                (contact) => {
+                    this.appendContact(contact);
+                },
+                err => {
+                    console.log(err)
+                })
+        },
+        false)
+
+        Model.eventHub.subscribe("deleted_" + account.id + "_evt",
+            (uuid) => { },
+            (evt) => {
+                let invitation = JSON.parse(evt);
+                Account.getAccount(invitation._id,
+                    (contact) => {
+                        this.removeContact(contact);
+                    },
+                    err => {
+                        console.log(err)
+                    })
+            },
+            false)
+
+
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
             ${theme}
         </style>
-
-        <div style="display: flex;">
-        </div>
+        <div class="contact-invitations-list"></div>
         `
+        // So here I will get the list of sent invitation for the account.
+        Account.getContacts(this.account.name, `{"status":"accepted"}`, (invitations) => {
+
+            for (var i = 0; i < invitations.length; i++) {
+                Account.getAccount(invitations[i]._id,
+                    (contact) => {
+                        this.appendContact(contact);
+                    },
+                    err => {
+                        console.log(err)
+                    })
+            }
+        }, err => {
+            console.log(err);
+        })
+    }
+
+    // The connection callback.
+    connectedCallback() {
+    }
+
+    getContactCard(contact){
+        let card = contactLst.querySelector("#" + "_" + contact.id.split("-").join("_") + "_accepted_invitation")
+        return card;
+    }
+
+    appendContact(contact) {
+        let contactLst = this.shadowRoot.querySelector(".contact-invitations-list")
+        let card = new ContactCard(this.account, contact)
+        card.id = "_" + contact.id.split("-").join("_") + "_accepted_invitation"
+        
+        card.setDeleteButton(this.onDeleteContact)
+
+        contactLst.appendChild(card)
+    }
+
+    removeContact(contact) {
+        // simply remove it.
+        let contactLst = this.shadowRoot.querySelector(".contact-invitations-list")
+        let card = contactLst.querySelector("#" + "_" + contact.id.split("-").join("_") + "_accepted_invitation")
+        if (card != undefined) {
+            contactLst.removeChild(card)
+        }
     }
 }
 
@@ -705,53 +809,3 @@ export class AcceptDeclineContactBtns extends HTMLElement {
 }
 
 customElements.define('globular-accept-decline-contact-btns', AcceptDeclineContactBtns)
-
-// Example of event that will keep the contact uptodate.
-/*
-
-TODO keep the account card in line with it info
-                // This fuction will keep the value updated in the contact list.
-                Model.eventHub.subscribe(`__update_account_${value._id}_data_evt__`,
-                (uuid) => {
-
-                },
-                (data) => {
-                  console.log("-------------------------> ", data)
-                },
-                true)
-
-// Connect event to keep the contact panel in correct state.
-        // Here I will react to network event to keep the interface in the correct state.
-        Model.eventHub.subscribe("sent_invitation_" + contact.id + "_evt",
-            (uuid) => { },
-            (evt) => {
-                // So here I will append the account into the list.
-                this.setRevokeButton()
-            },
-            false)
-
-        Model.eventHub.subscribe("received_invitation_" + account.id + "_evt",
-            (uuid) => { },
-            (evt) => {
-                // So here I will append the account into the list.
-                this.setAcceptDeclineButton()
-            },
-            false)
-
-
-        Model.eventHub.subscribe("accepted_invitation_" + contact.id + "_evt",
-            (uuid) => { },
-            (evt) => {
-                // TODO display contact actions...
-                // this.setAcceptDeclineButton()
-
-            },
-            false)
-
-        Model.eventHub.subscribe("declined_invitation_" + contact.id + "_evt",
-            (uuid) => { },
-            (evt) => {
-                // this.setInviteButton(this.oninvite)
-            },
-            false)
-*/
