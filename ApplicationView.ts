@@ -289,14 +289,18 @@ export class ApplicationView extends View {
                 flex-direction: column;
               }
 
+              #yes-no-contact-delete-box globular-contact-card{
+                padding-bottom: 10px;
+              }
+
               #yes-no-contact-delete-box div{
                 display: flex;
-                font-size: 1.2rem;
+                font-size: 1rem;
                 padding-bottom: 10px;
               }
 
               paper-button{
-                font-size: 1.2rem;
+                font-size: 1rem;
                 height: 32px;
               }
 
