@@ -279,15 +279,65 @@ export class ApplicationView extends View {
 
         // Delete contact.
         this.contactsMenu.onDeleteContact = (contact: Account) => {
-          this.displayMessage(
-            "<iron-icon icon='send' style='margin-right: 10px;'></iron-icon><div>Contact " +
-            contact.email +
-            " was remove from your contacts!</div>",
-            3000
+
+          // Here I will ask the user for confirmation before actually delete the contact informations.
+          let toast = this.displayMessage(
+            `
+            <style>
+              #yes-no-contact-delete-box{
+                display: flex;
+                flex-direction: column;
+              }
+
+              #yes-no-contact-delete-box div{
+                display: flex;
+                font-size: 1.2rem;
+                padding-bottom: 10px;
+              }
+
+              paper-button{
+                font-size: 1.2rem;
+                height: 32px;
+              }
+
+            </style>
+            <div id="yes-no-contact-delete-box">
+              <div>Your about to delete </div>
+              <globular-contact-card id="contact-to-delete" contact="${contact.id}"></globular-contact-card>
+              <div>Is it what you want to do? </div>
+              <div style="justify-content: flex-end;">
+                <paper-button raised id="yes-delete-contact">Yes</paper-button>
+                <paper-button raised id="no-delete-contact">No</paper-button>
+              </div>
+            </div>
+            `,
+            15000 // 15 sec...
           );
 
-          Model.eventHub.publish("delete_contact_event_", contact, true);
+          let yesBtn = <any> document.querySelector("#yes-delete-contact")
+          let noBtn = <any> document.querySelector("#no-delete-contact")
+
+          // On yes
+          yesBtn.onclick = ()=>{
+            toast.dismiss();
+
+            this.displayMessage(
+              "<iron-icon icon='send' style='margin-right: 10px;'></iron-icon><div>Contact " +
+              contact.email +
+              " was remove from your contacts!</div>",
+              3000
+            );
+  
+            Model.eventHub.publish("delete_contact_event_", contact, true);
+            
+          }
+
+          noBtn.onclick = ()=>{
+            toast.dismiss();
+          }
         }
+
+
 
         // The contacts will be initialyse at login time only.
         this.contactsMenu.init(account);

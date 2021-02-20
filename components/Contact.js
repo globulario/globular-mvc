@@ -303,6 +303,18 @@ export class ContactCard extends HTMLElement {
         this.attachShadow({ mode: 'open' });
         this.account = account;
         this.contact = contact;
+
+        if(this.hasAttribute("contact")){
+            Account.getAccount(this.getAttribute("contact"), (val)=>{
+                this.contact = val;
+            },(err)=>{console.log(err)})
+        }
+
+        if(this.hasAttribute("account")){
+            Account.getAccount(this.getAttribute("account"), (val)=>{
+                this.account = val;
+            },(err)=>{console.log(err)})
+        }
     }
 
     // The connection callback.
