@@ -9,6 +9,7 @@ import "@polymer/paper-input/paper-input.js";
 import "@polymer/paper-card/paper-card.js";
 import "@polymer/paper-button/paper-button.js";
 import "@polymer/paper-checkbox/paper-checkbox.js";
+import "./Session"
 
 import { Menu } from "./Menu";
 import { Model } from "../Model";
@@ -124,7 +125,7 @@ export class AccountMenu extends Menu {
                     </div>
                     <div>
                         <span id="account-header-id">
-                            ${account._id}
+                            ${account.name}
                         </span>
                         <span id="account-header-email">
                             ${account.email}
@@ -132,6 +133,7 @@ export class AccountMenu extends Menu {
                     </div>
                 </div>
             </div>
+            <globular-session-state account="${account.name}" editable state="online"></globular-session-state>
             <div class="card-actions">
               <paper-button id="settings_btn" >settings
                 <iron-icon style="padding-left: 5px;" icon="settings"></iron-icon>

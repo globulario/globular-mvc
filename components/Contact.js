@@ -13,6 +13,8 @@ import '@polymer/paper-checkbox/paper-checkbox.js';
 import '@polymer/iron-autogrow-textarea/iron-autogrow-textarea.js';
 import '@polymer/paper-tabs/paper-tabs.js';
 import '@polymer/paper-tabs/paper-tab.js';
+
+import {SessionState} from './Session'
 import { Autocomplete } from './Autocomplete'
 
 import { Menu } from './Menu';
@@ -307,6 +309,7 @@ export class ContactCard extends HTMLElement {
         if(this.hasAttribute("contact")){
             Account.getAccount(this.getAttribute("contact"), (val)=>{
                 this.contact = val;
+                console.log("-------------> contact: ", this.contact)
             },(err)=>{console.log(err)})
         }
 
@@ -347,6 +350,7 @@ export class ContactCard extends HTMLElement {
                     <span>${this.contact.email_}</span>
                 </div>
             </div>
+            <globular-session-state account="${this.contact.name}"></globular-session-state>
             <div class="actions-div">
                 <slot></slot>
             </div>

@@ -2,7 +2,7 @@ import { Model } from "./Model";
 import * as resource from "globular-web-client/resource/resource_pb";
 import * as jwt from "jwt-decode";
 import { ApplicationView } from "./ApplicationView";
-import { Account } from "./Account";
+import { Account, SessionState, Session } from "./Account";
 import { NotificationType, Notification } from "./Notification";
 
 import {
@@ -11,9 +11,7 @@ import {
   FindResp,
   UpdateOneRqst,
   UpdateOneRsp,
-  DeleteOneRqst,
-  ReplaceOneRqst,
-  ReplaceOneRsp,
+  DeleteOneRqst
 } from "globular-web-client/persistence/persistence_pb";
 import { v4 as uuidv4 } from "uuid";
 import { mergeTypedArrays, uint8arrayToStringMethod } from "./Utility";
@@ -670,16 +668,76 @@ export class Application extends Model {
 
         // Start refresh as needed.
         this.startRefreshToken();
+        let contactsessionStateListener = (contacts: Array<any>) => {
+          contacts.forEach(contact => {
+            Model.eventHub.subscribe(`session_state_${contact._id}_change_event`,
+              (uuid: string) => {
+                /** nothing special here... */
+              },
+              (evt: string) => {
+                Account.getAccount(contact._id, (account: Account) => {
+
+                  const obj = JSON.parse(evt)
+                  account.session = new Session(contact._id, obj.state_, obj.lastStateTime );
+
+                  // Here I will ask the user for confirmation before actually delete the contact informations.
+                  let toast = this.displayMessage(
+                    `
+                    <style>
+                      #contact-session-info-box{
+                        display: flex;
+                        flex-direction: column;
+                      }
+  
+                      #contact-session-info-box globular-contact-card{
+                        padding-bottom: 10px;
+                      }
+  
+                      #contact-session-info-box div{
+                        display: flex;
+                        font-size: 1.2rem;
+                        padding-bottom: 10px;
+                      }
+                    </style>
+                    <div id="contact-session-info-box">
+                      <div>Session state change... </div>
+                      <globular-contact-card contact="${contact._id}"></globular-contact-card>
+                    </div>
+                    `,
+                    5000 // 15 sec...
+                  );
+                }, (err: any) => { })
+
+
+              }, false)
+          })
+        }
 
         // Init the user data...
-
         this.account.initData(
           (account: Account) => {
+            this.account.session.state = SessionState.Online;
+            Model.eventHub.publish(`__session_state_${this.account.name}_change_event__`, this.account.session, true)
             onLogin(account);
+            Account.getContacts(this.account.name, `{"status":"accepted"}`, (contacts: Array<Account>) => {
+              contactsessionStateListener(contacts)
+            },
+              (err: any) => {
+                this.displayMessage(err, 3000)
+              })
+
             this.view.resume();
           },
           (err: any) => {
+            this.account.session.state = SessionState.Online;
+            Model.eventHub.publish(`__session_state_${this.account.name}_change_event__`, this.account.session, true)
             onLogin(this.account);
+            Account.getContacts(this.account.name, `{"status":"accepted"}`, (contacts: Array<Account>) => {
+              contactsessionStateListener(contacts)
+            },
+              (err: any) => {
+                this.displayMessage(err, 3000)
+              })
             this.view.resume();
             onError(err);
           }
@@ -702,6 +760,10 @@ export class Application extends Model {
     // Send local event.
     Model.eventHub.publish("logout_event", this.account, true);
 
+    // So here I will set the account session state to onlise.
+    this.account.session.state = SessionState.Offline;
+    Model.eventHub.publish(`__session_state_${this.account.name}_change_event__`, this.account.session, true)
+
     // Set room to undefined.
     this.account = null;
 
@@ -711,6 +773,13 @@ export class Application extends Model {
     localStorage.removeItem("user_name");
     localStorage.removeItem("user_email");
     localStorage.removeItem("token_expired");
+
+    // refresh the page to be sure all variable are clear...
+    this.view.wait("Wait until the application reload...")
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000)
+
   }
 
   /**
@@ -762,7 +831,7 @@ export class Application extends Model {
    * @param info 
    */
   static saveApplicationInfo(id: string, info: any, successCallback: (infos: any) => void, errorCallback: (err: any) => void) {
-    if(Object.keys(info).length == 0){
+    if (Object.keys(info).length == 0) {
       errorCallback("Nothing has change!")
       return;
     }

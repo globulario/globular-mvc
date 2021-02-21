@@ -16,6 +16,7 @@ import { Camera } from "./components/Camera";
 import { FileExplorer } from "./components/File";
 import { SearchBar } from "./components/Search";
 import { ContactsMenu } from "./components/Contact";
+import { MessengerMenu } from "./components/Messenger";
 import { ConversationPanel } from "./components/Conversation";
 import { SettingsMenu, SettingsPanel } from "./components/Settings";
 import { Application } from "./Application";
@@ -66,6 +67,9 @@ export class ApplicationView extends View {
 
   /** The contact menu */
   private contactsMenu: ContactsMenu;
+
+  /** The messenger menu */
+  private messengerMenu: MessengerMenu;
 
   /** The settings Menu */
   protected settingsMenu: SettingsMenu;
@@ -150,6 +154,9 @@ export class ApplicationView extends View {
 
     // The concact menu
     this.contactsMenu = new ContactsMenu();
+
+    // The messenger menu
+    this.messengerMenu = new MessengerMenu();
 
     // The camera can be use to take picture.
     this._camera = new Camera();
@@ -306,7 +313,7 @@ export class ApplicationView extends View {
 
             </style>
             <div id="yes-no-contact-delete-box">
-              <div>Your about to delete </div>
+              <div>Your about to delete the contact</div>
               <globular-contact-card id="contact-to-delete" contact="${contact.id}"></globular-contact-card>
               <div>Is it what you want to do? </div>
               <div style="justify-content: flex-end;">
@@ -345,6 +352,11 @@ export class ApplicationView extends View {
 
         // The contacts will be initialyse at login time only.
         this.contactsMenu.init(account);
+
+
+        // Also the messenger menu
+        this.messengerMenu.init(account);
+
 
       },
       true
@@ -399,6 +411,10 @@ export class ApplicationView extends View {
           this.contactsMenu.getMenuDiv().classList.remove("bottom");
           this.contactsMenu.getMenuDiv().classList.add("left");
 
+          this.overFlowMenu.getMenuDiv().appendChild(this.messengerMenu);
+          this.messengerMenu.getMenuDiv().classList.remove("bottom");
+          this.messengerMenu.getMenuDiv().classList.add("left");
+
           this.overFlowMenu.getMenuDiv().appendChild(this.notificationMenu);
           this.notificationMenu.getMenuDiv().classList.remove("bottom");
           this.notificationMenu.getMenuDiv().classList.add("left");
@@ -424,6 +440,10 @@ export class ApplicationView extends View {
           this.layout.toolbar().appendChild(this.contactsMenu);
           this.contactsMenu.getMenuDiv().classList.remove("left");
           this.contactsMenu.getMenuDiv().classList.add("bottom");
+
+          this.layout.toolbar().appendChild(this.messengerMenu);
+          this.messengerMenu.getMenuDiv().classList.remove("left");
+          this.messengerMenu.getMenuDiv().classList.add("bottom");
 
           this.layout.toolbar().appendChild(this.notificationMenu);
           this.notificationMenu.getMenuDiv().classList.remove("left");

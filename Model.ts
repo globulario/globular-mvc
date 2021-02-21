@@ -69,7 +69,7 @@ export class Model {
      * @param json The class data.
      */
     static fromString(json: string): any {
-
+        
     }
 
     /**
