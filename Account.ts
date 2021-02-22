@@ -121,15 +121,18 @@ export class Session extends Model {
     // Init from the db...
     fromObject(obj: any) {
         this._id = obj._id;
-        if (obj.state_ == 0) {
-            this.state_ = SessionState.Online;
+        if (obj.state == 0) {
+            this.state = SessionState.Online;
         } else if (obj.state == 1) {
-            this.state_ = SessionState.Offline;
+            this.state = SessionState.Offline;
         } else if (obj.state == 2) {
-            this.state_ = SessionState.Away;
+            this.state = SessionState.Away;
         }
-
-        this.lastStateTime = new Date(obj.lastStateTime)
+        if (typeof obj.lastStateTime === 'string' || obj.lastStateTime instanceof String){
+            obj.lastStateTime = new Date(obj.lastStateTime)
+        }else{
+            this.lastStateTime = obj.lastStateTime;
+        }
     }
 
     // Save session state in the databese.

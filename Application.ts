@@ -33,7 +33,6 @@ function getFileConfig(url: string, callback: (obj: any) => void, errorcallback:
   xmlhttp.send();
 }
 
-
 /**
  * That class can be use to create any other application.
  */
@@ -41,6 +40,7 @@ export class Application extends Model {
   public static uuid: string;
   public static language: string;
   private static infos: Map<string, any>;
+  private contactsListener: any;
 
   private _appConfig: any; // contain value defines in the config.json file of the application if one is found.
   public get appConfig(): any {
@@ -107,6 +107,9 @@ export class Application extends Model {
    */
   constructor(name: string, title: string, view: ApplicationView) {
     super();
+
+    // The map of contact listener.
+    this.contactsListener = {}
 
     // set the application view in it model.
     view.application = this;
@@ -519,13 +522,11 @@ export class Application extends Model {
         localStorage.setItem("user_email", email);
 
         // Set the account
-        this.account = new Account(userName, email, userName);
-
-        // Set the account infos...
-        this.account.initData(() => {
-          // sa is not a real account it's a role so it has no database
+        Account.getAccount(userName, (account: Account) => {
+          this.account = account;
           initCallback(this.account);
         }, onError);
+
       })
       .catch((err) => {
         // remove old information in that case.
@@ -633,6 +634,50 @@ export class Application extends Model {
     return null;
   }
 
+  // Display message when contact state change.
+  addContactListener(contact: any) {
+
+    Model.eventHub.subscribe(`session_state_${contact._id}_change_event`,
+      (uuid: string) => {
+        this.contactsListener[contact._id] = uuid;
+      },
+      (evt: string) => {
+        Account.getAccount(contact._id, (account: Account) => {
+
+          const obj = JSON.parse(evt)
+          account.session = new Session(contact._id, obj.state_, obj.lastStateTime);
+
+          // Here I will ask the user for confirmation before actually delete the contact informations.
+          let toast = this.displayMessage(
+            `
+          <style>
+            #contact-session-info-box{
+              display: flex;
+              flex-direction: column;
+            }
+
+            #contact-session-info-box globular-contact-card{
+              padding-bottom: 10px;
+            }
+
+            #contact-session-info-box div{
+              display: flex;
+              font-size: 1.2rem;
+              padding-bottom: 10px;
+            }
+          </style>
+          <div id="contact-session-info-box">
+            <div>Session state change... </div>
+            <globular-contact-card contact="${contact._id}"></globular-contact-card>
+          </div>
+          `,
+            5000 // 15 sec...
+          );
+        }, (err: any) => { })
+
+
+      }, false)
+  }
   /**
    * Login into the application
    * @param email
@@ -664,84 +709,60 @@ export class Application extends Model {
         localStorage.setItem("user_email", email);
         localStorage.setItem("user_name", userName);
 
-        this.account = new Account(userName, email, userName);
+        Account.getAccount(userName, (account: Account) => {
+          this.account = account;
+          this.account.session.state = SessionState.Online;
 
-        // Start refresh as needed.
-        this.startRefreshToken();
-        let contactsessionStateListener = (contacts: Array<any>) => {
-          contacts.forEach(contact => {
-            Model.eventHub.subscribe(`session_state_${contact._id}_change_event`,
-              (uuid: string) => {
-                /** nothing special here... */
-              },
-              (evt: string) => {
-                Account.getAccount(contact._id, (account: Account) => {
-
-                  const obj = JSON.parse(evt)
-                  account.session = new Session(contact._id, obj.state_, obj.lastStateTime );
-
-                  // Here I will ask the user for confirmation before actually delete the contact informations.
-                  let toast = this.displayMessage(
-                    `
-                    <style>
-                      #contact-session-info-box{
-                        display: flex;
-                        flex-direction: column;
-                      }
-  
-                      #contact-session-info-box globular-contact-card{
-                        padding-bottom: 10px;
-                      }
-  
-                      #contact-session-info-box div{
-                        display: flex;
-                        font-size: 1.2rem;
-                        padding-bottom: 10px;
-                      }
-                    </style>
-                    <div id="contact-session-info-box">
-                      <div>Session state change... </div>
-                      <globular-contact-card contact="${contact._id}"></globular-contact-card>
-                    </div>
-                    `,
-                    5000 // 15 sec...
-                  );
-                }, (err: any) => { })
-
-
-              }, false)
-          })
-        }
-
-        // Init the user data...
-        this.account.initData(
-          (account: Account) => {
-            this.account.session.state = SessionState.Online;
-            Model.eventHub.publish(`__session_state_${this.account.name}_change_event__`, this.account.session, true)
-            onLogin(account);
-            Account.getContacts(this.account.name, `{"status":"accepted"}`, (contacts: Array<Account>) => {
-              contactsessionStateListener(contacts)
+          // When new contact is accepted.
+          Model.eventHub.subscribe("accepted_" + account.id + "_evt",
+            (uuid) => { },
+            (evt) => {
+              let invitation = JSON.parse(evt);
+              this.addContactListener(invitation)
             },
-              (err: any) => {
-                this.displayMessage(err, 3000)
-              })
+            false)
 
-            this.view.resume();
+          Model.eventHub.subscribe("deleted_" + account.id + "_evt",
+            (uuid) => { },
+            (evt) => {
+              let invitation = JSON.parse(evt);
+              Model.eventHub.unSubscribe(`session_state_${invitation._id}_change_event`, this.contactsListener[invitation._id])
+            },
+            false)
+
+          Model.eventHub.publish(`__session_state_${this.account.name}_change_event__`, this.account.session, true)
+          onLogin(account);
+          Account.getContacts(this.account.name, `{"status":"accepted"}`, (contacts: Array<Account>) => {
+            contacts.forEach(contact => {
+              this.addContactListener(contact)
+            })
           },
-          (err: any) => {
-            this.account.session.state = SessionState.Online;
-            Model.eventHub.publish(`__session_state_${this.account.name}_change_event__`, this.account.session, true)
-            onLogin(this.account);
-            Account.getContacts(this.account.name, `{"status":"accepted"}`, (contacts: Array<Account>) => {
-              contactsessionStateListener(contacts)
-            },
-              (err: any) => {
-                this.displayMessage(err, 3000)
-              })
-            this.view.resume();
-            onError(err);
-          }
-        );
+            (err: any) => {
+              this.displayMessage(err, 3000)
+            })
+
+          this.view.resume();
+          // Start refresh as needed.
+          this.startRefreshToken();
+
+        }, (err: any) => {
+          this.account.session.state = SessionState.Online;
+          Model.eventHub.publish(`__session_state_${this.account.name}_change_event__`, this.account.session, true)
+          onLogin(this.account);
+          Account.getContacts(this.account.name, `{"status":"accepted"}`, (contacts: Array<Account>) => {
+            contacts.forEach(contact => {
+              this.addContactListener(contact)
+            })
+          },
+            (err: any) => {
+              this.displayMessage(err, 3000)
+            })
+          this.view.resume();
+          // Start refresh as needed.
+          this.startRefreshToken();
+
+          onError(err);
+        })
       })
       .catch((err) => {
         this.view.resume();

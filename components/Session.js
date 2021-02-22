@@ -6,6 +6,34 @@ import "@polymer/iron-icons/device-icons";
 import "@polymer/iron-icon/iron-icon.js";
 import '@polymer/paper-toggle-button/paper-toggle-button.js';
 
+
+let accountId = ""
+let away = false; // does not want to be see
+let timeout = null; // use it to make the event less anoying...
+let sessionTime = null;
+
+// When the applicaiton lost focus away state will be set to the logged user.
+document.addEventListener('visibilitychange', function () {
+    if (accountId.length > 0 && !away) {
+        if (document.visibilityState == 'hidden') {
+            timeout = setTimeout(()=>{
+                Model.eventHub.publish(`__session_state_${accountId}_change_event__`, { _id: accountId, state: 2, lastStateTime: new Date().toISOString() }, true)
+            }, 30 * 1000)
+        } else {
+            Model.eventHub.publish(`__session_state_${accountId}_change_event__`, { _id: accountId, state: 0, lastStateTime: sessionTime }, true)
+            if(timeout != undefined){
+                clearTimeout(timeout)
+            }
+        }
+    }
+});
+
+window.addEventListener('beforeunload', function (e) {
+    // the absence of a returnValue property on the event will guarantee the browser unload happens
+    Model.eventHub.publish(`__session_state_${accountId}_change_event__`, { _id: accountId, state: 1, lastStateTime: new Date() }, true)
+    delete e['returnValue'];
+});
+
 /**
  * Display the session state of a particular accout...
  */
@@ -19,7 +47,6 @@ export class SessionState extends HTMLElement {
         this.attachShadow({ mode: 'open' });
         this.account = account;
         this.interval = null;
-        this.sessionTime = null;
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -69,26 +96,37 @@ export class SessionState extends HTMLElement {
         this.lastStateTime = this.shadowRoot.querySelector("#session-state-timer")
 
         // Set the away button...
-        if(this.hasAttribute("editable")){
+        if (this.hasAttribute("editable")) {
+
             this.away.onchange = () => {
-                let session = this.account.session;
+
+                let session = {}
+                session._id = this.account.session.id;
+
                 if (this.away.checked) {
                     // Here I will set the user session...
-                    session.state_ = 2;
+                    session.state = 2;
                     session.lastStateTime = new Date();
+                    away = true;
                 } else {
-                    session.state_ = 0;
-                    session.lastStateTime = this.sessionTime; // set back the session time.
+                    session.state = 0;
+                    session.lastStateTime = sessionTime; // set back the session time.
+                    away = false;
                 }
-    
+
                 Model.eventHub.publish(`__session_state_${this.account.name}_change_event__`, session, true)
             }
-        }else{
+        } else {
             this.away.parentNode.removeChild(this.away);
         }
 
         // The account can be the actual object or a string...
         if (this.hasAttribute("account")) {
+            if (this.hasAttribute("editable")) {
+                // keep in memory
+                accountId = this.getAttribute("account")
+            }
+
             Account.getAccount(this.getAttribute("account"), (val) => {
                 this.account = val;
                 this.init();
@@ -104,7 +142,9 @@ export class SessionState extends HTMLElement {
      */
     init() {
         this.setSessionInfo(this.account.session)
-        this.sessionTime = new Date(this.account.session.lastStateTime);
+        if (this.hasAttribute("editable")) {
+        sessionTime = this.account.session.lastStateTime;
+        }
         Model.eventHub.subscribe(`session_state_${this.account.name}_change_event`,
             (uuid) => {
                 /** nothing special here... */
