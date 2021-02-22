@@ -4,8 +4,10 @@ import '@polymer/paper-input/paper-input.js';
 import '@polymer/paper-dropdown-menu/paper-dropdown-menu.js'
 import '@polymer/paper-listbox/paper-listbox.js'
 import '@polymer/paper-item/paper-item.js'
+import '@polymer/paper-menu-button/paper-menu-button.js'
 import '@polymer/neon-animation/neon-animation-runner-behavior.js'
 import 'web-animations-js/web-animations-next.min.js'
+import {IronResizableBehavior} from '@polymer/iron-resizable-behavior/iron-resizable-behavior.js';
 // import 'web-animations-js/src/we'
 
 /**
@@ -475,21 +477,32 @@ export class DropdownField extends Field {
     
         this.itemList = itemList
         let html = `
-            <paper-dropdown-menu id="field-input" label="${description}" raised>
+            <paper-dropdown-menu id="field-input" class="dropdown-menu" label="${description}" raised>
                 <paper-listbox class="dropdown-content" slot="dropdown-content" selected="1">
                 </paper-listbox>
             </paper-dropdown-menu>
             <div id="field-view"></div>
         `
 
+        // Inserts the html into the proper area in the container
         let range = document.createRange();
         this.container.appendChild(range.createContextualFragment(html))
+
         this.input = this.shadowRoot.getElementById("field-input")
         this.view = this.shadowRoot.getElementById("field-view")
+        this.listbox = this.shadowRoot.querySelector(".dropdown-content")
         this.shadowRoot.querySelector(".dropdown-content").innerHTML = this._getHtmlArray()
         //By default, show the input element and not the view element
         this.unlock()
         this.reset()
+    }
+
+    connectedCallback() {
+        this.addEventListener('iron-resize', this._onIronResize.bind(this));
+    }
+
+    _onIronResize() {
+        this.listbox.style.width = this.input.shadowRoot.getElementById("menuButton").offsetWidth + "px"
     }
 
     _getHtmlArray() {
@@ -506,16 +519,14 @@ export class DropdownField extends Field {
 
     
     getValue() {
-        let listbox = this.shadowRoot.querySelector(".dropdown-content")
-        return listbox.getElementsByTagName("paper-item")[listbox.selected].getAttribute("value")
+        return this.listbox.getElementsByTagName("paper-item")[this.listbox.selected].getAttribute("value")
     }
 
     setValue(v) {
-        let listbox = this.shadowRoot.querySelector(".dropdown-content")
-        let htmlItemlist = listbox.getElementsByTagName("paper-item")
+        let htmlItemlist = this.listbox.getElementsByTagName("paper-item")
         for (let i = 0; i < htmlItemlist.length; i++) {
             if (htmlItemlist[i].getAttribute("value") == v) {
-                listbox.selected = i
+                this.listbox.selected = i
                 return
             }
         }
