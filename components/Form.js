@@ -7,6 +7,7 @@ import '@polymer/paper-item/paper-item.js'
 import '@polymer/paper-menu-button/paper-menu-button.js'
 import '@polymer/neon-animation/neon-animation-runner-behavior.js'
 import 'web-animations-js/web-animations-next.min.js'
+import '@polymer/paper-input/paper-textarea.js';
 import {IronResizableBehavior} from '@polymer/iron-resizable-behavior/iron-resizable-behavior.js';
 // import 'web-animations-js/src/we'
 
@@ -221,6 +222,19 @@ class Field extends HTMLElement {
                     margin-top: auto;
                     padding: 0.5rem;
                 }
+
+                #container paper-textarea {
+                    margin-top:auto;
+                    padding: 0.5rem;
+                    word-wrap: break-word;
+                }
+
+                #container paper-textarea {
+                    --paper-input-container-input:{
+                        max-height: 200px;
+                    }
+                }
+
           
                 ${hostHtml}
               </style>
@@ -440,10 +454,84 @@ export class StringField extends Field {
         this.input.style.display = ""
         this.view.style.display = "none"
     }
-
 }
 
 customElements.define("globular-string-field", StringField);
+
+export class TextAreaField extends Field {
+
+    /**
+     * If x or y are 0 or negative, then there cannot be a width or a height since the grid is dependent on initial position. 
+     * The position will also be automatically placed within the grid.
+     * 
+     * If width or height are 0 or negative, then their value will be a default of 1.
+     * 
+     * The above conditions apply for all variations of those parameters. 
+     * Also, it isn't necessary to have all the different dimensions. It is possible to only have the small dimensions, the phone dimensions or the regular dimensions.
+     * 
+     * @param {*} label 
+     * @param {*} description
+     * @param {*} initialValue The initial value that the input will show
+     * @param {*} x The initial position of the Field on the x axis. Starts at 1.
+     * @param {*} y The initial position of the Field on the y axis. Starts at 1.
+     * @param {*} width The width of the Field in grid units.
+     * @param {*} height The height of the Field in grid units.
+     * @param {*} xSmall The position of the Field on the x axis when the screen is small. Starts at 1.
+     * @param {*} ySmall The position of the Field on the y axis when the screen is small. Starts at 1.
+     * @param {*} widthSmall The width of the Field when the screen is small.
+     * @param {*} heightSmall The height of the Field when the screen is small.
+     * @param {*} xPhone The position of the Field on the x axis when the screen is about the size of a phone. Starts at 1.
+     * @param {*} yPhone The position of the Field on the y axis when the screen is about the size of a phone. Starts at 1.
+     * @param {*} widthPhone The width of the Field when the screen is about the size of a phone.
+     * @param {*} heightPhone The height of the Field when the screen is about the size of a phone.
+     */
+    constructor(label, description, initialValue = "", x = 0, y = 0, width = 0, height = 0, xSmall = 0, ySmall = 0, widthSmall = 0, heightSmall = 0, xPhone = 0, yPhone = 0, widthPhone = 0, heightPhone = 0) {
+        super(label, initialValue, x, y, width, height, xSmall, ySmall, widthSmall, heightSmall , xPhone, yPhone, widthPhone, heightPhone)
+        // TODO: Add validation for the input
+        let html = `
+            <paper-textarea id="field-input" label="${description}" raised rows="3" max-rows="3"></paper-textarea>
+            <div id="field-view"></div>
+        `
+
+        let range = document.createRange();
+        this.container.appendChild(range.createContextualFragment(html))
+        this.input = this.shadowRoot.getElementById("field-input");
+        this.view = this.shadowRoot.getElementById("field-view")
+
+        //By default, show the input element and not the view element
+        this.unlock()
+        this.reset()
+
+    }
+    getValue() {
+        return this.input.value
+    }
+
+    setValue(v) {
+        this.input.value = v
+        this.view.innerHTML = v
+    }
+
+    clear() {
+        this.setValue("")
+    }
+
+    lock() {
+        this.view.innerHTML = this.input.value
+
+        // TODO: Change the method to remove and replace the elements
+        this.input.style.display = "none"
+        this.view.style.display = ""
+    }
+
+    unlock() {
+        this.input.style.display = ""
+        console.log("testing")
+        this.view.style.display = "none"
+    }
+}
+
+customElements.define("globular-text-area-field", TextAreaField);
 
 export class DropdownField extends Field {
 /**
