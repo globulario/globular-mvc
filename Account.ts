@@ -55,7 +55,9 @@ export class Session extends Model {
             (evt: string) => {
                 let obj = JSON.parse(evt)
                 // update the session state from the network.
-                this.fromObject(obj)
+                this._id = accountId
+                this.state_ = obj.state;
+                this.lastStateTime = new Date(obj.lastStateTime);
                
             }, false)
 
@@ -66,7 +68,10 @@ export class Session extends Model {
             (obj: any) => {
                 console.log("session state was change...")
                 // Set the object state from the object and save it...
-                this.fromObject(obj);
+                this._id = obj._id;
+                this.state_ = obj.state;
+                this.lastStateTime = obj.lastStateTime;
+                
                 this.save(() => {
                     /* nothing here*/
                 }, (err: any) => {
@@ -101,7 +106,10 @@ export class Session extends Model {
                 domain: Model.domain
             })
             .then((rsp: any) => {
-                this.fromObject(rsp.getResult().toJavaScript());
+                let obj = rsp.getResult().toJavaScript()
+                this._id = obj._id;
+                this.state_ = obj.state;
+                this.lastStateTime = new Date(obj.lastStateTime);
                 // Here I will connect local event to react with interface element...
                 initCallback()
             })

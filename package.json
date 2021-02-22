@@ -32,6 +32,7 @@
   "homepage": "https://github.com/davecourtois/globular-mvc#readme",
   "dependencies": {
     "@fortawesome/fontawesome-free": "^5.15.2",
+    "@modern-dev/namegen": "^0.1.0",
     "@polymer/app-layout": "^3.1.0",
     "@polymer/iron-autogrow-textarea": "^3.0.3",
     "@polymer/iron-collapse": "^3.0.1",
@@ -57,10 +58,16 @@
     "@polymer/paper-tooltip": "^3.0.1",
     "@types/materialize-css": "^1.0.8",
     "@types/uuid": "^8.0.0",
+    "docker-names": "^1.1.1",
     "globular-web-client": "^1.1.93",
     "materialize-css": "^1.0.0",
+    "namesgenerator": "0.0.1",
+    "random-sentence": "^1.0.4",
+    "sentencer": "^0.2.1",
+    "txtgen": "^2.2.8",
     "uuid": "^8.1.0",
-    "web-animations-js": "^2.3.2"
+    "web-animations-js": "^2.3.2",
+    "webrtc-adapter": "^7.7.0"
   },
   "devDependencies": {
     "css-loader": "^3.5.3",

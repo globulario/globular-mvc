@@ -52,7 +52,7 @@ export class ContactsMenu extends Menu {
             this.width = parseInt(this.getAttribute("width"));
         }
 
-        this.height = 525;
+        this.height = 550;
         if (this.hasAttribute("height")) {
             this.height = parseInt(this.getAttribute("height"));
         }

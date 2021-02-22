@@ -4,7 +4,7 @@ import * as jwt from "jwt-decode";
 import { ApplicationView } from "./ApplicationView";
 import { Account, SessionState, Session } from "./Account";
 import { NotificationType, Notification } from "./Notification";
-
+import { DockerNames } from "./components/RandomName"
 import {
   InsertOneRqst,
   FindRqst,
@@ -15,6 +15,8 @@ import {
 } from "globular-web-client/persistence/persistence_pb";
 import { v4 as uuidv4 } from "uuid";
 import { mergeTypedArrays, uint8arrayToStringMethod } from "./Utility";
+import { Conversation, ConversationScope } from "./Conversation";
+
 
 // Get the configuration from url
 function getFileConfig(url: string, callback: (obj: any) => void, errorcallback: (err: any) => void) {
@@ -32,6 +34,8 @@ function getFileConfig(url: string, callback: (obj: any) => void, errorcallback:
   xmlhttp.open("GET", url, true);
   xmlhttp.send();
 }
+
+const nameGenrator = new DockerNames();
 
 /**
  * That class can be use to create any other application.
@@ -730,6 +734,14 @@ export class Application extends Model {
             },
             false)
 
+          Model.eventHub.subscribe("__create_new_conversation_event__",
+            (uuid) => { },
+            (evt) => {
+              this.onCreateNewConversation();
+            },
+            true)
+
+
           Model.eventHub.publish(`__session_state_${this.account.name}_change_event__`, this.account.session, true)
           onLogin(account);
           Account.getContacts(this.account.name, `{"status":"accepted"}`, (contacts: Array<Account>) => {
@@ -841,8 +853,8 @@ export class Application extends Model {
 
   }
 
-  public displayMessage(msg: any, delay: number) {
-    this.view.displayMessage(msg, delay)
+  public displayMessage(msg: any, delay: number): any {
+    return this.view.displayMessage(msg, delay);
   }
 
   /**
@@ -898,6 +910,104 @@ export class Application extends Model {
     })
   }
 
+  ///////////////////////////////////////////////////////////////////////////////////////////
+  // Conversations
+  ///////////////////////////////////////////////////////////////////////////////////////////
+  onCreateNewConversation() {
+
+    if (document.getElementById("new-conversation-box")) {
+      return;
+    }
+
+    const name = nameGenrator.getRandomName(false);
+
+    // Display the box if not already displayed...
+    let toast = this.displayMessage(
+      `
+      <style>
+        new-conversation-box{
+          display: flex;
+          flex-direction: column;
+        }
+
+        #new-conversation-box .title{
+          font-size: 1.1rem;
+          font-weight: 400;
+        }
+
+        #new-conversation-box .actions{
+          display: flex;
+          justify-content: flex-end;
+        }
+
+        #new-conversation-box paper-button{
+          height: 35px;
+          font-size: .85rem;
+        }
+
+        #new-conversation-box{
+          --paper-input-container-input-color: #fff;
+        }
+
+        paper-radio-button{
+          --paper-radio-button-unchecked-color: #737373;
+          --paper-radio-button-label-color: #b9b9b9;
+        }
+
+      </style>
+      <div id="new-conversation-box">
+        <span class="title">New Conversation...</span>
+        <paper-input id="conversation-name-input" type="text" label="Name" style="flex-grow: 1; min-width:350px;" tabindex="0" aria-disabled="false"></paper-input>
+        <paper-radio-group selected="public-conversation-radion-btn">
+          <paper-radio-button id="public-conversation-radion-btn" name="public-conversation-radion-btn">Public</paper-radio-button>
+          <paper-radio-button id="private-conversation-radion-btn" name="private-conversation-radion-btn">Private</paper-radio-button>
+        </paper-radio-group>
+        <div class="actions">
+          <paper-button id="create-new-conversation-btn">Create</paper-button>
+          <paper-button id="cancel-create-new-conversation-btn">Cancel</paper-button>
+        </div>
+      </div>
+      `,
+      1000 * 60 * 15// 15 minutes...
+    );
+
+    let nameInput = <any> document.getElementById("conversation-name-input")
+    nameInput.value = name;
+
+    setTimeout(() => {
+      nameInput.focus()
+      nameInput.inputElement.inputElement.select()
+    }, 100)
+
+    let cancelBtn = document.getElementById("cancel-create-new-conversation-btn")
+    cancelBtn.onclick = () => {
+      toast.dismiss();
+    }
+
+    let createBtn = document.getElementById("create-new-conversation-btn")
+    createBtn.onclick = () => {
+       
+        // So here I will create a new conversation...
+        let uuid = uuidv4();
+        let isPublic = (<any>document.getElementById("public-conversation-radion-btn")).checked
+        let conversation = new Conversation(uuid, name, isPublic, this.account)
+
+        conversation.save(()=>{
+          if(isPublic){
+            // Publish create_new_conversation 
+            Model.eventHub.publish("create_new_conversation_event", conversation.toString(), false)
+          }else{
+            Model.eventHub.publish(`create_new_conversation_${this.account.name}_event`, conversation.toString(), false)
+          }
+          
+        }, 
+        (err:any)=>{
+          this.displayMessage(err, 3000)
+        })
+
+        toast.dismiss();
+    }
+  }
 
   ///////////////////////////////////////////////////////////////////////////////////////////
   // Notifications

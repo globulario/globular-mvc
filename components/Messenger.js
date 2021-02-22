@@ -47,10 +47,11 @@ export class MessengerMenu extends Menu {
             this.width = parseInt(this.getAttribute("width"));
         }
 
-        this.height = 525;
+        this.height = 550;
         if (this.hasAttribute("height")) {
             this.height = parseInt(this.getAttribute("height"));
         }
+
     }
 
     // Init the message menu at login time.
@@ -58,6 +59,23 @@ export class MessengerMenu extends Menu {
 
         // Keep the account reference.
         this.account = account;
+
+        // Event listener when a new conversation is created...
+        Model.eventHub.subscribe("create_new_conversation_event",
+            (uuid) => { },
+            (data) => {
+                let conversation = JSON.parse(data)
+                console.log("---> new public conversation created: ", conversation)
+             },
+            false)
+
+         Model.eventHub.subscribe(`create_new_conversation_${this.account.name}_event`,
+            (uuid) => { },
+            (data) => {
+                let conversation = JSON.parse(data)
+                console.log("---> new private conversation created: ", this.account.name , conversation)
+             },
+            false)
 
         let html = `
             <style>
@@ -71,15 +89,32 @@ export class MessengerMenu extends Menu {
                 overflow: hidden;
                 min-width: 389.5px;
             }
-
+                          
             #Messages-list{
                 flex: 1;
                 overflow: auto;
-                
+               
+            }
+
+            .btn: hover{
+                cursor: pointer;
             }
 
             </style>
+
             <div id="Messages-div">
+                <div style="display: flex; align-items: center;">
+                    <globular-autocomplete type="text" label="Search" id="search-conversation-box" width="${this.width}" style=""></globular-autocomplete>
+                    <div id="new-converstion-btn" class="btn" style="position: relative;">
+                        <iron-icon style="flex-grow: 1; --iron-icon-fill-color:var(--palette-text-primary);" icon="add"></iron-icon>
+                        <paper-ripple class="circle" recenters=""></paper-ripple>
+                    </div>
+                </div>
+                <paper-tabs selected="0">
+                    <paper-tab id="my-conversation-tab">Owned</paper-tab>
+                    <paper-tab id="my-participating-conversation-tab">Participating</paper-tab>
+                    <paper-tab id="public-conversation-tab">Public</paper-tab>
+                </paper-tabs>
                 <div id="Messages-list">
 
                 </div>
@@ -94,10 +129,25 @@ export class MessengerMenu extends Menu {
         this.getMenuDiv().style.overflowY = "auto";
         this.shadowRoot.appendChild(this.getMenuDiv())
 
-        // Here I will initial
+
+        this.newCoversationBtn = this.shadowRoot.querySelector("#new-converstion-btn")
+
+        this.newCoversationBtn.onclick = () => {
+            this.createNewConversation()
+        }
 
 
         this.shadowRoot.removeChild(this.getMenuDiv())
+
+    }
+
+    /**
+     * Create a new converstion.
+     */
+    createNewConversation() {
+        // simply publish create new conversation...
+        Model.eventHub.publish("__create_new_conversation_event__", {}, true)
+
     }
 }
 
