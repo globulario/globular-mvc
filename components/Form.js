@@ -460,6 +460,9 @@ export class StringField extends Field {
 
 customElements.define("globular-string-field", StringField);
 
+/**
+ * An input field with multiple lines which can accept any string as input.
+ */
 export class TextAreaField extends Field {
 
     /**
@@ -560,6 +563,9 @@ export class TextAreaField extends Field {
 
 customElements.define("globular-text-area-field", TextAreaField);
 
+/**
+ * An input field which uses a list that the user will choose from.
+ */
 export class DropdownField extends Field {
 /**
      * If x or y are 0 or negative, then there cannot be a width or a height since the grid is dependent on initial position. 
@@ -667,3 +673,167 @@ export class DropdownField extends Field {
 
 customElements.define("globular-dropdown-field", DropdownField);
 
+/**
+ * An input field which accepts an Image from the user's disk.
+ */
+export class ImageField extends Field {
+/**
+     * If x or y are 0 or negative, then there cannot be a width or a height since the grid is dependent on initial position. 
+     * The position will also be automatically placed within the grid.
+     * 
+     * If width or height are 0 or negative, then their value will be a default of 1.
+     * 
+     * The above conditions apply for all variations of those parameters. 
+     * Also, it isn't necessary to have all the different dimensions. It is possible to only have the small dimensions, the phone dimensions or the regular dimensions.
+     * 
+     * @param {*} label 
+     * @param {*} description
+     * @param {*} initialValue The initial value that the input will show
+     * @param {*} x The initial position of the Field on the x axis. Starts at 1.
+     * @param {*} y The initial position of the Field on the y axis. Starts at 1.
+     * @param {*} width The width of the Field in grid units.
+     * @param {*} height The height of the Field in grid units.
+     * @param {*} xSmall The position of the Field on the x axis when the screen is small. Starts at 1.
+     * @param {*} ySmall The position of the Field on the y axis when the screen is small. Starts at 1.
+     * @param {*} widthSmall The width of the Field when the screen is small.
+     * @param {*} heightSmall The height of the Field when the screen is small.
+     * @param {*} xPhone The position of the Field on the x axis when the screen is about the size of a phone. Starts at 1.
+     * @param {*} yPhone The position of the Field on the y axis when the screen is about the size of a phone. Starts at 1.
+     * @param {*} widthPhone The width of the Field when the screen is about the size of a phone.
+     * @param {*} heightPhone The height of the Field when the screen is about the size of a phone.
+     */
+    constructor(label, description, initialValue = "", x = 0, y = 0, width = 0, height = 0, xSmall = 0, ySmall = 0, widthSmall = 0, heightSmall = 0, xPhone = 0, yPhone = 0, widthPhone = 0, heightPhone = 0) {
+        super(label, initialValue, x, y, width, height, xSmall, ySmall, widthSmall, heightSmall , xPhone, yPhone, widthPhone, heightPhone)
+        // TODO: Add validation for the input
+        let html = `
+            <style>
+                #custom-file-upload span{
+                    flex-grow: 1;
+                }
+        
+                #custom-file-upload iron-icon{
+                    padding-right: 15px;
+                }
+        
+                #custom-file-upload{
+                    display: flex;
+                    align-items: flex-end;
+                    border-bottom: 1px solid var(--palette-text-primary);
+                    font-size: 1rem;
+                    flex-basis: 100%;
+                    letter-spacing: .00625em;
+                    font-weight: 400;
+                    line-height: 1.5rem;
+                    word-break: break-word;
+                    margin-top: auto;
+                    padding: 0.5rem;
+                }
+        
+                #custom-file-upload:hover{
+                    cursor: pointer;
+                }
+                
+                #field-input {
+                    display: none;
+                }
+
+                #field-view{
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  min-width: 64px;
+                  min-height: 64px;
+                  
+                }
+      
+            </style>
+
+            <div id="visual-input">
+                <div id="custom-file-upload">
+                    <iron-icon icon="cloud-upload"> </iron-icon>
+                    <span>${description}</span>
+                </div>
+            </div>
+            <div id="field-view">
+                <div id="image-display-div">
+                    <img id="image-display" src="#" />
+                    <iron-icon id="no-image-display" icon="image:photo"></iron-icon>
+                </div>
+            </div>
+            <input type="file" id="field-input"></input>
+        `
+        let range = document.createRange();
+        this.container.appendChild(range.createContextualFragment(html))
+        // TODO: Input has to be something different in this case
+        this.visualInput = this.shadowRoot.getElementById("visual-input")
+        this.input = this.shadowRoot.getElementById("field-input")
+        this.view = this.shadowRoot.getElementById("field-view")
+
+        
+        this.image = this.shadowRoot.getElementById("image-display")
+        this.icon = this.shadowRoot.getElementById("no-image-display")
+
+        this.onchange = null
+
+        this._initFileEvent()
+
+        this.shadowRoot.getElementById("custom-file-upload").onclick = () => {
+            this.input.click();
+        }
+
+        //By default, show the input element and not the view element
+        this.unlock()
+        this.reset()
+
+    }
+    
+    _initFileEvent() {
+        this.input.onchange = (evt) => {
+            const files = evt.target.files
+            if (files && files[0]) {
+                let reader = new FileReader()
+
+                reader.onload = (e) => {
+                    this.image.src = e.target.result
+                    // setup the onchange event
+                    if(this.onchange) {
+                        this.onchange(this.image.src)
+                    }
+
+                    this.image.style.display = "block";
+                    this.icon.style.display = "none";
+                }
+
+                reader.readAsDataURL(files[0])
+            }
+        }
+    }
+
+    getValue() {
+        return this.image.src
+    }
+
+    setValue(v) {
+        this.input.value = v
+    }
+
+    clear() {
+        this.setValue("")
+    }
+
+    lock() {
+        this.view.innerHTML = this.getValue()
+
+        // TODO: Change the method to remove and replace the elements
+        this.visualInput.style.display = "none"
+        this.view.style.display = ""
+    }
+
+    unlock() {
+        // TODO: The actual view is not disabled in this case when unlocked because you want to see it
+        this.visualInput.style.display = ""
+        // this.view.style.display = "none"
+    }
+}
+
+customElements.define("globular-image-field", ImageField);
