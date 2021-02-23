@@ -17,7 +17,6 @@ import { FileExplorer } from "./components/File";
 import { SearchBar } from "./components/Search";
 import { ContactsMenu } from "./components/Contact";
 import { MessengerMenu } from "./components/Messenger";
-import { ConversationPanel } from "./components/Conversation";
 import { SettingsMenu, SettingsPanel } from "./components/Settings";
 import { Application } from "./Application";
 
@@ -101,11 +100,6 @@ export class ApplicationView extends View {
   private settings_event_listener: string;
   private save_settings_event_listener: string;
 
-  /** The conversation panel */
-  private _conversation_panel: ConversationPanel;
-  public get conversation_panel(): ConversationPanel {
-    return this._conversation_panel;
-  }
 
   private _isLogin: boolean;
   public get isLogin(): boolean {
@@ -182,9 +176,6 @@ export class ApplicationView extends View {
     this._fileExplorer.onerror = (err: any) => {
       //this.displayMessage(err, 4000)
     };
-
-    // Initialyse conversation panel.
-    this._conversation_panel = new ConversationPanel();
 
     // set the global varialbe...
     applicationView = this;

@@ -16,12 +16,12 @@ let sessionTime = null;
 document.addEventListener('visibilitychange', function () {
     if (accountId.length > 0 && !away) {
         if (document.visibilityState == 'hidden') {
-            timeout = setTimeout(()=>{
+            timeout = setTimeout(() => {
                 Model.eventHub.publish(`__session_state_${accountId}_change_event__`, { _id: accountId, state: 2, lastStateTime: new Date().toISOString() }, true)
             }, 30 * 1000)
         } else {
             Model.eventHub.publish(`__session_state_${accountId}_change_event__`, { _id: accountId, state: 0, lastStateTime: sessionTime }, true)
-            if(timeout != undefined){
+            if (timeout != undefined) {
                 clearTimeout(timeout)
             }
         }
@@ -101,7 +101,7 @@ export class SessionState extends HTMLElement {
             this.away.onchange = () => {
 
                 let session = {}
-                session._id = this.account.session.id;
+                session._id = this.account.session._id;
 
                 if (this.away.checked) {
                     // Here I will set the user session...
@@ -143,7 +143,7 @@ export class SessionState extends HTMLElement {
     init() {
         this.setSessionInfo(this.account.session)
         if (this.hasAttribute("editable")) {
-        sessionTime = this.account.session.lastStateTime;
+            sessionTime = this.account.session.lastStateTime;
         }
         Model.eventHub.subscribe(`session_state_${this.account.name}_change_event`,
             (uuid) => {
