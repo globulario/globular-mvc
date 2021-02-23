@@ -223,18 +223,18 @@ class Field extends HTMLElement {
                     padding: 0.5rem;
                 }
 
-                #container paper-textarea {
+                #container textarea {
                     margin-top:auto;
-                    padding: 0.5rem;
                     word-wrap: break-word;
-                }
+                    margin:0.5rem;
+                    outline: var(--paper-input-container-shared-input-style_-_outline);
+                    background: var(--paper-input-container-shared-input-style_-_background);
+                    border: var(--paper-input-container-shared-input-style_-_border);
+                    font-family: var(--paper-input-container-shared-input-style_-_font-family);
+                    font-size: var(--paper-input-container-shared-input-style_-_font-size);
+                    font-weight: var(--paper-input-container-shared-input-style_-_font-weight);
 
-                #container paper-textarea {
-                    --paper-input-container-input:{
-                        max-height: 200px;
-                    }
                 }
-
           
                 ${hostHtml}
               </style>
@@ -488,8 +488,9 @@ export class TextAreaField extends Field {
     constructor(label, description, initialValue = "", x = 0, y = 0, width = 0, height = 0, xSmall = 0, ySmall = 0, widthSmall = 0, heightSmall = 0, xPhone = 0, yPhone = 0, widthPhone = 0, heightPhone = 0) {
         super(label, initialValue, x, y, width, height, xSmall, ySmall, widthSmall, heightSmall , xPhone, yPhone, widthPhone, heightPhone)
         // TODO: Add validation for the input
+        const rows = 3 + Math.floor(5.5 * Math.max(height - 1, 0))
         let html = `
-            <paper-textarea id="field-input" label="${description}" raised rows="3" max-rows="3"></paper-textarea>
+            <textarea id="field-input" placeholder="${description}" rows="${rows}"></textarea>
             <div id="field-view"></div>
         `
 
@@ -526,7 +527,6 @@ export class TextAreaField extends Field {
 
     unlock() {
         this.input.style.display = ""
-        console.log("testing")
         this.view.style.display = "none"
     }
 }
