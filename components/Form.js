@@ -773,6 +773,7 @@ export class ImageField extends Field {
         this.image = this.shadowRoot.getElementById("image-display")
         this.icon = this.shadowRoot.getElementById("no-image-display")
 
+        this.image.style.display = "none"
         this.onchange = null
 
         this._initFileEvent()
