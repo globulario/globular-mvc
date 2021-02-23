@@ -184,6 +184,8 @@ class Field extends HTMLElement {
     constructor(label, initialValue, x = 0, y = 0, width = 0, height = 0, xSmall = 0, ySmall = 0, widthSmall = 0, heightSmall = 0, xPhone = 0, yPhone = 0, widthPhone = 0, heightPhone = 0) {
         super()
         this.initialValue = initialValue
+        this.smallThreshold = 800
+        this.phoneThreshold = 500
 
         let hostHtml = this._getAllSizes(x, y, width, height, xSmall, ySmall, widthSmall, heightSmall, xPhone, yPhone, widthPhone, heightPhone)
 
@@ -249,8 +251,8 @@ class Field extends HTMLElement {
 
     _getAllSizes(x, y, width, height, xSmall, ySmall, widthSmall, heightSmall, xPhone, yPhone, widthPhone, heightPhone) {
         let hostHtml = this._getSize(x, y, width, height)
-        hostHtml += this._getConditionalSize(800, xSmall, ySmall, widthSmall, heightSmall)
-        hostHtml += this._getConditionalSize(500, xPhone, yPhone, widthPhone, heightPhone)
+        hostHtml += this._getConditionalSize(this.smallThreshold, xSmall, ySmall, widthSmall, heightSmall)
+        hostHtml += this._getConditionalSize(this.phoneThreshold, xPhone, yPhone, widthPhone, heightPhone)
         return hostHtml
     }
 
@@ -499,11 +501,36 @@ export class TextAreaField extends Field {
         this.input = this.shadowRoot.getElementById("field-input");
         this.view = this.shadowRoot.getElementById("field-view")
 
+        //Two listeners to change amount of rows
+        this._setHeightListener(heightSmall, this.smallThreshold)
+        this._setHeightListener(heightPhone, this.phoneThreshold)
+
         //By default, show the input element and not the view element
         this.unlock()
         this.reset()
 
     }
+
+    _setHeightListener(height, threshold) {
+        if(height && height > 0) {
+            let watcher = window.matchMedia("(max-width: " + threshold + "px)")
+            this._mediaQueryRows(watcher, height)
+            watcher.addEventListener("change", () => {
+                this._mediaQueryRows(watcher, height)
+            })
+        }
+    }
+
+    _mediaQueryRows(watcher, height) {
+        if (watcher.matches) {
+            this.input.setAttribute("rows", this._calcRow(height))
+        }
+    }
+
+    _calcRow(height) {
+        return 3 + Math.floor(5.5 * Math.max(height - 1, 0))
+    }
+
     getValue() {
         return this.input.value
     }
