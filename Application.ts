@@ -903,11 +903,8 @@ export class Application extends Model {
       application: Model.application,
       domain: Model.domain,
     }).then((rsp: UpdateOneRsp) => {
-      console.log("------------> ", rsp)
       successCallback(info_);
-    }).catch((err: any) => {
-      errorCallback(err)
-    })
+    }).catch(errorCallback)
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////////

@@ -1,91 +1,86 @@
 import { Model } from './Model';
-
-export enum PermissionType {
-    None = 0,
-    Read,
-    Delete,
-    Write,
-    WriteDelete,
-    ReadDelete,
-    ReadWrite,
-    ReadWriteDelete
-}
+import * as rbac from "globular-web-client/rbac/rbac_pb";
 
 /**
- * Permission are use to manage ressouces and action access. If no permission are define on action
- * or resource it make the resource open and accessible or executable by any user or application.
- * At the moment permission are define on a resource it became managed and protected by globular.
+ * That class is use to access Ressource permission.
  */
-export class Permission extends Model {
+export class PermissionManager {
 
-    protected id: string;
-    protected permission: PermissionType;
-
-
-    constructor(id: string, permission: PermissionType) {
-        super()
-    }
-
-    /** Save a resource */
-    public save(callback: () => void, errorCallback: (err: any) => void) {
-        /** nothing here. */
+    constructor() {
 
     }
 
-    /** Delete a resource */
-    public delete(callback: () => void, errorCallback: (err: any) => void) {
-        /** nothing here. */
-    }
-}
+    /**
+     * Return the ressource permission for a given ressource.
+     * @param subject The account, organization, group, peer to give permission to.
+     * @param ressource The ressource to set
+     * @param permission Can be any string, it will be drive by the interface here.
+     */
+    static getRessourcePermission(ressource: string, permission: string, type: rbac.PermissionType, successCallback: (permission: rbac.Permission) => void, errorCallback: (err: any) => void, subject?: string) {
+        let rqst = new rbac.GetResourcePermissionRqst
+        rqst.setName(permission)
+        rqst.setType(type)
 
-/**
- * Action permission it's use to manage who (Application or Role(user's)) can 
- * execute action on the server.
- */
-export class ActionPermission extends Permission {
-    private action: string;
-
-    constructor(id: string, permission: PermissionType, action: string) {
-        super(id, permission)
-        this.action = action;
-    }
-
-    /** Save a resource */
-    public save(callback: () => void, errorCallback: (err: any) => void) {
-        // Dispatch event on the network.
-        Model.eventHub.publish("action_permission_change_event", { id: this.id, permission: this.permission }, false)
+        Model.globular.rbacService.getResourcePermission(rqst, {
+            token: localStorage.getItem("user_token"),
+            application: Model.application,
+            domain: Model.domain,
+        }).then((rsp: rbac.GetResourcePermissionRsp) => {
+            successCallback(rsp.getPermission());
+        }).then(errorCallback)
     }
 
-    /** Delete a resource */
-    public delete(callback: () => void, errorCallback: (err: any) => void) {
-        // Dispatch event on the network.
-        Model.eventHub.publish("action_permission_delete_event", this.id, false)
-    }
-}
+    /**
+     * Return the ressource permission for a given ressource.
+     * @param subject The account, organization, group, peer to give permission to.
+     * @param ressource The ressource to set
+     * @param permission Can be any string, it will be drive by the interface here.
+     */
+    static getRessourcePermissions(ressource: string, successCallback: (permissions: rbac.Permissions) => void, errorCallback: (err: any) => void) {
+        let rqst = new rbac.GetResourcePermissionsRqst
+        rqst.setPath(ressource)
 
-/**
- * Resource permissions are use to manage who can access resource on the server.
- */
-export class ResourcePermission extends Permission {
-    // The path of the permission.
-    private path: string;
-
-    // The owner of the permssion.
-    private owner: string;
-
-    constructor(id: string, permission: PermissionType, path: string, owner: string) {
-        super(id, permission)
-        this.path = path;
-        this.owner = owner;
+        Model.globular.rbacService.getResourcePermissions(rqst, {
+            token: localStorage.getItem("user_token"),
+            application: Model.application,
+            domain: Model.domain,
+        }).then((rsp: rbac.GetResourcePermissionsRsp) => {
+            successCallback(rsp.getPermissions());
+        }).catch(errorCallback)
     }
 
-    /** Save a resource */
-    public save(callback: () => void, errorCallback: (err: any) => void) {
-        Model.eventHub.publish("resource_permission_change_event", { id: this.id, permission: this.permission }, false)
+    /**
+     * Create/Set a permission for a ressource.
+     * @param subject The account, organization, group, peer to give permission to.
+     * @param ressource The ressource to set
+     * @param permission Can be any string, it will be drive by the interface here.
+     */
+    static setRessourcePermissions(ressource: string, permission: string, subject: string, successCallback: () => void, errorCallback: (err: any) => void) {
+
+        // first of all I will get the ressource permissions
+        PermissionManager.getRessourcePermissions(ressource,
+            (permissions: rbac.Permissions) => {
+                console.log(permissions)
+                successCallback();
+            },
+            (err: any) => {
+                if(err.message.indexOf("leveldb: not found") != -1) {
+                    console.log("=========> 158")
+                    
+                }else{
+                    errorCallback(err)
+                }
+            })
     }
 
-    /** Delete a resource */
-    public delete(callback: () => void, errorCallback: (err: any) => void) {
-        Model.eventHub.publish("delete_permission_delete_event", this.id, false)
+    /**
+     * Remove ressource permissions or if permission and suject is set it will remove
+     * only for a specif permission and subject.
+     * @param subject The account, organization, group, peer to give permission to.
+     * @param ressource The ressource to set
+     * @param permission Can be any string, it will be drive by the interface here.
+     */
+    static removeRessourcePermissions(ressource: string, permission?: string, subject?: string) {
+
     }
 }

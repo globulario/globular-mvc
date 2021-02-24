@@ -2,6 +2,7 @@ import { ReplaceOneRqst, ReplaceOneRsp } from 'globular-web-client/persistence/p
 import {Account} from './Account'
 import adapter from 'webrtc-adapter';
 import { Model } from './Model';
+import { PermissionManager } from './Permission';
 
 /**
  * A message is the unit of conversation.
@@ -147,6 +148,15 @@ export class Conversation extends Model {
             .then((rsp: ReplaceOneRsp) => {
                 // Here I will return the value with it
                 Model.eventHub.publish(`create_new_conversation`, this.toString(), false)
+                console.log("=========> 151")
+                PermissionManager.setRessourcePermissions(this.name, "owner", this.owner.name, 
+                    ()=>{
+                        console.log("=========> permission was created!")
+                    }, 
+                    (err:any)=>{
+
+                    })
+
                 successCallback();
             })
             .catch(errorCallback);
