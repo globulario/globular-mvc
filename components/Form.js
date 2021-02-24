@@ -737,18 +737,21 @@ export class ImageField extends Field {
                     display: none;
                 }
 
+                #field-view {
+                    height: 100%;
+                }
+
                 #image-display-div{
                     position: relative;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     min-width: 32px;
-                    min-height: 32px;
+                    height: 100%;
                 }
 
                 img {
                     position: absolute;
-                    padding: 0.5rem;
                     height: 100%;
                     width: auto;
                 }
