@@ -131,8 +131,10 @@ export class FormSection extends HTMLElement {
             <paper-card class="card" id="${this.idTitle}_form_section">
                 <h2 class="card-title">${this.title}</h2>
                 <div class="card-subtitle">${this.subtitle}</div>
-                <slot id="container">
-                </slot>
+                <div>
+                    <slot id="container">
+                    </slot>
+                </div>
             </paper-card>
         `
 
@@ -206,6 +208,7 @@ class Field extends HTMLElement {
                    hyphens: auto;
                    word-break: break-word;
                    word-wrap: break-word;
+                   padding: .5rem;
                 }
 
                 #container {
@@ -218,6 +221,10 @@ class Field extends HTMLElement {
                 #container paper-input {
                     margin-top: auto;
                     padding: 0.5rem;
+                }
+
+                #container paper-input:invalid {
+                    border-bottom: 1px dashed red;
                 }
 
                 #container paper-dropdown-menu {
@@ -243,7 +250,7 @@ class Field extends HTMLElement {
           
               <paper-card id="container">
                 <div id="name-div" class="field-label">${label}</div>
-              <paper-card>
+              </paper-card>
         `
 
         this.container = this.shadowRoot.getElementById("container")
@@ -417,7 +424,7 @@ export class StringField extends Field {
         super(label, initialValue, x, y, width, height, xSmall, ySmall, widthSmall, heightSmall , xPhone, yPhone, widthPhone, heightPhone)
         // TODO: Add validation for the input
         let html = `
-            <paper-input id="field-input" label="${description}" raised required></paper-input>
+            <paper-input id="field-input" label="${description}" raised required error="This field is required."></paper-input>
             <div id="field-view"></div>
         `
         let range = document.createRange();
@@ -505,6 +512,7 @@ export class TextAreaField extends Field {
         this.view = this.shadowRoot.getElementById("field-view")
 
         //Two listeners to change amount of rows
+        // TODO: add listener for switch back to normal size
         this._setHeightListener(heightSmall, this.smallThreshold)
         this._setHeightListener(heightPhone, this.phoneThreshold)
 
@@ -739,6 +747,7 @@ export class ImageField extends Field {
 
                 #field-view {
                     height: 100%;
+                    width: 100%;
                 }
 
                 #image-display-div{
@@ -748,6 +757,9 @@ export class ImageField extends Field {
                     justify-content: center;
                     min-width: 32px;
                     height: 100%;
+                    max-height:100%;
+                    width:auto;
+                    max-width:100%;
                 }
 
                 img {
