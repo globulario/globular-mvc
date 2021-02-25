@@ -41,15 +41,18 @@ export class Form extends HTMLElement {
                 #container {
                     display: flex;
                     flex-direction: column;
+                    width: 85vw;
                 }    
             </style>
             <div id="container">
                 <slot>
                 </slot>
+                <paper-button id="save-btn">Enregistrer</paper-button>
             </div>
         `
 
         this.container = this.shadowRoot.getElementById("container")
+        this.shadowRoot.getElementById("save-btn").onclick = this.save.bind(this)
     }
 
     clear() {
@@ -63,7 +66,12 @@ export class Form extends HTMLElement {
         // TODO: Create side menu item for each new section which navigates to the new form section.
     }
 
-    // TODO: Add save event
+    /**
+     * Sends an event over your local network to save the current form.
+     */
+    save() {
+        Model.eventHub.publish("save_form_evt", true, true)
+    }
 }
 
 customElements.define("globular-form", Form);
@@ -121,7 +129,6 @@ export class FormSection extends HTMLElement {
                 }
 
                 .card {
-                    padding-top: 50px;
                     display:flex;
                     flex-direction:column;
                 }
