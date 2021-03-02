@@ -867,3 +867,78 @@ export class ImageField extends Field {
 }
 
 customElements.define("globular-image-field", ImageField);
+
+export class DateField extends Field {
+
+    /**
+     * If x or y are 0 or negative, then there cannot be a width or a height since the grid is dependent on initial position. 
+     * The position will also be automatically placed within the grid.
+     * 
+     * If width or height are 0 or negative, then their value will be a default of 1.
+     * 
+     * The above conditions apply for all variations of those parameters. 
+     * Also, it isn't necessary to have all the different dimensions. It is possible to only have the small dimensions, the phone dimensions or the regular dimensions.
+     * 
+     * @param {*} label 
+     * @param {*} description
+     * @param {*} initialValue The initial value that the input will show
+     * @param {*} x The initial position of the Field on the x axis. Starts at 1.
+     * @param {*} y The initial position of the Field on the y axis. Starts at 1.
+     * @param {*} width The width of the Field in grid units.
+     * @param {*} height The height of the Field in grid units.
+     * @param {*} xSmall The position of the Field on the x axis when the screen is small. Starts at 1.
+     * @param {*} ySmall The position of the Field on the y axis when the screen is small. Starts at 1.
+     * @param {*} widthSmall The width of the Field when the screen is small.
+     * @param {*} heightSmall The height of the Field when the screen is small.
+     * @param {*} xPhone The position of the Field on the x axis when the screen is about the size of a phone. Starts at 1.
+     * @param {*} yPhone The position of the Field on the y axis when the screen is about the size of a phone. Starts at 1.
+     * @param {*} widthPhone The width of the Field when the screen is about the size of a phone.
+     * @param {*} heightPhone The height of the Field when the screen is about the size of a phone.
+     */
+    constructor(label, description, initialValue = "", x = 0, y = 0, width = 0, height = 0, xSmall = 0, ySmall = 0, widthSmall = 0, heightSmall = 0, xPhone = 0, yPhone = 0, widthPhone = 0, heightPhone = 0) {
+        super(label, initialValue, x, y, width, height, xSmall, ySmall, widthSmall, heightSmall , xPhone, yPhone, widthPhone, heightPhone)
+        // TODO: Add validation for the input
+        let html = `
+            <paper-input id="field-input" label="${description}" type="Date" raised required error="This field is required."></paper-input>
+            <div id="field-view"></div>
+        `
+        let range = document.createRange();
+        this.container.appendChild(range.createContextualFragment(html))
+        this.input = this.shadowRoot.getElementById("field-input");
+        this.view = this.shadowRoot.getElementById("field-view")
+
+        //By default, show the input element and not the view element
+        this.unlock()
+        this.reset()
+
+    }
+
+    getValue() {
+        return this.input.value
+    }
+
+    setValue(v) {
+        this.input.value = v
+        this.view.innerHTML = v
+    }
+
+    clear() {
+        this.setValue("")
+    }
+
+    lock() {
+        this.view.innerHTML = this.input.value
+
+        // TODO: Change the method to remove and replace the elements
+        this.input.style.display = "none"
+        this.view.style.display = ""
+    }
+
+    unlock() {
+        this.input.style.display = ""
+        this.view.style.display = "none"
+    }
+}
+
+customElements.define("globular-date-field", DateField);
+
