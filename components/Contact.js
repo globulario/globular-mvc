@@ -595,7 +595,6 @@ export class ReceivedContactInvitations extends HTMLElement {
             },
             false)
 
-
         Model.eventHub.subscribe("declined_" + account.id + "_evt",
             (uuid) => { },
             (evt) => {

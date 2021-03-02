@@ -412,7 +412,7 @@ export class Settings extends HTMLElement {
             <div style="display: flex;">
               <paper-icon-button id="back-btn"  icon="arrow-back"></paper-icon-button>
               <div class="card-subtitle">${this.subtitle}</div>
-              <paper-icon-button id="hide-btn"  icon="unfold-less"></paper-icon-button>
+              <paper-icon-button id="hide-btn"  icon="unfold-more"></paper-icon-button>
             </div>
             <div class="card-content">
               <iron-collapse class="card-collapse"  opened = "[[opened]]">
@@ -433,9 +433,9 @@ export class Settings extends HTMLElement {
     let content = this.shadowRoot.querySelector(".card-collapse")
     if (button && content) {
       if (!content.opened) {
-        button.icon = "unfold-less"
-      } else {
         button.icon = "unfold-more"
+      } else {
+        button.icon = "unfold-less"
       }
       content.toggle();
     }

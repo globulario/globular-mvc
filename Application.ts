@@ -1,5 +1,6 @@
 import { Model } from "./Model";
 import * as resource from "globular-web-client/resource/resource_pb";
+
 import * as jwt from "jwt-decode";
 import { ApplicationView } from "./ApplicationView";
 import { Account, SessionState, Session } from "./Account";
@@ -15,8 +16,8 @@ import {
 } from "globular-web-client/persistence/persistence_pb";
 import { v4 as uuidv4 } from "uuid";
 import { mergeTypedArrays, uint8arrayToStringMethod } from "./Utility";
-import { Conversation, ConversationScope } from "./Conversation";
-
+import { ConversationManager } from "./Conversation";
+import { Conversations } from "globular-web-client/conversation/conversation_pb";
 
 // Get the configuration from url
 function getFileConfig(url: string, callback: (obj: any) => void, errorcallback: (err: any) => void) {
@@ -716,6 +717,7 @@ export class Application extends Model {
         Account.getAccount(userName, (account: Account) => {
           this.account = account;
           this.account.session.state = SessionState.Online;
+          onLogin(account);
 
           // When new contact is accepted.
           Model.eventHub.subscribe("accepted_" + account.id + "_evt",
@@ -743,7 +745,8 @@ export class Application extends Model {
 
 
           Model.eventHub.publish(`__session_state_${this.account.name}_change_event__`, this.account.session, true)
-          onLogin(account);
+
+          // retreive the contacts
           Account.getContacts(this.account.name, `{"status":"accepted"}`, (contacts: Array<Account>) => {
             contacts.forEach(contact => {
               this.addContactListener(contact)
@@ -753,14 +756,35 @@ export class Application extends Model {
               this.displayMessage(err, 3000)
             })
 
+          // Retreive conversations...
+          ConversationManager.loadOwnedConversation(this.account,
+            (conversations: Conversations) => {
+              Model.eventHub.publish("__load_owned_conversations_event__", conversations.getConversationsList(), true)
+            },
+            (err: any) => {
+              /* this.displayMessage(err, 3000)*/
+              /** no conversation found... */
+            })
+
+          // Connect to to the conversation manager.
+          ConversationManager.connect(
+            () => {
+               /* Nothing to do here **/
+            }, (err: any) => {
+              this.displayMessage(err, 3000)
+            })
+
           this.view.resume();
+
           // Start refresh as needed.
           this.startRefreshToken();
 
         }, (err: any) => {
+          /** Here the account can be sa for example... */
           this.account.session.state = SessionState.Online;
           Model.eventHub.publish(`__session_state_${this.account.name}_change_event__`, this.account.session, true)
           onLogin(this.account);
+
           Account.getContacts(this.account.name, `{"status":"accepted"}`, (contacts: Array<Account>) => {
             contacts.forEach(contact => {
               this.addContactListener(contact)
@@ -770,6 +794,7 @@ export class Application extends Model {
               this.displayMessage(err, 3000)
             })
           this.view.resume();
+
           // Start refresh as needed.
           this.startRefreshToken();
 
@@ -946,19 +971,17 @@ export class Application extends Model {
           --paper-input-container-input-color: #fff;
         }
 
-        paper-radio-button{
-          --paper-radio-button-unchecked-color: #737373;
-          --paper-radio-button-label-color: #b9b9b9;
+        paper-input{
+          flex-grow: 1; 
+          min-width:350px;
         }
 
       </style>
       <div id="new-conversation-box">
         <span class="title">New Conversation...</span>
-        <paper-input id="conversation-name-input" type="text" label="Name" style="flex-grow: 1; min-width:350px;" tabindex="0" aria-disabled="false"></paper-input>
-        <paper-radio-group selected="public-conversation-radion-btn">
-          <paper-radio-button id="public-conversation-radion-btn" name="public-conversation-radion-btn">Public</paper-radio-button>
-          <paper-radio-button id="private-conversation-radion-btn" name="private-conversation-radion-btn">Private</paper-radio-button>
-        </paper-radio-group>
+        <paper-input id="conversation-name-input" type="text" label="Name" tabindex="0" aria-disabled="false"></paper-input>
+        <paper-input id="conversation-keywords-input" type="text" label="Keyword (comma separated)" tabindex="1" aria-disabled="false"></paper-input>
+        
         <div class="actions">
           <paper-button id="create-new-conversation-btn">Create</paper-button>
           <paper-button id="cancel-create-new-conversation-btn">Cancel</paper-button>
@@ -968,8 +991,10 @@ export class Application extends Model {
       1000 * 60 * 15// 15 minutes...
     );
 
-    let nameInput = <any> document.getElementById("conversation-name-input")
+    let nameInput = <any>document.getElementById("conversation-name-input")
     nameInput.value = name;
+
+
 
     setTimeout(() => {
       nameInput.focus()
@@ -983,26 +1008,27 @@ export class Application extends Model {
 
     let createBtn = document.getElementById("create-new-conversation-btn")
     createBtn.onclick = () => {
-       
-        // So here I will create a new conversation...
-        let uuid = uuidv4();
-        let isPublic = (<any>document.getElementById("public-conversation-radion-btn")).checked
-        let conversation = new Conversation(uuid, name, isPublic, this.account)
+      let language = window.navigator.language.split("-")[0]
+      let keywordsInput = <any>document.getElementById("conversation-keywords-input")
+      let keywords = new Array<string>();
+      console.log(keywordsInput.value)
+      console.log(keywordsInput)
+      if (keywordsInput.value != undefined) {
+        keywordsInput.value.split(",").forEach((keyword: string) => {
+          keywords.push(keyword.trim())
+        })
+      }
 
-        conversation.save(()=>{
-          if(isPublic){
-            // Publish create_new_conversation 
-            Model.eventHub.publish("create_new_conversation_event", conversation.toString(), false)
-          }else{
-            Model.eventHub.publish(`create_new_conversation_${this.account.name}_event`, conversation.toString(), false)
-          }
-          
-        }, 
-        (err:any)=>{
+      ConversationManager.createConversation(nameInput.value, keywords, language,
+        (conversation) => {
+          /** Publish a new conversation event. */
+          Model.eventHub.publish("__new_conversation_event__", conversation, true)
+          toast.dismiss();
+        },
+        (err: any) => {
           this.displayMessage(err, 3000)
         })
-
-        toast.dismiss();
+      toast.dismiss();
     }
   }
 
@@ -1080,7 +1106,6 @@ export class Application extends Model {
     }
 
     rqst.setCollection("Notifications");
-
     rqst.setData(notification.toString());
 
     // Save the nofiction on the server.

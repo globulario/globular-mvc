@@ -1,165 +1,183 @@
-import { ReplaceOneRqst, ReplaceOneRsp } from 'globular-web-client/persistence/persistence_pb';
-import {Account} from './Account'
-import adapter from 'webrtc-adapter';
-import { Model } from './Model';
-import { PermissionManager } from './Permission';
 
-/**
- * A message is the unit of conversation.
- */
-export class Message extends Model {
-    private _id: string;
-    // The conversation the message is part of.
-    private conversation: Conversation;
-    private author: Account;
-    private answerTo:Message;
-    private answers: Array<Message>;
-    private date: Date;
+import { Conversation, ConnectRequest, Conversations, CreateConversationRequest, Message, CreateConversationResponse, DeleteConversationRequest, DeleteConversationResponse, FindConversationRequest, FindConversationResponse, JoinConversationRequest, JoinConversationResponse, ConnectResponse, SendMessageRequest, SendMessageResponse } from "globular-web-client/conversation/conversation_pb";
+import { GetCreatedConversationsRequest, GetCreatedConversationsResponse } from "globular-web-client/conversation/conversation_pb";
 
-    private path: string; // message is a ressource.
+import { Account } from "./Account";
+import { Model } from "./Model";
+import { v4 as uuidv4 } from "uuid";
 
-    // An array of ressource reference related to this message.
-    private ressources: Array<string>; // attachment, photo, file etc...
+export class ConversationManager {
+  public static uuid: string;
 
-    // The like's/unlike's contain list of account id's who like the message.
-    private likes: Array<string>;
-    private unlikes: Array<string>;
-    
-    constructor(conversation: Conversation, author: Account, answerTo?: Message){
-        super();
+  constructor() {
 
-        // Set class members
-        this.conversation = conversation;
-        this.author = author;
-        this.answerTo = answerTo;
+  }
 
-        // List of answer.
-        this.answers= new Array<Message>();
-    }
 
-    /**
-     * Serialyse message into the DB.
-     */
-    toString(): string {
-        return JSON.stringify({_id:this._id})
-    }
+  static connect(successCallback: (uuid: string) => void, errorCallback: (err: any) => void) {
+    ConversationManager.uuid = uuidv4();
+    let rqst = new ConnectRequest
+    rqst.setUuid(ConversationManager.uuid)
 
-    /**
-     * Initialyse model from json object.
-     * @param json The class data.
-     */
-    static fromString(json: string): any {
-        return this.fromObject(JSON.parse(json))
-    }
+    // This will open the connection with the conversation manager.
+    let stream = Model.globular.conversationService.connect(rqst, {
+      token: localStorage.getItem("user_token"),
+      application: Model.application,
+      domain: Model.domain,
+    })
 
-    /**
-     * Initialyse the notification from object.
-     * @param obj 
-     */
-    static fromObject(obj: any): any {
-        // Here I will 
-    }
-}
+    stream.on("data", (rsp: ConnectResponse) => {
+      /** Local event... */
+      Model.globular.eventHub.publish( `__received_message_${rsp.getMessage().getConversation()}_evt__`, rsp.getMessage(), true)
+    });
 
-export enum ConversationScope {
-    Public,
-    Private
-}
+    stream.on("status", (status) => {
+      if (status.code != 0) {
+        errorCallback(status.details)
+      }
+    });
 
-/**
- * That class contain the code to create conversation.
- */
-export class Conversation extends Model {
+  }
 
-    private _id: string;
-    private name: string;
-    private scope: ConversationScope;
-    private owner: Account;
+  /**
+   * Create a new conversation.
+   * @param name 
+   * @param keywords 
+   * @param language 
+   * @param succesCallback 
+   * @param errorCallback 
+   */
+  static createConversation(name: string, keywords: Array<string>, language: any, succesCallback: (conversation: Conversation) => void, errorCallback: (err: any) => void) {
+    let rqst = new CreateConversationRequest
+    rqst.setName(name)
+    rqst.setKeywordsList(keywords)
+    rqst.setLanguage("en")
 
-    private messages: Array<Message>;
+    Model.globular.conversationService.createConversation(rqst, {
+      token: localStorage.getItem("user_token"),
+      application: Model.application,
+      domain: Model.domain,
+    }).then((rsp: CreateConversationResponse) => {
+      succesCallback(rsp.getConversation())
+    }).catch((err: any) => {
 
-    // This is the ressource path.
-    private path: string;
+      errorCallback(err)
+    })
+  }
 
-    // The list of participant.
-    private participants: Map<string,Account>;
+  /**
+   * Load conversation owned by a given account.
+   * @param account Must by the logged account.
+   * @param succesCallback Return the list of conversation owned by the account.
+   * @param errorCallback Error if any.
+   */
+  static loadOwnedConversation(account: Account, succesCallback: (conversations: Conversations) => void, errorCallback: (err: any) => void) {
+    let rqst = new GetCreatedConversationsRequest
+    rqst.setCreator(account.name);
 
-    // The constructor.
-    constructor(_id: string, name: string, isPublic: boolean, owner: Account) {
-        super();
+    Model.globular.conversationService.getCreatedConversations(rqst, {
+      token: localStorage.getItem("user_token"),
+      application: Model.application,
+      domain: Model.domain,
+    }).then((rsp: GetCreatedConversationsResponse) => {
+      succesCallback(rsp.getConversations())
+    }).catch((err: any) => {
+      errorCallback(err)
+    })
+  }
 
-        // Set the id and the name.
-        this._id = _id;
-        this.name= name;
-        this.owner = owner;
+  static deleteConversation(conversationUuid: string, succesCallback: () => void, errorCallback: (err: any) => void) {
+    let rqst = new DeleteConversationRequest
+    rqst.setConversationUuid(conversationUuid)
 
-        if(isPublic){
-            this.scope = ConversationScope.Public;
-        }else{
-            this.scope = ConversationScope.Private;
+    Model.globular.conversationService.deleteConversation(rqst, {
+      token: localStorage.getItem("user_token"),
+      application: Model.application,
+      domain: Model.domain,
+    }).then((rsp: DeleteConversationResponse) => {
+      succesCallback()
+    }).catch((err: any) => {
+      errorCallback(err)
+    })
+  }
+
+  static findConversations(query: string, succesCallback: (conversations: Conversation[]) => void, errorCallback: (err: any) => void) {
+    let rqst = new FindConversationRequest
+    rqst.setQuery(query)
+    rqst.setOffset(0)
+    rqst.setLanguage(window.navigator.language.split("-")[0])
+    rqst.setPagesize(500);
+    rqst.setSnippetsize(500); // not realy necessary here...
+
+    Model.globular.conversationService.findConversation(rqst, {
+      token: localStorage.getItem("user_token"),
+      application: Model.application,
+      domain: Model.domain,
+    }).then((rsp: FindConversationResponse) => {
+      succesCallback(rsp.getConversationsList())
+    }).catch((err: any) => {
+      errorCallback(err)
+    })
+  }
+
+  static joinConversation(conversationUuid: string, succesCallback: (messages: Message[]) => void, errorCallback: (err: any) => void) {
+    let rqst = new JoinConversationRequest
+    rqst.setConnectionUuid(ConversationManager.uuid)
+    rqst.setConversationUuid(conversationUuid)
+
+    let stream = Model.globular.conversationService.joinConversation(rqst, {
+      token: localStorage.getItem("user_token"),
+      application: Model.application,
+      domain: Model.domain,
+    })
+
+    // Now I will get existing message from the conversation.
+    var messages = new Array<Message>();
+
+    stream.on("data", (rsp: JoinConversationResponse) => {
+      messages.push(rsp.getMsg())
+    });
+
+    stream.on("status", (status) => {
+
+      if (status.code == 0) {
+        succesCallback(messages)
+      } else {
+        // No message found...
+        if(status.details == "EOF"){
+          succesCallback(messages)
+          return
         }
-        
-        this.participants = new Map<string,Account>();
-    }
+        // An error happen
+        errorCallback(status.details)
+      }
+    });
 
-    /**
-     * Serialyse conversation to DB.
-     */
-    toString(): string {
-        return JSON.stringify({_id:this._id, name:this.name, scope:this.scope, owner:this.owner.name})
-    }
+  }
 
-    /**
-     * Initialyse model from json object.
-     * @param json The class data.
-     */
-    static fromString(json: string): any {
+  static sendMessage(conversationUuid: string, author: string, text:string, replyTo:string, successCallback :()=>void, errorCallback:()=>void){
 
-    }
+    let rqst = new SendMessageRequest
+    let message = new Message
+    message.setUuid(uuidv4())
+    message.setConversation(conversationUuid)
+    message.setText(text)
+    message.setInReplyTo(replyTo)
+    message.setCreationTime(new Date().getTime());
+    message.setAuthor(author);
+    message.setLanguage(window.navigator.language.split("-")[0]);
 
-    /**
-     * Initialyse the notification from object.
-     * @param obj 
-     */
-    static fromObject(obj: any): any {
-    }
+    rqst.setMsg(message)
 
-    /**
-     * Save the conversation or create it...
-     */
-    save(successCallback: ()=>void, errorCallback:(err:any)=>void){
-        
-        let rqst = new ReplaceOneRqst
-        let data = this.toString();
-        rqst.setCollection("Conversations");
-        rqst.setId("local_resource");
-        rqst.setDatabase("local_resource");
-        rqst.setQuery(`{"_id":"${this._id}"}`);
-        rqst.setValue(data);
-        rqst.setOptions(`[{"upsert": true}]`);
+    Model.globular.conversationService.sendMessage(rqst, {
+      token: localStorage.getItem("user_token"),
+      application: Model.application,
+      domain: Model.domain,
+    }).then((rsp:SendMessageResponse)=>{
+      /** Nothing to do here... */
+      console.log("----> message was sent!", message)
 
-        // call persist data
-        Model.globular.persistenceService
-            .replaceOne(rqst, {
-                token: localStorage.getItem("user_token"),
-                application: Model.application,
-                domain: Model.domain
-            })
-            .then((rsp: ReplaceOneRsp) => {
-                // Here I will return the value with it
-                Model.eventHub.publish(`create_new_conversation`, this.toString(), false)
-                console.log("=========> 151")
-                PermissionManager.setRessourcePermissions(this.name, "owner", this.owner.name, 
-                    ()=>{
-                        console.log("=========> permission was created!")
-                    }, 
-                    (err:any)=>{
-
-                    })
-
-                successCallback();
-            })
-            .catch(errorCallback);
-    }
-
+    }).catch(errorCallback)
+    
+  }
 }

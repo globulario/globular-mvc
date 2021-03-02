@@ -3,6 +3,7 @@ import { FindOneRqst, FindResp, FindRqst, ReplaceOneRqst, ReplaceOneRsp } from "
 import * as RessourceService from "globular-web-client/resource/resource_pb";
 import { mergeTypedArrays, uint8arrayToStringMethod } from "./Utility";
 import { GetThumbnailsResponse } from "globular-web-client/file/file_pb";
+import { Group } from "./Group";
 
 /**
  * The session object will keep information about the
@@ -189,6 +190,8 @@ export class Account extends Model {
     private static listeners: any;
     private static accounts: any;
 
+    private groups_: Array<Group>;
+
     // keep the session information.
     private session_: Session;
     public get session(): Session {
@@ -309,7 +312,7 @@ export class Account extends Model {
 
         // Find the account by id or by name... both must be unique in the backend.
         rqst.setQuery(`{"name":"${id}"}`); // search by name and not id... the id will be retreived.
-        rqst.setOptions(`[{"Projection":{"_id":1, "email":1, "name":1}}]`);
+        rqst.setOptions(`[{"Projection":{"_id":1, "email":1, "name":1, "groups":1, "organizations":1, "roles":1}}]`);
 
         // call persist data
         Model.globular.persistenceService

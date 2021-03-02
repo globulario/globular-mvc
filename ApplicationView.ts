@@ -16,7 +16,7 @@ import { Camera } from "./components/Camera";
 import { FileExplorer } from "./components/File";
 import { SearchBar } from "./components/Search";
 import { ContactsMenu } from "./components/Contact";
-import { MessengerMenu } from "./components/Messenger";
+import { MessengerMenu, Messenger } from "./components/Messenger";
 import { SettingsMenu, SettingsPanel } from "./components/Settings";
 import { Application } from "./Application";
 
@@ -69,6 +69,9 @@ export class ApplicationView extends View {
 
   /** The messenger menu */
   private messengerMenu: MessengerMenu;
+
+  /** Don't shoot the messenger! */
+  private messenger: Messenger;
 
   /** The settings Menu */
   protected settingsMenu: SettingsMenu;
@@ -316,11 +319,11 @@ export class ApplicationView extends View {
             15000 // 15 sec...
           );
 
-          let yesBtn = <any> document.querySelector("#yes-delete-contact")
-          let noBtn = <any> document.querySelector("#no-delete-contact")
+          let yesBtn = <any>document.querySelector("#yes-delete-contact")
+          let noBtn = <any>document.querySelector("#no-delete-contact")
 
           // On yes
-          yesBtn.onclick = ()=>{
+          yesBtn.onclick = () => {
             toast.dismiss();
 
             this.displayMessage(
@@ -329,12 +332,12 @@ export class ApplicationView extends View {
               " was remove from your contacts!</div>",
               3000
             );
-  
+
             Model.eventHub.publish("delete_contact_event_", contact, true);
-            
+
           }
 
-          noBtn.onclick = ()=>{
+          noBtn.onclick = () => {
             toast.dismiss();
           }
         }
@@ -347,6 +350,12 @@ export class ApplicationView extends View {
 
         // Also the messenger menu
         this.messengerMenu.init(account);
+
+        // Set the messenger.
+        this.messenger = new Messenger(account);
+
+        // Also display it inside the workspace.
+        document.body.appendChild(this.messenger)
 
 
       },
@@ -623,6 +632,9 @@ export class ApplicationView extends View {
 
     this.clearWorkspace();
     this.clearSideMenu();
+
+    // Close the messenger
+    this.messenger.parentNode.removeChild(this.messenger)
 
     window.dispatchEvent(new Event("resize"));
   }
