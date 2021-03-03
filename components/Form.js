@@ -164,7 +164,7 @@ customElements.define("globular-form-section", FormSection);
 /**
  * Never instantiate a Field variable. This is meant to be an abstract class that must be implemented by a derived class in order to be used properly.
  */
-class Field extends HTMLElement {
+export class Field extends HTMLElement {
 
     /**
      * If x or y are 0 or negative, then there cannot be a width or a height since the grid is dependent on initial position. 
@@ -380,6 +380,14 @@ class Field extends HTMLElement {
     clear() { }
 
     /**
+     * Checks to see whether the input field is valid.
+     * 
+     * Abstract method.
+     * Must be implemented in derived classes
+     */
+    isValid() { }
+
+    /**
      * Disables the input element and enables the view element.
      *  
      * Abstract method.
@@ -456,6 +464,10 @@ export class StringField extends Field {
 
     clear() {
         this.setValue("")
+    }
+
+    isValid() {
+        return this.input.checkValidity() && this.input.getValue() && this.input.getValue() !== ""
     }
 
     lock() {
@@ -560,6 +572,10 @@ export class TextAreaField extends Field {
 
     clear() {
         this.setValue("")
+    }
+
+    isValid() {
+        return this.input.checkValidity() && this.input.getValue() && this.input.getValue() !== ""
     }
 
     lock() {
@@ -670,6 +686,10 @@ export class DropdownField extends Field {
 
     clear() {
         this.setValue("")
+    }
+
+    isValid() {
+        return this.input.checkValidity() && this.input.getValue() && this.input.getValue() !== ""
     }
 
     lock() {
@@ -851,6 +871,10 @@ export class ImageField extends Field {
         this.setValue("")
     }
 
+    isValid() {
+        return this.input.checkValidity() && this.input.getValue() && this.input.getValue() !== ""
+    }
+
     lock() {
         this.view.innerHTML = this.getValue()
 
@@ -924,6 +948,10 @@ export class DateField extends Field {
 
     clear() {
         this.setValue("")
+    }
+
+    isValid() {
+        return this.input.checkValidity() && this.input.getValue() && this.input.getValue() !== ""
     }
 
     lock() {
