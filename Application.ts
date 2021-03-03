@@ -781,6 +781,12 @@ export class Application extends Model {
 
         }, (err: any) => {
           /** Here the account can be sa for example... */
+          if(this.account==undefined){
+            onError(err)
+            console.log(err)
+            return
+          }
+          
           this.account.session.state = SessionState.Online;
           Model.eventHub.publish(`__session_state_${this.account.name}_change_event__`, this.account.session, true)
           onLogin(this.account);

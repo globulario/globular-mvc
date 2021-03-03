@@ -174,10 +174,11 @@ export class Session extends Model {
             })
             .then((rsp: ReplaceOneRsp) => {
                 // Here I will return the value with it
-                Model.eventHub.publish(`session_state_${this._id}_change_event`, JSON.stringify(this), false)
+                Model.eventHub.publish(`session_state_${this._id}_change_event`, this.toString(), false)
                 onSave();
             })
             .catch((err: any) => {
+                console.log(err)
                 onError(err);
             });
     }
@@ -346,8 +347,13 @@ export class Account extends Model {
      */
     private initGroups(obj:any, successCallback:()=>void, errorCallback:(err:any)=>void){
         this.groups_ = new Array<Group>();
+        if(obj.groups == undefined){
+            successCallback()
+            return
+        }
         if(obj.groups.length == 0){
             successCallback()
+            return
         }
 
         // Initi the group.
