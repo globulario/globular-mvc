@@ -324,11 +324,61 @@ export class Account extends Model {
             .then((rsp: any) => {
                 let data = rsp.getResult().toJavaScript();
                 let account = new Account(data._id, data.email, data.name)
-                account.initData(successCallback, errorCallback)
+                account.initData(()=>{
+                    Account.accounts[data._id] = account;
+                    // here I will initialyse groups...
+                    account.initGroups(data, ()=>{
+                        successCallback(account)
+                    }, errorCallback)
+                    
+                }, errorCallback)
             })
             .catch((err: any) => {
                 errorCallback(err);
             });
+    }
+
+    /**
+     * Initialyse account groups.
+     * @param obj The account data from the persistence store.
+     * @param successCallback 
+     * @param errorCallback 
+     */
+    private initGroups(obj:any, successCallback:()=>void, errorCallback:(err:any)=>void){
+        this.groups_ = new Array<Group>();
+        if(obj.groups.length == 0){
+            successCallback()
+        }
+
+        // Initi the group.
+        let setGroup_ = (index:number)=>{
+            if(index < obj.groups.length){
+                let groupId = obj.groups[index]["$id"]
+                Group.getGroup(groupId, (g:Group)=>{
+                    this.groups_.push(g)
+                    index++
+                    setGroup_(index);
+                    
+                }, errorCallback)
+            }else{
+                successCallback();
+            }
+        }
+        
+        // start the recursion.
+        setGroup_(0)
+
+    }
+
+    // Test if a account is member of a given group.
+    isMemberOf(groupName:string):boolean{
+        this.groups_.forEach((g:Group)=>{
+            if(g.name == groupName){
+                // be sure the account is in the group reference list...
+                return g.hasMember(this)
+            }
+        })
+        return false;
     }
 
     public static setAccount(a: Account) {
