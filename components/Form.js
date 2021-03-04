@@ -70,6 +70,53 @@ export class Form extends HTMLElement {
      * Sends an event over your local network to save the current form.
      */
     save() {
+        M.Toast.dismissAll()
+        const toastHtml = `
+        <style>
+            #button-container {
+                display: flex;
+                flex-direction: row;
+                justify-content: space-between;
+                background-color: transparent;
+                flex-grow: 1;
+            }
+            
+            #toast-main-container {
+                display: flex;
+                flex-direction: column;
+                background-color: transparent;
+            }
+
+            #toast-text {
+                padding-bottom: 2rem;
+                color: wheat;
+            }
+
+            .toast-btn {
+                box-shadow: none;
+                background-color: transparent;
+                color: wheat;
+                cursor: pointer;
+                transition: background-color .2s;
+                border: none;
+                border-radius: 3px;
+                padding: 0.5rem;
+            }
+
+            .toast-btn:focus {
+                background-color: rgba(255,255,255,0.1);
+            }
+        </style>
+        <div id="toast-main-container">
+            <span id="toast-text">Est-ce que vous voulez sauvegarder votre formulaire?</span>
+            <div id="button-container">
+                <button class="toast-btn" id="save-btn">Enregistrer</button>
+                <button class="toast-btn" id="no-save-btn">Ne pas enregistrer</button>
+                <button class="toast-btn" id="cancel-btn">Annuler</button>
+            </div>
+        </div>
+        `
+        M.toast({html: toastHtml, displayLength: 999999})
         Model.eventHub.publish("save_form_evt", true, true)
     }
 }
