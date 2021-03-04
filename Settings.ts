@@ -97,7 +97,7 @@ export class UserSettings extends Settings {
                             imageCropperSettings.setValue(account.profilPicture)
                         },
                         (err: any) => {
-    
+                            console.log("------>", err)
                         })
                 }else{
                     // revert the change.

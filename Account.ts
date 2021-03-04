@@ -499,7 +499,7 @@ export class Account extends Model {
 
         // Retreive user data...
         Account.readOneUserData(
-            `{"name_":"` + userName + `"}`, // The query is made on the user database and not local_ressource Accounts here so name is name_ here
+            `{"_id":"${this.id }"}`, // The query is made on the user database and not local_ressource Accounts here so name is name_ here
             userName, // The database to search into 
             (data: any) => {
 
@@ -585,9 +585,10 @@ export class Account extends Model {
         }
 
         let collection = "user_data";
-        let data = this.toString();
+        // save only user data and not the how user info...
+        let data = JSON.stringify({_id:this.id, firstName_ :this.firstName, lastName_: this.lastName, middleName_: this.middleName, profilPicture_:this.profilPicture});
         rqst.setCollection(collection);
-        rqst.setQuery(`{"name":"` + userName + `"}`);
+        rqst.setQuery(`{"_id":"${this.id }"}`);
         rqst.setValue(data);
         rqst.setOptions(`[{"upsert": true}]`);
 
