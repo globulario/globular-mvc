@@ -158,10 +158,19 @@ export class SessionState extends HTMLElement {
     }
 
     setSessionInfo(session) {
-        // Set the sate 
-        if (session.state_ == 0) {
+        // depending if session is obj or typescript class
+        // it can affect it values.
+        let state = 1
+        if(session.state!=undefined){
+            state = session.state
+        }else if (session.state_!=undefined){
+            state = session.state_
+        }
+
+
+        if (state == 0) {
             this.stateName.innerHTML = "Online"
-        } else if (session.state_ == 1) {
+        } else if (state == 1) {
             this.stateName.innerHTML = "Offline"
         } else {
             this.stateName.innerHTML = "Away"

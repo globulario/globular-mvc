@@ -21,7 +21,7 @@ export class Autocomplete extends HTMLElement {
         this.displayValue = null;
 
         this.width = 300;
-        if(this.hasAttribute("width")){
+        if (this.hasAttribute("width")) {
             this.width = parseInt(this.getAttribute("width"))
         }
     }
@@ -43,24 +43,23 @@ export class Autocomplete extends HTMLElement {
             <paper-card id="values_div" style="position: absolute; max-height: 350px; overflow-y: auto;  width:${this.width}px; z-index: 10;"> </paper-card>
         </div>
         `
-        // Action's
-        let input = this.shadowRoot.getElementById("input")
+    }
+
+    setValues(values){
         let valuesDiv = this.shadowRoot.getElementById("values_div")
-
-        input.onkeyup = () => {
-
-            this.getValues(input.value, (values) => {
-                valuesDiv.innerHTML = "";
-                for (var i = 0; i < values.length; i++) {
-                    let div = this.displayValue(values[i])
-                    valuesDiv.appendChild(div)
-                }
-
-            });
+        valuesDiv.innerHTML = "";
+        for (var i = 0; i < values.length; i++) {
+            let div = this.displayValue(values[i])
+            valuesDiv.appendChild(div)
         }
     }
 
-    clear(){
+    getValue(){
+        let input = this.shadowRoot.getElementById("input")
+        return input.value
+    }
+
+    clear() {
         input.value = '';
         let valuesDiv = this.shadowRoot.getElementById("values_div")
         valuesDiv.innerHTML = ""
