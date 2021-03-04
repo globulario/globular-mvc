@@ -14,7 +14,7 @@ import '@polymer/iron-autogrow-textarea/iron-autogrow-textarea.js';
 import '@polymer/paper-tabs/paper-tabs.js';
 import '@polymer/paper-tabs/paper-tab.js';
 
-import {SessionState} from './Session'
+import { SessionState } from './Session'
 import { Autocomplete } from './Autocomplete'
 
 import { Menu } from './Menu';
@@ -113,6 +113,57 @@ export class ContactsMenu extends Menu {
 
         // The invite contact action.
         let inviteContactInput = this.shadowRoot.getElementById("invite_contact_input")
+        inviteContactInput.onkeyup = () => {
+            let val = inviteContactInput.getValue();
+            if (val.length > 3) {
+                this.findAccountByEmail(val)
+            }else{
+                inviteContactInput.clear()
+            }
+        }
+
+        // That function must return the div that display the value that we want.
+        inviteContactInput.displayValue = (contact) => {
+            let card = new ContactCard(account, contact);
+
+            // Here depending if the contact is in contact list, in received invitation list or in sent invitation
+            // list displayed action will be different.
+            Account.getContacts(account.name, "{}",
+                (contacts) => {
+                    const info = contacts.find(obj => {
+                        return obj._id === contact.name;
+                    })
+
+                    if (info == undefined) {
+                        card.setInviteButton((contact) => {
+                            this.onInviteConctact(contact);
+                            inviteContactInput.clear();
+                        })
+                    } else if (info.status == "sent") {
+                        // Here I will display the revoke invitation button.
+                        card.setRevokeButton(this.onRevokeContact)
+                    } else if (info.status == "received") {
+                        // Here I will display the accept/decline button.
+                        card.setAcceptDeclineButton(this.onAcceptContact, this.onDeclineContact)
+                    } else if (info.status == "revoked" || info.status == "deleted") {
+                        // Here I will display the accept/decline button.
+                        card.setInviteButton((contact) => {
+                            this.onInviteConctact(contact);
+                            inviteContactInput.clear();
+                        })
+                    }
+                },
+                () => {
+                    card.setInviteButton((contact) => {
+                        this.onInviteConctact(contact);
+                        inviteContactInput.clear();
+                    })
+                })
+
+
+            return card
+        }
+
 
         let contactList = new ContactList(account, this.onDeleteContact)
         contactLst.appendChild(contactList)
@@ -146,128 +197,23 @@ export class ContactsMenu extends Menu {
         contactsTab.click();
 
         // Get the list of all accounts (mab).
-        Account.getAccounts("{}", (accounts) => {
+        this.shadowRoot.removeChild(this.getMenuDiv())
+    }
 
+    findAccountByEmail(email) {
+
+        Account.getAccounts(`{"email":{"$regex": "${email}", "$options": "im"}}`, (accounts) => {
+            console.log(accounts)
             // set the getValues function that will return the list to be use as filter.
-            inviteContactInput.getValues = (value, callback) => {
-                let filtered = [];
-                if (value.length == 0) {
-                    inviteContactInput.clear();
-                    return filtered
-                }
-                for (var i = 0; i < accounts.length; i++) {
-                    let a = accounts[i]
-                    let contain = false;
+            let inviteContactInput = this.shadowRoot.getElementById("invite_contact_input")
 
-                    if (a._id.toLowerCase().indexOf(value.toLowerCase()) != -1) {
-                        contain = true
-                        filtered.push(a)
-                    }
+            inviteContactInput.setValues(accounts)
 
-                    if (!contain && a.email_.toLowerCase().indexOf(value.toLowerCase()) != -1) {
-                        filtered.push(a)
-                    }
-
-                }
-
-                // return _id value or email if value
-                let getValue = (a) => {
-                    if (a._id.toLowerCase().indexOf(value.toLowerCase()) != -1) {
-                        return a._id.toLowerCase()
-                    }
-
-                    if (a.email_.toLowerCase().indexOf(value.toLowerCase()) != -1) {
-                        return a.email_.toLowerCase()
-                    }
-                }
-
-                // Now I will sort the values.
-                filtered.sort((a, b) => {
-                    let val_a = getValue(a)
-                    let val_b = getValue(b)
-                    if (val_a < val_b) {
-                        return -1;
-                    }
-                    if (val_a > val_b) {
-                        return 1;
-                    }
-                    return 0;
-                });
-
-                // remove user by it id or email.
-                let removeUser = (id) => {
-                    if (id.length > 0) {
-                        let index = filtered.findIndex((a) => {
-                            if (a.email_ == id) {
-                                return true;
-                            }
-                            if (a._id == id) {
-                                return true;
-                            }
-                            return false
-                        })
-                        if (index != -1) {
-                            return filtered.splice(index, 1)
-                        }
-                        return null
-                    }
-                }
-
-                // Remove the logged user from the list
-                removeUser(account.email)
-
-                // Todo filter with value 
-                callback(filtered)
-            }
-
-
-            // That function must return the div that display the value that we want.
-            inviteContactInput.displayValue = (contact) => {
-                let card = new ContactCard(account, contact);
-
-                // Here depending if the contact is in contact list, in received invitation list or in sent invitation
-                // list displayed action will be different.
-                Account.getContacts(account.name, "{}",
-                    (contacts) => {
-                        const info = contacts.find(obj => {
-                            return obj._id === contact.name;
-                        })
-
-                        if (info == undefined) {
-                            card.setInviteButton((contact) => {
-                                this.onInviteConctact(contact);
-                                inviteContactInput.clear();
-                            })
-                        } else if (info.status == "sent") {
-                            // Here I will display the revoke invitation button.
-                            card.setRevokeButton(this.onRevokeContact)
-                        } else if (info.status == "received") {
-                            // Here I will display the accept/decline button.
-                            card.setAcceptDeclineButton(this.onAcceptContact, this.onDeclineContact)
-                        } else if (info.status == "revoked" || info.status == "deleted") {
-                            // Here I will display the accept/decline button.
-                            card.setInviteButton((contact) => {
-                                this.onInviteConctact(contact);
-                                inviteContactInput.clear();
-                            })
-                        }
-                    },
-                    () => {
-                        card.setInviteButton((contact) => {
-                            this.onInviteConctact(contact);
-                            inviteContactInput.clear();
-                        })
-                    })
-
-
-                return card
-            }
 
         }, (err) => {
-            callback([])
+            //callback([])
+            console.log(err)
         })
-
-        this.shadowRoot.removeChild(this.getMenuDiv())
     }
 
 }
@@ -306,17 +252,17 @@ export class ContactCard extends HTMLElement {
         this.account = account;
         this.contact = contact;
 
-        if(this.hasAttribute("contact")){
-            Account.getAccount(this.getAttribute("contact"), (val)=>{
+        if (this.hasAttribute("contact")) {
+            Account.getAccount(this.getAttribute("contact"), (val) => {
                 this.contact = val;
                 console.log("-------------> contact: ", this.contact)
-            },(err)=>{console.log(err)})
+            }, (err) => { console.log(err) })
         }
 
-        if(this.hasAttribute("account")){
-            Account.getAccount(this.getAttribute("account"), (val)=>{
+        if (this.hasAttribute("account")) {
+            Account.getAccount(this.getAttribute("account"), (val) => {
                 this.account = val;
-            },(err)=>{console.log(err)})
+            }, (err) => { console.log(err) })
         }
     }
 
@@ -544,7 +490,7 @@ export class SentContactInvitations extends HTMLElement {
         let card = contactLst.querySelector("#" + id)
         if (card != undefined) {
             contactLst.removeChild(card)
-        }else{
+        } else {
             console.log("no contact card found with id: ", id)
         }
     }
@@ -681,7 +627,7 @@ export class ContactList extends HTMLElement {
     // Create the applicaiton view.
     constructor(account, onDeleteContact) {
         super()
-    
+
         // Keep contact card in memory...
         this.cards = {}
 
@@ -692,18 +638,18 @@ export class ContactList extends HTMLElement {
         this.onDeleteContact = onDeleteContact;
 
         Model.eventHub.subscribe("accepted_" + account.id + "_evt",
-        (uuid) => { },
-        (evt) => {
-            let invitation = JSON.parse(evt);
-            Account.getAccount(invitation._id,
-                (contact) => {
-                    this.appendContact(contact);
-                },
-                err => {
-                    console.log(err)
-                })
-        },
-        false)
+            (uuid) => { },
+            (evt) => {
+                let invitation = JSON.parse(evt);
+                Account.getAccount(invitation._id,
+                    (contact) => {
+                        this.appendContact(contact);
+                    },
+                    err => {
+                        console.log(err)
+                    })
+            },
+            false)
 
         Model.eventHub.subscribe("deleted_" + account.id + "_evt",
             (uuid) => { },
@@ -748,7 +694,7 @@ export class ContactList extends HTMLElement {
     connectedCallback() {
     }
 
-    getContactCard(contact){
+    getContactCard(contact) {
         let card = contactLst.querySelector("#" + "_" + contact.id.split("-").join("_") + "_accepted_invitation")
         return card;
     }
@@ -757,7 +703,7 @@ export class ContactList extends HTMLElement {
         let contactLst = this.shadowRoot.querySelector(".contact-invitations-list")
         let card = new ContactCard(this.account, contact)
         card.id = "_" + contact.id.split("-").join("_") + "_accepted_invitation"
-        
+
         card.setDeleteButton(this.onDeleteContact)
 
         contactLst.appendChild(card)

@@ -191,7 +191,7 @@ export class Account extends Model {
     private static listeners: any;
     private static accounts: any;
 
-    private groups_: Array<Group>;
+    private groups_: Array<any>;
 
     // keep the session information.
     private session_: Session;
@@ -328,10 +328,9 @@ export class Account extends Model {
                 account.initData(()=>{
                     Account.accounts[data._id] = account;
                     // here I will initialyse groups...
-                    account.initGroups(data, ()=>{
-                        successCallback(account)
-                    }, errorCallback)
-                    
+                    account.groups_ = data.groups;
+
+                    successCallback(account)
                 }, errorCallback)
             })
             .catch((err: any) => {
@@ -345,41 +344,48 @@ export class Account extends Model {
      * @param successCallback 
      * @param errorCallback 
      */
-    private initGroups(obj:any, successCallback:()=>void, errorCallback:(err:any)=>void){
-        this.groups_ = new Array<Group>();
-        if(obj.groups == undefined){
-            successCallback()
+    public getGroups(successCallback:(groups:Array<Group>)=>void){
+        let groups_ = new Array<Group>();
+        if(this.groups_ == undefined){
+            successCallback([])
             return
         }
-        if(obj.groups.length == 0){
-            successCallback()
+
+        if(this.groups_.length == 0){
+            successCallback([])
             return
         }
 
         // Initi the group.
         let setGroup_ = (index:number)=>{
-            if(index < obj.groups.length){
-                let groupId = obj.groups[index]["$id"]
+            if(index <this.groups_.length){
+                let groupId = this.groups_[index]["$id"]
                 Group.getGroup(groupId, (g:Group)=>{
-                    this.groups_.push(g)
+                    groups_.push(g)
                     index++
                     setGroup_(index);
                     
-                }, errorCallback)
+                }, ()=>{
+                    index++
+                    if(index < this.groups_.length){
+                        setGroup_(index);
+                    }else{
+                        successCallback(groups_);
+                    }
+                })
             }else{
-                successCallback();
+                successCallback(groups_);
             }
         }
         
         // start the recursion.
         setGroup_(0)
-
     }
 
     // Test if a account is member of a given group.
-    isMemberOf(groupName:string):boolean{
-        this.groups_.forEach((g:Group)=>{
-            if(g.name == groupName){
+    isMemberOf(id:string):boolean{
+        this.groups_.forEach((g:any)=>{
+            if(g._id == id){
                 // be sure the account is in the group reference list...
                 return g.hasMember(this)
             }
@@ -751,6 +757,7 @@ export class Account extends Model {
                                 }, errorCallback)
                         }
                     } else {
+                        accounts.push(Account.accounts[a_.getId()])
                         if (accounts_.length > 0) {
                             initAccountData()
                         } else {
