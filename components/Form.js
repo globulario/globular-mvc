@@ -164,7 +164,7 @@ customElements.define("globular-form-section", FormSection);
 /**
  * Never instantiate a Field variable. This is meant to be an abstract class that must be implemented by a derived class in order to be used properly.
  */
-class Field extends HTMLElement {
+export class Field extends HTMLElement {
 
     /**
      * If x or y are 0 or negative, then there cannot be a width or a height since the grid is dependent on initial position. 
@@ -380,6 +380,14 @@ class Field extends HTMLElement {
     clear() { }
 
     /**
+     * Checks to see whether the input field is valid.
+     * 
+     * Abstract method.
+     * Must be implemented in derived classes
+     */
+    isValid() { }
+
+    /**
      * Disables the input element and enables the view element.
      *  
      * Abstract method.
@@ -429,7 +437,6 @@ export class StringField extends Field {
      */
     constructor(label, description, initialValue = "", x = 0, y = 0, width = 0, height = 0, xSmall = 0, ySmall = 0, widthSmall = 0, heightSmall = 0, xPhone = 0, yPhone = 0, widthPhone = 0, heightPhone = 0) {
         super(label, initialValue, x, y, width, height, xSmall, ySmall, widthSmall, heightSmall , xPhone, yPhone, widthPhone, heightPhone)
-        // TODO: Add validation for the input
         let html = `
             <paper-input id="field-input" label="${description}" raised required error="This field is required."></paper-input>
             <div id="field-view"></div>
@@ -456,6 +463,10 @@ export class StringField extends Field {
 
     clear() {
         this.setValue("")
+    }
+
+    isValid() {
+        return this.getValue() && this.getValue() !== ""
     }
 
     lock() {
@@ -506,7 +517,6 @@ export class TextAreaField extends Field {
      */
     constructor(label, description, initialValue = "", x = 0, y = 0, width = 0, height = 0, xSmall = 0, ySmall = 0, widthSmall = 0, heightSmall = 0, xPhone = 0, yPhone = 0, widthPhone = 0, heightPhone = 0) {
         super(label, initialValue, x, y, width, height, xSmall, ySmall, widthSmall, heightSmall , xPhone, yPhone, widthPhone, heightPhone)
-        // TODO: Add validation for the input
         const rows = 3 + Math.floor(5.5 * Math.max(height - 1, 0))
         let html = `
             <textarea id="field-input" placeholder="${description}" rows="${rows}"></textarea>
@@ -560,6 +570,10 @@ export class TextAreaField extends Field {
 
     clear() {
         this.setValue("")
+    }
+
+    isValid() {
+        return this.getValue() && this.getValue() !== ""
     }
 
     lock() {
@@ -672,6 +686,10 @@ export class DropdownField extends Field {
         this.setValue("")
     }
 
+    isValid() {
+        return this.getValue() && this.getValue() !== ""
+    }
+
     lock() {
         this.view.innerHTML = this.getValue()
 
@@ -719,7 +737,6 @@ export class ImageField extends Field {
      */
     constructor(label, description, initialValue = "", x = 0, y = 0, width = 0, height = 0, xSmall = 0, ySmall = 0, widthSmall = 0, heightSmall = 0, xPhone = 0, yPhone = 0, widthPhone = 0, heightPhone = 0) {
         super(label, initialValue, x, y, width, height, xSmall, ySmall, widthSmall, heightSmall , xPhone, yPhone, widthPhone, heightPhone)
-        // TODO: Add validation for the input
         let html = `
             <style>
                 #custom-file-upload span{
@@ -851,6 +868,10 @@ export class ImageField extends Field {
         this.setValue("")
     }
 
+    isValid() {
+        return this.getValue() && this.getValue() !== ""
+    }
+
     lock() {
         this.view.innerHTML = this.getValue()
 
@@ -897,7 +918,6 @@ export class DateField extends Field {
      */
     constructor(label, description, initialValue = "", x = 0, y = 0, width = 0, height = 0, xSmall = 0, ySmall = 0, widthSmall = 0, heightSmall = 0, xPhone = 0, yPhone = 0, widthPhone = 0, heightPhone = 0) {
         super(label, initialValue, x, y, width, height, xSmall, ySmall, widthSmall, heightSmall , xPhone, yPhone, widthPhone, heightPhone)
-        // TODO: Add validation for the input
         let html = `
             <paper-input id="field-input" label="${description}" type="Date" raised required error="This field is required."></paper-input>
             <div id="field-view"></div>
@@ -924,6 +944,10 @@ export class DateField extends Field {
 
     clear() {
         this.setValue("")
+    }
+
+    isValid() {
+        return this.getValue() && this.getValue() !== ""
     }
 
     lock() {
