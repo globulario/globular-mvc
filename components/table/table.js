@@ -1,11 +1,8 @@
-/**
- * That class is use to display a message to a user.
- */
 // Polymer dependencies
 import { PolymerElement, html } from "@polymer/polymer/polymer-element.js";
 
 import { createElement } from "../element.js";
-import {fireResize, isString, exportToCsv, getCoords } from "../utility.js";
+import { fireResize, isString, exportToCsv, getCoords } from "../utility.js";
 import '../menu/menuItem.js';
 import '../menu/dropdownMenu.js';
 import './header.js'; // The maximum allowed number of row for a grid.
@@ -16,56 +13,51 @@ var lastWidth = 0;
 class TableElement extends PolymerElement {
   constructor() {
     super();
-    this.rowheight = -1; // in pixel...
-    // Keep the position in the data.
+    this.rowheight = -1; // in pixels
 
-    this.index = -1; // Scroll div.
+    this.index = -1;
 
-    this.scrollDiv = null; // because some browser limit the number of potential 
-    // number of rows in a grid, multiple gids will be use 
-    // to display larger table.
+    this.scrollDiv = null;
 
-    this.tiles = []; // Keep reference of table sorters.
+    // Some browsers limit the number of rows in a grid, therefore, multiple grids (named tiles) are used to display large tables
+    this.tiles = [];
 
-    this.sorters = []; // Keep reference of table filters.
+    this.sorters = [];
+    this.filters = [];
 
-    this.filters = []; // Index of rows that respect the filters.
+    this.sorted = [];
+    this.filtered = {};
 
-    this.filtered = {}; // Contain the list index of filtered.
+    this.header = null;
+    this.menu = null;
 
-    this.sorted = []; // Contain the array of sorted values.
+    // Cells are created once then recycled for optimization purposes
+    this.cells = [];
 
-    this.header = null; // cells are created once and recycled to save
-    // browser ressources.
-
-    this.cells = []; // contain the table menu.
-
-    this.menu = null; // Here I will link the body columns whit the  header columns.
-    // if the browser support resize observer...
     // Options for the observer (which mutations to observe)
-
     var config = {
       attributes: true,
       subtree: true
-    }; // Create an observer instance linked to the callback function
-
-    var observer = new MutationObserver(function (mutation) {
+    };
+    
+    // Create an observer instance linked to a resize callback
+    var observer = new MutationObserver((mutation) => {
       if (mutation[0].target.offsetWidth != lastWidth) {
         lastWidth = mutation[0].target.offsetWidth;
         fireResize();
       }
-    }); // Start observing the target node for configured mutations
-
+    });
+    
+    // Start observing the target node for configured mutations
     observer.observe(this, config);
   }
+
   /**
-   * The internal component properties.
+   * Internal component properties.
    */
-
-
   static get properties() {
     return {
-      // Tha array of data to display.
+      // array of data to display.
       data: Array,
       rowheight: Number,
       order: String,
@@ -93,37 +85,41 @@ class TableElement extends PolymerElement {
    */
 
 
+  /**
+   * Creates all the grids (tiles) necessary to display the table
+   */
   createTiles() {
-    this.scrollDiv.element.style.display = ""; // Calculate the number of tile.
+    this.scrollDiv.element.style.display = "";
 
     var size = 1;
 
+    // Get the number of tiles necessary
     if (this.size() > maxRowNumber) {
       size = Math.ceil(this.size() / maxRowNumber);
     }
 
-    this.tiles = []; // Now I will create the tile.
-
+    this.tiles = [];
+    
+    // Create the tiles as divs with a grid display style
     for (var i = 0; i < size; i++) {
       this.tiles[i] = this.scrollDiv.appendElement({
         "tag": "div",
         "class": "table-tile",
         "style": "grid-gap: 0px; display: grid;"
-      }).down(); // Set the number of rows for the tiles.
-
-      // The header with drive the body cell width.
+      }).down();
+      
+      // The number of rows is equal to the number of rows in the header.
       var gridTemplateColumns = "";
-      for(var j=0; j < this.header.getSize(); j++){
+      for (var j = 0; j < this.header.getSize(); j++) {
         var headerCell = this.header.getHeaderCell(j)
         gridTemplateColumns += headerCell.offsetWidth + "px"
-        if(j < this.header.getSize() - 1){
+        if (j < this.header.getSize() - 1) {
           gridTemplateColumns += " ";
         }
       }
-
       this.tiles[i].element.style.gridTemplateColumns = gridTemplateColumns;
 
-      // The table column height
+      // Height for the table
       if (i < size - 1 || this.size() % maxRowNumber == 0) {
         this.tiles[i].element.style.gridTemplateRows = "repeat( " + maxRowNumber + ", " + this.rowheight + "px)";
       } else {
@@ -163,7 +159,7 @@ class TableElement extends PolymerElement {
         if (totalWidth == 0) {
           return;
         }
-        
+
         // set tiles columns width.
         // Set the table width
         if (table.width == undefined) {
@@ -215,7 +211,7 @@ class TableElement extends PolymerElement {
     }
   }
 
-  getScrollWidth(){
+  getScrollWidth() {
     var scrollBarWidth = this.scrollDiv.element.offsetWidth - this.scrollDiv.element.clientWidth;
     return scrollBarWidth
   }
@@ -370,7 +366,7 @@ class TableElement extends PolymerElement {
       this.menu = createElement(null, {
         "tag": "dropdown-menu-element"
       });
-      
+
       this.menu.appendElement({
         "tag": "menu-item-element",
         "id": "item-0"
@@ -378,110 +374,110 @@ class TableElement extends PolymerElement {
         "tag": "iron-icon",
         "icon": "menu"
       }) // Remove all sorting menu.
-      .appendElement({
-        "tag": "menu-item-element",
-        "id": "unorder-menu-item",
-        "style": "text-agling: left;",
-        "action": ""
-      }).down().appendElement({
-        "tag": "iron-icon",
-        "icon": "sort",
-        "style": "height: 18px; width: 18px"
-      }).appendElement({
-        "tag": "span",
-        "innerHtml": "remove all sorter",
-        "style": "margin-left: 10px;"
-      }).up() // Now filetering
-      .appendElement({
-        "tag": "menu-item-element",
-        "id": "filter-menu-item",
-        "style": "text-agling: left;"
-      }).down().appendElement({
-        "tag": "iron-icon",
-        "id": "filter-menu-item-icon",
-        "icon": "filter-list",
-        "style": "height: 18px; width: 18px"
-      }).appendElement({
-        "tag": "span",
-        "id": "filter-menu-item-span",
-        "innerHtml": "filtering",
-        "style": "margin-left: 10px;"
-      }) // Remove all filter
-      .appendElement({
-        "tag": "menu-item-element",
-        "id": "unfilter-menu-item",
-        "style": "text-agling: left;",
-        "action": ""
-      }).down().appendElement({
-        "tag": "span",
-        "innerHtml": "remove all filter",
-        "style": "margin-left: 10px;"
-      }).up().appendElement({
-        "tag": "menu-item-element",
-        "separator": "true",
-        "style": "text-agling: left;"
-      }).down().appendElement({
-        "tag": "div",
-        "id": "filter-menu-items",
-        "style": "text-agling: left; display: flex; flex-direction: column;"
-      }).up().up() // The export menu button.
-      .appendElement({
-        "tag": "menu-item-element",
-        "separator": "true",
-        "style": "text-agling: left;"
-      }) // Delete filetered values
-      .appendElement({
-        "tag": "menu-item-element",
-        "id": "delete-filtere-menu-item",
-        "style": "text-agling: left;",
-        "action": this.ondeletefiltered
-      }).down().appendElement({
-        "tag": "iron-icon",
-        "icon": "delete",
-        "style": "height: 18px; width: 18px"
-      }).appendElement({
-        "tag": "span",
-        "innerHtml": "delete filtered",
-        "style": "margin-left: 10px;"
-      }).up()
-      .appendElement({
-        "tag": "menu-item-element",
-        "separator": "true",
-        "style": "text-agling: left;"
-      }) // Delete filetered values
-      .appendElement({
-        "tag": "menu-item-element",
-        "id": "delete-all-data-menu-item",
-        "style": "text-agling: left;",
-        "action": this.ondeleteall
-      }).down().appendElement({
-        "tag": "iron-icon",
-        "icon": "delete",
-        "style": "height: 18px; width: 18px"
-      }).appendElement({
-        "tag": "span",
-        "innerHtml": "delete all data",
-        "style": "margin-left: 10px;"
-      }).up()
-      .appendElement({
-        "tag": "menu-item-element",
-        "separator": "true",
-        "style": "text-agling: left;"
-      }) // Export csv file
-      .appendElement({
-        "tag": "menu-item-element",
-        "id": "export-menu-item",
-        "style": "text-agling: left;",
-        "action": this.onexport
-      }).down().appendElement({
-        "tag": "iron-icon",
-        "icon": "file-download",
-        "style": "height: 18px; width: 18px"
-      }).appendElement({
-        "tag": "span",
-        "innerHtml": "export",
-        "style": "margin-left: 10px;"
-      }); // Set the menu
+        .appendElement({
+          "tag": "menu-item-element",
+          "id": "unorder-menu-item",
+          "style": "text-agling: left;",
+          "action": ""
+        }).down().appendElement({
+          "tag": "iron-icon",
+          "icon": "sort",
+          "style": "height: 18px; width: 18px"
+        }).appendElement({
+          "tag": "span",
+          "innerHtml": "remove all sorter",
+          "style": "margin-left: 10px;"
+        }).up() // Now filetering
+        .appendElement({
+          "tag": "menu-item-element",
+          "id": "filter-menu-item",
+          "style": "text-agling: left;"
+        }).down().appendElement({
+          "tag": "iron-icon",
+          "id": "filter-menu-item-icon",
+          "icon": "filter-list",
+          "style": "height: 18px; width: 18px"
+        }).appendElement({
+          "tag": "span",
+          "id": "filter-menu-item-span",
+          "innerHtml": "filtering",
+          "style": "margin-left: 10px;"
+        }) // Remove all filter
+        .appendElement({
+          "tag": "menu-item-element",
+          "id": "unfilter-menu-item",
+          "style": "text-agling: left;",
+          "action": ""
+        }).down().appendElement({
+          "tag": "span",
+          "innerHtml": "remove all filter",
+          "style": "margin-left: 10px;"
+        }).up().appendElement({
+          "tag": "menu-item-element",
+          "separator": "true",
+          "style": "text-agling: left;"
+        }).down().appendElement({
+          "tag": "div",
+          "id": "filter-menu-items",
+          "style": "text-agling: left; display: flex; flex-direction: column;"
+        }).up().up() // The export menu button.
+        .appendElement({
+          "tag": "menu-item-element",
+          "separator": "true",
+          "style": "text-agling: left;"
+        }) // Delete filetered values
+        .appendElement({
+          "tag": "menu-item-element",
+          "id": "delete-filtere-menu-item",
+          "style": "text-agling: left;",
+          "action": this.ondeletefiltered
+        }).down().appendElement({
+          "tag": "iron-icon",
+          "icon": "delete",
+          "style": "height: 18px; width: 18px"
+        }).appendElement({
+          "tag": "span",
+          "innerHtml": "delete filtered",
+          "style": "margin-left: 10px;"
+        }).up()
+        .appendElement({
+          "tag": "menu-item-element",
+          "separator": "true",
+          "style": "text-agling: left;"
+        }) // Delete filetered values
+        .appendElement({
+          "tag": "menu-item-element",
+          "id": "delete-all-data-menu-item",
+          "style": "text-agling: left;",
+          "action": this.ondeleteall
+        }).down().appendElement({
+          "tag": "iron-icon",
+          "icon": "delete",
+          "style": "height: 18px; width: 18px"
+        }).appendElement({
+          "tag": "span",
+          "innerHtml": "delete all data",
+          "style": "margin-left: 10px;"
+        }).up()
+        .appendElement({
+          "tag": "menu-item-element",
+          "separator": "true",
+          "style": "text-agling: left;"
+        }) // Export csv file
+        .appendElement({
+          "tag": "menu-item-element",
+          "id": "export-menu-item",
+          "style": "text-agling: left;",
+          "action": this.onexport
+        }).down().appendElement({
+          "tag": "iron-icon",
+          "icon": "file-download",
+          "style": "height: 18px; width: 18px"
+        }).appendElement({
+          "tag": "span",
+          "innerHtml": "export",
+          "style": "margin-left: 10px;"
+        }); // Set the menu
       // Append the element in the body so it will alway be visible.
 
       this.appendChild(this.menu.element);
@@ -717,13 +713,12 @@ class TableElement extends PolymerElement {
 
     return data;
   }
+
   /**
    * Return the visible data size.
    */
-
-
   size() {
-    // if filter are applied.
+    // if filters are applied.
     if (Object.keys(this.filtered).length > 0) {
       return Object.keys(this.filtered).length;
     } else if (this.hasFilter()) {

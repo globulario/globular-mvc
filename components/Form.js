@@ -52,7 +52,7 @@ export class Form extends HTMLElement {
         `
 
         this.container = this.shadowRoot.getElementById("container")
-        this.shadowRoot.getElementById("save-btn").onclick = this.save.bind(this)
+        this.shadowRoot.getElementById("save-btn").onclick = this.confirm.bind(this)
     }
 
     clear() {
@@ -67,9 +67,9 @@ export class Form extends HTMLElement {
     }
 
     /**
-     * Sends an event over your local network to save the current form.
+     * Creates a Toast popup to confirm if the user wants to save their form.
      */
-    save() {
+    confirm() {
         M.Toast.dismissAll()
         const toastHtml = `
         <style>
@@ -110,15 +110,37 @@ export class Form extends HTMLElement {
         <div id="toast-main-container">
             <span id="toast-text">Est-ce que vous voulez sauvegarder votre formulaire?</span>
             <div id="button-container">
-                <button class="toast-btn" id="save-btn">Enregistrer</button>
-                <button class="toast-btn" id="no-save-btn">Ne pas enregistrer</button>
-                <button class="toast-btn" id="cancel-btn">Annuler</button>
+                <button class="toast-btn" id="save-btn" onclick="save()">Enregistrer</button>
+                <button class="toast-btn" id="no-save-btn" onclick="noSave()">Ne pas enregistrer</button>
+                <button class="toast-btn" id="cancel-btn" onclick="cancel()">Annuler</button>
             </div>
         </div>
         `
         M.toast({html: toastHtml, displayLength: 999999})
-        Model.eventHub.publish("save_form_evt", true, true)
+
+        Model.eventHub.publish("lock_form_evt", true, true) // TODO: Event in form.ts
     }
+
+    /**
+     * Sends an event over your local network to save the current form.
+     */
+    save() {
+        Model.eventHub.publish("save_form_evt", true, true)
+        M.Toast.dismissAll()
+        Model.eventHub.publish("unlock_form_evt", true, true) // TODO: Event in form.ts
+    }
+
+    noSave() {
+        Model.eventHub.publish("reset_form_evt", true, true) // TODO: Event in form.ts
+        M.Toast.dismissAll()
+        Model.eventHub.publish("unlock_form_evt", true, true) // TODO: Event in form.ts
+    }
+
+    cancel() {
+        M.Toast.dismissAll()
+        Model.eventHub.publish("unlock_form_evt", true, true)
+    }
+
 }
 
 customElements.define("globular-form", Form);
