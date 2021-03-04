@@ -628,7 +628,7 @@ export class DropdownField extends Field {
         this.itemList = itemList
         let html = `
             <paper-dropdown-menu id="field-input" class="dropdown-menu" label="${description}" raised>
-                <paper-listbox class="dropdown-content" slot="dropdown-content" selected="1">
+                <paper-listbox class="dropdown-content" slot="dropdown-content">
                 </paper-listbox>
             </paper-dropdown-menu>
             <div id="field-view"></div>
@@ -661,7 +661,7 @@ export class DropdownField extends Field {
             return htmlArray;
         }
         for (let i = 0; i < this.itemList.length; i++)  {
-            htmlArray += `<paper-item value=${this.itemList[i]}>${this.itemList[i]}</paper-item>
+            htmlArray += `<paper-item value="${this.itemList[i]}">${this.itemList[i]}</paper-item>
             `
         }
         return htmlArray
@@ -810,7 +810,6 @@ export class ImageField extends Field {
         `
         let range = document.createRange();
         this.container.appendChild(range.createContextualFragment(html))
-        // TODO: Input has to be something different in this case
         this.visualInput = this.shadowRoot.getElementById("visual-input")
         this.input = this.shadowRoot.getElementById("field-input")
         this.view = this.shadowRoot.getElementById("field-view")
