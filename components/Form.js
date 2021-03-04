@@ -8,7 +8,7 @@ import '@polymer/paper-menu-button/paper-menu-button.js'
 import '@polymer/neon-animation/neon-animation-runner-behavior.js'
 import 'web-animations-js/web-animations-next.min.js'
 import '@polymer/paper-input/paper-textarea.js';
-import {IronResizableBehavior} from '@polymer/iron-resizable-behavior/iron-resizable-behavior.js';
+import { IronResizableBehavior } from '@polymer/iron-resizable-behavior/iron-resizable-behavior.js';
 // import 'web-animations-js/src/we'
 
 /**
@@ -175,7 +175,7 @@ export class Field extends HTMLElement {
      * The above conditions apply for all variations of those parameters. 
      * Also, it isn't necessary to have all the different dimensions. It is possible to only have an arbitrary amount of the small dimensions, the phone dimensions or the regular dimensions.
      * 
-     * @param {*} label 
+     * @param {*} label (aka Title) The string which will be display at the top of the Field.
      * @param {*} initialValue The initial value that the input will show
      * @param {*} x The initial position of the Field on the x axis. Starts at 1.
      * @param {*} y The initial position of the Field on the y axis. Starts at 1.
@@ -183,12 +183,12 @@ export class Field extends HTMLElement {
      * @param {*} height The height of the Field in grid units.
      * @param {*} xSmall The position of the Field on the x axis when the screen is small. Starts at 1.
      * @param {*} ySmall The position of the Field on the y axis when the screen is small. Starts at 1.
-     * @param {*} widthSmall The width of the Field when the screen is small.
-     * @param {*} heightSmall The height of the Field when the screen is small.
+     * @param {*} widthSmall The width of the Field when the screen is small in grid units.
+     * @param {*} heightSmall The height of the Field when the screen is small in grid units.
      * @param {*} xPhone The position of the Field on the x axis when the screen is about the size of a phone. Starts at 1.
      * @param {*} yPhone The position of the Field on the y axis when the screen is about the size of a phone. Starts at 1.
-     * @param {*} widthPhone The width of the Field when the screen is about the size of a phone.
-     * @param {*} heightPhone The height of the Field when the screen is about the size of a phone.
+     * @param {*} widthPhone The width of the Field when the screen is about the size of a phone in grid units.
+     * @param {*} heightPhone The height of the Field when the screen is about the size of a phone in grid units.
      */
     constructor(label, initialValue, x = 0, y = 0, width = 0, height = 0, xSmall = 0, ySmall = 0, widthSmall = 0, heightSmall = 0, xPhone = 0, yPhone = 0, widthPhone = 0, heightPhone = 0) {
         super()
@@ -263,6 +263,22 @@ export class Field extends HTMLElement {
         this.container = this.shadowRoot.getElementById("container")
     }
 
+    /**
+     * Gets the HTML resize and size code for the all the different dimensions.
+     * 
+     * @param {*} x The initial position of the Field on the x axis. Starts at 1.
+     * @param {*} y The initial position of the Field on the y axis. Starts at 1.
+     * @param {*} width The width of the Field in grid units.
+     * @param {*} height The height of the Field in grid units.
+     * @param {*} xSmall The position of the Field on the x axis when the screen is small. Starts at 1.
+     * @param {*} ySmall The position of the Field on the y axis when the screen is small. Starts at 1.
+     * @param {*} widthSmall The width of the Field when the screen is small.
+     * @param {*} heightSmall The height of the Field when the screen is small.
+     * @param {*} xPhone The position of the Field on the x axis when the screen is about the size of a phone. Starts at 1.
+     * @param {*} yPhone The position of the Field on the y axis when the screen is about the size of a phone. Starts at 1.
+     * @param {*} widthPhone The width of the Field when the screen is about the size of a phone.
+     * @param {*} heightPhone The height of the Field when the screen is about the size of a phone.
+     */
     _getAllSizes(x, y, width, height, xSmall, ySmall, widthSmall, heightSmall, xPhone, yPhone, widthPhone, heightPhone) {
         let hostHtml = this._getSize(x, y, width, height)
         hostHtml += this._getConditionalSize(this.smallThreshold, xSmall, ySmall, widthSmall, heightSmall)
@@ -270,9 +286,18 @@ export class Field extends HTMLElement {
         return hostHtml
     }
 
+    /**
+     * Gets the conditional resize code for the specified dimensions.
+     * 
+     * @param {*} pixelWidth If the width of the screen drops underneath this value, then the dimensions will change
+     * @param {*} x The initial position of the Field on the x axis. Starts at 1.
+     * @param {*} y The initial position of the Field on the y axis. Starts at 1.
+     * @param {*} width The width of the Field in grid units.
+     * @param {*} height The height of the Field in grid units.
+     */
     _getConditionalSize(pixelWidth, x, y, width, height) {
         let conditionalHtml = ``
-        if(!pixelWidth || pixelWidth < 0){
+        if (!pixelWidth || pixelWidth < 0) {
             return conditionalHtml
         }
         conditionalHtml = `@media only screen and (max-width: ${pixelWidth}px) {
@@ -280,11 +305,11 @@ export class Field extends HTMLElement {
         }`
 
         return conditionalHtml
-        
+
     }
-    
+
     /**
-     * Gets the CSS for the size of the host element. 
+     * Gets the CSS for the size of the host element. The size is setup using grid-columns.
      * 
      * If x or y are 0 or negative, then there cannot be a width or a height since the grid is dependent on initial position. 
      * The position will also be automatically placed within the grid.
@@ -354,9 +379,6 @@ export class Field extends HTMLElement {
 
     /**
      * Returns the value of the current input.
-     * 
-     * Abstract method.
-     * Must be reimplemented in derived classes.
      */
     getValue() {
         return ""
@@ -365,41 +387,27 @@ export class Field extends HTMLElement {
     /**
      * Sets the value of the current input of the view and input elements.
      * 
-     * Abstract method.
-     * Must be implemented in derived classes.
      * @param {*} v New value for the current input
      */
     setValue(v) { }
 
     /**
      * Sets the value of the view and input elements to a nill value.
-     * 
-     * Abstract method.
-     * Must be implemented in derived classes.
      */
     clear() { }
 
     /**
      * Checks to see whether the input field is valid.
-     * 
-     * Abstract method.
-     * Must be implemented in derived classes
      */
     isValid() { }
 
     /**
      * Disables the input element and enables the view element.
-     *  
-     * Abstract method.
-     * Must be implemented in derived classes.
      */
     lock() { }
 
     /**
      * Enables the input element and disables the view element.
-     * 
-     * Abstract method.
-     * Must be implemented in derived classes.
      */
     unlock() { }
 
@@ -419,8 +427,8 @@ export class StringField extends Field {
      * The above conditions apply for all variations of those parameters. 
      * Also, it isn't necessary to have all the different dimensions. It is possible to only have the small dimensions, the phone dimensions or the regular dimensions.
      * 
-     * @param {*} label 
-     * @param {*} description
+     * @param {*} label (aka Title) The string which will be display at the top of the Field.
+     * @param {*} description The string which is displayed within the input and hovers above it once text is entered. 
      * @param {*} initialValue The initial value that the input will show
      * @param {*} x The initial position of the Field on the x axis. Starts at 1.
      * @param {*} y The initial position of the Field on the y axis. Starts at 1.
@@ -428,21 +436,25 @@ export class StringField extends Field {
      * @param {*} height The height of the Field in grid units.
      * @param {*} xSmall The position of the Field on the x axis when the screen is small. Starts at 1.
      * @param {*} ySmall The position of the Field on the y axis when the screen is small. Starts at 1.
-     * @param {*} widthSmall The width of the Field when the screen is small.
-     * @param {*} heightSmall The height of the Field when the screen is small.
+     * @param {*} widthSmall The width of the Field when the screen is small in grid units.
+     * @param {*} heightSmall The height of the Field when the screen is small in grid units.
      * @param {*} xPhone The position of the Field on the x axis when the screen is about the size of a phone. Starts at 1.
      * @param {*} yPhone The position of the Field on the y axis when the screen is about the size of a phone. Starts at 1.
-     * @param {*} widthPhone The width of the Field when the screen is about the size of a phone.
-     * @param {*} heightPhone The height of the Field when the screen is about the size of a phone.
+     * @param {*} widthPhone The width of the Field when the screen is about the size of a phone in grid units.
+     * @param {*} heightPhone The height of the Field when the screen is about the size of a phone in grid units.
      */
     constructor(label, description, initialValue = "", x = 0, y = 0, width = 0, height = 0, xSmall = 0, ySmall = 0, widthSmall = 0, heightSmall = 0, xPhone = 0, yPhone = 0, widthPhone = 0, heightPhone = 0) {
-        super(label, initialValue, x, y, width, height, xSmall, ySmall, widthSmall, heightSmall , xPhone, yPhone, widthPhone, heightPhone)
+        super(label, initialValue, x, y, width, height, xSmall, ySmall, widthSmall, heightSmall, xPhone, yPhone, widthPhone, heightPhone)
         let html = `
             <paper-input id="field-input" label="${description}" raised required error="This field is required."></paper-input>
             <div id="field-view"></div>
         `
+
+        // Inserts the html into the proper area in the container
         let range = document.createRange();
         this.container.appendChild(range.createContextualFragment(html))
+
+        // Gets the elements necessary for manipulating the DOM
         this.input = this.shadowRoot.getElementById("field-input");
         this.view = this.shadowRoot.getElementById("field-view")
 
@@ -499,8 +511,8 @@ export class TextAreaField extends Field {
      * The above conditions apply for all variations of those parameters. 
      * Also, it isn't necessary to have all the different dimensions. It is possible to only have the small dimensions, the phone dimensions or the regular dimensions.
      * 
-     * @param {*} label 
-     * @param {*} description
+     * @param {*} label (aka Title) The string which will be display at the top of the Field.
+     * @param {*} description The string which is displayed within the input and hovers above it once text is entered. 
      * @param {*} initialValue The initial value that the input will show
      * @param {*} x The initial position of the Field on the x axis. Starts at 1.
      * @param {*} y The initial position of the Field on the y axis. Starts at 1.
@@ -508,39 +520,61 @@ export class TextAreaField extends Field {
      * @param {*} height The height of the Field in grid units.
      * @param {*} xSmall The position of the Field on the x axis when the screen is small. Starts at 1.
      * @param {*} ySmall The position of the Field on the y axis when the screen is small. Starts at 1.
-     * @param {*} widthSmall The width of the Field when the screen is small.
-     * @param {*} heightSmall The height of the Field when the screen is small.
+     * @param {*} widthSmall The width of the Field when the screen is small in grid units.
+     * @param {*} heightSmall The height of the Field when the screen is small in grid units.
      * @param {*} xPhone The position of the Field on the x axis when the screen is about the size of a phone. Starts at 1.
      * @param {*} yPhone The position of the Field on the y axis when the screen is about the size of a phone. Starts at 1.
-     * @param {*} widthPhone The width of the Field when the screen is about the size of a phone.
-     * @param {*} heightPhone The height of the Field when the screen is about the size of a phone.
+     * @param {*} widthPhone The width of the Field when the screen is about the size of a phone in grid units.
+     * @param {*} heightPhone The height of the Field when the screen is about the size of a phone in grid units.
      */
     constructor(label, description, initialValue = "", x = 0, y = 0, width = 0, height = 0, xSmall = 0, ySmall = 0, widthSmall = 0, heightSmall = 0, xPhone = 0, yPhone = 0, widthPhone = 0, heightPhone = 0) {
-        super(label, initialValue, x, y, width, height, xSmall, ySmall, widthSmall, heightSmall , xPhone, yPhone, widthPhone, heightPhone)
+        super(label, initialValue, x, y, width, height, xSmall, ySmall, widthSmall, heightSmall, xPhone, yPhone, widthPhone, heightPhone)
         const rows = 3 + Math.floor(5.5 * Math.max(height - 1, 0))
         let html = `
             <textarea id="field-input" placeholder="${description}" rows="${rows}"></textarea>
             <div id="field-view"></div>
         `
 
+        // Inserts the html into the proper area in the container
         let range = document.createRange();
         this.container.appendChild(range.createContextualFragment(html))
+
+        // Gets the elements necessary for manipulating the DOM
         this.input = this.shadowRoot.getElementById("field-input");
         this.view = this.shadowRoot.getElementById("field-view")
 
-        //Two listeners to change amount of rows
-        // TODO: add listener for switch back to normal size
-        this._setHeightListener(heightSmall, this.smallThreshold)
-        this._setHeightListener(heightPhone, this.phoneThreshold)
+        //Three listeners to change amount of rows
+        this._setMaxHeightListener(heightSmall, this.smallThreshold)
+        this._setMaxHeightListener(heightPhone, this.phoneThreshold)
+        this._setMinHeightListener(heightSmall, this.smallThreshold)
 
         //By default, show the input element and not the view element
         this.unlock()
         this.reset()
-
     }
 
-    _setHeightListener(height, threshold) {
-        if(height && height > 0) {
+    /**
+     * Sets a listener which checks when the viewport width is greater than a certain threshold
+     * @param {*} height The height of the input after the modification in grid units. 
+     * @param {*} threshold in pixels.
+     */
+    _setMinHeightListener(height, threshold) {
+        if (height && height > 0) {
+            let watcher = window.matchMedia("(min-width: " + (threshold + 1) + "px)")
+            this._mediaQueryRows(watcher, height)
+            watcher.addEventListener("change", () => {
+                this._mediaQueryRows(watcher, height)
+            })
+        }
+    }
+
+    /**
+     * Sets a listener which checks when the viewport width is lesser than a certain threshold
+     * @param {*} height The height of the input after the modification in grid units. 
+     * @param {*} threshold in pixels.
+     */
+    _setMaxHeightListener(height, threshold) {
+        if (height && height > 0) {
             let watcher = window.matchMedia("(max-width: " + threshold + "px)")
             this._mediaQueryRows(watcher, height)
             watcher.addEventListener("change", () => {
@@ -549,12 +583,21 @@ export class TextAreaField extends Field {
         }
     }
 
+    /**
+     * Queries the watcher to check when the condition is met, then modifies the rows to the appropriate height.
+     * @param {*} watcher The media query which specifies the necessary condition.
+     * @param {*} height The height of the input after the modification in grid units. 
+     */
     _mediaQueryRows(watcher, height) {
         if (watcher.matches) {
             this.input.setAttribute("rows", this._calcRow(height))
         }
     }
 
+    /**
+     * Calculates the amount of rows necessary for a given height. (Subject to change if found to be ugly)
+     * @param {*} height The height of the input after the modification in grid space.
+     */
     _calcRow(height) {
         return 3 + Math.floor(5.5 * Math.max(height - 1, 0))
     }
@@ -596,35 +639,35 @@ customElements.define("globular-text-area-field", TextAreaField);
  * An input field which uses a list that the user will choose from.
  */
 export class DropdownField extends Field {
-/**
-     * If x or y are 0 or negative, then there cannot be a width or a height since the grid is dependent on initial position. 
-     * The position will also be automatically placed within the grid.
-     * 
-     * If width or height are 0 or negative, then their value will be a default of 1.
-     * 
-     * The above conditions apply for all variations of those parameters. 
-     * Also, it isn't necessary to have all the different dimensions. It is possible to only have the small dimensions, the phone dimensions or the regular dimensions.
-     * 
-     * @param {*} label 
-     * @param {*} description
-     * @param {*} itemList
-     * @param {*} initialValue The initial value that the input will show
-     * @param {*} x The initial position of the Field on the x axis. Starts at 1.
-     * @param {*} y The initial position of the Field on the y axis. Starts at 1.
-     * @param {*} width The width of the Field in grid units.
-     * @param {*} height The height of the Field in grid units.
-     * @param {*} xSmall The position of the Field on the x axis when the screen is small. Starts at 1.
-     * @param {*} ySmall The position of the Field on the y axis when the screen is small. Starts at 1.
-     * @param {*} widthSmall The width of the Field when the screen is small.
-     * @param {*} heightSmall The height of the Field when the screen is small.
-     * @param {*} xPhone The position of the Field on the x axis when the screen is about the size of a phone. Starts at 1.
-     * @param {*} yPhone The position of the Field on the y axis when the screen is about the size of a phone. Starts at 1.
-     * @param {*} widthPhone The width of the Field when the screen is about the size of a phone.
-     * @param {*} heightPhone The height of the Field when the screen is about the size of a phone.
-     */
+    /**
+         * If x or y are 0 or negative, then there cannot be a width or a height since the grid is dependent on initial position. 
+         * The position will also be automatically placed within the grid.
+         * 
+         * If width or height are 0 or negative, then their value will be a default of 1.
+         * 
+         * The above conditions apply for all variations of those parameters. 
+         * Also, it isn't necessary to have all the different dimensions. It is possible to only have the small dimensions, the phone dimensions or the regular dimensions.
+         * 
+         * @param {*} label (aka Title) The string which will be display at the top of the Field.
+         * @param {*} description The string which is displayed within the input and hovers above it once text is entered. 
+         * @param {*} itemList The items displayed in the dropdown list. 
+         * @param {*} initialValue The initial value that the input will show
+         * @param {*} x The initial position of the Field on the x axis. Starts at 1.
+         * @param {*} y The initial position of the Field on the y axis. Starts at 1.
+         * @param {*} width The width of the Field in grid units.
+         * @param {*} height The height of the Field in grid units.
+         * @param {*} xSmall The position of the Field on the x axis when the screen is small. Starts at 1.
+         * @param {*} ySmall The position of the Field on the y axis when the screen is small. Starts at 1.
+         * @param {*} widthSmall The width of the Field when the screen is small in grid units.
+         * @param {*} heightSmall The height of the Field when the screen is small in grid units.
+         * @param {*} xPhone The position of the Field on the x axis when the screen is about the size of a phone. Starts at 1.
+         * @param {*} yPhone The position of the Field on the y axis when the screen is about the size of a phone. Starts at 1.
+         * @param {*} widthPhone The width of the Field when the screen is about the size of a phone in grid units.
+         * @param {*} heightPhone The height of the Field when the screen is about the size of a phone in grid units.
+         */
     constructor(label, description, itemList, initialValue = "", x = 0, y = 0, width = 0, height = 0, xSmall = 0, ySmall = 0, widthSmall = 0, heightSmall = 0, xPhone = 0, yPhone = 0, widthPhone = 0, heightPhone = 0) {
-        super(label, initialValue, x, y, width, height, xSmall, ySmall, widthSmall, heightSmall , xPhone, yPhone, widthPhone, heightPhone)
-    
+        super(label, initialValue, x, y, width, height, xSmall, ySmall, widthSmall, heightSmall, xPhone, yPhone, widthPhone, heightPhone)
+
         this.itemList = itemList
         let html = `
             <paper-dropdown-menu id="field-input" class="dropdown-menu" label="${description}" raised>
@@ -638,36 +681,47 @@ export class DropdownField extends Field {
         let range = document.createRange();
         this.container.appendChild(range.createContextualFragment(html))
 
+        // Gets the elements necessary for manipulating the DOM
         this.input = this.shadowRoot.getElementById("field-input")
         this.view = this.shadowRoot.getElementById("field-view")
         this.listbox = this.shadowRoot.querySelector(".dropdown-content")
+
         this.shadowRoot.querySelector(".dropdown-content").innerHTML = this._getHtmlArray()
         //By default, show the input element and not the view element
         this.unlock()
         this.reset()
     }
 
+    /**
+     * A connected callback executes after the constructor and is necessary to make sure HTML is properly initialized
+     */
     connectedCallback() {
         this.addEventListener('iron-resize', this._onIronResize.bind(this));
     }
 
+    /**
+     * Resizes the dropdown list to be the same size as the input. 
+     */
     _onIronResize() {
         this.listbox.style.width = this.input.shadowRoot.getElementById("menuButton").offsetWidth + "px"
     }
 
+    /**
+     * Gets the HTML for the items within the dropdown list.
+     */
     _getHtmlArray() {
         let htmlArray = ``
         if (!this.itemList || this.itemList.length < 0) {
             return htmlArray;
         }
-        for (let i = 0; i < this.itemList.length; i++)  {
+        for (let i = 0; i < this.itemList.length; i++) {
             htmlArray += `<paper-item value="${this.itemList[i]}">${this.itemList[i]}</paper-item>
             `
         }
         return htmlArray
     }
 
-    
+
     getValue() {
         return this.listbox.getElementsByTagName("paper-item")[this.listbox.selected].getAttribute("value")
     }
@@ -710,33 +764,33 @@ customElements.define("globular-dropdown-field", DropdownField);
  * An input field which accepts an Image from the user's disk.
  */
 export class ImageField extends Field {
-/**
-     * If x or y are 0 or negative, then there cannot be a width or a height since the grid is dependent on initial position. 
-     * The position will also be automatically placed within the grid.
-     * 
-     * If width or height are 0 or negative, then their value will be a default of 1.
-     * 
-     * The above conditions apply for all variations of those parameters. 
-     * Also, it isn't necessary to have all the different dimensions. It is possible to only have the small dimensions, the phone dimensions or the regular dimensions.
-     * 
-     * @param {*} label 
-     * @param {*} description
-     * @param {*} initialValue The initial value that the input will show
-     * @param {*} x The initial position of the Field on the x axis. Starts at 1.
-     * @param {*} y The initial position of the Field on the y axis. Starts at 1.
-     * @param {*} width The width of the Field in grid units.
-     * @param {*} height The height of the Field in grid units.
-     * @param {*} xSmall The position of the Field on the x axis when the screen is small. Starts at 1.
-     * @param {*} ySmall The position of the Field on the y axis when the screen is small. Starts at 1.
-     * @param {*} widthSmall The width of the Field when the screen is small.
-     * @param {*} heightSmall The height of the Field when the screen is small.
-     * @param {*} xPhone The position of the Field on the x axis when the screen is about the size of a phone. Starts at 1.
-     * @param {*} yPhone The position of the Field on the y axis when the screen is about the size of a phone. Starts at 1.
-     * @param {*} widthPhone The width of the Field when the screen is about the size of a phone.
-     * @param {*} heightPhone The height of the Field when the screen is about the size of a phone.
-     */
+    /**
+         * If x or y are 0 or negative, then there cannot be a width or a height since the grid is dependent on initial position. 
+         * The position will also be automatically placed within the grid.
+         * 
+         * If width or height are 0 or negative, then their value will be a default of 1.
+         * 
+         * The above conditions apply for all variations of those parameters. 
+         * Also, it isn't necessary to have all the different dimensions. It is possible to only have the small dimensions, the phone dimensions or the regular dimensions.
+         * 
+         * @param {*} label (aka Title) The string which will be display at the top of the Field.
+         * @param {*} description The string which is displayed within the input and hovers above it once text is entered. 
+         * @param {*} initialValue The initial value that the input will show
+         * @param {*} x The initial position of the Field on the x axis. Starts at 1.
+         * @param {*} y The initial position of the Field on the y axis. Starts at 1.
+         * @param {*} width The width of the Field in grid units.
+         * @param {*} height The height of the Field in grid units.
+         * @param {*} xSmall The position of the Field on the x axis when the screen is small. Starts at 1.
+         * @param {*} ySmall The position of the Field on the y axis when the screen is small. Starts at 1.
+         * @param {*} widthSmall The width of the Field when the screen is small in grid units.
+         * @param {*} heightSmall The height of the Field when the screen is small in grid units.
+         * @param {*} xPhone The position of the Field on the x axis when the screen is about the size of a phone. Starts at 1.
+         * @param {*} yPhone The position of the Field on the y axis when the screen is about the size of a phone. Starts at 1.
+         * @param {*} widthPhone The width of the Field when the screen is about the size of a phone in grid units.
+         * @param {*} heightPhone The height of the Field when the screen is about the size of a phone in grid units.
+         */
     constructor(label, description, initialValue = "", x = 0, y = 0, width = 0, height = 0, xSmall = 0, ySmall = 0, widthSmall = 0, heightSmall = 0, xPhone = 0, yPhone = 0, widthPhone = 0, heightPhone = 0) {
-        super(label, initialValue, x, y, width, height, xSmall, ySmall, widthSmall, heightSmall , xPhone, yPhone, widthPhone, heightPhone)
+        super(label, initialValue, x, y, width, height, xSmall, ySmall, widthSmall, heightSmall, xPhone, yPhone, widthPhone, heightPhone)
         let html = `
             <style>
                 #custom-file-upload span{
@@ -808,13 +862,14 @@ export class ImageField extends Field {
             </div>
             <input type="file" id="field-input"></input>
         `
+
+        // Inserts the html into the proper area in the container
         let range = document.createRange();
         this.container.appendChild(range.createContextualFragment(html))
+        // Gets the elements necessary for manipulating the DOM
         this.visualInput = this.shadowRoot.getElementById("visual-input")
         this.input = this.shadowRoot.getElementById("field-input")
         this.view = this.shadowRoot.getElementById("field-view")
-
-        
         this.image = this.shadowRoot.getElementById("image-display")
         this.icon = this.shadowRoot.getElementById("no-image-display")
 
@@ -823,6 +878,7 @@ export class ImageField extends Field {
 
         this._initFileEvent()
 
+        // Links the fancy div's onclick event with the input's onclick event.
         this.shadowRoot.getElementById("custom-file-upload").onclick = () => {
             this.input.click();
         }
@@ -832,7 +888,10 @@ export class ImageField extends Field {
         this.reset()
 
     }
-    
+
+    /**
+     * Tells the input to put the file that was found by the user into an img tag to display it.
+     */
     _initFileEvent() {
         this.input.onchange = (evt) => {
             const files = evt.target.files
@@ -841,8 +900,8 @@ export class ImageField extends Field {
 
                 reader.onload = (e) => {
                     this.image.src = e.target.result
-                    // setup the onchange event
-                    if(this.onchange) {
+                    // Setup the onchange event
+                    if (this.onchange) {
                         this.onchange(this.image.src)
                     }
 
@@ -899,8 +958,8 @@ export class DateField extends Field {
      * The above conditions apply for all variations of those parameters. 
      * Also, it isn't necessary to have all the different dimensions. It is possible to only have the small dimensions, the phone dimensions or the regular dimensions.
      * 
-     * @param {*} label 
-     * @param {*} description
+     * @param {*} label (aka Title) The string which will be display at the top of the Field.
+     * @param {*} description The string which is displayed within the input and hovers above it once text is entered. 
      * @param {*} initialValue The initial value that the input will show
      * @param {*} x The initial position of the Field on the x axis. Starts at 1.
      * @param {*} y The initial position of the Field on the y axis. Starts at 1.
@@ -908,21 +967,25 @@ export class DateField extends Field {
      * @param {*} height The height of the Field in grid units.
      * @param {*} xSmall The position of the Field on the x axis when the screen is small. Starts at 1.
      * @param {*} ySmall The position of the Field on the y axis when the screen is small. Starts at 1.
-     * @param {*} widthSmall The width of the Field when the screen is small.
-     * @param {*} heightSmall The height of the Field when the screen is small.
+     * @param {*} widthSmall The width of the Field when the screen is small in grid units.
+     * @param {*} heightSmall The height of the Field when the screen is small in grid units.
      * @param {*} xPhone The position of the Field on the x axis when the screen is about the size of a phone. Starts at 1.
      * @param {*} yPhone The position of the Field on the y axis when the screen is about the size of a phone. Starts at 1.
-     * @param {*} widthPhone The width of the Field when the screen is about the size of a phone.
-     * @param {*} heightPhone The height of the Field when the screen is about the size of a phone.
+     * @param {*} widthPhone The width of the Field when the screen is about the size of a phone in grid units.
+     * @param {*} heightPhone The height of the Field when the screen is about the size of a phone in grid units.
      */
     constructor(label, description, initialValue = "", x = 0, y = 0, width = 0, height = 0, xSmall = 0, ySmall = 0, widthSmall = 0, heightSmall = 0, xPhone = 0, yPhone = 0, widthPhone = 0, heightPhone = 0) {
-        super(label, initialValue, x, y, width, height, xSmall, ySmall, widthSmall, heightSmall , xPhone, yPhone, widthPhone, heightPhone)
+        super(label, initialValue, x, y, width, height, xSmall, ySmall, widthSmall, heightSmall, xPhone, yPhone, widthPhone, heightPhone)
         let html = `
             <paper-input id="field-input" label="${description}" type="Date" raised required error="This field is required."></paper-input>
             <div id="field-view"></div>
         `
+
+        // Inserts the html into the proper area in the container
         let range = document.createRange();
         this.container.appendChild(range.createContextualFragment(html))
+
+        // Gets the elements necessary for manipulating the DOM
         this.input = this.shadowRoot.getElementById("field-input");
         this.view = this.shadowRoot.getElementById("field-view")
 
