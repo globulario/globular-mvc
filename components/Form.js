@@ -110,32 +110,44 @@ export class Form extends HTMLElement {
         <div id="toast-main-container">
             <span id="toast-text">Est-ce que vous voulez sauvegarder votre formulaire?</span>
             <div id="button-container">
-                <button class="toast-btn" id="save-btn" onclick="save()">Enregistrer</button>
-                <button class="toast-btn" id="no-save-btn" onclick="noSave()">Ne pas enregistrer</button>
-                <button class="toast-btn" id="cancel-btn" onclick="cancel()">Annuler</button>
+                <button class="toast-btn" id="save-btn">Enregistrer</button>
+                <button class="toast-btn" id="no-save-btn">Ne pas enregistrer</button>
+                <button class="toast-btn" id="cancel-btn">Annuler</button>
             </div>
         </div>
         `
         M.toast({html: toastHtml, displayLength: 999999})
 
-        Model.eventHub.publish("lock_form_evt", true, true) // TODO: Event in form.ts
+        let toast = document.querySelector(".toast")
+        toast.querySelector("#save-btn").onclick = this.save.bind(this)
+        toast.querySelector("#no-save-btn").onclick = this.noSave.bind(this)
+        toast.querySelector("#cancel-btn").onclick = this.cancel.bind(this)
+
+        Model.eventHub.publish("lock_form_evt", true, true)
     }
 
     /**
-     * Sends an event over your local network to save the current form.
+     * Sends an event over your local network to save, unlock, then reset the current form.
      */
     save() {
         Model.eventHub.publish("save_form_evt", true, true)
         M.Toast.dismissAll()
-        Model.eventHub.publish("unlock_form_evt", true, true) // TODO: Event in form.ts
+        Model.eventHub.publish("unlock_form_evt", true, true)
+        Model.eventHub.publish("reset_form_evt", true, true)
     }
 
+    /**
+     * Sends an event over your local network to reset, then unlock the current form.
+     */
     noSave() {
-        Model.eventHub.publish("reset_form_evt", true, true) // TODO: Event in form.ts
+        Model.eventHub.publish("reset_form_evt", true, true)
         M.Toast.dismissAll()
-        Model.eventHub.publish("unlock_form_evt", true, true) // TODO: Event in form.ts
+        Model.eventHub.publish("unlock_form_evt", true, true)
     }
 
+    /**
+     * Sends an event over your local network to unlock the current form.
+     */
     cancel() {
         M.Toast.dismissAll()
         Model.eventHub.publish("unlock_form_evt", true, true)
@@ -319,6 +331,11 @@ export class Field extends HTMLElement {
                     font-size: var(--paper-input-container-shared-input-style_-_font-size);
                     font-weight: var(--paper-input-container-shared-input-style_-_font-weight);
 
+                }
+
+                #field-view {
+                    text-align: center;
+                    font-size: 1rem;
                 }
           
                 ${hostHtml}
@@ -792,6 +809,8 @@ export class DropdownField extends Field {
 
 
     getValue() {
+        if(!this.listbox.selected || this.listbox.selected < 0) 
+            return ""
         return this.listbox.getElementsByTagName("paper-item")[this.listbox.selected].getAttribute("value")
     }
 
@@ -824,6 +843,10 @@ export class DropdownField extends Field {
     unlock() {
         this.input.style.display = ""
         this.view.style.display = "none"
+    }
+
+    reset() {
+        this.listbox.selected = -1
     }
 }
 
@@ -892,7 +915,7 @@ export class ImageField extends Field {
                     display: none;
                 }
 
-                #field-view {
+                #image-view {
                     height: 100%;
                     width: 100%;
                 }
@@ -923,7 +946,7 @@ export class ImageField extends Field {
                     <span>${description}</span>
                 </div>
             </div>
-            <div id="field-view">
+            <div id="image-view">
                 <div id="image-display-div">
                     <img id="image-display" src="#" />
                     <iron-icon id="no-image-display" icon="image:photo"></iron-icon>
@@ -938,7 +961,6 @@ export class ImageField extends Field {
         // Gets the elements necessary for manipulating the DOM
         this.visualInput = this.shadowRoot.getElementById("visual-input")
         this.input = this.shadowRoot.getElementById("field-input")
-        this.view = this.shadowRoot.getElementById("field-view")
         this.image = this.shadowRoot.getElementById("image-display")
         this.icon = this.shadowRoot.getElementById("no-image-display")
 
@@ -1000,11 +1022,9 @@ export class ImageField extends Field {
     }
 
     lock() {
-        this.view.innerHTML = this.getValue()
 
         // TODO: Change the method to remove and replace the elements
         this.visualInput.style.display = "none"
-        this.view.style.display = ""
     }
 
     unlock() {
@@ -1016,6 +1036,9 @@ export class ImageField extends Field {
 
 customElements.define("globular-image-field", ImageField);
 
+/**
+ * An input field which accepts a date and also has a fancy date picker.
+ */
 export class DateField extends Field {
 
     /**
