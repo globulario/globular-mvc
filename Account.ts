@@ -32,19 +32,19 @@ export class Session extends Model {
     }
 
     // The link to the account.
-    constructor(accountId: string, state: number=1, lastStateTime?:string) {
+    constructor(accountId: string, state: number = 1, lastStateTime?: string) {
         super();
 
         this._id = accountId;
-        if(state==0){
+        if (state == 0) {
             this.state = SessionState.Online;
-        }else if(state==1){
+        } else if (state == 1) {
             this.state = SessionState.Offline;
-        }else if(state==2){
+        } else if (state == 2) {
             this.state = SessionState.Away;
         }
-        
-        if(lastStateTime!=undefined){
+
+        if (lastStateTime != undefined) {
             this.lastStateTime = new Date(lastStateTime)
         }
 
@@ -59,7 +59,7 @@ export class Session extends Model {
                 this._id = accountId
                 this.state_ = obj.state;
                 this.lastStateTime = new Date(obj.lastStateTime);
-               
+
             }, false)
 
         Model.eventHub.subscribe(`__session_state_${accountId}_change_event__`,
@@ -72,7 +72,7 @@ export class Session extends Model {
                 this._id = obj._id;
                 this.state_ = obj.state;
                 this.lastStateTime = obj.lastStateTime;
-                
+
                 this.save(() => {
                     /* nothing here*/
                 }, (err: any) => {
@@ -81,7 +81,7 @@ export class Session extends Model {
             }, true)
     }
 
-    initData(initCallback:()=>void, errorCallback: (err: any)=>void) {
+    initData(initCallback: () => void, errorCallback: (err: any) => void) {
 
         // In that case I will get the values from the database...
         let userName = this._id;
@@ -118,12 +118,14 @@ export class Session extends Model {
                 // In that case I will save defaut session values...
                 this.save(() => {
                     initCallback()
-                 }, errorCallback)
+                }, errorCallback)
             });
     }
 
     toString(): string {
         // return the basic infomration to be store in the database.
+        console.log(this.lastStateTime)
+
         return `{"_id":"${this._id}", "state":${this.state.toString()}, "lastStateTime":"${this.lastStateTime.toISOString()}"}`
     }
 
@@ -137,9 +139,9 @@ export class Session extends Model {
         } else if (obj.state == 2) {
             this.state = SessionState.Away;
         }
-        if (typeof obj.lastStateTime === 'string' || obj.lastStateTime instanceof String){
+        if (typeof obj.lastStateTime === 'string' || obj.lastStateTime instanceof String) {
             obj.lastStateTime = new Date(obj.lastStateTime)
-        }else{
+        } else {
             this.lastStateTime = obj.lastStateTime;
         }
     }
@@ -297,12 +299,33 @@ export class Account extends Model {
      * @param errorCallback Error Callback.
      */
     public static getAccount(id: string, successCallback: (account: Account) => void, errorCallback: (err: any) => void) {
-        if (Account.accounts != null) {
-            if (Account.accounts[id] != null) {
-                successCallback(Account.accounts[id]);
-                return
-            }
+        if (Account.accounts == null) {
+            // Set the accouts map
+            Account.accounts = {}
+
+            // Set the defaut account...
+
+            // The super administrator
+            let sa = new Account("sa", Model.globular.config.AdminEmail, "sa")
+            sa.firstName = "Super"
+            sa.lastName = "Administrator"
+            Account.accounts["sa"] = sa;
+
+            // The limited guest account
+            let guest = new Account("guest", Model.globular.config.AdminEmail, "guest")
+            guest.firstName = "Anonymous"
+            guest.lastName = "User"
+            Account.accounts["guest"] = guest;
         }
+
+        if (Account.accounts[id] != null) {
+            if(id=="sa"||id=="guest"){
+                Account.accounts[id].session = new Session(id, 1, new Date().toISOString())
+            }
+            successCallback(Account.accounts[id]);
+            return
+        }
+
 
         let rqst = new FindOneRqst();
         rqst.setId("local_resource");
@@ -312,7 +335,7 @@ export class Account extends Model {
         rqst.setCollection(collection);
 
         // Find the account by id or by name... both must be unique in the backend.
-        rqst.setQuery(`{"name":"${id}"}`); // search by name and not id... the id will be retreived.
+        rqst.setQuery(`{"$or":[{"_id":"${id}"},{"name":"${id}"} ]}`); // search by name and not id... the id will be retreived.
         rqst.setOptions(`[{"Projection":{"_id":1, "email":1, "name":1, "groups":1, "organizations":1, "roles":1}}]`);
 
         // call persist data
@@ -325,7 +348,7 @@ export class Account extends Model {
             .then((rsp: any) => {
                 let data = rsp.getResult().toJavaScript();
                 let account = new Account(data._id, data.email, data.name)
-                account.initData(()=>{
+                account.initData(() => {
                     Account.accounts[data._id] = account;
                     // here I will initialyse groups...
                     account.groups_ = data.groups;
@@ -344,48 +367,48 @@ export class Account extends Model {
      * @param successCallback 
      * @param errorCallback 
      */
-    public getGroups(successCallback:(groups:Array<Group>)=>void){
+    public getGroups(successCallback: (groups: Array<Group>) => void) {
         let groups_ = new Array<Group>();
-        if(this.groups_ == undefined){
+        if (this.groups_ == undefined) {
             successCallback([])
             return
         }
 
-        if(this.groups_.length == 0){
+        if (this.groups_.length == 0) {
             successCallback([])
             return
         }
 
         // Initi the group.
-        let setGroup_ = (index:number)=>{
-            if(index <this.groups_.length){
+        let setGroup_ = (index: number) => {
+            if (index < this.groups_.length) {
                 let groupId = this.groups_[index]["$id"]
-                Group.getGroup(groupId, (g:Group)=>{
+                Group.getGroup(groupId, (g: Group) => {
                     groups_.push(g)
                     index++
                     setGroup_(index);
-                    
-                }, ()=>{
+
+                }, () => {
                     index++
-                    if(index < this.groups_.length){
+                    if (index < this.groups_.length) {
                         setGroup_(index);
-                    }else{
+                    } else {
                         successCallback(groups_);
                     }
                 })
-            }else{
+            } else {
                 successCallback(groups_);
             }
         }
-        
+
         // start the recursion.
         setGroup_(0)
     }
 
     // Test if a account is member of a given group.
-    isMemberOf(id:string):boolean{
-        this.groups_.forEach((g:any)=>{
-            if(g._id == id){
+    isMemberOf(id: string): boolean {
+        this.groups_.forEach((g: any) => {
+            if (g._id == id) {
                 // be sure the account is in the group reference list...
                 return g.hasMember(this)
             }
@@ -487,7 +510,7 @@ export class Account extends Model {
 
         // Create the empty session...
         this.session = new Session(this.name);
-        
+
     }
 
     /**
@@ -499,7 +522,7 @@ export class Account extends Model {
 
         // Retreive user data...
         Account.readOneUserData(
-            `{"_id":"${this.id }"}`, // The query is made on the user database and not local_ressource Accounts here so name is name_ here
+            `{"_id":"${this.id}"}`, // The query is made on the user database and not local_ressource Accounts here so name is name_ here
             userName, // The database to search into 
             (data: any) => {
 
@@ -526,13 +549,13 @@ export class Account extends Model {
                 Account.getContacts(this.name, `{}`,
                     (contacts: []) => {
                         // Set the list of contacts (received invitation, sent invitation and actual contact id's)
-                        this.session.initData(()=>{
+                        this.session.initData(() => {
                             callback(this);
                         }, onError)
-                        
+
                     },
                     (err: any) => {
-                        this.session.initData(()=>{
+                        this.session.initData(() => {
                             callback(this);
                         }, onError)
                     })
@@ -544,7 +567,7 @@ export class Account extends Model {
                 // onError(err);
                 // Call success callback ...
                 if (callback != undefined) {
-                    this.session.initData(()=>{
+                    this.session.initData(() => {
                         callback(this);
                     }, onError)
                 }
@@ -586,9 +609,9 @@ export class Account extends Model {
 
         let collection = "user_data";
         // save only user data and not the how user info...
-        let data = JSON.stringify({_id:this.id, firstName_ :this.firstName, lastName_: this.lastName, middleName_: this.middleName, profilPicture_:this.profilPicture});
+        let data = JSON.stringify({ _id: this.id, firstName_: this.firstName, lastName_: this.lastName, middleName_: this.middleName, profilPicture_: this.profilPicture });
         rqst.setCollection(collection);
-        rqst.setQuery(`{"_id":"${this.id }"}`);
+        rqst.setQuery(`{"_id":"${this.id}"}`);
         rqst.setValue(data);
         rqst.setOptions(`[{"upsert": true}]`);
 
