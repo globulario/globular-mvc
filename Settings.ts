@@ -1,5 +1,6 @@
 import { Account } from "./Account";
 import { Application } from "./Application";
+import { FileExplorer } from "./components/File";
 import { ImageCropperSetting, ImageSetting, SettingsMenu, SettingsPanel, ComplexSetting, EmailSetting, StringSetting, TextAreaSetting } from "./components/Settings";
 import { Model } from "./Model";
 
@@ -153,7 +154,6 @@ export class ApplicationSettings extends Settings {
         descriptionSetting.setValue(description)
         generalSettings.addSetting(descriptionSetting)
 
-        let securitySettings = applicationSettingPage.appendSettings("Security", "Permissions and access settings.")
 
         // Here If the application setting have change.
         Application.eventHub.subscribe(`update_application_${application.id}_settings_evt`,
@@ -193,5 +193,56 @@ export class ApplicationSettings extends Settings {
                 }
             }, true)
     }
+
+}
+
+/**
+ * Model to save application settings.
+ */
+export class FileSettings extends Settings {
+    fileExplorer:FileExplorer;
+
+    // The application.
+    constructor(settingsMenu: SettingsMenu, settingsPanel: SettingsPanel) {
+        super(settingsMenu, settingsPanel);
+    
+        console.log(Model.application);
+
+        this.settingsMenu.appendSettingsMenuItem("folder-shared", "Files");
+
+        let fileSettingPage = <any>this.settingsPanel.appendSettingsPage("Files");
+        
+        this.fileExplorer = new FileExplorer;
+        this.fileExplorer.setRoot("/"+ Model.application)
+ 
+        // Append a title.
+        let html = `
+            <style>
+            .title {
+                font-size: 1rem;
+                text-transform: uppercase;
+                color: var(--cr-primary-text-color);
+                font-weight: 400;
+                letter-spacing: .25px;
+                margin-bottom: 12px;
+                margin-top: var(--cr-section-vertical-margin);
+                outline: none;
+                padding-bottom: 4px;
+                padding-top: 16px;
+            }
+            </style>
+            <div class="title">
+                Files & Directories
+            </div>
+        `
+
+        fileSettingPage.appendChild(document.createRange().createContextualFragment(html));
+        fileSettingPage.appendChild(this.fileExplorer);
+        this.fileExplorer.setAttribute("maximized", "true")
+        this.fileExplorer.setAttribute("hideactions", "true")
+
+        
+    }
+
 
 }

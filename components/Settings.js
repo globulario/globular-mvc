@@ -11,6 +11,8 @@ import '@polymer/iron-collapse/iron-collapse.js';
 import "@polymer/iron-icons/image-icons";
 import { ImageCropper } from "./Image";
 import { Camera } from "./Camera";
+import { FileExplorer } from "./File"
+
 import { Model } from "../Model";
 
 /**

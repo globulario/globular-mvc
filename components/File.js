@@ -496,7 +496,7 @@ export class PathNavigator extends HTMLElement {
             </div>
             `
 
-        this.div = this.shadowRoot.getElementById("path-navigator-box")
+        this.div = this.shadowRoot.querySelector("#path-navigator-box")
     }
 }
 
@@ -531,7 +531,7 @@ export class FileNavigator extends HTMLElement {
         this.height = 640
 
         // The control width
-        this.width = 250
+        this.width = 200
     }
 
 
@@ -670,13 +670,13 @@ export class FileNavigator extends HTMLElement {
                 ${theme}
             </style>
 
-            <div id="file-navigator-div" style="max-width: ${this.width}px; min-width: ${this.width}px; max-height: ${this.height}px; min-height: ${this.height}px; overflow: auto;">
+            <div id="file-navigator-div" style="min-width: ${this.width}px; max-height: ${this.height}px; min-height: ${this.height}px; overflow: auto;">
                 
             </div>
             `
 
         // The get the root div.
-        this.div = this.shadowRoot.getElementById("file-navigator-div");
+        this.div = this.shadowRoot.querySelector("#file-navigator-div");
     }
 }
 
@@ -706,6 +706,41 @@ export class FileExplorer extends HTMLElement {
         // The function will be call in case of error.
         this.onerror = undefined;
 
+        // The function is call when the explorer is call
+        this.onclose = undefined;
+
+        // This function is call when the explorer is open.
+        this.onopen = undefined;
+
+        // Interface elements...
+        // The main explorer button
+        this.fileExplorerBox = undefined
+        this.fileExplorerOpenBtn = undefined
+        this.fileExplererCloseBtn = undefined
+
+        // The file view.
+        this.filesListView = undefined
+        this.filesIconView = undefined
+
+        // The path navigator
+        this.pathNavigator = undefined
+
+        // The file navigator.
+        this.fileNavigator = undefined
+
+        this.filesListBtn = undefined
+        this.fileIconBtn = undefined
+
+        // The refresh button
+        this.refreshBtn = undefined
+
+        // File navigation button.
+        this.backNavigationBtn = undefined
+        this.fowardNavigationBtn = undefined
+        this.upwardNavigationBtn = undefined
+        this.lstNavigationBtn = undefined
+
+
     }
 
     // Set the file explorer directory.
@@ -729,18 +764,32 @@ export class FileExplorer extends HTMLElement {
         // Read the fd
         _readDir(this.root, (dir) => {
             // set interface with the given directory.
+
             if (this.fileNavigator != null) {
                 this.fileNavigator.setDir(dir)
+            } else {
+                console.log("no file navigator!")
             }
+
             if (this.pathNavigator != null) {
                 this.pathNavigator.setDir(dir)
+            } else {
+                console.log("no path navigator!")
             }
+
             if (this.filesListView != null) {
                 this.filesListView.setDir(dir)
+            } else {
+                console.log("no file list view!")
             }
+
             if (this.filesIconView) {
                 this.filesIconView.setDir(dir)
+            } else {
+                console.log("no file icon view!")
             }
+
+
             this.setDir(dir)
 
 
@@ -753,6 +802,8 @@ export class FileExplorer extends HTMLElement {
     }
 
     setDir(dir) {
+
+
         if (this.backNavigationBtn != null) {
             this.backNavigationBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
         }
@@ -770,7 +821,7 @@ export class FileExplorer extends HTMLElement {
             this.navigations.push(dir.path) // set the path in the navigation.
         }
 
-        if (this.navigations.length > 2) {
+        if (this.navigations.length > 2 && this.lstNavigationBtn != null) {
             this.lstNavigationBtn.style.display = "block"
             let navigationLst = null
             console.log(this.lstNavigationBtn.parentNode.childNodes)
@@ -858,7 +909,7 @@ export class FileExplorer extends HTMLElement {
 
         this.path = dir.path;
 
-        if (this.path.split("/").length > 2) {
+        if (this.path.split("/").length > 2 && this.upwardNavigationBtn != null) {
             this.upwardNavigationBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-active)")
         }
     }
@@ -874,13 +925,12 @@ export class FileExplorer extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
             ${theme}
-
+            
             iron-icon:hover{
                 cursor: pointer;
             }
 
             #file-navigation-panel{
-                min-width: 250px;
                 background-color: var(--palette-background-default);
                 color: var(--palette-text-primary);
             }
@@ -897,6 +947,10 @@ export class FileExplorer extends HTMLElement {
                 display: flex;
                 flex-direction: column;
                 min-width: 800px;
+            }
+
+            paper-card{
+                font-size: 1.0rem;
             }
 
             .card-actions{
@@ -942,31 +996,31 @@ export class FileExplorer extends HTMLElement {
         `
 
         // The main explorer button
-        this.fileExplorerBox = this.shadowRoot.getElementById("file-explorer-box")
-        this.fileExplorerOpenBtn = this.shadowRoot.getElementById("file-explorer-box-open-btn")
-        this.fileExplererCloseBtn = this.shadowRoot.getElementById("file-explorer-box-close-btn")
+        this.fileExplorerBox = this.shadowRoot.querySelector("#file-explorer-box")
+        this.fileExplorerOpenBtn = this.shadowRoot.querySelector("#file-explorer-box-open-btn")
+        this.fileExplererCloseBtn = this.shadowRoot.querySelector("#file-explorer-box-close-btn")
 
         // The file view.
-        this.filesListView = this.shadowRoot.getElementById("globular-files-list-view")
-        this.filesIconView = this.shadowRoot.getElementById("globular-files-icon-view")
+        this.filesListView = this.shadowRoot.querySelector("#globular-files-list-view")
+        this.filesIconView = this.shadowRoot.querySelector("#globular-files-icon-view")
 
         // The path navigator
-        this.pathNavigator = this.shadowRoot.getElementById("globular-path-navigator")
+        this.pathNavigator = this.shadowRoot.querySelector("#globular-path-navigator")
 
         // The file navigator.
-        this.fileNavigator = this.shadowRoot.getElementById("globular-file-navigator")
+        this.fileNavigator = this.shadowRoot.querySelector("#globular-file-navigator")
 
-        this.filesListBtn = this.shadowRoot.getElementById("files-list-btn")
-        this.fileIconBtn = this.shadowRoot.getElementById("files-icon-btn")
+        this.filesListBtn = this.shadowRoot.querySelector("#files-list-btn")
+        this.fileIconBtn = this.shadowRoot.querySelector("#files-icon-btn")
 
         // The refresh button
-        this.refreshBtn = this.shadowRoot.getElementById("navigation-refresh-btn")
+        this.refreshBtn = this.shadowRoot.querySelector("#navigation-refresh-btn")
 
         // File navigation button.
-        this.backNavigationBtn = this.shadowRoot.getElementById("navigation-back-btn")
-        this.fowardNavigationBtn = this.shadowRoot.getElementById("navigation-foward-btn")
-        this.upwardNavigationBtn = this.shadowRoot.getElementById("navigation-upward-btn")
-        this.lstNavigationBtn = this.shadowRoot.getElementById("navigation-lst-btn")
+        this.backNavigationBtn = this.shadowRoot.querySelector("#navigation-back-btn")
+        this.fowardNavigationBtn = this.shadowRoot.querySelector("#navigation-foward-btn")
+        this.upwardNavigationBtn = this.shadowRoot.querySelector("#navigation-upward-btn")
+        this.lstNavigationBtn = this.shadowRoot.querySelector("#navigation-lst-btn")
 
         this.backNavigationBtn.onclick = () => {
             let index = this.navigations.indexOf(this.path)
@@ -1010,11 +1064,17 @@ export class FileExplorer extends HTMLElement {
         this.fileExplorerOpenBtn.onclick = () => {
             this.fileExplorerBox.style.display = "flex"
             this.fileExplorerOpenBtn.style.display = "none"
+            if (this.onopen != undefined) {
+                this.onopen();
+            }
         }
 
         this.fileExplererCloseBtn.onclick = () => {
             this.fileExplorerBox.style.display = "none"
             this.fileExplorerOpenBtn.style.display = ""
+            if (this.onclose != undefined) {
+                this.onclose();
+            }
         }
 
         // Refresh the root directory and send event to
@@ -1024,6 +1084,17 @@ export class FileExplorer extends HTMLElement {
                 Model.eventHub.publish("set_dir_event", _dirs[this.path], true)
             }, this.onerror, true)
         }
+
+        if (this.hasAttribute("maximized")) {
+            this.fileExplorerOpenBtn.click();
+        }
+
+        if (this.hasAttribute("hideactions")) {
+            this.shadowRoot.querySelector(".card-actions").style.display = "none";
+        }
+        
+        // Need to set event on each webcomponents.
+        this.init();
     }
 }
 

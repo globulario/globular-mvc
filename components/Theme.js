@@ -141,7 +141,7 @@ export let theme = `:host{
     background-color: var(--palette-background-paper);
     color: var(--palette-text-primary);
   }
-  
+
   ::-webkit-scrollbar
   {
     width: 8px;  /* for vertical scrollbars */
@@ -171,5 +171,6 @@ export let theme = `:host{
       flex-basis: 0px;
     }
   }
+
 
   `;

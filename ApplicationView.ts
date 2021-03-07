@@ -2,7 +2,7 @@ import { View } from "./View";
 import * as M from "materialize-css";
 import "materialize-css/sass/materialize.scss";
 import { Account } from "./Account";
-import { ApplicationSettings, UserSettings } from "./Settings"
+import { ApplicationSettings, FileSettings, UserSettings } from "./Settings"
 import { Model } from "./Model";
 
 // web-components.
@@ -610,6 +610,9 @@ export class ApplicationView extends View {
 
     // The application settings...
     let applicationSettings = new ApplicationSettings(this.application, this.settingsMenu, this.settingsPanel);
+
+    // The file settings
+    let fileSettings = new FileSettings(this.settingsMenu, this.settingsPanel);
 
     window.dispatchEvent(new Event("resize"));
   }
