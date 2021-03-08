@@ -59,7 +59,7 @@
     "@types/materialize-css": "^1.0.8",
     "@types/uuid": "^8.0.0",
     "docker-names": "^1.1.1",
-    "globular-web-client": "^1.1.109",
+    "globular-web-client": "^1.1.111",
     "materialize-css": "^1.0.0",
     "namesgenerator": "0.0.1",
     "random-sentence": "^1.0.4",

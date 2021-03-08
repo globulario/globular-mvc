@@ -5,7 +5,7 @@ import * as jwt from "jwt-decode";
 import { ApplicationView } from "./ApplicationView";
 import { Account, SessionState, Session } from "./Account";
 import { NotificationType, Notification } from "./Notification";
-import { DockerNames } from "./components/RandomName"
+
 import {
   InsertOneRqst,
   FindRqst,
@@ -17,7 +17,7 @@ import {
 import { v4 as uuidv4 } from "uuid";
 import { mergeTypedArrays, uint8arrayToStringMethod } from "./Utility";
 import { ConversationManager } from "./Conversation";
-import { Conversations } from "globular-web-client/conversation/conversation_pb";
+import { Conversation, Conversations } from "globular-web-client/conversation/conversation_pb";
 
 // Get the configuration from url
 function getFileConfig(url: string, callback: (obj: any) => void, errorcallback: (err: any) => void) {
@@ -36,7 +36,6 @@ function getFileConfig(url: string, callback: (obj: any) => void, errorcallback:
   xmlhttp.send();
 }
 
-const nameGenrator = new DockerNames();
 
 /**
  * That class can be use to create any other application.
@@ -96,7 +95,7 @@ export class Application extends Model {
     this._path = value;
   }
 
-  protected account: Account;
+  public account: Account;
 
   // Event listener's
   private login_event_listener: string;
@@ -737,12 +736,6 @@ export class Application extends Model {
             },
             false)
 
-          Model.eventHub.subscribe("__create_new_conversation_event__",
-            (uuid) => { },
-            (evt) => {
-              this.onCreateNewConversation();
-            },
-            true)
 
 
           Model.eventHub.publish(`__session_state_${this.account.name}_change_event__`, this.account.session, true)
@@ -758,9 +751,9 @@ export class Application extends Model {
             })
 
           // Retreive conversations...
-          ConversationManager.loadOwnedConversation(this.account,
+          ConversationManager.loadConversation(this.account,
             (conversations: Conversations) => {
-              Model.eventHub.publish("__load_owned_conversations_event__", conversations.getConversationsList(), true)
+              Model.eventHub.publish("__load_conversations_event__", conversations.getConversationsList(), true)
             },
             (err: any) => {
               /* this.displayMessage(err, 3000)*/
@@ -770,7 +763,7 @@ export class Application extends Model {
           // Connect to to the conversation manager.
           ConversationManager.connect(
             () => {
-               /* Nothing to do here **/
+              /* Nothing to do here **/
             }, (err: any) => {
               this.displayMessage(err, 3000)
             })
@@ -916,105 +909,6 @@ export class Application extends Model {
     }).catch(errorCallback)
   }
 
-  ///////////////////////////////////////////////////////////////////////////////////////////
-  // Conversations
-  ///////////////////////////////////////////////////////////////////////////////////////////
-  onCreateNewConversation() {
-
-    if (document.getElementById("new-conversation-box")) {
-      return;
-    }
-
-    const name = nameGenrator.getRandomName(false);
-
-    // Display the box if not already displayed...
-    let toast = this.displayMessage(
-      `
-      <style>
-        new-conversation-box{
-          display: flex;
-          flex-direction: column;
-        }
-
-        #new-conversation-box .title{
-          font-size: 1.1rem;
-          font-weight: 400;
-        }
-
-        #new-conversation-box .actions{
-          display: flex;
-          justify-content: flex-end;
-        }
-
-        #new-conversation-box paper-button{
-          height: 35px;
-          font-size: .85rem;
-        }
-
-        #new-conversation-box{
-          --paper-input-container-input-color: #fff;
-        }
-
-        paper-input{
-          flex-grow: 1; 
-          min-width:350px;
-        }
-
-      </style>
-      <div id="new-conversation-box">
-        <span class="title">New Conversation...</span>
-        <paper-input id="conversation-name-input" type="text" label="Name" tabindex="0" aria-disabled="false"></paper-input>
-        <paper-input id="conversation-keywords-input" type="text" label="Keyword (comma separated)" tabindex="1" aria-disabled="false"></paper-input>
-        
-        <div class="actions">
-          <paper-button id="create-new-conversation-btn">Create</paper-button>
-          <paper-button id="cancel-create-new-conversation-btn">Cancel</paper-button>
-        </div>
-      </div>
-      `,
-      1000 * 60 * 15// 15 minutes...
-    );
-
-    let nameInput = <any>document.getElementById("conversation-name-input")
-    nameInput.value = name;
-
-
-
-    setTimeout(() => {
-      nameInput.focus()
-      nameInput.inputElement.inputElement.select()
-    }, 100)
-
-    let cancelBtn = document.getElementById("cancel-create-new-conversation-btn")
-    cancelBtn.onclick = () => {
-      toast.dismiss();
-    }
-
-    let createBtn = document.getElementById("create-new-conversation-btn")
-    createBtn.onclick = () => {
-      let language = window.navigator.language.split("-")[0]
-      let keywordsInput = <any>document.getElementById("conversation-keywords-input")
-      let keywords = new Array<string>();
-      console.log(keywordsInput.value)
-      console.log(keywordsInput)
-      if (keywordsInput.value != undefined) {
-        keywordsInput.value.split(",").forEach((keyword: string) => {
-          keywords.push(keyword.trim())
-        })
-      }
-
-      ConversationManager.createConversation(nameInput.value, keywords, language,
-        (conversation) => {
-          /** Publish a new conversation event. */
-          Model.eventHub.publish("__new_conversation_event__", conversation, true)
-          toast.dismiss();
-        },
-        (err: any) => {
-          this.displayMessage(err, 3000)
-        })
-      toast.dismiss();
-    }
-  }
 
   ///////////////////////////////////////////////////////////////////////////////////////////
   // Notifications

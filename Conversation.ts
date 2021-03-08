@@ -1,6 +1,6 @@
 
-import { Conversation, ConnectRequest, Conversations, CreateConversationRequest, Message, CreateConversationResponse, DeleteConversationRequest, DeleteConversationResponse, FindConversationRequest, FindConversationResponse, JoinConversationRequest, JoinConversationResponse, ConnectResponse, SendMessageRequest, SendMessageResponse } from "globular-web-client/conversation/conversation_pb";
-import { GetCreatedConversationsRequest, GetCreatedConversationsResponse } from "globular-web-client/conversation/conversation_pb";
+import { Conversation, ConnectRequest, Conversations, CreateConversationRequest, Message, CreateConversationResponse, DeleteConversationRequest, DeleteConversationResponse, FindConversationsRequest, FindConversationsResponse, JoinConversationRequest, JoinConversationResponse, ConnectResponse, SendMessageRequest, SendMessageResponse } from "globular-web-client/conversation/conversation_pb";
+import { GetConversationsRequest, GetConversationsResponse } from "globular-web-client/conversation/conversation_pb";
 
 import { Account } from "./Account";
 import { Model } from "./Model";
@@ -66,20 +66,20 @@ export class ConversationManager {
   }
 
   /**
-   * Load conversation owned by a given account.
+   * Load conversations of a given account.
    * @param account Must by the logged account.
    * @param succesCallback Return the list of conversation owned by the account.
    * @param errorCallback Error if any.
    */
-  static loadOwnedConversation(account: Account, succesCallback: (conversations: Conversations) => void, errorCallback: (err: any) => void) {
-    let rqst = new GetCreatedConversationsRequest
+  static loadConversation(account: Account, succesCallback: (conversations: Conversations) => void, errorCallback: (err: any) => void) {
+    let rqst = new GetConversationsRequest
     rqst.setCreator(account.name);
 
-    Model.globular.conversationService.getCreatedConversations(rqst, {
+    Model.globular.conversationService.getConversations(rqst, {
       token: localStorage.getItem("user_token"),
       application: Model.application,
       domain: Model.domain,
-    }).then((rsp: GetCreatedConversationsResponse) => {
+    }).then((rsp: GetConversationsResponse) => {
       succesCallback(rsp.getConversations())
     }).catch((err: any) => {
       errorCallback(err)
@@ -102,18 +102,18 @@ export class ConversationManager {
   }
 
   static findConversations(query: string, succesCallback: (conversations: Conversation[]) => void, errorCallback: (err: any) => void) {
-    let rqst = new FindConversationRequest
+    let rqst = new FindConversationsRequest
     rqst.setQuery(query)
     rqst.setOffset(0)
     rqst.setLanguage(window.navigator.language.split("-")[0])
     rqst.setPagesize(500);
     rqst.setSnippetsize(500); // not realy necessary here...
 
-    Model.globular.conversationService.findConversation(rqst, {
+    Model.globular.conversationService.findConversations(rqst, {
       token: localStorage.getItem("user_token"),
       application: Model.application,
       domain: Model.domain,
-    }).then((rsp: FindConversationResponse) => {
+    }).then((rsp: FindConversationsResponse) => {
       succesCallback(rsp.getConversationsList())
     }).catch((err: any) => {
       errorCallback(err)

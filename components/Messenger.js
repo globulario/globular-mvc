@@ -16,7 +16,6 @@ import '@polymer/paper-tabs/paper-tabs.js';
 import '@polymer/paper-tabs/paper-tab.js';
 import '@polymer/iron-autogrow-textarea/iron-autogrow-textarea.js';
 import { Autocomplete } from './Autocomplete'
-import { v4 as uuidv4 } from "uuid";
 import { Menu } from './Menu';
 import { theme } from "./Theme";
 import { Account } from "../Account"
@@ -97,7 +96,6 @@ export class MessengerMenu extends Menu {
             #conversations-lst{
                 flex: 1;
                 overflow: auto;
-               
             }
 
             .conversations-lst{
@@ -125,18 +123,17 @@ export class MessengerMenu extends Menu {
                 </div>
                 <div id="conversation-search-results"></div>
                 <paper-tabs selected="0">
-                    <paper-tab id="owned-conversations-tab">Owned</paper-tab>
-                    <paper-tab id="participating-conversations-tab">Participating</paper-tab>
-                    <paper-tab id="invitated-conversations-tab">Invitations</paper-tab>
+                    <paper-tab id="conversations-tab">Conversations</paper-tab>
+                    <paper-tab id="sent-conversations-invitations-tab">Sent Invitations</paper-tab>
+                    <paper-tab id="received-conversations-invitations-tab">Received Invitations</paper-tab>
                 </paper-tabs>
                 <div id="conversations-lst">
-                    <div id="owned-conversations-lst" class="conversations-lst"></div>
-                    <div id="participating-conversations-lst" class="conversations-lst" style="display: none;"></div>
-                    <globular-conversations-invitations id="invitations-panel" style="display: none;"></globular-conversations-invitations>
+                    <div id="conversations-lst_" class="conversations-lst"></div>
+                    <div id="sent-conversations-invitations-lst" class="conversations-lst" style="display: none;"></div>
+                    <div id="received-conversations-invitations-lst" class="conversations-lst" style="display: none;"></div>
                 </div>
             </div>
         `
-
 
         let range = document.createRange()
         this.getMenuDiv().innerHTML = "" // remove existing elements.
@@ -146,32 +143,31 @@ export class MessengerMenu extends Menu {
         this.getMenuDiv().style.overflowY = "auto";
         this.shadowRoot.appendChild(this.getMenuDiv())
 
-        let ownedConversationTab = this.shadowRoot.querySelector("#owned-conversations-tab")
-        this.ownedConversationLst = this.shadowRoot.querySelector("#owned-conversations-lst")
+        let conversationsTab = this.shadowRoot.querySelector("#conversations-tab")
+        this.conversationsLst = this.shadowRoot.querySelector("#conversations-lst_")
 
-        let participatingConversationTab = this.shadowRoot.querySelector("#participating-conversations-tab")
-        this.participatingConversationLst = this.shadowRoot.querySelector("#participating-conversations-lst")
+        let sentConversationsInvitationsTab = this.shadowRoot.querySelector("#sent-conversations-invitations-tab")
+        this.sentConversationsInvitationsLst = this.shadowRoot.querySelector("#sent-conversations-invitations-lst")
 
-        let invitedConversationTab = this.shadowRoot.querySelector("#invitated-conversations-tab")
-        this.invitationsPanel = this.shadowRoot.querySelector("#invitations-panel")
-        this.invitationsPanel.setAccount(account);
+        let receivedConversationsInvitationsTab = this.shadowRoot.querySelector("#received-conversations-invitations-tab")
+        this.receivedConversationsInvitationsLst = this.shadowRoot.querySelector("#received-conversations-invitations-lst")
 
-        ownedConversationTab.onclick = () => {
-            this.ownedConversationLst.style.display = "flex"
-            this.participatingConversationLst.style.display = "none"
-            this.invitationsPanel.style.display = "none"
+        conversationsTab.onclick = () => {
+            this.conversationsLst.style.display = "flex"
+            this.sentConversationsInvitationsLst.style.display = "none"
+            this.receivedConversationsInvitationsLst.style.display = "none"
         }
 
-        participatingConversationTab.onclick = () => {
-            this.ownedConversationLst.style.display = "none"
-            this.participatingConversationLst.style.display = "flex"
-            this.invitationsPanel.style.display = "none"
+        sentConversationsInvitationsTab.onclick = () => {
+            this.conversationsLst.style.display = "none"
+            this.sentConversationsInvitationsLst.style.display = "flex"
+            this.receivedConversationsInvitationsLst.style.display = "none"
         }
 
-        invitedConversationTab.onclick = () => {
-            this.invitationsPanel.style.display = "flex"
-            this.ownedConversationLst.style.display = "none"
-            this.participatingConversationLst.style.display = "none"
+        receivedConversationsInvitationsTab.onclick = () => {
+            this.sentConversationsInvitationsLst.style.display = "flex"
+            this.receivedConversationsInvitationsLst.style.display = "none"
+            this.conversationsLst.style.display = "none"
         }
 
         // Find a conversation...
@@ -221,9 +217,9 @@ export class MessengerMenu extends Menu {
         }
 
 
-        this.newCoversationBtn = this.shadowRoot.querySelector("#new-converstion-btn")
+        this.newconversationBtn = this.shadowRoot.querySelector("#new-converstion-btn")
 
-        this.newCoversationBtn.onclick = () => {
+        this.newconversationBtn.onclick = () => {
             // simply publish create new conversation...
             Model.eventHub.publish("__create_new_conversation_event__", {}, true)
         }
@@ -232,17 +228,17 @@ export class MessengerMenu extends Menu {
         Model.eventHub.subscribe("__new_conversation_event__",
             (uuid) => { },
             (conversation) => {
-                this.appendOwnedConversation(conversation)
+                this.appendConversation(conversation)
             },
             true)
 
 
         /** Load conversations */
-        Model.eventHub.subscribe("__load_owned_conversations_event__",
+        Model.eventHub.subscribe("__load_conversations_event__",
             (uuid) => { },
             (conversations) => {
                 for (var i = 0; i < conversations.length; i++) {
-                    this.appendOwnedConversation(conversations[i])
+                    this.appendConversation(conversations[i])
                 }
             },
             true)
@@ -252,7 +248,7 @@ export class MessengerMenu extends Menu {
             (uuid) => { },
             (conversations) => {
                 for (var i = 0; i < conversations.length; i++) {
-                    //this.appendOwnedConversation(conversations[i])
+                    //this.appendConversation(conversations[i])
                 }
             },
             true)
@@ -262,10 +258,10 @@ export class MessengerMenu extends Menu {
     }
 
     // Display base conversation info
-    appendOwnedConversation(conversation) {
+    appendConversation(conversation) {
         let conversationInfos = new ConversationInfos(null, this.account.name_)
         conversationInfos.init(conversation)
-        this.ownedConversationLst.appendChild(conversationInfos)
+        this.conversationsLst.appendChild(conversationInfos)
     }
 }
 
@@ -280,6 +276,7 @@ export class ConversationInfos extends HTMLElement {
         super();
 
         this.account = account;
+        this.delete_conversation_listener;
 
         // Set the shadow dom.
         this.attachShadow({ mode: "open" });
@@ -435,9 +432,11 @@ export class ConversationInfos extends HTMLElement {
         this.titleDiv.innerHTML = conversation.getName();
         let creationTime = new Date(conversation.getCreationTime() * 1000)
         this.created.innerHTML = creationTime.toLocaleDateString() + " " + creationTime.toLocaleTimeString()
+
+        console.log(conversation.getLastMessageTime(), typeof conversation.getLastMessageTime())
         if (conversation.getLastMessageTime() > 0) {
             let lastMessageTime = new Date(conversation.getLastMessageTime() * 1000)
-            this.created.innerHTML = lastMessageTime.toLocaleDateString() + " " + lastMessageTime.toLocaleTimeString()
+            this.lastMessage.innerHTML = lastMessageTime.toLocaleDateString() + " " + lastMessageTime.toLocaleTimeString()
         } else {
             this.lastMessage.innerHTML = "no messages reveceived yet..."
         }
@@ -456,6 +455,7 @@ export class ConversationInfos extends HTMLElement {
                     span.innerHTML = owner
                     this.owners.appendChild(span)
                     if (owner == this.account) {
+                        this.setInviteButton();
                         this.setJoinButton();
                         this.setDeleteButton()
                     }
@@ -463,24 +463,34 @@ export class ConversationInfos extends HTMLElement {
             },
             (err) => { })
 
-        // Remove it from it parent and delete it...
-        Model.eventHub.subscribe(`delete_conversation_${conversation.getUuid()}_evt`,
+        let conversationUuid = conversation.getUuid();
+        Model.eventHub.subscribe(`delete_conversation_${conversationUuid}_evt`,
             (uuid) => {
-
+                this.delete_conversation_listener = uuid;
             },
             (evt) => {
+                // simply remove it from it parent.
                 this.parentNode.removeChild(this)
-            },
-            false
-        )
+                Model.eventHub.unSubscribe(conversationUuid, this.delete_conversation_listener)
+            }, false)
 
+
+    }
+    setInviteButton(onJoinConversation) {
+        this.innerHtml = ""
+        let range = document.createRange()
+        this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.65em; width: 20px;" id="invite_btn">Invite</paper-button>`))
+
+        this.querySelector("#invite_btn").onclick = () => {
+            Model.eventHub.publish("__invite_conversation_evt__", this.conversation, true)
+        }
     }
 
     /** Display join conversation button */
     setJoinButton(onJoinConversation) {
         this.innerHtml = ""
         let range = document.createRange()
-        this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.65em; width: 20px; align-self: flex-end;" id="join_btn">Join</paper-button>`))
+        this.appendChild(range.createContextualFragment(`</div><paper-button style="font-size:.65em; width: 20px;" id="join_btn">Join</paper-button>`))
 
         this.querySelector("#join_btn").onclick = () => {
             ConversationManager.joinConversation(this.conversation.getUuid(),
@@ -505,17 +515,13 @@ export class ConversationInfos extends HTMLElement {
     setDeleteButton(onDeleteConversation) {
         this.innerHtml = ""
         let range = document.createRange()
-        this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.65em; width: 20px; align-self: flex-end;" id="delete_btn">Delete</paper-button>`))
+        this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.65em; width: 20px;" id="delete_btn">Delete</paper-button>`))
 
         this.querySelector("#delete_btn").onclick = () => {
-            ConversationManager.deleteConversation(this.conversation.getUuid(), () => {
-                // Here the conversation has been deleted...
-                Model.eventHub.publish(`delete_conversation_${this.conversation.getUuid()}_evt`, {}, false)
-                if (onDeleteConversation != null) {
-                    onDeleteConversation();
-                }
-
-            }, (err) => { console.log(err) })
+            Model.eventHub.publish("__delete_conversation_evt__", this.conversation, true)
+            if (onDeleteConversation != null) {
+                onDeleteConversation();
+            }
         }
 
     }
@@ -1160,7 +1166,7 @@ export class ConversationsList extends HTMLElement {
             for (var i = 0; i < conversationsListRows.length; i++) {
                 conversationsListRows[i].classList.remove("active");
             }
-            let selector = this.shadowRoot.querySelector(`#coversation_${conversation.getUuid()}_selector`)
+            let selector = this.shadowRoot.querySelector(`#conversation_${conversation.getUuid()}_selector`)
             selector.classList.add("active")
             return
         }
@@ -1189,7 +1195,7 @@ export class ConversationsList extends HTMLElement {
                 }
 
             </style>
-            <div id="coversation_${conversation.getUuid()}_selector" class="conversation-list-row">
+            <div id="conversation_${conversation.getUuid()}_selector" class="conversation-list-row">
                 <div>${conversation.getName()}</div>
                 <paper-ripple></paper-ripple>
             </div>
@@ -1197,7 +1203,7 @@ export class ConversationsList extends HTMLElement {
 
         this.shadowRoot.querySelector(".container").appendChild(document.createRange().createContextualFragment(html))
 
-        let selector = this.shadowRoot.querySelector(`#coversation_${conversation.getUuid()}_selector`)
+        let selector = this.shadowRoot.querySelector(`#conversation_${conversation.getUuid()}_selector`)
         let conversationUuid = conversation.getUuid();
         this.listeners[conversationUuid] = []
 
@@ -1222,7 +1228,7 @@ export class ConversationsList extends HTMLElement {
                 })
                 delete this.conversations[conversationUuid];
 
-                let selector = this.shadowRoot.querySelector(`#coversation_${conversationUuid}_selector`)
+                let selector = this.shadowRoot.querySelector(`#conversation_${conversationUuid}_selector`)
                 if (selector != null) {
                     // remove it from the vue...
                     selector.parentNode.removeChild(selector)
@@ -1337,67 +1343,3 @@ export class ParticipantsList extends HTMLElement {
 
 customElements.define('globular-paticipants-list', ParticipantsList)
 
-
-/**
- * Conversations invatations panel.
- */
-export class ConversationsInvitations extends HTMLElement {
-
-    constructor() {
-        super();
-        this.account = null;
-        this.ownedConversation = [];
-
-        // Set the shadow dom.
-        this.attachShadow({ mode: "open" });
-
-        this.shadowRoot.innerHTML = `
-        <style>
-            ${theme}
-
-            .container{
-                display: flex;
-                flex-direction: column;
-            }
-
-            .new-invitation-div{
-                display: flex;
-            }
-
-        </style>
-
-        <div class="container">
-            <div class="new-invitation-div">
-            </div>
-            
-        </div>
-        `
-
-        /** Load owned conversations */
-        Model.eventHub.subscribe("__load_owned_conversations_event__",
-            (uuid) => { },
-            (conversations) => {
-                this.ownedConversation = conversations;
-                console.log("-----------> owned conversation: ", this.ownedConversation)
-            },
-            true);
-        
-        /** Append to owned conversations */
-        Model.eventHub.subscribe("__new_conversation_event__",
-            (uuid) => { },
-            (conversation) => {
-                this.ownedConversation.push(conversation)
-                console.log("-----------> owned conversation: ", this.ownedConversation)
-            },
-            true)
-
-  
-    }
-
-    setAccount(account) {
-        this.account = account
-    }
-}
-
-
-customElements.define('globular-conversations-invitations', ConversationsInvitations)

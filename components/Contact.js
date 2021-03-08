@@ -32,6 +32,9 @@ export class ContactsMenu extends Menu {
     constructor() {
         super("Contacts", "social:people", "Contacts")
 
+        // The logged account.
+        this.account = null;
+
         // Here is the class members.
         this.onInviteConctact = null;
 
@@ -60,6 +63,9 @@ export class ContactsMenu extends Menu {
 
     // Init the contact at login time.
     init(account) {
+
+        this.account = account;
+
         let html = `
             <style>
             ${theme}
@@ -117,40 +123,47 @@ export class ContactsMenu extends Menu {
             let val = inviteContactInput.getValue();
             if (val.length > 3) {
                 this.findAccountByEmail(val)
-            }else{
+            } else {
                 inviteContactInput.clear()
             }
         }
 
         // That function must return the div that display the value that we want.
         inviteContactInput.displayValue = (contact) => {
+
             let card = new ContactCard(account, contact);
 
             // Here depending if the contact is in contact list, in received invitation list or in sent invitation
             // list displayed action will be different.
             Account.getContacts(account.name, "{}",
                 (contacts) => {
+
                     const info = contacts.find(obj => {
                         return obj._id === contact.name;
                     })
 
-                    if (info == undefined) {
-                        card.setInviteButton((contact) => {
-                            this.onInviteConctact(contact);
-                            inviteContactInput.clear();
-                        })
-                    } else if (info.status == "sent") {
-                        // Here I will display the revoke invitation button.
-                        card.setRevokeButton(this.onRevokeContact)
-                    } else if (info.status == "received") {
-                        // Here I will display the accept/decline button.
-                        card.setAcceptDeclineButton(this.onAcceptContact, this.onDeclineContact)
-                    } else if (info.status == "revoked" || info.status == "deleted") {
-                        // Here I will display the accept/decline button.
-                        card.setInviteButton((contact) => {
-                            this.onInviteConctact(contact);
-                            inviteContactInput.clear();
-                        })
+                    if (contact._id != this.account._id) {
+                        if (info == undefined) {
+                            card.setInviteButton((contact) => {
+                                this.onInviteConctact(contact);
+                                inviteContactInput.clear();
+                            })
+                        } else if (info.status == "sent") {
+                            // Here I will display the revoke invitation button.
+                            card.setRevokeButton(this.onRevokeContact)
+                        } else if (info.status == "received") {
+                            // Here I will display the accept/decline button.
+                            card.setAcceptDeclineButton(this.onAcceptContact, this.onDeclineContact)
+                        } else if (info.status == "revoked" || info.status == "deleted") {
+                            // Here I will display the accept/decline button.
+                            card.setInviteButton((contact) => {
+                                this.onInviteConctact(contact);
+                                inviteContactInput.clear();
+                            })
+                        } else if (info.status == "accepted") {
+                            // Here I will display the revoke invitation button.
+                            card.setDeleteButton(this.onDeleteContact)
+                        }
                     }
                 },
                 () => {
@@ -203,7 +216,9 @@ export class ContactsMenu extends Menu {
     findAccountByEmail(email) {
 
         Account.getAccounts(`{"email":{"$regex": "${email}", "$options": "im"}}`, (accounts) => {
-            console.log(accounts)
+            accounts = accounts.filter((obj) => {
+                return obj.id !== this.account.id;
+            });
             // set the getValues function that will return the list to be use as filter.
             let inviteContactInput = this.shadowRoot.getElementById("invite_contact_input")
 

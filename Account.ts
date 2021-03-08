@@ -124,9 +124,13 @@ export class Session extends Model {
 
     toString(): string {
         // return the basic infomration to be store in the database.
-        console.log(this.lastStateTime)
-
-        return `{"_id":"${this._id}", "state":${this.state.toString()}, "lastStateTime":"${this.lastStateTime.toISOString()}"}`
+        let lastStateTime: String
+        if (typeof this.lastStateTime === 'string' || this.lastStateTime instanceof String){
+            lastStateTime = this.lastStateTime;
+        }else{
+            lastStateTime = this.lastStateTime.toISOString()
+        }
+        return `{"_id":"${this._id}", "state":${this.state.toString()}, "lastStateTime":"${lastStateTime}"}`
     }
 
     // Init from the db...

@@ -4,6 +4,7 @@ import "materialize-css/sass/materialize.scss";
 import { Account } from "./Account";
 import { ApplicationSettings, FileSettings, UserSettings } from "./Settings"
 import { Model } from "./Model";
+import { DockerNames } from "./components/RandomName"
 
 // web-components.
 import { Layout } from "./components/Layout";
@@ -15,7 +16,7 @@ import { ApplicationsMenu } from "./components/Applications";
 import { Camera } from "./components/Camera";
 import { FileExplorer } from "./components/File";
 import { SearchBar } from "./components/Search";
-import { ContactsMenu } from "./components/Contact";
+import { ContactCard, ContactsMenu } from "./components/Contact";
 import { MessengerMenu, Messenger } from "./components/Messenger";
 import { SettingsMenu, SettingsPanel } from "./components/Settings";
 import { Application } from "./Application";
@@ -24,9 +25,15 @@ import { Application } from "./Application";
 import { Wizard } from "./components/Wizard";
 import { SlideShow } from "./components/SlideShow";
 import { ImageCropper } from "./components/Image";
+import { Conversation } from "globular-web-client/conversation/conversation_pb";
+import { ConversationManager } from "./Conversation";
 
 // This variable is there to give acces to wait and resume...
 export let applicationView: ApplicationView;
+const nameGenrator = new DockerNames();
+
+// Must be imported to overide the materialyse style
+import "./style.css"
 
 /**
  * Application view made use of Web-component and Materialyse to create a basic application
@@ -358,6 +365,24 @@ export class ApplicationView extends View {
         document.body.appendChild(this.messenger)
 
 
+        Model.eventHub.subscribe("__create_new_conversation_event__",
+          (uuid) => { },
+          (evt) => {
+            this.onCreateNewConversation();
+          },
+          true)
+
+        Model.eventHub.subscribe("__invite_conversation_evt__",
+          (uuid: string) => { },
+          (evt: any) => {
+            this.onInviteToConversaiton(evt);
+          }, true)
+
+        Model.eventHub.subscribe("__delete_conversation_evt__",
+          (uuid: string) => { },
+          (evt: any) => {
+            this.onDeleteConversaiton(evt);
+          }, true)
       },
       true
     );
@@ -695,6 +720,250 @@ export class ApplicationView extends View {
       this.getSideMenu().appendChild(this._sidemenu_childnodes[i])
     }
 
+  }
+
+
+  ///////////////////////////////////////////////////////////////////////////////////////////
+  // Conversations
+  ///////////////////////////////////////////////////////////////////////////////////////////
+  onCreateNewConversation() {
+
+    if (document.getElementById("new-conversation-box")) {
+      return;
+    }
+
+    const name = nameGenrator.getRandomName(false);
+
+    // Display the box if not already displayed...
+    let toast = this.displayMessage(
+      `
+      <style>
+        new-conversation-box{
+          display: flex;
+          flex-direction: column;
+        }
+
+        #new-conversation-box .title{
+          font-size: 1.1rem;
+          font-weight: 400;
+        }
+
+        #new-conversation-box .actions{
+          display: flex;
+          justify-content: flex-end;
+        }
+
+        #new-conversation-box paper-button{
+          height: 35px;
+          font-size: .85rem;
+        }
+
+        paper-input{
+          flex-grow: 1; 
+          min-width:350px;
+        }
+
+      </style>
+      <div id="new-conversation-box">
+        <span class="title">New Conversation...</span>
+        <paper-input id="conversation-name-input" type="text" label="Name" tabindex="0" aria-disabled="false"></paper-input>
+        <paper-input id="conversation-keywords-input" type="text" label="Keyword (comma separated)" tabindex="1" aria-disabled="false"></paper-input>
+        
+        <div class="actions">
+          <paper-button id="create-new-conversation-btn">Create</paper-button>
+          <paper-button id="cancel-create-new-conversation-btn">Cancel</paper-button>
+        </div>
+      </div>
+      `,
+      1000 * 60 * 15// 15 minutes...
+    );
+
+    let nameInput = <any>document.getElementById("conversation-name-input")
+    nameInput.value = name;
+    setTimeout(() => {
+      nameInput.focus()
+      nameInput.inputElement.inputElement.select()
+    }, 100)
+
+    let cancelBtn = document.getElementById("cancel-create-new-conversation-btn")
+    cancelBtn.onclick = () => {
+      toast.dismiss();
+    }
+
+    let createBtn = document.getElementById("create-new-conversation-btn")
+    createBtn.onclick = () => {
+      let language = window.navigator.language.split("-")[0]
+      let keywordsInput = <any>document.getElementById("conversation-keywords-input")
+      let keywords = new Array<string>();
+      if (keywordsInput.value != undefined) {
+        keywordsInput.value.split(",").forEach((keyword: string) => {
+          keywords.push(keyword.trim())
+        })
+      }
+
+      ConversationManager.createConversation(nameInput.value, keywords, language,
+        (conversation) => {
+          /** Publish a new conversation event. */
+          Model.eventHub.publish("__new_conversation_event__", conversation, true)
+          toast.dismiss();
+        },
+        (err: any) => {
+          this.displayMessage(err, 3000)
+        })
+      toast.dismiss();
+    }
+  }
+
+  /**
+   * Invite to conversation.
+   * @param converstion 
+   */
+  onInviteToConversaiton(conversation: Conversation) {
+    let toast = this.displayMessage(
+      `
+      <style>
+        #invite-conversation-participants{
+          display: flex;
+          flex-direction: column;
+        }
+
+        invite-conversation-participants #yes-no-contact-delete-box globular-contact-card{
+          padding-bottom: 10px;
+        }
+
+        #invite-conversation-participants div{
+          display: flex;
+          font-size: 1rem;
+          padding-bottom: 10px;
+        }
+
+        paper-button{
+          font-size: .85rem;
+          height: 32px;
+        }
+
+      </style>
+      <div id="invite-conversation-participants">
+        <div>Select contact you want to invite to ${conversation.getName()}</div>
+        <globular-autocomplete type="email" label="Search" id="invite-conversation-participants-invite_contact_input" width="${350}" style="flex-grow: 1;"></globular-autocomplete>
+        <div style="justify-content: flex-end;">
+          <paper-button id="invite-conversation-participants-cancel-btn">Cancel</paper-button>
+        </div>
+      </div>
+      `,
+      60 * 1000 * 5 // 5 minutes sec...
+    );
+
+    let inviteContactInput = <any>document.querySelector("#invite-conversation-participants-invite_contact_input")
+    inviteContactInput.focus();
+
+    let findAccountByEmail = (email: string) => {
+      Account.getAccounts(`{"email":{"$regex": "${email}", "$options": "im"}}`, (accounts) => {
+        // set the getValues function that will return the list to be use as filter.
+        accounts = accounts.filter((obj: Account)=>{
+          return obj.id !== this.application.account.id;
+        });
+
+        inviteContactInput.setValues(accounts)
+      }, (err) => {
+        this.displayMessage(err, 3000)
+      })
+    }
+
+    inviteContactInput.onkeyup = () => {
+      let val = inviteContactInput.getValue();
+      if (val.length > 3) {
+        findAccountByEmail(val)
+      } else {
+        inviteContactInput.clear()
+      }
+    }
+
+    inviteContactInput.displayValue = (contact: Account) => {
+      let card = new ContactCard(this.application.account, contact);
+      card.setInviteButton((a: Account) => {
+        console.log("--------------> invite: ", a)
+        toast.dismiss();
+      })
+      return card
+    }
+
+    let cancelBtn = <any>document.querySelector("#invite-conversation-participants-cancel-btn")
+
+    cancelBtn.onclick = () => {
+      toast.dismiss();
+    }
+  }
+
+  /**
+   * Delete a conversation.
+   * @param conversation 
+   */
+  onDeleteConversaiton(conversation: Conversation) {
+    let toast = this.displayMessage(
+      `
+      <style>
+        #yes-no-contact-delete-box{
+          display: flex;
+          flex-direction: column;
+        }
+
+        #yes-no-contact-delete-box globular-contact-card{
+          padding-bottom: 10px;
+        }
+
+        #yes-no-contact-delete-box div{
+          display: flex;
+          font-size: 1rem;
+          padding-bottom: 10px;
+        }
+
+        paper-button{
+          font-size: .85rem;
+          height: 32px;
+        }
+
+      </style>
+      <div id="yes-no-contact-delete-box">
+        <div>Your about to delete the conversation ${conversation.getName()}</div>
+        <div>Is it what you want to do? </div>
+        <div style="justify-content: flex-end;">
+          <paper-button id="yes-delete-contact">Yes</paper-button>
+          <paper-button id="no-delete-contact">No</paper-button>
+        </div>
+      </div>
+      `,
+      15000 // 15 sec...
+    );
+
+    let yesBtn = <any>document.querySelector("#yes-delete-contact")
+    let noBtn = <any>document.querySelector("#no-delete-contact")
+
+    // On yes
+    yesBtn.onclick = () => {
+
+      ConversationManager.deleteConversation(conversation.getUuid(), () => {
+        toast.dismiss();
+
+        // Here the conversation has been deleted...
+        Model.eventHub.publish(`delete_conversation_${conversation.getUuid()}_evt`, {}, false)
+
+        this.displayMessage(
+          "<iron-icon icon='communication:message' style='margin-right: 10px;'></iron-icon><div>Contact " +
+          conversation.getName() +
+          " was deleted!</div>",
+          3000
+        );
+      }, (err) => {
+        this.displayMessage(err, 3000)
+        toast.dismiss();
+      })
+
+    }
+
+    noBtn.onclick = () => {
+      toast.dismiss();
+    }
   }
 
   //////////////////////////////////////////////////////////////////////////////////////////

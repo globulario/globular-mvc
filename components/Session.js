@@ -64,7 +64,6 @@ export class SessionState extends HTMLElement {
                 --iron-icon-fill-color: var(--palette-text-primary);
                 align-items: center;
                 font-size: .95rem;
-                min-width: 355px;
             }
 
             .session-state-panel span{
