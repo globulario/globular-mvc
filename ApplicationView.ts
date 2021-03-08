@@ -845,7 +845,7 @@ export class ApplicationView extends View {
       </style>
       <div id="invite-conversation-participants">
         <div>Select contact you want to invite to ${conversation.getName()}</div>
-        <globular-autocomplete type="email" label="Search" id="invite-conversation-participants-invite_contact_input" width="${350}" style="flex-grow: 1;"></globular-autocomplete>
+        <globular-autocomplete type="email" label="Search" id="invite-conversation-participants-invite_contact_input" width="${355}" style="flex-grow: 1;"></globular-autocomplete>
         <div style="justify-content: flex-end;">
           <paper-button id="invite-conversation-participants-cancel-btn">Cancel</paper-button>
         </div>
@@ -861,7 +861,9 @@ export class ApplicationView extends View {
       Account.getAccounts(`{"email":{"$regex": "${email}", "$options": "im"}}`, (accounts) => {
         // set the getValues function that will return the list to be use as filter.
         accounts = accounts.filter((obj: Account)=>{
-          return obj.id !== this.application.account.id;
+          // remove participant already in the conversation and the current account.
+          let index = conversation.getParticipantsList().indexOf(obj.id);
+          return obj.id !== this.application.account.id && index == -1;
         });
 
         inviteContactInput.setValues(accounts)
@@ -882,7 +884,14 @@ export class ApplicationView extends View {
     inviteContactInput.displayValue = (contact: Account) => {
       let card = new ContactCard(this.application.account, contact);
       card.setInviteButton((a: Account) => {
-        console.log("--------------> invite: ", a)
+        ConversationManager.sendConversationInvitation(conversation.getUuid(), this.application.account.id, a.id, 
+          ()=>{
+            Model.eventHub.publish("invite_participant_event_", {participant:a.id, conversation: conversation.getName()}, true)
+          }, 
+          (err:any)=>{
+            this.displayMessage(err, 3000)
+          })
+        // So here I will create a 
         toast.dismiss();
       })
       return card

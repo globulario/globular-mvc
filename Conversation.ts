@@ -1,5 +1,5 @@
 
-import { Conversation, ConnectRequest, Conversations, CreateConversationRequest, Message, CreateConversationResponse, DeleteConversationRequest, DeleteConversationResponse, FindConversationsRequest, FindConversationsResponse, JoinConversationRequest, JoinConversationResponse, ConnectResponse, SendMessageRequest, SendMessageResponse } from "globular-web-client/conversation/conversation_pb";
+import { Conversation, ConnectRequest, Conversations, CreateConversationRequest, Message, CreateConversationResponse, DeleteConversationRequest, DeleteConversationResponse, FindConversationsRequest, FindConversationsResponse, JoinConversationRequest, JoinConversationResponse, ConnectResponse, SendMessageRequest, SendMessageResponse, SendInvitationRequest, Invitation } from "globular-web-client/conversation/conversation_pb";
 import { GetConversationsRequest, GetConversationsResponse } from "globular-web-client/conversation/conversation_pb";
 
 import { Account } from "./Account";
@@ -153,6 +153,26 @@ export class ConversationManager {
       }
     });
 
+  }
+
+  // Send a conversation invitation to a given user.
+  static sendConversationInvitation(conversation:string, from: string, to: string, successCallback :()=>void, errorCallback:(err:any)=>void){
+    let rqst = new SendInvitationRequest
+    let invitation = new Invitation
+    invitation.setFrom(from)
+    invitation.setTo(to)
+    invitation.setConversation(conversation)
+    rqst.setInvitation(invitation)
+
+    Model.globular.conversationService.sendInvitation(rqst, {
+      token: localStorage.getItem("user_token"),
+      application: Model.application,
+      domain: Model.domain,
+    }).then((rsp:SendMessageResponse)=>{
+      /** Nothing to do here... */
+      successCallback()
+
+    }).catch(errorCallback)
   }
 
   static sendMessage(conversationUuid: string, author: string, text:string, replyTo:string, successCallback :()=>void, errorCallback:()=>void){

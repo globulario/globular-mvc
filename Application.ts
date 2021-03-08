@@ -17,7 +17,7 @@ import {
 import { v4 as uuidv4 } from "uuid";
 import { mergeTypedArrays, uint8arrayToStringMethod } from "./Utility";
 import { ConversationManager } from "./Conversation";
-import { Conversation, Conversations } from "globular-web-client/conversation/conversation_pb";
+import { Conversation, Conversations, Invitation } from "globular-web-client/conversation/conversation_pb";
 
 // Get the configuration from url
 function getFileConfig(url: string, callback: (obj: any) => void, errorcallback: (err: any) => void) {
@@ -234,6 +234,20 @@ export class Application extends Model {
               this.view.displayMessage(err, 4000);
             }
           );
+        },
+        true
+      );
+
+      
+      // Invite contact event.
+      Model.eventHub.subscribe(
+        "invite_participant_event_",
+        (uuid: string) => {
+          this.invite_contact_listener = uuid;
+        },
+        (evt:any) => {
+          // Here I will try to login the user.
+          this.onInviteParticipant(evt);
         },
         true
       );
@@ -1082,6 +1096,35 @@ export class Application extends Model {
    * Remove all notification.
    */
   clearNotifications(type: NotificationType) { }
+
+  ///////////////////////////////////////////////////////////////////
+  // Invite to a conversation.
+  ///////////////////////////////////////////////////////////////////
+  onInviteParticipant(evt: any) {
+    // Create a user notification.
+    let notification = new Notification(
+      NotificationType.User,
+      evt["participant"],
+      `
+      <div style="display: flex; flex-direction: column;">
+        <p>
+          ${this.account.name} invited you to join the conversation named ${evt["conversation"]}.
+        </p>
+      </div>`
+    );
+
+    // Send the notification.
+    this.sendNotifications(
+      notification,
+      () => {
+        /** nothing special here... */
+      },
+      (err: any) => {
+        this.view.displayMessage(err, 3000);
+      }
+    );
+  }
+
 
   ///////////////////////////////////////////////////////////////////
   // Contacts.
