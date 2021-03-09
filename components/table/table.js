@@ -93,7 +93,7 @@ class TableElement extends PolymerElement {
 
     var size = 1;
 
-    // Get the number of tiles necessary
+    // Get the number of tiles necessary to populate the table
     if (this.size() > maxRowNumber) {
       size = Math.ceil(this.size() / maxRowNumber);
     }
@@ -108,7 +108,7 @@ class TableElement extends PolymerElement {
         "style": "grid-gap: 0px; display: grid;"
       }).down();
       
-      // The number of rows is equal to the number of rows in the header.
+      // Set the number of rows equal to the number of rows in the header.
       var gridTemplateColumns = "";
       for (var j = 0; j < this.header.getSize(); j++) {
         var headerCell = this.header.getHeaderCell(j)
@@ -119,7 +119,7 @@ class TableElement extends PolymerElement {
       }
       this.tiles[i].element.style.gridTemplateColumns = gridTemplateColumns;
 
-      // Height for the table
+      // CSS for the table's height
       if (i < size - 1 || this.size() % maxRowNumber == 0) {
         this.tiles[i].element.style.gridTemplateRows = "repeat( " + maxRowNumber + ", " + this.rowheight + "px)";
       } else {
@@ -129,9 +129,8 @@ class TableElement extends PolymerElement {
 
     var resizeListener = function (tiles, scrollDiv, header, table) {
       return function (entry) {
-        var value = ""; // Set the last header cell margin larger to move out the scroll bar 
-        // out of the way of the last table column.
-
+        var value = ""; 
+        // Set the final header tile's margin to be slightly greater than the other margins so that there is space for the scrollbar
         var scrollBarWidth = scrollDiv.offsetWidth - scrollDiv.clientWidth;
 
         if (header.lastChild.style != null) {
@@ -142,9 +141,9 @@ class TableElement extends PolymerElement {
           } else {
             header.lastChild.style.marginRight = "";
           }
-        } // Calculate the body column.
-
-
+        }
+        
+        // Calculate the table's total width using the header as a baseline
         var totalWidth = 0;
 
         for (var i = 0; i < header.children.length; i++) {
@@ -160,14 +159,13 @@ class TableElement extends PolymerElement {
           return;
         }
 
-        // set tiles columns width.
-        // Set the table width
+        // Set the table's overall width
         if (table.width == undefined) {
           table.style.width = totalWidth + "px";
           table.width = totalWidth;
-        } // set tiles columns width.
-
-
+        }
+        
+        // Set each tiles' width
         for (var i = 0; i < tiles.length; i++) {
           tiles[i].element.style.gridTemplateColumns = value;
         }
@@ -180,9 +178,13 @@ class TableElement extends PolymerElement {
     }(this.tiles, this.scrollDiv.element, this.children[0], this);
 
     window.addEventListener("resize", resizeListener, true);
-  } // create the cells once and use it mutitple time.
-
-
+  }
+  
+  /**
+   * Instantiates the cells variable following the Singleton principle.
+   * 
+   * Cells are the items within each tile. A tile is a container whereas the cell is the content.
+   */
   createCells() {
     if (this.data.length == 0) {
       return;
@@ -211,13 +213,16 @@ class TableElement extends PolymerElement {
     }
   }
 
+  /**
+   * Gets the width of the screen excluding the scrollbar
+   */
   getScrollWidth() {
     var scrollBarWidth = this.scrollDiv.element.offsetWidth - this.scrollDiv.element.clientWidth;
     return scrollBarWidth
   }
 
   /**
-   * return the current row index.
+   * Returns the current row index.
    */
   getIndex() {
     var index = 0;
@@ -232,30 +237,30 @@ class TableElement extends PolymerElement {
   hasFilter() {
     return this.getFilters().length > 0;
   }
+
   /**
-   * Render 
+   * Render the table
    */
-
-
   render() {
-    // first of all I will get the current index.
     var index = this.getIndex();
     var values = this.getFilteredData();
 
     if (this.index != index) {
-      this.index = index; // remove actual tile content.
-
+      this.index = index; 
+      
+      // Remove the current content within a tile to make sure we have a blank slate.
       for (var i = 0; i < this.tiles.length; i++) {
         this.tiles[i].removeAllChilds();
-      } // Represent the number of visible items to display, I round it to display entire row.
-
-
-      var max = Math.ceil(this.clientHeight / this.rowheight); // create cells once.
-
+      }
+      
+      // Represent the number of visible items to display, I round it to display entire row.
+      var max = Math.ceil(this.clientHeight / this.rowheight);
+      
       if (max == 0 && this.style.maxHeight != undefined) {
         max = Math.ceil(parseInt(this.style.maxHeight.replace("px", "")) / this.rowheight);
       }
 
+      // create cells once.
       if (this.cells.length == 0) {
         this.createCells();
       }
@@ -311,11 +316,10 @@ class TableElement extends PolymerElement {
       }
     }
   }
+
   /**
    * That function is call when the table is ready to be diplay.
    */
-
-
   ready() {
     super.ready(); // The position.
 
