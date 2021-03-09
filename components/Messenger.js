@@ -92,6 +92,16 @@ export class MessengerMenu extends Menu {
             },
             false)
 
+        Model.eventHub.subscribe("delete_conversation_evt",
+            () => { },
+            () => {
+                console.log("-----------------> 98")
+                this.conversationsTab.innerHTML = "Conversations"
+                if(this.conversationsLst.children.length > 0){
+                    this.conversationsTab.innerHTML += " (" + this.conversationsLst.children.length + ")"
+                }
+            }, true)
+
         let html = `
             <style>
             ${theme}
@@ -286,8 +296,15 @@ export class MessengerMenu extends Menu {
         Model.eventHub.subscribe("__refresh_invitations__",
             (uuid) => { },
             () => {
-                this.receivedConversationsInvitationsTab.innerHTML = "Received Invitations (" + this.receivedConversationsInvitationsLst.children.length + ")"
-                this.sentConversationsInvitationsTab.innerHTML = "Received Invitations (" + this.sentConversationsInvitationsLst.children.length + ")"
+                this.receivedConversationsInvitationsTab.innerHTML = "Received Invitations"
+                if(this.receivedConversationsInvitationsLst.children.length > 0){
+                    this.receivedConversationsInvitationsTab.innerHTML += " (" + this.receivedConversationsInvitationsLst.children.length + ")"
+                }
+
+                this.sentConversationsInvitationsTab.innerHTML = "Received Invitations"
+                if(this.sentConversationsInvitationsLst.children.length>0){
+                    this.sentConversationsInvitationsTab.innerHTML += " (" + this.sentConversationsInvitationsLst.children.length + ")"
+                }
             },
             true)
         this.shadowRoot.removeChild(this.getMenuDiv())
@@ -300,6 +317,7 @@ export class MessengerMenu extends Menu {
         conversationInfos.init(conversation)
         conversationInfos.setJoinButton(); // here I will display the join button.
         this.conversationsLst.appendChild(conversationInfos)
+        this.conversationsTab.innerHTML = "Conversations (" + this.conversationsLst.children.length + ")"
     }
 
     appendReceivedInvitation(invitation) {
@@ -360,7 +378,6 @@ export class MessengerMenu extends Menu {
 
         // Now I will set the number of received conversations in the tab.
         this.receivedConversationsInvitationsTab.innerHTML = "Received Invitations (" + this.receivedConversationsInvitationsLst.children.length + ")"
-
     }
 
 
@@ -591,33 +608,34 @@ export class ConversationInfos extends HTMLElement {
                 // simply remove it from it parent.
                 this.parentNode.removeChild(this)
                 Model.eventHub.unSubscribe(conversationUuid, this.delete_conversation_listener)
+                Model.eventHub.publish("delete_conversation_evt",null, true)
             }, false)
 
 
     }
     setInviteButton() {
-        if (this.querySelector("#invite_btn") != undefined) {
+        if (this.querySelector(`#invite_${this.conversation.getUuid()}_btn`) != undefined) {
             return
         }
         this.innerHtml = ""
         let range = document.createRange()
-        this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.65em; width: 20px;" id="invite_btn">Invite</paper-button>`))
+        this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.65em; width: 20px;" id="invite_${this.conversation.getUuid()}_btn">Invite</paper-button>`))
 
-        this.querySelector("#invite_btn").onclick = () => {
+        this.querySelector(`#invite_${this.conversation.getUuid()}_btn`).onclick = () => {
             Model.eventHub.publish("__invite_conversation_evt__", this.conversation, true)
         }
     }
 
     /** Display join conversation button */
     setJoinButton(onJoinConversation) {
-        if (this.querySelector("#join_btn") != undefined) {
+        if (this.querySelector(`#join_${this.conversation.getUuid()}_btn`) != undefined) {
             return
         }
         this.innerHtml = ""
         let range = document.createRange()
-        this.appendChild(range.createContextualFragment(`</div><paper-button style="font-size:.65em; width: 20px;" id="join_btn">Join</paper-button>`))
+        this.appendChild(range.createContextualFragment(`</div><paper-button style="font-size:.65em; width: 20px;" id="join_${this.conversation.getUuid()}_btn">Join</paper-button>`))
 
-        this.querySelector("#join_btn").onclick = () => {
+        this.querySelector(`#join_${this.conversation.getUuid()}_btn`).onclick = () => {
             ConversationManager.joinConversation(this.conversation.getUuid(),
                 (messages) => {
                     if (onJoinConversation != null) {
@@ -638,14 +656,14 @@ export class ConversationInfos extends HTMLElement {
 
     /** Display delete conversation button */
     setDeleteButton(onDeleteConversation) {
-        if (this.querySelector("#delete_btn") != undefined) {
+        if (this.querySelector(`#delete_${this.conversation.getUuid()}_btn`) != undefined) {
             return
         }
         this.innerHtml = ""
         let range = document.createRange()
-        this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.65em; width: 20px;" id="delete_btn">Delete</paper-button>`))
+        this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.65em; width: 20px;" id="delete_${this.conversation.getUuid()}_btn">Delete</paper-button>`))
 
-        this.querySelector("#delete_btn").onclick = () => {
+        this.querySelector(`#delete_${this.conversation.getUuid()}_btn`).onclick = () => {
             Model.eventHub.publish("__delete_conversation_evt__", this.conversation, true)
             if (onDeleteConversation != null) {
                 onDeleteConversation();

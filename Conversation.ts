@@ -98,6 +98,7 @@ export class ConversationManager {
       domain: Model.domain,
     }).then((rsp: DeleteConversationResponse) => {
       succesCallback()
+
     }).catch((err: any) => {
       errorCallback(err)
     })
