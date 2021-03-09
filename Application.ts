@@ -241,7 +241,7 @@ export class Application extends Model {
       
       // Invite contact event.
       Model.eventHub.subscribe(
-        "invite_participant_event_",
+        "send_conversation_invitation_event_",
         (uuid: string) => {
           this.invite_contact_listener = uuid;
         },

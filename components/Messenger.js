@@ -22,6 +22,8 @@ import { Account } from "../Account"
 import { Model } from "../Model"
 import { PermissionManager } from '../Permission';
 import { ConversationManager } from '../Conversation';
+import { Invitation } from 'globular-web-client/conversation/conversation_pb';
+import { encode, decode } from 'uint8-to-base64';
 
 
 /**
@@ -55,6 +57,10 @@ export class MessengerMenu extends Menu {
             this.height = parseInt(this.getAttribute("height"));
         }
 
+        // Element of interfaces needed between function call
+        this.conversationsLst = null;
+        this.sentConversationsInvitationsLst = null;
+        this.receivedConversationsInvitationsLst = null;
     }
 
     // Init the message menu at login time.
@@ -64,19 +70,21 @@ export class MessengerMenu extends Menu {
         this.account = account;
 
         // Event listener when a new conversation is created...
-        Model.eventHub.subscribe("create_new_conversation_event",
+        Model.eventHub.subscribe(`send_conversation_invitation_${this.account.id}_evt`,
             (uuid) => { },
             (data) => {
-                let conversation = JSON.parse(data)
-                console.log("---> new public conversation created: ", conversation)
+                const decoded = decode(data);
+                let invitation = Invitation.deserializeBinary(decoded)
+                this.appendSentInvitation(invitation)
             },
             false)
 
-        Model.eventHub.subscribe(`create_new_conversation_${this.account.name_}_event`,
+        Model.eventHub.subscribe(`receive_conversation_invitation_${this.account.id}_evt`,
             (uuid) => { },
             (data) => {
-                let conversation = JSON.parse(data)
-                console.log("---> new private conversation created: ", this.account.name_, conversation)
+                const decoded = decode(data);
+                let invitation = Invitation.deserializeBinary(decoded)
+                this.appendReceivedInvitation(invitation)
             },
             false)
 
@@ -152,6 +160,31 @@ export class MessengerMenu extends Menu {
         let receivedConversationsInvitationsTab = this.shadowRoot.querySelector("#received-conversations-invitations-tab")
         this.receivedConversationsInvitationsLst = this.shadowRoot.querySelector("#received-conversations-invitations-lst")
 
+        // Setup the list of received invitations
+        ConversationManager.getReceivedInvitations(account.id,
+            (invitations) => {
+                /** Get initial invitation list. */
+                console.log(invitations)
+                invitations.forEach(invitation => {
+                    this.appendReceivedInvitation(invitation)
+                })
+
+            },
+            (err) => {
+                console.log(err)
+            })
+
+        // Setup the list of sent invitations.
+        ConversationManager.getSentInvitations(account.id,
+            invitations => {
+                invitations.forEach(invitation => {
+                    this.appendSentInvitation(invitation)
+                })
+            },
+            err => {
+                console.log(err)
+            })
+
         conversationsTab.onclick = () => {
             this.conversationsLst.style.display = "flex"
             this.sentConversationsInvitationsLst.style.display = "none"
@@ -165,8 +198,8 @@ export class MessengerMenu extends Menu {
         }
 
         receivedConversationsInvitationsTab.onclick = () => {
-            this.sentConversationsInvitationsLst.style.display = "flex"
-            this.receivedConversationsInvitationsLst.style.display = "none"
+            this.sentConversationsInvitationsLst.style.display = "none"
+            this.receivedConversationsInvitationsLst.style.display = "flex"
             this.conversationsLst.style.display = "none"
         }
 
@@ -237,21 +270,13 @@ export class MessengerMenu extends Menu {
         Model.eventHub.subscribe("__load_conversations_event__",
             (uuid) => { },
             (conversations) => {
+                this.conversationsLst.innerHTML = "";
                 for (var i = 0; i < conversations.length; i++) {
                     this.appendConversation(conversations[i])
                 }
             },
             true)
 
-
-        Model.eventHub.subscribe("__load_participating_conversations_event__",
-            (uuid) => { },
-            (conversations) => {
-                for (var i = 0; i < conversations.length; i++) {
-                    //this.appendConversation(conversations[i])
-                }
-            },
-            true)
 
         this.shadowRoot.removeChild(this.getMenuDiv())
 
@@ -261,7 +286,94 @@ export class MessengerMenu extends Menu {
     appendConversation(conversation) {
         let conversationInfos = new ConversationInfos(null, this.account.name_)
         conversationInfos.init(conversation)
+        conversationInfos.setJoinButton(); // here I will display the join button.
         this.conversationsLst.appendChild(conversationInfos)
+
+    }
+
+    appendReceivedInvitation(invitation) {
+
+        Model.eventHub.subscribe(`accept_conversation_invitation_${invitation.getConversation()}_evt`,
+            (uuid) => { },
+            (evt) => {
+                // re-init the conversation list.
+                ConversationManager.loadConversation(this.account,
+                    (conversations) => {
+                        Model.eventHub.publish("__load_conversations_event__", conversations.getConversationsList(), true)
+                    },
+                    (err) => {
+                        /* this.displayMessage(err, 3000)*/
+                        /** no conversation found... */
+                        console.log(err)
+                    })
+
+            }, false)
+
+        let conversatioName = invitation.getName()
+        let invitationCard = new InvitationCard();
+        invitationCard.id = "_" + conversatioName + "_invitation_card"
+        invitationCard.account = this.account.id;
+        invitationCard.contact = invitation.getFrom();
+        invitationCard.setInvitation(invitation)
+
+        invitationCard.setAcceptButton((invitation) => {
+
+            ConversationManager.acceptConversationInvitation(invitation,
+                () => {
+                    // Publish network events
+                    Model.eventHub.publish(`accept_conversation_invitation_${invitation.getConversation()}_evt`, `{}`, false)
+
+                    // re-init the conversation list.
+                    ConversationManager.loadConversation(this.account,
+                        (conversations) => {
+                            Model.eventHub.publish("__load_conversations_event__", conversations.getConversationsList(), true)
+                        },
+                        (err) => {
+                            /* this.displayMessage(err, 3000)*/
+                            /** no conversation found... */
+                            console.log(err)
+                        })
+                },
+                (err) => {
+                    console.log(err)
+                })
+        })
+
+        invitationCard.setDeclineButton((invitation) => {
+            ConversationManager.declineConversationInvitation(invitation,
+                () => {
+                    // Publish network events
+                    Model.eventHub.publish(`decline_conversation_invitation_${invitation.getConversation()}_evt`, {}, false)
+                },
+                (err) => {
+                    console.log(err)
+                })
+        })
+
+        this.receivedConversationsInvitationsLst.appendChild(invitationCard)
+
+    }
+
+
+    appendSentInvitation(invitation) {
+
+        let invitationCard = new InvitationCard();
+        invitationCard.account = invitation.getFrom();
+        invitationCard.contact = invitation.getTo();
+        invitationCard.setInvitation(invitation)
+        this.sentConversationsInvitationsLst.appendChild(invitationCard)
+        invitationCard.setRevokeButton((invitation) => {
+
+            ConversationManager.revokeConversationInvitation(invitation,
+                () => {
+                    // Publish network events
+                    Model.eventHub.publish(`revoke_conversation_invitation_${invitation.getConversation()}_evt`, `{}`, false)
+                },
+                (err) => {
+                    console.log(err)
+                })
+        })
+
     }
 }
 
@@ -476,7 +588,10 @@ export class ConversationInfos extends HTMLElement {
 
 
     }
-    setInviteButton(onJoinConversation) {
+    setInviteButton() {
+        if (this.querySelector("#invite_btn") != undefined) {
+            return
+        }
         this.innerHtml = ""
         let range = document.createRange()
         this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.65em; width: 20px;" id="invite_btn">Invite</paper-button>`))
@@ -488,6 +603,9 @@ export class ConversationInfos extends HTMLElement {
 
     /** Display join conversation button */
     setJoinButton(onJoinConversation) {
+        if (this.querySelector("#join_btn") != undefined) {
+            return
+        }
         this.innerHtml = ""
         let range = document.createRange()
         this.appendChild(range.createContextualFragment(`</div><paper-button style="font-size:.65em; width: 20px;" id="join_btn">Join</paper-button>`))
@@ -513,6 +631,9 @@ export class ConversationInfos extends HTMLElement {
 
     /** Display delete conversation button */
     setDeleteButton(onDeleteConversation) {
+        if (this.querySelector("#delete_btn") != undefined) {
+            return
+        }
         this.innerHtml = ""
         let range = document.createRange()
         this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.65em; width: 20px;" id="delete_btn">Delete</paper-button>`))
@@ -771,6 +892,7 @@ export class MessagesPanel extends HTMLElement {
             }
 
             .conversation-messages{
+                padding-top: 16px;
                 min-height: 425px;
                 display: flex;
                 flex-direction: column-reverse;
@@ -966,7 +1088,7 @@ export class MessagesPanel extends HTMLElement {
                         let img = participantInfos.querySelector(".conversation-participant-img")
                         let ico = participantInfos.querySelector(".conversation-participant-ico")
 
-                        participantInfos.parentNode.borderTopLeftRadius = "0px";
+                        participantInfos.parentNode.style.borderTopLeftRadius = "0px";
                         participantInfos.style.left = "-38px"
 
                         // Set the ico.
@@ -981,7 +1103,8 @@ export class MessagesPanel extends HTMLElement {
 
                         // Now the tool tip...
                         participantInfos.querySelector(`#msg_uuid_${msg.getUuid()}_tooltip`);
-                        participantInfos.innerHTML = `${account.getName()}`
+                        console.log(author)
+                        //participantInfos.innerHTML = `${author.name}`
                     }
                 },
                 (err) => {
@@ -1143,8 +1266,6 @@ export class ConversationsList extends HTMLElement {
                 this.openConversation(evt.conversation, evt.messages)
 
             }, true)
-
-
 
     }
 
@@ -1343,3 +1464,190 @@ export class ParticipantsList extends HTMLElement {
 
 customElements.define('globular-paticipants-list', ParticipantsList)
 
+/**
+ * Display information about invitation.
+ */
+export class InvitationCard extends HTMLElement {
+
+    constructor() {
+        super();
+        this.account = null;
+        this.contact = null;
+        this.invitation = null;
+        this.interval = null;
+
+        // Set the shadow dom.
+        this.attachShadow({ mode: "open" });
+
+        // map of listeners.
+        this.listeners = {}
+    }
+
+
+    connectedCallback() {
+        if (document.getElementById("_" + this.invitation.getConversation() + "_invitation_card") != undefined) {
+            return // must be call one time...
+        }
+
+        this.id = "_" + this.invitation.getConversation() + "_invitation_card"
+
+        // set attributes.
+        if (this.hasAttribute("account")) {
+            this.account = this.getAttribute("account")
+        }
+
+        if (this.hasAttribute("contact")) {
+            this.contact = this.getAttribute("contact")
+        }
+
+        this.shadowRoot.innerHTML = `
+        <style>
+            ${theme}
+
+            .container{
+                padding: 5px;
+                display: flex;
+                flex-direction: column;
+                transition: background 0.2s ease,padding 0.8s linear;
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
+                border-bottom: 1px solid var(--palette-divider);
+            }
+
+            .container:hover{
+                filter: invert(10%);
+            }
+
+            .container .title {
+                font-size: 1rem;
+            }
+
+            .container .title span{
+                font-weight: 500;
+            }
+
+            .actions{
+                display: flex;
+                justify-content: flex-end;
+            }
+
+        </style>
+
+        <div class="container">
+            <div class="title"></div>
+            <globular-contact-card account="${this.account}" contact="${this.contact}"></globular-contact-card>
+            <slot class="actions"></slot>
+        </div>
+        `
+
+        this.shadowRoot.querySelector(".title").innerHTML = `Conversation <span>${this.invitation.getName()}</span>`;
+
+
+        /** Listener event... */
+        Model.eventHub.subscribe(`accept_conversation_invitation_${this.invitation.getConversation()}_evt`,
+            (uuid) => {
+                //console.log(uuid)
+                this.listeners["accept_conversation_invitation_"] = { evt: `accept_conversation_invitation_${this.invitation.getConversation()}_evt`, uuid: uuid }
+            },
+            (evt) => {
+                // remove the invitation from the list.
+                this.parentNode.removeChild(this)
+                this.deleteListeners()
+
+            }, false)
+
+        Model.eventHub.subscribe(`decline_conversation_invitation_${this.invitation.getConversation()}_evt`,
+            (uuid) => {
+                //console.log(uuid)
+                this.listeners["decline_conversation_invitation_"] = { evt: `decline_conversation_invitation_${this.invitation.getConversation()}_evt`, uuid: uuid }
+            },
+            (evt) => {
+                // remove the invitation from the list.
+                this.parentNode.removeChild(this)
+                this.deleteListeners()
+            }, false)
+
+        Model.eventHub.subscribe(`revoke_conversation_invitation_${this.invitation.getConversation()}_evt`,
+            (uuid) => {
+                //console.log(uuid)
+                this.listeners["revoke_conversation_invitation_"] = { evt: `revoke_conversation_invitation_${this.invitation.getConversation()}_evt`, uuid: uuid }
+            },
+            (evt) => {
+                // remove the invitation from the list.
+                this.parentNode.removeChild(this)
+                this.deleteListeners()
+
+            }, false)
+
+        Model.eventHub.subscribe(`delete_conversation_${this.invitation.getConversation()}_evt`,
+            (uuid) => {
+                this.listeners["delete_conversation_"] = { evt: `delete_conversation_${this.invitation.getConversation()}_evt`, uuid: uuid }
+            },
+            (evt) => {
+                // simply remove it from it parent.
+                this.parentNode.removeChild(this)
+                this.deleteListeners()
+            }, false)
+
+
+    }
+
+    deleteListeners() {
+        for (const key in this.listeners) {
+            const listener = this.listeners[key]
+            Model.eventHub.unSubscribe(listener.evt, listener.uuid)
+        }
+    }
+
+    setInvitation(invitation) {
+        this.invitation = invitation;
+
+        // initialyse account informations.
+        Account.getAccount(this.invitation.getFrom(), () => { }, err => { })
+        Account.getAccount(this.invitation.getTo(), () => { }, err => { })
+    }
+
+    setAcceptButton(onAccpect) {
+        this.innerHtml = ""
+        let range = document.createRange()
+        this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.65em; width: 20px; align-self: flex-end;" id="accept_${this.invitation.getConversation()}_btn">Accept</paper-button>`))
+        this.querySelector(`#accept_${this.invitation.getConversation()}_btn`).onclick = () => {
+            if (onAccpect != null) {
+                onAccpect(this.invitation)
+            }
+            this.parentNode.removeChild(this)
+            this.deleteListeners()
+        }
+    }
+
+    setDeclineButton(onDecline) {
+        this.innerHtml = ""
+        let range = document.createRange()
+        this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.65em; width: 20px; align-self: flex-end;" id="decline_${this.invitation.getConversation()}_btn">Decline</paper-button>`))
+
+        this.querySelector(`#decline_${this.invitation.getConversation()}_btn`).onclick = () => {
+            if (onDecline != null) {
+                onDecline(this.invitation)
+            }
+            this.parentNode.removeChild(this)
+            this.deleteListeners()
+        }
+    }
+
+    setRevokeButton(onRevoke) {
+        this.innerHtml = ""
+        let range = document.createRange()
+        this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.65em; width: 20px; align-self: flex-end;" id="revoke_${this.invitation.getConversation()}_btn">Revoke</paper-button>`))
+
+        this.querySelector(`#revoke_${this.invitation.getConversation()}_btn`).onclick = () => {
+            if (onRevoke != null) {
+                onRevoke(this.invitation)
+            }
+            this.parentNode.removeChild(this)
+            this.deleteListeners()
+        }
+    }
+}
+
+
+customElements.define('globular-conversation-invitation-card', InvitationCard)

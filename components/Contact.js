@@ -270,7 +270,6 @@ export class ContactCard extends HTMLElement {
         if (this.hasAttribute("contact")) {
             Account.getAccount(this.getAttribute("contact"), (val) => {
                 this.contact = val;
-                console.log("-------------> contact: ", this.contact)
             }, (err) => { console.log(err) })
         }
 
@@ -293,7 +292,7 @@ export class ContactCard extends HTMLElement {
                 color: var(--palette-text-primary);
             }
 
-            .contact-invitation-div:hover{
+            .contact-invitation-div.actionable:hover{
                 filter: invert(10%);
             }
 
@@ -317,10 +316,15 @@ export class ContactCard extends HTMLElement {
             </div>
         </div>
         `
+        /** only element with actions will have illuminated background... */
+        if(this.children.length > 0){
+            this.shadowRoot.querySelector(".contact-invitation-div").classList.add("actionable")
+        }
     }
 
     // Set the invite button...
     setInviteButton(onInviteConctact) {
+        
         this.innerHtml = ""
         let range = document.createRange()
         this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.65em; width: 20px; align-self: flex-end;" id="invite_btn">Invite</paper-button>`))
@@ -495,7 +499,6 @@ export class SentContactInvitations extends HTMLElement {
         card.id = id
         card.setRevokeButton(this.onRevokeContact)
         contactLst.appendChild(card)
-        console.log("------->", contactLst.querySelector("#" + id))
     }
 
     removeContact(contact) {

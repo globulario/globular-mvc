@@ -25,7 +25,7 @@ import { Application } from "./Application";
 import { Wizard } from "./components/Wizard";
 import { SlideShow } from "./components/SlideShow";
 import { ImageCropper } from "./components/Image";
-import { Conversation } from "globular-web-client/conversation/conversation_pb";
+import { Conversation, Invitation } from "globular-web-client/conversation/conversation_pb";
 import { ConversationManager } from "./Conversation";
 
 // This variable is there to give acces to wait and resume...
@@ -884,9 +884,9 @@ export class ApplicationView extends View {
     inviteContactInput.displayValue = (contact: Account) => {
       let card = new ContactCard(this.application.account, contact);
       card.setInviteButton((a: Account) => {
-        ConversationManager.sendConversationInvitation(conversation.getUuid(), this.application.account.id, a.id, 
+        ConversationManager.sendConversationInvitation(conversation.getUuid(), conversation.getName(), this.application.account.id, a.id, 
           ()=>{
-            Model.eventHub.publish("invite_participant_event_", {participant:a.id, conversation: conversation.getName()}, true)
+            Model.eventHub.publish("send_conversation_invitation_event_", {participant:a.id, conversation: conversation.getName()}, true)
           }, 
           (err:any)=>{
             this.displayMessage(err, 3000)
@@ -955,10 +955,10 @@ export class ApplicationView extends View {
         toast.dismiss();
 
         // Here the conversation has been deleted...
-        Model.eventHub.publish(`delete_conversation_${conversation.getUuid()}_evt`, {}, false)
+        Model.eventHub.publish(`delete_conversation_${conversation.getUuid()}_evt`, `{}`, false)
 
         this.displayMessage(
-          "<iron-icon icon='communication:message' style='margin-right: 10px;'></iron-icon><div>Contact " +
+          "<iron-icon icon='communication:message' style='margin-right: 10px;'></iron-icon><div>Conversation named " +
           conversation.getName() +
           " was deleted!</div>",
           3000

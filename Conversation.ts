@@ -1,10 +1,12 @@
 
-import { Conversation, ConnectRequest, Conversations, CreateConversationRequest, Message, CreateConversationResponse, DeleteConversationRequest, DeleteConversationResponse, FindConversationsRequest, FindConversationsResponse, JoinConversationRequest, JoinConversationResponse, ConnectResponse, SendMessageRequest, SendMessageResponse, SendInvitationRequest, Invitation } from "globular-web-client/conversation/conversation_pb";
+import { Conversation, ConnectRequest, Conversations, CreateConversationRequest, Message, CreateConversationResponse, DeleteConversationRequest, DeleteConversationResponse, FindConversationsRequest, FindConversationsResponse, JoinConversationRequest, JoinConversationResponse, ConnectResponse, SendMessageRequest, SendMessageResponse, SendInvitationRequest, Invitation, Invitations, GetReceivedInvitationsRequest, GetReceivedInvitationsResponse, AcceptInvitationRequest, DeclineInvitationRequest, GetSentInvitationsRequest, GetSentInvitationsResponse, RevokeInvitationRequest, RevokeInvitationResponse } from "globular-web-client/conversation/conversation_pb";
 import { GetConversationsRequest, GetConversationsResponse } from "globular-web-client/conversation/conversation_pb";
 
 import { Account } from "./Account";
 import { Model } from "./Model";
 import { v4 as uuidv4 } from "uuid";
+import { GetResourcePermissionsRsp } from "globular-web-client/rbac/rbac_pb";
+import {encode, decode} from 'uint8-to-base64';
 
 export class ConversationManager {
   public static uuid: string;
@@ -156,12 +158,13 @@ export class ConversationManager {
   }
 
   // Send a conversation invitation to a given user.
-  static sendConversationInvitation(conversation:string, from: string, to: string, successCallback :()=>void, errorCallback:(err:any)=>void){
+  static sendConversationInvitation(conversation:string, name: string, from: string, to: string, successCallback :()=>void, errorCallback:(err:any)=>void){
     let rqst = new SendInvitationRequest
     let invitation = new Invitation
     invitation.setFrom(from)
     invitation.setTo(to)
     invitation.setConversation(conversation)
+    invitation.setName(name)
     rqst.setInvitation(invitation)
 
     Model.globular.conversationService.sendInvitation(rqst, {
@@ -171,11 +174,106 @@ export class ConversationManager {
     }).then((rsp:SendMessageResponse)=>{
       /** Nothing to do here... */
       successCallback()
+      const encoded = encode(invitation.serializeBinary());
+      // publish network event.
+      Model.eventHub.publish(`send_conversation_invitation_${from}_evt`, encoded, false)
+      Model.eventHub.publish(`receive_conversation_invitation_${to}_evt`, encoded, false)
+    }).catch(errorCallback)
+  }
+
+  /**
+   * Get the list of received invitations.
+   * @param accountId The account id
+   * @param successCallback 
+   * @param errorCallback 
+   */
+  static getReceivedInvitations(accountId: string, successCallback :(invitation: Array<Invitation>)=>void, errorCallback:(err:any)=>void){
+    let rqst = new GetReceivedInvitationsRequest
+    rqst.setAccount(accountId);
+    Model.globular.conversationService.getReceivedInvitations(rqst, {
+      token: localStorage.getItem("user_token"),
+      application: Model.application,
+      domain: Model.domain,
+    }).then((rsp:GetReceivedInvitationsResponse)=>{
+      /** Nothing to do here... */
+      successCallback(rsp.getInvitations().getInvitationsList())
 
     }).catch(errorCallback)
   }
 
-  static sendMessage(conversationUuid: string, author: string, text:string, replyTo:string, successCallback :()=>void, errorCallback:()=>void){
+  /**
+   * Get the list of sent invitations.
+   * @param accountId The account id
+   * @param successCallback 
+   * @param errorCallback 
+   */
+  static getSentInvitations(accountId: string, successCallback :(invitation: Array<Invitation>)=>void, errorCallback:(err:any)=>void){
+    let rqst = new GetSentInvitationsRequest
+    rqst.setAccount(accountId);
+    Model.globular.conversationService.getSentInvitations(rqst, {
+      token: localStorage.getItem("user_token"),
+      application: Model.application,
+      domain: Model.domain,
+    }).then((rsp:GetSentInvitationsResponse)=>{
+      /** Nothing to do here... */
+      successCallback(rsp.getInvitations().getInvitationsList())
+
+    }).catch(errorCallback)
+  }
+
+  /**
+   * Conversation invitation is accepted!
+   * @param invitation The invitation
+   * @param successCallback The success callback.
+   * @param errorCallback The error callback.
+   */
+  static acceptConversationInvitation(invitation:Invitation, successCallback: ()=>void, errorCallback: (err:any)=>void){
+    let rqst = new AcceptInvitationRequest
+    rqst.setInvitation(invitation);
+    Model.globular.conversationService.acceptInvitation(rqst, {
+      token: localStorage.getItem("user_token"),
+      application: Model.application,
+      domain: Model.domain,
+    }).then((rsp:AcceptInvitationRequest)=>{
+      /** Nothing to do here... */
+      successCallback()
+
+    }).catch(errorCallback)
+  }
+
+  /**
+   * The conversation invitation was declined!
+   * @param invitation The invitation.
+   * @param successCallback The success callback
+   * @param errorCallback The error callback
+   */
+  static declineConversationInvitation(invitation:Invitation, successCallback: ()=>void, errorCallback: (err:any)=>void){
+    let rqst = new DeclineInvitationRequest
+    rqst.setInvitation(invitation);
+    Model.globular.conversationService.declineInvitation(rqst, {
+      token: localStorage.getItem("user_token"),
+      application: Model.application,
+      domain: Model.domain,
+    }).then((rsp:AcceptInvitationRequest)=>{
+      /** Nothing to do here... */
+      successCallback()
+    }).catch(errorCallback)
+  }
+
+  static revokeConversationInvitation(invitation:Invitation, successCallback: ()=>void, errorCallback: (err:any)=>void){
+    let rqst = new RevokeInvitationRequest
+    rqst.setInvitation(invitation);
+    Model.globular.conversationService.revokeInvitation(rqst, {
+      token: localStorage.getItem("user_token"),
+      application: Model.application,
+      domain: Model.domain,
+    }).then((rsp:RevokeInvitationResponse)=>{
+      /** Nothing to do here... */
+      successCallback()
+    }).catch(errorCallback)
+  }
+
+  static sendMessage(conversationUuid: string, author: string, text:string, replyTo:string, successCallback :()=>void, errorCallback:(err:any)=>void){
 
     let rqst = new SendMessageRequest
     let message = new Message
