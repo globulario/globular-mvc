@@ -2,7 +2,7 @@ import { View } from "./View";
 import * as M from "materialize-css";
 import "materialize-css/sass/materialize.scss";
 import { Account } from "./Account";
-import { ApplicationSettings, FileSettings, UserSettings } from "./Settings"
+import { ApplicationSettings, FileSettings, LogSettings, UserSettings } from "./Settings"
 import { Model } from "./Model";
 import { DockerNames } from "./components/RandomName"
 
@@ -25,6 +25,7 @@ import { Application } from "./Application";
 import { Wizard } from "./components/Wizard";
 import { SlideShow } from "./components/SlideShow";
 import { ImageCropper } from "./components/Image";
+import "./components/table/table.js"
 import { Conversation, Invitation } from "globular-web-client/conversation/conversation_pb";
 import { ConversationManager } from "./Conversation";
 
@@ -639,6 +640,9 @@ export class ApplicationView extends View {
     // The file settings
     let fileSettings = new FileSettings(this.settingsMenu, this.settingsPanel);
 
+    // The logs
+    let logs = new LogSettings(this.settingsMenu, this.settingsPanel);
+
     window.dispatchEvent(new Event("resize"));
   }
 
@@ -860,7 +864,7 @@ export class ApplicationView extends View {
     let findAccountByEmail = (email: string) => {
       Account.getAccounts(`{"email":{"$regex": "${email}", "$options": "im"}}`, (accounts) => {
         // set the getValues function that will return the list to be use as filter.
-        accounts = accounts.filter((obj: Account)=>{
+        accounts = accounts.filter((obj: Account) => {
           // remove participant already in the conversation and the current account.
           let index = conversation.getParticipantsList().indexOf(obj.id);
           return obj.id !== this.application.account.id && index == -1;
@@ -884,11 +888,11 @@ export class ApplicationView extends View {
     inviteContactInput.displayValue = (contact: Account) => {
       let card = new ContactCard(this.application.account, contact);
       card.setInviteButton((a: Account) => {
-        ConversationManager.sendConversationInvitation(conversation.getUuid(), conversation.getName(), this.application.account.id, a.id, 
-          ()=>{
-            Model.eventHub.publish("send_conversation_invitation_event_", {participant:a.id, conversation: conversation.getName()}, true)
-          }, 
-          (err:any)=>{
+        ConversationManager.sendConversationInvitation(conversation.getUuid(), conversation.getName(), this.application.account.id, a.id,
+          () => {
+            Model.eventHub.publish("send_conversation_invitation_event_", { participant: a.id, conversation: conversation.getName() }, true)
+          },
+          (err: any) => {
             this.displayMessage(err, 3000)
           })
         // So here I will create a 

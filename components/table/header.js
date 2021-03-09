@@ -12,7 +12,7 @@ import { randomUUID, fireResize } from "../utility.js"
 import './filter.js';
 import './sorter.js';
 
-class TableHeaderElement extends PolymerElement {
+export class TableHeaderElement extends PolymerElement {
     constructor() {
         super();
     }
@@ -94,7 +94,7 @@ class TableHeaderElement extends PolymerElement {
 
 customElements.define('table-header-element', TableHeaderElement);
 
-class TableHeaderCellElement extends PolymerElement {
+export class TableHeaderCellElement extends PolymerElement {
     constructor() {
         super();
 

@@ -397,7 +397,7 @@ export class MessengerMenu extends Menu {
                 })
         })
 
-        this.sentConversationsInvitationsTab.innerHTML = "Received Invitations (" + this.sentConversationsInvitationsLst.children.length + ")"
+        this.sentConversationsInvitationsTab.innerHTML = "Sent Invitations (" + this.sentConversationsInvitationsLst.children.length + ")"
     }
 }
 

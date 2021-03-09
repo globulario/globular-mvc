@@ -106,6 +106,7 @@ export class SettingsSideMenuItem extends HTMLElement {
        ${theme}
        #container {
            display: flex;
+           align-items: flex-end;
            padding-left: 10px;
            padding-top: 10px;
            padding-bottom: 10px;
@@ -348,20 +349,7 @@ export class Settings extends HTMLElement {
           }
         }
 
-        .card-title{
-            position: absolute;
-            top: -40px;
-            font-size: 1rem;
-            text-transform: uppercase;
-            color: var(--cr-primary-text-color);
-            font-weight: 400;
-            letter-spacing: .25px;
-            margin-bottom: 12px;
-            margin-top: var(--cr-section-vertical-margin);
-            outline: none;
-            padding-bottom: 4px;
-            padding-top: 8px;
-        }
+   
 
         .card-subtitle{
           padding: 24px;

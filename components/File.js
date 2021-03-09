@@ -170,7 +170,7 @@ export class FilesView extends HTMLElement {
             const headers = this.div.getElementsByClassName("files-list-view-header")
             if (this.div.scrollTop > 0) {
                 for (var h of headers) {
-                    h.style.boxShadow = "0 2px 2px -1px rgba(0, 0, 0, 0.4)"
+                    h.style.boxShadow = "var(--dark-mode-shadow)"
                 }
             } else {
                 for (var h of headers) {

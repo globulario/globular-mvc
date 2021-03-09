@@ -5,11 +5,12 @@ import '@polymer/iron-icons/iron-icons.js';
 // List of imported functionality.
 import { createElement } from "../element"
 import { randomUUID } from "../utility"
+import { theme } from "../Theme.js"
 
 /*
  * Menu item represent element contain inside a menu.
  */
-class MenuItemElement extends PolymerElement {
+export class MenuItemElement extends PolymerElement {
 
     constructor() {
         super()
@@ -39,9 +40,15 @@ class MenuItemElement extends PolymerElement {
     }
 
     static get template() {
-        return html`
-            <slot></slot>
-    `;
+        let template = document.createElement("template")
+        template.innerHTML = `
+          <style>
+            ${theme}
+          </style>
+          <slot></slot>
+        `;
+
+        return template
     }
 
     /**

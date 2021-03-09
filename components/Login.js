@@ -147,26 +147,6 @@ export class LoginBox extends HTMLElement {
                 margin: 20px 0px 10px 2px;
             }
 
-            .card-title{
-                position: absolute;
-                top: -40px;
-                font-size: 1rem;
-                text-transform: uppercase;
-
-                color: var(--cr-primary-text-color);
-                font-weight: 400;
-                letter-spacing: .25px;
-                margin-bottom: 12px;
-                margin-top: var(--cr-section-vertical-margin);
-                outline: none;
-                padding-bottom: 4px;
-                padding-top: 8px;
-            }
-
-            .card-actions{
-                font-size: 1.1rem;
-            }
-
         </style>
 
         <paper-card id="login_box">
@@ -301,21 +281,6 @@ export class RegisterBox extends HTMLElement {
                     justify-content: flex-end;
                 }
 
-                .card-title{
-                    position: absolute;
-                    top: -40px;
-                    font-size: 1rem;
-                    text-transform: uppercase;
-                    color: var(--cr-primary-text-color);
-                    font-size: 108%;
-                    font-weight: 400;
-                    letter-spacing: .25px;
-                    margin-bottom: 12px;
-                    margin-top: var(--cr-section-vertical-margin);
-                    outline: none;
-                    padding-bottom: 4px;
-                    padding-top: 8px;
-                }
 
             </style>
 

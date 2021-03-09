@@ -5,6 +5,7 @@ import '@polymer/iron-icons/iron-icons.js';
 
 import { createElement } from "../element.js";
 import { randomUUID, fireResize, getCoords } from "../utility.js";
+import { theme } from "../Theme.js"
 
 class TableSorterElement extends PolymerElement {
   constructor() {
@@ -33,8 +34,11 @@ class TableSorterElement extends PolymerElement {
    * The internal component properties.
    */
   static get template() {
-    return html`
+    let template = document.createElement("template")
+    template.innerHTML = `
       <style>
+          ${theme}
+
           #div-selector {
             display: flex; 
             flex-direction: column;
@@ -46,6 +50,8 @@ class TableSorterElement extends PolymerElement {
             left: 0px;
             color: white;
             z-index: 100;
+
+            --iron-icon-fill-color: var(--palette-text-accent);
         }
 
         #div-selector:hover{
@@ -59,6 +65,7 @@ class TableSorterElement extends PolymerElement {
             <div id="order-div"></div>
       </div>
     `
+    return template;
   }
 
   static get properties() {
@@ -78,7 +85,7 @@ class TableSorterElement extends PolymerElement {
     super.ready(); // Here I will create the sorte selection div.
 
     var div = this.shadowRoot.getElementById("div-selector")
-    div.style.boxShadow ="0px 1px 12px -1px rgba(0,0,0,0.75)"
+    div.style.boxShadow ="var(--dark-mode-shadow)"
 
     this.table = this.parentNode.parentNode.parentNode;
     this.header = this.parentNode.parentNode;
@@ -141,7 +148,7 @@ class TableSorterElement extends PolymerElement {
           sorter.ascSortBtn.isSet = false;
           sorter.state = 0;
           div.style.flexDirection = "column";
-          div.style.boxShadow ="0px 1px 12px -1px rgba(0,0,0,0.75)"
+          div.style.boxShadow ="var(--dark-mode-shadow)"
         } // In case the sorter is set it container must be the sorter.
         sorter.setOrder();
       };
@@ -172,7 +179,7 @@ class TableSorterElement extends PolymerElement {
           sorter.descSortBtn.isSet = false;
           sorter.state = 0;
           div.style.flexDirection = "column";
-          div.style.boxShadow ="0px 1px 12px -1px rgba(0,0,0,0.75)"
+          div.style.boxShadow ="var(--dark-mode-shadow)"
         } // In case the sorter is set it container must be the sorter.
         sorter.setOrder();
       };
@@ -200,7 +207,7 @@ class TableSorterElement extends PolymerElement {
         // not display the order.
         sorter.orderDiv.innerHTML = ""
         div.style.flexDirection = "column";
-        div.style.boxShadow ="0px 1px 12px -1px rgba(0,0,0,0.75)"
+        div.style.boxShadow ="var(--dark-mode-shadow)"
         div.style.display ="none"
         sorter.ascSortBtn.style.display = "";
         sorter.descSortBtn.style.display = "";
