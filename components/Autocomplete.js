@@ -43,6 +43,14 @@ export class Autocomplete extends HTMLElement {
             <paper-card id="values_div" style="position: absolute; max-height: 350px; overflow-y: auto;  width:${this.width}px; z-index: 10;"> </paper-card>
         </div>
         `
+
+    }
+
+    focus(){
+        let nameInput = this.shadowRoot.getElementById("input")
+        setTimeout(() => {
+          nameInput.focus()
+        }, 100)
     }
 
     setValues(values){

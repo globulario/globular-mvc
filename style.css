@@ -124,3 +124,9 @@ html{
     {
       background: rgba(0, 0, 0, 0.5);
     }
+    
+    /** Materialyse **/
+    .toast {
+      background-color: var(--palette-background-paper);
+      color: var(--palette-text-primary);
+    }
