@@ -190,4 +190,88 @@ export let theme = `
     color: var(--cr-primary-text-color);
     flex-grow: 1;
   }
-  `
+
+  /** Table element **/
+/** Simple table style **/
+table-element{
+    /** Set max heigth to display the scroll**/
+    max-height: 500px;
+
+    /** Border */
+    border-bottom: 1px solid var(--palette-divider);
+    border-right: 1px solid var(--palette-divider);
+}
+
+.table-item{
+    text-align: center;
+    vertical-align: middle;
+}
+
+table-header-element{
+    background-color: var(--palette-primary-accent);
+    color: var(--palette-text-accent);
+    font-size: 1rem;
+
+}
+
+table-header-element :last-child{
+    border-right:none;
+}
+
+table-header-cell-element{
+    padding: 5px 10px 5px 10px;
+    font-weight: 500;
+    font-size: 1.1rem;
+}
+
+
+dropdown-menu-element{
+  font-size: 1rem;
+}
+
+/** Sample style example. **/
+
+/** Tiles are grids **/
+.table-tile{
+    /** Align item in table **/
+    justify-items: center;
+    align-items: center;
+    border-left: 1px solid var(--palette-divider);
+}
+
+/** The cell container **/
+.table-item{
+    width: 100%;
+    height: 100%;
+    padding: 0px;
+    margin: 0px;
+    font-size: 1rem;
+}
+
+
+/** The cell value div **/
+.table-item-value {
+    
+    border-right: 1px solid var(--palette-divider);
+    border-top: 1px solid var(--palette-divider);
+    /** Text align center and at middle by default **/
+    text-align: center;
+    vertical-align: middle;
+    display: table-cell;
+    height: 100%;
+}
+
+.inner-triangle{
+    border-left: 10px solid transparent;
+    border-right: 10px solid var(--palette-primary-accent);
+    border-bottom: 10px solid transparent;
+    height: 0;
+    width: 0;
+    position: absolute;
+    right: 0px;
+}
+
+.inner-triangle:hover{
+    cursor: pointer;
+}
+`

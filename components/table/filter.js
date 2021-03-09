@@ -1060,7 +1060,7 @@ export class Filter {
     this.addExpressionBtn = this.operatorPanel.appendElement({
       "tag": "paper-icon-button",
       "icon": "add",
-      "style": "height: 18px; width: 18px; padding: 1px;",
+      "style": "height: 18px; width: 18px; padding: 0px;",
       "title": "append a new exprssion"
     }).down();
     this.andOrBtn = this.operatorPanel.appendElement({
@@ -1115,19 +1115,19 @@ export class Filter {
     this.addFilterBtn = this.filterMenu.appendElement({
       "tag": "paper-icon-button",
       "icon": "add",
-      "style": "height: 18px; width: 18px; padding: 1px;",
+      "style": "height: 18px; width: 18px; padding: 0px;",
       "title": "append new group of expression."
     }).down();
     this.clearFileterBtn = this.filterMenu.appendElement({
       "tag": "paper-icon-button",
       "icon": "close",
-      "style": "height: 18px; width: 18px; padding: 1px; align-self: center;",
+      "style": "height: 18px; width: 18px; padding: 0px; align-self: center;",
       "title": "clear the content of filter"
     }).down();
     this.deleteFileterBtn = this.filterMenu.appendElement({
       "tag": "paper-icon-button",
       "icon": "delete",
-      "style": "height: 18px; width: 18px; padding: 1px;",
+      "style": "height: 18px; width: 18px; padding: 0px;",
       "title": "delele the filter and it content"
     }).down();
 

@@ -327,7 +327,7 @@ export class ContactCard extends HTMLElement {
         
         this.innerHtml = ""
         let range = document.createRange()
-        this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.65em; width: 20px; align-self: flex-end;" id="invite_btn">Invite</paper-button>`))
+        this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.85em; width: 20px; align-self: flex-end;" id="invite_btn">Invite</paper-button>`))
         let inviteBtn = this.querySelector("#invite_btn")
         inviteBtn.onclick = () => {
             if (onInviteConctact != null) {
@@ -339,7 +339,7 @@ export class ContactCard extends HTMLElement {
     setDeleteButton(onDeleteContact) {
         this.innerHtml = ""
         let range = document.createRange()
-        this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.65em; width: 20px; align-self: flex-end;" id="delete_btn">Delete</paper-button>`))
+        this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.85em; width: 20px; align-self: flex-end;" id="delete_btn">Delete</paper-button>`))
 
         this.querySelector("#delete_btn").onclick = () => {
             if (onDeleteContact != null) {
@@ -352,7 +352,7 @@ export class ContactCard extends HTMLElement {
     setRevokeButton(onRevokeInvitation) {
         this.innerHtml = ""
         let range = document.createRange()
-        this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.65em; width: 20px; align-self: flex-end;" id="revoke_invitation_btn">Revoke</paper-button>`))
+        this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.85em; width: 20px; align-self: flex-end;" id="revoke_invitation_btn">Revoke</paper-button>`))
 
         this.querySelector("#revoke_invitation_btn").onclick = () => {
             if (onRevokeInvitation != null) {
@@ -764,8 +764,8 @@ export class AcceptDeclineContactBtns extends HTMLElement {
         </style>
 
         <div style="display: flex;">
-            <paper-button id="decline_contact_btn" style="font-size:.65em; width: 20px;">Decline</paper-button>
-            <paper-button id="accept_contact_btn" style="font-size:.65em; width: 20px;">Accept</paper-button>
+            <paper-button id="decline_contact_btn" style="font-size:.85em; width: 20px;">Decline</paper-button>
+            <paper-button id="accept_contact_btn" style="font-size:.85em; width: 20px;">Accept</paper-button>
         </div>
         `
 

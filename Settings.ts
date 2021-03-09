@@ -338,8 +338,9 @@ export class LogSettings extends Settings {
         table.rowheight = 29
         table.style.width = "1325px"
         table.style.maxHeight = "900px";
-        table.data = []
+        table.data = [[1, 2, 3, 4],[1, 2, 3, 4], [1, 2, 3, 4], [1, 2, 3, 4]]
         let titles = ["toto", "titi", "tata", "tutu"]
+
         // Create the table filter and sorter...
         titles.forEach(title => {
             const headerCell = <any>(document.createElement("table-header-cell-element"))
@@ -349,5 +350,16 @@ export class LogSettings extends Settings {
 
         logSettingPage.appendChild(table);
 
+
+    }
+
+    /**
+     * Return the list of logs of an application.
+     * @param query The query to get logs..
+     * @param successCallback Return the list of log to be displayed
+     * @param errorCallback Return an error if something wrong append.
+     */
+    getLogs(query:string, successCallback:()=>void, errorCallback:(err:any)=>void){
+        
     }
 }
