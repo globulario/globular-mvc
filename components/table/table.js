@@ -6,11 +6,12 @@ import { fireResize, isString, exportToCsv, getCoords } from "../utility.js";
 import '../menu/menuItem.js';
 import '../menu/dropdownMenu.js';
 import './header.js'; // The maximum allowed number of row for a grid.
+import {theme} from "../Theme.js"
 
 var maxRowNumber = 1000;
 var lastWidth = 0;
 
-class TableElement extends PolymerElement {
+export class TableElement extends PolymerElement {
   constructor() {
     super();
     this.rowheight = -1; // in pixels
@@ -71,14 +72,18 @@ class TableElement extends PolymerElement {
   }
 
   static get template() {
-    return html`
+    let template = document.createElement("template")
+    template.innerHTML = `
         <style>
+        ${theme}
             ::slotted(table-header-element) {
 
             }
         </style>
         <slot></slot>
     `;
+
+    return template
   }
   /**
    * Create a new tile in the layout.
@@ -572,7 +577,7 @@ class TableElement extends PolymerElement {
 
         if (header.fixed) {
           if (this.scrollTop != 0) {
-            header.style.boxShadow = "0 3px 5px rgba(57, 63, 72, 0.5)";
+            header.style.boxShadow = "var(--dark-mode-shadow)";
           } else {
             header.style.boxShadow = "";
           }

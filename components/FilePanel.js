@@ -12,7 +12,7 @@ import '@polymer/neon-animation/neon-animatable.js';
 /**
  * Display a single image.
  */
-class ImagePanel {
+export class ImagePanel {
   constructor(parent, fileInfo, data) {
     // Keep the parent.
     this.parent = parent
@@ -106,7 +106,7 @@ class ImagePanel {
  * This element is use to display files in a server directory.
  * It can be use to upload file, delete file, download file...
  */
-class FilePaneElement extends PolymerElement {
+export class FilePaneElement extends PolymerElement {
   constructor() {
     super(); // The directory object.
     // this.directory = null; // This is the json string...

@@ -182,7 +182,7 @@ export class FormSection extends HTMLElement {
                 
                 .card-title{
                     position: absolute;
-                    font-size: 1rem;
+                    font-size: 1.25rem;
                     text-transform: uppercase;
                     color: var(--cr-primary-text-color);
                     font-weight: 400;

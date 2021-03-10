@@ -14,7 +14,7 @@ import { isString } from "../utility"
 /**
  * That class must be use to create menu.
  */
-class PopupMenuElement extends DropdownMenuElement {
+export class PopupMenuElement extends DropdownMenuElement {
     constructor() {
         super();
 

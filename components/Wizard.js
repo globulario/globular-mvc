@@ -73,29 +73,6 @@ export class Wizard extends HTMLElement {
                 font-size: 1.35em;
             }
 
-            .card-title{
-                position: absolute;
-                top: -40px;
-                font-size: 1rem;
-                text-transform: uppercase;
-
-                color: var(--cr-primary-text-color);
-                font-size: 108%;
-                font-weight: 400;
-                letter-spacing: .25px;
-                margin-bottom: 12px;
-                margin-top: var(--cr-section-vertical-margin);
-                outline: none;
-                padding-bottom: 4px;
-                padding-top: 8px;
-            }
-
-            .card-actions{
-                display: flex;
-                justify-content: flex-end;
-                align-items: center;
-            }
-
             .step-number{
                 position: relative;
                 display: flex;

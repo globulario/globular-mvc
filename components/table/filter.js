@@ -6,10 +6,11 @@ import "@polymer/paper-icon-button/paper-icon-button.js";
 import "@polymer/iron-icons/iron-icons.js"; // List of imported functionality.
 
 import { createElement } from "../element.js";
-import { attachAutoComplete } from "../autocomplete/autocomplete.js";
+import { attachAutoComplete } from "./autocomplete.js";
 import { fireResize, isNumeric, intersectSafe, isString, isBoolean, getCoords } from "../utility.js"; // Expression contain operator and field to be test.
+import {theme} from "../Theme.js"
 
-class Expression {
+export class Expression {
   constructor(parent) {
     // Keep a link to the parent filter for that expression.
     this.parent = parent; // So here I will append the expression panel.
@@ -1015,7 +1016,7 @@ class DateExpression extends Expression {
 } // Filter is a recursive structure that can contain other filter or expressions whit one operator (AND/OR).
 
 
-class Filter {
+export class Filter {
   // Parent can be null if the filter is the main filter.
   constructor(parent, table, index) {
     this.table = table;
@@ -1059,7 +1060,7 @@ class Filter {
     this.addExpressionBtn = this.operatorPanel.appendElement({
       "tag": "paper-icon-button",
       "icon": "add",
-      "style": "height: 18px; width: 18px; padding: 1px;",
+      "style": "height: 18px; width: 18px; padding: 0px;",
       "title": "append a new exprssion"
     }).down();
     this.andOrBtn = this.operatorPanel.appendElement({
@@ -1108,25 +1109,25 @@ class Filter {
 
     this.filterMenu = this.panel.appendElement({
       "tag": "div",
-      "style": "z-index: 1; position: absolute; background-color: white; top:0px; -webkit-box-shadow: 0px 0px 5px -1px rgba(0,0,0,0.75);  -moz-box-shadow: 0px 0px 5px -1px rgba(0,0,0,0.75);  box-shadow: 0px 0px 5px -1px rgba(0,0,0,0.75);"
+      "style": "z-index: 1; position: absolute; top:0px; -webkit-box-shadow: 0px 0px 5px -1px rgba(0,0,0,0.75);  -moz-box-shadow: 0px 0px 5px -1px rgba(0,0,0,0.75);  box-shadow: 0px 0px 5px -1px rgba(0,0,0,0.75); background-color: var(--palette-background-paper); color: var(--palette-text-primary);"
     }).down(); // Remove/add btn
 
     this.addFilterBtn = this.filterMenu.appendElement({
       "tag": "paper-icon-button",
       "icon": "add",
-      "style": "height: 18px; width: 18px; padding: 1px;",
+      "style": "height: 18px; width: 18px; padding: 0px;",
       "title": "append new group of expression."
     }).down();
     this.clearFileterBtn = this.filterMenu.appendElement({
       "tag": "paper-icon-button",
       "icon": "close",
-      "style": "height: 18px; width: 18px; padding: 1px; align-self: center;",
+      "style": "height: 18px; width: 18px; padding: 0px; align-self: center;",
       "title": "clear the content of filter"
     }).down();
     this.deleteFileterBtn = this.filterMenu.appendElement({
       "tag": "paper-icon-button",
       "icon": "delete",
-      "style": "height: 18px; width: 18px; padding: 1px;",
+      "style": "height: 18px; width: 18px; padding: 0px;",
       "title": "delele the filter and it content"
     }).down();
 
@@ -1362,7 +1363,7 @@ class Filter {
 
 }
 
-class TableFilterElement extends PolymerElement {
+export class TableFilterElement extends PolymerElement {
   constructor() {
     super();
     this.filterBtn = null;
@@ -1371,6 +1372,7 @@ class TableFilterElement extends PolymerElement {
     this.headerCell = null;
     this.filter = null;
     this.panel = null;
+
   }
 
   /**
@@ -1388,28 +1390,40 @@ class TableFilterElement extends PolymerElement {
 
 
   static get template() {
-    return html`
-    <style>
-        .filter-panel {
-            /** display empty filter **/
-            max-height: 350px;
-            
-            /** Position properties **/
-            flex-direction: column;
-            align-items: stretch;
+    let template = document.createElement('template');
+    template.innerHTML= `
+      <style>
+      ${theme}
+          .filter-panel {
+              /** display empty filter **/
+              max-height: 350px;
+              
+              /** Position properties **/
+              flex-direction: column;
+              align-items: stretch;
 
-            /** can be overide **/
-            background-color: white;
-            color: grey;
+              /** can be overide **/
+              background-color: var(--palette-background-paper);
+              color: var(--palette-text-primary);
 
-            box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
-        }
+              box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
+          }
+          #filter-btn{
+            --iron-icon-fill-color: var(--palette-text-accent);
+          }
 
-    </style>
-    <div id="filter" style="z-index: 100;">
-        <iron-icon id="ascSortBtn" icon="filter-list" style="height: 18px; display: none;"></iron-icon>
-    </div>
+          paper-button {
+            font-size: 0.85rem;
+            height: 20px;
+          }
+      </style>
+      
+      <div id="filter" style="z-index: 100;">
+          <iron-icon id="filter-btn" icon="filter-list" style="height: 18px; display: none;"></iron-icon>
+      </div>
     `
+    
+    return template;
   }
 
   connectedCallback() {
@@ -1428,7 +1442,7 @@ class TableFilterElement extends PolymerElement {
     this.header = this.parentNode.parentNode; // The parent cell.
 
     this.headerCell = this.parentNode;
-    this.filterBtn = this.shadowRoot.getElementById("ascSortBtn")
+    this.filterBtn = this.shadowRoot.getElementById("filter-btn")
     this.headerCell.style.position = "relative";
     this.headerCell.style.paddingRight = "25px";
     this.div.style.position = "absolute";
@@ -1473,15 +1487,15 @@ class TableFilterElement extends PolymerElement {
     }).down();
 
     var applyBtn = buttonDiv.appendElement({
-      "tag": "button",
+      "tag": "paper-button",
       "innerHtml": "Apply",
-      "style": "background-color: white; border: none; margin: 2px; font-size: 14px; -webkit-font-smoothing; antialiased; font-weight:normal;font-family:'Roboto', 'Noto', sans-serif;"
+      "style": "border: none; margin: 2px; font-size: 14px; -webkit-font-smoothing; antialiased; font-weight:normal;font-family:'Roboto', 'Noto', sans-serif;"
     }).down();
 
     var okBtn = buttonDiv.appendElement({
-      "tag": "button",
+      "tag": "paper-button",
       "innerHtml": "Ok",
-      "style": "background-color: white; border: none; margin: 2px; font-size: 14px; -webkit-font-smoothing; antialiased; font-weight:normal;font-family:'Roboto', 'Noto', sans-serif;"
+      "style": "border: none; margin: 2px; font-size: 14px; -webkit-font-smoothing; antialiased; font-weight:normal;font-family:'Roboto', 'Noto', sans-serif;"
     }).down(); // Set the pointer for various button...
 
     applyBtn.element.onmouseover = okBtn.element.onmouseover = this.filterBtn.onmouseover = function () {

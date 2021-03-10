@@ -7,11 +7,13 @@ import "./menuItem.js"; // List of imported functionality.
 
 import { createElement } from "../element.js";
 import { isString, getCoords } from "../utility.js";
+import { theme } from "../Theme.js"
+
 /**
  * That class must be use to create menu.
  */
 
-class DropdownMenuElement extends PolymerElement {
+export class DropdownMenuElement extends PolymerElement {
   constructor() {
     super(); // Drop down menu members.
 
@@ -36,11 +38,16 @@ class DropdownMenuElement extends PolymerElement {
   }
 
   static get template() {
-    return html`
-            <style>
-            </style>
-            <slot></slot>
+    let template = document.createElement("template")
+    template.innerHTML = `
+      <style>
+        ${theme}
+
+      </style>
+      <slot></slot>
     `;
+
+    return template
   }
   /**
    * That function is call when the table is ready to be diplay.
@@ -51,7 +58,7 @@ class DropdownMenuElement extends PolymerElement {
     super.ready(); // Set the default font/icon color
 
     if (this.color == undefined) {
-      this.color = "black";
+      this.color = "var(--palette-text-primary)";
     }
 
     if (this.overColor == undefined) {
@@ -60,13 +67,8 @@ class DropdownMenuElement extends PolymerElement {
 
 
     if (this.background == undefined) {
-      this.background = "white";
+      this.background = "var(--palette-background-paper)";
     }
-
-    if (this.overBackground == undefined) {
-      this.overBackground = "#E8E8E8";
-    } // Now I will create the panel.
-
 
     this.panel = createElement(this);
     this.style.position = "relative";
@@ -115,11 +117,11 @@ class DropdownMenuElement extends PolymerElement {
 
     if (item.level == 0) {
       // The menu diplayed at the top
-      currentPanel.element.style = "font: 11pt/normal 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace; display: inline; position: relative; color: " + this.color + ";";
+      currentPanel.element.style = "font: 11pt/normal 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace; display: inline; position: relative; color: var(--palette-text-primary);";
       item.content = currentPanel;
     } else {
       // Transfest very thing except sub-items.
-      currentPanel.element.style = "display: flex; background-color: " + this.background + ";"; // I will move child into dropdown_submenu div.
+      currentPanel.element.style = "display: flex; background-color: var(--palette-background-paper); color: var(--palette-text-primary);"; // I will move child into dropdown_submenu div.
 
       var childs = [];
 
@@ -146,7 +148,7 @@ class DropdownMenuElement extends PolymerElement {
 
       if (item.separator == true) {
         // Create separator...
-        item.content.element.parentNode.style.borderTop = "1px solid " + this.overBackground;
+        item.content.element.parentNode.style.borderTop = "1px solid var(--palette-divider)";
         item.content.element.parentNode.style.marginTop = "3px";
         item.content.element.parentNode.style.paddingTop = "3px";
       } // move child
@@ -169,9 +171,9 @@ class DropdownMenuElement extends PolymerElement {
     dropdown_submenu_items_style += "left: 0px;";
     dropdown_submenu_items_style += "margin-left: 2px;";
     dropdown_submenu_items_style += "margin-top: 2px;";
-    dropdown_submenu_items_style += "-webkit-box-shadow: 0px 1px 12px -1px rgba(0, 0, 0, 0.75);";
-    dropdown_submenu_items_style += "-moz-box-shadow: 0px 1px 12px -1px rgba(0, 0, 0, 0.75);";
-    dropdown_submenu_items_style += "box-shadow: 0px 1px 12px -1px rgba(0, 0, 0, 0.75);"; // Append the subitem panel.
+    dropdown_submenu_items_style += "-webkit-box-shadow: var(--dark-mode-shadow);";
+    dropdown_submenu_items_style += "-moz-box-shadow: var(--dark-mode-shadow);";
+    dropdown_submenu_items_style += "box-shadow: var(--dark-mode-shadow);"; // Append the subitem panel.
 
     item.panel = currentPanel.appendElement({
       "tag": "div",
@@ -303,13 +305,12 @@ class DropdownMenuElement extends PolymerElement {
       return function (evt) {
         evt.stopPropagation(); // In case the separator is define I will not set the background color.
 
-        this.style.backgroundColor = dropdownMenu.overBackground;
-        this.style.color = dropdownMenu.overColor;
+        this.style.filter = "invert(10%)"
         this.style.cursor = "pointer";
 
         function setParent(item) {
           if (item.parent != null) {
-            item.parent.content.element.style.backgroundColor = dropdownMenu.overBackground;
+            item.parent.content.element.style.filter = "invert(10%)"
             setParent(item.parent);
           }
         }
@@ -324,11 +325,13 @@ class DropdownMenuElement extends PolymerElement {
         evt.stopPropagation();
         this.style.backgroundColor = dropdownMenu.background;
         this.style.color = dropdownMenu.color;
+        this.style.filter = "none"
         this.style.cursor = "default";
 
         function setParent(item) {
           if (item.parent != null) {
             item.parent.content.element.style.backgroundColor = dropdownMenu.background;
+            item.parent.content.element.style.filter = "none"
             setParent(item.parent);
           }
         }

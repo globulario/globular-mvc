@@ -397,7 +397,7 @@ export class MessengerMenu extends Menu {
                 })
         })
 
-        this.sentConversationsInvitationsTab.innerHTML = "Received Invitations (" + this.sentConversationsInvitationsLst.children.length + ")"
+        this.sentConversationsInvitationsTab.innerHTML = "Sent Invitations (" + this.sentConversationsInvitationsLst.children.length + ")"
     }
 }
 
@@ -458,7 +458,7 @@ export class ConversationInfos extends HTMLElement {
             }
 
             .conversation-infos paper-button{
-                font-size:.65em; 
+                font-size:.85em; 
                 width: 20px;
             }
 
@@ -619,7 +619,7 @@ export class ConversationInfos extends HTMLElement {
         }
         this.innerHtml = ""
         let range = document.createRange()
-        this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.65em; width: 20px;" id="invite_${this.conversation.getUuid()}_btn">Invite</paper-button>`))
+        this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.85em; width: 20px;" id="invite_${this.conversation.getUuid()}_btn">Invite</paper-button>`))
 
         this.querySelector(`#invite_${this.conversation.getUuid()}_btn`).onclick = () => {
             Model.eventHub.publish("__invite_conversation_evt__", this.conversation, true)
@@ -633,7 +633,7 @@ export class ConversationInfos extends HTMLElement {
         }
         this.innerHtml = ""
         let range = document.createRange()
-        this.appendChild(range.createContextualFragment(`</div><paper-button style="font-size:.65em; width: 20px;" id="join_${this.conversation.getUuid()}_btn">Join</paper-button>`))
+        this.appendChild(range.createContextualFragment(`</div><paper-button style="font-size:.85em; width: 20px;" id="join_${this.conversation.getUuid()}_btn">Join</paper-button>`))
 
         this.querySelector(`#join_${this.conversation.getUuid()}_btn`).onclick = () => {
             ConversationManager.joinConversation(this.conversation.getUuid(),
@@ -661,7 +661,7 @@ export class ConversationInfos extends HTMLElement {
         }
         this.innerHtml = ""
         let range = document.createRange()
-        this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.65em; width: 20px;" id="delete_${this.conversation.getUuid()}_btn">Delete</paper-button>`))
+        this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.85em; width: 20px;" id="delete_${this.conversation.getUuid()}_btn">Delete</paper-button>`))
 
         this.querySelector(`#delete_${this.conversation.getUuid()}_btn`).onclick = () => {
             Model.eventHub.publish("__delete_conversation_evt__", this.conversation, true)
@@ -1645,7 +1645,7 @@ export class InvitationCard extends HTMLElement {
         this.innerHtml = ""
         let range = document.createRange()
         let uuid = uuidv4()
-        this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.65em; width: 20px; align-self: flex-end;" id="accept_${uuid}_btn">Accept</paper-button>`))
+        this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.85em; width: 20px; align-self: flex-end;" id="accept_${uuid}_btn">Accept</paper-button>`))
         this.querySelector(`#accept_${uuid}_btn`).onclick = () => {
             if (onAccpect != null) {
                 onAccpect(this.invitation)
@@ -1658,7 +1658,7 @@ export class InvitationCard extends HTMLElement {
         this.innerHtml = ""
         let range = document.createRange()
         let uuid = uuidv4()
-        this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.65em; width: 20px; align-self: flex-end;" id="decline_${uuid}_btn">Decline</paper-button>`))
+        this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.85em; width: 20px; align-self: flex-end;" id="decline_${uuid}_btn">Decline</paper-button>`))
 
         this.querySelector(`#decline_${uuid}_btn`).onclick = () => {
             if (onDecline != null) {
@@ -1672,7 +1672,7 @@ export class InvitationCard extends HTMLElement {
         this.innerHtml = ""
         let range = document.createRange()
         let uuid = uuidv4()
-        this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.65em; width: 20px; align-self: flex-end;" id="revoke_${uuid}_btn">Revoke</paper-button>`))
+        this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.85em; width: 20px; align-self: flex-end;" id="revoke_${uuid}_btn">Revoke</paper-button>`))
 
         this.querySelector(`#revoke_${uuid}_btn`).onclick = () => {
             if (onRevoke != null) {
