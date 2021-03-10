@@ -1,9 +1,11 @@
+import { SetEmailResponse } from "globular-web-client/admin/admin_pb";
+import { GetLogRqst, GetLogRsp, LogInfo } from "globular-web-client/log/log_pb";
 import { Account } from "./Account";
 import { Application } from "./Application";
 import { FileExplorer } from "./components/File";
 import { ImageCropperSetting, ImageSetting, SettingsMenu, SettingsPanel, ComplexSetting, EmailSetting, StringSetting, TextAreaSetting } from "./components/Settings";
 import { Model } from "./Model";
-
+import { mergeTypedArrays, uint8arrayToStringMethod } from "./Utility"
 export class Settings {
 
     protected settingsMenu: SettingsMenu;
@@ -336,20 +338,82 @@ export class LogSettings extends Settings {
 
         table.appendChild(header)
         table.rowheight = 29
-        table.style.width = "1325px"
-        table.style.maxHeight = "900px";
-        table.data = [[1, 2, 3, 4],[1, 2, 3, 4], [1, 2, 3, 4], [1, 2, 3, 4]]
-        let titles = ["toto", "titi", "tata", "tutu"]
+        table.style.width = "1150px"
+        table.style.maxHeight = "800px";
+        
+        let titles = ["Date", "Level", "Account", "Method", "Detail"]
 
         // Create the table filter and sorter...
+
         titles.forEach(title => {
             const headerCell = <any>(document.createElement("table-header-cell-element"))
             headerCell.innerHTML = `<table-sorter-element></table-sorter-element><div>${title}</div> <table-filter-element></table-filter-element>`
+            // Now I will set the way I will display the values.
+            if (title == "Date") {
+                headerCell.width = 200;
+                headerCell.onrender = function (div: any, value: Date) {
+                    if (value != undefined) {
+                        div.innerHTML = value.toLocaleString();
+                    }
+                }
+            }else if(title=="Level"){
+                headerCell.width = 100;
+            }else if(title=="Account"){
+                headerCell.width = 150;
+            }else if(title=="Method"){
+                headerCell.width = 425;
+            }else if(title=="Detail"){
+                headerCell.width = 225;
+                headerCell.onrender = function (div: any, value: string) {
+                    console.log(value)
+                    div.title = value;
+                    if (value != undefined) {
+                        console.log(value.length)
+                        if(value.length > 50){
+                            div.innerHTML = value.substr(0, 25) + "...";
+                        }else{
+                            div.innerHTML = value;
+                        }
+                    }
+                }
+            }
+            
             header.appendChild(headerCell)
         })
 
         logSettingPage.appendChild(table);
+        table.data = [];
 
+        this.getLogs("/error/" + Model.application + "/*", 
+            (infos:Array<LogInfo>)=>{
+                console.log(infos)
+                header.fixed = true;
+                // Here I will transform the the info to fit into the table.
+                infos.forEach((info:LogInfo)=>{
+                    let date = new Date(info.getDate() * 1000);
+                    let level = ""
+                    console.log(info.getLevel())
+                    if(info.getLevel() == 0){
+                        level = "fatal"
+                    }else if(info.getLevel() == 1){
+                        level = "error"
+                    }else if(info.getLevel() == 2){
+                        level = "warning"
+                    }else if(info.getLevel() == 3){
+                        level = "info"
+                    }else if(info.getLevel() == 4){
+                        level = "debug"
+                    }else if(info.getLevel() == 5){
+                        level = "trace"
+                    }
+
+                    table.data.push([date, level, info.getUsername(), info.getMethod(), info.getMessage()])
+                })
+                table.refresh()
+            }, 
+            (err:any)=>{
+                console.log(err)
+            })
 
     }
 
@@ -359,7 +423,31 @@ export class LogSettings extends Settings {
      * @param successCallback Return the list of log to be displayed
      * @param errorCallback Return an error if something wrong append.
      */
-    getLogs(query:string, successCallback:()=>void, errorCallback:(err:any)=>void){
-        
+    getLogs(query:string, successCallback:(infos: Array<LogInfo>)=>void, errorCallback:(err:any)=>void){
+        let rqst = new GetLogRqst
+        rqst.setQuery(query) // test get all error from the server.
+
+        let stream = Model.globular.logService.getLog(rqst, {
+            token: localStorage.getItem("user_token"),
+            application: Model.application,
+            domain: Model.domain,
+        });
+
+        let data = new Array<LogInfo>();
+
+        stream.on("data", (rsp: GetLogRsp) => {
+            data =  data.concat(rsp.getInfosList())
+        });
+
+        stream.on("status", (status) => {
+            if (status.code == 0) {
+                successCallback(data)
+            } else {
+                // In case of error I will return an empty array
+                errorCallback(status.details)
+            }
+        });
+
+
     }
 }
