@@ -485,7 +485,9 @@ export class Field extends HTMLElement {
     /**
      * Checks to see whether the input field is valid.
      */
-    isValid() { }
+    isValid() {
+        return false
+     }
 
     /**
      * Disables the input element and enables the view element.
