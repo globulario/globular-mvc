@@ -17,7 +17,7 @@ import {
 import { v4 as uuidv4 } from "uuid";
 import { mergeTypedArrays, uint8arrayToStringMethod } from "./Utility";
 import { ConversationManager } from "./Conversation";
-import { Conversation, Conversations, Invitation } from "globular-web-client/conversation/conversation_pb";
+import { Conversations } from "globular-web-client/conversation/conversation_pb";
 
 // Get the configuration from url
 function getFileConfig(url: string, callback: (obj: any) => void, errorcallback: (err: any) => void) {
@@ -238,14 +238,42 @@ export class Application extends Model {
         true
       );
 
-      
+      // That listener is use to keep the client up to date with the server.
+      // if an accout is connect it will not restart it session automaticaly...
+      Model.eventHub.subscribe(
+        `update_${Application.domain}_${Application.application}_evt`,
+        (uuid: string) => {
+          this.register_event_listener = uuid;
+        },
+        (version: string) => {
+         
+          if (this.account == undefined) {
+            // reload the page...
+             location.reload();
+          }else{
+            // 
+            this.displayMessage(`
+            <div style="display: flex; flex-direction: column">
+              <div>A new version of <span style="font-weight: 500;">
+                ${Application.application}</span> (v.${version}) is available.
+              </div>
+              <div>
+                Press <span style="font-weight: 500;">f5</span> to refresh the page.
+              </div>
+            </div>
+            `, 10 * 1000);
+          }
+        },
+        false
+      );
+
       // Invite contact event.
       Model.eventHub.subscribe(
         "send_conversation_invitation_event_",
         (uuid: string) => {
           this.invite_contact_listener = uuid;
         },
-        (evt:any) => {
+        (evt: any) => {
           // Here I will try to login the user.
           this.onInviteParticipant(evt);
         },
