@@ -136,7 +136,8 @@ html{
 table-element{
     /** Set max heigth to display the scroll**/
     max-height: 500px;
-
+    background-color: var(--palette-background-paper);
+    color: var(--palette-text-primary);
     /** Border */
     border-bottom: 1px solid var(--palette-divider);
     border-right: 1px solid var(--palette-divider);
