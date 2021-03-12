@@ -499,8 +499,8 @@ export class TableElement extends PolymerElement {
       this.menu.element.style.position = "absolute";
 
       this.style.marginLeft = this.menu.element.offsetWidth + 4 + "px";
-      this.menu.element.style.left = -1 * (this.menu.element.offsetWidth + 2) + "px"; 
-      
+      this.menu.element.style.left = -1 * (this.menu.element.offsetWidth + 2) + "px";
+
       // Make the table resize on display.
       var intersectionObserver = new IntersectionObserver(function (entries) {
         if (entries[0].isIntersecting) {
@@ -606,9 +606,10 @@ export class TableElement extends PolymerElement {
 
     if (this.scrollDiv != null) {
       this.scrollDiv.removeAllChilds(); // Recreate tiles
-      this.createTiles(); // Redisplay values.
-      this.render();
     }
+    this.createTiles(); // Redisplay values.
+    this.render();
+
   }
 
   clear() {
@@ -661,13 +662,6 @@ export class TableElement extends PolymerElement {
 
       return this.sorted;
     } // Return the list of all filtered values.
-
-    // Remove undefined values...
-    for(let key in this.filtered){
-      if(this.filtered[key]==undefined){
-        delete this.filtered[key]
-      }
-    }
 
     return Object.values(this.filtered);
   }
@@ -780,10 +774,10 @@ export class TableElement extends PolymerElement {
   deleteRow(index) {
     this.data.splice(index, 1)
     let i = 0
-    this.data.forEach(d=>{
+    this.data.forEach(d => {
       d.index = i;
       i++
-    } )
+    })
 
     this.sort()
     this.filter()
