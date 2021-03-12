@@ -227,7 +227,7 @@ export class ContactsMenu extends Menu {
 
         }, (err) => {
             //callback([])
-            console.log(err)
+            ApplicationView.displayMessage(err, 3000)
         })
     }
 
@@ -270,13 +270,17 @@ export class ContactCard extends HTMLElement {
         if (this.hasAttribute("contact")) {
             Account.getAccount(this.getAttribute("contact"), (val) => {
                 this.contact = val;
-            }, (err) => { console.log(err) })
+            }, (err) => { 
+                ApplicationView.displayMessage(err, 3000)
+            })
         }
 
         if (this.hasAttribute("account")) {
             Account.getAccount(this.getAttribute("account"), (val) => {
                 this.account = val;
-            }, (err) => { console.log(err) })
+            }, (err) => { 
+                ApplicationView.displayMessage(err, 3000)
+            })
         }
     }
 
@@ -409,7 +413,7 @@ export class SentContactInvitations extends HTMLElement {
                         this.appendContact(contact)
                     },
                     err => {
-                        console.log(err)
+                        ApplicationView.displayMessage(err, 3000)
                     })
             },
             false)
@@ -437,11 +441,11 @@ export class SentContactInvitations extends HTMLElement {
                         this.appendContact(contact)
                     },
                     err => {
-                        console.log(err)
+                        ApplicationView.displayMessage(err, 3000)
                     })
             }
         }, err => {
-            console.log(err);
+            ApplicationView.displayMessage(err, 3000)
         })
 
         Model.eventHub.subscribe("revoked_" + account.id + "_evt",
@@ -453,7 +457,7 @@ export class SentContactInvitations extends HTMLElement {
                         this.removeContact(contact);
                     },
                     err => {
-                        console.log(err)
+                        ApplicationView.displayMessage(err, 3000)
                     })
             },
             false)
@@ -467,7 +471,7 @@ export class SentContactInvitations extends HTMLElement {
                         this.removeContact(contact);
                     },
                     err => {
-                        console.log(err)
+                        ApplicationView.displayMessage(err, 3000)
                     })
             },
             false)
@@ -481,7 +485,7 @@ export class SentContactInvitations extends HTMLElement {
                         this.removeContact(contact);
                     },
                     err => {
-                        console.log(err)
+                        ApplicationView.displayMessage(err, 3000)
                     })
             },
             false)
@@ -540,7 +544,7 @@ export class ReceivedContactInvitations extends HTMLElement {
                         this.appendContact(contact);
                     },
                     err => {
-                        console.log(err)
+                        ApplicationView.displayMessage(err, 3000)
                     })
             },
             false)
@@ -554,7 +558,7 @@ export class ReceivedContactInvitations extends HTMLElement {
                         this.removeContact(contact);
                     },
                     err => {
-                        console.log(err)
+                        ApplicationView.displayMessage(err, 3000)
                     })
             },
             false)
@@ -568,7 +572,7 @@ export class ReceivedContactInvitations extends HTMLElement {
                         this.removeContact(contact);
                     },
                     err => {
-                        console.log(err)
+                        ApplicationView.displayMessage(err, 3000)
                     })
             },
             false)
@@ -582,7 +586,7 @@ export class ReceivedContactInvitations extends HTMLElement {
                         this.removeContact(contact);
                     },
                     err => {
-                        console.log(err)
+                        ApplicationView.displayMessage(err, 3000)
                     })
             },
             false)
@@ -603,11 +607,11 @@ export class ReceivedContactInvitations extends HTMLElement {
                         this.appendContact(contact);
                     },
                     err => {
-                        console.log(err)
+                        ApplicationView.displayMessage(err, 3000)
                     })
             }
         }, err => {
-            console.log(err);
+            ApplicationView.displayMessage(err, 3000)
         })
     }
 
@@ -664,7 +668,7 @@ export class ContactList extends HTMLElement {
                         this.appendContact(contact);
                     },
                     err => {
-                        console.log(err)
+                        ApplicationView.displayMessage(err, 3000)
                     })
             },
             false)
@@ -678,7 +682,7 @@ export class ContactList extends HTMLElement {
                         this.removeContact(contact);
                     },
                     err => {
-                        console.log(err)
+                        ApplicationView.displayMessage(err, 3000)
                     })
             },
             false)
@@ -700,11 +704,11 @@ export class ContactList extends HTMLElement {
                         this.appendContact(contact);
                     },
                     err => {
-                        console.log(err)
+                        ApplicationView.displayMessage(err, 3000)
                     })
             }
         }, err => {
-            console.log(err);
+            ApplicationView.displayMessage(err, 3000);
         })
     }
 

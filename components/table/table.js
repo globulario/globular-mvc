@@ -6,7 +6,7 @@ import { fireResize, isString, exportToCsv, getCoords } from "../utility.js";
 import '../menu/menuItem.js';
 import '../menu/dropdownMenu.js';
 import './header.js'; // The maximum allowed number of row for a grid.
-import {theme} from "../Theme.js"
+import { theme } from "../Theme.js"
 
 var maxRowNumber = 1000;
 var lastWidth = 0;
@@ -40,7 +40,7 @@ export class TableElement extends PolymerElement {
       attributes: true,
       subtree: true
     };
-    
+
     // Create an observer instance linked to a resize callback
     var observer = new MutationObserver((mutation) => {
       if (mutation[0].target.offsetWidth != lastWidth) {
@@ -48,7 +48,7 @@ export class TableElement extends PolymerElement {
         fireResize();
       }
     });
-    
+
     // Start observing the target node for configured mutations
     observer.observe(this, config);
   }
@@ -104,7 +104,7 @@ export class TableElement extends PolymerElement {
     }
 
     this.tiles = [];
-    
+
     // Create the tiles as divs with a grid display style
     for (var i = 0; i < size; i++) {
       this.tiles[i] = this.scrollDiv.appendElement({
@@ -112,7 +112,7 @@ export class TableElement extends PolymerElement {
         "class": "table-tile",
         "style": "grid-gap: 0px; display: grid;"
       }).down();
-      
+
       // Set the number of rows equal to the number of rows in the header.
       var gridTemplateColumns = "";
       for (var j = 0; j < this.header.getSize(); j++) {
@@ -134,7 +134,7 @@ export class TableElement extends PolymerElement {
 
     var resizeListener = function (tiles, scrollDiv, header, table) {
       return function (entry) {
-        var value = ""; 
+        var value = "";
         // Set the final header tile's margin to be slightly greater than the other margins so that there is space for the scrollbar
         var scrollBarWidth = scrollDiv.offsetWidth - scrollDiv.clientWidth;
 
@@ -147,7 +147,7 @@ export class TableElement extends PolymerElement {
             header.lastChild.style.marginRight = "";
           }
         }
-        
+
         // Calculate the table's total width using the header as a baseline
         var totalWidth = 0;
 
@@ -169,7 +169,7 @@ export class TableElement extends PolymerElement {
           table.style.width = totalWidth + "px";
           table.width = totalWidth;
         }
-        
+
         // Set each tiles' width
         for (var i = 0; i < tiles.length; i++) {
           tiles[i].element.style.gridTemplateColumns = value;
@@ -184,7 +184,7 @@ export class TableElement extends PolymerElement {
 
     window.addEventListener("resize", resizeListener, true);
   }
-  
+
   /**
    * Instantiates the cells variable following the Singleton principle.
    * 
@@ -251,16 +251,16 @@ export class TableElement extends PolymerElement {
     var values = this.getFilteredData();
 
     if (this.index != index) {
-      this.index = index; 
-      
+      this.index = index;
+
       // Remove the current content within a tile to make sure we have a blank slate.
       for (var i = 0; i < this.tiles.length; i++) {
         this.tiles[i].removeAllChilds();
       }
-      
+
       // Represent the number of visible items to display, I round it to display entire row.
       var max = Math.ceil(this.clientHeight / this.rowheight);
-      
+
       if (max == 0 && this.style.maxHeight != undefined) {
         max = Math.ceil(parseInt(this.style.maxHeight.replace("px", "")) / this.rowheight);
       }
@@ -279,40 +279,43 @@ export class TableElement extends PolymerElement {
           var tile = this.tiles[tileIndex]; // now I will calculate the row index
 
           var rowIndex = this.index - maxRowNumber * tileIndex + i;
-          var size = values[i].length;
+          if (values[i] != undefined) {
+            var size = values[i].length;
+            for (var j = 0; j < size; j++) {
+              var renderFct = this.header.getHeaderCell(j).onrender;
+              var cell = this.cells[i * this.getRowData(i).length + j];
+              cell.element.style.gridRow = rowIndex + 1 + " / span 1";
+              tile.element.appendChild(cell.element);
+              var div = cell.element.children[0];
+              var value = values[i + this.index][j]; // reset the div style.
 
-          for (var j = 0; j < size; j++) {
-            var renderFct = this.header.getHeaderCell(j).onrender;
-            var cell = this.cells[i * this.getRowData(i).length + j];
-            cell.element.style.gridRow = rowIndex + 1 + " / span 1";
-            tile.element.appendChild(cell.element);
-            var div = cell.element.children[0];
-            var value = values[i + this.index][j]; // reset the div style.
+              div.style = "";
+              div.innerHTML = ""; // Here I will evalueate render function.
 
-            div.style = "";
-            div.innerHTML = ""; // Here I will evalueate render function.
-
-            if (renderFct == null) {
-              if (value != undefined) {
-                div.innerHTML = value.toString();
-              }
-            } else {
-              var r = i + this.index;
-
-              if (isString(renderFct)) {
-                eval(renderFct + "(div , value, r, j)");
+              if (renderFct == null) {
+                if (value != undefined) {
+                  div.innerHTML = value.toString();
+                }
               } else {
-                renderFct(div, value, r, j); // row, col.
+                var r = i + this.index;
+
+                if (isString(renderFct)) {
+                  eval(renderFct + "(div , value, r, j)");
+                } else {
+                  renderFct(div, value, r, j); // row, col.
+                }
+              }
+
+              if (j == size - 1) {
+                if (scrollBarWidth > 0) {
+                  cell.element.style.paddingRight = scrollBarWidth + "px";
+                } else {
+                  cell.element.style.paddingRight = "";
+                }
               }
             }
-
-            if (j == size - 1) {
-              if (scrollBarWidth > 0) {
-                cell.element.style.paddingRight = scrollBarWidth + "px";
-              } else {
-                cell.element.style.paddingRight = "";
-              }
-            }
+          }else{
+            console.log("--------> undfined ", values, i)
           }
         }
       } else {
@@ -598,20 +601,31 @@ export class TableElement extends PolymerElement {
     // reset the index.
     this.index = -1; // remove acutal rows.
 
-    this.scrollDiv.removeAllChilds(); // Recreate tiles
+    if (this.scrollDiv != null) {
+      this.scrollDiv.removeAllChilds(); // Recreate tiles
+      this.createTiles(); // Redisplay values.
+      this.render();
+    }
+  }
 
-    this.createTiles(); // Redisplay values.
+  clear() {
+    this.data = []
+    this.sorters = [];
+    this.filters = [];
 
-    this.render();
-  } //////////////////////////////////////////////////////////////////////////////////////
+    this.sorted = [];
+    this.filtered = {};
+
+    this.refresh();
+
+  }
+  //////////////////////////////////////////////////////////////////////////////////////
   // Data access function.
   //////////////////////////////////////////////////////////////////////////////////////
 
   /**
    * Return the table data.
    */
-
-
   getData() {
     if (this.data == undefined) {
       return [];
@@ -622,8 +636,6 @@ export class TableElement extends PolymerElement {
   /**
    * Return the filtered data only.
    */
-
-
   getFilteredData() {
     // if no filter applied...
     if (Object.keys(this.filtered).length == 0) {
@@ -644,10 +656,17 @@ export class TableElement extends PolymerElement {
         }
       } // return the list of sorted and filtered values.
 
+    
 
       return this.sorted;
     } // Return the list of all filtered values.
 
+    // Remove undefined values...
+    for(let key in this.filtered){
+      if(this.filtered[key]==undefined){
+        delete this.filtered[key]
+      }
+    }
 
     return Object.values(this.filtered);
   }
@@ -700,7 +719,8 @@ export class TableElement extends PolymerElement {
   }
 
   getFilteredColumnData(index) {
-    if (Object.keys(this.filtered).length == 0) {
+    let filtered = this.getFilteredData()
+    if (Object.keys(filtered).length == 0) {
       if (this.getFilters().length > 0) {
         return []; // all data are filtered.
       }
@@ -711,11 +731,11 @@ export class TableElement extends PolymerElement {
     var data = [];
 
     if (this.getData() != undefined) {
-      for (var i in this.filtered) {
+      for (var i in filtered) {
         data.push({
           // push the filtered values.
-          "value": this.filtered[i][index],
-          "index": this.filtered[i].index
+          "value": filtered[i][index],
+          "index": filtered[i].index
         });
       }
     }
@@ -728,8 +748,9 @@ export class TableElement extends PolymerElement {
    */
   size() {
     // if filters are applied.
-    if (Object.keys(this.filtered).length > 0) {
-      return Object.keys(this.filtered).length;
+    let filtered = this.getFilteredData()
+    if (Object.keys(filtered).length > 0) {
+      return Object.keys(filtered).length;
     } else if (this.hasFilter()) {
       return 0; // all filtered.
     }
@@ -757,12 +778,24 @@ export class TableElement extends PolymerElement {
 
     return sorters;
   }
+
+  deleteRow(index) {
+    this.data.splice(index, 1)
+    let i = 0
+    this.data.forEach(d=>{
+      d.index = i;
+      i++
+    } )
+
+    this.sort()
+    this.filter()
+    this.refresh()
+  }
+
   /**
    * Order a table. 
    * @param {*} side can be asc, desc or nothing.
    */
-
-
   sort() {
     this.data.sort(function (a, b) {
       var indexA = parseInt(a.index);
@@ -786,11 +819,11 @@ export class TableElement extends PolymerElement {
       }
     }
   }
+
+
   /**
    * Return the list of active filters.
    */
-
-
   getFilters() {
     var filters = []; // put all filter in the save array.
 
@@ -804,11 +837,10 @@ export class TableElement extends PolymerElement {
 
     return filters;
   }
+
   /**
    * Filter table values.
    */
-
-
   filter() {
     // so here I will empty the filtered map.
     this.filtered = {}; // Get the filters

@@ -4,6 +4,7 @@ import * as RessourceService from "globular-web-client/resource/resource_pb";
 import { mergeTypedArrays, uint8arrayToStringMethod } from "./Utility";
 import { GetThumbnailsResponse } from "globular-web-client/file/file_pb";
 import { Group } from "./Group";
+import { ApplicationView } from "./ApplicationView";
 
 /**
  * The session object will keep information about the
@@ -76,7 +77,7 @@ export class Session extends Model {
                 this.save(() => {
                     /* nothing here*/
                 }, (err: any) => {
-                    console.log(err)
+                    ApplicationView.displayMessage(err, 3000)
                 })
             }, true)
     }
@@ -184,7 +185,6 @@ export class Session extends Model {
                 onSave();
             })
             .catch((err: any) => {
-                console.log(err)
                 onError(err);
             });
     }
