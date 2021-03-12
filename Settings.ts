@@ -469,7 +469,7 @@ export class LogSettings extends Settings {
         this.header = <any>(document.createElement("table-header-element"))
 
         this.table.appendChild(this.header)
-        this.table.rowheight = 29
+        this.table.rowheight = 80
         this.table.style.width = "1150px"
         this.table.style.maxHeight = "820px";
 
@@ -485,8 +485,8 @@ export class LogSettings extends Settings {
                     if (value != undefined) {
                         div.style.justifySelf = "flex-start"
                         div.style.display = "flex"
-                        div.style.alignItems = "flex-end"
-
+                        div.style.alignItems = "center"
+                        
                         div.innerHTML = `
                             <iron-icon icon="delete" style="padding-left: 5px;"></iron-icon>
                             <span>${value.toLocaleString()}</span>
@@ -517,18 +517,22 @@ export class LogSettings extends Settings {
             } else if (title == "Account") {
                 headerCell.width = 150;
             } else if (title == "Method") {
-                headerCell.width = 425;
+                headerCell.width = 350;
             } else if (title == "Detail") {
-                headerCell.width = 225;
+                headerCell.width = 350;
                 headerCell.onrender = function (div: any, value: string) {
-                    div.title = value;
+                    // div.title = value;
                     if (value != undefined) {
-                        if (value.length > 50) {
-                            div.innerHTML = value.substr(0, 25) + "...";
-                        } else {
-                            div.innerHTML = value;
-                        }
+                       div.style.overflow = "auto"
+                       div.style.display = "flex"
+                       let html= `
+                        <div style="padding: 5px">
+                            ${value}
+                        </div>
+                       `
+                       div.appendChild(document.createRange().createContextualFragment(html))
                     }
+
                 }
             }
 

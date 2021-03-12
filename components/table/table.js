@@ -314,8 +314,6 @@ export class TableElement extends PolymerElement {
                 }
               }
             }
-          }else{
-            console.log("--------> undfined ", values, i)
           }
         }
       } else {
