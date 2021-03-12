@@ -1,7 +1,8 @@
 import { SetEmailResponse } from "globular-web-client/admin/admin_pb";
-import { GetLogRqst, GetLogRsp, LogInfo } from "globular-web-client/log/log_pb";
+import { ClearAllLogRqst, DeleteLogRqst, DeleteLogRsp, GetLogRqst, GetLogRsp, LogInfo } from "globular-web-client/log/log_pb";
 import { Account } from "./Account";
 import { Application } from "./Application";
+import { ApplicationView } from "./ApplicationView";
 import { FileExplorer } from "./components/File";
 import { ImageCropperSetting, ImageSetting, SettingsMenu, SettingsPanel, ComplexSetting, EmailSetting, StringSetting, TextAreaSetting } from "./components/Settings";
 import { Model } from "./Model";
@@ -179,13 +180,11 @@ export class ApplicationSettings extends Settings {
                     // Set the infos.
                     Application.saveApplicationInfo(application.name, { "icon": iconSetting.getValue(), "description": descriptionSetting.getValue() },
                         (info: any) => {
-                            console.log("infos was saved!")
                             const data = JSON.stringify(info)
                             Application.eventHub.publish(`update_application_${info._id}_settings_evt`, data, false)
-                            console.log(data)
                         },
                         (err: any) => {
-                            application.displayMessage(err, 3000)
+                            ApplicationView.displayMessage(err, 3000)
                             iconSetting.setValue(icon) // set back the value...
                             descriptionSetting.setValue(description)
                         })
@@ -251,12 +250,18 @@ export class FileSettings extends Settings {
  * Model to save application settings.
  */
 export class LogSettings extends Settings {
-    fileExplorer: FileExplorer;
+
+    private infos:Array<LogInfo>
+    private table: any;
+    private header: any;
+    private errorCheckBox: any;
+    private warningCheckBox:any;
+    private infoCheckBox:any;
 
     // The application.
     constructor(settingsMenu: SettingsMenu, settingsPanel: SettingsPanel) {
         super(settingsMenu, settingsPanel);
-
+        this.infos = new Array<LogInfo>();
         this.settingsMenu.appendSettingsMenuItem("error", "Errors");
         let logSettingPage = <any>this.settingsPanel.appendSettingsPage("Errors");
 
@@ -279,8 +284,6 @@ export class LogSettings extends Settings {
             }
 
             .title  div{
-                display: flex;
-                align-items: stretch;
                 padding-right: 25px;
             }
 
@@ -309,41 +312,168 @@ export class LogSettings extends Settings {
 
             </style>
             <div class="title ">
-                <div>
-                    <iron-icon icon="error" class="error"></iron-icon icon>
-                    <span>Errors</span>
-                    <paper-checkbox checked></paper-checkbox>
+                <div style="display: flex; display: flex;flex-grow: 1;align-items: center;">
+                    <div>
+                        <iron-icon icon="error" class="error"></iron-icon icon>
+                        <span>Errors</span>
+                        <paper-checkbox id="error_log_checkbox" checked></paper-checkbox>
+                    </div>
+                    <div>
+                        <iron-icon icon="warning" class="warning"></iron-icon icon>
+                        <span>Warnings</span>
+                        <paper-checkbox id="warning_log_checkbox" ></paper-checkbox>
+                    </div>
+                    <div>
+                        <iron-icon icon="info" class="info"></iron-icon icon>
+                        <span>Infos</span>
+                        <paper-checkbox  id="info_log_checkbox"></paper-checkbox>
+                    </div>
                 </div>
-                <div>
-                    <iron-icon icon="warning" class="warning"></iron-icon icon>
-                    <span>Warnings</span>
-                    <paper-checkbox></paper-checkbox>
-                </div>
-                <div>
-                    <iron-icon icon="info" class="info"></iron-icon icon>
-                    <span>Infos</span>
-                    <paper-checkbox></paper-checkbox>
-                </div>
+                
+                <paper-button title="delete diplayed logs." style="align-self: flex-end; font-size: 1rem;">CLEAR</paper-button>
+
             </div>
         `
 
         logSettingPage.appendChild(document.createRange().createContextualFragment(html));
 
+
+        this.errorCheckBox = <any> logSettingPage.querySelector("#error_log_checkbox");
+        this.warningCheckBox =  <any> logSettingPage.querySelector("#warning_log_checkbox");
+        this.infoCheckBox =  <any> logSettingPage.querySelector("#info_log_checkbox");
+
+
+        this.infoCheckBox.onclick = this.warningCheckBox.onclick = this.errorCheckBox.onclick = ()=>{
+            this.table.clear(); // remove all values...
+            if(this.errorCheckBox.checked){
+                this.getLogs("/error/" + Model.application + "/*",
+                (infos: Array<LogInfo>) => {
+                    this.setInfos(infos)
+                    this.getLogs("/fatal/" + Model.application + "/*",
+                    (infos: Array<LogInfo>) => {
+                        this.setInfos(infos)
+                    },
+                    (err: any) => {
+                        ApplicationView.displayMessage(err, 3000)
+                    })
+                },
+                (err: any) => {
+                    ApplicationView.displayMessage(err, 3000)
+                })
+            }
+            if(this.warningCheckBox.checked){
+                this.getLogs("/warning/" + Model.application + "/*",
+                (infos: Array<LogInfo>) => {
+                    this.setInfos(infos)
+                },
+                (err: any) => {
+                    ApplicationView.displayMessage(err, 3000)
+                })
+            }
+
+            if(this.infoCheckBox.checked){
+                this.getLogs("/info/" + Model.application + "/*",
+                (infos: Array<LogInfo>) => {
+                    this.setInfos(infos)
+                    this.getLogs("/debug/" + Model.application + "/*",
+                    (infos: Array<LogInfo>) => {
+                        this.setInfos(infos)
+                        this.getLogs("/trace/" + Model.application + "/*",
+                        (infos: Array<LogInfo>) => {
+                            this.setInfos(infos)
+                        },
+                        (err: any) => {
+                            ApplicationView.displayMessage(err, 3000)
+                        })
+                    },
+                    (err: any) => {
+                        ApplicationView.displayMessage(err, 3000)
+                    })
+                },
+                (err: any) => {
+                    ApplicationView.displayMessage(err, 3000)
+                })
+            }
+            
+        }
+
+        logSettingPage.querySelector("paper-button").onclick = () => {
+
+            let data = this.table.getFilteredData();
+            if (data.length < this.table.data.length) {
+
+                let deleteRows = (index: number) => {
+                    
+
+                    let index_ = parseInt(data[index].index)
+                    this.deleteLog(this.infos[index_],
+                        () => {
+                            // remove the data at given index.
+                            this.table.deleteRow(index_)
+
+                            index += 1
+                            if (index < data.length) {
+                                deleteRows(index)  
+                            }
+                            
+
+                        },
+                        (err: any) => {
+                            ApplicationView.displayMessage(err, 3000);
+                        })
+                }
+                let index = 0
+                deleteRows(index)
+                
+            } else {
+                // Remove error/fatal logs.
+                if(this.errorCheckBox.checked){
+                    this.clearLogs("/error/"+ Application.application + "/*",()=>{
+                        this.table.clear();
+                    }, (err:any)=>{ApplicationView.displayMessage(err, 300)})
+
+                    this.clearLogs("/fatal/"+ Application.application+ "/*",()=>{
+                        this.table.clear();
+                    }, (err:any)=>{ApplicationView.displayMessage(err, 300)})
+                }
+        
+                // Remove warnings
+                if(this.warningCheckBox.checked){
+                    this.clearLogs("/warning/"+ Application.application+ "/*", ()=>{
+                        this.table.clear();
+                    }, (err:any)=>{ApplicationView.displayMessage(err, 300)})
+                }
+                
+                // Remove debug, info and tace.
+                if(this.infoCheckBox.checked){
+                    this.clearLogs("/info/"+ Application.application+ "/*", ()=>{
+                        this.table.clear();
+                    }, (err:any)=>{ApplicationView.displayMessage(err, 300)})
+
+                    this.clearLogs("/debug/"+ Application.application+ "/*", ()=>{
+                        this.table.clear();
+                    }, (err:any)=>{ApplicationView.displayMessage(err, 300)})
+
+
+                    this.clearLogs("/trace/"+ Application.application+ "/*", ()=>{
+                        this.table.clear();
+                    }, (err:any)=>{ApplicationView.displayMessage(err, 300)})
+                }
+            }
+        }
+
         // Now I will get the 
-        var table = <any>(document.createElement("table-element"));
-        console.log(table)
+        this.table = <any>(document.createElement("table-element"));
 
         // Create the header element.
-        var header = <any>(document.createElement("table-header-element"))
+        this.header = <any>(document.createElement("table-header-element"))
 
-        table.appendChild(header)
-        table.rowheight = 29
-        table.style.width = "1150px"
-        table.style.maxHeight = "800px";
-        
+        this.table.appendChild(this.header)
+        this.table.rowheight = 80
+        this.table.style.width = "1150px"
+        this.table.style.maxHeight = "820px";
+
         let titles = ["Date", "Level", "Account", "Method", "Detail"]
-
-        // Create the table filter and sorter...
 
         titles.forEach(title => {
             const headerCell = <any>(document.createElement("table-header-cell-element"))
@@ -351,70 +481,138 @@ export class LogSettings extends Settings {
             // Now I will set the way I will display the values.
             if (title == "Date") {
                 headerCell.width = 200;
-                headerCell.onrender = function (div: any, value: Date) {
+                headerCell.onrender = (div: any, value: Date, row: number, colum: number) => {
                     if (value != undefined) {
-                        div.innerHTML = value.toLocaleString();
-                    }
-                }
-            }else if(title=="Level"){
-                headerCell.width = 100;
-            }else if(title=="Account"){
-                headerCell.width = 150;
-            }else if(title=="Method"){
-                headerCell.width = 425;
-            }else if(title=="Detail"){
-                headerCell.width = 225;
-                headerCell.onrender = function (div: any, value: string) {
-                    console.log(value)
-                    div.title = value;
-                    if (value != undefined) {
-                        console.log(value.length)
-                        if(value.length > 50){
-                            div.innerHTML = value.substr(0, 25) + "...";
-                        }else{
-                            div.innerHTML = value;
+                        div.style.justifySelf = "flex-start"
+                        div.style.display = "flex"
+                        div.style.alignItems = "center"
+                        
+                        div.innerHTML = `
+                            <iron-icon icon="delete" style="padding-left: 5px;"></iron-icon>
+                            <span>${value.toLocaleString()}</span>
+                        `
+
+                        div.children[0].onclick = () => {
+                            this.deleteLog(this.infos[row],
+                                () => {
+                                    this.table.deleteRow(row)
+                                },
+                                (err: any) => {
+                                    ApplicationView.displayMessage(err, 3000)
+                                })
+
+                        }
+
+                        div.children[0].onmouseenter = () => {
+                            div.children[0].style.cursor = "pointer"
+                        }
+
+                        div.children[0].onmouseout = () => {
+                            div.children[0].style.cursor = "default"
                         }
                     }
                 }
-            }
-            
-            header.appendChild(headerCell)
-        })
-
-        logSettingPage.appendChild(table);
-        table.data = [];
-
-        this.getLogs("/error/" + Model.application + "/*", 
-            (infos:Array<LogInfo>)=>{
-                console.log(infos)
-                header.fixed = true;
-                // Here I will transform the the info to fit into the table.
-                infos.forEach((info:LogInfo)=>{
-                    let date = new Date(info.getDate() * 1000);
-                    let level = ""
-                    console.log(info.getLevel())
-                    if(info.getLevel() == 0){
-                        level = "fatal"
-                    }else if(info.getLevel() == 1){
-                        level = "error"
-                    }else if(info.getLevel() == 2){
-                        level = "warning"
-                    }else if(info.getLevel() == 3){
-                        level = "info"
-                    }else if(info.getLevel() == 4){
-                        level = "debug"
-                    }else if(info.getLevel() == 5){
-                        level = "trace"
+            } else if (title == "Level") {
+                headerCell.width = 100;
+            } else if (title == "Account") {
+                headerCell.width = 150;
+            } else if (title == "Method") {
+                headerCell.width = 350;
+            } else if (title == "Detail") {
+                headerCell.width = 350;
+                headerCell.onrender = function (div: any, value: string) {
+                    // div.title = value;
+                    if (value != undefined) {
+                       div.style.overflow = "auto"
+                       div.style.display = "flex"
+                       let html= `
+                        <div style="padding: 5px">
+                            ${value}
+                        </div>
+                       `
+                       div.appendChild(document.createRange().createContextualFragment(html))
                     }
 
-                    table.data.push([date, level, info.getUsername(), info.getMethod(), info.getMessage()])
-                })
-                table.refresh()
-            }, 
-            (err:any)=>{
-                console.log(err)
+                }
+            }
+
+            this.header.appendChild(headerCell)
+        })
+
+        logSettingPage.appendChild(this.table);
+        this.table.data = [];
+
+        this.getLogs("/error/" + Model.application + "/*",
+            (infos: Array<LogInfo>) => {
+                this.setInfos(infos)
+            },
+            (err: any) => {
+                ApplicationView.displayMessage(err, 3000)
             })
 
+    }
+
+    setInfos(infos: Array<LogInfo>){
+        // Here I will transform the the info to fit into the table.
+        infos.forEach((info: LogInfo) => {
+            let date = new Date(info.getDate() * 1000);
+            let level = ""
+            console.log(info.getLevel())
+            if (info.getLevel() == 0) {
+                level = "fatal"
+            } else if (info.getLevel() == 1) {
+                level = "error"
+            } else if (info.getLevel() == 2) {
+                level = "warning"
+            } else if (info.getLevel() == 3) {
+                level = "info"
+            } else if (info.getLevel() == 4) {
+                level = "debug"
+            } else if (info.getLevel() == 5) {
+                level = "trace"
+            }
+
+            this.infos.push(info) //keep in the array.
+            this.table.data.push([date, level, info.getUsername(), info.getMethod(), info.getMessage()])
+        })
+        this.table.refresh()
+    }
+
+    /**
+     * Clear all logs from the database.
+     * @param successCallback On logs clear
+     * @param errorCallback On error
+     */
+    clearLogs(query: string, successCallback: () => void, errorCallback: (err: any) => void){
+        let rqst = new ClearAllLogRqst
+        rqst.setQuery(query)
+
+        Model.globular.logService.clearAllLog(rqst, {
+            token: localStorage.getItem("user_token"),
+            application: Model.application,
+            domain: Model.domain,
+        }).then((rsp: DeleteLogRsp) => {
+            successCallback()
+        }).catch(errorCallback)
+    }
+
+    /**
+     * Delete log a whit a specific key.
+     * @param key 
+     * @param successCallback 
+     * @param errorCallback 
+     */
+    deleteLog(log: LogInfo, successCallback: () => void, errorCallback: (err: any) => void) {
+        let rqst = new DeleteLogRqst
+        rqst.setLog(log)
+        Model.globular.logService.deleteLog(rqst, {
+            token: localStorage.getItem("user_token"),
+            application: Model.application,
+            domain: Model.domain,
+        }).then((rsp: DeleteLogRsp) => {
+            successCallback()
+        })
+            .catch(errorCallback)
     }
 
     /**
@@ -423,7 +621,7 @@ export class LogSettings extends Settings {
      * @param successCallback Return the list of log to be displayed
      * @param errorCallback Return an error if something wrong append.
      */
-    getLogs(query:string, successCallback:(infos: Array<LogInfo>)=>void, errorCallback:(err:any)=>void){
+    getLogs(query: string, successCallback: (infos: Array<LogInfo>) => void, errorCallback: (err: any) => void) {
         let rqst = new GetLogRqst
         rqst.setQuery(query) // test get all error from the server.
 
@@ -436,7 +634,7 @@ export class LogSettings extends Settings {
         let data = new Array<LogInfo>();
 
         stream.on("data", (rsp: GetLogRsp) => {
-            data =  data.concat(rsp.getInfosList())
+            data = data.concat(rsp.getInfosList())
         });
 
         stream.on("status", (status) => {

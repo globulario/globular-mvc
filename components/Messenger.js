@@ -25,6 +25,7 @@ import { ConversationManager } from '../Conversation';
 import { Invitation } from 'globular-web-client/conversation/conversation_pb';
 import { encode, decode } from 'uint8-to-base64';
 import { v4 as uuidv4 } from "uuid";
+import { ApplicationView } from '../ApplicationView';
 
 /**
  * Communication with your contact's
@@ -47,7 +48,7 @@ export class MessengerMenu extends Menu {
         this.onReceiveMessage = null;
 
 
-        this.width = 350;
+        this.width = 320;
         if (this.hasAttribute("width")) {
             this.width = parseInt(this.getAttribute("width"));
         }
@@ -112,7 +113,7 @@ export class MessengerMenu extends Menu {
                 height: 100%;
                 flex-direction: column;
                 overflow: hidden;
-                min-width: 389.5px;
+                min-width: 200px;
             }
                           
             #conversations-lst{
@@ -179,14 +180,13 @@ export class MessengerMenu extends Menu {
         ConversationManager.getReceivedInvitations(account.id,
             (invitations) => {
                 /** Get initial invitation list. */
-                console.log(invitations)
                 invitations.forEach(invitation => {
                     this.appendReceivedInvitation(invitation)
                 })
 
             },
             (err) => {
-                console.log(err)
+                ApplicationView.displayMessage(err, 3000)
             })
 
         // Setup the list of sent invitations.
@@ -197,7 +197,7 @@ export class MessengerMenu extends Menu {
                 })
             },
             err => {
-                console.log(err)
+                ApplicationView.displayMessage(err, 3000)
             })
 
         this.conversationsTab.onclick = () => {
@@ -257,7 +257,7 @@ export class MessengerMenu extends Menu {
                         }
                     },
                     (err) => {
-                        console.log(err)
+                        ApplicationView.displayMessage(err, 3000)
                     })
             } else {
 
@@ -331,9 +331,8 @@ export class MessengerMenu extends Menu {
                         Model.eventHub.publish("__load_conversations_event__", conversations.getConversationsList(), true)
                     },
                     (err) => {
-                        /* this.displayMessage(err, 3000)*/
                         /** no conversation found... */
-                        console.log(err)
+                        ApplicationView.displayMessage(err, 3000)
                     })
 
             }, false)
@@ -353,13 +352,12 @@ export class MessengerMenu extends Menu {
                             Model.eventHub.publish("__load_conversations_event__", conversations.getConversationsList(), true)
                         },
                         (err) => {
-                            /* this.displayMessage(err, 3000)*/
                             /** no conversation found... */
-                            console.log(err)
+                            ApplicationView.displayMessage(err, 3000)
                         })
                 },
                 (err) => {
-                    console.log(err)
+                    ApplicationView.displayMessage(err, 3000)
                 })
         })
 
@@ -370,7 +368,7 @@ export class MessengerMenu extends Menu {
                     Model.eventHub.publish(`decline_conversation_invitation_${invitation.getConversation()}_${invitation.getFrom()}_evt`, {}, false)
                 },
                 (err) => {
-                    console.log(err)
+                    ApplicationView.displayMessage(err, 3000)
                 })
         })
 
@@ -393,7 +391,7 @@ export class MessengerMenu extends Menu {
                     Model.eventHub.publish(`revoke_conversation_invitation_${invitation.getConversation()}_${invitation.getTo()}_evt`, `{}`, false)
                 },
                 (err) => {
-                    console.log(err)
+                    ApplicationView.displayMessage(err, 3000)
                 })
         })
 
@@ -649,7 +647,7 @@ export class ConversationInfos extends HTMLElement {
                     Model.eventHub.publish(`join_conversation_${this.conversation.getUuid()}_evt`, this.account.name, false)
                 },
                 (err) => {
-                    console.log(err);
+                    ApplicationView.displayMessage(err, 3000)
                 })
         }
     }
@@ -1200,7 +1198,6 @@ export class MessageEditor extends HTMLElement {
                 <div class="btn">
                     <iron-icon  id="send-btn" icon="send"></iron-icon>
                     <paper-ripple class="circle" recenters=""></paper-ripple>
-
                 </div>
                 <div class="btn">
                     <iron-icon  id="attach-file-btn" icon="editor:insert-drive-file"></iron-icon>
@@ -1228,7 +1225,7 @@ export class MessageEditor extends HTMLElement {
                     /** Nothing here... */
                 },
                 (err) => {
-                    console.log(err)
+                    ApplicationView.displayMessage(err, 3000)
                 })
         }
 

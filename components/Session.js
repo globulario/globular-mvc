@@ -131,9 +131,10 @@ export class SessionState extends HTMLElement {
                 this.account = val;
                 this.init();
 
-            }, (err) => { console.log(err) })
+            }, (err) => {
+                ApplicationView.displayMessage(err, 3000)
+            })
         }
-
 
     }
 
@@ -161,9 +162,9 @@ export class SessionState extends HTMLElement {
         // depending if session is obj or typescript class
         // it can affect it values.
         let state = 1
-        if(session.state!=undefined){
+        if (session.state != undefined) {
             state = session.state
-        }else if (session.state_!=undefined){
+        } else if (session.state_ != undefined) {
             state = session.state_
         }
 

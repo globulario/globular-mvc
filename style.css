@@ -221,3 +221,12 @@ dropdown-menu-element{
 .inner-triangle:hover{
     cursor: pointer;
 }
+
+.btn:hover{
+  cursor: pointer;
+}
+
+.btn iron-icon{
+  flex-grow: 1; 
+  --iron-icon-fill-color:var(--palette-text-primary);
+}

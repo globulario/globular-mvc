@@ -184,7 +184,7 @@ export class Application extends Model {
               Model.eventHub.publish("login_event", account, true);
             },
             (err: any) => {
-              this.view.displayMessage(err, 4000);
+              ApplicationView.displayMessage(err, 4000);
             }
           );
         },
@@ -231,7 +231,7 @@ export class Application extends Model {
               console.log("--> register succeed!", data);
             },
             (err: any) => {
-              this.view.displayMessage(err, 4000);
+              ApplicationView.displayMessage(err, 4000);
             }
           );
         },
@@ -378,7 +378,7 @@ export class Application extends Model {
               );
             })
             .catch((err: any) => {
-              this.view.displayMessage(err, 4000);
+              ApplicationView.displayMessage(err, 4000);
             });
         },
         true
@@ -395,7 +395,7 @@ export class Application extends Model {
               );
               this.view.init();
             } else {
-              this.displayMessage(
+              ApplicationView.displayMessage(
                 "no application information found for " +
                 this.name +
                 " make sure your application has the correct name in your class derived from Application!", 3000
@@ -405,7 +405,7 @@ export class Application extends Model {
           }
         },
         (err: any) => {
-          console.log(err);
+          ApplicationView.displayMessage(err, 3000)
         }
       );
 
@@ -428,7 +428,7 @@ export class Application extends Model {
             this.startRefreshToken();
           },
           (err: any) => {
-            this.view.displayMessage(err, 4000);
+            ApplicationView.displayMessage(err, 4000);
             this.view.resume();
           }
         );
@@ -581,8 +581,7 @@ export class Application extends Model {
         localStorage.removeItem("user_email");
         localStorage.removeItem("token_expired");
         localStorage.removeItem("remember_me");
-        console.log("fail to refesh token!");
-        console.log(err);
+        ApplicationView.displayMessage(err, 3000)
         onError(err);
       });
   }
@@ -604,7 +603,7 @@ export class Application extends Model {
           },
           (err: any) => {
             // simply display the error on the view.
-            this.view.displayMessage(err, 4000);
+            ApplicationView.displayMessage(err, 4000);
             // Stop runing...
             clearInterval(__setInterval);
           }
@@ -695,7 +694,7 @@ export class Application extends Model {
 
 
           // Here I will ask the user for confirmation before actually delete the contact informations.
-          let toast = this.displayMessage(
+          let toast = ApplicationView.displayMessage(
             `
           <style>
             #contact-session-info-box{
@@ -789,7 +788,7 @@ export class Application extends Model {
             })
           },
             (err: any) => {
-              this.displayMessage(err, 3000)
+              ApplicationView.displayMessage(err, 3000)
             })
 
           // Retreive conversations...
@@ -807,7 +806,7 @@ export class Application extends Model {
             () => {
               /* Nothing to do here **/
             }, (err: any) => {
-              this.displayMessage(err, 3000)
+              ApplicationView.displayMessage(err, 3000)
             })
 
           this.view.resume();
@@ -897,10 +896,6 @@ export class Application extends Model {
 
   }
 
-  public displayMessage(msg: any, delay: number): any {
-    return this.view.displayMessage(msg, delay);
-  }
-
   /**
    * That function must be use to update application information store
    * in level db in local_ressource table.
@@ -971,7 +966,7 @@ export class Application extends Model {
         );
       },
       (err: any) => {
-        this.view.displayMessage(err, 4000);
+        ApplicationView.displayMessage(err, 4000);
       }
     );
 
@@ -985,7 +980,7 @@ export class Application extends Model {
         );
       },
       (err: any) => {
-        this.view.displayMessage(err, 4000);
+        ApplicationView.displayMessage(err, 4000);
       }
     );
   }
@@ -1148,7 +1143,7 @@ export class Application extends Model {
         /** nothing special here... */
       },
       (err: any) => {
-        this.view.displayMessage(err, 3000);
+        ApplicationView.displayMessage(err, 3000);
       }
     );
   }
@@ -1180,11 +1175,11 @@ export class Application extends Model {
           () => {
             // this.displayMessage(, 3000)
           }, (err: any) => {
-            this.displayMessage(err, 3000)
+            ApplicationView.displayMessage(err, 3000)
           })
       },
       (err: any) => {
-        this.view.displayMessage(err, 3000);
+        ApplicationView.displayMessage(err, 3000);
       }
     );
   }
@@ -1212,11 +1207,11 @@ export class Application extends Model {
           () => {
             // this.displayMessage(, 3000)
           }, (err: any) => {
-            this.displayMessage(err, 3000)
+            ApplicationView.displayMessage(err, 3000)
           })
       },
       (err: any) => {
-        this.view.displayMessage(err, 3000);
+        ApplicationView.displayMessage(err, 3000);
       }
     );
   }
@@ -1243,11 +1238,11 @@ export class Application extends Model {
           () => {
             // this.displayMessage(, 3000)
           }, (err: any) => {
-            this.displayMessage(err, 3000)
+            ApplicationView.displayMessage(err, 3000)
           })
       },
       (err: any) => {
-        this.view.displayMessage(err, 3000);
+        ApplicationView.displayMessage(err, 3000);
       }
     );
   }
@@ -1274,11 +1269,11 @@ export class Application extends Model {
           () => {
             // this.displayMessage(, 3000)
           }, (err: any) => {
-            this.displayMessage(err, 3000)
+            ApplicationView.displayMessage(err, 3000)
           })
       },
       (err: any) => {
-        this.view.displayMessage(err, 3000);
+        ApplicationView.displayMessage(err, 3000);
       }
     );
   }
@@ -1305,11 +1300,11 @@ export class Application extends Model {
           () => {
             // this.displayMessage(, 3000)
           }, (err: any) => {
-            this.displayMessage(err, 3000)
+            ApplicationView.displayMessage(err, 3000)
           })
       },
       (err: any) => {
-        this.view.displayMessage(err, 3000);
+        ApplicationView.displayMessage(err, 3000);
       }
     );
   }
