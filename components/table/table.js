@@ -90,8 +90,11 @@ export class TableElement extends PolymerElement {
    * Creates all the grids (tiles) necessary to display the table
    */
   createTiles() {
-    this.scrollDiv.element.style.display = "";
+    if (this.scrollDiv == null) {
+      return null
+    }
 
+    this.scrollDiv.element.style.display = "";
     var size = 1;
 
     // Get the number of tiles necessary to populate the table
@@ -128,11 +131,12 @@ export class TableElement extends PolymerElement {
       }
     }
 
-    var resizeListener = function (tiles, scrollDiv, header, table) {
+    var resizeListener = function (tiles, header, table) {
       return function (entry) {
+
         var value = "";
         // Set the final header tile's margin to be slightly greater than the other margins so that there is space for the scrollbar
-        var scrollBarWidth = scrollDiv.offsetWidth - scrollDiv.clientWidth;
+        var scrollBarWidth = table.scrollDiv.element.offsetWidth - table.scrollDiv.element.clientWidth;
 
         if (header.lastChild.style != null) {
           if (scrollBarWidth > 0) {
@@ -176,7 +180,7 @@ export class TableElement extends PolymerElement {
           table.menu.element.style.left = -1 * (table.menu.element.offsetWidth + 2) + "px";
         }
       };
-    }(this.tiles, this.scrollDiv.element, this.children[0], this);
+    }(this.tiles, this.children[0], this);
 
     window.addEventListener("resize", resizeListener, true);
   }
@@ -227,9 +231,10 @@ export class TableElement extends PolymerElement {
    */
   getIndex() {
     var index = 0;
-
-    if (this.scrollDiv.element.scrollTop != undefined) {
-      index = parseInt(this.scrollDiv.element.scrollTop / this.rowheight);
+    if (this.scrollDiv != null) {
+      if (this.scrollDiv.element.scrollTop != undefined) {
+        index = parseInt(this.scrollDiv.element.scrollTop / this.rowheight);
+      }
     }
 
     return index;
@@ -266,7 +271,7 @@ export class TableElement extends PolymerElement {
         this.createCells();
       }
 
-      if (values.length > 0) {
+      if (values.length > 0 && this.scrollDiv !=undefined) {
         var scrollBarWidth = this.scrollDiv.element.offsetWidth - this.scrollDiv.element.clientWidth;
 
         for (var i = 0; i + this.index < values.length && i < max; i++) {
@@ -318,7 +323,7 @@ export class TableElement extends PolymerElement {
             }
           }
         }
-      } else {
+      } else if(this.scrollDiv!=undefined) {
         // hide the scroll div.
         this.scrollDiv.element.style.display = "none";
       }
@@ -606,17 +611,15 @@ export class TableElement extends PolymerElement {
 
     if (this.scrollDiv != null) {
       this.scrollDiv.removeAllChilds(); // Recreate tiles
+      this.createTiles(); // Redisplay values.
     }
-    this.createTiles(); // Redisplay values.
+
     this.render();
 
   }
 
   clear() {
     this.data = []
-    this.sorters = [];
-    this.filters = [];
-
     this.sorted = [];
     this.filtered = {};
 

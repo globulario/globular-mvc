@@ -1,6 +1,6 @@
 import { Model } from "./Model";
 import * as resource from "globular-web-client/resource/resource_pb";
-
+import 'source-map-support/register' // That resolve the error map and give real source name and plage in function.
 import * as jwt from "jwt-decode";
 import { ApplicationView } from "./ApplicationView";
 import { Account, SessionState, Session } from "./Account";
@@ -18,6 +18,9 @@ import { v4 as uuidv4 } from "uuid";
 import { mergeTypedArrays, uint8arrayToStringMethod } from "./Utility";
 import { ConversationManager } from "./Conversation";
 import { Conversations } from "globular-web-client/conversation/conversation_pb";
+import { Login } from "./components/Login";
+import { LogInfo, LogLevel, LogRqst, LogRsp } from "globular-web-client/log/log_pb";
+import { getErrorSource, install } from "source-map-support";
 
 // Get the configuration from url
 function getFileConfig(url: string, callback: (obj: any) => void, errorcallback: (err: any) => void) {
@@ -35,7 +38,6 @@ function getFileConfig(url: string, callback: (obj: any) => void, errorcallback:
   xmlhttp.open("GET", url, true);
   xmlhttp.send();
 }
-
 
 /**
  * That class can be use to create any other application.
@@ -165,6 +167,39 @@ export class Application extends Model {
   ) {
     let init_ = () => {
 
+      // So here I will intercept all error and log it on the server log.
+      // This error will be available in the setting -> error(s)
+      window.onerror = (message, source, lineno, colno, error) => { 
+        let info = new LogInfo
+        info.setDate(Math.trunc(Date.now()/1000))
+        info.setLevel(LogLevel.ERROR_MESSAGE)
+        info.setApplication(Application.application)
+        info.setUserid("")
+        info.setUsername("")
+        if(this.account != undefined){
+          info.setUserid(this.account.id)
+          info.setUsername(this.account.name)
+        }
+        
+        info.setMethod(error.name + " " + error.message)
+        info.setMessage(error.stack.toString())
+
+        let rqst = new LogRqst
+        rqst.setInfo(info)
+        
+        Model.globular.logService.log(rqst, {
+          token: localStorage.getItem("user_token"),
+          application: Model.application,
+          domain: Model.domain,
+        }).then((rsp:LogRsp)=>{
+          console.log("info was log!")
+        })
+        .catch((err:any)=>{
+           ApplicationView.displayMessage(err, 3000)
+        })
+
+      };
+
       // Here I will connect the listener's
       // The login event.
       Model.eventHub.subscribe(
@@ -252,7 +287,7 @@ export class Application extends Model {
              location.reload();
           }else{
             // 
-            this.displayMessage(`
+            ApplicationView.displayMessage(`
             <div style="display: flex; flex-direction: column">
               <div>A new version of <span style="font-weight: 500;">
                 ${Application.application}</span> (v.${version}) is available.

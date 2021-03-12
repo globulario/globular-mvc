@@ -467,9 +467,9 @@ export class LogSettings extends Settings {
 
         // Create the header element.
         this.header = <any>(document.createElement("table-header-element"))
-
+        this.header.fixed = true;
         this.table.appendChild(this.header)
-        this.table.rowheight = 80
+        this.table.rowheight = 120
         this.table.style.width = "1150px"
         this.table.style.maxHeight = "820px";
 
@@ -486,7 +486,7 @@ export class LogSettings extends Settings {
                         div.style.justifySelf = "flex-start"
                         div.style.display = "flex"
                         div.style.alignItems = "center"
-                        
+
                         div.innerHTML = `
                             <iron-icon icon="delete" style="padding-left: 5px;"></iron-icon>
                             <span>${value.toLocaleString()}</span>
