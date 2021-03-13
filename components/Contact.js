@@ -68,22 +68,25 @@ export class ContactsMenu extends Menu {
 
         let html = `
             <style>
-            ${theme}
-            #Contacts-div {
-                display: flex;
-                flex-wrap: wrap;
-                padding: 10px;
-                height: 100%;
-                flex-direction: column;
-                overflow: hidden;
-            }
+                ${theme}
+                #Contacts-div {
+                    display: flex;
+                    flex-wrap: wrap;
+                    padding: 10px;
+                    height: 100%;
+                    flex-direction: column;
+                    overflow: hidden;
 
-              
-            #Contacts-list{
-                flex: 1;
-                overflow: auto;
-               
-            }
+                }
+
+                
+                #Contacts-list{
+                    flex: 1;
+                    overflow: auto;
+                
+                }
+
+
 
             </style>
             <div id="Contacts-div">
@@ -131,7 +134,7 @@ export class ContactsMenu extends Menu {
         // That function must return the div that display the value that we want.
         inviteContactInput.displayValue = (contact) => {
 
-            let card = new ContactCard(account, contact);
+            let card = new ContactCard(account, contact, true);
 
             // Here depending if the contact is in contact list, in received invitation list or in sent invitation
             // list displayed action will be different.
@@ -260,12 +263,13 @@ TODO keep the account card in line with it info
 export class ContactCard extends HTMLElement {
 
     // Create the applicaiton view.
-    constructor(account, contact) {
+    constructor(account, contact, actionable=false) {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
         this.account = account;
         this.contact = contact;
+        this.actionable = actionable
 
         if (this.hasAttribute("contact")) {
             Account.getAccount(this.getAttribute("contact"), (val) => {
@@ -294,6 +298,7 @@ export class ContactCard extends HTMLElement {
                 transition: background 0.2s ease,padding 0.8s linear;
                 background-color: var(--palette-background-paper);
                 color: var(--palette-text-primary);
+                position: relative;
             }
 
             .contact-invitation-div.actionable:hover{
@@ -303,6 +308,11 @@ export class ContactCard extends HTMLElement {
             .actions-div{
                 display: flex;
                 justify-content: flex-end;
+                position: absolute;
+                bottom: 0px;
+                right: 0px;
+            }
+
             }
         </style>
         <div class="contact-invitation-div" style="display: flex; flex-direction: column;">
@@ -321,7 +331,7 @@ export class ContactCard extends HTMLElement {
         </div>
         `
         /** only element with actions will have illuminated background... */
-        if(this.children.length > 0){
+        if(this.children.length > 0 || this.actionable){
             this.shadowRoot.querySelector(".contact-invitation-div").classList.add("actionable")
         }
     }
@@ -425,6 +435,10 @@ export class SentContactInvitations extends HTMLElement {
             .contact-invitations-list{
                 display: flex;
                 flex-direction: column;
+            }
+
+            .contact-invitations-list globular-contact-card{
+                border-bottom: 1px solid var(--palette-divider);
             }
 
         </style>
@@ -595,6 +609,15 @@ export class ReceivedContactInvitations extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
             ${theme}
+            .contact-invitations-list{
+                display: flex;
+                flex-direction: column;
+            }
+
+            .contact-invitations-list globular-contact-card{
+                border-bottom: 1px solid var(--palette-divider);
+            }
+
         </style>
         <div class="contact-invitations-list"></div>
         `
@@ -692,6 +715,14 @@ export class ContactList extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
             ${theme}
+            .contact-invitations-list{
+                display: flex;
+                flex-direction: column;
+            }
+
+            .contact-invitations-list globular-contact-card{
+                border-bottom: 1px solid var(--palette-divider);
+            }
         </style>
         <div class="contact-invitations-list"></div>
         `

@@ -15,7 +15,6 @@ import '@polymer/iron-autogrow-textarea/iron-autogrow-textarea.js';
 import '@polymer/paper-tabs/paper-tabs.js';
 import '@polymer/paper-tabs/paper-tab.js';
 import '@polymer/iron-autogrow-textarea/iron-autogrow-textarea.js';
-import { Autocomplete } from './Autocomplete'
 import { Menu } from './Menu';
 import { theme } from "./Theme";
 import { Account } from "../Account"
@@ -23,7 +22,7 @@ import { Model } from "../Model"
 import { PermissionManager } from '../Permission';
 import { ConversationManager } from '../Conversation';
 import { Invitation } from 'globular-web-client/conversation/conversation_pb';
-import { encode, decode } from 'uint8-to-base64';
+import { decode } from 'uint8-to-base64';
 import { v4 as uuidv4 } from "uuid";
 import { ApplicationView } from '../ApplicationView';
 
@@ -65,7 +64,6 @@ export class MessengerMenu extends Menu {
         this.conversationsTab = null
         this.sentConversationsInvitationsTab = null
         this.receivedConversationsInvitationsTab = null
-
     }
 
     // Init the message menu at login time.
@@ -96,10 +94,9 @@ export class MessengerMenu extends Menu {
         Model.eventHub.subscribe("delete_conversation_evt",
             () => { },
             () => {
-                console.log("-----------------> 98")
-                this.conversationsTab.innerHTML = "Conversations"
+                this.conversationsTab.innerHTML = `<span id="conversations_label">Conversations</span>`
                 if(this.conversationsLst.children.length > 0){
-                    this.conversationsTab.innerHTML += " (" + this.conversationsLst.children.length + ")"
+                    this.conversationsTab.innerHTML += `<paper-badge for="conversations_label" label="${this.conversationsLst.children.length}"></paper-badge>`
                 }
             }, true)
 
@@ -134,6 +131,11 @@ export class MessengerMenu extends Menu {
                 position: relative;
             }
 
+            /* Need to position the badge to look like a text superscript */
+            paper-tab {
+              --paper-badge-margin-left: 14px;
+              padding-right: 20px;
+            }
             </style>
 
             <div id="Messages-div">
@@ -296,14 +298,14 @@ export class MessengerMenu extends Menu {
         Model.eventHub.subscribe("__refresh_invitations__",
             (uuid) => { },
             () => {
-                this.receivedConversationsInvitationsTab.innerHTML = "Received Invitations"
+                this.receivedConversationsInvitationsTab.innerHTML = `<span id="received_invitations_label">Received Invitations</span>`
                 if(this.receivedConversationsInvitationsLst.children.length > 0){
-                    this.receivedConversationsInvitationsTab.innerHTML += " (" + this.receivedConversationsInvitationsLst.children.length + ")"
+                    this.receivedConversationsInvitationsTab.innerHTML += `<paper-badge for="received_invitations_label" label="${this.receivedConversationsInvitationsLst.children.length}"></paper-badge>`
                 }
 
-                this.sentConversationsInvitationsTab.innerHTML = "Received Invitations"
+                this.sentConversationsInvitationsTab.innerHTML = `<span id="sent_invitations_label">Sent Invitations</span>`
                 if(this.sentConversationsInvitationsLst.children.length>0){
-                    this.sentConversationsInvitationsTab.innerHTML += " (" + this.sentConversationsInvitationsLst.children.length + ")"
+                    this.sentConversationsInvitationsTab.innerHTML += `<paper-badge for="sent_invitations_label" label="${this.sentConversationsInvitationsLst.children.length}"></paper-badge>`
                 }
             },
             true)
@@ -317,7 +319,7 @@ export class MessengerMenu extends Menu {
         conversationInfos.init(conversation)
         conversationInfos.setJoinButton(); // here I will display the join button.
         this.conversationsLst.appendChild(conversationInfos)
-        this.conversationsTab.innerHTML = "Conversations (" + this.conversationsLst.children.length + ")"
+        this.conversationsTab.innerHTML = `<span id="conversation_label">Conversations</span> <paper-badge for="conversation_label" label="${this.conversationsLst.children.length}"></paper-badge>`
     }
 
     appendReceivedInvitation(invitation) {
@@ -375,7 +377,7 @@ export class MessengerMenu extends Menu {
         this.receivedConversationsInvitationsLst.appendChild(invitationCard)
 
         // Now I will set the number of received conversations in the tab.
-        this.receivedConversationsInvitationsTab.innerHTML = "Received Invitations (" + this.receivedConversationsInvitationsLst.children.length + ")"
+        this.receivedConversationsInvitationsTab.innerHTML = `<span id="received_invitation_label">Received Invitations</span> <paper-badge for="received_invitation_label" label="${this.receivedConversationsInvitationsLst.children.length}"></paper-badge>`
     }
 
 
@@ -395,7 +397,7 @@ export class MessengerMenu extends Menu {
                 })
         })
 
-        this.sentConversationsInvitationsTab.innerHTML = "Sent Invitations (" + this.sentConversationsInvitationsLst.children.length + ")"
+        this.sentConversationsInvitationsTab.innerHTML = `<span id="sent_invitations_label">Sent Invitations</span> <paper-badge for="sent_invitations_label" label="${this.sentConversationsInvitationsLst.children.length}"></paper-badge>`
     }
 }
 
@@ -745,7 +747,6 @@ export class Messenger extends HTMLElement {
                 border-bottom: 1px solid var(--palette-divider);
                 display: flex;
             }
-
         </style>
 
         <paper-card class="container">
@@ -1534,6 +1535,7 @@ export class InvitationCard extends HTMLElement {
             ${theme}
 
             .container{
+                position: relative;
                 padding: 5px;
                 display: flex;
                 flex-direction: column;
@@ -1558,6 +1560,9 @@ export class InvitationCard extends HTMLElement {
             .actions{
                 display: flex;
                 justify-content: flex-end;
+                position: absolute;
+                bottom: 0px;
+                right: 0px;
             }
 
         </style>

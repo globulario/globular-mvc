@@ -526,7 +526,7 @@ export class LogSettings extends Settings {
                        div.style.overflow = "auto"
                        div.style.display = "flex"
                        let html= `
-                        <div style="padding: 5px">
+                        <div style="padding: 5px; text-align: left;">
                             ${value}
                         </div>
                        `
