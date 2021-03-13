@@ -95,7 +95,7 @@ export class MessengerMenu extends Menu {
             () => { },
             () => {
                 this.conversationsTab.innerHTML = `<span id="conversations_label">Conversations</span>`
-                if(this.conversationsLst.children.length > 0){
+                if (this.conversationsLst.children.length > 0) {
                     this.conversationsTab.innerHTML += `<paper-badge for="conversations_label" label="${this.conversationsLst.children.length}"></paper-badge>`
                 }
             }, true)
@@ -133,9 +133,16 @@ export class MessengerMenu extends Menu {
 
             /* Need to position the badge to look like a text superscript */
             paper-tab {
-              --paper-badge-margin-left: 14px;
-              padding-right: 20px;
+              padding-right: 25px;
             }
+
+            paper-tab paper-badge {
+                --paper-badge-background: var(--palette-primary-accent);
+                --paper-badge-width: 16px;
+                --paper-badge-height: 16px;
+                --paper-badge-margin-left: 10px;
+            }
+
             </style>
 
             <div id="Messages-div">
@@ -299,12 +306,12 @@ export class MessengerMenu extends Menu {
             (uuid) => { },
             () => {
                 this.receivedConversationsInvitationsTab.innerHTML = `<span id="received_invitations_label">Received Invitations</span>`
-                if(this.receivedConversationsInvitationsLst.children.length > 0){
+                if (this.receivedConversationsInvitationsLst.children.length > 0) {
                     this.receivedConversationsInvitationsTab.innerHTML += `<paper-badge for="received_invitations_label" label="${this.receivedConversationsInvitationsLst.children.length}"></paper-badge>`
                 }
 
                 this.sentConversationsInvitationsTab.innerHTML = `<span id="sent_invitations_label">Sent Invitations</span>`
-                if(this.sentConversationsInvitationsLst.children.length>0){
+                if (this.sentConversationsInvitationsLst.children.length > 0) {
                     this.sentConversationsInvitationsTab.innerHTML += `<paper-badge for="sent_invitations_label" label="${this.sentConversationsInvitationsLst.children.length}"></paper-badge>`
                 }
             },
@@ -591,8 +598,9 @@ export class ConversationInfos extends HTMLElement {
                     span.innerHTML = owner
                     this.owners.appendChild(span)
                     if (owner == this.account) {
-                        this.setInviteButton();
+                        this.setLeaveButton()
                         this.setJoinButton();
+                        this.setInviteButton();
                         this.setDeleteButton()
                     }
                 })
@@ -608,7 +616,7 @@ export class ConversationInfos extends HTMLElement {
                 // simply remove it from it parent.
                 this.parentNode.removeChild(this)
                 Model.eventHub.unSubscribe(conversationUuid, this.delete_conversation_listener)
-                Model.eventHub.publish("delete_conversation_evt",null, true)
+                Model.eventHub.publish("delete_conversation_evt", null, true)
             }, false)
 
 
@@ -623,6 +631,37 @@ export class ConversationInfos extends HTMLElement {
 
         this.querySelector(`#invite_${this.conversation.getUuid()}_btn`).onclick = () => {
             Model.eventHub.publish("__invite_conversation_evt__", this.conversation, true)
+        }
+    }
+
+    /** Leave the conversation */
+    setLeaveButton(onLeaveConversation) {
+        if (this.querySelector(`#leave_${this.conversation.getUuid()}_btn`) != undefined) {
+            return
+        }
+        this.innerHtml = ""
+        let range = document.createRange()
+        this.appendChild(range.createContextualFragment(`</div><paper-button style="display:none; font-size:.85em; width: 20px;" id="leave_${this.conversation.getUuid()}_btn">Leave</paper-button>`))
+
+        this.querySelector(`#leave_${this.conversation.getUuid()}_btn`).onclick = () => {
+            ConversationManager.leaveConversation(this.conversation.getUuid(),
+                (messages) => {
+                    if (onLeaveConversation != null) {
+                        onLeaveConversation(messages);
+                    }
+
+                    // local event
+                    Model.eventHub.publish("__leave_conversation_evt__", this.conversation, true)
+
+                    // network event.
+                    Model.eventHub.publish(`leave_conversation_${this.conversation.getUuid()}_evt`, this.account.name, false)
+
+                    this.querySelector(`#join_${this.conversation.getUuid()}_btn`).style.display = "block"
+                    this.querySelector(`#leave_${this.conversation.getUuid()}_btn`).style.display = "none"
+                },
+                (err) => {
+                    ApplicationView.displayMessage(err, 3000)
+                })
         }
     }
 
@@ -647,6 +686,9 @@ export class ConversationInfos extends HTMLElement {
 
                     // network event.
                     Model.eventHub.publish(`join_conversation_${this.conversation.getUuid()}_evt`, this.account.name, false)
+
+                    this.querySelector(`#join_${this.conversation.getUuid()}_btn`).style.display = "none"
+                    this.querySelector(`#leave_${this.conversation.getUuid()}_btn`).style.display = "block"
                 },
                 (err) => {
                     ApplicationView.displayMessage(err, 3000)
@@ -819,6 +861,13 @@ export class Messenger extends HTMLElement {
         this.messageEditor = this.shadowRoot.querySelector("globular-message-editor");
         this.messageEditor.setAccount(this.account)
 
+        // Hide the messenger.
+        Model.eventHub.subscribe(`__close_messenger__`,
+        (uuid) => { },
+        (evt) => {
+            this.hide()
+        }, true)
+
         // Join a conversation local event...
         Model.eventHub.subscribe(`__join_conversation_evt__`,
             (uuid) => { },
@@ -828,7 +877,11 @@ export class Messenger extends HTMLElement {
                 // Set the name in the summary title.
                 this.shadowRoot.querySelector(".summary").innerHTML = evt.conversation.getName();
             }, true)
+    }
 
+    hide(){
+        this.shadowRoot.querySelector(".summary").innerHTML = "";
+        this.shadowRoot.querySelector(".container").style.display = "none";
     }
 
     // Here I will open the converstion.
@@ -843,20 +896,10 @@ export class Messenger extends HTMLElement {
             (evt) => {
                 this.closeConversation(conversation);
                 if (this.conversationsList.children.length == 0) {
-                    this.shadowRoot.querySelector(".summary").innerHTML = "";
-                    this.shadowRoot.querySelector(".container").style.display = "none";
+                    this.hide()
                 }
             },
             false)
-
-        /** Event received when a participant join a conversation */
-        Model.eventHub.subscribe(`join_conversation_${conversationUuid}_evt`,
-            (uuid) => { },
-            (evt) => {
-                console.log("Participant enter the conversation ", evt)
-            },
-            false)
-
     }
 
     closeConversation(conversation) {
@@ -986,11 +1029,12 @@ export class MessagesPanel extends HTMLElement {
                 this.previousMessage = null;
                 this.previousMessageDiv = null;
 
-                this.conversation = evt.conversation;
+
                 if (this.listener != null) {
-                    Model.eventHub.unSubscribe(`__received_message_${evt.conversation.getUuid()}_evt__`, this.listener)
+                    Model.eventHub.unSubscribe(`__received_message_${this.conversation.getUuid()}_evt__`, this.listener)
                 }
 
+                this.conversation = evt.conversation;
                 Model.eventHub.subscribe(`__received_message_${evt.conversation.getUuid()}_evt__`,
                     (uuid) => {
                         this.listener = uuid;
@@ -1017,8 +1061,6 @@ export class MessagesPanel extends HTMLElement {
                 }
 
             }, true)
-
-
     }
 
     setScroll() {
@@ -1214,6 +1256,7 @@ export class MessageEditor extends HTMLElement {
                 this.conversation = evt.conversation;
             }, true)
 
+
         this.send = this.shadowRoot.querySelector("#send-btn")
         this.textWriterBox = this.shadowRoot.querySelector("#text-writer-box")
 
@@ -1353,7 +1396,7 @@ export class ConversationsList extends HTMLElement {
 
         Model.eventHub.subscribe(`__received_message_${conversationUuid}_evt__`,
             (uuid) => {
-                this.listeners[conversationUuid].push({ evt: `__received_message_${conversationUuid}_evt__`, listenr: uuid })
+                this.listeners[conversationUuid].push({ evt: `__received_message_${conversationUuid}_evt__`, listener: uuid })
             },
             (msg) => {
                 // keep the message in the list of messages.
@@ -1367,39 +1410,56 @@ export class ConversationsList extends HTMLElement {
             },
             (evt) => {
                 // Here I will unsubscribe to each event from it...
-                this.listeners[conversationUuid].forEach((value) => {
-                    Model.eventHub.unSubscribe(value.evt, value.listener)
-                })
-                delete this.conversations[conversationUuid];
-
-                let selector = this.shadowRoot.querySelector(`#conversation_${conversationUuid}_selector`)
-                if (selector != null) {
-                    // remove it from the vue...
-                    selector.parentNode.removeChild(selector)
-                }
-
-                // Now I will set the current conversation on the first selector found...
-                if (selector.classList.contains("active")) {
-
-                    if (this.shadowRoot.querySelector(".conversation-list-row") != undefined) {
-                        this.shadowRoot.querySelector(".conversation-list-row").click()
-                    }
-                }
+                this.closeConversation(conversationUuid)
 
             },
             false);
 
+        Model.eventHub.subscribe(`__leave_conversation_evt__`,
+            (uuid) => { 
+                this.listeners[conversationUuid].push({ evt: `__leave_conversation_evt__`, listener: uuid })
+            },
+            (conversation) => {
+                this.closeConversation(conversation.getUuid())
+            }, true)
+
+
         selector.onclick = () => {
             // Set the active conversation...
             Model.eventHub.publish("__join_conversation_evt__", this.conversations[conversationUuid], true)
-
         }
 
         selector.click()
     }
 
-}
+    /** Close a conversation by leaving it or delete it. */
+    closeConversation(conversationUuid) {
+        // Here I will unsubscribe to each event from it...
+        this.listeners[conversationUuid].forEach((value) => {
+            Model.eventHub.unSubscribe(value.evt, value.listener)
 
+        })
+
+        // remove the conversation from map.
+        delete this.conversations[conversationUuid];
+
+        let selector = this.shadowRoot.querySelector(`#conversation_${conversationUuid}_selector`)
+        if (selector != null) {
+            // remove it from the vue...
+            selector.parentNode.removeChild(selector)
+        }
+
+        // Now I will set the current conversation on the first selector found...
+        if (Object.keys(this.conversations).length > 0) {
+            // Join another conversation.
+            let selector = this.shadowRoot.querySelector(`#conversation_${Object.keys(this.conversations)[0]}_selector`)
+            selector.click() // that will set new conversation.
+        }else{
+            Model.eventHub.publish("__close_messenger__", null, true)
+        }
+    }
+
+}
 
 customElements.define('globular-conversations-list', ConversationsList)
 
@@ -1438,6 +1498,13 @@ export class AttachedFilesList extends HTMLElement {
                 console.log("---> set attached file for conversation... ");
 
             }, true)
+
+        Model.eventHub.subscribe(`__leave_conversation_evt__`,
+            (uuid) => { },
+            (evt) => {
+                console.log("---> remove attached files for conversation... ", evt);
+            }, true)
+
     }
 
     setAccount(account) {
@@ -1476,7 +1543,13 @@ export class ParticipantsList extends HTMLElement {
         Model.eventHub.subscribe(`__join_conversation_evt__`,
             (uuid) => { },
             (evt) => {
-                console.log("---> set paticipants list for convesation...")
+                console.log("---> set paticipants list for conversation...")
+            }, true)
+
+        Model.eventHub.subscribe(`__leave_conversation_evt__`,
+            (uuid) => { },
+            (evt) => {
+                console.log("---> remove current participant from conversation... ", evt);
             }, true)
     }
 
