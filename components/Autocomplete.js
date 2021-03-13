@@ -40,7 +40,7 @@ export class Autocomplete extends HTMLElement {
 
         <div id="autocomplete-div">
             <paper-input  id='input' type='${type}' label='${label}' style='flex-grow: 1; width:${this.width}px;'></paper-input>
-            <paper-card id="values_div" style="position: absolute; max-height: 350px; overflow-y: auto;  width:${this.width}px; z-index: 10;"> </paper-card>
+            <paper-card id="values_div" style="max-height: 350px; overflow-y: auto;  width:${this.width}px; z-index: 10;"> </paper-card>
         </div>
         `
 
