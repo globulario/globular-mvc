@@ -25,6 +25,7 @@ import { Invitation } from 'globular-web-client/conversation/conversation_pb';
 import { decode } from 'uint8-to-base64';
 import { v4 as uuidv4 } from "uuid";
 import { ApplicationView } from '../ApplicationView';
+import { GetThumbnailsResponse } from 'globular-web-client/file/file_pb';
 
 /**
  * Communication with your contact's
@@ -599,9 +600,9 @@ export class ConversationInfos extends HTMLElement {
                     let span = document.createElement("span")
                     span.innerHTML = owner
                     this.owners.appendChild(span)
+                    this.setLeaveButton()
+                    this.setJoinButton();
                     if (owner == this.account) {
-                        this.setLeaveButton()
-                        this.setJoinButton();
                         this.setInviteButton();
                         this.setDeleteButton()
                     }
@@ -631,18 +632,18 @@ export class ConversationInfos extends HTMLElement {
             },
             (evt) => {
                 this.querySelector(`#join_${this.conversation.getUuid()}_btn`).style.display = "none"
-                this.querySelector(`#leave_${this.conversation.getUuid()}_btn`).style.display = "block"
+                this.querySelector(`#leave_${this.conversation.getUuid()}_btn`).style.display = "flex"
 
-            }, false)
-
+            }, true)
+                                
         Model.eventHub.subscribe(`leave_conversation_${conversationUuid}_evt`,
             (uuid) => {
                 this.leave_conversation_listener = uuid;
             },
             (evt) => {
-                this.querySelector(`#join_${this.conversation.getUuid()}_btn`).style.display = "block"
+                this.querySelector(`#join_${this.conversation.getUuid()}_btn`).style.display = "flex"
                 this.querySelector(`#leave_${this.conversation.getUuid()}_btn`).style.display = "none"
-            }, false)
+            }, true)
     }
     setInviteButton() {
         if (this.querySelector(`#invite_${this.conversation.getUuid()}_btn`) != undefined) {
@@ -667,17 +668,14 @@ export class ConversationInfos extends HTMLElement {
         this.appendChild(range.createContextualFragment(`</div><paper-button style="display:none; font-size:.85em; width: 20px;" id="leave_${this.conversation.getUuid()}_btn">Leave</paper-button>`))
 
         this.querySelector(`#leave_${this.conversation.getUuid()}_btn`).onclick = () => {
-            ConversationManager.leaveConversation(this.conversation.getUuid(),
+            ConversationManager.leaveConversation(this.conversation.getUuid(), this.account,
                 (messages) => {
                     if (onLeaveConversation != null) {
                         onLeaveConversation(messages);
                     }
 
                     // local event
-                    Model.eventHub.publish("__leave_conversation_evt__", this.conversation, true)
-
-                    // network event.
-                    Model.eventHub.publish(`leave_conversation_${this.conversation.getUuid()}_evt`, this.account.name, false)
+                    Model.eventHub.publish("__leave_conversation_evt__", this.conversation.getUuid(), true)
 
                     this.querySelector(`#join_${this.conversation.getUuid()}_btn`).style.display = "block"
                     this.querySelector(`#leave_${this.conversation.getUuid()}_btn`).style.display = "none"
@@ -698,7 +696,7 @@ export class ConversationInfos extends HTMLElement {
         this.appendChild(range.createContextualFragment(`</div><paper-button style="font-size:.85em; width: 20px;" id="join_${this.conversation.getUuid()}_btn">Join</paper-button>`))
 
         this.querySelector(`#join_${this.conversation.getUuid()}_btn`).onclick = () => {
-            ConversationManager.joinConversation(this.conversation.getUuid(),
+            ConversationManager.joinConversation(this.conversation.getUuid(), this.account,
                 (messages) => {
                     if (onJoinConversation != null) {
                         onJoinConversation(messages);
@@ -709,7 +707,6 @@ export class ConversationInfos extends HTMLElement {
 
                     // network event.
                     Model.eventHub.publish(`join_conversation_${this.conversation.getUuid()}_evt`, this.account.name, false)
-
                     this.querySelector(`#join_${this.conversation.getUuid()}_btn`).style.display = "none"
                     this.querySelector(`#leave_${this.conversation.getUuid()}_btn`).style.display = "block"
                 },
@@ -753,7 +750,12 @@ export class Messenger extends HTMLElement {
 
         // Set the shadow dom.
         this.attachShadow({ mode: "open" });
+
+        // The list of listener's
         this.listeners = {}
+
+        // Here I will keep the opened converstion infos...
+        this.conversations = {}
 
         this.shadowRoot.innerHTML = `
         <style>
@@ -847,7 +849,7 @@ export class Messenger extends HTMLElement {
                     <globular-paticipants-list></globular-paticipants-list>
                 </div>
             </iron-collapse>
-            <iron-collapse class="messenger-content">
+            <iron-collapse class="messenger-content" opened = "[[opened]]">
                 <globular-messages-panel></globular-messages-panel>
                 <globular-message-editor></globular-message-editor>
             </iron-collapse>
@@ -892,30 +894,27 @@ export class Messenger extends HTMLElement {
         this.messageEditor = this.shadowRoot.querySelector("globular-message-editor");
         this.messageEditor.setAccount(this.account)
 
-
-
-        // Hide the messenger.
-        Model.eventHub.subscribe(`__close_messenger__`,
-            (uuid) => { },
-            (evt) => {
-                this.hide()
-            }, true)
-
         // Join a conversation local event...
         Model.eventHub.subscribe(`__join_conversation_evt__`,
             (uuid) => { },
             (evt) => {
-                this.openConversation(evt.conversation, evt.messages)
+                let conversation = evt.conversation;
 
-                // Set the name in the summary title.
-                this.shadowRoot.querySelector(".summary").innerHTML = evt.conversation.getName();
-
-                // Set the leave converstion button.
-                this.shadowRoot.querySelector("#leave_conversation_btn").onclick = () => {
-                    Model.eventHub.publish("__leave_conversation_evt__", evt.conversation, true)
-                    Model.eventHub.publish(`leave_conversation_${ evt.conversation.getUuid()}_evt`, this.account.name, false)
+                // if the conversation already exist i set it.
+                if (this.conversations[conversation.getUuid()] != undefined) {
+                    // Set the conversation.
+                    this.setConversation(conversation.getUuid())
+                    return
                 }
+
+                // Here the conversation dosent exist so I will keep it in the map.
+                this.conversations[conversation.getUuid()] = { conversation: conversation, messages: evt.messages }
+
+                // Open the conversation.
+                this.openConversation(conversation, evt.messages)
+
             }, true)
+
     }
 
     hide() {
@@ -923,27 +922,395 @@ export class Messenger extends HTMLElement {
         this.shadowRoot.querySelector(".container").style.display = "none";
     }
 
+    setConversation(conversationUuid) {
+        let conversation = this.conversations[conversationUuid].conversation
+        let messages = this.conversations[conversationUuid].messages
+
+        // Set the leave converstion button.
+        this.shadowRoot.querySelector("#leave_conversation_btn").onclick = () => {
+            ConversationManager.leaveConversation(conversationUuid, this.account.id,
+                () => {
+                    Model.eventHub.publish("__leave_conversation_evt__", conversationUuid, true)
+                }, err => { })
+        }
+
+        // Set the name in the summary title.
+        this.shadowRoot.querySelector(".summary").innerHTML = conversation.getName();
+
+        // Set the conversation.
+        this.conversationsList.setConversation(conversation)
+
+        // Set the participant list.
+        this.participantsList.setConversation(conversation)
+
+        // Set messages
+        this.messagesPanel.setConversation(conversation, messages)
+
+        // Set the conversation in the message editor.
+        this.messageEditor.setConversation(conversation)
+
+    }
+
     // Here I will open the converstion.
     openConversation(conversation, messages) {
 
+        // Display the messenger panel.
         this.shadowRoot.querySelector(".container").style.display = "flex";
         let conversationUuid = conversation.getUuid()
 
-        /** Event received when a conversation is deleted */
-        Model.eventHub.subscribe(`delete_conversation_${conversationUuid}_evt`,
-            (uuid) => { },
-            (evt) => {
-                this.closeConversation(conversation);
-                if (this.conversationsList.children.length == 0) {
-                    this.hide()
-                }
+        // Set the listener's for that conversation
+        this.listeners[conversationUuid] = []
+
+        // Connect the conversation event's
+        // Set the leave converstion button.
+        this.shadowRoot.querySelector("#leave_conversation_btn").onclick = () => {
+            ConversationManager.leaveConversation(conversationUuid, this.account.id,
+                () => {
+                    Model.eventHub.publish("__leave_conversation_evt__", conversationUuid, true)
+                }, err => { })
+        }
+
+        // Set the name in the summary title.
+        this.shadowRoot.querySelector(".summary").innerHTML = conversation.getName();
+
+        // Keep messages into conversation
+        Model.eventHub.subscribe(`__received_message_${conversationUuid}_evt__`,
+            (uuid) => {
+                this.listeners[conversationUuid].push({ evt: `__received_message_${conversationUuid}_evt__`, listener: uuid })
             },
-            false)
+            (msg) => {
+                // keep the message in the list of messages.
+                this.conversations[conversationUuid].messages.push(msg)
+
+            }, true)
+
+        // Delete a conversation.
+        Model.eventHub.subscribe(`delete_conversation_${conversationUuid}_evt`,
+            (uuid) => {
+                this.listeners[conversationUuid].push({ evt: `delete_conversation_${conversationUuid}_evt`, listener: uuid })
+            },
+            (conversationUuid) => {
+                // Here I will unsubscribe to each event from it...
+                this.closeConversation(conversationUuid)
+
+            },
+            false);
+
+        Model.eventHub.subscribe(`join_conversation_${conversationUuid}_evt`,
+            (uuid) => {
+                this.listeners[conversationUuid].push({ evt: `join_conversation_${conversationUuid}_evt`, listener: uuid })
+            },
+            (participant) => {
+                let participants = conversation.getParticipantsList()
+                let index = participants.indexOf(participant)
+                if(index == -1){
+                    participants.push(participant)
+                    conversation.setParticipantsList(participants)
+                }
+                // Here I will unsubscribe to each event from it...
+                this.participantsList.setConversation(conversation)
+            },
+            false);
+
+        // Leave a conversation.
+
+        // Local event
+        Model.eventHub.subscribe(`__leave_conversation_evt__`,
+            (uuid) => {
+                this.listeners[conversationUuid].push({ evt: `__leave_conversation_evt__`, listener: uuid })
+            },
+            (conversationUuid) => {
+                this.closeConversation(conversationUuid)
+            }, true)
+
+        // Network event                    
+        Model.eventHub.subscribe(`leave_conversation_${conversationUuid}_evt`,
+            (uuid) => {
+                this.listeners[conversationUuid].push({ evt: `leave_conversation_${conversationUuid}_evt`, listener: uuid })
+            },
+            (participant) => {
+                // Remove the participant.
+                let participants = conversation.getParticipantsList()
+                let index = participants.indexOf(participant)
+                if( index != -1){
+                    participants.splice(index, 1)
+                    conversation.setParticipantsList(participants)
+                }
+
+                // Here I will unsubscribe to each event from it...
+                this.participantsList.setConversation(conversation)
+            },
+            false);
+
+        // Open the conversation.
+        this.conversationsList.openConversation(conversation)
+
+        // Open the participant list.
+        this.participantsList.setConversation(conversation)
+
+        // Set messages
+        this.messagesPanel.setConversation(conversation, messages)
+
+        // Set the conversation in the message editor.
+        this.messageEditor.setConversation(conversation)
+    }
+
+    closeConversation(conversationUuid) {
+
+        // Here I will unsubscribe to each event from it...
+        this.listeners[conversationUuid].forEach((value) => {
+            Model.eventHub.unSubscribe(value.evt, value.listener)
+        })
+
+        let conversation = this.conversations[conversationUuid].conversation
+
+        // close the conversation in the participant list.
+        this.participantsList.clear()
+
+        // close the conversation in the conversation list.
+        this.conversationsList.closeConversation(conversation)
+
+        // Clear the messages panel
+        this.messagesPanel.clear();
+
+        // remove the conversation from map.
+        delete this.conversations[conversationUuid];
+
+        if (Object.keys(this.conversations).length == 0) {
+            this.hide()
+        } else {
+            // TODO set the first conversation.
+            this.setConversation(Object.keys(this.conversations)[0])
+        }
+
     }
 
 }
 
 customElements.define('globular-messenger', Messenger)
+
+
+/**
+ * Display the list of open conversation (where the user are logged in).
+ */
+export class ConversationsList extends HTMLElement {
+
+    constructor() {
+        super();
+        this.account = null;
+
+        // Set the shadow dom.
+        this.attachShadow({ mode: "open" });
+
+        this.shadowRoot.innerHTML = `
+        <style>
+            ${theme}
+
+            .container{
+                min-height: 140px;
+                font-size: 14px;
+                font-weight: 400;
+                padding-top: 5px;
+                border-right: 1px solid var(--palette-divider);
+            }
+
+            .container .active{
+                font-weight: 500;
+            }
+
+        </style>
+        <div class="container">
+            
+        </div>
+        `
+    }
+
+    setAccount(account) {
+        this.account = account
+    }
+
+    /**
+     * Set the current conversation.
+     * @param {*} conversation 
+     */
+    setConversation(conversation) {
+        // simply set as active conversation...
+        /** I will unactivate all other conversations... */
+        let conversationsListRows = this.shadowRoot.querySelectorAll(`.conversation-list-row`);
+        for (var i = 0; i < conversationsListRows.length; i++) {
+            conversationsListRows[i].classList.remove("active");
+        }
+        let selector = this.shadowRoot.querySelector(`#conversation_${conversation.getUuid()}_selector`)
+        selector.classList.add("active")
+
+    }
+
+    /**
+     * Append a new conversation in the conversation panel.
+     * @param {*} conversation The conversation object.
+     */
+    openConversation(conversation) {
+
+        let html = `
+            <style>
+                .conversation-list-row{
+                    display: flex;
+                    background-color: var(--palette-background-paper);
+                    transition: background 0.2s ease,padding 0.8s linear;
+                    padding: 10px;
+                    position: relative;
+                }
+
+                .conversation-list-row .active{
+                    font-weight: 500;
+                }
+
+                .conversation-list-row:hover {
+                    filter: invert(10%);
+                    cursor: pointer;
+                }
+
+            </style>
+            <div id="conversation_${conversation.getUuid()}_selector" class="conversation-list-row">
+                <div>${conversation.getName()}</div>
+                <paper-ripple></paper-ripple>
+            </div>
+        `
+
+        this.shadowRoot.querySelector(".container").appendChild(document.createRange().createContextualFragment(html))
+
+        let selector = this.shadowRoot.querySelector(`#conversation_${conversation.getUuid()}_selector`)
+
+        selector.onclick = () => {
+            document.querySelector("globular-messenger").setConversation(conversation.getUuid())
+        }
+
+        selector.click()
+    }
+
+    /** Close a conversation by leaving it or delete it. */
+    closeConversation(conversation) {
+        let selector = this.shadowRoot.querySelector(`#conversation_${conversation.getUuid()}_selector`)
+        if (selector != null) {
+            // remove it from the vue...
+            selector.parentNode.removeChild(selector)
+        }
+    }
+
+}
+
+customElements.define('globular-conversations-list', ConversationsList)
+
+
+/**
+ * Display the list of file attached with that conversation.
+ */
+export class AttachedFilesList extends HTMLElement {
+
+    constructor() {
+        super();
+        this.account = null;
+
+        // Set the shadow dom.
+        this.attachShadow({ mode: "open" });
+
+        this.shadowRoot.innerHTML = `
+        <style>
+            ${theme}
+
+            .container{
+                
+            }
+
+        </style>
+
+        <div class="container">
+  
+        </div>
+        `
+    }
+
+    setAccount(account) {
+        this.account = account
+    }
+}
+
+
+customElements.define('globular-attached-files-list', AttachedFilesList)
+
+/**
+ * Participants for the active conversation.
+ */
+export class ParticipantsList extends HTMLElement {
+
+    constructor() {
+        super();
+        this.account = null;
+
+        // Set the shadow dom.
+        this.attachShadow({ mode: "open" });
+
+        this.shadowRoot.innerHTML = `
+        <style>
+            ${theme}
+
+            .container{
+                
+            }
+
+            .participant-table{
+                display: table;
+                border-collapse: separate;
+                border-spacing: 5px;
+
+            }
+
+            .participant-table-header{
+                display: table-row;
+                position: sticky;
+            }
+
+            .participant-table-header div{
+                display: table-cell;
+            }
+
+            .participant-table-row{
+                display: table-row;
+            }
+
+        </style>
+
+        <div class="container">
+            <div class="participant-table">
+                <div class="participant-table-header">
+                        <div>name</div>
+                        <div>status</div>
+                </div>
+                <div id="paticipants-lst">
+                </div>
+            <div>
+        </div>
+        `
+
+
+    }
+
+    setConversation(conversation) {
+        console.log("-----------> set ", conversation.getParticipantsList())
+    }
+
+
+    clear() {
+        this.shadowRoot.querySelector("#paticipants-lst").innerHTML = ""
+    }
+
+    setAccount(account) {
+        this.account = account
+    }
+}
+
+customElements.define('globular-paticipants-list', ParticipantsList)
+
 
 /**
  * This is where the conversations messages are displayed
@@ -955,6 +1322,7 @@ export class MessagesPanel extends HTMLElement {
         this.account = null;
         this.conversation = null;
         this.listener = null;
+        this.conversationUuid = "";
         this.previousMessage = null;
         this.previousMessageDiv = null;
 
@@ -1055,47 +1423,6 @@ export class MessagesPanel extends HTMLElement {
         // Set the container's
         this.container = this.shadowRoot.querySelector(".container");
         this.messagesContainer = this.shadowRoot.querySelector(".conversation-messages");
-
-        Model.eventHub.subscribe(`__join_conversation_evt__`,
-            (uuid) => { },
-            (evt) => {
-                // simply reset the messages...
-                this.messagesContainer.innerHTML = "";
-                this.previousMessage = null;
-                this.previousMessageDiv = null;
-
-
-                if (this.listener != null) {
-                    Model.eventHub.unSubscribe(`__received_message_${this.conversation.getUuid()}_evt__`, this.listener)
-                }
-
-                this.conversation = evt.conversation;
-                Model.eventHub.subscribe(`__received_message_${evt.conversation.getUuid()}_evt__`,
-                    (uuid) => {
-                        this.listener = uuid;
-                    },
-                    (msg) => {
-                        this.appendMessage(msg)
-                    }, true)
-
-                // Sort message by their date...
-                let messages = evt.messages;
-                messages.sort((a, b) => {
-                    if (a.getCreationTime() < b.getCreationTime()) {
-                        return -1;
-                    }
-                    if (a.getCreationTime() > b.getCreationTime()) {
-                        return 1;
-                    }
-                    return 0;
-                })
-
-                // I will use the list of message form the event to set 
-                for (var i = 0; i < messages.length; i++) {
-                    this.appendMessage(messages[i])
-                }
-
-            }, true)
     }
 
     setScroll() {
@@ -1106,13 +1433,51 @@ export class MessagesPanel extends HTMLElement {
         this.account = account
     }
 
+    clear() {
+        this.messagesContainer.innerHTML = "";
+        this.previousMessage = null;
+        this.previousMessageDiv = null;
+        if (this.listener != null) {
+            Model.eventHub.unSubscribe(`__received_message_${this.conversationUuid}_evt__`, this.listener)
+        }
+    }
+
+    setConversation(conversation, messages) {
+        // simply reset the messages...
+        this.clear();
+        this.conversationUuid = conversation.getUuid()
+        Model.eventHub.subscribe(`__received_message_${conversation.getUuid()}_evt__`,
+            (uuid) => {
+                this.listener = uuid;
+            },
+            (msg) => {
+                this.appendMessage(msg)
+            }, true)
+
+        // Sort message by their date...
+        messages.sort((a, b) => {
+            if (a.getCreationTime() < b.getCreationTime()) {
+                return -1;
+            }
+            if (a.getCreationTime() > b.getCreationTime()) {
+                return 1;
+            }
+            return 0;
+        })
+
+        // I will use the list of message form the event to set 
+        for (var i = 0; i < messages.length; i++) {
+            this.appendMessage(messages[i])
+        }
+    }
+
     /** Append a new message into the list... */
     appendMessage(msg) {
         // simply set space and tab into the message.
         let txt = msg.getText()
         txt = txt.replace(new RegExp('\r?\n', 'g'), "<br />");
         txt = txt.replace(new RegExp('\t', 'g'), `<span "style='width: 2rem;'></span>`)
-        let creationDate = new Date(msg.getCreationTime())
+        let creationDate = new Date(msg.getCreationTime() * 1000)
         let html = `
         <div id="msg_uuid_${msg.getUuid()}" style="display: flex; flex-direction: column; margin-bottom: 10px;  margin-top: 5px;">
             <div class="conversation-message">
@@ -1216,7 +1581,6 @@ export class MessagesPanel extends HTMLElement {
     }
 }
 
-
 customElements.define('globular-messages-panel', MessagesPanel)
 
 /**
@@ -1226,7 +1590,7 @@ export class MessageEditor extends HTMLElement {
     constructor() {
         super();
         this.account = null;
-        this.conversation = null;
+        this.conversationUuid = null;
 
         // Set the shadow dom.
         this.attachShadow({ mode: "open" });
@@ -1285,13 +1649,6 @@ export class MessageEditor extends HTMLElement {
         </div>
         `
 
-        Model.eventHub.subscribe(`__join_conversation_evt__`,
-            (uuid) => { },
-            (evt) => {
-                this.conversation = evt.conversation;
-            }, true)
-
-
         this.send = this.shadowRoot.querySelector("#send-btn")
         this.textWriterBox = this.shadowRoot.querySelector("#text-writer-box")
 
@@ -1299,7 +1656,7 @@ export class MessageEditor extends HTMLElement {
             let txt = this.textWriterBox.value;
             this.textWriterBox.value = ""
             let replyTo = ""
-            ConversationManager.sendMessage(this.conversation.getUuid(), this.account.name, txt, replyTo,
+            ConversationManager.sendMessage(this.conversationUuid, this.account.name, txt, replyTo,
                 () => {
                     /** Nothing here... */
                 },
@@ -1310,296 +1667,16 @@ export class MessageEditor extends HTMLElement {
 
     }
 
+    setConversation(conversation) {
+        this.conversationUuid = conversation.getUuid()
+    }
+
     setAccount(account) {
         this.account = account
     }
 }
-
 
 customElements.define('globular-message-editor', MessageEditor)
-
-
-/**
- * Display the list of open conversation (where the user are logged in).
- */
-export class ConversationsList extends HTMLElement {
-
-    constructor() {
-        super();
-        this.account = null;
-
-        // Here I will keep the opened converstion infos...
-        this.conversations = {}
-
-        // keep track of conversation listener to delete them if require.
-        this.listeners = {}
-
-        // Set the shadow dom.
-        this.attachShadow({ mode: "open" });
-
-        this.shadowRoot.innerHTML = `
-        <style>
-            ${theme}
-
-            .container{
-                min-height: 140px;
-                font-size: 14px;
-                font-weight: 400;
-                padding-top: 5px;
-                border-right: 1px solid var(--palette-divider);
-            }
-
-            .container .active{
-                font-weight: 500;
-            }
-
-        </style>
-        <div class="container">
-            
-        </div>
-        `
-
-        Model.eventHub.subscribe(`__join_conversation_evt__`,
-            (uuid) => {
-
-            },
-            (evt) => {
-                this.openConversation(evt.conversation, evt.messages)
-
-            }, true)
-
-    }
-
-    setAccount(account) {
-        this.account = account
-    }
-
-    /**
-     * Append a new conversation in the conversation panel.
-     * @param {*} conversation The conversation object.
-     * @param {*} messages The list of actual message.
-     */
-    openConversation(conversation, messages) {
-
-        if (this.conversations[conversation.getUuid()] != undefined) {
-            // simply set as active conversation...
-            /** I will unactivate all other conversations... */
-            let conversationsListRows = this.shadowRoot.querySelectorAll(`.conversation-list-row`);
-            for (var i = 0; i < conversationsListRows.length; i++) {
-                conversationsListRows[i].classList.remove("active");
-            }
-            let selector = this.shadowRoot.querySelector(`#conversation_${conversation.getUuid()}_selector`)
-            selector.classList.add("active")
-            return
-        }
-
-
-        // keep in memory conversation and message.
-        this.conversations[conversation.getUuid()] = { conversation: conversation, messages: messages }
-
-        let html = `
-            <style>
-                .conversation-list-row{
-                    display: flex;
-                    background-color: var(--palette-background-paper);
-                    transition: background 0.2s ease,padding 0.8s linear;
-                    padding: 10px;
-                    position: relative;
-                }
-
-                .conversation-list-row .active{
-                    font-weight: 500;
-                }
-
-                .conversation-list-row:hover {
-                    filter: invert(10%);
-                    cursor: pointer;
-                }
-
-            </style>
-            <div id="conversation_${conversation.getUuid()}_selector" class="conversation-list-row">
-                <div>${conversation.getName()}</div>
-                <paper-ripple></paper-ripple>
-            </div>
-        `
-
-        this.shadowRoot.querySelector(".container").appendChild(document.createRange().createContextualFragment(html))
-
-        let selector = this.shadowRoot.querySelector(`#conversation_${conversation.getUuid()}_selector`)
-        let conversationUuid = conversation.getUuid();
-        this.listeners[conversationUuid] = []
-
-        Model.eventHub.subscribe(`__received_message_${conversationUuid}_evt__`,
-            (uuid) => {
-                this.listeners[conversationUuid].push({ evt: `__received_message_${conversationUuid}_evt__`, listener: uuid })
-            },
-            (msg) => {
-                // keep the message in the list of messages.
-                this.conversations[conversationUuid].messages.push(msg)
-
-            }, true)
-
-        Model.eventHub.subscribe(`delete_conversation_${conversationUuid}_evt`,
-            (uuid) => {
-                this.listeners[conversationUuid].push({ evt: `delete_conversation_${conversation.getUuid()}_evt`, listener: uuid })
-            },
-            (evt) => {
-                // Here I will unsubscribe to each event from it...
-                this.closeConversation(conversationUuid)
-
-            },
-            false);
-
-        Model.eventHub.subscribe(`__leave_conversation_evt__`,
-            (uuid) => {
-                this.listeners[conversationUuid].push({ evt: `__leave_conversation_evt__`, listener: uuid })
-            },
-            (conversation) => {
-                this.closeConversation(conversation.getUuid())
-            }, true)
-
-
-        selector.onclick = () => {
-            // Set the active conversation...
-            Model.eventHub.publish("__join_conversation_evt__", this.conversations[conversationUuid], true)
-        }
-
-
-        selector.click()
-    }
-
-    /** Close a conversation by leaving it or delete it. */
-    closeConversation(conversationUuid) {
-        // Here I will unsubscribe to each event from it...
-        this.listeners[conversationUuid].forEach((value) => {
-            Model.eventHub.unSubscribe(value.evt, value.listener)
-
-        })
-
-        // remove the conversation from map.
-        delete this.conversations[conversationUuid];
-
-        let selector = this.shadowRoot.querySelector(`#conversation_${conversationUuid}_selector`)
-        if (selector != null) {
-            // remove it from the vue...
-            selector.parentNode.removeChild(selector)
-        }
-
-        // Now I will set the current conversation on the first selector found...
-        if (Object.keys(this.conversations).length > 0) {
-            // Join another conversation.
-            let selector = this.shadowRoot.querySelector(`#conversation_${Object.keys(this.conversations)[0]}_selector`)
-            selector.click() // that will set new conversation.
-        } else {
-            Model.eventHub.publish("__close_messenger__", null, true)
-        }
-    }
-
-    // return object store in the map.
-    getCurrentConversation(uuid) {
-        return this.conversations[uuid]
-    }
-
-}
-
-customElements.define('globular-conversations-list', ConversationsList)
-
-
-/**
- * Display the list of file attached with that conversation.
- */
-export class AttachedFilesList extends HTMLElement {
-
-    constructor() {
-        super();
-        this.account = null;
-
-        // Set the shadow dom.
-        this.attachShadow({ mode: "open" });
-
-        this.shadowRoot.innerHTML = `
-        <style>
-            ${theme}
-
-            .container{
-                
-            }
-
-        </style>
-
-        <div class="container">
-  
-        </div>
-        `
-
-        Model.eventHub.subscribe(`__join_conversation_evt__`,
-            (uuid) => { },
-            (evt) => {
-
-                console.log("---> set attached file for conversation... ");
-
-            }, true)
-
-        Model.eventHub.subscribe(`__leave_conversation_evt__`,
-            (uuid) => { },
-            (evt) => {
-                console.log("---> remove attached files for conversation... ", evt);
-            }, true)
-
-    }
-
-    setAccount(account) {
-        this.account = account
-    }
-}
-
-
-customElements.define('globular-attached-files-list', AttachedFilesList)
-
-/**
- * Participants for the active conversation.
- */
-export class ParticipantsList extends HTMLElement {
-
-    constructor() {
-        super();
-        this.account = null;
-
-        // Set the shadow dom.
-        this.attachShadow({ mode: "open" });
-
-        this.shadowRoot.innerHTML = `
-        <style>
-            ${theme}
-
-            .container{
-                
-            }
-
-        </style>
-        <div class="container">
-        </div>
-        `
-
-        Model.eventHub.subscribe(`__join_conversation_evt__`,
-            (uuid) => { },
-            (evt) => {
-                console.log("---> set paticipants list for conversation...")
-            }, true)
-
-        Model.eventHub.subscribe(`__leave_conversation_evt__`,
-            (uuid) => { },
-            (evt) => {
-                console.log("---> remove current participant from conversation... ", evt);
-            }, true)
-    }
-
-    setAccount(account) {
-        this.account = account
-    }
-}
-
-customElements.define('globular-paticipants-list', ParticipantsList)
 
 /**
  * Display information about invitation.

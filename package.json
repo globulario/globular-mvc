@@ -60,7 +60,7 @@
     "@types/source-map-support": "^0.5.3",
     "@types/uuid": "^8.0.0",
     "docker-names": "^1.1.1",
-    "globular-web-client": "^1.1.114",
+    "globular-web-client": "^1.1.116",
     "materialize-css": "^1.0.0",
     "namesgenerator": "0.0.1",
     "random-sentence": "^1.0.4",
