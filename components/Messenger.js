@@ -419,7 +419,9 @@ export class ConversationInfos extends HTMLElement {
         super();
 
         this.account = account;
-        this.delete_conversation_listener;
+        this.delete_conversation_listener = null;
+        this.join_conversation_listener = null;
+        this.leave_conversation_listener = null;
 
         // Set the shadow dom.
         this.attachShadow({ mode: "open" });
@@ -615,11 +617,32 @@ export class ConversationInfos extends HTMLElement {
             (evt) => {
                 // simply remove it from it parent.
                 this.parentNode.removeChild(this)
-                Model.eventHub.unSubscribe(conversationUuid, this.delete_conversation_listener)
+                Model.eventHub.unSubscribe(`delete_conversation_${conversationUuid}_evt`, this.delete_conversation_listener)
+                Model.eventHub.unSubscribe(`join_conversation_${conversationUuid}_evt`, this.join_conversation_listener)
+                Model.eventHub.unSubscribe(`leave_conversation_${conversationUuid}_evt`, this.leave_conversation_listener)
+
+                // publish local event from network one.
                 Model.eventHub.publish("delete_conversation_evt", null, true)
             }, false)
 
+        Model.eventHub.subscribe(`join_conversation_${conversationUuid}_evt`,
+            (uuid) => {
+                this.join_conversation_listener = uuid;
+            },
+            (evt) => {
+                this.querySelector(`#join_${this.conversation.getUuid()}_btn`).style.display = "none"
+                this.querySelector(`#leave_${this.conversation.getUuid()}_btn`).style.display = "block"
 
+            }, false)
+
+        Model.eventHub.subscribe(`leave_conversation_${conversationUuid}_evt`,
+            (uuid) => {
+                this.leave_conversation_listener = uuid;
+            },
+            (evt) => {
+                this.querySelector(`#join_${this.conversation.getUuid()}_btn`).style.display = "block"
+                this.querySelector(`#leave_${this.conversation.getUuid()}_btn`).style.display = "none"
+            }, false)
     }
     setInviteButton() {
         if (this.querySelector(`#invite_${this.conversation.getUuid()}_btn`) != undefined) {
@@ -785,6 +808,10 @@ export class Messenger extends HTMLElement {
                 --iron-icon-fill-color:var(--palette-text-primary);
             }
 
+            .btn:hover{
+                cursor:pointer;
+            }
+
             .conversations-detail{
                 border-bottom: 1px solid var(--palette-divider);
                 display: flex;
@@ -797,6 +824,10 @@ export class Messenger extends HTMLElement {
                     <iron-icon  id="hide-btn-0"  icon="expand-more" style="" icon="add"></iron-icon>
                     <paper-ripple class="circle" recenters=""></paper-ripple>
                 </div>
+                <div class="btn">
+                    <paper-ripple class="circle" recenters=""></paper-ripple>
+                    <iron-icon style="height: 18px;" id="leave_conversation_btn" icon="exit-to-app"></iron-icon>
+                </div>     
                 <div class="summary"></div>
                 <div class="btn">
                     <iron-icon  id="hide-btn-1"  icon="unfold-less" icon="add"></iron-icon>
@@ -861,12 +892,14 @@ export class Messenger extends HTMLElement {
         this.messageEditor = this.shadowRoot.querySelector("globular-message-editor");
         this.messageEditor.setAccount(this.account)
 
+
+
         // Hide the messenger.
         Model.eventHub.subscribe(`__close_messenger__`,
-        (uuid) => { },
-        (evt) => {
-            this.hide()
-        }, true)
+            (uuid) => { },
+            (evt) => {
+                this.hide()
+            }, true)
 
         // Join a conversation local event...
         Model.eventHub.subscribe(`__join_conversation_evt__`,
@@ -876,10 +909,16 @@ export class Messenger extends HTMLElement {
 
                 // Set the name in the summary title.
                 this.shadowRoot.querySelector(".summary").innerHTML = evt.conversation.getName();
+
+                // Set the leave converstion button.
+                this.shadowRoot.querySelector("#leave_conversation_btn").onclick = () => {
+                    Model.eventHub.publish("__leave_conversation_evt__", evt.conversation, true)
+                    Model.eventHub.publish(`leave_conversation_${ evt.conversation.getUuid()}_evt`, this.account.name, false)
+                }
             }, true)
     }
 
-    hide(){
+    hide() {
         this.shadowRoot.querySelector(".summary").innerHTML = "";
         this.shadowRoot.querySelector(".container").style.display = "none";
     }
@@ -900,10 +939,6 @@ export class Messenger extends HTMLElement {
                 }
             },
             false)
-    }
-
-    closeConversation(conversation) {
-        console.log("-------------> close a conversation!", conversation)
     }
 
 }
@@ -1416,7 +1451,7 @@ export class ConversationsList extends HTMLElement {
             false);
 
         Model.eventHub.subscribe(`__leave_conversation_evt__`,
-            (uuid) => { 
+            (uuid) => {
                 this.listeners[conversationUuid].push({ evt: `__leave_conversation_evt__`, listener: uuid })
             },
             (conversation) => {
@@ -1428,6 +1463,7 @@ export class ConversationsList extends HTMLElement {
             // Set the active conversation...
             Model.eventHub.publish("__join_conversation_evt__", this.conversations[conversationUuid], true)
         }
+
 
         selector.click()
     }
@@ -1454,9 +1490,14 @@ export class ConversationsList extends HTMLElement {
             // Join another conversation.
             let selector = this.shadowRoot.querySelector(`#conversation_${Object.keys(this.conversations)[0]}_selector`)
             selector.click() // that will set new conversation.
-        }else{
+        } else {
             Model.eventHub.publish("__close_messenger__", null, true)
         }
+    }
+
+    // return object store in the map.
+    getCurrentConversation(uuid) {
+        return this.conversations[uuid]
     }
 
 }
