@@ -798,6 +798,10 @@ export class ContactCard extends HTMLElement {
                 right: 0px;
             }
 
+            globular-session-state{
+                padding: 8px;
+            }
+
             }
         </style>
         <div class="contact-invitation-div" style="display: flex; flex-direction: column;">

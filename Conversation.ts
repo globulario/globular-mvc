@@ -147,16 +147,12 @@ export class ConversationManager {
 
       if (status.code == 0) {
         succesCallback(messages)
-        console.log("------> publish event ", eventName, accountId)
         Model.eventHub.publish(eventName, accountId, false)
-        Model.eventHub.publish(eventName, accountId, true)
       } else {
         // No message found...
         if (status.details == "EOF") {
           succesCallback(messages)
-          console.log("------> publish event ", eventName, accountId)
           Model.eventHub.publish(eventName, accountId, false)
-          Model.eventHub.publish(eventName, accountId, true)
           return
         }
         // An error happen
@@ -182,9 +178,8 @@ export class ConversationManager {
     }).then((rsp: LeaveConversationResponse) => {
       successCallback();
       // network event.
-      console.log("------> publish event ", eventName, accountId)
       Model.eventHub.publish(eventName, accountId, false)
-      Model.eventHub.publish(eventName, accountId, true)
+
     }).catch(errorCallback)
   }
 

@@ -72,6 +72,7 @@ export class AccountMenu extends Menu {
                     align-items: center;
                     background-color: var(--palette-background-paper);
                     color: var(--palette-text-primary);
+                    margin-bottom: 16px;
                 }
 
                 #account-header-id{
@@ -132,8 +133,8 @@ export class AccountMenu extends Menu {
                         </span>
                     </div>
                 </div>
+                <globular-session-state account="${account.name}" editable state="online"></globular-session-state>
             </div>
-            <globular-session-state account="${account.name}" editable state="online"></globular-session-state>
             <div class="card-actions">
               <paper-button id="settings_btn" >settings
                 <iron-icon style="padding-left: 5px;" icon="settings"></iron-icon>

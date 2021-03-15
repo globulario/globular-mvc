@@ -26,6 +26,7 @@ import { decode } from 'uint8-to-base64';
 import { v4 as uuidv4 } from "uuid";
 import { ApplicationView } from '../ApplicationView';
 import { GetThumbnailsResponse } from 'globular-web-client/file/file_pb';
+import { SessionState } from './Session';
 
 /**
  * Communication with your contact's
@@ -626,23 +627,27 @@ export class ConversationInfos extends HTMLElement {
                 Model.eventHub.publish("delete_conversation_evt", null, true)
             }, false)
 
-        Model.eventHub.subscribe(`join_conversation_${conversationUuid}_evt`,
+        Model.eventHub.subscribe(`__join_conversation_evt__`,
             (uuid) => {
                 this.join_conversation_listener = uuid;
             },
             (evt) => {
-                this.querySelector(`#join_${this.conversation.getUuid()}_btn`).style.display = "none"
-                this.querySelector(`#leave_${this.conversation.getUuid()}_btn`).style.display = "flex"
-
+                console.log(evt)
+                if (evt.conversation.getUuid() == conversationUuid) {
+                    this.querySelector(`#join_${conversationUuid}_btn`).style.display = "none"
+                    this.querySelector(`#leave_${conversationUuid}_btn`).style.display = "flex"
+                }
             }, true)
-                                
-        Model.eventHub.subscribe(`leave_conversation_${conversationUuid}_evt`,
+
+        Model.eventHub.subscribe(`__leave_conversation_evt__`,
             (uuid) => {
                 this.leave_conversation_listener = uuid;
             },
             (evt) => {
-                this.querySelector(`#join_${this.conversation.getUuid()}_btn`).style.display = "flex"
-                this.querySelector(`#leave_${this.conversation.getUuid()}_btn`).style.display = "none"
+                if (evt == conversationUuid) {
+                    this.querySelector(`#join_${conversationUuid}_btn`).style.display = "flex"
+                    this.querySelector(`#leave_${conversationUuid}_btn`).style.display = "none"
+                }
             }, true)
     }
     setInviteButton() {
@@ -677,7 +682,7 @@ export class ConversationInfos extends HTMLElement {
                     // local event
                     Model.eventHub.publish("__leave_conversation_evt__", this.conversation.getUuid(), true)
 
-                    this.querySelector(`#join_${this.conversation.getUuid()}_btn`).style.display = "block"
+                    this.querySelector(`#join_${this.conversation.getUuid()}_btn`).style.display = "flex"
                     this.querySelector(`#leave_${this.conversation.getUuid()}_btn`).style.display = "none"
                 },
                 (err) => {
@@ -708,7 +713,7 @@ export class ConversationInfos extends HTMLElement {
                     // network event.
                     Model.eventHub.publish(`join_conversation_${this.conversation.getUuid()}_evt`, this.account.name, false)
                     this.querySelector(`#join_${this.conversation.getUuid()}_btn`).style.display = "none"
-                    this.querySelector(`#leave_${this.conversation.getUuid()}_btn`).style.display = "block"
+                    this.querySelector(`#leave_${this.conversation.getUuid()}_btn`).style.display = "flex"
                 },
                 (err) => {
                     ApplicationView.displayMessage(err, 3000)
@@ -837,16 +842,16 @@ export class Messenger extends HTMLElement {
                 </div>
             </div>
             <iron-collapse class="conversations-detail">
-                
-                <globular-conversations-list></globular-conversations-list>
+                <globular-conversations-list style="border-right: 1px solid var(--palette-divider);"></globular-conversations-list>
                 <div style="display: flex; flex-direction: column; margin-left: 10px;">
                     <paper-tabs selected="0">
                         <paper-tab id="paticipants-tab">Participants</paper-tab>
                         <paper-tab id="attached-files-tab">Files</paper-tab>
-                        <paper-tab id="permissions-tab">Permissions</paper-tab>
                     </paper-tabs>
-                    <globular-attached-files-list></globular-attached-files-list>
-                    <globular-paticipants-list></globular-paticipants-list>
+                    <div style="display: flex; flex-grow: 1; overflow-y: auto; max-height: 175px;">
+                        <globular-attached-files-list style="display: none;"></globular-attached-files-list>
+                        <globular-paticipants-list></globular-paticipants-list>
+                    </div>
                 </div>
             </iron-collapse>
             <iron-collapse class="messenger-content" opened = "[[opened]]">
@@ -894,6 +899,18 @@ export class Messenger extends HTMLElement {
         this.messageEditor = this.shadowRoot.querySelector("globular-message-editor");
         this.messageEditor.setAccount(this.account)
 
+        let participantsTab = this.shadowRoot.querySelector("#paticipants-tab")
+        participantsTab.onclick = () => {
+            this.attachedFilesList.style.display = "none"
+            this.participantsList.style.display = "block"
+        }
+
+        let filesTab = this.shadowRoot.querySelector("#attached-files-tab")
+        filesTab.onclick = () => {
+            this.attachedFilesList.style.display = "block"
+            this.participantsList.style.display = "none"
+        }
+
         // Join a conversation local event...
         Model.eventHub.subscribe(`__join_conversation_evt__`,
             (uuid) => { },
@@ -940,14 +957,14 @@ export class Messenger extends HTMLElement {
         // Set the conversation.
         this.conversationsList.setConversation(conversation)
 
-        // Set the participant list.
-        this.participantsList.setConversation(conversation)
-
         // Set messages
         this.messagesPanel.setConversation(conversation, messages)
 
         // Set the conversation in the message editor.
         this.messageEditor.setConversation(conversation)
+
+        // Set the participant list.
+        this.participantsList.setConversation(conversation)
 
     }
 
@@ -989,10 +1006,9 @@ export class Messenger extends HTMLElement {
             (uuid) => {
                 this.listeners[conversationUuid].push({ evt: `delete_conversation_${conversationUuid}_evt`, listener: uuid })
             },
-            (conversationUuid) => {
+            () => {
                 // Here I will unsubscribe to each event from it...
                 this.closeConversation(conversationUuid)
-
             },
             false);
 
@@ -1003,7 +1019,7 @@ export class Messenger extends HTMLElement {
             (participant) => {
                 let participants = conversation.getParticipantsList()
                 let index = participants.indexOf(participant)
-                if(index == -1){
+                if (index == -1) {
                     participants.push(participant)
                     conversation.setParticipantsList(participants)
                 }
@@ -1019,7 +1035,7 @@ export class Messenger extends HTMLElement {
             (uuid) => {
                 this.listeners[conversationUuid].push({ evt: `__leave_conversation_evt__`, listener: uuid })
             },
-            (conversationUuid) => {
+            () => {
                 this.closeConversation(conversationUuid)
             }, true)
 
@@ -1032,7 +1048,7 @@ export class Messenger extends HTMLElement {
                 // Remove the participant.
                 let participants = conversation.getParticipantsList()
                 let index = participants.indexOf(participant)
-                if( index != -1){
+                if (index != -1) {
                     participants.splice(index, 1)
                     conversation.setParticipantsList(participants)
                 }
@@ -1045,14 +1061,15 @@ export class Messenger extends HTMLElement {
         // Open the conversation.
         this.conversationsList.openConversation(conversation)
 
-        // Open the participant list.
-        this.participantsList.setConversation(conversation)
-
         // Set messages
         this.messagesPanel.setConversation(conversation, messages)
 
         // Set the conversation in the message editor.
         this.messageEditor.setConversation(conversation)
+
+        // Set the participant list.
+        this.participantsList.setConversation(conversation)
+
     }
 
     closeConversation(conversationUuid) {
@@ -1079,8 +1096,8 @@ export class Messenger extends HTMLElement {
         if (Object.keys(this.conversations).length == 0) {
             this.hide()
         } else {
-            // TODO set the first conversation.
             this.setConversation(Object.keys(this.conversations)[0])
+            this.participantsList.setConverssation(this.conversations[Object.keys(this.conversations)[0]].conversation)
         }
 
     }
@@ -1111,7 +1128,6 @@ export class ConversationsList extends HTMLElement {
                 font-size: 14px;
                 font-weight: 400;
                 padding-top: 5px;
-                border-right: 1px solid var(--palette-divider);
             }
 
             .container .active{
@@ -1185,7 +1201,7 @@ export class ConversationsList extends HTMLElement {
             document.querySelector("globular-messenger").setConversation(conversation.getUuid())
         }
 
-        selector.click()
+        this.setConversation(conversation)
     }
 
     /** Close a conversation by leaving it or delete it. */
@@ -1201,6 +1217,110 @@ export class ConversationsList extends HTMLElement {
 
 customElements.define('globular-conversations-list', ConversationsList)
 
+
+/**
+ * Participants for the active conversation.
+ */
+export class ParticipantsList extends HTMLElement {
+
+    constructor() {
+        super();
+        this.account = null;
+
+        // Set the shadow dom.
+        this.attachShadow({ mode: "open" });
+
+        this.shadowRoot.innerHTML = `
+        <style>
+            ${theme}
+
+            .container{
+                
+            }
+
+            #paticipants-lst{
+                display: flex;
+                flex-direction: column;
+            }
+
+            .participant-table-row{
+                display: flex;
+                transition: background 0.2s ease,padding 0.8s linear;
+                background-color: var(--palette-background-paper);
+                border-bottom: 1px solid var(--palette-divider);
+            }
+
+            .participant-table-row:hover{
+                filter: invert(10%);
+            }
+
+            .participant-table-row div{
+                display: flex;
+                flex-direction: column;
+                padding: 5px;
+            }
+
+            .participant-table-row img{
+                height: 48px;
+                width: 48px;
+            }
+
+            .iron-icon {
+                height: 48px;
+                width: 48px;
+            }
+
+        </style>
+
+        <div id="paticipants-lst">
+        </div>
+        `
+    }
+
+    /**
+     * Here I will set paticipant from the conversation.
+     * @param {*} conversation 
+     */
+    setConversation(conversation) {
+        this.clear() // clear actual participant list...
+        let participants = conversation.getParticipantsList()
+        participants.forEach(paticipant => {
+            // So Here I will get the account.
+            Account.getAccount(paticipant,
+                p => {
+                    let html = `
+                    <div class="participant-table-row">
+                        <div>
+                            <img src="${p.profilPicture_}"> </img>
+                           
+                        </div>
+                        <div>
+                            <span><span style="font-style: italic;">${p.name}</span> ${p.firstName} ${p.lastName}</span>
+                            <globular-session-state account=${p.id}></globular-session-state>
+                        </div>
+                    </div>
+                    `
+
+                    console.log(p)
+                    this.shadowRoot.querySelector("#paticipants-lst").appendChild(document.createRange().createContextualFragment(html))
+                },
+                err => {
+                    console.log(err)
+                })
+        })
+    }
+
+
+    clear() {
+        this.shadowRoot.querySelector("#paticipants-lst").innerHTML = ""
+    }
+
+    setAccount(account) {
+        this.account = account
+    }
+}
+
+customElements.define('globular-paticipants-list', ParticipantsList)
 
 /**
  * Display the list of file attached with that conversation.
@@ -1237,79 +1357,6 @@ export class AttachedFilesList extends HTMLElement {
 
 
 customElements.define('globular-attached-files-list', AttachedFilesList)
-
-/**
- * Participants for the active conversation.
- */
-export class ParticipantsList extends HTMLElement {
-
-    constructor() {
-        super();
-        this.account = null;
-
-        // Set the shadow dom.
-        this.attachShadow({ mode: "open" });
-
-        this.shadowRoot.innerHTML = `
-        <style>
-            ${theme}
-
-            .container{
-                
-            }
-
-            .participant-table{
-                display: table;
-                border-collapse: separate;
-                border-spacing: 5px;
-
-            }
-
-            .participant-table-header{
-                display: table-row;
-                position: sticky;
-            }
-
-            .participant-table-header div{
-                display: table-cell;
-            }
-
-            .participant-table-row{
-                display: table-row;
-            }
-
-        </style>
-
-        <div class="container">
-            <div class="participant-table">
-                <div class="participant-table-header">
-                        <div>name</div>
-                        <div>status</div>
-                </div>
-                <div id="paticipants-lst">
-                </div>
-            <div>
-        </div>
-        `
-
-
-    }
-
-    setConversation(conversation) {
-        console.log("-----------> set ", conversation.getParticipantsList())
-    }
-
-
-    clear() {
-        this.shadowRoot.querySelector("#paticipants-lst").innerHTML = ""
-    }
-
-    setAccount(account) {
-        this.account = account
-    }
-}
-
-customElements.define('globular-paticipants-list', ParticipantsList)
 
 
 /**
@@ -1353,8 +1400,8 @@ export class MessagesPanel extends HTMLElement {
             }
 
             .container{
-                min-height: 425px;
-                max-height: 425px;
+                min-height: 525px;
+                max-height: 525px;
                 padding-left: 40px;
                 padding-right: 8px;
                 background-color: var(--palette-background-default);
@@ -1363,7 +1410,7 @@ export class MessagesPanel extends HTMLElement {
 
             .conversation-messages{
                 padding-top: 16px;
-                min-height: 425px;
+                min-height: 525px;
                 display: flex;
                 flex-direction: column-reverse;
             }

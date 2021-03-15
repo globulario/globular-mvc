@@ -55,9 +55,6 @@ export class SessionState extends HTMLElement {
 
             .session-state-panel{
                 display: flex;
-                padding-left: 16px;
-                padding-right: 16px;
-                padding-bottom: 16px;
                 flex-direction: row;
                 background-color: var(--palette-background-paper);
                 color: var(--palette-text-primary);
