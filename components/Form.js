@@ -51,6 +51,7 @@ export class Form extends HTMLElement {
             </div>
         `
 
+        this.toast = ""
         this.container = this.shadowRoot.getElementById("container")
         this.shadowRoot.getElementById("save-btn").onclick = this.confirm.bind(this)
     }
@@ -70,7 +71,6 @@ export class Form extends HTMLElement {
      * Creates a Toast popup to confirm if the user wants to save their form.
      */
     confirm() {
-        M.Toast.dismissAll()
         const toastHtml = `
         <style>
             #button-container {
@@ -89,13 +89,11 @@ export class Form extends HTMLElement {
 
             #toast-text {
                 padding-bottom: 2rem;
-                color: wheat;
             }
 
             .toast-btn {
                 box-shadow: none;
                 background-color: transparent;
-                color: wheat;
                 cursor: pointer;
                 transition: background-color .2s;
                 border: none;
@@ -118,10 +116,10 @@ export class Form extends HTMLElement {
         `
         M.toast({html: toastHtml, displayLength: 999999})
 
-        let toast = document.querySelector(".toast")
-        toast.querySelector("#save-btn").onclick = this.save.bind(this)
-        toast.querySelector("#no-save-btn").onclick = this.noSave.bind(this)
-        toast.querySelector("#cancel-btn").onclick = this.cancel.bind(this)
+        this.toast = document.querySelector(".toast")
+        this.toast.querySelector("#save-btn").onclick = this.save.bind(this)
+        this.toast.querySelector("#no-save-btn").onclick = this.noSave.bind(this)
+        this.toast.querySelector("#cancel-btn").onclick = this.cancel.bind(this)
 
         Model.eventHub.publish("lock_form_evt", true, true)
     }
@@ -131,9 +129,9 @@ export class Form extends HTMLElement {
      */
     save() {
         Model.eventHub.publish("save_form_evt", true, true)
-        M.Toast.dismissAll()
+        this.toast.remove()
         Model.eventHub.publish("unlock_form_evt", true, true)
-        Model.eventHub.publish("reset_form_evt", true, true)
+        // Model.eventHub.publish("reset_form_evt", true, true)
     }
 
     /**
@@ -141,7 +139,7 @@ export class Form extends HTMLElement {
      */
     noSave() {
         Model.eventHub.publish("reset_form_evt", true, true)
-        M.Toast.dismissAll()
+        this.toast.remove()
         Model.eventHub.publish("unlock_form_evt", true, true)
     }
 
@@ -149,7 +147,7 @@ export class Form extends HTMLElement {
      * Sends an event over your local network to unlock the current form.
      */
     cancel() {
-        M.Toast.dismissAll()
+        this.toast.remove()
         Model.eventHub.publish("unlock_form_evt", true, true)
     }
 
@@ -186,6 +184,7 @@ export class FormSection extends HTMLElement {
                     text-transform: uppercase;
                     color: var(--cr-primary-text-color);
                     font-weight: 400;
+                    top: .25rem;
                     letter-spacing: .25px;
                     margin-bottom: .35em;
                     margin-top: var(--cr-section-vertical-margin);
@@ -193,6 +192,7 @@ export class FormSection extends HTMLElement {
                     padding-bottom: .25em;
                     padding-top: .5em;
                     padding-left: 2em;
+                    background: transparent;
                 }
 
                 .card-subtitle{
@@ -1071,7 +1071,7 @@ export class DateField extends Field {
     constructor(label, description, initialValue = "", x = 0, y = 0, width = 0, height = 0, xSmall = 0, ySmall = 0, widthSmall = 0, heightSmall = 0, xPhone = 0, yPhone = 0, widthPhone = 0, heightPhone = 0) {
         super(label, initialValue, x, y, width, height, xSmall, ySmall, widthSmall, heightSmall, xPhone, yPhone, widthPhone, heightPhone)
         let html = `
-            <paper-input id="field-input" label="${description}" type="Date" raised required error="This field is required."></paper-input>
+            <paper-input id="field-input" label="${description}" type="datetime-local" raised required error="This field is required."></paper-input>
             <div id="field-view"></div>
         `
 
