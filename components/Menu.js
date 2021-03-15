@@ -66,7 +66,7 @@ export class Menu extends HTMLElement {
             }
 
             .bottom{
-                right: 0px;
+                right: -16px;
                 top: 40px;
             }
 

@@ -1,6 +1,6 @@
 import { Model } from "./Model";
 import * as resource from "globular-web-client/resource/resource_pb";
-
+import 'source-map-support/register' // That resolve the error map and give real source name and plage in function.
 import * as jwt from "jwt-decode";
 import { ApplicationView } from "./ApplicationView";
 import { Account, SessionState, Session } from "./Account";
@@ -17,7 +17,10 @@ import {
 import { v4 as uuidv4 } from "uuid";
 import { mergeTypedArrays, uint8arrayToStringMethod } from "./Utility";
 import { ConversationManager } from "./Conversation";
-import { Conversation, Conversations, Invitation } from "globular-web-client/conversation/conversation_pb";
+import { Conversations } from "globular-web-client/conversation/conversation_pb";
+import { Login } from "./components/Login";
+import { LogInfo, LogLevel, LogRqst, LogRsp } from "globular-web-client/log/log_pb";
+import { getErrorSource, install } from "source-map-support";
 
 // Get the configuration from url
 function getFileConfig(url: string, callback: (obj: any) => void, errorcallback: (err: any) => void) {
@@ -35,7 +38,6 @@ function getFileConfig(url: string, callback: (obj: any) => void, errorcallback:
   xmlhttp.open("GET", url, true);
   xmlhttp.send();
 }
-
 
 /**
  * That class can be use to create any other application.
@@ -165,6 +167,39 @@ export class Application extends Model {
   ) {
     let init_ = () => {
 
+      // So here I will intercept all error and log it on the server log.
+      // This error will be available in the setting -> error(s)
+      window.onerror = (message, source, lineno, colno, error) => { 
+        let info = new LogInfo
+        info.setDate(Math.trunc(Date.now()/1000))
+        info.setLevel(LogLevel.ERROR_MESSAGE)
+        info.setApplication(Application.application)
+        info.setUserid("")
+        info.setUsername("")
+        if(this.account != undefined){
+          info.setUserid(this.account.id)
+          info.setUsername(this.account.name)
+        }
+        
+        info.setMethod(error.name + " " + error.message)
+        info.setMessage(error.stack.toString())
+
+        let rqst = new LogRqst
+        rqst.setInfo(info)
+        
+        Model.globular.logService.log(rqst, {
+          token: localStorage.getItem("user_token"),
+          application: Model.application,
+          domain: Model.domain,
+        }).then((rsp:LogRsp)=>{
+          console.log("info was log!")
+        })
+        .catch((err:any)=>{
+           ApplicationView.displayMessage(err, 3000)
+        })
+
+      };
+
       // Here I will connect the listener's
       // The login event.
       Model.eventHub.subscribe(
@@ -184,7 +219,7 @@ export class Application extends Model {
               Model.eventHub.publish("login_event", account, true);
             },
             (err: any) => {
-              this.view.displayMessage(err, 4000);
+              ApplicationView.displayMessage(err, 4000);
             }
           );
         },
@@ -231,21 +266,49 @@ export class Application extends Model {
               console.log("--> register succeed!", data);
             },
             (err: any) => {
-              this.view.displayMessage(err, 4000);
+              ApplicationView.displayMessage(err, 4000);
             }
           );
         },
         true
       );
 
-      
+      // That listener is use to keep the client up to date with the server.
+      // if an accout is connect it will not restart it session automaticaly...
+      Model.eventHub.subscribe(
+        `update_${Application.domain}_${Application.application}_evt`,
+        (uuid: string) => {
+          this.register_event_listener = uuid;
+        },
+        (version: string) => {
+         
+          if (this.account == undefined) {
+            // reload the page...
+             location.reload();
+          }else{
+            // 
+            ApplicationView.displayMessage(`
+            <div style="display: flex; flex-direction: column">
+              <div>A new version of <span style="font-weight: 500;">
+                ${Application.application}</span> (v.${version}) is available.
+              </div>
+              <div>
+                Press <span style="font-weight: 500;">f5</span> to refresh the page.
+              </div>
+            </div>
+            `, 10 * 1000);
+          }
+        },
+        false
+      );
+
       // Invite contact event.
       Model.eventHub.subscribe(
         "send_conversation_invitation_event_",
         (uuid: string) => {
           this.invite_contact_listener = uuid;
         },
-        (evt:any) => {
+        (evt: any) => {
           // Here I will try to login the user.
           this.onInviteParticipant(evt);
         },
@@ -350,7 +413,7 @@ export class Application extends Model {
               );
             })
             .catch((err: any) => {
-              this.view.displayMessage(err, 4000);
+              ApplicationView.displayMessage(err, 4000);
             });
         },
         true
@@ -367,7 +430,7 @@ export class Application extends Model {
               );
               this.view.init();
             } else {
-              this.displayMessage(
+              ApplicationView.displayMessage(
                 "no application information found for " +
                 this.name +
                 " make sure your application has the correct name in your class derived from Application!", 3000
@@ -377,7 +440,7 @@ export class Application extends Model {
           }
         },
         (err: any) => {
-          console.log(err);
+          ApplicationView.displayMessage(err, 3000)
         }
       );
 
@@ -400,7 +463,7 @@ export class Application extends Model {
             this.startRefreshToken();
           },
           (err: any) => {
-            this.view.displayMessage(err, 4000);
+            ApplicationView.displayMessage(err, 4000);
             this.view.resume();
           }
         );
@@ -553,8 +616,7 @@ export class Application extends Model {
         localStorage.removeItem("user_email");
         localStorage.removeItem("token_expired");
         localStorage.removeItem("remember_me");
-        console.log("fail to refesh token!");
-        console.log(err);
+        ApplicationView.displayMessage(err, 3000)
         onError(err);
       });
   }
@@ -576,7 +638,7 @@ export class Application extends Model {
           },
           (err: any) => {
             // simply display the error on the view.
-            this.view.displayMessage(err, 4000);
+            ApplicationView.displayMessage(err, 4000);
             // Stop runing...
             clearInterval(__setInterval);
           }
@@ -667,7 +729,7 @@ export class Application extends Model {
 
 
           // Here I will ask the user for confirmation before actually delete the contact informations.
-          let toast = this.displayMessage(
+          let toast = ApplicationView.displayMessage(
             `
           <style>
             #contact-session-info-box{
@@ -761,7 +823,7 @@ export class Application extends Model {
             })
           },
             (err: any) => {
-              this.displayMessage(err, 3000)
+              ApplicationView.displayMessage(err, 3000)
             })
 
           // Retreive conversations...
@@ -779,7 +841,7 @@ export class Application extends Model {
             () => {
               /* Nothing to do here **/
             }, (err: any) => {
-              this.displayMessage(err, 3000)
+              ApplicationView.displayMessage(err, 3000)
             })
 
           this.view.resume();
@@ -869,10 +931,6 @@ export class Application extends Model {
 
   }
 
-  public displayMessage(msg: any, delay: number): any {
-    return this.view.displayMessage(msg, delay);
-  }
-
   /**
    * That function must be use to update application information store
    * in level db in local_ressource table.
@@ -943,7 +1001,7 @@ export class Application extends Model {
         );
       },
       (err: any) => {
-        this.view.displayMessage(err, 4000);
+        ApplicationView.displayMessage(err, 4000);
       }
     );
 
@@ -957,7 +1015,7 @@ export class Application extends Model {
         );
       },
       (err: any) => {
-        this.view.displayMessage(err, 4000);
+        ApplicationView.displayMessage(err, 4000);
       }
     );
   }
@@ -1120,7 +1178,7 @@ export class Application extends Model {
         /** nothing special here... */
       },
       (err: any) => {
-        this.view.displayMessage(err, 3000);
+        ApplicationView.displayMessage(err, 3000);
       }
     );
   }
@@ -1152,11 +1210,11 @@ export class Application extends Model {
           () => {
             // this.displayMessage(, 3000)
           }, (err: any) => {
-            this.displayMessage(err, 3000)
+            ApplicationView.displayMessage(err, 3000)
           })
       },
       (err: any) => {
-        this.view.displayMessage(err, 3000);
+        ApplicationView.displayMessage(err, 3000);
       }
     );
   }
@@ -1184,11 +1242,11 @@ export class Application extends Model {
           () => {
             // this.displayMessage(, 3000)
           }, (err: any) => {
-            this.displayMessage(err, 3000)
+            ApplicationView.displayMessage(err, 3000)
           })
       },
       (err: any) => {
-        this.view.displayMessage(err, 3000);
+        ApplicationView.displayMessage(err, 3000);
       }
     );
   }
@@ -1215,11 +1273,11 @@ export class Application extends Model {
           () => {
             // this.displayMessage(, 3000)
           }, (err: any) => {
-            this.displayMessage(err, 3000)
+            ApplicationView.displayMessage(err, 3000)
           })
       },
       (err: any) => {
-        this.view.displayMessage(err, 3000);
+        ApplicationView.displayMessage(err, 3000);
       }
     );
   }
@@ -1246,11 +1304,11 @@ export class Application extends Model {
           () => {
             // this.displayMessage(, 3000)
           }, (err: any) => {
-            this.displayMessage(err, 3000)
+            ApplicationView.displayMessage(err, 3000)
           })
       },
       (err: any) => {
-        this.view.displayMessage(err, 3000);
+        ApplicationView.displayMessage(err, 3000);
       }
     );
   }
@@ -1277,11 +1335,11 @@ export class Application extends Model {
           () => {
             // this.displayMessage(, 3000)
           }, (err: any) => {
-            this.displayMessage(err, 3000)
+            ApplicationView.displayMessage(err, 3000)
           })
       },
       (err: any) => {
-        this.view.displayMessage(err, 3000);
+        ApplicationView.displayMessage(err, 3000);
       }
     );
   }

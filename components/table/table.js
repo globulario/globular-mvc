@@ -90,8 +90,11 @@ export class TableElement extends PolymerElement {
    * Creates all the grids (tiles) necessary to display the table
    */
   createTiles() {
-    this.scrollDiv.element.style.display = "";
+    if (this.scrollDiv == null) {
+      return null
+    }
 
+    this.scrollDiv.element.style.display = "";
     var size = 1;
 
     // Get the number of tiles necessary to populate the table
@@ -128,11 +131,12 @@ export class TableElement extends PolymerElement {
       }
     }
 
-    var resizeListener = function (tiles, scrollDiv, header, table) {
+    var resizeListener = function (tiles, header, table) {
       return function (entry) {
+
         var value = "";
         // Set the final header tile's margin to be slightly greater than the other margins so that there is space for the scrollbar
-        var scrollBarWidth = scrollDiv.offsetWidth - scrollDiv.clientWidth;
+        var scrollBarWidth = table.scrollDiv.element.offsetWidth - table.scrollDiv.element.clientWidth;
 
         if (header.lastChild.style != null) {
           if (scrollBarWidth > 0) {
@@ -176,7 +180,7 @@ export class TableElement extends PolymerElement {
           table.menu.element.style.left = -1 * (table.menu.element.offsetWidth + 2) + "px";
         }
       };
-    }(this.tiles, this.scrollDiv.element, this.children[0], this);
+    }(this.tiles, this.children[0], this);
 
     window.addEventListener("resize", resizeListener, true);
   }
@@ -227,9 +231,10 @@ export class TableElement extends PolymerElement {
    */
   getIndex() {
     var index = 0;
-
-    if (this.scrollDiv.element.scrollTop != undefined) {
-      index = parseInt(this.scrollDiv.element.scrollTop / this.rowheight);
+    if (this.scrollDiv != null) {
+      if (this.scrollDiv.element.scrollTop != undefined) {
+        index = parseInt(this.scrollDiv.element.scrollTop / this.rowheight);
+      }
     }
 
     return index;
@@ -266,7 +271,7 @@ export class TableElement extends PolymerElement {
         this.createCells();
       }
 
-      if (values.length > 0) {
+      if (values.length > 0 && this.scrollDiv !=undefined) {
         var scrollBarWidth = this.scrollDiv.element.offsetWidth - this.scrollDiv.element.clientWidth;
 
         for (var i = 0; i + this.index < values.length && i < max; i++) {
@@ -299,20 +304,26 @@ export class TableElement extends PolymerElement {
               if (isString(renderFct)) {
                 eval(renderFct + "(div , value, r, j)");
               } else {
-                renderFct(div, value, r, j); // row, col.
-              }
-            }
+                var r = i + this.index;
 
-            if (j == size - 1) {
-              if (scrollBarWidth > 0) {
-                cell.element.style.paddingRight = scrollBarWidth + "px";
-              } else {
-                cell.element.style.paddingRight = "";
+                if (isString(renderFct)) {
+                  eval(renderFct + "(div , value, r, j)");
+                } else {
+                  renderFct(div, value, r, j); // row, col.
+                }
+              }
+
+              if (j == size - 1) {
+                if (scrollBarWidth > 0) {
+                  cell.element.style.paddingRight = scrollBarWidth + "px";
+                } else {
+                  cell.element.style.paddingRight = "";
+                }
               }
             }
           }
         }
-      } else {
+      } else if(this.scrollDiv!=undefined) {
         // hide the scroll div.
         this.scrollDiv.element.style.display = "none";
       }
@@ -493,8 +504,8 @@ export class TableElement extends PolymerElement {
       this.menu.element.style.position = "absolute";
 
       this.style.marginLeft = this.menu.element.offsetWidth + 4 + "px";
-      this.menu.element.style.left = -1 * (this.menu.element.offsetWidth + 2) + "px"; 
-      
+      this.menu.element.style.left = -1 * (this.menu.element.offsetWidth + 2) + "px";
+
       // Make the table resize on display.
       var intersectionObserver = new IntersectionObserver(function (entries) {
         if (entries[0].isIntersecting) {
@@ -598,12 +609,24 @@ export class TableElement extends PolymerElement {
     // reset the index.
     this.index = -1; // remove acutal rows.
 
-    this.scrollDiv.removeAllChilds(); // Recreate tiles
-
-    this.createTiles(); // Redisplay values.
+    if (this.scrollDiv != null) {
+      this.scrollDiv.removeAllChilds(); // Recreate tiles
+      this.createTiles(); // Redisplay values.
+    }
 
     this.render();
-  } //////////////////////////////////////////////////////////////////////////////////////
+
+  }
+
+  clear() {
+    this.data = []
+    this.sorted = [];
+    this.filtered = {};
+
+    this.refresh();
+
+  }
+  //////////////////////////////////////////////////////////////////////////////////////
   // Data access function.
   //////////////////////////////////////////////////////////////////////////////////////
 
@@ -638,10 +661,10 @@ export class TableElement extends PolymerElement {
             this.sorted.push(this.data[i]);
           }
         }
-      } 
+      } // return the list of sorted and filtered values.
 
       return this.sorted;
-    }
+    } // Return the list of all filtered values.
 
     return Object.values(this.filtered);
   }
@@ -691,7 +714,8 @@ export class TableElement extends PolymerElement {
   }
 
   getFilteredColumnData(index) {
-    if (Object.keys(this.filtered).length == 0) {
+    let filtered = this.getFilteredData()
+    if (Object.keys(filtered).length == 0) {
       if (this.getFilters().length > 0) {
         return []; // all data are filtered.
       }
@@ -702,11 +726,11 @@ export class TableElement extends PolymerElement {
     var data = [];
 
     if (this.getData() != undefined) {
-      for (var i in this.filtered) {
+      for (var i in filtered) {
         data.push({
           // push the filtered values.
-          "value": this.filtered[i][index],
-          "index": this.filtered[i].index
+          "value": filtered[i][index],
+          "index": filtered[i].index
         });
       }
     }
@@ -719,8 +743,9 @@ export class TableElement extends PolymerElement {
    */
   size() {
     // if filters are applied.
-    if (Object.keys(this.filtered).length > 0) {
-      return Object.keys(this.filtered).length;
+    let filtered = this.getFilteredData()
+    if (Object.keys(filtered).length > 0) {
+      return Object.keys(filtered).length;
     } else if (this.hasFilter()) {
       return 0; // all filtered.
     }
@@ -748,12 +773,24 @@ export class TableElement extends PolymerElement {
 
     return sorters;
   }
+
+  deleteRow(index) {
+    this.data.splice(index, 1)
+    let i = 0
+    this.data.forEach(d => {
+      d.index = i;
+      i++
+    })
+
+    this.sort()
+    this.filter()
+    this.refresh()
+  }
+
   /**
    * Order a table. 
    * @param {*} side can be asc, desc or nothing.
    */
-
-
   sort() {
     this.data.sort(function (a, b) {
       var indexA = parseInt(a.index);
@@ -777,11 +814,11 @@ export class TableElement extends PolymerElement {
       }
     }
   }
+
+
   /**
    * Return the list of active filters.
    */
-
-
   getFilters() {
     var filters = []; // put all filter in the save array.
 
@@ -795,11 +832,10 @@ export class TableElement extends PolymerElement {
 
     return filters;
   }
+
   /**
    * Filter table values.
    */
-
-
   filter() {
     // so here I will empty the filtered map.
     this.filtered = {}; // Get the filters

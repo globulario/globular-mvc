@@ -185,7 +185,7 @@ export class ApplicationView extends View {
 
     // Set the onerror callback for the component.
     this._fileExplorer.onerror = (err: any) => {
-      //this.displayMessage(err, 4000)
+      //ApplicationView.displayMessage(err, 4000)
     };
 
     // set the global varialbe...
@@ -237,7 +237,7 @@ export class ApplicationView extends View {
         // On invite contact action.
         this.contactsMenu.onInviteConctact = (contact: Account) => {
           // Display the message to the user.
-          this.displayMessage(
+          ApplicationView.displayMessage(
             "<iron-icon icon='send' style='margin-right: 10px;'></iron-icon><div>Invitation was sent to " +
             contact.email +
             "</div>",
@@ -251,7 +251,7 @@ export class ApplicationView extends View {
         // On revoke contact invitation action.
         this.contactsMenu.onRevokeContact = (contact: Account) => {
 
-          this.displayMessage(
+          ApplicationView.displayMessage(
             "<iron-icon icon='send' style='margin-right: 10px;'></iron-icon><div>Invitation to " +
             contact.email +
             " was revoked!</div>",
@@ -264,7 +264,7 @@ export class ApplicationView extends View {
 
         // On accept contact invitation
         this.contactsMenu.onAcceptContact = (contact: Account) => {
-          this.displayMessage(
+          ApplicationView.displayMessage(
             "<iron-icon icon='send' style='margin-right: 10px;'></iron-icon><div>Invitation from " +
             contact.email +
             " was accepted!</div>",
@@ -276,7 +276,7 @@ export class ApplicationView extends View {
 
         // Decline contact invitation
         this.contactsMenu.onDeclineContact = (contact: Account) => {
-          this.displayMessage(
+          ApplicationView.displayMessage(
             "<iron-icon icon='send' style='margin-right: 10px;'></iron-icon><div>Invitation from " +
             contact.email +
             " was declined!</div>",
@@ -290,7 +290,7 @@ export class ApplicationView extends View {
         this.contactsMenu.onDeleteContact = (contact: Account) => {
 
           // Here I will ask the user for confirmation before actually delete the contact informations.
-          let toast = this.displayMessage(
+          let toast = ApplicationView.displayMessage(
             `
             <style>
               #yes-no-contact-delete-box{
@@ -334,7 +334,7 @@ export class ApplicationView extends View {
           yesBtn.onclick = () => {
             toast.dismiss();
 
-            this.displayMessage(
+            ApplicationView.displayMessage(
               "<iron-icon icon='send' style='margin-right: 10px;'></iron-icon><div>Contact " +
               contact.email +
               " was remove from your contacts!</div>",
@@ -558,7 +558,7 @@ export class ApplicationView extends View {
    * Try to extract error message from input object.
    * @param err Can be a string or object, in case of object I will test if the object contain a field named 'message'
    */
-  private getErrorMessage(err: any) {
+  private static getErrorMessage(err: any) {
     try {
       let errObj = err;
       if (typeof err === "string" || err instanceof String) {
@@ -584,9 +584,10 @@ export class ApplicationView extends View {
    * Display a message to the user.
    * @param msg The message to display in toast!
    */
-  public displayMessage(err: any, duration: number) {
+  public static displayMessage(msg: any, duration: number) {
+    console.log(msg)
     return M.toast({
-      html: this.getErrorMessage(err),
+      html: this.getErrorMessage(msg),
       displayLength: duration,
     });
   }
@@ -739,7 +740,7 @@ export class ApplicationView extends View {
     const name = nameGenrator.getRandomName(false);
 
     // Display the box if not already displayed...
-    let toast = this.displayMessage(
+    let toast = ApplicationView.displayMessage(
       `
       <style>
         new-conversation-box{
@@ -812,7 +813,7 @@ export class ApplicationView extends View {
           toast.dismiss();
         },
         (err: any) => {
-          this.displayMessage(err, 3000)
+          ApplicationView.displayMessage(err, 3000)
         })
       toast.dismiss();
     }
@@ -823,7 +824,7 @@ export class ApplicationView extends View {
    * @param converstion 
    */
   onInviteToConversaiton(conversation: Conversation) {
-    let toast = this.displayMessage(
+    let toast = ApplicationView.displayMessage(
       `
       <style>
         #invite-conversation-participants{
@@ -872,7 +873,7 @@ export class ApplicationView extends View {
 
         inviteContactInput.setValues(accounts)
       }, (err) => {
-        this.displayMessage(err, 3000)
+        ApplicationView.displayMessage(err, 3000)
       })
     }
 
@@ -893,7 +894,7 @@ export class ApplicationView extends View {
             Model.eventHub.publish("send_conversation_invitation_event_", { participant: a.id, conversation: conversation.getName() }, true)
           },
           (err: any) => {
-            this.displayMessage(err, 3000)
+            ApplicationView.displayMessage(err, 3000)
           })
         // So here I will create a 
         toast.dismiss();
@@ -913,7 +914,7 @@ export class ApplicationView extends View {
    * @param conversation 
    */
   onDeleteConversaiton(conversation: Conversation) {
-    let toast = this.displayMessage(
+    let toast = ApplicationView.displayMessage(
       `
       <style>
         #yes-no-contact-delete-box{
@@ -961,14 +962,14 @@ export class ApplicationView extends View {
         // Here the conversation has been deleted...
         Model.eventHub.publish(`delete_conversation_${conversation.getUuid()}_evt`, `{}`, false)
 
-        this.displayMessage(
+        ApplicationView.displayMessage(
           "<iron-icon icon='communication:message' style='margin-right: 10px;'></iron-icon><div>Conversation named " +
           conversation.getName() +
           " was deleted!</div>",
           3000
         );
       }, (err) => {
-        this.displayMessage(err, 3000)
+        ApplicationView.displayMessage(err, 3000)
         toast.dismiss();
       })
 

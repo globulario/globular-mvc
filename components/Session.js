@@ -55,16 +55,13 @@ export class SessionState extends HTMLElement {
 
             .session-state-panel{
                 display: flex;
-                padding-left: 16px;
-                padding-right: 16px;
-                padding-bottom: 16px;
                 flex-direction: row;
                 background-color: var(--palette-background-paper);
                 color: var(--palette-text-primary);
                 --iron-icon-fill-color: var(--palette-text-primary);
                 align-items: center;
                 font-size: .95rem;
-                min-width: 320px;
+                min-width: 300px;
             }
 
             .session-state-panel span{
@@ -131,9 +128,10 @@ export class SessionState extends HTMLElement {
                 this.account = val;
                 this.init();
 
-            }, (err) => { console.log(err) })
+            }, (err) => {
+                ApplicationView.displayMessage(err, 3000)
+            })
         }
-
 
     }
 
@@ -161,9 +159,9 @@ export class SessionState extends HTMLElement {
         // depending if session is obj or typescript class
         // it can affect it values.
         let state = 1
-        if(session.state!=undefined){
+        if (session.state != undefined) {
             state = session.state
-        }else if (session.state_!=undefined){
+        } else if (session.state_ != undefined) {
             state = session.state_
         }
 

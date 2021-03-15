@@ -1,12 +1,12 @@
 
-import { Conversation, ConnectRequest, Conversations, CreateConversationRequest, Message, CreateConversationResponse, DeleteConversationRequest, DeleteConversationResponse, FindConversationsRequest, FindConversationsResponse, JoinConversationRequest, JoinConversationResponse, ConnectResponse, SendMessageRequest, SendMessageResponse, SendInvitationRequest, Invitation, Invitations, GetReceivedInvitationsRequest, GetReceivedInvitationsResponse, AcceptInvitationRequest, DeclineInvitationRequest, GetSentInvitationsRequest, GetSentInvitationsResponse, RevokeInvitationRequest, RevokeInvitationResponse } from "globular-web-client/conversation/conversation_pb";
+import { Conversation, ConnectRequest, Conversations, CreateConversationRequest, Message, CreateConversationResponse, DeleteConversationRequest, DeleteConversationResponse, FindConversationsRequest, FindConversationsResponse, JoinConversationRequest, JoinConversationResponse, ConnectResponse, SendMessageRequest, SendMessageResponse, SendInvitationRequest, Invitation, Invitations, GetReceivedInvitationsRequest, GetReceivedInvitationsResponse, AcceptInvitationRequest, DeclineInvitationRequest, GetSentInvitationsRequest, GetSentInvitationsResponse, RevokeInvitationRequest, RevokeInvitationResponse, LeaveConversationRequest, LeaveConversationResponse } from "globular-web-client/conversation/conversation_pb";
 import { GetConversationsRequest, GetConversationsResponse } from "globular-web-client/conversation/conversation_pb";
 
 import { Account } from "./Account";
 import { Model } from "./Model";
 import { v4 as uuidv4 } from "uuid";
 import { GetResourcePermissionsRsp } from "globular-web-client/rbac/rbac_pb";
-import {encode, decode} from 'uint8-to-base64';
+import { encode, decode } from 'uint8-to-base64';
 
 export class ConversationManager {
   public static uuid: string;
@@ -30,7 +30,7 @@ export class ConversationManager {
 
     stream.on("data", (rsp: ConnectResponse) => {
       /** Local event... */
-      Model.globular.eventHub.publish( `__received_message_${rsp.getMessage().getConversation()}_evt__`, rsp.getMessage(), true)
+      Model.globular.eventHub.publish(`__received_message_${rsp.getMessage().getConversation()}_evt__`, rsp.getMessage(), true)
     });
 
     stream.on("status", (status) => {
@@ -123,7 +123,7 @@ export class ConversationManager {
     })
   }
 
-  static joinConversation(conversationUuid: string, succesCallback: (messages: Message[]) => void, errorCallback: (err: any) => void) {
+  static joinConversation(conversationUuid: string, account:string, succesCallback: (messages: Message[]) => void, errorCallback: (err: any) => void) {
     let rqst = new JoinConversationRequest
     rqst.setConnectionUuid(ConversationManager.uuid)
     rqst.setConversationUuid(conversationUuid)
@@ -136,6 +136,8 @@ export class ConversationManager {
 
     // Now I will get existing message from the conversation.
     var messages = new Array<Message>();
+    let accountId = account;
+    let eventName = `join_conversation_${conversationUuid}_evt`
 
     stream.on("data", (rsp: JoinConversationResponse) => {
       messages.push(rsp.getMsg())
@@ -145,10 +147,12 @@ export class ConversationManager {
 
       if (status.code == 0) {
         succesCallback(messages)
+        Model.eventHub.publish(eventName, accountId, false)
       } else {
         // No message found...
-        if(status.details == "EOF"){
+        if (status.details == "EOF") {
           succesCallback(messages)
+          Model.eventHub.publish(eventName, accountId, false)
           return
         }
         // An error happen
@@ -158,8 +162,29 @@ export class ConversationManager {
 
   }
 
+  // leave the conversation.
+  static leaveConversation(conversationUuid: string, account: string,  successCallback: () => void, errorCallback: (err: any) => void) {
+    let rqst = new LeaveConversationRequest
+    rqst.setConversationUuid(conversationUuid)
+    rqst.setConnectionUuid(ConversationManager.uuid)
+
+    let accountId = account;
+    let eventName = `leave_conversation_${conversationUuid}_evt`
+
+    Model.globular.conversationService.leaveConversation(rqst, {
+      token: localStorage.getItem("user_token"),
+      application: Model.application,
+      domain: Model.domain,
+    }).then((rsp: LeaveConversationResponse) => {
+      successCallback();
+      // network event.
+      Model.eventHub.publish(eventName, accountId, false)
+
+    }).catch(errorCallback)
+  }
+
   // Send a conversation invitation to a given user.
-  static sendConversationInvitation(conversation:string, name: string, from: string, to: string, successCallback :()=>void, errorCallback:(err:any)=>void){
+  static sendConversationInvitation(conversation: string, name: string, from: string, to: string, successCallback: () => void, errorCallback: (err: any) => void) {
     let rqst = new SendInvitationRequest
     let invitation = new Invitation
     invitation.setFrom(from)
@@ -172,7 +197,7 @@ export class ConversationManager {
       token: localStorage.getItem("user_token"),
       application: Model.application,
       domain: Model.domain,
-    }).then((rsp:SendMessageResponse)=>{
+    }).then((rsp: SendMessageResponse) => {
       /** Nothing to do here... */
       successCallback()
       const encoded = encode(invitation.serializeBinary());
@@ -188,14 +213,14 @@ export class ConversationManager {
    * @param successCallback 
    * @param errorCallback 
    */
-  static getReceivedInvitations(accountId: string, successCallback :(invitation: Array<Invitation>)=>void, errorCallback:(err:any)=>void){
+  static getReceivedInvitations(accountId: string, successCallback: (invitation: Array<Invitation>) => void, errorCallback: (err: any) => void) {
     let rqst = new GetReceivedInvitationsRequest
     rqst.setAccount(accountId);
     Model.globular.conversationService.getReceivedInvitations(rqst, {
       token: localStorage.getItem("user_token"),
       application: Model.application,
       domain: Model.domain,
-    }).then((rsp:GetReceivedInvitationsResponse)=>{
+    }).then((rsp: GetReceivedInvitationsResponse) => {
       /** Nothing to do here... */
       successCallback(rsp.getInvitations().getInvitationsList())
 
@@ -208,14 +233,14 @@ export class ConversationManager {
    * @param successCallback 
    * @param errorCallback 
    */
-  static getSentInvitations(accountId: string, successCallback :(invitation: Array<Invitation>)=>void, errorCallback:(err:any)=>void){
+  static getSentInvitations(accountId: string, successCallback: (invitation: Array<Invitation>) => void, errorCallback: (err: any) => void) {
     let rqst = new GetSentInvitationsRequest
     rqst.setAccount(accountId);
     Model.globular.conversationService.getSentInvitations(rqst, {
       token: localStorage.getItem("user_token"),
       application: Model.application,
       domain: Model.domain,
-    }).then((rsp:GetSentInvitationsResponse)=>{
+    }).then((rsp: GetSentInvitationsResponse) => {
       /** Nothing to do here... */
       successCallback(rsp.getInvitations().getInvitationsList())
 
@@ -228,14 +253,14 @@ export class ConversationManager {
    * @param successCallback The success callback.
    * @param errorCallback The error callback.
    */
-  static acceptConversationInvitation(invitation:Invitation, successCallback: ()=>void, errorCallback: (err:any)=>void){
+  static acceptConversationInvitation(invitation: Invitation, successCallback: () => void, errorCallback: (err: any) => void) {
     let rqst = new AcceptInvitationRequest
     rqst.setInvitation(invitation);
     Model.globular.conversationService.acceptInvitation(rqst, {
       token: localStorage.getItem("user_token"),
       application: Model.application,
       domain: Model.domain,
-    }).then((rsp:AcceptInvitationRequest)=>{
+    }).then((rsp: AcceptInvitationRequest) => {
       /** Nothing to do here... */
       successCallback()
 
@@ -248,33 +273,33 @@ export class ConversationManager {
    * @param successCallback The success callback
    * @param errorCallback The error callback
    */
-  static declineConversationInvitation(invitation:Invitation, successCallback: ()=>void, errorCallback: (err:any)=>void){
+  static declineConversationInvitation(invitation: Invitation, successCallback: () => void, errorCallback: (err: any) => void) {
     let rqst = new DeclineInvitationRequest
     rqst.setInvitation(invitation);
     Model.globular.conversationService.declineInvitation(rqst, {
       token: localStorage.getItem("user_token"),
       application: Model.application,
       domain: Model.domain,
-    }).then((rsp:AcceptInvitationRequest)=>{
+    }).then((rsp: AcceptInvitationRequest) => {
       /** Nothing to do here... */
       successCallback()
     }).catch(errorCallback)
   }
 
-  static revokeConversationInvitation(invitation:Invitation, successCallback: ()=>void, errorCallback: (err:any)=>void){
+  static revokeConversationInvitation(invitation: Invitation, successCallback: () => void, errorCallback: (err: any) => void) {
     let rqst = new RevokeInvitationRequest
     rqst.setInvitation(invitation);
     Model.globular.conversationService.revokeInvitation(rqst, {
       token: localStorage.getItem("user_token"),
       application: Model.application,
       domain: Model.domain,
-    }).then((rsp:RevokeInvitationResponse)=>{
+    }).then((rsp: RevokeInvitationResponse) => {
       /** Nothing to do here... */
       successCallback()
     }).catch(errorCallback)
   }
 
-  static sendMessage(conversationUuid: string, author: string, text:string, replyTo:string, successCallback :()=>void, errorCallback:(err:any)=>void){
+  static sendMessage(conversationUuid: string, author: string, text: string, replyTo: string, successCallback: () => void, errorCallback: (err: any) => void) {
 
     let rqst = new SendMessageRequest
     let message = new Message
@@ -282,21 +307,25 @@ export class ConversationManager {
     message.setConversation(conversationUuid)
     message.setText(text)
     message.setInReplyTo(replyTo)
-    message.setCreationTime(new Date().getTime());
+    message.setCreationTime(Math.round(Date.now() / 1000));
     message.setAuthor(author);
     message.setLanguage(window.navigator.language.split("-")[0]);
+    message.setDislikesList(new Array<string>());
+    message.setLikesList(new Array<string>());
+    message.setReadersList([author]);
 
+    console.log(message)
     rqst.setMsg(message)
 
     Model.globular.conversationService.sendMessage(rqst, {
       token: localStorage.getItem("user_token"),
       application: Model.application,
       domain: Model.domain,
-    }).then((rsp:SendMessageResponse)=>{
+    }).then((rsp: SendMessageResponse) => {
       /** Nothing to do here... */
       console.log("----> message was sent!", message)
 
     }).catch(errorCallback)
-    
+
   }
 }

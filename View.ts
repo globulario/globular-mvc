@@ -35,7 +35,7 @@ export class View {
     }
 
     // Display a user message.
-    displayMessage(msg: any, delay?: number) {
+    static displayMessage(msg: any, delay?: number) {
         
     }
 

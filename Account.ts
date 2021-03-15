@@ -4,6 +4,7 @@ import * as RessourceService from "globular-web-client/resource/resource_pb";
 import { mergeTypedArrays, uint8arrayToStringMethod } from "./Utility";
 import { GetThumbnailsResponse } from "globular-web-client/file/file_pb";
 import { Group } from "./Group";
+import { ApplicationView } from "./ApplicationView";
 
 /**
  * The session object will keep information about the
@@ -76,7 +77,7 @@ export class Session extends Model {
                 this.save(() => {
                     /* nothing here*/
                 }, (err: any) => {
-                    console.log(err)
+                    ApplicationView.displayMessage(err, 3000)
                 })
             }, true)
     }
@@ -184,7 +185,6 @@ export class Session extends Model {
                 onSave();
             })
             .catch((err: any) => {
-                console.log(err)
                 onError(err);
             });
     }
@@ -524,9 +524,9 @@ export class Account extends Model {
     initData(callback: (account: Account) => void, onError: (err: any) => void) {
         let userName = this.name
 
-        // Retreive user data...
+        // Retreive user data... 
         Account.readOneUserData(
-            `{"_id":"${this.id}"}`, // The query is made on the user database and not local_ressource Accounts here so name is name_ here
+            `{"$or":[{"_id":"${this.id}"},{"name":"${this.id}"} ]}`, // The query is made on the user database and not local_ressource Accounts here so name is name_ here
             userName, // The database to search into 
             (data: any) => {
 
@@ -615,7 +615,7 @@ export class Account extends Model {
         // save only user data and not the how user info...
         let data = JSON.stringify({ _id: this.id, firstName_: this.firstName, lastName_: this.lastName, middleName_: this.middleName, profilPicture_: this.profilPicture });
         rqst.setCollection(collection);
-        rqst.setQuery(`{"_id":"${this.id}"}`);
+        rqst.setQuery(`{"$or":[{"_id":"${this.id}"},{"name":"${this.id}"} ]}`);
         rqst.setValue(data);
         rqst.setOptions(`[{"upsert": true}]`);
 
