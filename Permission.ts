@@ -2,7 +2,7 @@ import { Model } from './Model';
 import * as rbac from "globular-web-client/rbac/rbac_pb";
 
 /**
- * That class is use to access Ressource permission.
+ * That class is use to access Resource permission.
  */
 export class PermissionManager {
 
@@ -11,13 +11,14 @@ export class PermissionManager {
     }
 
     /**
-     * Return the ressource permission for a given ressource.
+     * Return the resource permission for a given resource.
      * @param subject The account, organization, group, peer to give permission to.
-     * @param ressource The ressource to set
+     * @param resource The resource to set
      * @param permission Can be any string, it will be drive by the interface here.
      */
-    static getRessourcePermission(ressource: string, permission: string, type: rbac.PermissionType, successCallback: (permission: rbac.Permission) => void, errorCallback: (err: any) => void, subject?: string) {
+    static getResourcePermission(resource: string, permission: string, type: rbac.PermissionType, successCallback: (permission: rbac.Permission) => void, errorCallback: (err: any) => void, subject?: string) {
         let rqst = new rbac.GetResourcePermissionRqst
+        rqst.setPath(resource)
         rqst.setName(permission)
         rqst.setType(type)
 
@@ -31,14 +32,14 @@ export class PermissionManager {
     }
 
     /**
-     * Return the ressource permission for a given ressource.
+     * Return the resource permission for a given resource.
      * @param subject The account, organization, group, peer to give permission to.
-     * @param ressource The ressource to set
+     * @param resource The resource to set
      * @param permission Can be any string, it will be drive by the interface here.
      */
-    static getRessourcePermissions(ressource: string, successCallback: (permissions: rbac.Permissions) => void, errorCallback: (err: any) => void) {
+    static getResourcePermissions(resource: string, successCallback: (permissions: rbac.Permissions) => void, errorCallback: (err: any) => void) {
         let rqst = new rbac.GetResourcePermissionsRqst
-        rqst.setPath(ressource)
+        rqst.setPath(resource)
 
         Model.globular.rbacService.getResourcePermissions(rqst, {
             token: localStorage.getItem("user_token"),
@@ -50,15 +51,15 @@ export class PermissionManager {
     }
 
     /**
-     * Create/Set a permission for a ressource.
+     * Create/Set a permission for a resource.
      * @param subject The account, organization, group, peer to give permission to.
-     * @param ressource The ressource to set
+     * @param resource The resource to set
      * @param permission Can be any string, it will be drive by the interface here.
      */
-    static setRessourcePermissions(ressource: string, permission: string, subject: string, successCallback: () => void, errorCallback: (err: any) => void) {
+    static setResourcePermissions(resource: string, permission: string, subject: string, successCallback: () => void, errorCallback: (err: any) => void) {
 
-        // first of all I will get the ressource permissions
-        PermissionManager.getRessourcePermissions(ressource,
+        // first of all I will get the resource permissions
+        PermissionManager.getResourcePermissions(resource,
             (permissions: rbac.Permissions) => {
                 console.log(permissions)
                 successCallback();
@@ -74,13 +75,13 @@ export class PermissionManager {
     }
 
     /**
-     * Remove ressource permissions or if permission and suject is set it will remove
+     * Remove resource permissions or if permission and suject is set it will remove
      * only for a specif permission and subject.
      * @param subject The account, organization, group, peer to give permission to.
-     * @param ressource The ressource to set
+     * @param resource The resource to set
      * @param permission Can be any string, it will be drive by the interface here.
      */
-    static removeRessourcePermissions(ressource: string, permission?: string, subject?: string) {
+    static removeResourcePermissions(resource: string, permission?: string, subject?: string) {
 
     }
 }

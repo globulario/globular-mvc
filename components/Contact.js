@@ -145,7 +145,7 @@ export class ContactsMenu extends Menu {
         let inviteContactInput = this.shadowRoot.getElementById("invite_contact_input")
         inviteContactInput.onkeyup = () => {
             let val = inviteContactInput.getValue();
-            if (val.length > 3) {
+            if (val.length >= 3) {
                 this.findAccountByEmail(val)
             } else {
                 inviteContactInput.clear()

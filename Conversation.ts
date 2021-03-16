@@ -1,5 +1,5 @@
 
-import { Conversation, ConnectRequest, Conversations, CreateConversationRequest, Message, CreateConversationResponse, DeleteConversationRequest, DeleteConversationResponse, FindConversationsRequest, FindConversationsResponse, JoinConversationRequest, JoinConversationResponse, ConnectResponse, SendMessageRequest, SendMessageResponse, SendInvitationRequest, Invitation, Invitations, GetReceivedInvitationsRequest, GetReceivedInvitationsResponse, AcceptInvitationRequest, DeclineInvitationRequest, GetSentInvitationsRequest, GetSentInvitationsResponse, RevokeInvitationRequest, RevokeInvitationResponse, LeaveConversationRequest, LeaveConversationResponse } from "globular-web-client/conversation/conversation_pb";
+import { Conversation, ConnectRequest, Conversations, CreateConversationRequest, Message, CreateConversationResponse, DeleteConversationRequest, DeleteConversationResponse, FindConversationsRequest, FindConversationsResponse, JoinConversationRequest, JoinConversationResponse, ConnectResponse, SendMessageRequest, SendMessageResponse, SendInvitationRequest, Invitation, Invitations, GetReceivedInvitationsRequest, GetReceivedInvitationsResponse, AcceptInvitationRequest, DeclineInvitationRequest, GetSentInvitationsRequest, GetSentInvitationsResponse, RevokeInvitationRequest, RevokeInvitationResponse, LeaveConversationRequest, LeaveConversationResponse, KickoutFromConversationRequest } from "globular-web-client/conversation/conversation_pb";
 import { GetConversationsRequest, GetConversationsResponse } from "globular-web-client/conversation/conversation_pb";
 
 import { Account } from "./Account";
@@ -88,7 +88,7 @@ export class ConversationManager {
     })
   }
 
-  static deleteConversation(conversationUuid: string, succesCallback: () => void, errorCallback: (err: any) => void) {
+  static deleteConversation(conversationUuid: string, account:string, succesCallback: () => void, errorCallback: (err: any) => void) {
     let rqst = new DeleteConversationRequest
     rqst.setConversationUuid(conversationUuid)
 
@@ -98,10 +98,32 @@ export class ConversationManager {
       domain: Model.domain,
     }).then((rsp: DeleteConversationResponse) => {
       succesCallback()
+      
+      // Here the conversation has been deleted...
+      Model.eventHub.publish(`delete_conversation_${conversationUuid}_evt`, conversationUuid, false)
 
     }).catch((err: any) => {
-      errorCallback(err)
+      succesCallback()
+      Model.eventHub.publish(`__leave_conversation_evt__`, conversationUuid, true)
+      Model.eventHub.publish(`leave_conversation_${conversationUuid}_evt`, account, false)
+      Model.eventHub.publish(`__delete_conversation_${conversationUuid}_evt__`, conversationUuid, true)
+      
+      //errorCallback(err)
     })
+  }
+
+  static kickoutFromConversation(conversationUuid: string, account:string, succesCallback: () => void, errorCallback: (err: any) => void) {
+    let rqst = new KickoutFromConversationRequest
+    rqst.setConversationUuid(conversationUuid)
+    rqst.setAccount(account)
+    Model.globular.conversationService.kickoutFromConversation(rqst, {
+      token: localStorage.getItem("user_token"),
+      application: Model.application,
+      domain: Model.domain,
+    }).then((rsp: DeleteConversationResponse) => {
+      succesCallback()
+      Model.eventHub.publish(`kickout_conversation_${conversationUuid}_evt`, account, false)
+    }).catch(errorCallback)
   }
 
   static findConversations(query: string, succesCallback: (conversations: Conversation[]) => void, errorCallback: (err: any) => void) {
@@ -123,7 +145,7 @@ export class ConversationManager {
     })
   }
 
-  static joinConversation(conversationUuid: string, account:string, succesCallback: (messages: Message[]) => void, errorCallback: (err: any) => void) {
+  static joinConversation(conversationUuid: string,succesCallback: (conversation:Conversation, messages: Message[]) => void, errorCallback: (err: any) => void) {
     let rqst = new JoinConversationRequest
     rqst.setConnectionUuid(ConversationManager.uuid)
     rqst.setConversationUuid(conversationUuid)
@@ -136,23 +158,34 @@ export class ConversationManager {
 
     // Now I will get existing message from the conversation.
     var messages = new Array<Message>();
-    let accountId = account;
-    let eventName = `join_conversation_${conversationUuid}_evt`
+    let conversation: Conversation;
 
     stream.on("data", (rsp: JoinConversationResponse) => {
-      messages.push(rsp.getMsg())
+      if(rsp.getConversation() != undefined){
+        conversation = rsp.getConversation();
+      }
+      if(rsp.getMsg()!=undefined){
+        messages.push(rsp.getMsg())
+      }
     });
 
     stream.on("status", (status) => {
 
       if (status.code == 0) {
-        succesCallback(messages)
-        Model.eventHub.publish(eventName, accountId, false)
+        succesCallback(conversation, messages)
+
+        let participants = conversation.getParticipantsList()
+        console.log(participants)
+        // network event.
+        Model.eventHub.publish(`leave_conversation_${conversationUuid}_evt`, JSON.stringify(participants), false)
       } else {
         // No message found...
         if (status.details == "EOF") {
-          succesCallback(messages)
-          Model.eventHub.publish(eventName, accountId, false)
+          succesCallback(conversation, messages)
+          let participants = conversation.getParticipantsList()
+          console.log(participants)
+          // network event.
+          Model.eventHub.publish(`leave_conversation_${conversationUuid}_evt`, JSON.stringify(participants), false)
           return
         }
         // An error happen
@@ -163,13 +196,10 @@ export class ConversationManager {
   }
 
   // leave the conversation.
-  static leaveConversation(conversationUuid: string, account: string,  successCallback: () => void, errorCallback: (err: any) => void) {
+  static leaveConversation(conversationUuid: string, successCallback: () => void, errorCallback: (err: any) => void) {
     let rqst = new LeaveConversationRequest
     rqst.setConversationUuid(conversationUuid)
     rqst.setConnectionUuid(ConversationManager.uuid)
-
-    let accountId = account;
-    let eventName = `leave_conversation_${conversationUuid}_evt`
 
     Model.globular.conversationService.leaveConversation(rqst, {
       token: localStorage.getItem("user_token"),
@@ -177,8 +207,10 @@ export class ConversationManager {
       domain: Model.domain,
     }).then((rsp: LeaveConversationResponse) => {
       successCallback();
+      let participants = rsp.getConversation().getParticipantsList()
+      console.log(participants)
       // network event.
-      Model.eventHub.publish(eventName, accountId, false)
+      Model.eventHub.publish(`leave_conversation_${conversationUuid}_evt`, JSON.stringify(participants), false)
 
     }).catch(errorCallback)
   }
