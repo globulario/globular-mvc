@@ -116,7 +116,7 @@ export class Form extends HTMLElement {
         `
         M.toast({html: toastHtml, displayLength: 999999})
 
-        toast = document.querySelector(".toast")
+        let toast = document.querySelector(".toast")
         toast.querySelector("#save-btn").onclick = this.save.bind(this)
         toast.querySelector("#no-save-btn").onclick = this.noSave.bind(this)
         toast.querySelector("#cancel-btn").onclick = this.cancel.bind(this)
@@ -276,6 +276,8 @@ export class Field extends HTMLElement {
         this.initialValue = initialValue
         this.smallThreshold = 800
         this.phoneThreshold = 500
+        this.invalidColor = "red"
+        this.validColor = "var(--paper-card-background-color, var(--primary-background-color))"
 
         let hostHtml = this._getAllSizes(x, y, width, height, xSmall, ySmall, widthSmall, heightSmall, xPhone, yPhone, widthPhone, heightPhone)
 
@@ -490,6 +492,16 @@ export class Field extends HTMLElement {
      }
 
     /**
+     * Marks the field as being invalid either by making it red or something of the sort.
+     */
+    markInvalid() { }
+
+    /**
+     * Marks the field as being valid by making it normal.
+     */
+    markValid() { }
+
+    /**
      * Disables the input element and enables the view element.
      */
     lock() { }
@@ -567,6 +579,14 @@ export class StringField extends Field {
 
     isValid() {
         return this.getValue() && this.getValue() !== ""
+    }
+
+    markInvalid() {
+        this.input.style.backgroundColor = this.invalidColor
+    }
+
+    markValid() {
+        this.input.style.backgroundColor = this.validColor
     }
 
     lock() {
@@ -707,6 +727,14 @@ export class TextAreaField extends Field {
         return this.getValue() && this.getValue() !== ""
     }
 
+    markInvalid() {
+        this.input.style.backgroundColor = this.invalidColor
+    }
+
+    markValid() {
+        this.input.style.backgroundColor = this.validColor
+    }
+
     lock() {
         this.view.innerHTML = this.input.value
 
@@ -832,6 +860,14 @@ export class DropdownField extends Field {
 
     isValid() {
         return this.getValue() && this.getValue() !== ""
+    }
+
+    markInvalid() {
+        this.input.style.backgroundColor = this.invalidColor
+    }
+
+    markValid() {
+        this.input.style.backgroundColor = this.validColor
     }
 
     lock() {
@@ -1023,6 +1059,14 @@ export class ImageField extends Field {
         return this.getValue() && this.getValue() !== ""
     }
 
+    markInvalid() {
+        this.input.style.backgroundColor = this.invalidColor
+    }
+
+    markValid() {
+        this.input.style.backgroundColor = this.validColor
+    }
+
     lock() {
 
         // TODO: Change the method to remove and replace the elements
@@ -1105,6 +1149,15 @@ export class DateField extends Field {
     isValid() {
         return this.getValue() && this.getValue() !== ""
     }
+
+    markInvalid() {
+        this.input.style.backgroundColor = this.invalidColor
+    }
+
+    markValid() {
+        this.input.style.backgroundColor = this.validColor
+    }
+
 
     lock() {
         this.view.innerHTML = this.input.value
