@@ -724,7 +724,7 @@ export class Account extends Model {
                 let collection = "Contacts";
                 rqst.setCollection(collection);
 
-                rqst.setQuery(`{"_id":"${from}"}`);
+                rqst.setQuery(`{"_id":"${from.id}"}`);
                 let receivedInvitation = `{"_id":"${from.id}", "invitationTime":${new Date().getTime()}, "status":"${status_to}"}`
                 rqst.setValue(receivedInvitation);
                 rqst.setOptions(`[{"upsert": true}]`);
@@ -738,7 +738,7 @@ export class Account extends Model {
                     })
                     .then((rsp: ReplaceOneRsp) => {
                         // Here I will return the value with it
-                        Model.eventHub.publish(status_to + "_" + to + "_evt", receivedInvitation, false)
+                        Model.eventHub.publish(status_to + "_" + to.id + "_evt", receivedInvitation, false)
                         successCallback();
 
                     })
