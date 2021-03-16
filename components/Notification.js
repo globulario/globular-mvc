@@ -254,7 +254,7 @@ export class NotificationMenu extends Menu {
                     },
                     (evt) => {
                         this.setNotificationCount()
-                        let notification = Notification.fromString(notification)
+                        let notification = Notification.fromString(evt)
                         this.appendNofication(this.userNotificationsPanel, notification)
                         if (!this.userNotificationsCollapse.opened) {
                             this.userNotificationsCollapse.toggle()
@@ -463,9 +463,8 @@ export class NotificationMenu extends Menu {
                 (uuid) => {
                     deleteNotificationListener = uuid
                 },
-                (notification) => {
-                    notification = JSON.parse(notification)
-                    notification._date = new Date(notification._date)
+                (evt) => {
+                    let notification = Notification.fromString(evt)
                     notificationDiv.parentNode.removeChild(notificationDiv)
                     Model.eventHub.unSubscribe(notification._id + "_delete_notification_event", deleteNotificationListener)
                     if (this.userNotificationsPanel.children.length == 0 && this.applicationNotificationsPanel.children.length == 0) {
