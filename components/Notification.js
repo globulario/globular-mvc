@@ -10,6 +10,7 @@ import '@polymer/paper-badge/paper-badge.js';
 import { Model } from '../Model';
 import { Menu } from './Menu';
 import { theme } from "./Theme";
+import {Notification} from "../Notification"
 
 /**
  * Login/Register functionality.
@@ -251,10 +252,9 @@ export class NotificationMenu extends Menu {
                     (uuid) => {
                         this.account_notification_listener = uuid
                     },
-                    (notification) => {
+                    (evt) => {
                         this.setNotificationCount()
-                        notification = JSON.parse(notification)
-                        notification._date = new Date(notification._date)
+                        let notification = Notification.fromString(notification)
                         this.appendNofication(this.userNotificationsPanel, notification)
                         if (!this.userNotificationsCollapse.opened) {
                             this.userNotificationsCollapse.toggle()
@@ -283,10 +283,10 @@ export class NotificationMenu extends Menu {
             (uuid) => {
                 /** nothing to do here. */
             },
-            (notification) => {
+            (evt) => {
                 this.setNotificationCount()
-                notification = JSON.parse(notification)
-                notification._date = new Date(notification._date)
+                let notification = Notification.fromString(evt)
+                console.log(notification)
                 this.appendNofication(this.applicationNotificationsPanel, notification)
                 if (!this.applicationNotificationsCollapse.opened) {
                     this.applicationNotificationsCollapse.toggle()

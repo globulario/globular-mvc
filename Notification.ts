@@ -82,11 +82,16 @@ export class Notification  extends Model{
         this._id = this._date.getTime().toString(); // I will use the date a id.
     }
 
+    toString(): string {
+        return JSON.stringify({_id:this._id, _text:this._text, _type:this._type, _recipient:this._recipient, _sender:this.sender, _date:this._date.getTime()/1000})
+    }
+
     /**
      * Initialyse model from json object.
      * @param json The class data.
      */
     static fromString(json: string):any{
+        console.log(json)
         return Notification.fromObject(JSON.parse(json))
     }
 
@@ -106,7 +111,8 @@ export class Notification  extends Model{
         }else{
             notification._type = NotificationType.User
         }
-        notification._date = new Date(obj._date)
+
+        notification._date = new Date(obj._date * 1000)
         return notification;
     }
 }
