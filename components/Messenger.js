@@ -264,7 +264,6 @@ export class MessengerMenu extends Menu {
 
                         searchConverstionResults = this.shadowRoot.querySelector("#search-conversation-results")
                         for (var i = 0; i < conversations.length; i++) {
-                            console.log("------------>", conversationInfos[i])
                             let conversationInfos = new ConversationInfos(null, this.account)
                             conversationInfos.init(conversations[i])
                             searchConverstionResults.appendChild(conversationInfos)
