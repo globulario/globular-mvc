@@ -286,6 +286,7 @@ export class Application extends Model {
             // reload the page...
              location.reload();
           }else{
+            
             // 
             ApplicationView.displayMessage(`
             <div style="display: flex; flex-direction: column">
@@ -448,7 +449,7 @@ export class Application extends Model {
       let rememberMe = localStorage.getItem("remember_me");
       if (rememberMe) {
         // Here I will renew the last token...
-        let userId = localStorage.getItem("user_name");
+        let userId = localStorage.getItem("user_id");
         this.view.wait(
           "<div>log in</div><div>" + userId + "</div><div>...</div>"
         );
@@ -471,6 +472,7 @@ export class Application extends Model {
         // simply remove invalid token and user infos.
         localStorage.removeItem("remember_me");
         localStorage.removeItem("user_token");
+        localStorage.removeItem("user_id");
         localStorage.removeItem("user_name");
         localStorage.removeItem("user_email");
         localStorage.removeItem("token_expired");
@@ -593,12 +595,14 @@ export class Application extends Model {
         let token = rsp.getToken();
 
         let decoded = jwt(token);
+        let id =  (<any>decoded).id;
         let userName = (<any>decoded).username;
         let email = (<any>decoded).email;
 
         // here I will save the user token and user_name in the local storage.
         localStorage.setItem("user_token", token);
         localStorage.setItem("token_expired", (<any>decoded).exp);
+        localStorage.setItem("user_id", id);
         localStorage.setItem("user_name", userName);
         localStorage.setItem("user_email", email);
 
@@ -612,6 +616,7 @@ export class Application extends Model {
       .catch((err) => {
         // remove old information in that case.
         localStorage.removeItem("user_token");
+        localStorage.removeItem("user_id");
         localStorage.removeItem("user_name");
         localStorage.removeItem("user_email");
         localStorage.removeItem("token_expired");
@@ -684,6 +689,7 @@ export class Application extends Model {
 
         // here I will save the user token and user_name in the local storage.
         localStorage.setItem("user_token", token);
+        localStorage.setItem("user_id", (<any>decoded).id);
         localStorage.setItem("user_name", (<any>decoded).username);
         localStorage.setItem("token_expired", (<any>decoded).exp);
         localStorage.setItem("user_email", (<any>decoded).email);
@@ -783,14 +789,16 @@ export class Application extends Model {
         let decoded = jwt(token);
         let userName = (<any>decoded).username;
         let email = (<any>decoded).email;
+        let id = (<any>decoded).id;
 
         // here I will save the user token and user_name in the local storage.
         localStorage.setItem("user_token", token);
         localStorage.setItem("token_expired", (<any>decoded).exp);
         localStorage.setItem("user_email", email);
         localStorage.setItem("user_name", userName);
+        localStorage.setItem("user_id", id);
 
-        Account.getAccount(userName, (account: Account) => {
+        Account.getAccount(id, (account: Account) => {
           this.account = account;
           this.account.session.state = SessionState.Online;
           onLogin(account);
@@ -814,10 +822,10 @@ export class Application extends Model {
 
 
 
-          Model.eventHub.publish(`__session_state_${this.account.name}_change_event__`, this.account.session, true)
+          Model.eventHub.publish(`__session_state_${this.account.id}_change_event__`, this.account.session, true)
 
           // retreive the contacts
-          Account.getContacts(this.account.name, `{"status":"accepted"}`, (contacts: Array<Account>) => {
+          Account.getContacts(this.account, `{"status":"accepted"}`, (contacts: Array<Account>) => {
             contacts.forEach(contact => {
               this.addContactListener(contact)
             })
@@ -873,7 +881,7 @@ export class Application extends Model {
 
     // So here I will set the account session state to onlise.
     this.account.session.state = SessionState.Offline;
-    Model.eventHub.publish(`__session_state_${this.account.name}_change_event__`, this.account.session, true)
+    Model.eventHub.publish(`__session_state_${this.account.id}_change_event__`, this.account.session, true)
 
     // Set room to undefined.
     this.account = null;
@@ -881,6 +889,7 @@ export class Application extends Model {
     // remove token informations
     localStorage.removeItem("remember_me");
     localStorage.removeItem("user_token");
+    localStorage.removeItem("user_id");
     localStorage.removeItem("user_name");
     localStorage.removeItem("user_email");
     localStorage.removeItem("token_expired");
@@ -919,6 +928,7 @@ export class Application extends Model {
     // remove token informations
     localStorage.removeItem("remember_me");
     localStorage.removeItem("user_token");
+    localStorage.removeItem("user_id");
     localStorage.removeItem("user_name");
     localStorage.removeItem("user_email");
     localStorage.removeItem("token_expired");
@@ -1112,7 +1122,7 @@ export class Application extends Model {
         rqst.setId(db);
         rqst.setDatabase(db);
       }
-      query = `{"_recipient":"${this.account.name}"}`;
+      query = `{"_recipient":"${this.account.id}"}`;
     }
 
     rqst.setCollection("Notifications");
@@ -1206,7 +1216,7 @@ export class Application extends Model {
     this.sendNotifications(
       notification,
       () => {
-        Account.setContact(this.account.name, "sent", contact.name, "received",
+        Account.setContact(this.account, "sent", contact, "received",
           () => {
             // this.displayMessage(, 3000)
           }, (err: any) => {
@@ -1238,7 +1248,7 @@ export class Application extends Model {
     this.sendNotifications(
       notification,
       () => {
-        Account.setContact(this.account.name, "accepted", contact.name, "accepted",
+        Account.setContact(this.account, "accepted", contact, "accepted",
           () => {
             // this.displayMessage(, 3000)
           }, (err: any) => {
@@ -1269,7 +1279,7 @@ export class Application extends Model {
     this.sendNotifications(
       notification,
       () => {
-        Account.setContact(this.account.name, "declined", contact.name, "declined",
+        Account.setContact(this.account, "declined", contact, "declined",
           () => {
             // this.displayMessage(, 3000)
           }, (err: any) => {
@@ -1300,7 +1310,7 @@ export class Application extends Model {
     this.sendNotifications(
       notification,
       () => {
-        Account.setContact(this.account.name, "revoked", contact.name, "revoked",
+        Account.setContact(this.account, "revoked", contact, "revoked",
           () => {
             // this.displayMessage(, 3000)
           }, (err: any) => {
@@ -1331,7 +1341,7 @@ export class Application extends Model {
     this.sendNotifications(
       notification,
       () => {
-        Account.setContact(this.account.name, "deleted", contact.name, "deleted",
+        Account.setContact(this.account, "deleted", contact, "deleted",
           () => {
             // this.displayMessage(, 3000)
           }, (err: any) => {

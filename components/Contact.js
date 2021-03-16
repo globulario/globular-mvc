@@ -159,7 +159,7 @@ export class ContactsMenu extends Menu {
 
             // Here depending if the contact is in contact list, in received invitation list or in sent invitation
             // list displayed action will be different.
-            Account.getContacts(account.name, "{}",
+            Account.getContacts(account, "{}",
                 (contacts) => {
 
                     const info = contacts.find(obj => {
@@ -207,11 +207,11 @@ export class ContactsMenu extends Menu {
         let sentContactInvitations = new SentContactInvitations(account, this.onRevokeContact, sentContactInvitationsTab.children[1]);
         contactLst.appendChild(sentContactInvitations)
 
-        
+
         let receivedContactInvitations = new ReceivedContactInvitations(account, this.onAcceptContact, this.onDeclineContact, receivedContactInvitationsTab.children[1]);
         contactLst.appendChild(receivedContactInvitations)
-        
-  
+
+
         contactsTab.onclick = () => {
             contactList.style.display = "block"
             receivedContactInvitations.style.display = "none"
@@ -245,9 +245,9 @@ export class ContactsMenu extends Menu {
             });
             // set the getValues function that will return the list to be use as filter.
             let inviteContactInput = this.shadowRoot.getElementById("invite_contact_input")
-
-            inviteContactInput.setValues(accounts)
-
+            if (inviteContactInput != undefined) {
+                inviteContactInput.setValues(accounts)
+            }
 
         }, (err) => {
             //callback([])
@@ -330,7 +330,7 @@ export class SentContactInvitations extends HTMLElement {
 
         `
         // So here I will get the list of sent invitation for the account.
-        Account.getContacts(this.account.name, `{"status":"sent"}`, (invitations) => {
+        Account.getContacts(this.account, `{"status":"sent"}`, (invitations) => {
 
             for (var i = 0; i < invitations.length; i++) {
                 Account.getAccount(invitations[i]._id,
@@ -417,7 +417,7 @@ export class SentContactInvitations extends HTMLElement {
         if (card != undefined) {
             contactLst.removeChild(card)
             this.badge.label = contactLst.children.length
-            if(contactLst.children.length==0){
+            if (contactLst.children.length == 0) {
                 this.badge.style.display = "none"
             }
         }
@@ -514,7 +514,7 @@ export class ReceivedContactInvitations extends HTMLElement {
         <div class="contact-invitations-list"></div>
         `
         // So here I will get the list of sent invitation for the account.
-        Account.getContacts(this.account.name, `{"status":"received"}`, (invitations) => {
+        Account.getContacts(this.account, `{"status":"received"}`, (invitations) => {
 
             for (var i = 0; i < invitations.length; i++) {
                 Account.getAccount(invitations[i]._id,
@@ -557,7 +557,7 @@ export class ReceivedContactInvitations extends HTMLElement {
         if (card != undefined) {
             contactLst.removeChild(card)
             this.badge.label = contactLst.children.length
-            if(contactLst.children.length==0){
+            if (contactLst.children.length == 0) {
                 this.badge.style.display = "none"
             }
         }
@@ -633,7 +633,7 @@ export class ContactList extends HTMLElement {
         // The connection callback.
 
         // So here I will get the list of sent invitation for the account.
-        Account.getContacts(this.account.name, `{"status":"accepted"}`, (invitations) => {
+        Account.getContacts(this.account, `{"status":"accepted"}`, (invitations) => {
 
             for (var i = 0; i < invitations.length; i++) {
                 Account.getAccount(invitations[i]._id,
@@ -678,7 +678,7 @@ export class ContactList extends HTMLElement {
         if (card != undefined) {
             contactLst.removeChild(card)
             this.badge.label = contactLst.children.length
-            if(contactLst.children.length==0){
+            if (contactLst.children.length == 0) {
                 this.badge.style.display = "none"
             }
         }
@@ -771,10 +771,10 @@ export class ContactCard extends HTMLElement {
 
     // The connection callback.
     connectedCallback() {
-        if(this.contact == undefined){
+        if (this.contact == undefined) {
             return
         }
-        
+
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>

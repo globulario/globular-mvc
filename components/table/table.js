@@ -206,12 +206,8 @@ export class TableElement extends PolymerElement {
       for (var j = 0; j < rowsLength; j++) {
         var cell = document.createElement("div");
         cell.className = "table-item";
-        cell.style.display = "table";
-        cell.style.overflow = "hidden";
         var cellContent = document.createElement("div");
         cellContent.className = "table-item-value";
-        cellContent.style.display = "table-cell";
-        cellContent.style.overflow = "hidden";
         cell.appendChild(cellContent); // keep the cell as element in the buffer.
         this.cells.push(createElement(cell));
       }

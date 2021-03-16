@@ -1277,6 +1277,7 @@ export class ParticipantsList extends HTMLElement {
         super();
         this.account = null;
         this.isOwner = false;
+        this.blocked = false;
 
         // Set the shadow dom.
         this.attachShadow({ mode: "open" });
@@ -1353,8 +1354,10 @@ export class ParticipantsList extends HTMLElement {
      * @param {*} conversation 
      */
     setConversation(conversation, messages) {
-
-
+        if(this.blocked){
+            return
+        }
+        this.blocked = true
         this.clear() // clear actual participant list...
  
         PermissionManager.getResourcePermissions(conversation.getUuid(),
@@ -1392,16 +1395,22 @@ export class ParticipantsList extends HTMLElement {
                             // process next...
                             if (__participants__.length > 0) {
                                 setParticipantsRow()
+                            }else{
+                                this.blocked = false
                             }
                         },
                         err => {
-                            console.log(err)
+                            this.blocked = false
+                            ApplicationView.displayMessage(err, 3000)
                         })
                 }
                 // Process the list of 
                 setParticipantsRow()
             },
-            (err) => { })
+            (err) => { 
+                this.blocked = false
+                ApplicationView.displayMessage(err, 3000)
+            })
     }
 
     setAvailableParticipantRow(p) {
@@ -1863,7 +1872,7 @@ export class MessageEditor extends HTMLElement {
             let txt = this.textWriterBox.value;
             this.textWriterBox.value = ""
             let replyTo = ""
-            ConversationManager.sendMessage(this.conversationUuid, this.account.name, txt, replyTo,
+            ConversationManager.sendMessage(this.conversationUuid, this.account, txt, replyTo,
                 () => {
                     /** Nothing here... */
                 },

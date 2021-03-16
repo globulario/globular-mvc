@@ -550,7 +550,7 @@ export class Account extends Model {
                 // Keep in the local map...
                 Account.setAccount(this)
 
-                Account.getContacts(this.name, `{}`,
+                Account.getContacts(this, `{}`,
                     (contacts: []) => {
                         // Set the list of contacts (received invitation, sent invitation and actual contact id's)
                         this.session.initData(() => {
@@ -636,17 +636,17 @@ export class Account extends Model {
             });
     }
 
-    static getContacts(userName: string, query: string, callback: (contacts: Array<any>) => void, errorCallback: (err: any) => void) {
+    static getContacts(account: Account, query: string, callback: (contacts: Array<any>) => void, errorCallback: (err: any) => void) {
 
         // Insert the notification in the db.
         let rqst = new FindRqst();
         rqst.setId("local_resource");
 
-        if (userName == "sa") {
+        if (account.id == "sa") {
             rqst.setId("local_resource");
 
         } else {
-            let db = userName.split("@").join("_").split(".").join("_") + "_db";
+            let db = account.name.split("@").join("_").split(".").join("_") + "_db";
             rqst.setDatabase(db);
         }
 
@@ -677,14 +677,14 @@ export class Account extends Model {
         });
     }
 
-    public static setContact(from: string, status_from: string, to: string, status_to: string, successCallback: () => void, errorCallback: (err: any) => void) {
+    public static setContact(from: Account, status_from: string, to: Account, status_to: string, successCallback: () => void, errorCallback: (err: any) => void) {
         // So here I will save the contact invitation into pending contact invitation collection...
         let rqst = new ReplaceOneRqst();
         rqst.setId("local_resource");
-        if (from == "sa") {
+        if (from.id == "sa") {
             rqst.setDatabase("local_resource");
         } else {
-            let db = from.split("@").join("_").split(".").join("_") + "_db";
+            let db = from.name.split("@").join("_").split(".").join("_") + "_db";
             rqst.setDatabase(db);
         }
 
@@ -692,8 +692,8 @@ export class Account extends Model {
         let collection = "Contacts";
         rqst.setCollection(collection);
 
-        rqst.setQuery(`{"_id":"${to}"}`);
-        let sentInvitation = `{"_id":"${to}", "invitationTime":${new Date().getTime()}, "status":"${status_from}"}`
+        rqst.setQuery(`{"_id":"${to.id}"}`);
+        let sentInvitation = `{"_id":"${to.id}", "invitationTime":${new Date().getTime()}, "status":"${status_from}"}`
         rqst.setValue(sentInvitation);
         rqst.setOptions(`[{"upsert": true}]`);
 
@@ -707,16 +707,16 @@ export class Account extends Model {
             .then((rsp: ReplaceOneRsp) => {
 
                 // So Here I will send network event...
-                Model.eventHub.publish(status_from + "_" + from + "_evt", sentInvitation, false)
+                Model.eventHub.publish(status_from + "_" + from.id + "_evt", sentInvitation, false)
 
                 // Here I will return the value with it
                 let rqst = new ReplaceOneRqst();
                 rqst.setId("local_resource");
 
-                if (to == "sa") {
+                if (to.id == "sa") {
                     rqst.setDatabase("local_resource");
                 } else {
-                    let db = to.split("@").join("_").split(".").join("_") + "_db";
+                    let db = to.name.split("@").join("_").split(".").join("_") + "_db";
                     rqst.setDatabase(db);
                 }
 
@@ -725,7 +725,7 @@ export class Account extends Model {
                 rqst.setCollection(collection);
 
                 rqst.setQuery(`{"_id":"${from}"}`);
-                let receivedInvitation = `{"_id":"${from}", "invitationTime":${new Date().getTime()}, "status":"${status_to}"}`
+                let receivedInvitation = `{"_id":"${from.id}", "invitationTime":${new Date().getTime()}, "status":"${status_to}"}`
                 rqst.setValue(receivedInvitation);
                 rqst.setOptions(`[{"upsert": true}]`);
 

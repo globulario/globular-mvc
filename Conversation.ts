@@ -61,10 +61,7 @@ export class ConversationManager {
       domain: Model.domain,
     }).then((rsp: CreateConversationResponse) => {
       succesCallback(rsp.getConversation())
-    }).catch((err: any) => {
-
-      errorCallback(err)
-    })
+    }).catch(errorCallback)
   }
 
   /**
@@ -75,7 +72,7 @@ export class ConversationManager {
    */
   static loadConversation(account: Account, succesCallback: (conversations: Conversations) => void, errorCallback: (err: any) => void) {
     let rqst = new GetConversationsRequest
-    rqst.setCreator(account.name);
+    rqst.setCreator(account.id);
 
     Model.globular.conversationService.getConversations(rqst, {
       token: localStorage.getItem("user_token"),
@@ -84,11 +81,11 @@ export class ConversationManager {
     }).then((rsp: GetConversationsResponse) => {
       succesCallback(rsp.getConversations())
     }).catch((err: any) => {
-      errorCallback(err)
+      console.log(err)
     })
   }
 
-  static deleteConversation(conversationUuid: string, account:string, succesCallback: () => void, errorCallback: (err: any) => void) {
+  static deleteConversation(conversationUuid: string, account: string, succesCallback: () => void, errorCallback: (err: any) => void) {
     let rqst = new DeleteConversationRequest
     rqst.setConversationUuid(conversationUuid)
 
@@ -98,7 +95,7 @@ export class ConversationManager {
       domain: Model.domain,
     }).then((rsp: DeleteConversationResponse) => {
       succesCallback()
-      
+
       // Here the conversation has been deleted...
       Model.eventHub.publish(`delete_conversation_${conversationUuid}_evt`, conversationUuid, false)
 
@@ -107,12 +104,12 @@ export class ConversationManager {
       Model.eventHub.publish(`__leave_conversation_evt__`, conversationUuid, true)
       Model.eventHub.publish(`leave_conversation_${conversationUuid}_evt`, account, false)
       Model.eventHub.publish(`__delete_conversation_${conversationUuid}_evt__`, conversationUuid, true)
-      
+
       //errorCallback(err)
     })
   }
 
-  static kickoutFromConversation(conversationUuid: string, account:string, succesCallback: () => void, errorCallback: (err: any) => void) {
+  static kickoutFromConversation(conversationUuid: string, account: string, succesCallback: () => void, errorCallback: (err: any) => void) {
     let rqst = new KickoutFromConversationRequest
     rqst.setConversationUuid(conversationUuid)
     rqst.setAccount(account)
@@ -145,7 +142,7 @@ export class ConversationManager {
     })
   }
 
-  static joinConversation(conversationUuid: string,succesCallback: (conversation:Conversation, messages: Message[]) => void, errorCallback: (err: any) => void) {
+  static joinConversation(conversationUuid: string, succesCallback: (conversation: Conversation, messages: Message[]) => void, errorCallback: (err: any) => void) {
     let rqst = new JoinConversationRequest
     rqst.setConnectionUuid(ConversationManager.uuid)
     rqst.setConversationUuid(conversationUuid)
@@ -161,10 +158,10 @@ export class ConversationManager {
     let conversation: Conversation;
 
     stream.on("data", (rsp: JoinConversationResponse) => {
-      if(rsp.getConversation() != undefined){
+      if (rsp.getConversation() != undefined) {
         conversation = rsp.getConversation();
       }
-      if(rsp.getMsg()!=undefined){
+      if (rsp.getMsg() != undefined) {
         messages.push(rsp.getMsg())
       }
     });
@@ -256,7 +253,10 @@ export class ConversationManager {
       /** Nothing to do here... */
       successCallback(rsp.getInvitations().getInvitationsList())
 
-    }).catch(errorCallback)
+    }).catch((err: any) => {
+      console.log(err)
+      successCallback([])
+    })
   }
 
   /**
@@ -276,7 +276,10 @@ export class ConversationManager {
       /** Nothing to do here... */
       successCallback(rsp.getInvitations().getInvitationsList())
 
-    }).catch(errorCallback)
+    }).catch((err: any) => {
+      console.log(err)
+      successCallback([])
+    })
   }
 
   /**
@@ -331,7 +334,7 @@ export class ConversationManager {
     }).catch(errorCallback)
   }
 
-  static sendMessage(conversationUuid: string, author: string, text: string, replyTo: string, successCallback: () => void, errorCallback: (err: any) => void) {
+  static sendMessage(conversationUuid: string, author: Account, text: string, replyTo: string, successCallback: () => void, errorCallback: (err: any) => void) {
 
     let rqst = new SendMessageRequest
     let message = new Message
@@ -340,13 +343,11 @@ export class ConversationManager {
     message.setText(text)
     message.setInReplyTo(replyTo)
     message.setCreationTime(Math.round(Date.now() / 1000));
-    message.setAuthor(author);
+    message.setAuthor(author.id);
     message.setLanguage(window.navigator.language.split("-")[0]);
     message.setDislikesList(new Array<string>());
     message.setLikesList(new Array<string>());
-    message.setReadersList([author]);
-
-    console.log(message)
+    message.setReadersList([author.id]);
     rqst.setMsg(message)
 
     Model.globular.conversationService.sendMessage(rqst, {
