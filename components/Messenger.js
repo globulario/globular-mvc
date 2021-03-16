@@ -102,6 +102,8 @@ export class MessengerMenu extends Menu {
                 }
             }, true)
 
+
+
         let html = `
             <style>
             ${theme}
@@ -262,7 +264,8 @@ export class MessengerMenu extends Menu {
 
                         searchConverstionResults = this.shadowRoot.querySelector("#search-conversation-results")
                         for (var i = 0; i < conversations.length; i++) {
-                            let conversationInfos = new ConversationInfos(null, this.account.name_)
+                            console.log("------------>", conversationInfos[i])
+                            let conversationInfos = new ConversationInfos(null, this.account)
                             conversationInfos.init(conversations[i])
                             searchConverstionResults.appendChild(conversationInfos)
                         }
@@ -324,11 +327,62 @@ export class MessengerMenu extends Menu {
 
     // Display base conversation info
     appendConversation(conversation) {
-        let conversationInfos = new ConversationInfos(null, this.account.name_)
+        let conversationUuid = conversation.getUuid()
+        if (this.conversationsLst.querySelector("#conversation_" + conversationUuid + "_infos") != undefined) {
+            return;
+        }
+        let conversationName = conversation.getName()
+        let conversationInfos = new ConversationInfos(null, this.account)
+        conversationInfos.id = `conversation_${conversationUuid}_infos`
         conversationInfos.init(conversation)
         conversationInfos.setJoinButton(); // here I will display the join button.
         this.conversationsLst.appendChild(conversationInfos)
         this.conversationsTab.innerHTML = `<span id="conversation_label">Conversations</span> <paper-badge for="conversation_label" label="${this.conversationsLst.children.length}"></paper-badge>`
+
+        Model.eventHub.subscribe(`delete_conversation_${conversationUuid}_evt`,
+            (uuid) => {
+                //this.delete_conversation_listener = uuid;
+            },
+            (conversationUuid) => {
+                // simply remove it from it parent.
+                let conversationInfos = this.shadowRoot.querySelector(`#conversation_${conversationUuid}_infos`)
+                if (conversationInfos != undefined) {
+                    this.conversationsLst.removeChild(conversationInfos)
+                    // publish local event from network one.
+                    Model.eventHub.publish("delete_conversation_evt", null, true)
+                }
+            }, false)
+
+        Model.eventHub.subscribe(`__delete_conversation_${conversationUuid}_evt__`,
+            (uuid) => {
+                //this.delete_conversation_listener = uuid;
+            },
+            (conversationUuid) => {
+                // simply remove it from it parent.
+                let conversationInfos = this.shadowRoot.querySelector("#conversation_" + conversationUuid + "_infos")
+                if (conversationInfos != undefined) {
+                    this.conversationsLst.removeChild(conversationInfos)
+                    // publish local event from network one.
+                    Model.eventHub.publish("delete_conversation_evt", null, true)
+                }
+            }, true)
+
+        Model.eventHub.subscribe(`kickout_conversation_${conversationUuid}_evt`,
+            (uuid) => {
+                //
+            },
+            (participant) => {
+                // check for kickout...
+                if (participant == this.account.id) {
+                    let conversationInfos = this.shadowRoot.querySelector("#conversation_" + conversationUuid + "_infos")
+                    if (conversationInfos != undefined) {
+                        // That's mean the user get kickout from the conversation...
+                        this.conversationsLst.removeChild(conversationInfos)
+                        Model.eventHub.publish("delete_conversation_evt", null, true)
+                        ApplicationView.displayMessage(`You got kicked out of the conversation <span style="font-style:italic;">${conversationName}</span>`, 3000)
+                    }
+                }
+            }, false)
     }
 
     appendReceivedInvitation(invitation) {
@@ -336,6 +390,7 @@ export class MessengerMenu extends Menu {
         Model.eventHub.subscribe(`accept_conversation_invitation_${invitation.getConversation()}_${invitation.getFrom()}_evt`,
             (uuid) => { },
             (evt) => {
+
                 // re-init the conversation list.
                 ConversationManager.loadConversation(this.account,
                     (conversations) => {
@@ -580,7 +635,6 @@ export class ConversationInfos extends HTMLElement {
         let creationTime = new Date(conversation.getCreationTime() * 1000)
         this.created.innerHTML = creationTime.toLocaleDateString() + " " + creationTime.toLocaleTimeString()
 
-        console.log(conversation.getLastMessageTime(), typeof conversation.getLastMessageTime())
         if (conversation.getLastMessageTime() > 0) {
             let lastMessageTime = new Date(conversation.getLastMessageTime() * 1000)
             this.lastMessage.innerHTML = lastMessageTime.toLocaleDateString() + " " + lastMessageTime.toLocaleTimeString()
@@ -595,7 +649,7 @@ export class ConversationInfos extends HTMLElement {
         })
 
         // Here  I will display the list of owner for that conversation.
-        PermissionManager.getRessourcePermissions(conversation.getUuid(),
+        PermissionManager.getResourcePermissions(conversation.getUuid(),
             (permissions) => {
                 permissions.getOwners().getAccountsList().forEach(owner => {
                     let span = document.createElement("span")
@@ -603,29 +657,15 @@ export class ConversationInfos extends HTMLElement {
                     this.owners.appendChild(span)
                     this.setLeaveButton()
                     this.setJoinButton();
-                    if (owner == this.account) {
+                    if (owner == this.account.id) {
                         this.setInviteButton();
-                        this.setDeleteButton()
                     }
+                    this.setDeleteButton();
                 })
             },
             (err) => { })
 
         let conversationUuid = conversation.getUuid();
-        Model.eventHub.subscribe(`delete_conversation_${conversationUuid}_evt`,
-            (uuid) => {
-                this.delete_conversation_listener = uuid;
-            },
-            (evt) => {
-                // simply remove it from it parent.
-                this.parentNode.removeChild(this)
-                Model.eventHub.unSubscribe(`delete_conversation_${conversationUuid}_evt`, this.delete_conversation_listener)
-                Model.eventHub.unSubscribe(`join_conversation_${conversationUuid}_evt`, this.join_conversation_listener)
-                Model.eventHub.unSubscribe(`leave_conversation_${conversationUuid}_evt`, this.leave_conversation_listener)
-
-                // publish local event from network one.
-                Model.eventHub.publish("delete_conversation_evt", null, true)
-            }, false)
 
         Model.eventHub.subscribe(`__join_conversation_evt__`,
             (uuid) => {
@@ -673,7 +713,7 @@ export class ConversationInfos extends HTMLElement {
         this.appendChild(range.createContextualFragment(`</div><paper-button style="display:none; font-size:.85em; width: 20px;" id="leave_${this.conversation.getUuid()}_btn">Leave</paper-button>`))
 
         this.querySelector(`#leave_${this.conversation.getUuid()}_btn`).onclick = () => {
-            ConversationManager.leaveConversation(this.conversation.getUuid(), this.account,
+            ConversationManager.leaveConversation(this.conversation.getUuid(),
                 (messages) => {
                     if (onLeaveConversation != null) {
                         onLeaveConversation(messages);
@@ -701,17 +741,18 @@ export class ConversationInfos extends HTMLElement {
         this.appendChild(range.createContextualFragment(`</div><paper-button style="font-size:.85em; width: 20px;" id="join_${this.conversation.getUuid()}_btn">Join</paper-button>`))
 
         this.querySelector(`#join_${this.conversation.getUuid()}_btn`).onclick = () => {
-            ConversationManager.joinConversation(this.conversation.getUuid(), this.account,
-                (messages) => {
+            ConversationManager.joinConversation(this.conversation.getUuid(),
+                (conversation, messages) => {
                     if (onJoinConversation != null) {
                         onJoinConversation(messages);
                     }
+
+                    this.conversation = conversation;
 
                     // local event
                     Model.eventHub.publish("__join_conversation_evt__", { conversation: this.conversation, messages: messages }, true)
 
                     // network event.
-                    Model.eventHub.publish(`join_conversation_${this.conversation.getUuid()}_evt`, this.account.name, false)
                     this.querySelector(`#join_${this.conversation.getUuid()}_btn`).style.display = "none"
                     this.querySelector(`#leave_${this.conversation.getUuid()}_btn`).style.display = "flex"
                 },
@@ -926,6 +967,7 @@ export class Messenger extends HTMLElement {
 
                 // Here the conversation dosent exist so I will keep it in the map.
                 this.conversations[conversation.getUuid()] = { conversation: conversation, messages: evt.messages }
+                
 
                 // Open the conversation.
                 this.openConversation(conversation, evt.messages)
@@ -945,7 +987,7 @@ export class Messenger extends HTMLElement {
 
         // Set the leave converstion button.
         this.shadowRoot.querySelector("#leave_conversation_btn").onclick = () => {
-            ConversationManager.leaveConversation(conversationUuid, this.account.id,
+            ConversationManager.leaveConversation(conversationUuid,
                 () => {
                     Model.eventHub.publish("__leave_conversation_evt__", conversationUuid, true)
                 }, err => { })
@@ -964,7 +1006,7 @@ export class Messenger extends HTMLElement {
         this.messageEditor.setConversation(conversation)
 
         // Set the participant list.
-        this.participantsList.setConversation(conversation)
+        this.participantsList.setConversation(conversation, messages)
 
     }
 
@@ -981,7 +1023,7 @@ export class Messenger extends HTMLElement {
         // Connect the conversation event's
         // Set the leave converstion button.
         this.shadowRoot.querySelector("#leave_conversation_btn").onclick = () => {
-            ConversationManager.leaveConversation(conversationUuid, this.account.id,
+            ConversationManager.leaveConversation(conversationUuid,
                 () => {
                     Model.eventHub.publish("__leave_conversation_evt__", conversationUuid, true)
                 }, err => { })
@@ -1016,15 +1058,14 @@ export class Messenger extends HTMLElement {
             (uuid) => {
                 this.listeners[conversationUuid].push({ evt: `join_conversation_${conversationUuid}_evt`, listener: uuid })
             },
-            (participant) => {
-                let participants = conversation.getParticipantsList()
-                let index = participants.indexOf(participant)
-                if (index == -1) {
-                    participants.push(participant)
-                    conversation.setParticipantsList(participants)
-                }
+            (evt) => {
+                let participants = JSON.parse(evt)
+
+                // update the particpant list.
+                conversation.setParticipantsList(participants)
+
                 // Here I will unsubscribe to each event from it...
-                this.participantsList.setConversation(conversation)
+                this.participantsList.setConversation(conversation, this.conversations[conversationUuid].messages)
             },
             false);
 
@@ -1039,22 +1080,33 @@ export class Messenger extends HTMLElement {
                 this.closeConversation(conversationUuid)
             }, true)
 
+        Model.eventHub.subscribe(`kickout_conversation_${conversationUuid}_evt`,
+            (uuid) => {
+                this.listeners[conversationUuid].push({ evt: `kickout_conversation_${conversationUuid}_evt`, listener: uuid })
+            },
+            (participant) => {
+                // check for kickout...
+                if (participant == this.account.id) {
+                    // That's mean the user get kickout from the conversation...
+                    this.closeConversation(conversationUuid)
+                    
+                }
+            }, false)
+
         // Network event                    
         Model.eventHub.subscribe(`leave_conversation_${conversationUuid}_evt`,
             (uuid) => {
                 this.listeners[conversationUuid].push({ evt: `leave_conversation_${conversationUuid}_evt`, listener: uuid })
             },
-            (participant) => {
+            (evt) => {
                 // Remove the participant.
-                let participants = conversation.getParticipantsList()
-                let index = participants.indexOf(participant)
-                if (index != -1) {
-                    participants.splice(index, 1)
-                    conversation.setParticipantsList(participants)
-                }
+                let participants = JSON.parse(evt)
+                
+                // update the particpant list.
+                conversation.setParticipantsList(participants)
 
                 // Here I will unsubscribe to each event from it...
-                this.participantsList.setConversation(conversation)
+                this.participantsList.setConversation(conversation, this.conversations[conversationUuid].messages)
             },
             false);
 
@@ -1068,7 +1120,7 @@ export class Messenger extends HTMLElement {
         this.messageEditor.setConversation(conversation)
 
         // Set the participant list.
-        this.participantsList.setConversation(conversation)
+        this.participantsList.setConversation(conversation, messages)
 
     }
 
@@ -1097,7 +1149,7 @@ export class Messenger extends HTMLElement {
             this.hide()
         } else {
             this.setConversation(Object.keys(this.conversations)[0])
-            this.participantsList.setConverssation(this.conversations[Object.keys(this.conversations)[0]].conversation)
+            this.participantsList.setConverssation(this.conversations[Object.keys(this.conversations)[0]].conversation, this.conversations[Object.keys(this.conversations)[0]].messages)
         }
 
     }
@@ -1226,6 +1278,8 @@ export class ParticipantsList extends HTMLElement {
     constructor() {
         super();
         this.account = null;
+        this.isOwner = false;
+        this.blocked = false;
 
         // Set the shadow dom.
         this.attachShadow({ mode: "open" });
@@ -1245,6 +1299,7 @@ export class ParticipantsList extends HTMLElement {
 
             .participant-table-row{
                 display: flex;
+                align-items: center;
                 transition: background 0.2s ease,padding 0.8s linear;
                 background-color: var(--palette-background-paper);
                 border-bottom: 1px solid var(--palette-divider);
@@ -1270,6 +1325,25 @@ export class ParticipantsList extends HTMLElement {
                 width: 48px;
             }
 
+            .btn{
+                display: flex; 
+                width: 32px; 
+                height: 32px; 
+                justify-content: center; 
+                align-items: center;
+                position: relative;
+            }
+          
+            .btn:hover{
+                cursor: pointer;
+            }
+          
+            .btn iron-icon{
+                --iron-icon-fill-color:var(--palette-text-primary);
+                width: 24px; 
+                height: 24px;
+            }
+
         </style>
 
         <div id="paticipants-lst">
@@ -1281,35 +1355,132 @@ export class ParticipantsList extends HTMLElement {
      * Here I will set paticipant from the conversation.
      * @param {*} conversation 
      */
-    setConversation(conversation) {
-        this.clear() // clear actual participant list...
-        let participants = conversation.getParticipantsList()
-        participants.forEach(paticipant => {
-            // So Here I will get the account.
-            Account.getAccount(paticipant,
-                p => {
-                    let html = `
-                    <div class="participant-table-row">
-                        <div>
-                            <img src="${p.profilPicture_}"> </img>
-                           
-                        </div>
-                        <div>
-                            <span><span style="font-style: italic;">${p.name}</span> ${p.firstName} ${p.lastName}</span>
-                            <globular-session-state account=${p.id}></globular-session-state>
-                        </div>
-                    </div>
-                    `
+    setConversation(conversation, messages) {
+        if (this.blocked == true) {
+            return;
+        }
 
-                    console.log(p)
-                    this.shadowRoot.querySelector("#paticipants-lst").appendChild(document.createRange().createContextualFragment(html))
-                },
-                err => {
-                    console.log(err)
+        this.clear() // clear actual participant list...
+        this.blocked = true
+
+        PermissionManager.getResourcePermissions(conversation.getUuid(),
+            (permissions) => {
+                permissions.getOwners().getAccountsList().forEach(owner => {
+                    if (owner == this.account.id && !this.isOwner) {
+                        this.isOwner = true
+                    }
                 })
-        })
+
+                // Now I will append paticipant who wrote messages in that conversation and are not necessary in the room at that time...
+                let __participants__ = conversation.getParticipantsList()
+                let __unavailable__= []
+                messages.forEach(message => {
+                    let index = __participants__.indexOf(message.getAuthor())
+                    if (index == -1) {
+                        __participants__.push(message.getAuthor())
+                        __unavailable__.push(message.getAuthor())
+                    }
+                })
+
+                let setParticipantsRow = () => {
+                    let paticipant = __participants__.pop()
+                    Account.getAccount(paticipant,
+                        p => {
+                            // if the session is offline or the user is in the list of unavailble user then I will set it session as unavailable.
+                            if (p.session.state == 1 || __unavailable__.indexOf(p._id) != -1) {
+                                this.setUnavailableParticipantRow(p)
+                            } else {
+                                this.setAvailableParticipantRow(p)
+                            }
+
+                            this.kickoutFromConversation(conversation, p, this.shadowRoot.querySelector(`#paticipant-${p._id}-row`))
+
+                            // process next...
+                            console.log(__participants__)
+                            if (__participants__.length > 0) {
+                                setParticipantsRow()
+                            } else {
+                                // end initialisation.
+                                this.blocked = false
+                            }
+                        },
+                        err => {
+                            console.log(err)
+                        })
+                }
+                // Process the list of 
+                setParticipantsRow()
+            },
+            (err) => { })
     }
 
+    setAvailableParticipantRow(p) {
+        if (this.shadowRoot.querySelector(`paticipant-${p._id}-row`) == undefined) {
+            let html = `
+                <div  id="paticipant-${p._id}-row" class="participant-table-row">
+                    <div>
+                        <img src="${p.profilPicture_}"> </img>
+                    
+                    </div>
+                    <div style="flex-grow: 1;">
+                        <span><span style="font-style: italic;">${p.name_}</span> ${p.firstName_} ${p.lastName_}</span>
+                        <globular-session-state account=${p._id}></globular-session-state>
+                    </div>
+                </div>
+                `
+            this.shadowRoot.querySelector("#paticipants-lst").insertBefore(document.createRange().createContextualFragment(html), this.shadowRoot.querySelector("#paticipants-lst").firstChild)
+
+        }
+    }
+
+    setUnavailableParticipantRow(p) {
+        if (this.shadowRoot.querySelector(`paticipant-${p._id}-row`) == undefined) {
+            let html = `
+            <div id="paticipant-${p._id}-row" class="participant-table-row">
+                <div>
+                    <img src="${p.profilPicture_}"> </img>
+                </div>
+                <div style="flex-grow: 1;">
+                    <span><span style="font-style: italic;">${p.name_}</span> ${p.firstName_} ${p.lastName_}</span>
+                    <span>Not available</span>
+                </div>
+            </div>
+            `
+            this.shadowRoot.querySelector("#paticipants-lst").appendChild(document.createRange().createContextualFragment(html))
+        }
+    }
+
+    /** Set the kickout action. */
+    kickoutFromConversation(conversation, user, row) {
+
+        if (user._id != this.account._id && this.isOwner) {
+            let id = `conversation_${conversation.getUuid()}_${user._id}_kickout_btn`
+            let html = `
+            <div id="${id}" class="btn" title="Kickout ${user.name_} from this conversation.">
+                <iron-icon   icon="remove-circle-outline"></iron-icon>
+                <paper-ripple class="circle" recenters=""></paper-ripple>
+            </div>
+            `
+
+            row.appendChild(document.createRange().createContextualFragment(html))
+            let btn = this.shadowRoot.querySelector("#" + id)
+            btn.onclick = () => {
+                ConversationManager.kickoutFromConversation(conversation.getUuid(), user._id,
+                    () => {
+                        ApplicationView.displayMessage(`
+                        <div style="display: flex; flex-direction: column;">
+                            <img style="height: 48px; width: 48px;" src="${user.profilPicture_}"></img>
+                            <span>User <span style="font-style: italic;">${user.name_}</span> was kicked out of the conversation <span style="font-style:italic;">${conversation.getName()}</span>.</span>
+                            <span> <span style="font-style: italic;">${user.name_}</span> will not be able to join the conversation without a new invitation.</span>
+                        </div>
+                        `, 6000)
+                    },
+                    err => {
+                        ApplicationView.displayMessage(err, 3000)
+                    })
+            }
+        }
+    }
 
     clear() {
         this.shadowRoot.querySelector("#paticipants-lst").innerHTML = ""
@@ -1764,9 +1935,6 @@ export class InvitationCard extends HTMLElement {
             this.conversation = this.getAttribute("conversation")
         }
 
-        // initialyse account informations.
-        Account.getAccount(account, () => { }, err => { })
-        Account.getAccount(contact, () => { }, err => { })
 
         this.shadowRoot.innerHTML = `
         <style>
@@ -1848,6 +2016,39 @@ export class InvitationCard extends HTMLElement {
 
             }, false)
 
+        /** Listener event... */
+        Model.eventHub.subscribe(`accept_conversation_invitation_${this.conversation}_${this.account}_evt`,
+            (uuid) => {
+                //console.log(uuid)
+                this.listeners["accept_conversation_invitation_"] = { evt: `accept_conversation_invitation_${this.conversation}_${this.account}_evt`, uuid: uuid }
+            },
+            (evt) => {
+                // remove the invitation from the list.
+                this.deleteMe()
+
+            }, false)
+
+        Model.eventHub.subscribe(`decline_conversation_invitation_${this.conversation}_${this.account}_evt`,
+            (uuid) => {
+                //console.log(uuid)
+                this.listeners["decline_conversation_invitation_"] = { evt: `decline_conversation_invitation_${this.conversation}_${this.account}_evt`, uuid: uuid }
+            },
+            (evt) => {
+                // remove the invitation from the list.
+                this.deleteMe()
+            }, false)
+
+        Model.eventHub.subscribe(`revoke_conversation_invitation_${this.conversation}_${this.account}_evt`,
+            (uuid) => {
+                //console.log(uuid)
+                this.listeners["revoke_conversation_invitation_"] = { evt: `revoke_conversation_invitation_${this.conversation}_${this.account}_evt`, uuid: uuid }
+            },
+            (evt) => {
+                // remove the invitation from the list.
+                this.deleteMe()
+
+            }, false)
+
         Model.eventHub.subscribe(`delete_conversation_${this.conversation}_evt`,
             (uuid) => {
                 this.listeners["delete_conversation_"] = { evt: `delete_conversation_${this.conversation}_evt`, uuid: uuid }
@@ -1856,6 +2057,11 @@ export class InvitationCard extends HTMLElement {
                 // simply remove it from it parent.
                 this.deleteMe()
             }, false)
+
+        // initialyse account informations.
+        Account.getAccount(account, () => { }, err => { })
+        Account.getAccount(contact, () => { }, err => { })
+
 
     }
 

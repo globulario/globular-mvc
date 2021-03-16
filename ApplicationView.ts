@@ -956,11 +956,8 @@ export class ApplicationView extends View {
     // On yes
     yesBtn.onclick = () => {
 
-      ConversationManager.deleteConversation(conversation.getUuid(), () => {
+      ConversationManager.deleteConversation(conversation.getUuid(), this.application.account.id, () => {
         toast.dismiss();
-
-        // Here the conversation has been deleted...
-        Model.eventHub.publish(`delete_conversation_${conversation.getUuid()}_evt`, `{}`, false)
 
         ApplicationView.displayMessage(
           "<iron-icon icon='communication:message' style='margin-right: 10px;'></iron-icon><div>Conversation named " +
