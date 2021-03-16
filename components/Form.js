@@ -116,10 +116,10 @@ export class Form extends HTMLElement {
         `
         M.toast({html: toastHtml, displayLength: 999999})
 
-        this.toast = document.querySelector(".toast")
-        this.toast.querySelector("#save-btn").onclick = this.save.bind(this)
-        this.toast.querySelector("#no-save-btn").onclick = this.noSave.bind(this)
-        this.toast.querySelector("#cancel-btn").onclick = this.cancel.bind(this)
+        toast = document.querySelector(".toast")
+        toast.querySelector("#save-btn").onclick = this.save.bind(this)
+        toast.querySelector("#no-save-btn").onclick = this.noSave.bind(this)
+        toast.querySelector("#cancel-btn").onclick = this.cancel.bind(this)
 
         Model.eventHub.publish("lock_form_evt", true, true)
     }
@@ -129,7 +129,7 @@ export class Form extends HTMLElement {
      */
     save() {
         Model.eventHub.publish("save_form_evt", true, true)
-        this.toast.remove()
+        document.querySelector(".toast").remove()
         Model.eventHub.publish("unlock_form_evt", true, true)
         // Model.eventHub.publish("reset_form_evt", true, true)
     }
@@ -139,7 +139,7 @@ export class Form extends HTMLElement {
      */
     noSave() {
         Model.eventHub.publish("reset_form_evt", true, true)
-        this.toast.remove()
+        document.querySelector(".toast").remove()
         Model.eventHub.publish("unlock_form_evt", true, true)
     }
 
@@ -147,7 +147,7 @@ export class Form extends HTMLElement {
      * Sends an event over your local network to unlock the current form.
      */
     cancel() {
-        this.toast.remove()
+        document.querySelector(".toast").remove()
         Model.eventHub.publish("unlock_form_evt", true, true)
     }
 
