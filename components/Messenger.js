@@ -967,7 +967,7 @@ export class Messenger extends HTMLElement {
 
                 // Here the conversation dosent exist so I will keep it in the map.
                 this.conversations[conversation.getUuid()] = { conversation: conversation, messages: evt.messages }
-                
+
 
                 // Open the conversation.
                 this.openConversation(conversation, evt.messages)
@@ -1062,10 +1062,10 @@ export class Messenger extends HTMLElement {
                 let participants = JSON.parse(evt)
 
                 // update the particpant list.
-                conversation.setParticipantsList(participants)
+                this.conversations[conversationUuid].conversation.setParticipantsList(participants)
 
                 // Here I will unsubscribe to each event from it...
-                this.participantsList.setConversation(conversation, this.conversations[conversationUuid].messages)
+                this.participantsList.setConversation(this.conversations[conversationUuid].conversation, this.conversations[conversationUuid].messages)
             },
             false);
 
@@ -1089,7 +1089,7 @@ export class Messenger extends HTMLElement {
                 if (participant == this.account.id) {
                     // That's mean the user get kickout from the conversation...
                     this.closeConversation(conversationUuid)
-                    
+
                 }
             }, false)
 
@@ -1101,12 +1101,11 @@ export class Messenger extends HTMLElement {
             (evt) => {
                 // Remove the participant.
                 let participants = JSON.parse(evt)
-                
-                // update the particpant list.
-                conversation.setParticipantsList(participants)
+
+                this.conversations[conversationUuid].conversation.setParticipantsList(participants)
 
                 // Here I will unsubscribe to each event from it...
-                this.participantsList.setConversation(conversation, this.conversations[conversationUuid].messages)
+                this.participantsList.setConversation(this.conversations[conversationUuid].conversation, this.conversations[conversationUuid].messages)
             },
             false);
 
@@ -1279,7 +1278,6 @@ export class ParticipantsList extends HTMLElement {
         super();
         this.account = null;
         this.isOwner = false;
-        this.blocked = false;
 
         // Set the shadow dom.
         this.attachShadow({ mode: "open" });
@@ -1356,13 +1354,10 @@ export class ParticipantsList extends HTMLElement {
      * @param {*} conversation 
      */
     setConversation(conversation, messages) {
-        if (this.blocked == true) {
-            return;
-        }
+
 
         this.clear() // clear actual participant list...
-        this.blocked = true
-
+ 
         PermissionManager.getResourcePermissions(conversation.getUuid(),
             (permissions) => {
                 permissions.getOwners().getAccountsList().forEach(owner => {
@@ -1372,8 +1367,8 @@ export class ParticipantsList extends HTMLElement {
                 })
 
                 // Now I will append paticipant who wrote messages in that conversation and are not necessary in the room at that time...
-                let __participants__ = conversation.getParticipantsList()
-                let __unavailable__= []
+                let __participants__ = JSON.parse(JSON.stringify(conversation.getParticipantsList())); 
+                let __unavailable__ = []
                 messages.forEach(message => {
                     let index = __participants__.indexOf(message.getAuthor())
                     if (index == -1) {
@@ -1396,12 +1391,8 @@ export class ParticipantsList extends HTMLElement {
                             this.kickoutFromConversation(conversation, p, this.shadowRoot.querySelector(`#paticipant-${p._id}-row`))
 
                             // process next...
-                            console.log(__participants__)
                             if (__participants__.length > 0) {
                                 setParticipantsRow()
-                            } else {
-                                // end initialisation.
-                                this.blocked = false
                             }
                         },
                         err => {
@@ -1787,7 +1778,6 @@ export class MessagesPanel extends HTMLElement {
 
                         // Now the tool tip...
                         participantInfos.querySelector(`#msg_uuid_${msg.getUuid()}_tooltip`);
-                        console.log(author)
                         //participantInfos.innerHTML = `${author.name}`
                     }
                 },
