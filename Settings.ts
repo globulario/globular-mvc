@@ -520,6 +520,7 @@ export class LogSettings extends Settings {
                 headerCell.width = 350;
             } else if (title == "Detail") {
                 headerCell.width = 350;
+                /*
                 headerCell.onrender = function (div: any, value: string) {
                     // div.title = value;
                     if (value != undefined) {
@@ -534,6 +535,7 @@ export class LogSettings extends Settings {
                     }
 
                 }
+                */
             }
 
             this.header.appendChild(headerCell)

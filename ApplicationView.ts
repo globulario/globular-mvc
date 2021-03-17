@@ -891,7 +891,7 @@ export class ApplicationView extends View {
       card.setInviteButton((a: Account) => {
         ConversationManager.sendConversationInvitation(conversation.getUuid(), conversation.getName(), this.application.account.id, a.id,
           () => {
-            Model.eventHub.publish("send_conversation_invitation_event_", { participant: a.id, conversation: conversation.getName() }, true)
+            Model.eventHub.publish("send_conversation_invitation_event_", { participant: a.name, conversation: conversation.getName() }, true)
           },
           (err: any) => {
             ApplicationView.displayMessage(err, 3000)

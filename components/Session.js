@@ -111,7 +111,7 @@ export class SessionState extends HTMLElement {
                     away = false;
                 }
 
-                Model.eventHub.publish(`__session_state_${this.account.name}_change_event__`, session, true)
+                Model.eventHub.publish(`__session_state_${this.account.id}_change_event__`, session, true)
             }
         } else {
             this.away.parentNode.removeChild(this.away);
@@ -143,7 +143,7 @@ export class SessionState extends HTMLElement {
         if (this.hasAttribute("editable")) {
             sessionTime = this.account.session.lastStateTime;
         }
-        Model.eventHub.subscribe(`session_state_${this.account.name}_change_event`,
+        Model.eventHub.subscribe(`session_state_${this.account.id}_change_event`,
             (uuid) => {
                 /** nothing special here... */
             },

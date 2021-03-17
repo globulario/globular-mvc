@@ -147,26 +147,19 @@ dropdown-menu-element{
 .table-item{
    text-align: center;
    vertical-align: middle;
-   width: 100%;
-   height: 100%;
-   padding: 0px;
-   margin: 0px;
    font-size: 1rem;
-  /** hide anything to large to fit... **/
-   overflow:hidden;
-   display:inline-block;
-   text-overflow: ellipsis;
-}
-/** The cell value div **/
-.table-item-value {
+   height: 100%;
+   width: 100%;
    border-right: 1px solid var(--palette-divider);
    border-top: 1px solid var(--palette-divider);
-  /** Text align center and at middle by default **/
-   text-align: center;
-   vertical-align: middle;
-   display: table-cell;
-   height: 100%;
+   overflow: auto;
 }
+
+/** The cell value div **/
+.table-item-value {
+  padding: 5px;
+}
+
 .inner-triangle{
    border-left: 10px solid transparent;
    border-right: 10px solid var(--palette-primary-accent);

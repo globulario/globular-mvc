@@ -133,7 +133,7 @@ export class AccountMenu extends Menu {
                         </span>
                     </div>
                 </div>
-                <globular-session-state account="${account.name}" editable state="online"></globular-session-state>
+                <globular-session-state account="${account.id}" editable state="online"></globular-session-state>
             </div>
             <div class="card-actions">
               <paper-button id="settings_btn" >settings
