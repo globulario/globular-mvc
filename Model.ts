@@ -16,7 +16,14 @@ export class Model {
     public static domain: string;
 
     // The name of the applicaition where the model is use.
-    public static application: string;
+    public static get application(): string {
+        let app = window.location.pathname.split('/')[1]
+        if(app.length == 0){
+            app = Model.globular.config.IndexApplication;
+        }
+        return app;
+    }
+
 
     // The view.
     private _view: View;
@@ -32,7 +39,6 @@ export class Model {
         // Set the application name.
         // The domain will be set with the hostname.
         Model.domain = window.location.hostname
-        Model.application = window.location.pathname.split('/')[1]
         this.listeners = new Array<any>();
     }
 
