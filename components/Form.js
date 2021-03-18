@@ -51,7 +51,6 @@ export class Form extends HTMLElement {
             </div>
         `
 
-        this.toast = ""
         this.container = this.shadowRoot.getElementById("container")
         this.shadowRoot.getElementById("save-btn").onclick = this.confirm.bind(this)
     }
@@ -277,7 +276,7 @@ export class Field extends HTMLElement {
         this.smallThreshold = 800
         this.phoneThreshold = 500
         this.invalidColor = "red"
-        this.validColor = "var(--paper-card-background-color, var(--primary-background-color))"
+        this.label = label
 
         let hostHtml = this._getAllSizes(x, y, width, height, xSmall, ySmall, widthSmall, heightSmall, xPhone, yPhone, widthPhone, heightPhone)
 
@@ -489,7 +488,14 @@ export class Field extends HTMLElement {
      */
     isValid() {
         return false
-     }
+    }
+
+    /**
+     * Returns text saying what is invalid within the field.
+     */
+    getInvalidText() {
+        return `Le champs, ${this.label}, n'est pas valide.`
+    }
 
     /**
      * Marks the field as being invalid either by making it red or something of the sort.
@@ -842,7 +848,7 @@ export class DropdownField extends Field {
 
 
     getValue() {
-        if(!this.listbox.selected || this.listbox.selected < 0) 
+        if(this.listbox.selected === null || this.listbox.selected === undefined || this.listbox.selected < 0) 
             return ""
         return this.listbox.getElementsByTagName("paper-item")[this.listbox.selected].getAttribute("value")
     }
@@ -1064,12 +1070,12 @@ export class ImageField extends Field {
     }
 
     markInvalid() {
-        this.input.style.borderColor = this.invalidColor
-        this.input.style.borderStyle = "dashed"
+        this.visualInput.style.borderColor = this.invalidColor
+        this.visualInput.style.borderStyle = "dashed"
     }
 
     markValid() {
-        this.input.style.border = "none"
+        this.visualInput.style.border = "none"
     }
 
     lock() {
