@@ -582,12 +582,14 @@ export class StringField extends Field {
     }
 
     markInvalid() {
-        this.input.style.backgroundColor = this.invalidColor
+        this.input.style.borderColor = this.invalidColor
+        this.input.style.borderStyle = "dashed"
     }
 
     markValid() {
-        this.input.style.backgroundColor = this.validColor
+        this.input.style.border = "none"
     }
+
 
     lock() {
         this.view.innerHTML = this.input.value
@@ -728,11 +730,12 @@ export class TextAreaField extends Field {
     }
 
     markInvalid() {
-        this.input.style.backgroundColor = this.invalidColor
+        this.input.style.borderColor = this.invalidColor
+        this.input.style.borderStyle = "dashed"
     }
 
     markValid() {
-        this.input.style.backgroundColor = this.validColor
+        this.input.style.border = "none"
     }
 
     lock() {
@@ -863,11 +866,12 @@ export class DropdownField extends Field {
     }
 
     markInvalid() {
-        this.input.style.backgroundColor = this.invalidColor
+        this.input.style.borderColor = this.invalidColor
+        this.input.style.borderStyle = "dashed"
     }
 
     markValid() {
-        this.input.style.backgroundColor = this.validColor
+        this.input.style.border = "none"
     }
 
     lock() {
@@ -1060,11 +1064,12 @@ export class ImageField extends Field {
     }
 
     markInvalid() {
-        this.input.style.backgroundColor = this.invalidColor
+        this.input.style.borderColor = this.invalidColor
+        this.input.style.borderStyle = "dashed"
     }
 
     markValid() {
-        this.input.style.backgroundColor = this.validColor
+        this.input.style.border = "none"
     }
 
     lock() {
@@ -1151,11 +1156,12 @@ export class DateField extends Field {
     }
 
     markInvalid() {
-        this.input.style.backgroundColor = this.invalidColor
+        this.input.style.borderColor = this.invalidColor
+        this.input.style.borderStyle = "dashed"
     }
 
     markValid() {
-        this.input.style.backgroundColor = this.validColor
+        this.input.style.border = "none"
     }
 
 
