@@ -578,7 +578,7 @@ export class StringField extends Field {
     }
 
     isValid() {
-        return this.getValue() && this.getValue() !== ""
+        return this.getValue() !== undefined && this.getValue() !== null && this.getValue() !== ""
     }
 
     markInvalid() {
@@ -726,7 +726,7 @@ export class TextAreaField extends Field {
     }
 
     isValid() {
-        return this.getValue() && this.getValue() !== ""
+        return this.getValue() !== undefined && this.getValue() !== null && this.getValue() !== ""
     }
 
     markInvalid() {
@@ -862,7 +862,7 @@ export class DropdownField extends Field {
     }
 
     isValid() {
-        return this.getValue() && this.getValue() !== ""
+        return this.getValue() !== undefined && this.getValue() !== null && this.getValue() !== ""
     }
 
     markInvalid() {
@@ -1060,7 +1060,7 @@ export class ImageField extends Field {
     }
 
     isValid() {
-        return this.getValue() && this.getValue() !== ""
+        return this.getValue() !== undefined && this.getValue() !== null && this.getValue() !== ""
     }
 
     markInvalid() {
@@ -1152,7 +1152,7 @@ export class DateField extends Field {
     }
 
     isValid() {
-        return this.getValue() && this.getValue() !== ""
+        return this.getValue() !== undefined && this.getValue() !== null && this.getValue() !== ""
     }
 
     markInvalid() {
