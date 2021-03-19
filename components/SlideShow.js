@@ -301,6 +301,7 @@ export class SlideShow extends HTMLElement {
 
         // Wait the time of animation delay and set back the div at it start position.
         setTimeout(() => {
+            
             if (this.children.length == 0) {
                 return
             }

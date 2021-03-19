@@ -24,7 +24,7 @@ import { theme } from "./Theme";
 export class ApplicationsMenu extends Menu {
     // attributes.
 
-    // Create the applicaiton view.
+    // Create the application view.
     constructor() {
         super("applications", "apps", "Applications")
         let html = `
@@ -35,7 +35,7 @@ export class ApplicationsMenu extends Menu {
                 }
 
                 #applications-div {
-                    display: flex;
+                    display: none;
                     flex-wrap: wrap;
                     padding: 10px;
                     width: 300px;
@@ -62,9 +62,12 @@ export class ApplicationsMenu extends Menu {
         this.shadowRoot.appendChild(this.getMenuDiv())
 
         // Action's
-        this.getMenuDiv().querySelector("#application-panel-toolbar-menu").init();
+        this.getMenuDiv().querySelector("#application-panel-toolbar-menu").init(() => {
+            this.shadowRoot.querySelector(`#applications-div`).style.display = "flex"
+            this.shadowRoot.removeChild(this.getMenuDiv())
+        });
 
-        this.shadowRoot.removeChild(this.getMenuDiv())
+
     }
 }
 
@@ -76,35 +79,53 @@ customElements.define('globular-applications-menu', ApplicationsMenu)
 export class ApplicationsPanel extends HTMLElement {
     // attributes.
 
-    // Create the applicaiton view.
+    // Create the application view.
     constructor() {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
+        this.size = "normal"
+        this.iconSize = 56;
+        if (this.hasAttribute("size")) {
+            this.size = this.getAttribute("size")
+        }
+
+        if (this.size == "large") {
+            this.iconSize = 96
+        }
 
         this.shadowRoot.innerHTML = `
         <style>
         ${theme}
             .container {
                 display: flex;
+                flex-flow: wrap;
             }
-
+            paper-tooltip {
+                --paper-tooltip: {
+                  font-size: 1rem;
+                }
+              }
             .application-div {
                 display: flex;
                 position: relative;
                 flex-direction: column;
                 align-items: center;
-                height: 80px;
-                width: 80px;
+                width:  ${this.iconSize * 1.25}px;
                 margin: 5px;
                 padding: 5px;
                 border-radius: 5px;
                 transition: background 0.2s ease,padding 0.8s linear;
+                background-color: var(--palette-background-paper);
+                --paper-tooltip: {
+                    font-size: 1rem;
+                  }
             }
 
             .application-div img{
                 filter: invert(0%);
             }
+            
             .application-div:hover{
                 cursor: pointer;
                 -webkit-filter: invert(10%);
@@ -112,8 +133,8 @@ export class ApplicationsPanel extends HTMLElement {
             }
 
             .application-div img{
-                height: 56px;
-                width: 56px;
+                height: ${this.iconSize}px;
+                width:  ${this.iconSize}px;
             }
 
             .application-div span{
@@ -121,20 +142,25 @@ export class ApplicationsPanel extends HTMLElement {
                 color: #404040;
                 display: inline-block;
                 font-family: 'Google Sans',Roboto,RobotoDraft,Helvetica,Arial,sans-serif;
-                font-size: 14px;
+                font-size: 1rem;
                 letter-spacing: .09px;
                 line-height: 16px;
+                width: 100%;
+                text-align: center;
+                color: var(--palette-text-primary);
+            }
+
+            .application-div.normal span{
+                font-size: .85rem;
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
-                width: 76px;
-                text-align: center;
-                color: var(--palette-text-primary);
             }
 
         </style>
         <div class="container"></div>
         `
+
     }
 
 
@@ -143,54 +169,68 @@ export class ApplicationsPanel extends HTMLElement {
 
     }
 
-    init() {
+    init(callback) {
 
         Application.getAllApplicationInfo((infos) => {
             let range = document.createRange()
             for (var i = 0; i < infos.length; i++) {
-                let applicaiton = infos[i]
+                let application = infos[i]
                 let html = `
-                <div id="${applicaiton._id}_div" class="application-div">
+                <div id="${application._id}_div" class="application-div">
                     <paper-ripple recenters></paper-ripple>
-                    <img id="${applicaiton._id}_img"></img>
-                    <span id="${applicaiton._id}_span"></span>
-                    <a id="${applicaiton._id}_lnk" style="display: none;"></a>
+                    <img id="${application._id}_img"></img>
+                    <span id="${application._id}_span"></span>
+                    <a id="${application._id}_lnk" style="display: none;"></a>
                 </div>
+                <paper-tooltip for="${application._id}_div" style="font-size: .85rem;" role="tooltip" tabindex="-1">${application.description}</paper-tooltip>
                 `
-                if (this.shadowRoot.querySelector(`#${applicaiton._id}_div`) == undefined) {
-                    this.shadowRoot.querySelector(".container").appendChild(range.createContextualFragment(html))
+                console.log("---> application ", application)
+                let container = this.shadowRoot.querySelector(".container")
+                container.appendChild(range.createContextualFragment(html))
+                let div_ = container.querySelector(`#${application._id}_div`)
 
-                    let div_ = this.shadowRoot.getElementById(applicaiton._id + "_div")
-                    let img = this.shadowRoot.getElementById(applicaiton._id + "_img")
-                    let lnk = this.shadowRoot.getElementById(applicaiton._id + "_lnk")
+                if (div_ != null) {
+                    if (this.size == "normal") {
+                        div_.classList.add("normal")
+                    }
+
+                    let img = this.shadowRoot.getElementById(application._id + "_img")
+                    let lnk = this.shadowRoot.getElementById(application._id + "_lnk")
                     var currentLocation = window.location;
-                    lnk.href = currentLocation.origin + applicaiton.path;
+                    lnk.href = currentLocation.origin + application.path;
 
-                    let title = this.shadowRoot.getElementById(applicaiton._id + "_span")
-                    img.src = applicaiton.icon;
-                    title.innerHTML = applicaiton._id;
-                    title.title = applicaiton._id;
+                    let title = this.shadowRoot.getElementById(application._id + "_span")
+                    img.src = application.icon;
+                    title.innerHTML = application._id;
+                    title.title = application._id;
 
                     div_.onclick = () => {
                         lnk.click()
                     }
 
                     // Keep the image up to date.
-                    Application.eventHub.subscribe(`update_application_${applicaiton._id}_settings_evt`,
+                    Application.eventHub.subscribe(`update_application_${application._id}_settings_evt`,
                         (uuid) => {
 
                         },
                         (__applicationInfoStr__) => {
                             // Set the icon...
-                            let applicaiton = JSON.parse(__applicationInfoStr__)
-                            img.src = applicaiton.icon;
+                            let application = JSON.parse(__applicationInfoStr__)
+                            img.src = application.icon;
                         }, false)
-
+                }else{
+                    console.log("no found ", div_)
                 }
             }
 
+            if (callback != undefined) {
+                callback()
+            }
         }, (err) => {
             console.log(err)
+            if (callback != undefined) {
+                callback()
+            }
         })
     }
 }
