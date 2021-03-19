@@ -108,7 +108,6 @@ export class Form extends HTMLElement {
             <span id="toast-text">Est-ce que vous voulez sauvegarder votre formulaire?</span>
             <div id="button-container">
                 <button class="toast-btn" id="save-btn">Enregistrer</button>
-                <button class="toast-btn" id="no-save-btn">Ne pas enregistrer</button>
                 <button class="toast-btn" id="cancel-btn">Annuler</button>
             </div>
         </div>
@@ -117,7 +116,6 @@ export class Form extends HTMLElement {
 
         let toast = document.querySelector(".toast")
         toast.querySelector("#save-btn").onclick = this.save.bind(this)
-        toast.querySelector("#no-save-btn").onclick = this.noSave.bind(this)
         toast.querySelector("#cancel-btn").onclick = this.cancel.bind(this)
 
         Model.eventHub.publish("lock_form_evt", true, true)
@@ -131,15 +129,6 @@ export class Form extends HTMLElement {
         document.querySelector(".toast").remove()
         Model.eventHub.publish("unlock_form_evt", true, true)
         // Model.eventHub.publish("reset_form_evt", true, true)
-    }
-
-    /**
-     * Sends an event over your local network to reset, then unlock the current form.
-     */
-    noSave() {
-        Model.eventHub.publish("reset_form_evt", true, true)
-        document.querySelector(".toast").remove()
-        Model.eventHub.publish("unlock_form_evt", true, true)
     }
 
     /**
