@@ -10,7 +10,9 @@ import '@polymer/paper-badge/paper-badge.js';
 import { Model } from '../Model';
 import { Menu } from './Menu';
 import { theme } from "./Theme";
-import {Notification} from "../Notification"
+import { Notification } from "../Notification"
+import { Account } from "../Account"
+import { ApplicationView } from '../ApplicationView';
 
 /**
  * Login/Register functionality.
@@ -204,7 +206,7 @@ export class NotificationMenu extends Menu {
             }
 
             let now = new Date()
-            let dateTimeDivs = this.shadowRoot.querySelectorAll(".notification_date")
+            let dateTimeDivs = this.shadowRoot.querySelector(".notification_date")
             for (var i = 0; i < dateTimeDivs.length; i++) {
                 let date = dateTimeDivs[i].date;
                 let delay = Math.floor((now.getTime() - date.getTime()) / 1000);
@@ -239,7 +241,7 @@ export class NotificationMenu extends Menu {
             },
             (account) => {
                 this.clearUserNotifications()
-                Model.eventHub.unSubscribe(account._id + "_notification_event", this.account_notification_listener)
+                Model.eventHub.unSubscribe(account.name + "_notification_event", this.account_notification_listener)
             }, true)
 
         // The logout event.
@@ -248,7 +250,7 @@ export class NotificationMenu extends Menu {
                 /** nothing to do here. */
             },
             (account) => {
-                Model.eventHub.subscribe(account._id + "_notification_event",
+                Model.eventHub.subscribe(account.name + "_notification_event",
                     (uuid) => {
                         this.account_notification_listener = uuid
                     },
@@ -377,21 +379,21 @@ export class NotificationMenu extends Menu {
     appendNofication(parent, notification) {
 
         let html = `
-        <div id="${notification._id}" class="notification_panel">
+        <div id="div_${notification._id}" class="notification_panel">
             <div style="position: absolute; top: 5px; right: 5px;">
                 <div style="position: relative;">
-                    <iron-icon id="${notification._id}_close_btn"  icon="close" style="display: none; --iron-icon-fill-color:var(--palette-text-primary);"></iron-icon>
+                    <iron-icon id="div_${notification._id}_close_btn"  icon="close" style="display: none; --iron-icon-fill-color:var(--palette-text-primary);"></iron-icon>
                     <paper-ripple class="circle" recenters></paper-ripple>
                 </div>
             </div>
-            <div id="${notification._id}_recipient"  style="display: flex; flex-direction: column; padding: 5px; align-items: center;">
-                <img id="${notification._id}_img"></img>
-                <iron-icon id="${notification._id}_ico" icon="account-circle"></iron-icon>
-                <span id="${notification._id}_span" style="font-size: 10pt;"></span>
-                <div id="${notification._id}_date" class="notification_date" style="font-size: 10pt;"></div>
+            <div id="div_${notification._id}_recipient"  style="display: flex; flex-direction: column; padding: 5px; align-items: center;">
+                <img id="div_${notification._id}_img"></img>
+                <iron-icon id="div_${notification._id}_ico" icon="account-circle"></iron-icon>
+                <span id="div_${notification._id}_span" style="font-size: 10pt;"></span>
+                <div id="div_${notification._id}_date" class="notification_date" style="font-size: 10pt;"></div>
             </div>
             <div style="display: flex; flex-direction: column; padding:5px; flex-grow: 1;">
-                <div id="${notification._id}_text" style="flex-grow: 1; display: flex;"></div>
+                <div id="div_${notification._id}_text" style="flex-grow: 1; display: flex;">${notification._text}</div>
             </div>
         </div>
         `
@@ -402,21 +404,20 @@ export class NotificationMenu extends Menu {
 
         parent.insertBefore(range.createContextualFragment(html), parent.firstChild);
 
-        let isHidden = this.shadowRoot.getElementById(notification._id) == undefined
+        let isHidden = this.shadowRoot.getElementById(`div_${notification._id}`) == undefined
 
         // Action's
         if (isHidden) {
             this.shadowRoot.appendChild(this.getMenuDiv())
         }
 
-        this.shadowRoot.getElementById(notification._id + "_text").innerHTML = notification._text
+     
+        let notificationDiv = this.shadowRoot.getElementById(`div_${notification._id}`)
+        let closeBtn = this.shadowRoot.getElementById(`div_${notification._id}_close_btn`)
 
-
-        let notificationDiv = this.shadowRoot.getElementById(notification._id)
-        let closeBtn = this.shadowRoot.getElementById(notification._id + "_close_btn")
         closeBtn.onclick = () => {
             Model.eventHub.publish("delete_notification_event_", notification, true)
-            if(this.onclose !=undefined){
+            if (this.onclose != undefined) {
                 this.onclose(notification);
             }
         }
@@ -440,58 +441,65 @@ export class NotificationMenu extends Menu {
         if (notification._type == 1) {
             this.applicationNotificationsDiv.style.display = ""
             let application = JSON.parse(notification._sender)
-            let img = this.shadowRoot.getElementById(notification._id + "_img")
+            let img = this.shadowRoot.getElementById(`div_${notification._id}_img`)
             img.src = application.icon
             img.style.borderRadius = "0px"
             img.style.width = "24px"
             img.style.height = "24px"
         } else if (notification._type == 2) {
             this.userNotificationsDiv.style.display = ""
-            let account = JSON.parse(notification._sender)
-            if(account.profilPicture_ != undefined){
-                this.shadowRoot.getElementById(notification._id + "_img").style.display = "block"
-                this.shadowRoot.getElementById(notification._id + "_ico").style.display = "none"
-                this.shadowRoot.getElementById(notification._id + "_img").src = account.profilPicture_
-            }else{
-                this.shadowRoot.getElementById(notification._id + "_img").style.display = "none"
-                this.shadowRoot.getElementById(notification._id + "_ico").style.display = "block"
-            }
-            this.shadowRoot.getElementById(notification._id + "_span").innerHTML = account._id
-            let deleteNotificationListener
-            Model.eventHub.subscribe(
-                notification._id + "_delete_notification_event",
-                (uuid) => {
-                    deleteNotificationListener = uuid
-                },
-                (evt) => {
-                    let notification = Notification.fromString(evt)
-                    notificationDiv.parentNode.removeChild(notificationDiv)
-                    Model.eventHub.unSubscribe(notification._id + "_delete_notification_event", deleteNotificationListener)
-                    if (this.userNotificationsPanel.children.length == 0 && this.applicationNotificationsPanel.children.length == 0) {
-                        this.getIcon().icon = "social:notifications-none"
-                    }
+            let obj = JSON.parse(notification._sender)
+            let img = this.shadowRoot.getElementById(`div_${notification._id}_img`)
+            let ico = this.shadowRoot.getElementById(`div_${notification._id}_ico`)
+            let span =  this.shadowRoot.getElementById(`div_${notification._id}_span`)
+            Account.getAccount(obj._id, (account) => {
+                if (account.profilPicture_ != undefined) {
+                    img.style.display = "block"
+                    ico.style.display = "none"
+                    img.src = account.profilPicture_
+                } else {
+                    img.style.display = "none"
+                    ico.style.display = "block"
+                }
+                span.innerHTML = account.name
+                let deleteNotificationListener
+                Model.eventHub.subscribe(
+                    notification._id + "_delete_notification_event",
+                    (uuid) => {
+                        deleteNotificationListener = uuid
+                    },
+                    (evt) => {
+                        let notification = Notification.fromString(evt)
+                        notificationDiv.parentNode.removeChild(notificationDiv)
+                        Model.eventHub.unSubscribe(notification._id + "_delete_notification_event", deleteNotificationListener)
+                        if (this.userNotificationsPanel.children.length == 0 && this.applicationNotificationsPanel.children.length == 0) {
+                            this.getIcon().icon = "social:notifications-none"
+                        }
 
-                    if (this.userNotificationsPanel.children.length == 0) {
-                        this.userNotificationsDiv.style.display = "none"
-                    }
-                },
-                false
-            );
+                        if (this.userNotificationsPanel.children.length == 0) {
+                            this.userNotificationsDiv.style.display = "none"
+                        }
+                    },
+                    false
+                );
+            }, err => { 
+                ApplicationView.displayMessage(err, 3000)
+            })
         }
 
         let date = new Date(notification._date)
         let now = new Date()
         let delay = Math.floor((now.getTime() - date.getTime()) / 1000);
-        let div = this.shadowRoot.getElementById(notification._id + "_date")
-        div.date = date
+        let date_div = this.shadowRoot.getElementById(`div_${notification._id}_date`)
+        date_div.date = date
         if (delay < 60) {
-            div.innerHTML = delay + " seconds ago"
+            date_div.innerHTML = delay + " seconds ago"
         } else if (delay < 60 * 60) {
-            div.innerHTML = Math.floor(delay / (60)) + " minutes ago"
+            date_div.innerHTML = Math.floor(delay / (60)) + " minutes ago"
         } else if (delay < 60 * 60 * 24) {
-            div.innerHTML = Math.floor(delay / (60 * 60)) + " hours ago"
+            date_div.innerHTML = Math.floor(delay / (60 * 60)) + " hours ago"
         } else {
-            div.innerHTML = Math.floor(delay / (60 * 60 * 24)) + " days ago"
+            date_div.innerHTML = Math.floor(delay / (60 * 60 * 24)) + " days ago"
         }
 
         if (isHidden) {

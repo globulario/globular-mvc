@@ -18,9 +18,7 @@ import { v4 as uuidv4 } from "uuid";
 import { mergeTypedArrays, uint8arrayToStringMethod } from "./Utility";
 import { ConversationManager } from "./Conversation";
 import { Conversations } from "globular-web-client/conversation/conversation_pb";
-import { Login } from "./components/Login";
 import { LogInfo, LogLevel, LogRqst, LogRsp } from "globular-web-client/log/log_pb";
-import { getErrorSource, install } from "source-map-support";
 
 // Get the configuration from url
 function getFileConfig(url: string, callback: (obj: any) => void, errorcallback: (err: any) => void) {
@@ -131,8 +129,6 @@ export class Application extends Model {
     // The application name.
     this.name = name;
     this.title = title;
-
-    Model.application = this.name; // set the application in model.
     this.view = view;
 
     if (document.getElementsByTagName("title").length > 0) {
@@ -1122,7 +1118,7 @@ export class Application extends Model {
         rqst.setId(db);
         rqst.setDatabase(db);
       }
-      query = `{"_recipient":"${this.account.id}"}`;
+      query = `{"_recipient":"${this.account.name}"}`; // here I made use of the account name not it id as recipiant...
     }
 
     rqst.setCollection("Notifications");
