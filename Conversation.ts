@@ -1,5 +1,5 @@
 
-import { Conversation, ConnectRequest, Conversations, CreateConversationRequest, Message, CreateConversationResponse, DeleteConversationRequest, DeleteConversationResponse, FindConversationsRequest, FindConversationsResponse, JoinConversationRequest, JoinConversationResponse, ConnectResponse, SendMessageRequest, SendMessageResponse, SendInvitationRequest, Invitation, Invitations, GetReceivedInvitationsRequest, GetReceivedInvitationsResponse, AcceptInvitationRequest, DeclineInvitationRequest, GetSentInvitationsRequest, GetSentInvitationsResponse, RevokeInvitationRequest, RevokeInvitationResponse, LeaveConversationRequest, LeaveConversationResponse, KickoutFromConversationRequest } from "globular-web-client/conversation/conversation_pb";
+import { Conversation, ConnectRequest, Conversations, CreateConversationRequest, Message, CreateConversationResponse, DeleteConversationRequest, DeleteConversationResponse, FindConversationsRequest, FindConversationsResponse, JoinConversationRequest, JoinConversationResponse, ConnectResponse, SendMessageRequest, SendMessageResponse, SendInvitationRequest, Invitation, Invitations, GetReceivedInvitationsRequest, GetReceivedInvitationsResponse, AcceptInvitationRequest, DeclineInvitationRequest, GetSentInvitationsRequest, GetSentInvitationsResponse, RevokeInvitationRequest, RevokeInvitationResponse, LeaveConversationRequest, LeaveConversationResponse, KickoutFromConversationRequest, LikeMessageRqst, DisconnectRequest, DislikeMessageRqst, LikeMessageResponse, DislikeMessageResponse } from "globular-web-client/conversation/conversation_pb";
 import { GetConversationsRequest, GetConversationsResponse } from "globular-web-client/conversation/conversation_pb";
 
 import { Account } from "./Account";
@@ -334,6 +334,41 @@ export class ConversationManager {
     }).catch(errorCallback)
   }
 
+  static likeIt(conversation: string, message: string, account:string, successCallback: () => void, errorCallback: (err: any) => void) {
+    let rqst = new LikeMessageRqst
+    rqst.setMessage(message)
+    rqst.setConversation(conversation)
+    rqst.setAccount(account)
+
+    Model.globular.conversationService.likeMessage(rqst, {
+      token: localStorage.getItem("user_token"),
+      application: Model.application,
+      domain: Model.domain,
+    }).then((rsp: LikeMessageResponse) => {
+      if(successCallback!=undefined){
+        successCallback()
+      }
+    }).catch(errorCallback)
+
+  }
+
+  static dislikeIt(conversation: string, message: string, account:string, successCallback: () => void, errorCallback: (err: any) => void) {
+    let rqst = new DislikeMessageRqst
+    rqst.setMessage(message)
+    rqst.setConversation(conversation)
+    rqst.setAccount(account)
+
+    Model.globular.conversationService.dislikeMessage(rqst, {
+      token: localStorage.getItem("user_token"),
+      application: Model.application,
+      domain: Model.domain,
+    }).then((rsp: DislikeMessageResponse) => {
+      if(successCallback!=undefined){
+        successCallback()
+      }
+    }).catch(errorCallback)
+
+  }
   static sendMessage(conversationUuid: string, author: Account, text: string, replyTo: string, successCallback: () => void, errorCallback: (err: any) => void) {
 
     let rqst = new SendMessageRequest
