@@ -958,7 +958,10 @@ export class ApplicationView extends View {
 
       ConversationManager.deleteConversation(conversation.getUuid(), this.application.account.id, () => {
         toast.dismiss();
-
+        // Publish the list of participant with the account removed from it.
+        let participants = conversation.getParticipantsList()
+        participants.splice(participants.indexOf(this.application.account.id), 1)
+        Model.eventHub.publish(`leave_conversation_${conversation.getUuid()}_evt`, JSON.stringify(participants) , false)
         ApplicationView.displayMessage(
           "<iron-icon icon='communication:message' style='margin-right: 10px;'></iron-icon><div>Conversation named " +
           conversation.getName() +

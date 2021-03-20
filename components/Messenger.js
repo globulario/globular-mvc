@@ -25,6 +25,7 @@ import { Invitation } from 'globular-web-client/conversation/conversation_pb';
 import { decode } from 'uint8-to-base64';
 import { v4 as uuidv4 } from "uuid";
 import { ApplicationView } from '../ApplicationView';
+import { getCoords } from "./utility.js"
 
 /**
  * Communication with your contact's
@@ -310,11 +311,13 @@ export class MessengerMenu extends Menu {
                 this.receivedConversationsInvitationsTab.innerHTML = `<span id="received_invitations_label">Received Invitations</span>`
                 if (this.receivedConversationsInvitationsLst.children.length > 0) {
                     this.receivedConversationsInvitationsTab.innerHTML += `<paper-badge for="received_invitations_label" label="${this.receivedConversationsInvitationsLst.children.length}"></paper-badge>`
+                    window.dispatchEvent(new Event('resize'));
                 }
 
                 this.sentConversationsInvitationsTab.innerHTML = `<span id="sent_invitations_label">Sent Invitations</span>`
                 if (this.sentConversationsInvitationsLst.children.length > 0) {
                     this.sentConversationsInvitationsTab.innerHTML += `<paper-badge for="sent_invitations_label" label="${this.sentConversationsInvitationsLst.children.length}"></paper-badge>`
+                    window.dispatchEvent(new Event('resize'));
                 }
             },
             true)
@@ -335,6 +338,8 @@ export class MessengerMenu extends Menu {
         conversationInfos.setJoinButton(); // here I will display the join button.
         this.conversationsLst.appendChild(conversationInfos)
         this.conversationsTab.innerHTML = `<span id="conversation_label">Conversations</span> <paper-badge for="conversation_label" label="${this.conversationsLst.children.length}"></paper-badge>`
+        window.dispatchEvent(new Event('resize'));
+        console.log("append conversation " + conversationUuid);
 
         Model.eventHub.subscribe(`delete_conversation_${conversationUuid}_evt`,
             (uuid) => {
@@ -342,6 +347,7 @@ export class MessengerMenu extends Menu {
             },
             (conversationUuid) => {
                 // simply remove it from it parent.
+                console.log("delete conversation event received!", conversationUuid)
                 let conversationInfos = this.shadowRoot.querySelector(`#conversation_${conversationUuid}_infos`)
                 if (conversationInfos != undefined) {
                     this.conversationsLst.removeChild(conversationInfos)
@@ -439,6 +445,7 @@ export class MessengerMenu extends Menu {
 
         // Now I will set the number of received conversations in the tab.
         this.receivedConversationsInvitationsTab.innerHTML = `<span id="received_invitation_label">Received Invitations</span> <paper-badge for="received_invitation_label" label="${this.receivedConversationsInvitationsLst.children.length}"></paper-badge>`
+        window.dispatchEvent(new Event('resize'));
     }
 
 
@@ -459,6 +466,7 @@ export class MessengerMenu extends Menu {
         })
 
         this.sentConversationsInvitationsTab.innerHTML = `<span id="sent_invitations_label">Sent Invitations</span> <paper-badge for="sent_invitations_label" label="${this.sentConversationsInvitationsLst.children.length}"></paper-badge>`
+        window.dispatchEvent(new Event('resize'));
     }
 }
 
@@ -1540,6 +1548,7 @@ export class MessagesPanel extends HTMLElement {
         this.conversationUuid = "";
         this.previousMessage = null;
         this.previousMessageDiv = null;
+        this.previousAccountDiv = null;
 
         // Set the shadow dom.
         this.attachShadow({ mode: "open" });
@@ -1627,30 +1636,39 @@ export class MessagesPanel extends HTMLElement {
     appendMessage(msg) {
 
         // simply set space and tab into the message.
-        let message = new GlobularMessagePanel(msg, this.account)
+        if (this.messagesContainer.querySelector(`#_${msg.getUuid()}`) == undefined) {
+            let message = new GlobularMessagePanel(msg, this.account)
+            this.messagesContainer.insertBefore(message, this.messagesContainer.firstChild)
 
-        this.messagesContainer.insertBefore(message, this.messagesContainer.firstChild)
+            // Set display based if multiples messages are received from the same author before somebody else write something.
+            let messageDiv = message.getMessageDiv()
+            let accountDiv = message.getAccountDiv()
+            if (this.previousMessage != undefined) {
+                if (this.previousMessage.getAuthor() == msg.getAuthor()) {
+                    // hide the actions inside previous message div.
+                    this.previousMessageDiv.children[1].style.display = "none"; // hide action
+                    this.previousMessageDiv.children[0].style.borderBottomLeftRadius = "0px" // set message corner radius 
+                    this.previousMessageDiv.children[0].style.borderBottomRightRadius = "0px" // set message corner radius 
+                    this.previousMessageDiv.style.marginBottom = "0px"
+                    messageDiv.children[0].style.borderTopLeftRadius = "0px"
+                    messageDiv.children[0].style.borderTopRightRadius = "0px"
+                    if (this.previousAccountDiv != undefined) {
+                        accountDiv.style.display = "none"
+                    }
 
-        // Set display based if multiples messages are received from the same author before somebody else write something.
-        let messageDiv = message.getMessageDiv()
-
-        if (this.previousMessage != undefined) {
-            if (this.previousMessage.getAuthor() == msg.getAuthor()) {
-                // hide the actions inside previous message div.
-                this.previousMessageDiv.children[1].style.display = "none"; // hide action
-                this.previousMessageDiv.children[0].style.borderBottomLeftRadius = "0px" // set message corner radius 
-                this.previousMessageDiv.children[0].style.borderBottomRightRadius = "0px" // set message corner radius 
-                this.previousMessageDiv.style.marginBottom = "0px"
-                messageDiv.children[0].style.borderTopLeftRadius = "0px"
-                messageDiv.children[0].style.borderTopRightRadius = "0px"
+                }
             }
+
+            // set the message for the next step...
+            this.previousMessage = msg;
+            this.previousMessageDiv = messageDiv;
+            this.previousAccountDiv = accountDiv;
+
+            this.setScroll();
+        } else {
+            // simply set the message.
+            this.messagesContainer.querySelector(`#_${msg.getUuid()}`).setMessage(msg)
         }
-
-        // set the message for the next step...
-        this.previousMessage = msg;
-        this.previousMessageDiv = messageDiv;
-
-        this.setScroll();
     }
 }
 
@@ -2005,6 +2023,7 @@ export class LikeDisLikeBtn extends HTMLElement {
 
         // The onclick event listener...
         this.onclick = null;
+        let id = "_" + uuidv4()
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -2016,20 +2035,91 @@ export class LikeDisLikeBtn extends HTMLElement {
                 width: 18px; 
                 height: 18px;
             }
+
+            paper-badge {
+                --paper-badge-background: var(--palette-primary-accent);
+                --paper-badge-width: 16px;
+                --paper-badge-height: 16px;
+                --paper-badge-margin-left: 10px;
+            }
+
+            paper-card {
+                display: flex;
+                flex-direction: column;
+                position: absolute;
+                padding: 2px;
+                max-width: 100px;
+               
+            }
+
+            .liker-unliker-lst {
+                transition: background 1.2s ease,padding 0.8s linear;
+                display:inline-block;
+                padding: 2px;
+                font-size: .85rem;
+            }
+
         </style>
 
-        <div class="btn">
+        <div class="btn" id="${id}_btn">
             <iron-icon class="like-dislike-btn" icon="${this.icon}"></iron-icon>
             <paper-ripple class="circle" recenters=""></paper-ripple>
+            <paper-badge  id="${id}_count" style="display: none;" for="${id}_btn"></paper-badge>
         </div>
+        <paper-card  id="${id}_card" style="display: none;">
+        </paper-card>
         `
+        this.badge = this.shadowRoot.querySelector(`#${id}_count`)
+        this.btn = this.shadowRoot.querySelector(`#${id}_btn`)
+        this.card = this.shadowRoot.querySelector(`#${id}_card`)
+
+        this.btn.onmouseover = () => {
+            if(this.card.children.length == 0){
+                return
+            }
+            this.card.style.display = "flex"
+            document.body.appendChild(this.card)
+            let coord = getCoords(this.btn)
+            this.card.style.maxWidth = "150px"
+            this.card.style.fontSize = ".85rem"
+            this.card.style.padding = "3px"
+            this.card.style.top = coord.top + this.btn.offsetHeight + 5 + "px"
+            this.card.style.left = coord.left + 5 + "px"
+           
+        }
+
+        this.btn.onmouseout = () => {
+            this.card.style.display = "none"
+            this.shadowRoot.appendChild(this.card)
+        }
+    }
+
+    setAccounts(accounts) {
+
+        this.card.innerHTML = ""
+        this.card.style.display = "none"
+
+        if (accounts.length > 0) {
+            this.badge.label = accounts.length;
+            this.badge.style.display = "block"
+            window.dispatchEvent(new Event('resize'));
+
+            accounts.forEach(a => {
+                Account.getAccount(a, account => {
+                    let div = document.createElement("div");
+                    div.className = "liker-unliker-lst"
+                    div.innerHTML = `<span style="padding-right: 2px;">${account.firstName}</span><span>${account.lastName}</span>`
+                    this.card.appendChild(div)
+                }, err => { ApplicationView.displayMessage(err, 3000) })
+            })
+        } else {
+            this.badge.style.display = "none"
+        }
     }
 
 }
 
 customElements.define('globular-like-dislike-btn', LikeDisLikeBtn)
-
-
 
 /**
  * Display a message inside a div.
@@ -2041,16 +2131,13 @@ export class GlobularMessagePanel extends HTMLElement {
     constructor(msg, account) {
         super()
 
-        this.account = account;
-        this.msg = msg
-
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
 
-        let txt = msg.getText()
-        txt = txt.replace(new RegExp('\r?\n', 'g'), "<br />");
-        txt = txt.replace(new RegExp('\t', 'g'), `<span "style='width: 2rem;'></span>`)
-        let creationDate = new Date(msg.getCreationTime() * 1000)
+        this.account = null
+        if (account != null) {
+            this.setAccount(this.account = account)
+        }
 
 
         // Innitialisation of the layout.
@@ -2121,37 +2208,13 @@ export class GlobularMessagePanel extends HTMLElement {
                 flex-grow: 1;
             }
         </style>
-
-        <div id="msg_uuid_${msg.getUuid()}" style="display: flex; flex-direction: column; margin-bottom: 10px;  margin-top: 5px;">
-            <div class="conversation-message">
-                <div id="msg_participant_${msg.getUuid()}" style="display: none;" class="conversation-participant-info">
-                    <img class="conversation-participant-img" style="display: none;"></img>
-                    <iron-icon class="conversation-participant-ico" icon="account-circle" style="display: none;"></iron-icon>
-                    <paper-tooltip for="msg_participant_${msg.getUuid()}" style="font-size: 10pt;" role="tooltip" tabindex="-1">${msg.getAuthor()}</paper-tooltip>
-                </div>
-                <div id="msg_body_${msg.getUuid()}" class="body">
-                    ${txt}
-                </div>
-                <paper-tooltip for="msg_body_${msg.getUuid()}" style="font-size: 10pt;" role="tooltip" tabindex="-1">${creationDate.toLocaleString()}</paper-tooltip>
-            </div>
-            <div class="conversation-message-infos">
-                <div class="conversation-message-actions">
-                    <div class="btn">
-                        <iron-icon  id="reply-btn-${msg.getUuid()}" icon="reply"></iron-icon>
-                        <paper-ripple class="circle" recenters=""></paper-ripple>
-                        </div>
-                    
-                    <globular-like-dislike-btn class="btn" id="like-btn-${msg.getUuid()}" icon="thumb-up"></globular-like-dislike-btn>
-                    <globular-like-dislike-btn class="btn" id="dislike-btn-${msg.getUuid()}" icon="thumb-down"></globular-like-dislike-btn>
-
-                </div>
-                <span>
-                    ${creationDate.toLocaleString()}
-                </span>
-            </div>
-            <slot></slot>
-        </div>
         `
+
+        this.msg = null
+        if (msg != null) {
+            this.setMessage(msg)
+        }
+
 
         // Now I will set the account info...
         let participantInfos = this.shadowRoot.querySelector(".conversation-participant-info");
@@ -2159,14 +2222,12 @@ export class GlobularMessagePanel extends HTMLElement {
         // Now the like/dislike button...
         let likeBtn = this.shadowRoot.querySelector(`#like-btn-${msg.getUuid()}`)
         likeBtn.onclick = () => {
-            console.log("===> like it!")
-            ConversationManager.likeIt(this.msg.getConversation(), this.msg.getUuid(), this.account.id, ()=>{}, err=>{ApplicationView.displayMessage(err, 3000)})
+            ConversationManager.likeIt(this.msg.getConversation(), this.msg.getUuid(), this.account.id, () => { }, err => { ApplicationView.displayMessage(err, 3000) })
         }
 
         let dislikeBtn = this.shadowRoot.querySelector(`#dislike-btn-${msg.getUuid()}`)
         dislikeBtn.onclick = () => {
-            console.log("===> dislike it!")
-            ConversationManager.dislikeIt(this.msg.getConversation(), this.msg.getUuid(),  this.account.id, ()=>{}, err=>{ApplicationView.displayMessage(err, 3000)})
+            ConversationManager.dislikeIt(this.msg.getConversation(), this.msg.getUuid(), this.account.id, () => { }, err => { ApplicationView.displayMessage(err, 3000) })
         }
 
         // Display author info if it's somone-else than the current author...
@@ -2196,7 +2257,6 @@ export class GlobularMessagePanel extends HTMLElement {
 
                     // Now the tool tip...
                     participantInfos.querySelector(`#msg_uuid_${msg.getUuid()}_tooltip`);
-                    //participantInfos.innerHTML = `${author.name}`
                 }
             },
             (err) => {
@@ -2204,11 +2264,70 @@ export class GlobularMessagePanel extends HTMLElement {
             })
     }
 
+    setMessage(msg) {
+        this.id = "_" + msg.getUuid()
+        this.msg = msg
+        let txt = msg.getText()
+        txt = txt.replace(new RegExp('\r?\n', 'g'), "<br />");
+        txt = txt.replace(new RegExp('\t', 'g'), `<span "style='width: 2rem;'></span>`)
+        let creationDate = new Date(msg.getCreationTime() * 1000)
+
+        if (this.shadowRoot.querySelector(`#msg_uuid_${msg.getUuid()}`) == undefined) {
+            let html = `
+                <div id="msg_uuid_${msg.getUuid()}" style="display: flex; flex-direction: column; margin-bottom: 10px;  margin-top: 5px;">
+                <div class="conversation-message">
+                    <div id="msg_participant_${msg.getUuid()}" style="display: none;" class="conversation-participant-info">
+                        <img class="conversation-participant-img" style="display: none;"></img>
+                        <iron-icon class="conversation-participant-ico" icon="account-circle" style="display: none;"></iron-icon>
+                        <paper-tooltip for="msg_participant_${msg.getUuid()}" style="font-size: 10pt;" role="tooltip" tabindex="-1">${msg.getAuthor()}</paper-tooltip>
+                    </div>
+                    <div class="body">
+                        ${txt}
+                    </div>
+                    <paper-tooltip for="msg_body_${msg.getUuid()}" style="font-size: 10pt;" role="tooltip" tabindex="-1">${creationDate.toLocaleString()}</paper-tooltip>
+                </div>
+                <div class="conversation-message-infos">
+                    <div class="conversation-message-actions">
+                        <div class="btn">
+                            <iron-icon  id="reply-btn-${msg.getUuid()}" icon="reply"></iron-icon>
+                            <paper-ripple class="circle" recenters=""></paper-ripple>
+                            </div>
+                        
+                        <globular-like-dislike-btn class="btn" id="like-btn-${msg.getUuid()}" icon="thumb-up"></globular-like-dislike-btn>
+                        <globular-like-dislike-btn class="btn" id="dislike-btn-${msg.getUuid()}" icon="thumb-down"></globular-like-dislike-btn>
+
+                    </div>
+                    <span>
+                        ${creationDate.toLocaleString()}
+                    </span>
+                </div>
+                <slot></slot>
+            </div>
+            `
+            // append the fragment.
+            this.shadowRoot.appendChild(document.createRange().createContextualFragment(html))
+        } else {
+            this.shadowRoot.querySelector(".body").innerHTML = txt;
+        }
+
+        // Set likes and dislike list.
+        this.shadowRoot.querySelector(`#like-btn-${msg.getUuid()}`).setAccounts(msg.getLikesList())
+        this.shadowRoot.querySelector(`#dislike-btn-${msg.getUuid()}`).setAccounts(msg.getDislikesList())
+
+    }
+
+    setAccount(account) {
+        this.account = account;
+    }
+
     // Return div where the message live in...
     getMessageDiv() {
         return this.shadowRoot.querySelector(`#msg_uuid_${this.msg.getUuid()}`)
     }
 
+    getAccountDiv() {
+        return this.shadowRoot.querySelector(`#msg_participant_${this.msg.getUuid()}`)
+    }
 }
 
 customElements.define('globular-message-panel', GlobularMessagePanel)
