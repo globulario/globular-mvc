@@ -344,3 +344,31 @@ export class Camera extends HTMLElement {
 }
 
 customElements.define('globular-camera', Camera)
+
+
+
+/**
+ * Search Box
+ */
+export class MediaCall extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor() {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+            ${theme}
+        </style>
+        `
+
+        // test create offer...
+    }
+
+}
+
+customElements.define('globular-media-call', MediaCall)

@@ -2551,3 +2551,5 @@ export class GlobularMessagePanel extends HTMLElement {
 }
 
 customElements.define('globular-message-panel', GlobularMessagePanel)
+
+
