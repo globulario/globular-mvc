@@ -869,6 +869,12 @@ export class Messenger extends HTMLElement {
                 border-bottom: 1px solid var(--palette-divider);
                 display: flex;
             }
+
+            #messages-list-container{
+                min-height: 525px;
+                max-height: 525px;
+                overflow-y: auto;    
+            }
         </style>
 
         <paper-card class="container">
@@ -901,7 +907,9 @@ export class Messenger extends HTMLElement {
                 </div>
             </iron-collapse>
             <iron-collapse class="messenger-content" opened = "[[opened]]">
-                <globular-messages-panel></globular-messages-panel>
+                <div id="messages-list-container">
+                    <globular-messages-list style="margin-top: 16px;"></globular-messages-list>
+                </div>
                 <globular-message-editor></globular-message-editor>
             </iron-collapse>
         </paper-card>
@@ -929,7 +937,7 @@ export class Messenger extends HTMLElement {
                     button.icon = "unfold-less"
                 }
                 content.toggle();
-                this.shadowRoot.querySelector("globular-messages-panel").setScroll();
+                this.shadowRoot.querySelector("globular-messages-list").setScroll();
             }
         }
 
@@ -940,8 +948,8 @@ export class Messenger extends HTMLElement {
         this.attachedFilesList.setAccount(this.account)
         this.participantsList = this.shadowRoot.querySelector("globular-paticipants-list");
         this.participantsList.setAccount(this.account)
-        this.messagesPanel = this.shadowRoot.querySelector("globular-messages-panel");
-        this.messagesPanel.setAccount(this.account)
+        this.messagesLst = this.shadowRoot.querySelector("globular-messages-list");
+        this.messagesLst.setAccount(this.account)
         this.messageEditor = this.shadowRoot.querySelector("globular-message-editor");
         this.messageEditor.setAccount(this.account)
 
@@ -979,11 +987,21 @@ export class Messenger extends HTMLElement {
 
             }, true)
 
+        Model.eventHub.subscribe(`__new_message_evt__`,
+            (uuid) => { },
+            (evt) => {
+                this.setScroll()
+            }, true)
     }
 
     hide() {
         this.shadowRoot.querySelector(".summary").innerHTML = "";
         this.shadowRoot.querySelector(".container").style.display = "none";
+    }
+
+    setScroll() {
+        let container = this.shadowRoot.querySelector("#messages-list-container");
+        container.scrollTop = container.scrollHeight;
     }
 
     setConversation(conversationUuid) {
@@ -1005,7 +1023,7 @@ export class Messenger extends HTMLElement {
         this.conversationsList.setConversation(conversation)
 
         // Set messages
-        this.messagesPanel.setConversation(conversation, messages)
+        this.messagesLst.setConversation(conversation, messages)
 
         // Set the conversation in the message editor.
         this.messageEditor.setConversation(conversation)
@@ -1044,6 +1062,7 @@ export class Messenger extends HTMLElement {
             },
             (msg) => {
                 // keep the message in the list of messages.
+                console.log("1065 ---->", msg)
                 this.conversations[conversationUuid].messages.push(msg)
 
             }, true)
@@ -1118,7 +1137,7 @@ export class Messenger extends HTMLElement {
         this.conversationsList.openConversation(conversation)
 
         // Set messages
-        this.messagesPanel.setConversation(conversation, messages)
+        this.messagesLst.setConversation(conversation, messages)
 
         // Set the conversation in the message editor.
         this.messageEditor.setConversation(conversation)
@@ -1144,7 +1163,7 @@ export class Messenger extends HTMLElement {
         this.conversationsList.closeConversation(conversation)
 
         // Clear the messages panel
-        this.messagesPanel.clear();
+        this.messagesLst.clear();
 
         // remove the conversation from map.
         delete this.conversations[conversationUuid];
@@ -1184,6 +1203,7 @@ export class ConversationsList extends HTMLElement {
                 font-size: 14px;
                 font-weight: 400;
                 padding-top: 5px;
+ 
             }
 
             .container .active{
@@ -1538,7 +1558,7 @@ customElements.define('globular-attached-files-list', AttachedFilesList)
 /**
  * This is where the conversations messages are displayed
  */
-export class MessagesPanel extends HTMLElement {
+export class MessagesList extends HTMLElement {
 
     constructor() {
         super();
@@ -1558,17 +1578,13 @@ export class MessagesPanel extends HTMLElement {
             ${theme}
 
             .container{
-                min-height: 525px;
-                max-height: 525px;
                 padding-left: 40px;
                 padding-right: 8px;
                 background-color: var(--palette-background-default);
-                overflow-y: auto;
             }
 
             .conversation-messages{
-                padding-top: 16px;
-                min-height: 525px;
+                max-width: 470px;
                 display: flex;
                 flex-direction: column-reverse;
             }
@@ -1584,10 +1600,6 @@ export class MessagesPanel extends HTMLElement {
         // Set the container's
         this.container = this.shadowRoot.querySelector(".container");
         this.messagesContainer = this.shadowRoot.querySelector(".conversation-messages");
-    }
-
-    setScroll() {
-        this.container.scrollTop = this.container.scrollHeight;
     }
 
     setAccount(account) {
@@ -1612,6 +1624,7 @@ export class MessagesPanel extends HTMLElement {
                 this.listener = uuid;
             },
             (msg) => {
+                console.log(msg)
                 this.appendMessage(msg)
             }, true)
 
@@ -1635,8 +1648,20 @@ export class MessagesPanel extends HTMLElement {
     /** Append a new message into the list... */
     appendMessage(msg) {
 
+        console.log(msg)
+        let parentMsg = null;
+        let replyTo = msg.getInReplyTo().split("/").join("_")
+
+        if (replyTo.length > 0) {
+            parentMsg = this.messagesContainer.querySelector(`#_${replyTo}`)
+            if (parentMsg != undefined) {
+                parentMsg.appendReply(msg)
+                return
+            }
+        }
+
         // simply set space and tab into the message.
-        if (this.messagesContainer.querySelector(`#_${msg.getUuid()}`) == undefined) {
+        if (this.messagesContainer.querySelector(`#_${msg.getUuid().split("/").join("_")}`) == undefined) {
             let message = new GlobularMessagePanel(msg, this.account)
             this.messagesContainer.insertBefore(message, this.messagesContainer.firstChild)
 
@@ -1664,15 +1689,16 @@ export class MessagesPanel extends HTMLElement {
             this.previousMessageDiv = messageDiv;
             this.previousAccountDiv = accountDiv;
 
-            this.setScroll();
         } else {
             // simply set the message.
-            this.messagesContainer.querySelector(`#_${msg.getUuid()}`).setMessage(msg)
+            this.messagesContainer.querySelector(`#_${msg.getUuid().split("/").join("_")}`).setMessage(msg)
         }
+
+        Model.eventHub.publish("__new_message_evt__", null, true)
     }
 }
 
-customElements.define('globular-messages-panel', MessagesPanel)
+customElements.define('globular-messages-list', MessagesList)
 
 /**
  * This is where the user write new messages.
@@ -1683,6 +1709,10 @@ export class MessageEditor extends HTMLElement {
         this.account = null;
         this.conversationUuid = null;
 
+        // Reply 
+        this.on_answer_message_listener = ""
+        this.replyTo = null;
+
         // Set the shadow dom.
         this.attachShadow({ mode: "open" });
 
@@ -1692,12 +1722,17 @@ export class MessageEditor extends HTMLElement {
 
             .container{
                 display:flex;
-                flex-grow:1;
+                flex-direction: column;
                 padding: 2px;
+                border-top: 1px solid var(--palette-divider);
             }
 
             .toolbar {
                 display: flex;
+            }
+
+            #text-writer-box{
+                width: 100%;
             }
 
             .btn{
@@ -1724,8 +1759,48 @@ export class MessageEditor extends HTMLElement {
                 font-size: 1rem;
             }
 
+            .answer-bar{
+                display: none;
+                flex-direction: column;
+                font-size: .85em;
+            }
+
+            .answer-to-div{
+                display: flex;
+            }
+
+            .answer-to-div span{
+                flex-grow: 1;
+            }
+
+            #reply-to{
+                font-weight: 500;
+                padding-left: 5px;
+            }
+
+
+            .answer-to-text{
+                max-width: 500px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                padding: 3px;
+            }
+
+
         </style>
         <div class="container">
+            <div class="answer-bar">
+                <div class="answer-to-div">
+                    <span style="display: flex; align-items: center;">You reply to <div id="reply-to"> </div></span>
+                    <div class="btn">
+                        <iron-icon  id="close-answer-btn" icon="close"></iron-icon>
+                        <paper-ripple class="circle" recenters=""></paper-ripple>
+                    </div>
+                </div>
+                <div class="answer-to-text">
+                </div>
+            </div>
             <div class="toolbar">
                 <iron-autogrow-textarea id="text-writer-box"></iron-autogrow-textarea>
                 <div class="btn">
@@ -1743,10 +1818,53 @@ export class MessageEditor extends HTMLElement {
         this.send = this.shadowRoot.querySelector("#send-btn")
         this.textWriterBox = this.shadowRoot.querySelector("#text-writer-box")
 
+        Model.eventHub.subscribe("__answer_message_evt__",
+            uuid => {
+                /** nothing here... */
+                this.on_answer_message_listener = uuid;
+            },
+            msg => {
+
+                this.replyTo = msg;
+
+                // Here I will set the reply to content.
+                this.shadowRoot.querySelector(".answer-bar").style.display = "flex";
+                Account.getAccount(msg.getAuthor(), account => {
+                    this.shadowRoot.querySelector("#reply-to").innerHTML = `${account.firstName} ${account.lastName}`;
+                }, err => { ApplicationView.displayMessage(err, 3000) })
+
+                this.shadowRoot.querySelector(".answer-to-text").innerHTML = msg.getText()
+
+                // Set the text write box the focus...
+                setTimeout(() => {
+                    this.textWriterBox.textarea.focus();
+                }, 100)
+
+            }, true)
+
+        /** Close the answer panel... */
+        this.shadowRoot.querySelector("#close-answer-btn").onclick = () => {
+            this.replyTo = null;
+            this.shadowRoot.querySelector(".answer-bar").style.display = "none";
+            this.shadowRoot.querySelector("#reply-to").innerHTML = "";
+            this.shadowRoot.querySelector(".answer-to-text").innerHTML = ""
+
+            // Set the text write box the focus...
+            setTimeout(() => {
+                this.textWriterBox.textarea.focus();
+            }, 100)
+        }
+
         this.send.onclick = () => {
             let txt = this.textWriterBox.value;
             this.textWriterBox.value = ""
             let replyTo = ""
+            if (this.replyTo != undefined) {
+                replyTo = this.replyTo.getUuid();
+            }
+
+            this.shadowRoot.querySelector("#close-answer-btn").click()
+
             ConversationManager.sendMessage(this.conversationUuid, this.account, txt, replyTo,
                 () => {
                     /** Nothing here... */
@@ -2074,7 +2192,7 @@ export class LikeDisLikeBtn extends HTMLElement {
         this.card = this.shadowRoot.querySelector(`#${id}_card`)
 
         this.btn.onmouseover = () => {
-            if(this.card.children.length == 0){
+            if (this.card.children.length == 0) {
                 return
             }
             this.card.style.display = "flex"
@@ -2085,7 +2203,7 @@ export class LikeDisLikeBtn extends HTMLElement {
             this.card.style.padding = "3px"
             this.card.style.top = coord.top + this.btn.offsetHeight + 5 + "px"
             this.card.style.left = coord.left + 5 + "px"
-           
+
         }
 
         this.btn.onmouseout = () => {
@@ -2220,14 +2338,16 @@ export class GlobularMessagePanel extends HTMLElement {
         let participantInfos = this.shadowRoot.querySelector(".conversation-participant-info");
 
         // Now the like/dislike button...
-        let likeBtn = this.shadowRoot.querySelector(`#like-btn-${msg.getUuid()}`)
-        likeBtn.onclick = () => {
-            ConversationManager.likeIt(this.msg.getConversation(), this.msg.getUuid(), this.account.id, () => { }, err => { ApplicationView.displayMessage(err, 3000) })
-        }
+        if (this.account.id != this.msg.getAuthor()) {
+            let likeBtn = this.shadowRoot.querySelector(`#like-btn-${msg.getUuid().split("/").join("_")}`)
+            likeBtn.onclick = () => {
+                ConversationManager.likeIt(this.msg.getConversation(), this.msg.getUuid().split("/").join("_"), this.account.id, () => { }, err => { ApplicationView.displayMessage(err, 3000) })
+            }
 
-        let dislikeBtn = this.shadowRoot.querySelector(`#dislike-btn-${msg.getUuid()}`)
-        dislikeBtn.onclick = () => {
-            ConversationManager.dislikeIt(this.msg.getConversation(), this.msg.getUuid(), this.account.id, () => { }, err => { ApplicationView.displayMessage(err, 3000) })
+            let dislikeBtn = this.shadowRoot.querySelector(`#dislike-btn-${msg.getUuid().split("/").join("_")}`)
+            dislikeBtn.onclick = () => {
+                ConversationManager.dislikeIt(this.msg.getConversation(), this.msg.getUuid().split("/").join("_"), this.account.id, () => { }, err => { ApplicationView.displayMessage(err, 3000) })
+            }
         }
 
         // Display author info if it's somone-else than the current author...
@@ -2256,7 +2376,7 @@ export class GlobularMessagePanel extends HTMLElement {
                     }
 
                     // Now the tool tip...
-                    participantInfos.querySelector(`#msg_uuid_${msg.getUuid()}_tooltip`);
+                    participantInfos.querySelector(`#msg_uuid_${msg.getUuid().split("/").join("_")}_tooltip`);
                 }
             },
             (err) => {
@@ -2265,43 +2385,43 @@ export class GlobularMessagePanel extends HTMLElement {
     }
 
     setMessage(msg) {
-        this.id = "_" + msg.getUuid()
         this.msg = msg
+        this.id = "_" + msg.getUuid().split("/").join("_")
         let txt = msg.getText()
         txt = txt.replace(new RegExp('\r?\n', 'g'), "<br />");
         txt = txt.replace(new RegExp('\t', 'g'), `<span "style='width: 2rem;'></span>`)
         let creationDate = new Date(msg.getCreationTime() * 1000)
 
-        if (this.shadowRoot.querySelector(`#msg_uuid_${msg.getUuid()}`) == undefined) {
+        if (this.shadowRoot.querySelector(`#msg_uuid_${msg.getUuid().split("/").join("_")}`) == undefined) {
             let html = `
-                <div id="msg_uuid_${msg.getUuid()}" style="display: flex; flex-direction: column; margin-bottom: 10px;  margin-top: 5px;">
+                <div id="msg_uuid_${msg.getUuid().split("/").join("_")}" style="display: flex; flex-direction: column; margin-top: 5px;">
                 <div class="conversation-message">
-                    <div id="msg_participant_${msg.getUuid()}" style="display: none;" class="conversation-participant-info">
+                    <div id="msg_participant_${msg.getUuid().split("/").join("_")}" style="display: none;" class="conversation-participant-info">
                         <img class="conversation-participant-img" style="display: none;"></img>
                         <iron-icon class="conversation-participant-ico" icon="account-circle" style="display: none;"></iron-icon>
-                        <paper-tooltip for="msg_participant_${msg.getUuid()}" style="font-size: 10pt;" role="tooltip" tabindex="-1">${msg.getAuthor()}</paper-tooltip>
+                        <paper-tooltip for="msg_participant_${msg.getUuid().split("/").join("_")}" style="font-size: 10pt;" role="tooltip" tabindex="-1">${msg.getAuthor()}</paper-tooltip>
                     </div>
                     <div class="body">
                         ${txt}
                     </div>
-                    <paper-tooltip for="msg_body_${msg.getUuid()}" style="font-size: 10pt;" role="tooltip" tabindex="-1">${creationDate.toLocaleString()}</paper-tooltip>
+                    <paper-tooltip for="msg_body_${msg.getUuid().split("/").join("_")}" style="font-size: 10pt;" role="tooltip" tabindex="-1">${creationDate.toLocaleString()}</paper-tooltip>
                 </div>
                 <div class="conversation-message-infos">
                     <div class="conversation-message-actions">
                         <div class="btn">
-                            <iron-icon  id="reply-btn-${msg.getUuid()}" icon="reply"></iron-icon>
+                            <iron-icon  id="reply-btn-${msg.getUuid().split("/").join("_")}" icon="reply"></iron-icon>
                             <paper-ripple class="circle" recenters=""></paper-ripple>
                             </div>
                         
-                        <globular-like-dislike-btn class="btn" id="like-btn-${msg.getUuid()}" icon="thumb-up"></globular-like-dislike-btn>
-                        <globular-like-dislike-btn class="btn" id="dislike-btn-${msg.getUuid()}" icon="thumb-down"></globular-like-dislike-btn>
+                        <globular-like-dislike-btn class="btn" id="like-btn-${msg.getUuid().split("/").join("_")}" icon="thumb-up"></globular-like-dislike-btn>
+                        <globular-like-dislike-btn class="btn" id="dislike-btn-${msg.getUuid().split("/").join("_")}" icon="thumb-down"></globular-like-dislike-btn>
 
                     </div>
                     <span>
                         ${creationDate.toLocaleString()}
                     </span>
                 </div>
-                <slot></slot>
+                <globular-messages-list style="display: none;" id="replies-${msg.getUuid().split("/").join("_")}"></globular-messages-list>
             </div>
             `
             // append the fragment.
@@ -2310,10 +2430,36 @@ export class GlobularMessagePanel extends HTMLElement {
             this.shadowRoot.querySelector(".body").innerHTML = txt;
         }
 
-        // Set likes and dislike list.
-        this.shadowRoot.querySelector(`#like-btn-${msg.getUuid()}`).setAccounts(msg.getLikesList())
-        this.shadowRoot.querySelector(`#dislike-btn-${msg.getUuid()}`).setAccounts(msg.getDislikesList())
+        let likeBtn = this.shadowRoot.querySelector(`#like-btn-${msg.getUuid().split("/").join("_")}`)
+        let dislikeBtn = this.shadowRoot.querySelector(`#dislike-btn-${msg.getUuid().split("/").join("_")}`)
+        let replyBtn = this.shadowRoot.querySelector(`#reply-btn-${msg.getUuid().split("/").join("_")}`)
 
+        if (replyBtn != null) {
+            if (this.account.id == msg.getAuthor()) {
+                replyBtn.parentNode.removeChild(replyBtn)
+            } else {
+                // Now the reply button...
+                replyBtn.onclick = () => { this.reply() }
+            }
+        }
+
+        // Set likes and dislike list.
+        likeBtn.setAccounts(msg.getLikesList())
+        dislikeBtn.setAccounts(msg.getDislikesList())
+
+
+        this.replies = this.shadowRoot.querySelector(`#replies-${msg.getUuid().split("/").join("_")}`)
+        this.replies.setAccount(this.account)
+
+    }
+
+    reply() {
+        Model.eventHub.publish("__answer_message_evt__", this.msg, true)
+    }
+
+    appendReply(msg) {
+        this.replies.appendMessage(msg)
+        this.replies.style.display = "block"
     }
 
     setAccount(account) {
@@ -2322,11 +2468,11 @@ export class GlobularMessagePanel extends HTMLElement {
 
     // Return div where the message live in...
     getMessageDiv() {
-        return this.shadowRoot.querySelector(`#msg_uuid_${this.msg.getUuid()}`)
+        return this.shadowRoot.querySelector(`#msg_uuid_${this.msg.getUuid().split("/").join("_")}`)
     }
 
     getAccountDiv() {
-        return this.shadowRoot.querySelector(`#msg_participant_${this.msg.getUuid()}`)
+        return this.shadowRoot.querySelector(`#msg_participant_${this.msg.getUuid().split("/").join("_")}`)
     }
 }
 

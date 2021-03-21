@@ -30,7 +30,7 @@ export class ConversationManager {
 
     stream.on("data", (rsp: ConnectResponse) => {
       /** Local event... */
-      Model.globular.eventHub.publish(`__received_message_${rsp.getMessage().getConversation()}_evt__`, rsp.getMessage(), true)
+      Model.globular.eventHub.publish(`__received_message_${rsp.getMsg().getConversation()}_evt__`, rsp.getMsg(), true)
     });
 
     stream.on("status", (status) => {
@@ -371,7 +371,11 @@ export class ConversationManager {
 
     let rqst = new SendMessageRequest
     let message = new Message
-    message.setUuid(uuidv4())
+    let uuid = uuidv4();
+    if(replyTo.length > 0){
+      uuid = replyTo + "/" + uuid
+    }
+    message.setUuid(uuid)
     message.setConversation(conversationUuid)
     message.setText(text)
     message.setInReplyTo(replyTo)
