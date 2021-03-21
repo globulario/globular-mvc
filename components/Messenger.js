@@ -677,7 +677,6 @@ export class ConversationInfos extends HTMLElement {
                 this.join_conversation_listener = uuid;
             },
             (evt) => {
-                console.log(evt)
                 if (evt.conversation.getUuid() == conversationUuid) {
                     this.querySelector(`#join_${conversationUuid}_btn`).style.display = "none"
                     this.querySelector(`#leave_${conversationUuid}_btn`).style.display = "flex"
@@ -871,9 +870,15 @@ export class Messenger extends HTMLElement {
             }
 
             #messages-list-container{
-                min-height: 525px;
+                background-color: var(--palette-background-default);
+                overflow-y: auto;
+                min-height: 525px; 
                 max-height: 525px;
-                overflow-y: auto;    
+                display: grid;
+            }
+
+            #messages-list-container globular-messages-list{
+                width: 100%;
             }
         </style>
 
@@ -907,9 +912,11 @@ export class Messenger extends HTMLElement {
                 </div>
             </iron-collapse>
             <iron-collapse class="messenger-content" opened = "[[opened]]">
+
                 <div id="messages-list-container">
-                    <globular-messages-list style="margin-top: 16px;"></globular-messages-list>
+                    <globular-messages-list style="align-self: end;"></globular-messages-list>
                 </div>
+                
                 <globular-message-editor></globular-message-editor>
             </iron-collapse>
         </paper-card>
@@ -964,6 +971,20 @@ export class Messenger extends HTMLElement {
             this.attachedFilesList.style.display = "block"
             this.participantsList.style.display = "none"
         }
+
+        Model.eventHub.subscribe(`__refresh_conversation_evt__`,
+            (uuid) => { },
+            (conversationUuid) => {
+
+                // if the conversation already exist i set it.
+                if (this.conversations[conversationUuid] != undefined) {
+                    // Set the conversation.
+                    this.setConversation(conversationUuid)
+                    return
+                }
+
+
+            }, true)
 
         // Join a conversation local event...
         Model.eventHub.subscribe(`__join_conversation_evt__`,
@@ -1580,26 +1601,22 @@ export class MessagesList extends HTMLElement {
             .container{
                 padding-left: 40px;
                 padding-right: 8px;
-                background-color: var(--palette-background-default);
             }
 
-            .conversation-messages{
-                max-width: 470px;
+            .conversation-messages {
+                max-width: 520px;
                 display: flex;
                 flex-direction: column-reverse;
             }
-
         </style>
 
         <div class="container">
-            <div class="conversation-messages">
-
-            </div>
+            <slot class="conversation-messages">
+            </slot>
         </div>
         `
         // Set the container's
         this.container = this.shadowRoot.querySelector(".container");
-        this.messagesContainer = this.shadowRoot.querySelector(".conversation-messages");
     }
 
     setAccount(account) {
@@ -1607,7 +1624,7 @@ export class MessagesList extends HTMLElement {
     }
 
     clear() {
-        this.messagesContainer.innerHTML = "";
+        this.innerHTML = "";
         this.previousMessage = null;
         this.previousMessageDiv = null;
         if (this.listener != null) {
@@ -1645,25 +1662,43 @@ export class MessagesList extends HTMLElement {
         }
     }
 
+    refresh() {
+        console.log(this.children)
+        if (this.children.length == 0) {
+            return
+        }
+        console.log(this.children[0])
+        let messageDiv = this.children[0].getMessageDiv()
+
+        // hide the actions inside previous message div.
+        messageDiv.children[1].style.display = "block"; // hide action
+        messageDiv.children[0].style.borderBottomLeftRadius = "10px" // set message corner radius 
+        messageDiv.children[0].style.borderBottomRightRadius = "10px" // set message corner radius 
+    }
+
     /** Append a new message into the list... */
     appendMessage(msg) {
 
-        console.log(msg)
         let parentMsg = null;
         let replyTo = msg.getInReplyTo().split("/").join("_")
 
         if (replyTo.length > 0) {
-            parentMsg = this.messagesContainer.querySelector(`#_${replyTo}`)
-            if (parentMsg != undefined) {
-                parentMsg.appendReply(msg)
-                return
+            if (`msg_uuid_${replyTo}` != this.parentNode.id) {
+                parentMsg = __globularMessagePanels__[replyTo] // this.messagesContainer.querySelector(`#_${replyTo}`)
+                if (parentMsg != undefined) {
+                    parentMsg.appendReply(msg)
+                    return
+                }
             }
         }
 
         // simply set space and tab into the message.
-        if (this.messagesContainer.querySelector(`#_${msg.getUuid().split("/").join("_")}`) == undefined) {
+        if (this.querySelector(`#_${msg.getUuid().split("/").join("_")}`) == undefined) {
             let message = new GlobularMessagePanel(msg, this.account)
-            this.messagesContainer.insertBefore(message, this.messagesContainer.firstChild)
+            this.insertBefore(message, this.firstChild)
+            if (message.classList.contains("others-message")) {
+                this.container.style.paddingTop = "16px";
+            }
 
             // Set display based if multiples messages are received from the same author before somebody else write something.
             let messageDiv = message.getMessageDiv()
@@ -1691,7 +1726,7 @@ export class MessagesList extends HTMLElement {
 
         } else {
             // simply set the message.
-            this.messagesContainer.querySelector(`#_${msg.getUuid().split("/").join("_")}`).setMessage(msg)
+            this.querySelector(`#_${msg.getUuid().split("/").join("_")}`).setMessage(msg)
         }
 
         Model.eventHub.publish("__new_message_evt__", null, true)
@@ -1725,6 +1760,7 @@ export class MessageEditor extends HTMLElement {
                 flex-direction: column;
                 padding: 2px;
                 border-top: 1px solid var(--palette-divider);
+                max-width: 580px;
             }
 
             .toolbar {
@@ -1777,7 +1813,6 @@ export class MessageEditor extends HTMLElement {
                 font-weight: 500;
                 padding-left: 5px;
             }
-
 
             .answer-to-text{
                 max-width: 500px;
@@ -1841,6 +1876,7 @@ export class MessageEditor extends HTMLElement {
                 }, 100)
 
             }, true)
+
 
         /** Close the answer panel... */
         this.shadowRoot.querySelector("#close-answer-btn").onclick = () => {
@@ -2239,6 +2275,8 @@ export class LikeDisLikeBtn extends HTMLElement {
 
 customElements.define('globular-like-dislike-btn', LikeDisLikeBtn)
 
+var __globularMessagePanels__ = {};
+
 /**
  * Display a message inside a div.
  */
@@ -2256,7 +2294,6 @@ export class GlobularMessagePanel extends HTMLElement {
         if (account != null) {
             this.setAccount(this.account = account)
         }
-
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -2325,12 +2362,24 @@ export class GlobularMessagePanel extends HTMLElement {
                 display: flex;
                 flex-grow: 1;
             }
+
         </style>
         `
 
         this.msg = null
         if (msg != null) {
             this.setMessage(msg)
+            // needed by globular-messages-list.
+            __globularMessagePanels__[msg.getUuid().split("/").join("_")] = this;
+
+            Model.eventHub.subscribe(`delete_message_${msg.getUuid()}_evt`,
+                uuid => { },
+                () => {
+                    // simply remove it from the list.
+                    let parent = this.parentNode
+                    parent.removeChild(this)
+                    parent.refresh()
+                }, false)
         }
 
 
@@ -2341,12 +2390,12 @@ export class GlobularMessagePanel extends HTMLElement {
         if (this.account.id != this.msg.getAuthor()) {
             let likeBtn = this.shadowRoot.querySelector(`#like-btn-${msg.getUuid().split("/").join("_")}`)
             likeBtn.onclick = () => {
-                ConversationManager.likeIt(this.msg.getConversation(), this.msg.getUuid().split("/").join("_"), this.account.id, () => { }, err => { ApplicationView.displayMessage(err, 3000) })
+                ConversationManager.likeIt(this.msg.getConversation(), this.msg.getUuid(), this.account.id, () => { }, err => { ApplicationView.displayMessage(err, 3000) })
             }
 
             let dislikeBtn = this.shadowRoot.querySelector(`#dislike-btn-${msg.getUuid().split("/").join("_")}`)
             dislikeBtn.onclick = () => {
-                ConversationManager.dislikeIt(this.msg.getConversation(), this.msg.getUuid().split("/").join("_"), this.account.id, () => { }, err => { ApplicationView.displayMessage(err, 3000) })
+                ConversationManager.dislikeIt(this.msg.getConversation(), this.msg.getUuid(), this.account.id, () => { }, err => { ApplicationView.displayMessage(err, 3000) })
             }
         }
 
@@ -2357,6 +2406,7 @@ export class GlobularMessagePanel extends HTMLElement {
                 if (this.account.id == author.id) {
                     participantInfos.parentNode.style.borderTopRightRadius = "0px";
                 } else {
+
                     participantInfos.style.display = "flex"
 
                     let img = participantInfos.querySelector(".conversation-participant-img")
@@ -2370,6 +2420,7 @@ export class GlobularMessagePanel extends HTMLElement {
                         ico.style.display = "none"
                         img.style.display = "block"
                         img.src = author.profilPicture
+                        this.classList.add("others-message")
                     } else {
                         ico.style.display = "block"
                         img.style.display = "none"
@@ -2408,14 +2459,18 @@ export class GlobularMessagePanel extends HTMLElement {
                 </div>
                 <div class="conversation-message-infos">
                     <div class="conversation-message-actions">
-                        <div class="btn">
-                            <iron-icon  id="reply-btn-${msg.getUuid().split("/").join("_")}" icon="reply"></iron-icon>
+                        <div class="btn" id="reply-btn-${msg.getUuid().split("/").join("_")}">
+                            <iron-icon icon="reply"></iron-icon>
                             <paper-ripple class="circle" recenters=""></paper-ripple>
-                            </div>
+                        </div>
                         
                         <globular-like-dislike-btn class="btn" id="like-btn-${msg.getUuid().split("/").join("_")}" icon="thumb-up"></globular-like-dislike-btn>
                         <globular-like-dislike-btn class="btn" id="dislike-btn-${msg.getUuid().split("/").join("_")}" icon="thumb-down"></globular-like-dislike-btn>
 
+                        <div class="btn" id="delete-btn-${msg.getUuid().split("/").join("_")}">
+                            <iron-icon icon="delete"></iron-icon>
+                            <paper-ripple class="circle" recenters=""></paper-ripple>
+                        </div>
                     </div>
                     <span>
                         ${creationDate.toLocaleString()}
@@ -2433,6 +2488,7 @@ export class GlobularMessagePanel extends HTMLElement {
         let likeBtn = this.shadowRoot.querySelector(`#like-btn-${msg.getUuid().split("/").join("_")}`)
         let dislikeBtn = this.shadowRoot.querySelector(`#dislike-btn-${msg.getUuid().split("/").join("_")}`)
         let replyBtn = this.shadowRoot.querySelector(`#reply-btn-${msg.getUuid().split("/").join("_")}`)
+        let deleteBtn = this.shadowRoot.querySelector(`#delete-btn-${msg.getUuid().split("/").join("_")}`)
 
         if (replyBtn != null) {
             if (this.account.id == msg.getAuthor()) {
@@ -2440,6 +2496,15 @@ export class GlobularMessagePanel extends HTMLElement {
             } else {
                 // Now the reply button...
                 replyBtn.onclick = () => { this.reply() }
+            }
+        }
+
+        if (deleteBtn != null) {
+            if (this.account.id != msg.getAuthor()) {
+                deleteBtn.parentNode.removeChild(deleteBtn)
+            } else {
+                // Now the reply button...
+                deleteBtn.onclick = () => { this.delete() }
             }
         }
 
@@ -2457,9 +2522,18 @@ export class GlobularMessagePanel extends HTMLElement {
         Model.eventHub.publish("__answer_message_evt__", this.msg, true)
     }
 
+
+    delete() {
+        /** So here I will delete the message. */
+        ConversationManager.deleteMessage(this.msg, () => {
+            console.log("message was deleted!")
+        }, err => { ApplicationView.displayMessage(err, 3000) })
+    }
+
     appendReply(msg) {
         this.replies.appendMessage(msg)
         this.replies.style.display = "block"
+
     }
 
     setAccount(account) {

@@ -1,5 +1,5 @@
 
-import { Conversation, ConnectRequest, Conversations, CreateConversationRequest, Message, CreateConversationResponse, DeleteConversationRequest, DeleteConversationResponse, FindConversationsRequest, FindConversationsResponse, JoinConversationRequest, JoinConversationResponse, ConnectResponse, SendMessageRequest, SendMessageResponse, SendInvitationRequest, Invitation, Invitations, GetReceivedInvitationsRequest, GetReceivedInvitationsResponse, AcceptInvitationRequest, DeclineInvitationRequest, GetSentInvitationsRequest, GetSentInvitationsResponse, RevokeInvitationRequest, RevokeInvitationResponse, LeaveConversationRequest, LeaveConversationResponse, KickoutFromConversationRequest, LikeMessageRqst, DisconnectRequest, DislikeMessageRqst, LikeMessageResponse, DislikeMessageResponse } from "globular-web-client/conversation/conversation_pb";
+import { Conversation, ConnectRequest, Conversations, CreateConversationRequest, Message, CreateConversationResponse, DeleteConversationRequest, DeleteConversationResponse, FindConversationsRequest, FindConversationsResponse, JoinConversationRequest, JoinConversationResponse, ConnectResponse, SendMessageRequest, SendMessageResponse, SendInvitationRequest, Invitation, Invitations, GetReceivedInvitationsRequest, GetReceivedInvitationsResponse, AcceptInvitationRequest, DeclineInvitationRequest, GetSentInvitationsRequest, GetSentInvitationsResponse, RevokeInvitationRequest, RevokeInvitationResponse, LeaveConversationRequest, LeaveConversationResponse, KickoutFromConversationRequest, LikeMessageRqst, DisconnectRequest, DislikeMessageRqst, LikeMessageResponse, DislikeMessageResponse, DeleteMessageRequest, DeleteMessageResponse } from "globular-web-client/conversation/conversation_pb";
 import { GetConversationsRequest, GetConversationsResponse } from "globular-web-client/conversation/conversation_pb";
 
 import { Account } from "./Account";
@@ -178,7 +178,6 @@ export class ConversationManager {
         if (status.details == "EOF") {
           succesCallback(conversation, messages)
           let participants = conversation.getParticipantsList()
-          console.log(participants)
           // network event.
           Model.eventHub.publish(`leave_conversation_${conversationUuid}_evt`, JSON.stringify(participants), false)
           return
@@ -367,6 +366,28 @@ export class ConversationManager {
     }).catch(errorCallback)
 
   }
+
+
+  static deleteMessage(msg:Message, successCallback: () => void, errorCallback: (err: any) => void){
+    let rqst = new DeleteMessageRequest
+    rqst.setUuid(msg.getUuid())
+    rqst.setConversation(msg.getConversation())
+
+    Model.globular.conversationService.deleteMessage(rqst, {
+      token: localStorage.getItem("user_token"),
+      application: Model.application,
+      domain: Model.domain,
+    }).then((rsp: DeleteMessageResponse) => {
+      if(successCallback!=undefined){
+        successCallback()
+      }
+
+      // Simply send event on the network...
+      Model.eventHub.publish(`delete_message_${msg.getUuid()}_evt`, null, false)
+      
+    }).catch(errorCallback)
+  }
+
   static sendMessage(conversationUuid: string, author: Account, text: string, replyTo: string, successCallback: () => void, errorCallback: (err: any) => void) {
 
     let rqst = new SendMessageRequest
