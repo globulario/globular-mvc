@@ -840,6 +840,10 @@ export class DropdownField extends Field {
         this.listbox.innerHTML = this._getHtmlArray()
     }
 
+    setInputOnChange(f) {
+        this.listbox.addEventListener('iron-select', f);
+    }
+
     getValue() {
         if(this.listbox.selected === null || this.listbox.selected === undefined || this.listbox.selected < 0) 
             return ""
