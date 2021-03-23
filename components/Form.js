@@ -800,7 +800,7 @@ export class DropdownField extends Field {
         this.view = this.shadowRoot.getElementById("field-view")
         this.listbox = this.shadowRoot.querySelector(".dropdown-content")
 
-        this.shadowRoot.querySelector(".dropdown-content").innerHTML = this._getHtmlArray()
+        this.listbox.innerHTML = this._getHtmlArray()
         //By default, show the input element and not the view element
         this.unlock()
         this.reset()
@@ -835,6 +835,10 @@ export class DropdownField extends Field {
         return htmlArray
     }
 
+    setList(l) {
+        this.itemList = l
+        this.listbox.innerHTML = this._getHtmlArray()
+    }
 
     getValue() {
         if(this.listbox.selected === null || this.listbox.selected === undefined || this.listbox.selected < 0) 
