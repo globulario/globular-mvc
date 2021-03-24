@@ -98,7 +98,7 @@ export class ApplicationsPanel extends HTMLElement {
         <style>
         ${theme}
             .container {
-                display: flex;
+                display: inline-flex;
                 flex-flow: wrap;
             }
             paper-tooltip {

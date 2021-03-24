@@ -121,21 +121,10 @@ export class LoginBox extends HTMLElement {
                 margin-right: auto;
                 margin-bottom: 20px;
             }
-            
-            globular-login-box {
-                top: 20%;
-                transform: translate(-50%, -50%);
-                position: fixed;
-                left: 50%;
-            }
 
             #login_box{
                 z-index: 1000;
-                display: flex;
-                flex-direction: column;
-                margin-top: 15vh;
                 min-width: 340px;
-                position: relative;
             }
 
             #login_box .card-actions {
@@ -259,21 +248,10 @@ export class RegisterBox extends HTMLElement {
                     margin-right: auto;
                     margin-bottom: 20px;
                 }
-                
-                globular-register-box {
-                    top: 20%;
-                    transform: translate(-50%, -50%);
-                    position: fixed;
-                    left: 50%;
-                }
 
                 #register_box{
                     z-index: 1000;
-                    display: flex;
-                    flex-direction: column;
-                    margin-top: 15vh;
                     min-width: 340px;
-                    position: relative;
                 }
 
                 #register_box .card-actions {

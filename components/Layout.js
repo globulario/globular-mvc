@@ -101,12 +101,23 @@ export class Layout extends HTMLElement {
             }
 
             ::slotted(#workspace) {
-              display: flex;
-              flex-direction: column;
-              justify-content: center;
-              align-items: center;
+              width: 50%;
+              margin: 0 auto;
+              text-align: center;
             }
 
+            @media only screen and (max-width: 1500px) {
+              ::slotted(#workspace) {
+                width: 75%;
+              }
+            }
+
+            @media only screen and (max-width: 1024px) {
+              ::slotted(#workspace) {
+                width: 100%;
+              }
+            }
+    
             ::slotted(paper-card){
               background-color: var(--palette-background-paper);
               color: var(--palette-text-primary);

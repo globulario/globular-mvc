@@ -177,7 +177,7 @@ export class SettingsPanel extends HTMLElement {
     <style>
        ${theme}
        #container {
-           display: flex;
+           display: inline-flex;
            flex-direction: column;
        }
     </style>
@@ -348,8 +348,6 @@ export class Settings extends HTMLElement {
             min-width: 380px;
           }
         }
-
-   
 
         .card-subtitle{
           padding: 24px;

@@ -88,6 +88,7 @@ paper-card div{
    background-color: var(--palette-background-paper);
    color: var(--palette-text-primary);
 }
+
 ::-webkit-scrollbar {
    width: 8px;
   /* for vertical scrollbars */
@@ -179,3 +180,9 @@ dropdown-menu-element{
    flex-grow: 1;
    --iron-icon-fill-color:var(--palette-text-primary);
 }
+/*
+#workspace globular-settings-panel{
+   display: flex;
+   justify-content: center;
+ }
+ */
