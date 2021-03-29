@@ -51,7 +51,6 @@ export class Form extends HTMLElement {
             </div>
         `
 
-        this.toast = ""
         this.container = this.shadowRoot.getElementById("container")
         this.shadowRoot.getElementById("save-btn").onclick = this.confirm.bind(this)
     }
@@ -109,7 +108,6 @@ export class Form extends HTMLElement {
             <span id="toast-text">Est-ce que vous voulez sauvegarder votre formulaire?</span>
             <div id="button-container">
                 <button class="toast-btn" id="save-btn">Enregistrer</button>
-                <button class="toast-btn" id="no-save-btn">Ne pas enregistrer</button>
                 <button class="toast-btn" id="cancel-btn">Annuler</button>
             </div>
         </div>
@@ -118,7 +116,6 @@ export class Form extends HTMLElement {
 
         let toast = document.querySelector(".toast")
         toast.querySelector("#save-btn").onclick = this.save.bind(this)
-        toast.querySelector("#no-save-btn").onclick = this.noSave.bind(this)
         toast.querySelector("#cancel-btn").onclick = this.cancel.bind(this)
 
         Model.eventHub.publish("lock_form_evt", true, true)
@@ -132,15 +129,6 @@ export class Form extends HTMLElement {
         document.querySelector(".toast").remove()
         Model.eventHub.publish("unlock_form_evt", true, true)
         // Model.eventHub.publish("reset_form_evt", true, true)
-    }
-
-    /**
-     * Sends an event over your local network to reset, then unlock the current form.
-     */
-    noSave() {
-        Model.eventHub.publish("reset_form_evt", true, true)
-        document.querySelector(".toast").remove()
-        Model.eventHub.publish("unlock_form_evt", true, true)
     }
 
     /**
@@ -277,7 +265,7 @@ export class Field extends HTMLElement {
         this.smallThreshold = 800
         this.phoneThreshold = 500
         this.invalidColor = "red"
-        this.validColor = "var(--paper-card-background-color, var(--primary-background-color))"
+        this.label = label
 
         let hostHtml = this._getAllSizes(x, y, width, height, xSmall, ySmall, widthSmall, heightSmall, xPhone, yPhone, widthPhone, heightPhone)
 
@@ -489,7 +477,14 @@ export class Field extends HTMLElement {
      */
     isValid() {
         return false
-     }
+    }
+
+    /**
+     * Returns text saying what is invalid within the field.
+     */
+    getInvalidText() {
+        return `Le champs, ${this.label}, n'est pas valide.`
+    }
 
     /**
      * Marks the field as being invalid either by making it red or something of the sort.
@@ -578,16 +573,18 @@ export class StringField extends Field {
     }
 
     isValid() {
-        return this.getValue() && this.getValue() !== ""
+        return this.getValue() !== undefined && this.getValue() !== null && this.getValue() !== ""
     }
 
     markInvalid() {
-        this.input.style.backgroundColor = this.invalidColor
+        this.input.style.borderColor = this.invalidColor
+        this.input.style.borderStyle = "dashed"
     }
 
     markValid() {
-        this.input.style.backgroundColor = this.validColor
+        this.input.style.border = "none"
     }
+
 
     lock() {
         this.view.innerHTML = this.input.value
@@ -724,15 +721,16 @@ export class TextAreaField extends Field {
     }
 
     isValid() {
-        return this.getValue() && this.getValue() !== ""
+        return this.getValue() !== undefined && this.getValue() !== null && this.getValue() !== ""
     }
 
     markInvalid() {
-        this.input.style.backgroundColor = this.invalidColor
+        this.input.style.borderColor = this.invalidColor
+        this.input.style.borderStyle = "dashed"
     }
 
     markValid() {
-        this.input.style.backgroundColor = this.validColor
+        this.input.style.border = "none"
     }
 
     lock() {
@@ -802,7 +800,7 @@ export class DropdownField extends Field {
         this.view = this.shadowRoot.getElementById("field-view")
         this.listbox = this.shadowRoot.querySelector(".dropdown-content")
 
-        this.shadowRoot.querySelector(".dropdown-content").innerHTML = this._getHtmlArray()
+        this.listbox.innerHTML = this._getHtmlArray()
         //By default, show the input element and not the view element
         this.unlock()
         this.reset()
@@ -837,9 +835,17 @@ export class DropdownField extends Field {
         return htmlArray
     }
 
+    setList(l) {
+        this.itemList = l
+        this.listbox.innerHTML = this._getHtmlArray()
+    }
+
+    setInputOnChange(f) {
+        this.listbox.addEventListener('iron-select', f);
+    }
 
     getValue() {
-        if(!this.listbox.selected || this.listbox.selected < 0) 
+        if(this.listbox.selected === null || this.listbox.selected === undefined || this.listbox.selected < 0) 
             return ""
         return this.listbox.getElementsByTagName("paper-item")[this.listbox.selected].getAttribute("value")
     }
@@ -859,15 +865,16 @@ export class DropdownField extends Field {
     }
 
     isValid() {
-        return this.getValue() && this.getValue() !== ""
+        return this.getValue() !== undefined && this.getValue() !== null && this.getValue() !== ""
     }
 
     markInvalid() {
-        this.input.style.backgroundColor = this.invalidColor
+        this.input.style.borderColor = this.invalidColor
+        this.input.style.borderStyle = "dashed"
     }
 
     markValid() {
-        this.input.style.backgroundColor = this.validColor
+        this.input.style.border = "none"
     }
 
     lock() {
@@ -1056,15 +1063,16 @@ export class ImageField extends Field {
     }
 
     isValid() {
-        return this.getValue() && this.getValue() !== ""
+        return this.getValue() !== undefined && this.getValue() !== null && this.getValue() !== ""
     }
 
     markInvalid() {
-        this.input.style.backgroundColor = this.invalidColor
+        this.visualInput.style.borderColor = this.invalidColor
+        this.visualInput.style.borderStyle = "dashed"
     }
 
     markValid() {
-        this.input.style.backgroundColor = this.validColor
+        this.visualInput.style.border = "none"
     }
 
     lock() {
@@ -1147,15 +1155,16 @@ export class DateField extends Field {
     }
 
     isValid() {
-        return this.getValue() && this.getValue() !== ""
+        return this.getValue() !== undefined && this.getValue() !== null && this.getValue() !== ""
     }
 
     markInvalid() {
-        this.input.style.backgroundColor = this.invalidColor
+        this.input.style.borderColor = this.invalidColor
+        this.input.style.borderStyle = "dashed"
     }
 
     markValid() {
-        this.input.style.backgroundColor = this.validColor
+        this.input.style.border = "none"
     }
 
 

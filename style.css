@@ -157,7 +157,7 @@ dropdown-menu-element{
 
 /** The cell value div **/
 .table-item-value {
-  padding: 5px;
+  height: 100%;
 }
 
 .inner-triangle{

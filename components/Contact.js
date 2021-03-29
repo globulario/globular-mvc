@@ -232,6 +232,7 @@ export class ContactsMenu extends Menu {
 
         // set active.
         contactsTab.click();
+        window.dispatchEvent(new Event('resize'));
 
         // Get the list of all accounts (mab).
         this.shadowRoot.removeChild(this.getMenuDiv())
@@ -407,6 +408,7 @@ export class SentContactInvitations extends HTMLElement {
         contactLst.appendChild(card)
         this.badge.label = contactLst.children.length
         this.badge.style.display = "block"
+        window.dispatchEvent(new Event('resize'));
     }
 
     removeContact(contact) {
@@ -421,6 +423,7 @@ export class SentContactInvitations extends HTMLElement {
                 this.badge.style.display = "none"
             }
         }
+        window.dispatchEvent(new Event('resize'));
     }
 }
 

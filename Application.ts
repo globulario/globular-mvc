@@ -1,6 +1,6 @@
 import { Model } from "./Model";
 import * as resource from "globular-web-client/resource/resource_pb";
-import 'source-map-support/register' // That resolve the error map and give real source name and plage in function.
+//import 'source-map-support/register' // That resolve the error map and give real source name and plage in function.
 import * as jwt from "jwt-decode";
 import { ApplicationView } from "./ApplicationView";
 import { Account, SessionState, Session } from "./Account";
