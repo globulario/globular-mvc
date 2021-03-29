@@ -30,7 +30,7 @@ export class ConversationManager {
 
     stream.on("data", (rsp: ConnectResponse) => {
       /** Local event... */
-      Model.globular.eventHub.publish(`__received_message_${rsp.getMessage().getConversation()}_evt__`, rsp.getMessage(), true)
+      Model.globular.eventHub.publish(`__received_message_${rsp.getMsg().getConversation()}_evt__`, rsp.getMsg(), true)
     });
 
     stream.on("status", (status) => {
