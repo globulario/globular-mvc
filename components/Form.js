@@ -168,18 +168,18 @@ export class FormSection extends HTMLElement {
                 
                 .card-title{
                     position: absolute;
-                    font-size: 1.25rem;
+                    font-size: 2rem;
                     text-transform: uppercase;
                     color: var(--cr-primary-text-color);
                     font-weight: 400;
                     top: .25rem;
                     letter-spacing: .25px;
-                    margin-bottom: .35em;
+                    margin-bottom: .35rem;
                     margin-top: var(--cr-section-vertical-margin);
                     outline: none;
-                    padding-bottom: .25em;
-                    padding-top: .5em;
-                    padding-left: 2em;
+                    padding-bottom: .25rem;
+                    padding-top: .5rem;
+                    padding-left: 2rem;
                     background: transparent;
                 }
 
