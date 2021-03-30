@@ -112,6 +112,8 @@ export class Layout extends HTMLElement {
               }
             }
 
+            
+
             @media only screen and (max-width: 1024px) {
               ::slotted(#workspace) {
                 width: 100%;
