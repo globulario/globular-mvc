@@ -91,7 +91,7 @@ export class ApplicationsPanel extends HTMLElement {
         }
 
         if (this.size == "large") {
-            this.iconSize = 96
+            this.iconSize = 64
         }
 
         this.shadowRoot.innerHTML = `
@@ -101,11 +101,13 @@ export class ApplicationsPanel extends HTMLElement {
                 display: inline-flex;
                 flex-flow: wrap;
             }
+
             paper-tooltip {
                 --paper-tooltip: {
                   font-size: 1rem;
                 }
-              }
+            }
+
             .application-div {
                 display: flex;
                 position: relative;
@@ -113,7 +115,7 @@ export class ApplicationsPanel extends HTMLElement {
                 align-items: center;
                 width:  ${this.iconSize * 1.25}px;
                 margin: 5px;
-                padding: 5px;
+                padding: 25px;
                 border-radius: 5px;
                 transition: background 0.2s ease,padding 0.8s linear;
                 background-color: var(--palette-background-paper);
@@ -145,16 +147,22 @@ export class ApplicationsPanel extends HTMLElement {
                 font-size: 1rem;
                 letter-spacing: .09px;
                 line-height: 16px;
-                width: 100%;
+                width: 125px;
                 text-align: center;
                 color: var(--palette-text-primary);
             }
 
             .application-div.normal span{
                 font-size: .85rem;
+                width: 100%;
+                text-align: center;
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
+            }
+
+            .application-div.normal{
+                padding: 10px;
             }
 
         </style>

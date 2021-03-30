@@ -55,7 +55,7 @@ export class ApplicationView extends View {
   }
 
   /** The application view component. */
-  private layout: Layout;
+  private  layout: Layout;
 
   /** The login panel */
   private login_: Login;
