@@ -207,22 +207,24 @@ export class NotificationMenu extends Menu {
 
             let now = new Date()
             let dateTimeDivs = this.shadowRoot.querySelector(".notification_date")
-            for (var i = 0; i < dateTimeDivs.length; i++) {
-                let date = dateTimeDivs[i].date;
-                let delay = Math.floor((now.getTime() - date.getTime()) / 1000);
-                let div = dateTimeDivs[i]
-                if (delay < 60) {
-                    div.innerHTML = delay + " seconds ago"
-                } else if (delay < 60 * 60) {
-                    div.innerHTML = Math.floor(delay / (60)) + " minutes ago"
-                } else if (delay < 60 * 60 * 24) {
-                    div.innerHTML = Math.floor(delay / (60 * 60)) + " hours ago"
-                } else {
-                    div.innerHTML = Math.floor(delay / (60 * 60 * 24)) + " days ago"
+            if (dateTimeDivs != undefined) {
+                for (var i = 0; i < dateTimeDivs.length; i++) {
+                    let date = dateTimeDivs[i].date;
+                    let delay = Math.floor((now.getTime() - date.getTime()) / 1000);
+                    let div = dateTimeDivs[i]
+                    if (delay < 60) {
+                        div.innerHTML = delay + " seconds ago"
+                    } else if (delay < 60 * 60) {
+                        div.innerHTML = Math.floor(delay / (60)) + " minutes ago"
+                    } else if (delay < 60 * 60 * 24) {
+                        div.innerHTML = Math.floor(delay / (60 * 60)) + " hours ago"
+                    } else {
+                        div.innerHTML = Math.floor(delay / (60 * 60 * 24)) + " days ago"
+                    }
                 }
-            }
 
-            localStorage.setItem("notifications_read_date", now.getTime().toString())
+                localStorage.setItem("notifications_read_date", now.getTime().toString())
+            }
 
             if (isHidden) {
                 this.shadowRoot.removeChild(this.getMenuDiv())
@@ -411,7 +413,7 @@ export class NotificationMenu extends Menu {
             this.shadowRoot.appendChild(this.getMenuDiv())
         }
 
-     
+
         let notificationDiv = this.shadowRoot.getElementById(`div_${notification._id}`)
         let closeBtn = this.shadowRoot.getElementById(`div_${notification._id}_close_btn`)
 
@@ -451,7 +453,7 @@ export class NotificationMenu extends Menu {
             let obj = JSON.parse(notification._sender)
             let img = this.shadowRoot.getElementById(`div_${notification._id}_img`)
             let ico = this.shadowRoot.getElementById(`div_${notification._id}_ico`)
-            let span =  this.shadowRoot.getElementById(`div_${notification._id}_span`)
+            let span = this.shadowRoot.getElementById(`div_${notification._id}_span`)
             Account.getAccount(obj._id, (account) => {
                 if (account.profilPicture_ != undefined) {
                     img.style.display = "block"
@@ -482,7 +484,7 @@ export class NotificationMenu extends Menu {
                     },
                     false
                 );
-            }, err => { 
+            }, err => {
                 ApplicationView.displayMessage(err, 3000)
             })
         }

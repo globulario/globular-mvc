@@ -84,6 +84,12 @@ export let theme = `
     /** Divider **/
     --palette-divider: rgba(255, 255, 255, 0.12);
   }
+  
+  :host-context(globular-login-box, globular-register-box){
+    position: fixed;
+    top: 20%;
+    left: calc(50% - 340px / 2);
+  }
 
   :host-context(#toolbar) {
     --iron-icon-fill-color: var(--palette-text-accent);
@@ -109,6 +115,7 @@ export let theme = `
   paper-card {
     background-color: transparent;
     font-size: 1rem;
+    text-align: left;
   }
 
   paper-button {
@@ -146,13 +153,6 @@ export let theme = `
     padding: 15px 16px 16px 16px;
   }
 
-  @media only screen and (max-width: 600px) {
-    .setting {
-      flex-direction: column;
-      align-items: self-start;
-      flex-basis: 0px;
-    }
-  }
 
   .card-title {
     position: absolute;
@@ -276,5 +276,5 @@ export let theme = `
   .inner-triangle:hover{
       cursor: pointer;
   }
-  
+
 `
