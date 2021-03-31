@@ -50,6 +50,7 @@ export class Form extends HTMLElement {
                 <paper-button id="save-btn">Enregistrer</paper-button>
             </div>
         `
+        this.style.display = "flex"
 
         this.container = this.shadowRoot.getElementById("container")
         this.shadowRoot.getElementById("save-btn").onclick = this.confirm.bind(this)
