@@ -366,6 +366,7 @@ export class Account extends Model {
                 }, errorCallback)
             })
             .catch((err: any) => {
+                console.log(err)
                 errorCallback(err);
             });
     }
