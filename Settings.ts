@@ -212,7 +212,7 @@ export class FileSettings extends Settings {
         let fileSettingPage = <any>this.settingsPanel.appendSettingsPage("Files");
 
         this.fileExplorer = new FileExplorer;
-        this.fileExplorer.setRoot("/" + Model.application)
+        this.fileExplorer.setRoot("/applications/" + Model.application)
 
         // Append a title.
         let html = `

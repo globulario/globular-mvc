@@ -208,7 +208,7 @@ export class ApplicationView extends View {
 
 
     // The file explorer object.
-    this._fileExplorer.init();
+    //this._fileExplorer.init();
 
     // Logout event
     Model.eventHub.subscribe(
