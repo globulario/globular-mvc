@@ -9,6 +9,7 @@ import '@polymer/iron-icons/editor-icons.js'
 
 import { Model } from '../Model';
 import { File } from "../File";
+import { Menu } from './Menu';
 import { theme } from './Theme';
 import { v4 as uuidv4 } from "uuid";
 
@@ -56,114 +57,96 @@ export class FilesView extends HTMLElement {
 
         // The function will be call in case of error.
         this.onerror = undefined;
-
-        Model.eventHub.subscribe("set_dir_event",
-            (uuid) => {
-                /** Nothin here. */
-            },
-            (dir) => {
-                this.setDir(dir)
-            }
-        )
-    }
-
-    // Set the directory.
-    setDir(dir) {
-        /** Nothing to do here. */
-    }
-
-    // The connection callback.
-    connectedCallback() {
         // Innitialisation of the layout.
         let id = uuidv4().split("-").join("_");
 
         this.shadowRoot.innerHTML = `
-            <style>
-                ${theme}
+          <style>
+              ${theme}
 
-                table {
-                    text-align: left;
-                    position: relative;
-                    border-collapse: separate; /* Don't collapse */
-                    border-spacing: 0;
-                }
-                
-                table th,
-                table td {
-                  /* Apply a left border on the first <td> or <th> in a row */
-                  border-right: 1px solid  var(--palette-action-disabled);
-                }
+              table {
+                  text-align: left;
+                  position: relative;
+                  border-collapse: separate; /* Don't collapse */
+                  border-spacing: 0;
+              }
+              
+              table th,
+              table td {
+                /* Apply a left border on the first <td> or <th> in a row */
+                border-right: 1px solid  var(--palette-action-disabled);
+              }
 
-                table th:last-child,
-                table td:last-child {
-                  /* Apply a left border on the first <td> or <th> in a row */
-                  border-right: none;
-                }
-                
-                thead {
-                    display: table-header-group;
-                    vertical-align: middle;
-                    border-color: inherit;
-                }
+              table th:last-child,
+              table td:last-child {
+                /* Apply a left border on the first <td> or <th> in a row */
+                border-right: none;
+              }
+              
+              thead {
+                  display: table-header-group;
+                  vertical-align: middle;
+                  border-color: inherit;
+              }
 
-                tbody {
-                    display: table-row-group;
-                    vertical-align: middle;
-                    border-color: inherit;
-                }
+              tbody {
+                  display: table-row-group;
+                  vertical-align: middle;
+                  border-color: inherit;
+              }
 
-                tr {
-                    display: table-row;
-                    vertical-align: inherit;
-                    border-color: inherit;
-                    color: var(--palette-text-primary);
-                }
+              tr {
+                  display: table-row;
+                  vertical-align: inherit;
+                  border-color: inherit;
+                  color: var(--palette-text-primary);
+              }
 
-                td {
-                    display: table-cell;
-                    vertical-align: inherit;
-                }
+              td {
+                  display: table-cell;
+                  vertical-align: inherit;
+              }
 
-                th, td {
-                    padding: 0.25rem;
-                    min-width: 150px;
-                    padding-left: 5px;
-                }
-                 
-                th {
-                    z-index: 100;
-                    position: sticky;
-                    background-color: var(--palette-background-paper);
-                    top: 0; /* Don't forget this, required for the stickiness */
-                }
+              th, td {
+                  padding: 0.25rem;
+                  min-width: 150px;
+                  padding-left: 5px;
+              }
+               
+              th {
+                  z-index: 100;
+                  position: sticky;
+                  background-color: var(--palette-background-paper);
+                  top: 0; /* Don't forget this, required for the stickiness */
+              }
 
-                .files-list-view-header {
-                    padding-left: 5px;
-                    padding-right: 5px;
-                }
+              .files-list-view-header {
+                  padding-left: 5px;
+                  padding-right: 5px;
+              }
 
-                .files-list-view-info {
-                    padding: 2px;
-                }
+              .files-list-view-info {
+                  padding: 2px;
+              }
 
-                .files-view-div{
-                    display: flex;
-                    flex-direction: column;
-                    background-color: var(--palette-background-default);
-                    color: var(--palette-text-primary);
-                    position: absolute;
-                    top: 0px;
-                    left: 0px;
-                    bottom: 0px;
-                    right: 0px;
-                    overflow: auto;
-                }
+              .files-view-div{
+                  display: flex;
+                  flex-direction: column;
+                  background-color: var(--palette-background-default);
+                  color: var(--palette-text-primary);
+                  position: absolute;
+                  top: 0px;
+                  left: 0px;
+                  bottom: 0px;
+                  right: 0px;
+                  overflow: auto;
+              }
 
-            </style>
+          </style>
 
-            <div class="files-view-div" id="${id}">
-            </div>
-            `
+          <div class="files-view-div" id="${id}">
+          </div>
+          `
         // get the div.
         this.div = this.shadowRoot.getElementById(id)
         this.div.onscroll = () => {
@@ -178,6 +161,22 @@ export class FilesView extends HTMLElement {
                 }
             }
         }
+    }
+
+    init() {
+        Model.eventHub.subscribe("set_dir_event",
+            (uuid) => {
+                /** Nothin here. */
+            },
+            (dir) => {
+                this.setDir(dir)
+            }
+        )
+    }
+
+    // Set the directory.
+    setDir(dir) {
+        /** Nothing to do here. */
     }
 }
 
@@ -197,17 +196,17 @@ export class FilesListView extends FilesView {
         this.div.innerHTML = "";
         let id = uuidv4().split("-").join("_");
         let html = `
-            <table>
-                <thead class="files-list-view-header">
-                    <tr>
-                        <th class="name_header_div files-list-view-header">Nom</th>
-                        <th class="modified_header_div files-list-view-header">Modifié le</th>
-                        <th class="mime_header_div files-list-view-header">Type</th>
-                        <th class="size_header_div files-list-view-header">Taille</th>
-                    </tr>
-                </thead>
-                <tbody id=${id}"_files_list_view_info" class="files-list-view-info"></tbody>
-            </table>
+        <table>
+            <thead class="files-list-view-header">
+                <tr>
+                    <th class="name_header_div files-list-view-header">Nom</th>
+                    <th class="modified_header_div files-list-view-header">Modifié le</th>
+                    <th class="mime_header_div files-list-view-header">Type</th>
+                    <th class="size_header_div files-list-view-header">Taille</th>
+                </tr>
+            </thead>
+            <tbody id=${id}"_files_list_view_info" class="files-list-view-info"></tbody>
+        </table>
         `
 
         // Create the header.
@@ -298,6 +297,10 @@ export class FilesIconView extends FilesView {
     setDir(dir) {
         // Here I will set the list of 
     }
+
+    init() {
+        // Connect event listener here.
+    }
 }
 
 customElements.define('globular-files-icon-view', FilesIconView)
@@ -324,6 +327,30 @@ export class PathNavigator extends HTMLElement {
         // List of listeners...
         this.navigationListener = ""
 
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+            <style>
+                ${theme}
+
+                #path-navigator-box{
+                    flex-grow: 1;
+                    background-color: var(--palette-background-default);
+                    color: var(--palette-text-primary);
+                    display: flex;
+                    align-items: center;
+                }
+
+
+            </style>
+
+            <div id="path-navigator-box">
+            </div>
+            `
+
+        this.div = this.shadowRoot.querySelector("#path-navigator-box")
+    }
+
+    init() {
         // The the path
         Model.eventHub.subscribe("set_dir_event",
             (uuid) => {
@@ -474,30 +501,6 @@ export class PathNavigator extends HTMLElement {
         }
     }
 
-    // The connection callback.
-    connectedCallback() {
-        // Innitialisation of the layout.
-        this.shadowRoot.innerHTML = `
-            <style>
-                ${theme}
-
-                #path-navigator-box{
-                    flex-grow: 1;
-                    background-color: var(--palette-background-default);
-                    color: var(--palette-text-primary);
-                    display: flex;
-                    align-items: center;
-                }
-
-
-            </style>
-
-            <div id="path-navigator-box">
-            </div>
-            `
-
-        this.div = this.shadowRoot.querySelector("#path-navigator-box")
-    }
 }
 
 customElements.define('globular-path-navigator', PathNavigator)
@@ -532,41 +535,69 @@ export class FileNavigator extends HTMLElement {
 
         // The control width
         this.width = 200
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+            ${theme}
+
+            #file-navigator-div {
+                min-width: ${this.width}px; 
+                max-height: ${this.height}px; 
+                min-height: ${this.height}px; 
+                overflow: auto;
+            }
+
+            /** On smaller display **/
+            @media only screen and (max-width: 801px) {
+                #file-navigator-div{
+                    min-height: 150px;
+                }
+            }
+
+        </style>
+
+        <div id="file-navigator-div" style="">
+            
+        </div>
+        `
+
+        // The get the root div.
+        this.div = this.shadowRoot.querySelector("#file-navigator-div");
     }
 
 
 
     // Init the tree view.
     initTreeView(dir, div, level) {
-        let id = uuidv4().split("-").join("_");
-        let name = dir.path.split("/").pop();
-        let offset = 10 * level
-        let html = `
-            <style>
+        let id = dir.path.split("/").join("_");
+        if (this.div.querySelector(`#${id}`) == undefined) {
+            let name = dir.path.split("/").pop();
+            let offset = 10 * level
+            let html = `
+                <style>
+                    #${id}:hover{
+                        cursor: pointer;
+                    }
+                </style>
 
-                #${id}:hover{
-                    cursor: pointer;
-                }
-
-            </style>
-
-            <div id="${id}" style="padding-left: ${offset}px;">
-                <div style="display: flex; padding-top: 5px; padding-bottom: 5px; align-items: center;  position: relative;">
-                    <iron-icon id="${id}_expand_btn" icon="icons:chevron-right" style="--iron-icon-fill-color:var(--palette-action-disabled);"></iron-icon>
-                    <iron-icon id="${id}_shrink_btn" icon="icons:expand-more" style="--iron-icon-fill-color:var(--palette-action-active); display: none;"></iron-icon>
-                    <div id="${id}_directory_lnk" class="directory-lnk">
-                        <iron-icon id="${id}_directory_icon" icon="icons:folder"></iron-icon>
-                        <span style="margin-left: 5px;"> ${name}</span>
+                <div id="${id}" style="padding-left: ${offset}px;">
+                    <div style="display: flex; padding-top: 5px; padding-bottom: 5px; align-items: center;  position: relative;">
+                        <iron-icon id="${id}_expand_btn" icon="icons:chevron-right" style="--iron-icon-fill-color:var(--palette-action-disabled);"></iron-icon>
+                        <iron-icon id="${id}_shrink_btn" icon="icons:expand-more" style="--iron-icon-fill-color:var(--palette-action-active); display: none;"></iron-icon>
+                        <div id="${id}_directory_lnk" class="directory-lnk">
+                            <iron-icon id="${id}_directory_icon" icon="icons:folder"></iron-icon>
+                            <span style="margin-left: 5px;"> ${name}</span>
+                        </div>
+                        <paper-ripple recenters></paper-ripple>
                     </div>
-                    <paper-ripple recenters></paper-ripple>
+                    <div id="${id}_files_div" style="display: none;">
+                    <div>
                 </div>
-                <div id="${id}_files_div" style="display: none;">
-                <div>
-            </div>
-        `
-
-        let range = document.createRange()
-        div.appendChild(range.createContextualFragment(html));
+            `
+            let range = document.createRange()
+            div.appendChild(range.createContextualFragment(html));
+        }
 
         /** Now i will get the */
         let shrinkBtn = this.shadowRoot.getElementById(id + "_shrink_btn")
@@ -658,25 +689,17 @@ export class FileNavigator extends HTMLElement {
     // Set the directory.
     setDir(dir) {
         console.log("set file navigation to dir: ", dir)
+        if (this.dir == dir) {
+            return;
+        }
+
         this.dir = dir;
         this.initTreeView(dir, this.div, 0)
     }
 
     // The connection callback.
     connectedCallback() {
-        // Innitialisation of the layout.
-        this.shadowRoot.innerHTML = `
-            <style>
-                ${theme}
-            </style>
 
-            <div id="file-navigator-div" style="min-width: ${this.width}px; max-height: ${this.height}px; min-height: ${this.height}px; overflow: auto;">
-                
-            </div>
-            `
-
-        // The get the root div.
-        this.div = this.shadowRoot.querySelector("#file-navigator-div");
     }
 }
 
@@ -693,6 +716,8 @@ export class FileExplorer extends HTMLElement {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
+
+        this.parent = this.getWorkspace()
 
         // The active explorer path.
         this.path = undefined
@@ -740,11 +765,210 @@ export class FileExplorer extends HTMLElement {
         this.upwardNavigationBtn = undefined
         this.lstNavigationBtn = undefined
 
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+            ${theme}
+            
+            iron-icon:hover{
+                cursor: pointer;
+            }
+
+            #file-navigation-panel{
+                background-color: var(--palette-background-default);
+                color: var(--palette-text-primary);
+            }
+
+            #file-selection-panel{
+                margin-left: 15px;
+                flex-grow: 1;
+                background-color: var(--palette-background-default);
+                color: var(--palette-text-primary);
+                position: relative;
+            }
+
+            #file-explorer-content{
+                display: flex;
+                flex-direction: column;
+                min-width: 800px;
+            }
+
+            paper-card{
+                font-size: 1.0rem;
+            }
+
+            .card-actions{
+                display: flex;
+            }
+
+            #file-explorer-layout{
+                display: flex; 
+                flex-grow: 1;
+            }
+
+            @media only screen and (max-width: 800px) {
+                #file-explorer-layout {
+                    flex-direction: column;
+                }
+                #file-explorer-content{
+                    min-width: 0px;
+                }
+
+                #file-selection-panel{
+                    min-height: 500px;
+                    margin-left: 0px;
+                }
+            }
+  
+            @media only screen and (max-width: 1024px) {
+
+            }
+    
+
+        </style>
+        <div style="padding: 7px">
+        <paper-card id="file-explorer-box" class="file-explorer" style="flex-direction: column; display: none;">
+            <div id="file-explorer-content" class="card-content">
+                <div style="display: flex; align-items: center;">
+                    <paper-icon-button id="navigation-back-btn" icon="icons:icons:arrow-back"></paper-icon-button>
+                    <paper-icon-button id="navigation-foward-btn" icon="icons:arrow-forward"></paper-icon-button>
+                    <div style="position: relative;">
+                        <iron-icon id="navigation-lst-btn" icon="icons:expand-more" style="--iron-icon-fill-color:var(--palette-action-active); display: none; height: 16px;"></iron-icon>
+                    </div>
+                    <paper-icon-button id="navigation-upward-btn" icon="icons:arrow-upward"></paper-icon-button>
+                    <globular-path-navigator id="globular-path-navigator" style="flex-grow: 1;"></globular-path-navigator>
+                    <paper-icon-button id="navigation-refresh-btn" icon="icons:refresh"></paper-icon-button>
+                </div>
+                <div id="file-explorer-layout">
+                    <div id="file-navigation-panel">
+                        <globular-file-navigator id="globular-file-navigator"></globular-file-navigator>
+                    </div>
+                    <div  id="file-selection-panel" style="position: relative;">
+                        <globular-files-list-view id="globular-files-list-view" ></globular-files-list-view>
+                        <globular-files-icon-view id="globular-files-icon-view"  style="display:none;"></globular-files-icon-view>
+                        <div style="position: absolute; bottom: 8px; right: 8px; display: flex; background-color:var(--palette-background-default)" >
+                            <paper-icon-button id="files-list-btn" icon="icons:view-list" style="--iron-icon-fill-color: var(--palette-action-active);"></paper-icon-button>
+                            <paper-icon-button id="files-icon-btn" icon="icons:view-module" style="--iron-icon-fill-color: var(--palette-action-disabled);"></paper-icon-button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="card-actions">
+                <span style="flex-grow: 1;"></span>
+                <paper-button id="file-explorer-box-close-btn">Close</paper-button>
+            </div>
+        </paper-card>
+        </div>
+        `
+
+        // The main explorer button
+        this.fileExplorerBox = this.shadowRoot.querySelector("#file-explorer-box")
+        this.fileExplererCloseBtn = this.shadowRoot.querySelector("#file-explorer-box-close-btn")
+
+        // The file view.
+        this.filesListView = this.shadowRoot.querySelector("#globular-files-list-view")
+        this.filesIconView = this.shadowRoot.querySelector("#globular-files-icon-view")
+
+        // The path navigator
+        this.pathNavigator = this.shadowRoot.querySelector("#globular-path-navigator")
+
+        // The file navigator.
+        this.fileNavigator = this.shadowRoot.querySelector("#globular-file-navigator")
+
+        this.filesListBtn = this.shadowRoot.querySelector("#files-list-btn")
+        this.fileIconBtn = this.shadowRoot.querySelector("#files-icon-btn")
+
+        // The refresh button
+        this.refreshBtn = this.shadowRoot.querySelector("#navigation-refresh-btn")
+
+        // File navigation button.
+        this.backNavigationBtn = this.shadowRoot.querySelector("#navigation-back-btn")
+        this.fowardNavigationBtn = this.shadowRoot.querySelector("#navigation-foward-btn")
+        this.upwardNavigationBtn = this.shadowRoot.querySelector("#navigation-upward-btn")
+        this.lstNavigationBtn = this.shadowRoot.querySelector("#navigation-lst-btn")
+
+        // Resize the file selection panel.
+        this.fileSelectionPanel = this.shadowRoot.querySelector("#file-selection-panel")
+        this.fileExplorerContent = this.shadowRoot.querySelector("#file-explorer-content")
+        this.actionsCard = this.shadowRoot.querySelector("#card-actions")
+
+        // I will use the resize event to set the size of the file explorer.
+        window.addEventListener("resize", ()=>{
+            // Here I will use the workspace to define the with of the content...
+            this.fileExplorerContent.style.minHeight = window.innerHeight - 64 - 55 - 45 + "px"
+        })
+
+        // Here I will connect the windows resize event...
+        this.backNavigationBtn.onclick = () => {
+            let index = this.navigations.indexOf(this.path)
+            index--
+            if (index < this.navigations.length && index > -1) {
+                Model.eventHub.publish("set_dir_event", _dirs[this.navigations[index]], true)
+            }
+        }
+
+        this.fowardNavigationBtn.onclick = () => {
+            let index = this.navigations.indexOf(this.path)
+            index++
+            if (index < this.navigations.length && index > -1) {
+                Model.eventHub.publish("set_dir_event", _dirs[this.navigations[index]], true)
+            }
+        }
+
+        this.upwardNavigationBtn.onclick = () => {
+
+            if (this.path.split("/").length > 2) {
+                this.path = this.path.substring(0, this.path.lastIndexOf("/"))
+                Model.eventHub.publish("set_dir_event", _dirs[this.path], true)
+            }
+        }
+
+
+        this.filesListBtn.onclick = () => {
+            this.filesListView.style.display = ""
+            this.filesIconView.style.display = "none"
+            this.filesListBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-active)")
+            this.fileIconBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
+        }
+
+        this.fileIconBtn.onclick = () => {
+            this.filesListView.style.display = "none"
+            this.filesIconView.style.display = ""
+            this.filesListBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
+            this.fileIconBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-active)")
+        }
+
+        this.fileExplererCloseBtn.onclick = () => {
+            this.close()
+        }
+
+        // Refresh the root directory and send event to
+        // refresh all the interface.
+        this.refreshBtn.onclick = () => {
+            _readDir(this.root, (dir) => {
+                Model.eventHub.publish("set_dir_event", _dirs[this.path], true)
+            }, this.onerror, true)
+        }
+
+        if (this.hasAttribute("maximized")) {
+            this.fileExplorerOpenBtn.click();
+        }
+
+        if (this.hasAttribute("hideactions")) {
+            this.shadowRoot.querySelector(".card-actions").style.display = "none";
+        }
 
     }
 
     // Set the file explorer directory.
     init() {
+        // Init the path navigator
+        this.pathNavigator.init();
+
+        // Init the files views
+        this.filesListView.init();
+        this.filesIconView.init();
 
         Model.eventHub.subscribe("set_dir_event",
             (uuid) => {
@@ -755,11 +979,6 @@ export class FileExplorer extends HTMLElement {
                 this.setDir(dir)
             }
         )
-
-        if (this.root == undefined) {
-            // Set the path to application folder by default.
-            this.root = "/" + Model.application; // set to the application folder.
-        }
 
         // Read the fd
         _readDir(this.root, (dir) => {
@@ -796,13 +1015,17 @@ export class FileExplorer extends HTMLElement {
         }, this.onerror)
     }
 
+    // The connection callback.
+    connectedCallback() {
+
+    }
+
     setRoot(root) {
         this.root = root
         this.init()
     }
 
     setDir(dir) {
-
 
         if (this.backNavigationBtn != null) {
             this.backNavigationBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
@@ -813,8 +1036,6 @@ export class FileExplorer extends HTMLElement {
         if (this.upwardNavigationBtn != null) {
             this.upwardNavigationBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
         }
-
-
 
         // Append the dir in the list of 
         if (this.navigations.indexOf(dir.path) == -1) {
@@ -918,184 +1139,60 @@ export class FileExplorer extends HTMLElement {
         return document.getElementById("workspace")
     }
 
+    open(parent) {
 
-    // The connection callback.
-    connectedCallback() {
-        // Innitialisation of the layout.
-        this.shadowRoot.innerHTML = `
-        <style>
-            ${theme}
-            
-            iron-icon:hover{
-                cursor: pointer;
-            }
-
-            #file-navigation-panel{
-                background-color: var(--palette-background-default);
-                color: var(--palette-text-primary);
-            }
-
-            #file-selection-panel{
-                margin-left: 15px;
-                flex-grow: 1;
-                background-color: var(--palette-background-default);
-                color: var(--palette-text-primary);
-                position: relative;
-            }
-
-            #file-explorer-content{
-                display: flex;
-                flex-direction: column;
-                min-width: 800px;
-            }
-
-            paper-card{
-                font-size: 1.0rem;
-            }
-
-            .card-actions{
-                display: flex;
-            }
-
-        </style>
-
-        <paper-icon-button id="file-explorer-box-open-btn" icon="icons:folder"></paper-icon-button>
-
-        <paper-card id="file-explorer-box" class="file-explorer" style="flex-direction: column; display: none;">
-            <div id="file-explorer-content" class="card-content">
-                <div style="display: flex; align-items: center;">
-                    <paper-icon-button id="navigation-back-btn" icon="icons:icons:arrow-back"></paper-icon-button>
-                    <paper-icon-button id="navigation-foward-btn" icon="icons:arrow-forward"></paper-icon-button>
-                    <div style="position: relative;">
-                        <iron-icon id="navigation-lst-btn" icon="icons:expand-more" style="--iron-icon-fill-color:var(--palette-action-active); display: none; height: 16px;"></iron-icon>
-                    </div>
-                    <paper-icon-button id="navigation-upward-btn" icon="icons:arrow-upward"></paper-icon-button>
-                    <globular-path-navigator id="globular-path-navigator" style="flex-grow: 1;"></globular-path-navigator>
-                    <paper-icon-button id="navigation-refresh-btn" icon="icons:refresh"></paper-icon-button>
-                </div>
-                <div style="display: flex; flex-grow: 1;">
-                    <div id="file-navigation-panel">
-                        <globular-file-navigator id="globular-file-navigator"></globular-file-navigator>
-                    </div>
-                    <div  id="file-selection-panel" style="position: relative;">
-                        <globular-files-list-view id="globular-files-list-view" ></globular-files-list-view>
-                        <globular-files-icon-view id="globular-files-icon-view"  style="display:none;"></globular-files-icon-view>
-                        <div style="position: absolute; bottom: 8px; right: 8px; display: flex; background-color:var(--palette-background-default)" >
-                            <paper-icon-button id="files-list-btn" icon="icons:view-list" style="--iron-icon-fill-color: var(--palette-action-active);"></paper-icon-button>
-                            <paper-icon-button id="files-icon-btn" icon="icons:view-module" style="--iron-icon-fill-color: var(--palette-action-disabled);"></paper-icon-button>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-            <div class="card-actions">
-                <span style="flex-grow: 1;"></span>
-                <paper-button id="file-explorer-box-close-btn">Close</paper-button>
-            </div>
-        </paper-card>
-        `
-
-        // The main explorer button
-        this.fileExplorerBox = this.shadowRoot.querySelector("#file-explorer-box")
-        this.fileExplorerOpenBtn = this.shadowRoot.querySelector("#file-explorer-box-open-btn")
-        this.fileExplererCloseBtn = this.shadowRoot.querySelector("#file-explorer-box-close-btn")
-
-        // The file view.
-        this.filesListView = this.shadowRoot.querySelector("#globular-files-list-view")
-        this.filesIconView = this.shadowRoot.querySelector("#globular-files-icon-view")
-
-        // The path navigator
-        this.pathNavigator = this.shadowRoot.querySelector("#globular-path-navigator")
-
-        // The file navigator.
-        this.fileNavigator = this.shadowRoot.querySelector("#globular-file-navigator")
-
-        this.filesListBtn = this.shadowRoot.querySelector("#files-list-btn")
-        this.fileIconBtn = this.shadowRoot.querySelector("#files-icon-btn")
-
-        // The refresh button
-        this.refreshBtn = this.shadowRoot.querySelector("#navigation-refresh-btn")
-
-        // File navigation button.
-        this.backNavigationBtn = this.shadowRoot.querySelector("#navigation-back-btn")
-        this.fowardNavigationBtn = this.shadowRoot.querySelector("#navigation-foward-btn")
-        this.upwardNavigationBtn = this.shadowRoot.querySelector("#navigation-upward-btn")
-        this.lstNavigationBtn = this.shadowRoot.querySelector("#navigation-lst-btn")
-
-        this.backNavigationBtn.onclick = () => {
-            let index = this.navigations.indexOf(this.path)
-            index--
-            if (index < this.navigations.length && index > -1) {
-                Model.eventHub.publish("set_dir_event", _dirs[this.navigations[index]], true)
-            }
+        if (parent != undefined) {
+            this.parent = parent;
         }
 
-        this.fowardNavigationBtn.onclick = () => {
-            let index = this.navigations.indexOf(this.path)
-            index++
-            if (index < this.navigations.length && index > -1) {
-                Model.eventHub.publish("set_dir_event", _dirs[this.navigations[index]], true)
-            }
+        this.fileExplorerBox.style.display = "flex"
+
+        if (this.onopen != undefined) {
+            this.onopen();
         }
+        this.parent.appendChild(this)
+    }
 
-        this.upwardNavigationBtn.onclick = () => {
+    close() {
+        this.fileExplorerBox.style.display = "none"
 
-            if (this.path.split("/").length > 2) {
-                this.path = this.path.substring(0, this.path.lastIndexOf("/"))
-                Model.eventHub.publish("set_dir_event", _dirs[this.path], true)
-            }
+        if (this.onclose != undefined) {
+            this.onclose();
+
         }
+        this.parent.removeChild(this)
+    }
 
+    maximize() {
+        this.fileExplorerOpenBtn.click();
+    }
 
-        this.filesListBtn.onclick = () => {
-            this.filesListView.style.display = ""
-            this.filesIconView.style.display = "none"
-            this.filesListBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-active)")
-            this.fileIconBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
-        }
-
-        this.fileIconBtn.onclick = () => {
-            this.filesListView.style.display = "none"
-            this.filesIconView.style.display = ""
-            this.filesListBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
-            this.fileIconBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-active)")
-        }
-
-        this.fileExplorerOpenBtn.onclick = () => {
-            this.fileExplorerBox.style.display = "flex"
-            this.fileExplorerOpenBtn.style.display = "none"
-            if (this.onopen != undefined) {
-                this.onopen();
-            }
-        }
-
-        this.fileExplererCloseBtn.onclick = () => {
-            this.fileExplorerBox.style.display = "none"
-            this.fileExplorerOpenBtn.style.display = ""
-            if (this.onclose != undefined) {
-                this.onclose();
-            }
-        }
-
-        // Refresh the root directory and send event to
-        // refresh all the interface.
-        this.refreshBtn.onclick = () => {
-            _readDir(this.root, (dir) => {
-                Model.eventHub.publish("set_dir_event", _dirs[this.path], true)
-            }, this.onerror, true)
-        }
-
-        if (this.hasAttribute("maximized")) {
-            this.fileExplorerOpenBtn.click();
-        }
-
-        if (this.hasAttribute("hideactions")) {
-            this.shadowRoot.querySelector(".card-actions").style.display = "none";
-        }
-        
-        // Need to set event on each webcomponents.
-        this.init();
+    hideActions() {
+        this.shadowRoot.querySelector(".card-actions").style.display = "none";
     }
 }
 
 customElements.define('globular-file-explorer', FileExplorer)
+
+
+/**
+ * Login/Register functionality.
+ */
+export class FilesMenu extends Menu {
+
+    // Create the application view.
+    constructor(fileExplorer) {
+        super("files", "folder", "Files")
+        this.fileExplorer = fileExplorer
+
+        this.onclick = () => {
+            this.fileExplorer.open();
+        }
+    }
+
+    init() {
+
+    }
+}
+
+customElements.define('globular-files-menu', FilesMenu)

@@ -101,14 +101,14 @@ export class Layout extends HTMLElement {
             }
 
             ::slotted(#workspace) {
-              width: 50%;
+              width: 65%;
               margin: 0 auto;
               text-align: center;
             }
 
             @media only screen and (max-width: 1500px) {
               ::slotted(#workspace) {
-                width: 75%;
+                width: 85%;
               }
             }
 

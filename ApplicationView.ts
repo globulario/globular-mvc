@@ -14,7 +14,7 @@ import { NotificationMenu } from "./components/Notification";
 import { OverflowMenu } from "./components/Menu";
 import { ApplicationsMenu } from "./components/Applications";
 import { Camera } from "./components/Camera";
-import { FileExplorer } from "./components/File";
+import { FileExplorer, FilesMenu } from "./components/File";
 import { SearchBar } from "./components/Search";
 import { ContactCard, ContactsMenu } from "./components/Contact";
 import { MessengerMenu, Messenger } from "./components/Messenger";
@@ -35,6 +35,7 @@ const nameGenrator = new DockerNames();
 
 // Must be imported to overide the materialyse style
 import "./style.css"
+import { rgbToHsl } from "./components/utility";
 
 /**
  * Application view made use of Web-component and Materialyse to create a basic application
@@ -74,6 +75,9 @@ export class ApplicationView extends View {
 
   /** The contact menu */
   private contactsMenu: ContactsMenu;
+
+  /** The file menu */
+  private filesMenu: FilesMenu;
 
   /** The messenger menu */
   private messengerMenu: MessengerMenu;
@@ -157,6 +161,7 @@ export class ApplicationView extends View {
     // The applicaiton menu
     this.applicationsMenu = new ApplicationsMenu();
 
+
     // The concact menu
     this.contactsMenu = new ContactsMenu();
 
@@ -183,11 +188,9 @@ export class ApplicationView extends View {
     // The file explorer object.
     this._fileExplorer = new FileExplorer();
 
-    // Set the onerror callback for the component.
-    this._fileExplorer.onerror = (err: any) => {
-      //ApplicationView.displayMessage(err, 4000)
-    };
-
+    // The file menu
+    this.filesMenu = new FilesMenu(this._fileExplorer);
+    
     // set the global varialbe...
     applicationView = this;
   }
@@ -205,10 +208,7 @@ export class ApplicationView extends View {
     this.accountMenu.init();
     this.applicationsMenu.init();
     this.notificationMenu.init();
-
-
-    // The file explorer object.
-    //this._fileExplorer.init();
+    this.filesMenu.init();
 
     // Logout event
     Model.eventHub.subscribe(
@@ -433,6 +433,10 @@ export class ApplicationView extends View {
         if (this.isLogin) {
           this.overFlowMenu.show();
 
+          this.overFlowMenu.getMenuDiv().appendChild(this.filesMenu);
+          this.filesMenu.getMenuDiv().classList.remove("bottom");
+          this.filesMenu.getMenuDiv().classList.add("left");
+
           this.overFlowMenu.getMenuDiv().appendChild(this.contactsMenu);
           this.contactsMenu.getMenuDiv().classList.remove("bottom");
           this.contactsMenu.getMenuDiv().classList.add("left");
@@ -462,6 +466,10 @@ export class ApplicationView extends View {
 
         if (this.isLogin) {
           this.overFlowMenu.hide();
+
+          this.layout.toolbar().appendChild(this.filesMenu);
+          this.filesMenu.getMenuDiv().classList.remove("left");
+          this.filesMenu.getMenuDiv().classList.add("bottom");
 
           this.layout.toolbar().appendChild(this.contactsMenu);
           this.contactsMenu.getMenuDiv().classList.remove("left");
@@ -644,6 +652,15 @@ export class ApplicationView extends View {
     // The logs
     let logs = new LogSettings(this.settingsMenu, this.settingsPanel);
 
+    // Set the file explorer...
+    this.fileExplorer.setRoot("/users/" + account.id)
+    this._fileExplorer.init();
+    
+    // Set the onerror callback for the component.
+    this._fileExplorer.onerror = (err: any) => {
+      ApplicationView.displayMessage(err, 4000)
+    };
+
     window.dispatchEvent(new Event("resize"));
   }
 
@@ -698,8 +715,6 @@ export class ApplicationView extends View {
 
     this.getSideMenu().appendChild(this.settingsMenu);
     this.getWorkspace().appendChild(this.settingsPanel);
-
-
 
   }
 

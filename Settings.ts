@@ -111,8 +111,6 @@ export class UserSettings extends Settings {
                     imageCropperSettings.setValue(account.profilPicture)
                 }
             }, true)
-
-
     }
 }
 
@@ -213,6 +211,7 @@ export class FileSettings extends Settings {
 
         this.fileExplorer = new FileExplorer;
         this.fileExplorer.setRoot("/applications/" + Model.application)
+        this.fileExplorer.init()
 
         // Append a title.
         let html = `
@@ -234,13 +233,10 @@ export class FileSettings extends Settings {
                 Files & Directories
             </div>
         `
-
+        // Display the file explorer...
         fileSettingPage.appendChild(document.createRange().createContextualFragment(html));
-        fileSettingPage.appendChild(this.fileExplorer);
-        this.fileExplorer.setAttribute("maximized", "true")
-        this.fileExplorer.setAttribute("hideactions", "true")
-
-
+        this.fileExplorer.open(fileSettingPage)
+        this.fileExplorer.hideActions()
     }
 
 

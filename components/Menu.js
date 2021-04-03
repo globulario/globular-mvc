@@ -116,6 +116,9 @@ export class Menu extends HTMLElement {
         // Remove it from the layout...
         this.menu.parentNode.removeChild(this.menu)
 
+        // Can be use to change the onclick default handler.
+        this.onclick = null;
+
     }
 
     // The connection callback.
@@ -163,6 +166,9 @@ export class Menu extends HTMLElement {
 
             // set the handler.
             document.addEventListener("click", handler);
+            if(this.onclick !=undefined){
+                this.onclick()
+            }
         }
     }
 

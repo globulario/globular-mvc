@@ -42,6 +42,7 @@ export class SettingsMenu extends HTMLElement {
 
     </style>
     <div id="container">
+      
     </div>
     `;
 
@@ -107,15 +108,15 @@ export class SettingsSideMenuItem extends HTMLElement {
        #container {
            display: flex;
            align-items: flex-end;
-           padding-left: 10px;
            padding-top: 10px;
            padding-bottom: 10px;
            font-weight: 500;
            font-size: .75em;
        }
 
-       iron-icon{
-            padding-right: 24px;
+       #button{
+          display: flex;
+          padding-right: 24px;
        }
 
        #container div:hover{
@@ -124,7 +125,10 @@ export class SettingsSideMenuItem extends HTMLElement {
 
     </style>
     <div id="container">
-        <iron-icon icon="${icon}"></iron-icon>
+        <div id="button">
+          <slot></slot>
+          <iron-icon id="icon" icon="${icon}"></iron-icon>
+        </div>
         <div id="title-div">${title}</div>
     </div>
     `;
@@ -138,9 +142,12 @@ export class SettingsSideMenuItem extends HTMLElement {
   connectedCallback() {
     this.container = this.shadowRoot.getElementById("container")
     this.titleDiv = this.shadowRoot.getElementById("title-div")
+    if(this.hasAttribute("icon")){
+      if(this.getAttribute("icon").length == 0){
+        this.shadowRoot.querySelector("#icon").style.display = "none";
+      }
+    }
   }
-
-
 }
 
 customElements.define("globular-settings-side-menu-item", SettingsSideMenuItem);
@@ -255,7 +262,7 @@ export class SettingsPage extends HTMLElement {
   }
 
   connectedCallback() {
-
+ 
   }
 
   // Model.eventHub must be init.
