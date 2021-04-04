@@ -191,125 +191,66 @@ export class FilesView extends HTMLElement {
 export class FilesListView extends FilesView {
     constructor() {
         super()
-        this.menu = createElement(null, {
-            "tag": "dropdown-menu-element"
-        });
+        this.menu = new DropdownMenuElement()
+        this.menu.innerHTML = `
+        <menu-item-element id="item-0">
+            <iron-icon icon="more-vert"></iron-icon>
+            <menu-item-element id="share-menu-item" style="text-agling: left;" action="">
+                <iron-icon icon="folder-shared" style="height: 18px; width: 18px"></iron-icon>
+                <span style="margin-left: 10px;">Share</span>
+            </menu-item-element>
+            <menu-item-element id="manage-acess-menu-item" style="text-agling: left;" action="">
+                <iron-icon icon="social:group" style="height: 18px; width: 18px"></iron-icon>
+                <span style="margin-left: 10px;">Manage access</span>
+            </menu-item-element>
+            <menu-item-element id="rename-menu-item" style="text-agling: left;" action="">
+                <iron-icon icon="icons:create" style="height: 18px; width: 18px"></iron-icon>
+                <span style="margin-left: 10px;">Rename</span>
+            </menu-item-element>
+            <menu-item-element id="delete-menu-item" style="text-agling: left;" action="">
+                <iron-icon icon="icons:delete" style="height: 18px; width: 18px"></iron-icon>
+                <span style="margin-left: 10px;">Delete</span>
+            </menu-item-element>
+            <menu-item-element id="download-menu-item" style="text-agling: left;" action="">
+                <iron-icon icon="icons:cloud-download" style="height: 18px; width: 18px"></iron-icon>
+                <span style="margin-left: 10px;">Download</span>
+            </menu-item-element>
+        </menu-item-element>
+        `
 
-        this.menu.appendElement({
-            "tag": "menu-item-element",
-            "id": "item-0"
-        }).down().appendElement({
-            "tag": "iron-icon",
-            "icon": "more-vert"
-        }) // Share menu item
-            .appendElement({
-                "tag": "menu-item-element",
-                "id": "share-menu-item",
-                "style": "text-agling: left;",
-                "action": ""
-            }).down().appendElement({
-                "tag": "iron-icon",
-                "icon": "folder-shared",
-                "style": "height: 18px; width: 18px"
-            }).appendElement({
-                "tag": "span",
-                "innerHtml": "Share",
-                "style": "margin-left: 10px;"
-            }).up() // Manage access menu item
-            .appendElement({
-                "tag": "menu-item-element",
-                "id": "manage-acess-menu-item",
-                "style": "text-agling: left;",
-                "action": ""
-            }).down().appendElement({
-                "tag": "iron-icon",
-                "icon": "social:group",
-                "style": "height: 18px; width: 18px"
-            }).appendElement({
-                "tag": "span",
-                "innerHtml": "Manage access",
-                "style": "margin-left: 10px;"
-            }).up()// Rename 
-            .appendElement({
-                "tag": "menu-item-element",
-                "id": "rename-menu-item",
-                "style": "text-agling: left;",
-                "action": ""
-            }).down().appendElement({
-                "tag": "iron-icon",
-                "icon": "icons:create",
-                "style": "height: 18px; width: 18px"
-            }).appendElement({
-                "tag": "span",
-                "innerHtml": "Rename",
-                "style": "margin-left: 10px;"
-            }).up()// Delete 
-            .appendElement({
-                "tag": "menu-item-element",
-                "id": "delete-menu-item",
-                "style": "text-agling: left;",
-                "action": ""
-            }).down().appendElement({
-                "tag": "iron-icon",
-                "icon": "icons:delete",
-                "style": "height: 18px; width: 18px"
-            }).appendElement({
-                "tag": "span",
-                "innerHtml": "Delete",
-                "style": "margin-left: 10px;"
-            }).up() // Download 
-            .appendElement({
-                "tag": "menu-item-element",
-                "id": "download-menu-item",
-                "style": "text-agling: left;",
-                "action": ""
-            }).down().appendElement({
-                "tag": "iron-icon",
-                "icon": "icons:cloud-download",
-                "style": "height: 18px; width: 18px"
-            }).appendElement({
-                "tag": "span",
-                "innerHtml": "Download",
-                "style": "margin-left: 10px;"
-            })
+        this.shareAccessMenuItem = this.menu.querySelector("#share-menu-item")
+        this.mananageAccessMenuItem = this.menu.querySelector("#manage-acess-menu-item")
+        this.renameMenuItem = this.menu.querySelector("#rename-menu-item")
+        this.deleteMenuItem = this.menu.querySelector("#delete-menu-item")
+        this.downloadMenuItem = this.menu.querySelector("#download-menu-item")
 
-        this.shareAccessMenuItem = this.menu.element.querySelector("#share-menu-item")
-        this.mananageAccessMenuItem = this.menu.element.querySelector("#manage-acess-menu-item")
-        this.renameMenuItem = this.menu.element.querySelector("#rename-menu-item")
-        this.deleteMenuItem = this.menu.element.querySelector("#delete-menu-item")
-        this.downloadMenuItem = this.menu.element.querySelector("#download-menu-item")
-     
         this.downloadMenuItem.action = () => {
             console.log("download menu click")
-            this.menu.element.parentNode.removeChild(this.menu.element)
-            this.menu.isOpen = false;
+            this.menu.parentNode.removeChild(this.menu)
         }
 
         this.shareAccessMenuItem.action = () => {
             console.log("share menu click")
-            this.menu.element.parentNode.removeChild(this.menu.element)
-            this.menu.isOpen = false;
+            this.menu.parentNode.removeChild(this.menu)
         }
 
         this.deleteMenuItem.action = () => {
             console.log("delete menu click")
-            this.menu.element.parentNode.removeChild(this.menu.element)
-            this.menu.isOpen = false;
+            this.menu.parentNode.removeChild(this.menu)
         }
 
         this.renameMenuItem.action = () => {
             console.log("rename menu click")
-            this.menu.element.parentNode.removeChild(this.menu.element)
-            this.menu.isOpen = false;
+            this.menu.parentNode.removeChild(this.menu)
         }
 
         this.mananageAccessMenuItem.action = () => {
             console.log("manage access menu click")
-            this.menu.element.parentNode.removeChild(this.menu.element)
-            this.menu.isOpen = false;
+            this.menu.parentNode.removeChild(this.menu)
         }
 
     }
+
 
     /**
      * Display the content of a directory
@@ -366,6 +307,34 @@ export class FilesListView extends FilesView {
         // Create the header.
         this.div.innerHTML = html
 
+        this.div.querySelector(`table`).onmouseleave = (evt) => {
+            let item0 = this.menu.querySelector("#item-0")
+            evt.stopPropagation()
+            let isopen = false;
+            if (item0.menu != undefined) {
+                isopen = item0.menu.isopen
+            }
+            if (!isopen) {
+                this.menu.style.display = "none"
+            }
+        }
+
+        this.div.onclick = (evt)=>{
+            evt.stopPropagation()
+            let item0 = this.menu.querySelector("#item-0")
+            let isopen = false;
+            if (item0.menu != undefined) {
+                isopen = item0.menu.isopen
+            }
+            if (isopen) {
+                item0.click()
+                item0.menu.isopen = false;
+                //this.div.querySelector(`table`).mouseleave()
+                this.menu.parentNode.removeChild(this.menu)
+            }
+        }
+
+
         // get the info div that will contain the information.
         let fileListView = this.div.getElementsByClassName("files-list-view-info")[0]
 
@@ -413,22 +382,20 @@ export class FilesListView extends FilesView {
             row.innerHTML = html;
 
             let checkbox = row.querySelector("paper-checkbox")
-            // The file menu
-            let item0 = this.menu.element.querySelector("#item-0")
-            this.menu.isOpen = false
-            let set_menu_open = () => {
-                this.menu.isOpen = document.body.querySelector(".dropdown_submenu_items").display != "none"
-            }
-            item0.addEventListener("click", set_menu_open)
 
             // On mouse over event.
             row.onmouseover = () => {
                 checkbox.style.visibility = "visible"
-
+                let item0 = this.menu.querySelector("#item-0")
                 // I will remove the background color for that item...
-                if (!this.menu.isOpen) {
-                    row.querySelector(".first-cell").appendChild(this.menu.element)
+                let isopen = false;
+                if (item0.menu != undefined) {
+                    isopen = item0.menu.isopen
+                }
+                if (!isopen) {
+                    row.querySelector(".first-cell").appendChild(this.menu)
                     item0.style.background = "none";
+                    this.menu.style.display = "block"
                 }
             }
 
@@ -1021,6 +988,7 @@ export class FileExplorer extends HTMLElement {
                     </div>
                     <paper-icon-button id="navigation-upward-btn" icon="icons:arrow-upward"></paper-icon-button>
                     <globular-path-navigator id="globular-path-navigator" style="flex-grow: 1;"></globular-path-navigator>
+                    <paper-icon-button id="navigation-cloud-upload-btn" icon="icons:cloud-upload"></paper-icon-button>
                     <paper-icon-button id="navigation-refresh-btn" icon="icons:refresh"></paper-icon-button>
                 </div>
                 <div id="file-explorer-layout">

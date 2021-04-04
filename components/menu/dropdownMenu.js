@@ -20,6 +20,7 @@ export class DropdownMenuElement extends PolymerElement {
     this.parent = null;
     this.panel = null;
     this.items = [];
+    this.isopen = false;
   }
   /**
    * The internal component properties.
@@ -85,6 +86,7 @@ export class DropdownMenuElement extends PolymerElement {
    * That function is call when the table is ready to be diplay.
    */
   ready() {
+    console.log("call ready")
     super.ready(); // Set the default font/icon color
 
     if (this.color == undefined) {
@@ -106,7 +108,7 @@ export class DropdownMenuElement extends PolymerElement {
 
     let items = []; // Set parent items in items.
 
-    let setParentItem = (item, level)=>{
+    let setParentItem = (item, level) => {
       item.level = level;
       for (var i = 0; i < item.children.length; i++) {
         if (item.children[i].tagName == "MENU-ITEM-ELEMENT") {
@@ -251,7 +253,7 @@ export class DropdownMenuElement extends PolymerElement {
 
       if (item.level > 0) {
         // Now I will offset the menu...
-        let setVisible = (item)=>{
+        let setVisible = (item) => {
           item.panel.element.style.display = "block";
 
           if (item.parent != undefined) {
@@ -281,6 +283,7 @@ export class DropdownMenuElement extends PolymerElement {
       evt.stopPropagation();
 
       if (item.level == 0) {
+        item.menu.isopen = true
         var coords = getCoords(this)
         item.panel.element.style.top = coords.top + this.offsetHeight + "px"
         item.panel.element.style.left = coords.left + "px"
@@ -306,11 +309,10 @@ export class DropdownMenuElement extends PolymerElement {
         } else {
           item.action(item.menu);
         }
-
+        
         let setInvisible = (item) => {
-          console.log("set invisible ", item)
+          item.menu.isopen = false
           item.panel.element.style.display = "none";
-
           if (item.parent != undefined) {
             setInvisible(item.parent);
           }
@@ -327,7 +329,7 @@ export class DropdownMenuElement extends PolymerElement {
       item.content.element.style.filter = "invert(10%)"
       item.content.element.style.cursor = "pointer";
 
-      let setParent = (item)=> {
+      let setParent = (item) => {
         if (item.parent != null) {
           item.parent.content.element.style.filter = "invert(10%)"
           setParent(item.parent);
@@ -344,12 +346,16 @@ export class DropdownMenuElement extends PolymerElement {
       item.content.element.style.color = this.color;
       item.content.element.style.filter = "none"
       item.content.element.style.cursor = "default";
-
-      let setParent = (item) =>{
+   
+      let setParent = (item) => {
         if (item.parent != null) {
           item.parent.content.element.style.backgroundColor = this.background;
           item.parent.content.element.style.filter = "none"
           setParent(item.parent);
+        }else{
+          if(item.panel.element.style.display == "none"){
+            item.menu.isopen = false
+          }
         }
       }
 
