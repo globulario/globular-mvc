@@ -13,6 +13,11 @@ import { Menu } from './Menu';
 import { theme } from './Theme';
 import { v4 as uuidv4 } from "uuid";
 
+// Menu to set action on files.
+import { DropdownMenuElement } from './menu/dropdownMenu.js';
+import { MenuItemElement } from './menu/menuItem.js';
+import { createElement } from "./element.js";
+import { ItemManufacturer } from 'globular-web-client/catalog/catalog_pb';
 // contain list of dir localy
 const _dirs = {}
 
@@ -186,6 +191,124 @@ export class FilesView extends HTMLElement {
 export class FilesListView extends FilesView {
     constructor() {
         super()
+        this.menu = createElement(null, {
+            "tag": "dropdown-menu-element"
+        });
+
+        this.menu.appendElement({
+            "tag": "menu-item-element",
+            "id": "item-0"
+        }).down().appendElement({
+            "tag": "iron-icon",
+            "icon": "more-vert"
+        }) // Share menu item
+            .appendElement({
+                "tag": "menu-item-element",
+                "id": "share-menu-item",
+                "style": "text-agling: left;",
+                "action": ""
+            }).down().appendElement({
+                "tag": "iron-icon",
+                "icon": "folder-shared",
+                "style": "height: 18px; width: 18px"
+            }).appendElement({
+                "tag": "span",
+                "innerHtml": "Share",
+                "style": "margin-left: 10px;"
+            }).up() // Manage access menu item
+            .appendElement({
+                "tag": "menu-item-element",
+                "id": "manage-acess-menu-item",
+                "style": "text-agling: left;",
+                "action": ""
+            }).down().appendElement({
+                "tag": "iron-icon",
+                "icon": "social:group",
+                "style": "height: 18px; width: 18px"
+            }).appendElement({
+                "tag": "span",
+                "innerHtml": "Manage access",
+                "style": "margin-left: 10px;"
+            }).up()// Rename 
+            .appendElement({
+                "tag": "menu-item-element",
+                "id": "rename-menu-item",
+                "style": "text-agling: left;",
+                "action": ""
+            }).down().appendElement({
+                "tag": "iron-icon",
+                "icon": "icons:create",
+                "style": "height: 18px; width: 18px"
+            }).appendElement({
+                "tag": "span",
+                "innerHtml": "Rename",
+                "style": "margin-left: 10px;"
+            }).up()// Delete 
+            .appendElement({
+                "tag": "menu-item-element",
+                "id": "delete-menu-item",
+                "style": "text-agling: left;",
+                "action": ""
+            }).down().appendElement({
+                "tag": "iron-icon",
+                "icon": "icons:delete",
+                "style": "height: 18px; width: 18px"
+            }).appendElement({
+                "tag": "span",
+                "innerHtml": "Delete",
+                "style": "margin-left: 10px;"
+            }).up() // Download 
+            .appendElement({
+                "tag": "menu-item-element",
+                "id": "download-menu-item",
+                "style": "text-agling: left;",
+                "action": ""
+            }).down().appendElement({
+                "tag": "iron-icon",
+                "icon": "icons:cloud-download",
+                "style": "height: 18px; width: 18px"
+            }).appendElement({
+                "tag": "span",
+                "innerHtml": "Download",
+                "style": "margin-left: 10px;"
+            })
+
+        this.shareAccessMenuItem = this.menu.element.querySelector("#share-menu-item")
+        this.mananageAccessMenuItem = this.menu.element.querySelector("#manage-acess-menu-item")
+        this.renameMenuItem = this.menu.element.querySelector("#rename-menu-item")
+        this.deleteMenuItem = this.menu.element.querySelector("#delete-menu-item")
+        this.downloadMenuItem = this.menu.element.querySelector("#download-menu-item")
+     
+        this.downloadMenuItem.action = () => {
+            console.log("download menu click")
+            this.menu.element.parentNode.removeChild(this.menu.element)
+            this.menu.isOpen = false;
+        }
+
+        this.shareAccessMenuItem.action = () => {
+            console.log("share menu click")
+            this.menu.element.parentNode.removeChild(this.menu.element)
+            this.menu.isOpen = false;
+        }
+
+        this.deleteMenuItem.action = () => {
+            console.log("delete menu click")
+            this.menu.element.parentNode.removeChild(this.menu.element)
+            this.menu.isOpen = false;
+        }
+
+        this.renameMenuItem.action = () => {
+            console.log("rename menu click")
+            this.menu.element.parentNode.removeChild(this.menu.element)
+            this.menu.isOpen = false;
+        }
+
+        this.mananageAccessMenuItem.action = () => {
+            console.log("manage access menu click")
+            this.menu.element.parentNode.removeChild(this.menu.element)
+            this.menu.isOpen = false;
+        }
+
     }
 
     /**
@@ -196,6 +319,37 @@ export class FilesListView extends FilesView {
         this.div.innerHTML = "";
         let id = uuidv4().split("-").join("_");
         let html = `
+        <style>
+            tbody tr {
+                background-color: var(--palette-background-default);
+                transition: background 0.2s ease,padding 0.8s linear;
+            }
+
+            tbody tr:hover {
+                -webkit-filter: invert(10%);
+                filter: invert(10%);
+            }
+
+            .first-cell {
+                display: flex;
+                align-items: center;
+            }
+
+            .first-cell span{
+                flex-grow: 1;
+                padding-top: 4px;
+                padding-left: 4px;
+            }
+
+            .first-cell paper-checkbox, paper-icon-button {
+                visibility: hidden;
+            }
+
+            .first-cell paper-icon-button {
+                min-width: 40px;
+            }
+
+        </style>
         <table>
             <thead class="files-list-view-header">
                 <tr>
@@ -214,7 +368,6 @@ export class FilesListView extends FilesView {
 
         // get the info div that will contain the information.
         let fileListView = this.div.getElementsByClassName("files-list-view-info")[0]
-        let range = document.createRange()
 
         for (let f of dir.files) {
             let size = ""
@@ -241,11 +394,14 @@ export class FilesListView extends FilesView {
                     size = f.size + " bytes";
                 }
                 mime = f.mime.split(";")[0].split("/")
+            } else {
+                size = f.files.length + " items"
             }
 
             // Set the text.
             let html = `
-                <td>
+                <td class="first-cell">
+                    <paper-checkbox></paper-checkbox>
                     <iron-icon id="${id}_icon" class="file-lnk-ico" style="height: 18px;" icon="${icon}"></iron-icon> 
                     <span> ${f.name} </span>
                 </td>
@@ -255,6 +411,34 @@ export class FilesListView extends FilesView {
             `
             let row = document.createElement("tr")
             row.innerHTML = html;
+
+            let checkbox = row.querySelector("paper-checkbox")
+            // The file menu
+            let item0 = this.menu.element.querySelector("#item-0")
+            this.menu.isOpen = false
+            let set_menu_open = () => {
+                this.menu.isOpen = document.body.querySelector(".dropdown_submenu_items").display != "none"
+            }
+            item0.addEventListener("click", set_menu_open)
+
+            // On mouse over event.
+            row.onmouseover = () => {
+                checkbox.style.visibility = "visible"
+
+                // I will remove the background color for that item...
+                if (!this.menu.isOpen) {
+                    row.querySelector(".first-cell").appendChild(this.menu.element)
+                    item0.style.background = "none";
+                }
+            }
+
+            // On mouseout event.
+            row.onmouseout = (evt) => {
+                evt.stopPropagation()
+                if (!checkbox.checked) {
+                    checkbox.style.visibility = "hidden"
+                }
+            }
 
             if (f.isDir) {
                 fileListView.insertBefore(row, fileListView.firstChild);
@@ -894,7 +1078,7 @@ export class FileExplorer extends HTMLElement {
         this.actionsCard = this.shadowRoot.querySelector("#card-actions")
 
         // I will use the resize event to set the size of the file explorer.
-        window.addEventListener("resize", ()=>{
+        window.addEventListener("resize", () => {
             // Here I will use the workspace to define the with of the content...
             this.fileExplorerContent.style.minHeight = window.innerHeight - 64 - 55 - 45 + "px"
         })

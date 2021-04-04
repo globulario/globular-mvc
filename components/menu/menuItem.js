@@ -3,8 +3,6 @@ import { PolymerElement, html } from '@polymer/polymer';
 import '@polymer/iron-icons/iron-icons.js';
 
 // List of imported functionality.
-import { createElement } from "../element"
-import { randomUUID } from "../utility"
 import { theme } from "../Theme.js"
 
 /*
@@ -44,6 +42,7 @@ export class MenuItemElement extends PolymerElement {
         template.innerHTML = `
           <style>
             ${theme}
+
           </style>
           <slot></slot>
         `;

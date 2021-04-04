@@ -42,18 +42,48 @@ export class DropdownMenuElement extends PolymerElement {
     template.innerHTML = `
       <style>
         ${theme}
+        menu-item-element{
+            display: flex; 
+            background-color: var(--palette-background-paper); 
+            color: var(--palette-text-primary);
+        }
+        
+        .menu_item_div{
+          display: block; 
+          position: relative; 
+          z-index: 1; 
+          padding: 2px 4px 2px 4px; 
+          min-width: 300px; 
+          transition: all .2s ease; 
+          position: relative; 
+          z-index: 1; 
+          padding: 2px 4px 2px 4px; 
+          min-width: 300px; 
+          transition: all .2s ease; 
+          color: ${this.color}
+        }
 
+        .dropdown_submenu_items{
+          display: none;
+          position: absolute;
+          z-index: 100;
+          left: 0px;
+          margin-left: 2px;
+          margin-top: 2px;
+          -webkit-box-shadow: var(--dark-mode-shadow);
+          -moz-box-shadow: var(--dark-mode-shadow);
+          box-shadow: var(--dark-mode-shadow);
+        }
       </style>
       <slot></slot>
     `;
 
     return template
   }
+
   /**
    * That function is call when the table is ready to be diplay.
    */
-
-
   ready() {
     super.ready(); // Set the default font/icon color
 
@@ -74,16 +104,13 @@ export class DropdownMenuElement extends PolymerElement {
     this.style.position = "relative";
     this.style.display = "none"; // I will get the list of menu items from the html element remove from it
 
-    var items = []; // Set parent items in items.
+    let items = []; // Set parent items in items.
 
-    function setParentItem(item, level, menu) {
+    let setParentItem = (item, level)=>{
       item.level = level;
-      var previous = null;
-
       for (var i = 0; i < item.children.length; i++) {
         if (item.children[i].tagName == "MENU-ITEM-ELEMENT") {
           item.children[i].parent = item;
-          previous = item.children[i];
           setParentItem(item.children[i], ++level);
         }
       }
@@ -92,7 +119,7 @@ export class DropdownMenuElement extends PolymerElement {
 
     if (this.items.length == 0) {
       while (this.children.length > 0) {
-        var item = this.children[0];
+        const item = this.children[0];
         item.parentNode.removeChild(item);
 
         if (item.tagName == "MENU-ITEM-ELEMENT") {
@@ -103,7 +130,7 @@ export class DropdownMenuElement extends PolymerElement {
     }
 
     for (var i = 0; i < items.length; i++) {
-      var item = items[i];
+      const item = items[i];
       this.appendItem(item);
     }
   }
@@ -188,13 +215,11 @@ export class DropdownMenuElement extends PolymerElement {
       // In that case the parent will be the body so the menu will never be 
       // hidden by other panel.
       var intersectionObserver = new IntersectionObserver(
-        function (itemPanel) {
-          return function (entries) {
-            if (!entries[0].isIntersecting) {
-              itemPanel.style.display = "none"
-            }
+        (entries) => {
+          if (!entries[0].isIntersecting) {
+            item.panel.element.style.display = "none"
           }
-        }(item.panel.element)
+        }
       )
 
       // Set the observer on the menu itself.
@@ -203,13 +228,11 @@ export class DropdownMenuElement extends PolymerElement {
       // append in the body.
       document.body.appendChild(item.panel.element)
       item.panel.element.style.top = "0px"
-      document.addEventListener('scroll', function (item, menu) {
-        return function(e) {
-          var coords = getCoords(menu)
-          item.panel.element.style.top = coords.top + menu.offsetHeight + "px"
-          item.panel.element.style.left = coords.left + "px"
-        }
-      }(item, this), true);
+      document.addEventListener('scroll', (e) => {
+        var coords = getCoords(this)
+        item.panel.element.style.top = coords.top + this.offsetHeight + "px"
+        item.panel.element.style.left = coords.left + "px"
+      }, true);
 
     }
 
@@ -218,127 +241,121 @@ export class DropdownMenuElement extends PolymerElement {
     } // On mouse enter event
 
 
-    currentPanel.element.onmouseenter = function (item) {
-      return function (evt) {
-        evt.stopPropagation();
-        var subItemPanels = document.getElementsByClassName("dropdown_submenu_items");
+    currentPanel.element.onmouseenter = (evt) => {
+      evt.stopPropagation();
+      var subItemPanels = document.getElementsByClassName("dropdown_submenu_items");
 
-        for (var i = 0; i < subItemPanels.length; i++) {
-          subItemPanels[i].style.display = "none";
-        }
+      for (var i = 0; i < subItemPanels.length; i++) {
+        subItemPanels[i].style.display = "none";
+      }
 
-        if (item.level > 0) {
-          // Now I will offset the menu...
-          function setVisible(item) {
-            item.panel.element.style.display = "block";
-
-            if (item.parent != undefined) {
-              setVisible(item.parent);
-            }
-
-            if (item.level > 0) {
-              item.panel.element.style.left = item.panel.element.parentNode.offsetWidth + "px";
-              if (item.panel.element.parentNode.separator == true) {
-                item.panel.element.style.top = item.panel.element.parentNode.offsetTop + 7 + "px";
-              } else {
-                item.panel.element.style.top = item.panel.element.parentNode.offsetTop + "px";
-              }
-            }
-
-            if (Object.keys(item.subItems).length == 0) {
-              item.panel.element.style.display = "none";
-            }
-          } // Set the item menu visibility...
-
-          setVisible(item);
-        }
-      };
-    }(item); // Now the actions...
-
-
-    currentPanel.element.onclick = function (item, menu) {
-      return function (evt) {
-        evt.stopPropagation();
-
-        if (item.level == 0) {
-          var coords = getCoords(menu)
-          item.panel.element.style.top = coords.top + menu.offsetHeight + "px"
-          item.panel.element.style.left = coords.left + "px"
-        }
-
-        if (item.panel.element.style.display == "block") {
-          item.panel.element.style.display = "none";
-        } else {
+      if (item.level > 0) {
+        // Now I will offset the menu...
+        let setVisible = (item)=>{
           item.panel.element.style.display = "block";
-          if (item.level >= 1) {// Now I will offset the menu...
-            // TODO test if the menu is dsplayed correctly here
-            // if it fit on the page.
-          }
-        }
 
-        if (Object.keys(item.panel.childs).length == 0) {
-          subItemPanel.element.style.display = "none";
-        }
-
-        if (item.action != undefined) {
-          if (isString(item.action)) {
-            eval(item.action);
-          } else {
-            item.action(item.menu);
+          if (item.parent != undefined) {
+            setVisible(item.parent);
           }
 
-          function setInvisible(item) {
-            item.panel.element.style.display = "none";
-
-            if (item.parent != undefined) {
-              setInvisible(item.parent);
+          if (item.level > 0) {
+            item.panel.element.style.left = item.panel.element.parentNode.offsetWidth + "px";
+            if (item.panel.element.parentNode.separator == true) {
+              item.panel.element.style.top = item.panel.element.parentNode.offsetTop + 7 + "px";
+            } else {
+              item.panel.element.style.top = item.panel.element.parentNode.offsetTop + "px";
             }
           }
 
-          setInvisible(item);
+          if (Object.keys(item.subItems).length == 0) {
+            item.panel.element.style.display = "none";
+          }
+        } // Set the item menu visibility...
+
+        setVisible(item);
+      }
+    }
+
+
+    currentPanel.element.onclick = (evt) => {
+      evt.stopPropagation();
+
+      if (item.level == 0) {
+        var coords = getCoords(this)
+        item.panel.element.style.top = coords.top + this.offsetHeight + "px"
+        item.panel.element.style.left = coords.left + "px"
+      }
+
+      if (item.panel.element.style.display == "block") {
+        item.panel.element.style.display = "none";
+      } else {
+        item.panel.element.style.display = "block";
+        if (item.level >= 1) {// Now I will offset the menu...
+          // TODO test if the menu is dsplayed correctly here
+          // if it fit on the page.
         }
-      };
-    }(item, this); // On mouse over event.
+      }
 
+      if (Object.keys(item.panel.childs).length == 0) {
+        subItemPanel.element.style.display = "none";
+      }
 
-    item.content.element.onmouseover = function (dropdownMenu, item) {
-      return function (evt) {
-        evt.stopPropagation(); // In case the separator is define I will not set the background color.
+      if (item.action != undefined) {
+        if (isString(item.action)) {
+          eval(item.action);
+        } else {
+          item.action(item.menu);
+        }
 
-        this.style.filter = "invert(10%)"
-        this.style.cursor = "pointer";
+        let setInvisible = (item) => {
+          console.log("set invisible ", item)
+          item.panel.element.style.display = "none";
 
-        function setParent(item) {
-          if (item.parent != null) {
-            item.parent.content.element.style.filter = "invert(10%)"
-            setParent(item.parent);
+          if (item.parent != undefined) {
+            setInvisible(item.parent);
           }
         }
 
-        setParent(item);
-      };
-    }(this, item); // On mouse out event.
+        setInvisible(item);
+      }
+    };
 
 
-    item.content.element.onmouseout = function (dropdownMenu, item) {
-      return function (evt) {
-        evt.stopPropagation();
-        this.style.backgroundColor = dropdownMenu.background;
-        this.style.color = dropdownMenu.color;
-        this.style.filter = "none"
-        this.style.cursor = "default";
+    item.content.element.onmouseover = (evt) => {
+      evt.stopPropagation(); // In case the separator is define I will not set the background color.
 
-        function setParent(item) {
-          if (item.parent != null) {
-            item.parent.content.element.style.backgroundColor = dropdownMenu.background;
-            item.parent.content.element.style.filter = "none"
-            setParent(item.parent);
-          }
+      item.content.element.style.filter = "invert(10%)"
+      item.content.element.style.cursor = "pointer";
+
+      let setParent = (item)=> {
+        if (item.parent != null) {
+          item.parent.content.element.style.filter = "invert(10%)"
+          setParent(item.parent);
         }
+      }
 
-        setParent(item);
-      };
-    }(this, item);
+      setParent(item);
+    };
+
+
+    item.content.element.onmouseout = (evt) => {
+      evt.stopPropagation();
+      item.content.element.style.backgroundColor = this.background;
+      item.content.element.style.color = this.color;
+      item.content.element.style.filter = "none"
+      item.content.element.style.cursor = "default";
+
+      let setParent = (item) =>{
+        if (item.parent != null) {
+          item.parent.content.element.style.backgroundColor = this.background;
+          item.parent.content.element.style.filter = "none"
+          setParent(item.parent);
+        }
+      }
+
+      setParent(item);
+    }
+
   }
 
 }
