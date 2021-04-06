@@ -179,4 +179,13 @@ export class File extends Model {
             callback(File.fromObject(data))
         }, errorCallback)
     }
+
+    /**
+     * Upload a file or a list of files... into a given directory.
+     */
+    static uploadFiles(path: string, files: any,  callback: (dir: File) => void, errorCallback: (err: any) => void) {
+        readDir(Model.globular, path, (data: any) => {
+            callback(File.fromObject(data))
+        }, errorCallback)
+    }
 }

@@ -18,6 +18,9 @@ import { DropdownMenuElement } from './menu/dropdownMenu.js';
 import { MenuItemElement } from './menu/menuItem.js';
 import { createElement } from "./element.js";
 import { ItemManufacturer } from 'globular-web-client/catalog/catalog_pb';
+import { GetThumbnailsResponse } from 'globular-web-client/file/file_pb';
+import { uploadFiles } from 'globular-web-client/api';
+import { ApplicationView } from '../ApplicationView';
 // contain list of dir localy
 const _dirs = {}
 
@@ -63,7 +66,65 @@ export class FilesView extends HTMLElement {
         // The function will be call in case of error.
         this.onerror = undefined;
         // Innitialisation of the layout.
-        let id = uuidv4().split("-").join("_");
+        let id = "_" + uuidv4().split("-").join("_");
+
+        this.menu = new DropdownMenuElement()
+        this.menu.innerHTML = `
+        <menu-item-element id="item-0">
+            <iron-icon icon="more-vert"></iron-icon>
+            <menu-item-element id="share-menu-item" style="text-agling: left;" action="">
+                <iron-icon icon="folder-shared" style="height: 18px; width: 18px"></iron-icon>
+                <span style="margin-left: 10px;">Share</span>
+            </menu-item-element>
+            <menu-item-element id="manage-acess-menu-item" style="text-agling: left;" action="">
+                <iron-icon icon="social:group" style="height: 18px; width: 18px"></iron-icon>
+                <span style="margin-left: 10px;">Manage access</span>
+            </menu-item-element>
+            <menu-item-element id="rename-menu-item" style="text-agling: left;" action="">
+                <iron-icon icon="icons:create" style="height: 18px; width: 18px"></iron-icon>
+                <span style="margin-left: 10px;">Rename</span>
+            </menu-item-element>
+            <menu-item-element id="delete-menu-item" style="text-agling: left;" action="">
+                <iron-icon icon="icons:delete" style="height: 18px; width: 18px"></iron-icon>
+                <span style="margin-left: 10px;">Delete</span>
+            </menu-item-element>
+            <menu-item-element id="download-menu-item" style="text-agling: left;" action="">
+                <iron-icon icon="icons:cloud-download" style="height: 18px; width: 18px"></iron-icon>
+                <span style="margin-left: 10px;">Download</span>
+            </menu-item-element>
+        </menu-item-element>
+        `
+
+        this.shareAccessMenuItem = this.menu.querySelector("#share-menu-item")
+        this.mananageAccessMenuItem = this.menu.querySelector("#manage-acess-menu-item")
+        this.renameMenuItem = this.menu.querySelector("#rename-menu-item")
+        this.deleteMenuItem = this.menu.querySelector("#delete-menu-item")
+        this.downloadMenuItem = this.menu.querySelector("#download-menu-item")
+
+        this.downloadMenuItem.action = () => {
+            console.log("download menu click")
+            this.menu.parentNode.removeChild(this.menu)
+        }
+
+        this.shareAccessMenuItem.action = () => {
+            console.log("share menu click")
+            this.menu.parentNode.removeChild(this.menu)
+        }
+
+        this.deleteMenuItem.action = () => {
+            console.log("delete menu click")
+            this.menu.parentNode.removeChild(this.menu)
+        }
+
+        this.renameMenuItem.action = () => {
+            console.log("rename menu click")
+            this.menu.parentNode.removeChild(this.menu)
+        }
+
+        this.mananageAccessMenuItem.action = () => {
+            console.log("manage access menu click")
+            this.menu.parentNode.removeChild(this.menu)
+        }
 
         this.shadowRoot.innerHTML = `
           <style>
@@ -169,13 +230,14 @@ export class FilesView extends HTMLElement {
     }
 
     init() {
+        // The the path
         Model.eventHub.subscribe("set_dir_event",
             (uuid) => {
                 /** Nothin here. */
             },
             (dir) => {
                 this.setDir(dir)
-            }
+            }, true
         )
     }
 
@@ -187,78 +249,24 @@ export class FilesView extends HTMLElement {
 
 /**
  * In this view files will be show as list.
+ * TODO 
+ * - file sorter at the header of the panel
+ * - Drag and drop
  */
 export class FilesListView extends FilesView {
     constructor() {
         super()
-        this.menu = new DropdownMenuElement()
-        this.menu.innerHTML = `
-        <menu-item-element id="item-0">
-            <iron-icon icon="more-vert"></iron-icon>
-            <menu-item-element id="share-menu-item" style="text-agling: left;" action="">
-                <iron-icon icon="folder-shared" style="height: 18px; width: 18px"></iron-icon>
-                <span style="margin-left: 10px;">Share</span>
-            </menu-item-element>
-            <menu-item-element id="manage-acess-menu-item" style="text-agling: left;" action="">
-                <iron-icon icon="social:group" style="height: 18px; width: 18px"></iron-icon>
-                <span style="margin-left: 10px;">Manage access</span>
-            </menu-item-element>
-            <menu-item-element id="rename-menu-item" style="text-agling: left;" action="">
-                <iron-icon icon="icons:create" style="height: 18px; width: 18px"></iron-icon>
-                <span style="margin-left: 10px;">Rename</span>
-            </menu-item-element>
-            <menu-item-element id="delete-menu-item" style="text-agling: left;" action="">
-                <iron-icon icon="icons:delete" style="height: 18px; width: 18px"></iron-icon>
-                <span style="margin-left: 10px;">Delete</span>
-            </menu-item-element>
-            <menu-item-element id="download-menu-item" style="text-agling: left;" action="">
-                <iron-icon icon="icons:cloud-download" style="height: 18px; width: 18px"></iron-icon>
-                <span style="margin-left: 10px;">Download</span>
-            </menu-item-element>
-        </menu-item-element>
-        `
-
-        this.shareAccessMenuItem = this.menu.querySelector("#share-menu-item")
-        this.mananageAccessMenuItem = this.menu.querySelector("#manage-acess-menu-item")
-        this.renameMenuItem = this.menu.querySelector("#rename-menu-item")
-        this.deleteMenuItem = this.menu.querySelector("#delete-menu-item")
-        this.downloadMenuItem = this.menu.querySelector("#download-menu-item")
-
-        this.downloadMenuItem.action = () => {
-            console.log("download menu click")
-            this.menu.parentNode.removeChild(this.menu)
-        }
-
-        this.shareAccessMenuItem.action = () => {
-            console.log("share menu click")
-            this.menu.parentNode.removeChild(this.menu)
-        }
-
-        this.deleteMenuItem.action = () => {
-            console.log("delete menu click")
-            this.menu.parentNode.removeChild(this.menu)
-        }
-
-        this.renameMenuItem.action = () => {
-            console.log("rename menu click")
-            this.menu.parentNode.removeChild(this.menu)
-        }
-
-        this.mananageAccessMenuItem.action = () => {
-            console.log("manage access menu click")
-            this.menu.parentNode.removeChild(this.menu)
-        }
 
     }
-
 
     /**
      * Display the content of a directory
      * @param {*} dir 
      */
     setDir(dir) {
+
         this.div.innerHTML = "";
-        let id = uuidv4().split("-").join("_");
+        let id = "_" + uuidv4().split("-").join("_");
         let html = `
         <style>
             tbody tr {
@@ -319,7 +327,7 @@ export class FilesListView extends FilesView {
             }
         }
 
-        this.div.onclick = (evt)=>{
+        this.div.onclick = (evt) => {
             evt.stopPropagation()
             let item0 = this.menu.querySelector("#item-0")
             let isopen = false;
@@ -337,7 +345,9 @@ export class FilesListView extends FilesView {
 
         // get the info div that will contain the information.
         let fileListView = this.div.getElementsByClassName("files-list-view-info")[0]
-
+        if (dir == undefined) {
+            return
+        }
         for (let f of dir.files) {
             let size = ""
             let mime = "Dossier de fichiers"
@@ -445,13 +455,270 @@ export class FilesIconView extends FilesView {
      * Display the content of a directory
      * @param {*} dir 
      */
+    /**
+     * Display the content of a directory
+     * @param {*} dir 
+     */
     setDir(dir) {
-        // Here I will set the list of 
+        this.div.innerHTML = "";
+        let h = 80; // the heigth of the image/icon div
+        let html = `
+        <style>
+            #container {
+                background-color: var(--palette-background-default);
+                display: flex;
+                flex-direction: column;
+                padding: 8px;
+            }
+
+            /** The file section */
+            .file-type-section {
+                display: flex;
+                flex-direction: column;
+            }
+
+            .file-type-section .title{
+                font-size: 1.2rem;
+                font-weight: 400;
+                text-transform: uppercase;
+                color: var(--palette-text-secondary);
+                border-bottom: 2px solid;
+                border-color: var(--palette-divider);
+                width: 66.66%;
+               
+            }
+
+            .file-type-section .content {
+                display: flex;
+                margin-bottom: 16px;
+                margin-top: 16px;
+                flex-wrap: wrap;
+            }
+
+            .file-type-section .title span {
+                font-weight: 400;
+                font-size: 1rem;
+            }
+
+            /** Display icon div */
+            .file-icon-div{
+                display: flex;
+                position: relative;
+                flex-direction: column;
+                align-items: center;
+                margin: 5px;
+                padding: 5px;
+                padding-top:25px;
+                border-radius: 5px;
+                transition: background 0.2s ease,padding 0.8s linear;
+                background-color: var(--palette-background-paper);
+                height: ${h}px;
+                min-width: ${h}px;
+                position: relative;
+            }
+
+            .file-icon-div paper-checkbox{
+                position: absolute;
+                display: none;
+                top: 5px; 
+                left: 5px;
+            }
+
+            .file-icon-div .menu-div{
+                position: absolute;
+                top: 1px; 
+                right: 1px;
+            }
+
+            .file-icon-div img {
+                display: block;
+                width:auto;
+                height: 100%;
+            }
+
+
+            .file-div {
+                display:flex; 
+                flex-direction: column;
+            }
+
+            .file-div span {
+                /*
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                */
+               word-wrap: break-word;
+            }
+
+            .file-icon-div:hover {
+                -webkit-filter: invert(10%);
+                filter: invert(10%);
+            }
+
+        </style>
+        <div id="container">
+        
+        </div>
+        `
+
+        // Create the header.
+        this.div.innerHTML = html
+
+        this.div.querySelector(`#container`).onmouseleave = (evt) => {
+            let item0 = this.menu.querySelector("#item-0")
+            evt.stopPropagation()
+            let isopen = false;
+            if (item0.menu != undefined) {
+                isopen = item0.menu.isopen
+            }
+            if (!isopen) {
+                this.menu.style.display = "none"
+            }
+        }
+
+        this.div.querySelector(`#container`).onclick = (evt) => {
+            evt.stopPropagation()
+            let item0 = this.menu.querySelector("#item-0")
+            let isopen = false;
+            if (item0.menu != undefined) {
+                isopen = item0.menu.isopen
+            }
+            if (isopen) {
+                item0.click()
+                item0.menu.isopen = false;
+                this.menu.parentNode.removeChild(this.menu)
+            }
+        }
+
+        let filesByType = {};
+        // get the info div that will contain the information.
+        for (let f of dir.files) {
+            let size = ""
+            let mime = "Dossier de fichiers"
+            let icon = "icons:folder"
+
+            if (!f.isDir) {
+                icon = "editor:insert-drive-file";
+                if (f.size > 1024) {
+                    if (f.size > 1024 * 1024) {
+                        if (f.size > 1024 * 1024 * 1024) {
+                            let fileSize = f.size / (1024 * 1024 * 1024);
+
+                            size = fileSize.toFixed(2) + " Gb";
+                        } else {
+                            let fileSize = f.size / (1024 * 1024);
+                            size = fileSize.toFixed(2) + " Mb";
+                        }
+                    } else {
+                        let fileSize = f.size / 1024;
+                        size = fileSize.toFixed(2) + " Kb";
+                    }
+                } else {
+                    size = f.size + " bytes";
+                }
+                mime = f.mime.split(";")[0].split("/")
+            } else {
+                size = f.files.length + " items"
+            }
+            // the first part of the mime type will be use as tile and category of file.
+            let fileType = f._mime.split("/")[0]
+            if (f.isDir) {
+                fileType = "folder"
+            }
+            if (filesByType[fileType] == undefined) {
+                filesByType[fileType] = []
+            }
+            filesByType[fileType].push(f)
+        }
+        let range = document.createRange()
+        // Now I will display files by their categories.
+        for (var fileType in filesByType) {
+            let section = this.div.querySelector(`#${fileType}_section`)
+            if (section == undefined) {
+                let html = `
+                <div class="file-type-section">
+                    <div class="title">${fileType} <span>(${filesByType[fileType].length})</span></div>
+                    <div class="content" id="${fileType}_section"></div>
+                </div>
+                `
+                this.div.querySelector(`#container`).appendChild(range.createContextualFragment(html))
+                section = this.div.querySelector(`#${fileType}_section`)
+            }
+
+            // Now I will create the icon file view.
+            filesByType[fileType].forEach(file => {
+                let id = "_" + uuidv4().split("-").join("_");
+
+                let html = `
+                <div class="file-div" >
+                    <div class="file-icon-div" id="${id}">
+                        <paper-checkbox></paper-checkbox>
+                        <div class="menu-div"></div>
+                    </div>
+                </div>
+                `
+
+                section.appendChild(range.createContextualFragment(html))
+                let fileIconDiv = section.querySelector(`#${id}`)
+
+                // Here I will append the interation.
+                fileIconDiv.onmouseover = (evt) => {
+                    let checkbox = fileIconDiv.querySelector("paper-checkbox")
+                    checkbox.style.display = "block"
+                    let item0 = this.menu.querySelector("#item-0")
+                    // I will remove the background color for that item...
+                    let isopen = false;
+                    if (item0.menu != undefined) {
+                        isopen = item0.menu.isopen
+                    }
+                    if (!isopen) {
+                        fileIconDiv.querySelector(".menu-div").appendChild(this.menu)
+                        item0.style.background = "none";
+                        this.menu.style.display = "block"
+                    }
+                }
+
+                fileIconDiv.onmouseout = (evt) => {
+                    let checkbox = fileIconDiv.querySelector("paper-checkbox")
+                    if (!checkbox.checked) {
+                        checkbox.style.display = "none"
+                    }
+                }
+
+                let w = 80;
+
+                if (fileType == "folder") {
+
+                } else if (fileType == "video") {
+
+                } else if (fileType == "image") {
+                    /** Display the thumbnail. */
+                    let img = document.createElement("img")
+                    img.src = file.thumbnail
+
+                    fileIconDiv.insertBefore(img, fileIconDiv.firstChild)
+                    console.log(img.width)
+                    console.log(img.height)
+                    if (img.height > img.width) {
+                        let r = img.width / img.height
+                        w = 80 * r
+                    } else {
+                        //let r = img.width/img.height
+                    }
+                }
+
+                // Now I will append the file name span...
+                let fileNameSpan = document.createElement("span")
+                fileNameSpan.innerHTML = file.name;
+                fileNameSpan.style.maxWidth = w + "px";
+                fileIconDiv.parentNode.appendChild(fileNameSpan);
+
+            })
+        }
+
     }
 
-    init() {
-        // Connect event listener here.
-    }
 }
 
 customElements.define('globular-files-icon-view', FilesIconView)
@@ -509,7 +776,7 @@ export class PathNavigator extends HTMLElement {
             },
             (dir) => {
                 this.setDir(dir)
-            }
+            }, true
         )
     }
 
@@ -721,7 +988,8 @@ export class FileNavigator extends HTMLElement {
 
     // Init the tree view.
     initTreeView(dir, div, level) {
-        let id = dir.path.split("/").join("_");
+       // let id = dir.path.split("/").join("_");
+        let id = "_" + uuidv4().split("-").join("_");
         if (this.div.querySelector(`#${id}`) == undefined) {
             let name = dir.path.split("/").pop();
             let offset = 10 * level
@@ -858,6 +1126,11 @@ customElements.define('globular-file-navigator', FileNavigator)
 
 /**
  * File explorer.
+ * TODO
+ * - search bar
+ * - Append a garbadge forlder
+ * - Append shared link folder
+ * - (?? video or picture special icons...)
  */
 export class FileExplorer extends HTMLElement {
     // attributes.
@@ -968,6 +1241,7 @@ export class FileExplorer extends HTMLElement {
                 #file-selection-panel{
                     min-height: 500px;
                     margin-left: 0px;
+                    margin-top: 15px;
                 }
             }
   
@@ -1034,6 +1308,9 @@ export class FileExplorer extends HTMLElement {
         // The refresh button
         this.refreshBtn = this.shadowRoot.querySelector("#navigation-refresh-btn")
 
+        // The upload file button.
+        this.uploadBtn = this.shadowRoot.querySelector("#navigation-cloud-upload-btn")
+
         // File navigation button.
         this.backNavigationBtn = this.shadowRoot.querySelector("#navigation-back-btn")
         this.fowardNavigationBtn = this.shadowRoot.querySelector("#navigation-foward-btn")
@@ -1048,7 +1325,7 @@ export class FileExplorer extends HTMLElement {
         // I will use the resize event to set the size of the file explorer.
         window.addEventListener("resize", () => {
             // Here I will use the workspace to define the with of the content...
-            this.fileExplorerContent.style.minHeight = window.innerHeight - 64 - 55 - 45 + "px"
+            this.fileExplorerContent.style.minHeight = window.innerHeight - 164 + "px"
         })
 
         // Here I will connect the windows resize event...
@@ -1111,6 +1388,26 @@ export class FileExplorer extends HTMLElement {
             this.shadowRoot.querySelector(".card-actions").style.display = "none";
         }
 
+        // Upload a file.
+        this.uploadBtn.onclick = () => {
+            let fileInput = document.querySelector("file-input")
+            if(fileInput == undefined){
+                fileInput = document.createElement("input")
+                fileInput.id="file-input"
+                fileInput.type = "file"
+                fileInput.multiple = "true"
+                fileInput.style.display = "none"
+                document.body.appendChild(fileInput)
+            }
+
+            fileInput.click()
+            // this.pathNavigator
+            fileInput.onchange = () => {
+                //ApplicationView.wait("upload files... please wait")
+                Model.eventHub.publish("__upload_files_event__", {path:this.path, files:fileInput.files}, true)
+                
+            }
+        }
     }
 
     // Set the file explorer directory.
@@ -1129,8 +1426,17 @@ export class FileExplorer extends HTMLElement {
             (dir) => {
                 // keep the active path.
                 this.setDir(dir)
-            }
+            }, true
         )
+
+        // Refresh the interface.
+        Model.eventHub.subscribe("upload_files_event", (uuid)=>{}, 
+            evt=>{
+                if(evt == this.path){
+                    // refresh the interface.
+                    this.refreshBtn.click();
+                }
+            }, false)
 
         // Read the fd
         _readDir(this.root, (dir) => {

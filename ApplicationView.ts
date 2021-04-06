@@ -36,6 +36,7 @@ const nameGenrator = new DockerNames();
 // Must be imported to overide the materialyse style
 import "./style.css"
 import { rgbToHsl } from "./components/utility";
+import { uploadFiles } from "globular-web-client/api";
 
 /**
  * Application view made use of Web-component and Materialyse to create a basic application
@@ -56,7 +57,7 @@ export class ApplicationView extends View {
   }
 
   /** The application view component. */
-  private  layout: Layout;
+  private layout: Layout;
 
   /** The login panel */
   private login_: Login;
@@ -413,6 +414,21 @@ export class ApplicationView extends View {
       },
       true
     );
+
+    // Upload file event.
+    Model.eventHub.subscribe(
+      "__upload_files_event__",(uuid)=>{},
+      (evt:any)=>{
+        this.wait("files are uploading please wait...")
+        uploadFiles(evt.path, evt.files, ()=>{
+          ApplicationView.displayMessage("your files was successfully uploaded!", 3000)
+          this.resume()
+          // Publish network event.
+          Model.eventHub.publish("upload_files_event", evt.path, false)
+      })
+      }
+      ,true
+    )
 
     /**
      * The resize listener.
