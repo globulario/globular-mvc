@@ -6,10 +6,13 @@ import '@polymer/paper-card/paper-card.js';
 import '@polymer/paper-button/paper-button.js';
 import '@polymer/paper-checkbox/paper-checkbox.js';
 import '@polymer/iron-icons/editor-icons.js'
+import "@polymer/iron-icons/social-icons";
+import "@polymer/iron-icons/av-icons";
 
 import { Model } from '../Model';
 import { File } from "../File";
 import { Menu } from './Menu';
+import { VideoPlayer } from './Video'
 import { theme } from './Theme';
 import { v4 as uuidv4 } from "uuid";
 
@@ -19,7 +22,7 @@ import { MenuItemElement } from './menu/menuItem.js';
 import { createElement } from "./element.js";
 import { ItemManufacturer } from 'globular-web-client/catalog/catalog_pb';
 import { GetThumbnailsResponse } from 'globular-web-client/file/file_pb';
-import { uploadFiles } from 'globular-web-client/api';
+import { downloadFileHttp, uploadFiles } from 'globular-web-client/api';
 import { ApplicationView } from '../ApplicationView';
 // contain list of dir localy
 const _dirs = {}
@@ -264,7 +267,9 @@ export class FilesListView extends FilesView {
      * @param {*} dir 
      */
     setDir(dir) {
-
+        if (dir.name.startsWith(".")) {
+            return;
+        }
         this.div.innerHTML = "";
         let id = "_" + uuidv4().split("-").join("_");
         let html = `
@@ -290,6 +295,11 @@ export class FilesListView extends FilesView {
                 padding-left: 4px;
             }
 
+            .first-cell span:hover{
+                cursor: pointer;
+                /*text-decoration: underline;*/
+            }
+            
             .first-cell paper-checkbox, paper-icon-button {
                 visibility: hidden;
             }
@@ -393,6 +403,15 @@ export class FilesListView extends FilesView {
 
             let checkbox = row.querySelector("paper-checkbox")
 
+            let span = row.querySelector("span")
+            row.onclick = ()=>{
+                if(f.mime.startsWith("video")){
+                    Model.eventHub.publish("__play_video__", f.path, true)
+                }else if(f.isDir){
+                    Model.eventHub.publish("set_dir_event", _dirs[f._path], true)
+                }
+            }
+
             // On mouse over event.
             row.onmouseover = () => {
                 checkbox.style.visibility = "visible"
@@ -416,26 +435,27 @@ export class FilesListView extends FilesView {
                     checkbox.style.visibility = "hidden"
                 }
             }
+            if (!f.name.startsWith(".")) {
+                if (f.isDir) {
+                    fileListView.insertBefore(row, fileListView.firstChild);
+                    let lnk = this.div.getElementsByClassName("file-lnk-ico")[0]
+                    lnk.onclick = () => {
+                        Model.eventHub.publish("set_dir_event", _dirs[f._path], true)
+                    }
 
-            if (f.isDir) {
-                fileListView.insertBefore(row, fileListView.firstChild);
-                let lnk = this.div.getElementsByClassName("file-lnk-ico")[0]
-                lnk.onclick = () => {
-                    Model.eventHub.publish("set_dir_event", _dirs[f._path], true)
+                    lnk.onmouseover = () => {
+                        lnk.style.cursor = "pointer"
+                    }
+
+                    lnk.onmouseleave = () => {
+                        lnk.style.cursor = "default"
+                    }
+
+                } else {
+                    fileListView.appendChild(row);
+
+                    // TODO create the code for open file.
                 }
-
-                lnk.onmouseover = () => {
-                    lnk.style.cursor = "pointer"
-                }
-
-                lnk.onmouseleave = () => {
-                    lnk.style.cursor = "default"
-                }
-
-            } else {
-                fileListView.appendChild(row);
-
-                // TODO create the code for open file.
             }
         }
     }
@@ -449,6 +469,7 @@ customElements.define('globular-files-list-view', FilesListView)
 export class FilesIconView extends FilesView {
     constructor() {
         super()
+        this.imageHeight = 80
     }
 
     /**
@@ -460,8 +481,15 @@ export class FilesIconView extends FilesView {
      * @param {*} dir 
      */
     setDir(dir) {
+        if (dir.name.startsWith(".")) {
+            return;
+        }
+
         this.div.innerHTML = "";
-        let h = 80; // the heigth of the image/icon div
+        let h = this.imageHeight; // the heigth of the image/icon div
+        let w = this.imageHeight;
+        let hidden = null;
+
         let html = `
         <style>
             #container {
@@ -505,7 +533,6 @@ export class FilesIconView extends FilesView {
                 display: flex;
                 position: relative;
                 flex-direction: column;
-                align-items: center;
                 margin: 5px;
                 padding: 5px;
                 padding-top:25px;
@@ -513,8 +540,9 @@ export class FilesIconView extends FilesView {
                 transition: background 0.2s ease,padding 0.8s linear;
                 background-color: var(--palette-background-paper);
                 height: ${h}px;
-                min-width: ${h}px;
-                position: relative;
+                min-width: ${w}px;
+                justify-content: center;
+                align-items: center;
             }
 
             .file-icon-div paper-checkbox{
@@ -540,6 +568,11 @@ export class FilesIconView extends FilesView {
             .file-div {
                 display:flex; 
                 flex-direction: column;
+                align-items: center;
+            }
+
+            .file-icon-div:hover{
+                cursor: pointer;
             }
 
             .file-div span {
@@ -549,6 +582,7 @@ export class FilesIconView extends FilesView {
                 text-overflow: ellipsis;
                 */
                word-wrap: break-word;
+               text-align: center;
             }
 
             .file-icon-div:hover {
@@ -629,13 +663,20 @@ export class FilesIconView extends FilesView {
             if (filesByType[fileType] == undefined) {
                 filesByType[fileType] = []
             }
-            filesByType[fileType].push(f)
+
+            if (!f.name.startsWith(".")) {
+                filesByType[fileType].push(f)
+            } else {
+                // The hidden dir.
+                hidden = f
+            }
+
         }
         let range = document.createRange()
         // Now I will display files by their categories.
         for (var fileType in filesByType) {
             let section = this.div.querySelector(`#${fileType}_section`)
-            if (section == undefined) {
+            if (section == undefined && filesByType[fileType].length > 0) {
                 let html = `
                 <div class="file-type-section">
                     <div class="title">${fileType} <span>(${filesByType[fileType].length})</span></div>
@@ -661,6 +702,8 @@ export class FilesIconView extends FilesView {
 
                 section.appendChild(range.createContextualFragment(html))
                 let fileIconDiv = section.querySelector(`#${id}`)
+                // Now I will append the file name span...
+                let fileNameSpan = document.createElement("span")
 
                 // Here I will append the interation.
                 fileIconDiv.onmouseover = (evt) => {
@@ -686,11 +729,40 @@ export class FilesIconView extends FilesView {
                     }
                 }
 
-                let w = 80;
+                if (file.isDir) {
+                    
+                    // Here I will create a folder mosaic from the folder content...
+                    let folderIcon = document.createRange().createContextualFragment(`<iron-icon icon="icons:folder"></iron-icon>`)
+                    fileIconDiv.insertBefore(folderIcon, fileIconDiv.firstChild)
 
-                if (fileType == "folder") {
-
+                    fileIconDiv.onclick = ()=>{
+                        Model.eventHub.publish("set_dir_event", _dirs[file._path], true)
+                    }
+                    
                 } else if (fileType == "video") {
+                    /** In that case I will display the vieo preview. */
+                    if (hidden != null) {
+                        for (var i = 0; i < hidden.files.length; i++) {
+                            let file_ = hidden.files[i]
+                            if (file.name.startsWith(file_.name)) {
+                                for (var j = 0; j < file_.files.length; j++) {
+                                    let file__ = file_.files[j]
+                                    if (file__.name == "__preview__") {
+                                        let files__ = file__.files;
+                                        let preview = new VideoPreview(file.path, files__, h, () => {
+                                            if (preview.width > 0 && preview.height > 0) {
+                                                w = (preview.width / preview.height) * h
+                                            }
+                                            fileNameSpan.style.maxWidth = w + "px";
+                                        })
+                                        fileIconDiv.insertBefore(preview, fileIconDiv.firstChild)
+
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                    }
 
                 } else if (fileType == "image") {
                     /** Display the thumbnail. */
@@ -698,18 +770,14 @@ export class FilesIconView extends FilesView {
                     img.src = file.thumbnail
 
                     fileIconDiv.insertBefore(img, fileIconDiv.firstChild)
-                    console.log(img.width)
-                    console.log(img.height)
-                    if (img.height > img.width) {
-                        let r = img.width / img.height
-                        w = 80 * r
-                    } else {
-                        //let r = img.width/img.height
+                    if (img.width > 0 && img.height > 0) {
+                        w = (img.width / img.height) * h
                     }
+
+                    console.log("image width ", img.width, "image heigth", img.height)
                 }
 
-                // Now I will append the file name span...
-                let fileNameSpan = document.createElement("span")
+
                 fileNameSpan.innerHTML = file.name;
                 fileNameSpan.style.maxWidth = w + "px";
                 fileIconDiv.parentNode.appendChild(fileNameSpan);
@@ -988,8 +1056,14 @@ export class FileNavigator extends HTMLElement {
 
     // Init the tree view.
     initTreeView(dir, div, level) {
-       // let id = dir.path.split("/").join("_");
-        let id = "_" + uuidv4().split("-").join("_");
+
+        // I will not display hidden directory...
+        if (dir.name.startsWith(".")) {
+            return;
+        }
+
+        let id = dir.path.split("/").join("_").split(".").join("_").split("[").join("_").split("]").join("_").split("(").join("_").split(")").join("_").split("{").join("_").split("}").join("_");
+        //let id = "_" + uuidv4().split("-").join("_");
         if (this.div.querySelector(`#${id}`) == undefined) {
             let name = dir.path.split("/").pop();
             let offset = 10 * level
@@ -1161,6 +1235,11 @@ export class FileExplorer extends HTMLElement {
         // This function is call when the explorer is open.
         this.onopen = undefined;
 
+        // Event listener...
+        this.set_dir_event_listener = null;
+        this.upload_files_event_listener = null;
+        this.__play_video__listener = null
+
         // Interface elements...
         // The main explorer button
         this.fileExplorerBox = undefined
@@ -1250,6 +1329,10 @@ export class FileExplorer extends HTMLElement {
             }
     
 
+            #globular-video-player{
+                display: none;
+            }
+
         </style>
         <div style="padding: 7px">
         <paper-card id="file-explorer-box" class="file-explorer" style="flex-direction: column; display: none;">
@@ -1270,11 +1353,13 @@ export class FileExplorer extends HTMLElement {
                         <globular-file-navigator id="globular-file-navigator"></globular-file-navigator>
                     </div>
                     <div  id="file-selection-panel" style="position: relative;">
-                        <globular-files-list-view id="globular-files-list-view" ></globular-files-list-view>
-                        <globular-files-icon-view id="globular-files-icon-view"  style="display:none;"></globular-files-icon-view>
+                        <globular-files-list-view id="globular-files-list-view" style="display:none;" ></globular-files-list-view>
+                        <globular-files-icon-view id="globular-files-icon-view"></globular-files-icon-view>
+                        <globular-video-player id="globular-video-player"></globular-video-player>
                         <div style="position: absolute; bottom: 8px; right: 8px; display: flex; background-color:var(--palette-background-default)" >
-                            <paper-icon-button id="files-list-btn" icon="icons:view-list" style="--iron-icon-fill-color: var(--palette-action-active);"></paper-icon-button>
-                            <paper-icon-button id="files-icon-btn" icon="icons:view-module" style="--iron-icon-fill-color: var(--palette-action-disabled);"></paper-icon-button>
+                            
+                        <paper-icon-button id="files-icon-btn" icon="icons:view-module" style="--iron-icon-fill-color: var(--palette-action-active);"></paper-icon-button>
+                            <paper-icon-button id="files-list-btn" icon="icons:view-list" style="--iron-icon-fill-color: var(--palette-action-disabled);"></paper-icon-button>
                         </div>
                     </div>
                 </div>
@@ -1295,6 +1380,9 @@ export class FileExplorer extends HTMLElement {
         // The file view.
         this.filesListView = this.shadowRoot.querySelector("#globular-files-list-view")
         this.filesIconView = this.shadowRoot.querySelector("#globular-files-icon-view")
+
+        // The video player
+        this.videoPlayer = this.shadowRoot.querySelector("#globular-video-player")
 
         // The path navigator
         this.pathNavigator = this.shadowRoot.querySelector("#globular-path-navigator")
@@ -1357,6 +1445,9 @@ export class FileExplorer extends HTMLElement {
         this.filesListBtn.onclick = () => {
             this.filesListView.style.display = ""
             this.filesIconView.style.display = "none"
+            this.videoPlayer.stop();
+            this.videoPlayer.style.display = "none"
+
             this.filesListBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-active)")
             this.fileIconBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
         }
@@ -1364,6 +1455,8 @@ export class FileExplorer extends HTMLElement {
         this.fileIconBtn.onclick = () => {
             this.filesListView.style.display = "none"
             this.filesIconView.style.display = ""
+            this.videoPlayer.stop();
+            this.videoPlayer.style.display = "none"
             this.filesListBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
             this.fileIconBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-active)")
         }
@@ -1391,9 +1484,9 @@ export class FileExplorer extends HTMLElement {
         // Upload a file.
         this.uploadBtn.onclick = () => {
             let fileInput = document.querySelector("file-input")
-            if(fileInput == undefined){
+            if (fileInput == undefined) {
                 fileInput = document.createElement("input")
-                fileInput.id="file-input"
+                fileInput.id = "file-input"
                 fileInput.type = "file"
                 fileInput.multiple = "true"
                 fileInput.style.display = "none"
@@ -1404,8 +1497,8 @@ export class FileExplorer extends HTMLElement {
             // this.pathNavigator
             fileInput.onchange = () => {
                 //ApplicationView.wait("upload files... please wait")
-                Model.eventHub.publish("__upload_files_event__", {path:this.path, files:fileInput.files}, true)
-                
+                Model.eventHub.publish("__upload_files_event__", { path: this.path, files: fileInput.files }, true)
+
             }
         }
     }
@@ -1419,24 +1512,58 @@ export class FileExplorer extends HTMLElement {
         this.filesListView.init();
         this.filesIconView.init();
 
-        Model.eventHub.subscribe("set_dir_event",
-            (uuid) => {
-                /** Nothin here. */
-            },
-            (dir) => {
-                // keep the active path.
-                this.setDir(dir)
-            }, true
-        )
+        if (this.set_dir_event_listener == null) {
+            Model.eventHub.subscribe("set_dir_event",
+                (uuid) => {
+                    this.set_dir_event_listener = uuid;
+                },
+                (dir) => {
+                    // keep the active path.
+                    this.setDir(dir)
+                }, true
+            )
+        }
 
         // Refresh the interface.
-        Model.eventHub.subscribe("upload_files_event", (uuid)=>{}, 
-            evt=>{
-                if(evt == this.path){
-                    // refresh the interface.
-                    this.refreshBtn.click();
+        if (this.upload_files_event_listener == null) {
+            Model.eventHub.subscribe("upload_files_event", (uuid) => { 
+                this.upload_files_event_listener = uuid
+            },
+                evt => {
+                    if (evt == this.path) {
+                        // refresh the interface.
+                        this.refreshBtn.click();
+                    }
+                }, false)
+        }
+
+
+        // Play the video...
+        if (this.__play_video__listener == null) {
+            Model.eventHub.subscribe("__play_video__", (uuid) => { 
+                this.__play_video__listener = uuid
+            }, (path) => {
+                if(!path.startsWith(this.root)){
+                    return
                 }
-            }, false)
+
+                // keep the actual display...
+                let display_icon_view = this.filesIconView.style.display
+                let display_list_view = this.filesListView.style.display
+
+                // hide the content.
+                this.filesListView.style.display = "none"
+                this.filesIconView.style.display = "none"
+
+                this.videoPlayer.style.display = "block"
+                
+                this.videoPlayer.__playing = true;
+
+                // Display the video only if the path match the video player /applications vs /users
+                this.videoPlayer.play(path)
+                
+            })
+        }
 
         // Read the fd
         _readDir(this.root, (dir) => {
@@ -1480,7 +1607,6 @@ export class FileExplorer extends HTMLElement {
 
     setRoot(root) {
         this.root = root
-        this.init()
     }
 
     setDir(dir) {
@@ -1503,7 +1629,6 @@ export class FileExplorer extends HTMLElement {
         if (this.navigations.length > 2 && this.lstNavigationBtn != null) {
             this.lstNavigationBtn.style.display = "block"
             let navigationLst = null
-            console.log(this.lstNavigationBtn.parentNode.childNodes)
             if (this.lstNavigationBtn.parentNode.children.length == 1) {
                 // Here I will set the navigation list.
                 navigationLst = document.createElement("paper-card")
@@ -1654,3 +1779,219 @@ export class FilesMenu extends Menu {
 }
 
 customElements.define('globular-files-menu', FilesMenu)
+
+/**
+ * Display video preview...
+ */
+export class VideoPreview extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor(path, previews, height, onresize) {
+        super()
+
+        this.path = path;
+        this.width = height;
+        this.height = height;
+        this.onresize = onresize;
+
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+
+        this.shadowRoot.innerHTML = `
+        <style>
+            ${theme}
+
+            #container{
+                height: ${height}px;
+                position: relative;
+            }
+
+            #container:hover {
+                cursor: pointer;
+            }
+
+            #play-btn{
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                transform: translate(-50%,-50%);
+                --iron-icon-fill-color: var(--palette-text-accent);
+                display: none;
+            }
+
+            #play-btn:hover {
+                cursor: pointer;
+            }
+
+            img {
+                display: block;
+                width:auto;
+                height: 100%;
+            }
+
+            .preview{
+
+            }
+        </style>
+       <div id = "container" >
+            <iron-icon id="play-btn" icon="av:play-circle-outline"></iron-icon>
+            <paper-ripple></paper-ripple>
+        </div>
+       
+       
+        `
+        this.images = []
+
+        // give the focus to the input.
+        this.container = this.shadowRoot.querySelector("#container")
+        this.playBtn = this.shadowRoot.querySelector("#play-btn")
+
+        let index = 0;
+
+        if (previews[0] != undefined) {
+
+            let getImage = (callback) => {
+                let preview = previews[index];
+                index++
+
+                // console.log(images[0])
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', preview.path, true);
+
+                // Set responseType to 'arraybuffer', we want raw binary data buffer
+                xhr.responseType = 'arraybuffer';
+
+                xhr.onload = (rsp) => {
+
+                    // Create an array of 8-bit unsigned integers
+                    var arr = new Uint8Array(rsp.currentTarget.response);
+
+                    // String.fromCharCode returns a 'string' from the specified sequence of Unicode values
+                    var raw = String.fromCharCode.apply(null, arr);
+
+                    //btoa() creates a base-64 encoded ASCII string from a String object 
+                    var b64 = btoa(raw);
+
+                    //ta-da your image data url!
+                    var dataURL = 'data:image/' + preview.mime + ';base64,' + b64;
+                    let img = document.createElement("img")
+                    img.className = "preview"
+
+                    img.src = dataURL
+                    this.images.push(img)
+
+                    if (index < previews.length) {
+                        getImage(callback)
+                    } else if (callback != undefined) {
+                        callback()
+                    }
+                };
+
+                xhr.send();
+            }
+
+            // Get the preview image...
+            getImage(() => {
+                if (this.images.length > 0) {
+                    this.container.appendChild(this.images[0])
+                    this.width = this.images[0].width
+                    this.height = this.images[0].height
+                    if (this.onresize != undefined) {
+                        this.onresize()
+                    }
+
+                }
+            })
+        }
+
+        // Play the video
+        this.container.onclick = (evt) => {
+            this.play()
+        }
+
+        // the next image timeout...
+        this.timeout = null;
+        let is_over_play_btn = false;
+
+
+        this.playBtn.onmouseenter = (evt) => {
+            evt.stopPropagation();
+            is_over_play_btn = true
+            this.playBtn.style.display = "block";
+        }
+
+        this.playBtn.onmouseout = (evt) => {
+            evt.stopPropagation();
+            is_over_play_btn = false
+        }
+
+        // Connect events
+        this.container.onmouseenter = (evt) => {
+            evt.stopPropagation();
+            this.playBtn.style.display = "block";
+            if (this.interval == null && !is_over_play_btn) {
+                this.startPreview();
+            }
+        }
+
+        this.container.onmouseout = (evt) => {
+            evt.stopPropagation();
+            this.playBtn.style.display = "none";
+            if (this.interval != null && !is_over_play_btn) {
+                this.stopPreview();
+            }
+        }
+
+    }
+
+
+    /**
+     * Start display the image 
+     */
+    startPreview() {
+        console.log("start preview...")
+        let index = 0;
+
+        this.interval = setInterval(() => {
+
+            let img = this.images[index]
+            if (img != undefined) {
+                while (this.container.children.length > 2) {
+                    this.container.removeChild(this.container.children[this.container.children.length - 1])
+                }
+
+                this.container.appendChild(img, this.container.firstChild)
+            }
+            // reset the conter if index reach the number of preview images.
+            if (index < this.images.length) {
+                index++
+            } else {
+                index = 0
+            }
+        }, 500)
+    }
+
+    /**
+     * Stop the image preview...
+     */
+    stopPreview() {
+        clearInterval(this.interval)
+        this.interval = null
+        while (this.container.children.length > 2) {
+            this.container.removeChild(this.container.children[this.container.children.length - 1])
+        }
+        this.container.appendChild(this.images[0])
+    }
+
+    /**
+     * Play video
+     */
+    play() {
+        Model.eventHub.publish("__play_video__", this.path, true)
+    }
+
+}
+
+customElements.define('globular-video-preview', VideoPreview)
+
