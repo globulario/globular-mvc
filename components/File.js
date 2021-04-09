@@ -22,8 +22,9 @@ import { MenuItemElement } from './menu/menuItem.js';
 import { createElement } from "./element.js";
 import { ItemManufacturer } from 'globular-web-client/catalog/catalog_pb';
 import { GetThumbnailsResponse } from 'globular-web-client/file/file_pb';
-import { downloadFileHttp, uploadFiles } from 'globular-web-client/api';
+import { createArchive, deleteDir, deleteFile, downloadFileHttp, uploadFiles } from 'globular-web-client/api';
 import { ApplicationView } from '../ApplicationView';
+import { Application } from '../Application';
 // contain list of dir localy
 const _dirs = {}
 
@@ -33,6 +34,40 @@ function _setDir(dir) {
     for (const f of dir.files) {
         _setDir(f)
     }
+}
+
+function getElementIndex (element) {
+    return Array.from(element.parentNode.children).indexOf(element);
+  }
+
+function getImage(callback, images, files, index) {
+    let f = files[index];
+    index++
+
+    // console.log(images[0])
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', f.path, true);
+
+    // Set responseType to 'arraybuffer', we want raw binary data buffer
+    xhr.responseType = 'blob';
+    xhr.onload = (rsp) => {
+        if (rsp.currentTarget.status == 200) {
+            var reader = new FileReader();
+            reader.readAsDataURL(rsp.currentTarget.response);
+            reader.onload =  function(e){
+                let img = document.createElement("img")
+                img.src = e.target.result
+                images.push(img)
+                if (index < files.length) {
+                    getImage(callback, images, files, index)
+                } else if (callback != undefined) {
+                    callback(images)
+                }
+            };
+        }
+    };
+
+    xhr.send();
 }
 
 /**
@@ -65,6 +100,9 @@ export class FilesView extends HTMLElement {
 
         // The active explorer path.
         this.path = undefined
+
+        // The list of files to delete
+        this.selected = {};
 
         // The function will be call in case of error.
         this.onerror = undefined;
@@ -105,8 +143,31 @@ export class FilesView extends HTMLElement {
         this.downloadMenuItem = this.menu.querySelector("#download-menu-item")
 
         this.downloadMenuItem.action = () => {
-            console.log("download menu click")
+
             this.menu.parentNode.removeChild(this.menu)
+            // Here I will create an archive from the selected files and dowload it...
+            let files = [];
+            for (var key in this.selected) {
+                files.push(this.selected[key].path)
+            }
+
+            // Create a tempory name...
+            let uuid = uuidv4()
+            console.log("download menu click", files)
+            createArchive(Application.globular, files, uuid,
+                path => {
+                    // Download the file...
+                    downloadFileHttp(path, uuid + ".tgz",
+                        () => {
+                            // Now I will remove the file from the server....
+                            console.log("file downloaded")
+                            deleteFile(Application.globular, path,
+                                () => {
+                                    console.log("file removed")
+                                },
+                                err => { ApplicationView.displayMessage(err, 3000) })
+                        }, err => { ApplicationView.displayMessage(err, 3000) })
+                }, err => { ApplicationView.displayMessage(err, 3000) })
         }
 
         this.shareAccessMenuItem.action = () => {
@@ -115,17 +176,119 @@ export class FilesView extends HTMLElement {
         }
 
         this.deleteMenuItem.action = () => {
-            console.log("delete menu click")
+
+            let fileList = ""
+            for (var fileName in this.selected) {
+                fileList += `<div>${this.selected[fileName].path}</div>`
+            }
+
+            let toast = ApplicationView.displayMessage(
+                `
+            <style>
+              #yes-no-files-delete-box{
+                display: flex;
+                flex-direction: column;
+              }
+
+              #yes-no-files-delete-box globular-files-card{
+                padding-bottom: 10px;
+              }
+
+              #yes-no-files-delete-box div{
+                display: flex;
+                font-size: 1rem;
+                padding-bottom: 10px;
+              }
+
+              paper-button{
+                font-size: 1rem;
+                height: 32px;
+              }
+
+            </style>
+            <div id="yes-no-files-delete-box">
+              <div>Your about to delete files</div>
+              <div style="display: flex; flex-direction: column;">
+                ${fileList}
+              </div>
+              <div>Is it what you want to do? </div>
+              <div style="justify-content: flex-end;">
+                <paper-button raised id="yes-delete-files">Yes</paper-button>
+                <paper-button raised id="no-delete-files">No</paper-button>
+              </div>
+            </div>
+            `,
+                15000 // 15 sec...
+            );
+
+            let yesBtn = document.querySelector("#yes-delete-files")
+            let noBtn = document.querySelector("#no-delete-files")
+
+            // On yes
+            yesBtn.onclick = () => {
+                toast.dismiss();
+
+                let success = () => {
+                    ApplicationView.displayMessage(
+                        `<iron-icon icon='delete' style='margin-right: 10px;'></iron-icon><div>
+                        Files are now deleted!
+                    </div>`,
+                        3000
+                    );
+
+                    // I will publish file event to remove all file from interfaces...
+                    for (var fileName in this.selected) {
+                        Model.eventHub.publish("delete_file_" + this.selected[fileName].path + "_evt", {}, false);
+                    }
+                }
+
+                let index = 0;
+                let deleteFile_ = () => {
+                    let name = Object.keys(this.selected)[index]
+                    let f = this.selected[name]
+                    index++
+                    if (f.isDir) {
+                        deleteDir(Application.globular, f.path,
+                            () => {
+                                if (index < Object.keys(this.selected).length) {
+                                    deleteFile_()
+                                } else {
+                                    success()
+                                }
+                            },
+                            err => { ApplicationView.displayMessage(err, 3000) })
+                    } else {
+                        deleteFile(Application.globular, f.path,
+                            () => {
+                                if (index < Object.keys(this.selected).length) {
+                                    deleteFile_()
+                                } else {
+                                    success()
+                                }
+                            },
+                            err => { ApplicationView.displayMessage(err, 3000) })
+                    }
+                }
+
+                // start file deletion...
+                deleteFile_()
+            }
+
+            noBtn.onclick = () => {
+                toast.dismiss();
+            }
+
             this.menu.parentNode.removeChild(this.menu)
+
         }
 
         this.renameMenuItem.action = () => {
-            console.log("rename menu click")
+            console.log("rename menu click", this.path)
             this.menu.parentNode.removeChild(this.menu)
         }
 
         this.mananageAccessMenuItem.action = () => {
-            console.log("manage access menu click")
+            console.log("manage access menu click", this.path)
             this.menu.parentNode.removeChild(this.menu)
         }
 
@@ -402,13 +565,41 @@ export class FilesListView extends FilesView {
             row.innerHTML = html;
 
             let checkbox = row.querySelector("paper-checkbox")
+            // Connect interface from various point...
+            checkbox.onclick = () => {
+                Model.eventHub.publish("__file_select_unselect_" + f.path, checkbox.checked, true)
+            }
+
+            Model.eventHub.subscribe("__file_select_unselect_" + f.path, () => { }, checked => {
+                checkbox.checked = checked;
+                if (checked) {
+                    checkbox.style.visibility = "visible"
+                    this.selected[f.path] = f
+                } else {
+                    checkbox.style.visibility = "hidden"
+                    delete this.selected[f.path]
+                }
+            }, true)
+
+            // The delete event...
+            Model.eventHub.subscribe("delete_file_" + f.path + "_evt",
+                () => { },
+                () => {
+                    // Remove the row...
+                    row.parentNode.removeChild(row)
+                    delete this.selected[f.path]
+                    dir.files = dir.files.filter(file => { return file.path != f.path; });
+                }, false);
+
 
             let span = row.querySelector("span")
-            row.onclick = ()=>{
-                if(f.mime.startsWith("video")){
+            span.onclick = () => {
+                if (f.mime.startsWith("video")) {
                     Model.eventHub.publish("__play_video__", f.path, true)
-                }else if(f.isDir){
+                } else if (f.isDir) {
                     Model.eventHub.publish("set_dir_event", _dirs[f._path], true)
+                } else if (f.mime.startsWith("image")) {
+                    Model.eventHub.publish("__show_image__", f.path, true)
                 }
             }
 
@@ -583,6 +774,9 @@ export class FilesIconView extends FilesView {
                 */
                word-wrap: break-word;
                text-align: center;
+               max-height: 200px;
+               overflow-y: hidden;
+
             }
 
             .file-icon-div:hover {
@@ -705,9 +899,37 @@ export class FilesIconView extends FilesView {
                 // Now I will append the file name span...
                 let fileNameSpan = document.createElement("span")
 
+                let checkbox = fileIconDiv.querySelector("paper-checkbox")
+
+                checkbox.onclick = () => {
+                    Model.eventHub.publish("__file_select_unselect_" + file.path, checkbox.checked, true)
+                }
+
+                Model.eventHub.subscribe("__file_select_unselect_" + file.path, () => { }, checked => {
+                    checkbox.checked = checked;
+                    if (checked) {
+                        checkbox.style.display = "block"
+                        this.selected[file.path] = file
+                    } else {
+                        checkbox.style.display = "none"
+                        delete this.selected[file.path]
+                    }
+                }, true)
+
+                Model.eventHub.subscribe("delete_file_" + file.path + "_evt",
+                    () => { },
+                    () => {
+                        // Remove the row...
+                        fileIconDiv.parentNode.parentNode.removeChild(fileIconDiv.parentNode)
+                        delete this.selected[file.path]
+                        // remove it from it parent.
+                        filesByType[fileType] = filesByType[fileType].filter(f => { return f.path != file.path; });
+                        dir.files = dir.files.filter(f => { return f.path != file.path; });
+                    }, false);
+
                 // Here I will append the interation.
                 fileIconDiv.onmouseover = (evt) => {
-                    let checkbox = fileIconDiv.querySelector("paper-checkbox")
+
                     checkbox.style.display = "block"
                     let item0 = this.menu.querySelector("#item-0")
                     // I will remove the background color for that item...
@@ -730,15 +952,15 @@ export class FilesIconView extends FilesView {
                 }
 
                 if (file.isDir) {
-                    
+
                     // Here I will create a folder mosaic from the folder content...
                     let folderIcon = document.createRange().createContextualFragment(`<iron-icon icon="icons:folder"></iron-icon>`)
                     fileIconDiv.insertBefore(folderIcon, fileIconDiv.firstChild)
 
-                    fileIconDiv.onclick = ()=>{
+                    fileIconDiv.onclick = () => {
                         Model.eventHub.publish("set_dir_event", _dirs[file._path], true)
                     }
-                    
+
                 } else if (fileType == "video") {
                     /** In that case I will display the vieo preview. */
                     if (hidden != null) {
@@ -775,6 +997,9 @@ export class FilesIconView extends FilesView {
                     }
 
                     console.log("image width ", img.width, "image heigth", img.height)
+                    img.onclick = () => {
+                        Model.eventHub.publish("__show_image__", file.path, true)
+                    }
                 }
 
 
@@ -1238,7 +1463,8 @@ export class FileExplorer extends HTMLElement {
         // Event listener...
         this.set_dir_event_listener = null;
         this.upload_files_event_listener = null;
-        this.__play_video__listener = null
+        this.__play_video__listener = null;
+        this.__show_image__listener = null;
 
         // Interface elements...
         // The main explorer button
@@ -1333,6 +1559,10 @@ export class FileExplorer extends HTMLElement {
                 display: none;
             }
 
+            #globular-image-viewer{
+                display: none;
+            }
+
         </style>
         <div style="padding: 7px">
         <paper-card id="file-explorer-box" class="file-explorer" style="flex-direction: column; display: none;">
@@ -1356,9 +1586,10 @@ export class FileExplorer extends HTMLElement {
                         <globular-files-list-view id="globular-files-list-view" style="display:none;" ></globular-files-list-view>
                         <globular-files-icon-view id="globular-files-icon-view"></globular-files-icon-view>
                         <globular-video-player id="globular-video-player"></globular-video-player>
-                        <div style="position: absolute; bottom: 8px; right: 8px; display: flex; background-color:var(--palette-background-default)" >
+                        <globular-image-viewer id="globular-image-viewer"></globular-image-viewer>
+                        <div style="position: absolute; bottom: 8px; right: 8px; display: flex; background-color:var(--palette-background-default);" >
                             
-                        <paper-icon-button id="files-icon-btn" icon="icons:view-module" style="--iron-icon-fill-color: var(--palette-action-active);"></paper-icon-button>
+                            <paper-icon-button id="files-icon-btn" class="active" icon="icons:view-module" style="--iron-icon-fill-color: var(--palette-action-active);"></paper-icon-button>
                             <paper-icon-button id="files-list-btn" icon="icons:view-list" style="--iron-icon-fill-color: var(--palette-action-disabled);"></paper-icon-button>
                         </div>
                     </div>
@@ -1383,6 +1614,9 @@ export class FileExplorer extends HTMLElement {
 
         // The video player
         this.videoPlayer = this.shadowRoot.querySelector("#globular-video-player")
+
+        // The image viewer
+        this.imageViewer = this.shadowRoot.querySelector("#globular-image-viewer")
 
         // The path navigator
         this.pathNavigator = this.shadowRoot.querySelector("#globular-path-navigator")
@@ -1443,16 +1677,21 @@ export class FileExplorer extends HTMLElement {
 
 
         this.filesListBtn.onclick = () => {
+            this.imageViewer.style.display = "none"
             this.filesListView.style.display = ""
             this.filesIconView.style.display = "none"
             this.videoPlayer.stop();
             this.videoPlayer.style.display = "none"
-
+            this.filesListBtn.classList.add("active")
+            this.fileIconBtn.classList.remove("active")
             this.filesListBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-active)")
             this.fileIconBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
         }
 
         this.fileIconBtn.onclick = () => {
+            this.imageViewer.style.display = "none"
+            this.filesListBtn.classList.remove("active")
+            this.fileIconBtn.classList.add("active")
             this.filesListView.style.display = "none"
             this.filesIconView.style.display = ""
             this.videoPlayer.stop();
@@ -1469,7 +1708,12 @@ export class FileExplorer extends HTMLElement {
         // refresh all the interface.
         this.refreshBtn.onclick = () => {
             _readDir(this.root, (dir) => {
+                /*
+                this.fileListView.selected = {}
+                this.filesIconView.selected = {}
+                */
                 Model.eventHub.publish("set_dir_event", _dirs[this.path], true)
+                this.displayView()
             }, this.onerror, true)
         }
 
@@ -1526,7 +1770,7 @@ export class FileExplorer extends HTMLElement {
 
         // Refresh the interface.
         if (this.upload_files_event_listener == null) {
-            Model.eventHub.subscribe("upload_files_event", (uuid) => { 
+            Model.eventHub.subscribe("upload_files_event", (uuid) => {
                 this.upload_files_event_listener = uuid
             },
                 evt => {
@@ -1540,28 +1784,55 @@ export class FileExplorer extends HTMLElement {
 
         // Play the video...
         if (this.__play_video__listener == null) {
-            Model.eventHub.subscribe("__play_video__", (uuid) => { 
+            Model.eventHub.subscribe("__play_video__", (uuid) => {
                 this.__play_video__listener = uuid
             }, (path) => {
-                if(!path.startsWith(this.root)){
+                if (!path.startsWith(this.root)) {
                     return
                 }
-
-                // keep the actual display...
-                let display_icon_view = this.filesIconView.style.display
-                let display_list_view = this.filesListView.style.display
 
                 // hide the content.
                 this.filesListView.style.display = "none"
                 this.filesIconView.style.display = "none"
 
                 this.videoPlayer.style.display = "block"
-                
+
                 this.videoPlayer.__playing = true;
 
                 // Display the video only if the path match the video player /applications vs /users
                 this.videoPlayer.play(path)
+
+            })
+        }
+
+        // Show image...
+        if (this.__show_image__listener == null) {
+            Model.eventHub.subscribe("__show_image__", (uuid) => {
+                this.__show_image__listener = uuid
+            }, (path) => {
+
+                // Display image...
+                if (!path.startsWith(this.root)) {
+                    return
+                }
+
+                // hide the content.
+                this.filesListView.style.display = "none"
+                this.filesIconView.style.display = "none"
+
+                // Display the image viewer...
+                this.imageViewer.style.display = "block"
+
+                // Here I will set the active image.
+                console.log(path)
+                for(var i=0; this.imageViewer.children.length; i++){
+                    if( this.imageViewer.children[i].name == path){
+                        this.imageViewer.activeImage( getElementIndex(this.imageViewer.children[i]))
+                        break
+                    }
+                }
                 
+
             })
         }
 
@@ -1593,7 +1864,6 @@ export class FileExplorer extends HTMLElement {
                 console.log("no file icon view!")
             }
 
-
             this.setDir(dir)
 
 
@@ -1609,7 +1879,60 @@ export class FileExplorer extends HTMLElement {
         this.root = root
     }
 
+    displayView() {
+        if (this.filesListBtn.classList.contains("active")) {
+            this.filesListView.style.display = ""
+            this.filesIconView.style.display = "none"
+        } else {
+            this.filesListView.style.display = "none"
+            this.filesIconView.style.display = ""
+        }
+    }
+
     setDir(dir) {
+
+        // Set back the list and icon view
+        this.displayView()
+
+        // stop and hide the video player.
+        this.videoPlayer.style.display = "none"
+        this.videoPlayer.stop();
+
+
+        this.imageViewer.style.display = "none";
+        this.imageViewer.innerHTML = "";
+
+        // Set back the view when the image viewer is close.
+        this.imageViewer.onclose = () => {
+            this.displayView()
+        }
+
+        // get all images in the directory
+        let images_ = []
+        for (var i = 0; i < dir.files.length; i++) {
+            if (dir.files[i].mime.startsWith("image")) {
+                images_.push(dir.files[i])
+            }
+        }
+
+        // Initialyse images from the server.
+        let index = 0;
+        let images = [];
+        
+        // Set the images in the image viewer.
+        if (images_.length > 0) {
+            getImage((images) => {
+                for(var i=0; i < images.length;i++){
+                    let img = images[i]
+                    img.name = images_[i].path
+                    img.slot = "images"
+                    this.imageViewer.addImage(img)
+                }
+                // Init the images...
+                this.imageViewer.populateChildren();
+            }, images, images_, index)
+        }
+
 
         if (this.backNavigationBtn != null) {
             this.backNavigationBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
@@ -1851,48 +2174,9 @@ export class VideoPreview extends HTMLElement {
 
         if (previews[0] != undefined) {
 
-            let getImage = (callback) => {
-                let preview = previews[index];
-                index++
-
-                // console.log(images[0])
-                var xhr = new XMLHttpRequest();
-                xhr.open('GET', preview.path, true);
-
-                // Set responseType to 'arraybuffer', we want raw binary data buffer
-                xhr.responseType = 'arraybuffer';
-
-                xhr.onload = (rsp) => {
-
-                    // Create an array of 8-bit unsigned integers
-                    var arr = new Uint8Array(rsp.currentTarget.response);
-
-                    // String.fromCharCode returns a 'string' from the specified sequence of Unicode values
-                    var raw = String.fromCharCode.apply(null, arr);
-
-                    //btoa() creates a base-64 encoded ASCII string from a String object 
-                    var b64 = btoa(raw);
-
-                    //ta-da your image data url!
-                    var dataURL = 'data:image/' + preview.mime + ';base64,' + b64;
-                    let img = document.createElement("img")
-                    img.className = "preview"
-
-                    img.src = dataURL
-                    this.images.push(img)
-
-                    if (index < previews.length) {
-                        getImage(callback)
-                    } else if (callback != undefined) {
-                        callback()
-                    }
-                };
-
-                xhr.send();
-            }
-
             // Get the preview image...
-            getImage(() => {
+            getImage((images) => {
+                this.images = images
                 if (this.images.length > 0) {
                     this.container.appendChild(this.images[0])
                     this.width = this.images[0].width
@@ -1902,7 +2186,7 @@ export class VideoPreview extends HTMLElement {
                     }
 
                 }
-            })
+            }, this.images, previews, index)
         }
 
         // Play the video

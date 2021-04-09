@@ -311,3 +311,261 @@ export class ImageCropper extends HTMLElement {
 }
 
 window.customElements.define('globular-image-cropper', ImageCropper);
+
+/**
+ * Classic image viewer
+ */
+class ImageViewer extends HTMLElement {
+
+  constructor () {
+    super();
+    this.onclose = null;
+
+    let shadowRoot = this.attachShadow({mode: 'open'});
+
+    shadowRoot.innerHTML = `
+      <style>
+        .modal {
+          z-index: 3000;
+          display: none;
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+          height: 100%;
+          overflow: auto;
+          background-color: rgba(0, 0, 0, 0.94);
+          font-family: Verdana,sans-serif;
+          display:flex;
+          justify-content:center;
+          align-items: center;
+        }
+        #info {
+          background-color:#2196F3;
+          left:88px;
+          font-size:18px;
+          text-align:center;
+          color:white;
+          margin-top:8px;
+          padding: 5px 16px;
+        }
+        #leftA {
+          position:absolute;
+          top:53%;
+          left:0%;
+          transform:translate(0%,-53%);
+          font-size:30px;
+          background-color: #3e3c3c99;
+          color:white;
+        }
+        #rightA {
+          position:absolute;
+          top:53%;
+          right:0%;
+          transform:translate(0%,-53%);
+          font-size:30px;
+          background-color: #3e3c3c99;
+          color:white;
+        }
+        .btn, .button {
+          border: none;
+          display: inline-block;
+          padding: 8px 16px;
+          vertical-align: middle;
+          overflow: hidden;
+          text-decoration: none;
+          color: inherit;
+          background-color: inherit;
+          text-align: center;
+          cursor: pointer;
+          white-space: nowrap;
+        }
+        .btn, .button {
+          -webkit-touch-callout: none;
+          -webkit-user-select: none;
+          -khtml-user-select: none;
+          -moz-user-select: none;
+          -ms-user-select: none;
+          user-select: none;
+        }
+        .display-topright {
+          position: absolute;
+          right: 0;
+          top: 0;
+        }
+        .display-topleft {
+          position: absolute;
+          left: 20px;
+          top: 0;
+          font-size:25px;
+          text-align:center;
+          color:white;
+          margin-top:5px;
+        }
+        .container, .w3-panel {
+          padding: 0.01em 16px;
+        }
+        .image {
+          max-width: 100%;
+          height: auto;
+        }
+        img {
+          vertical-align: middle;
+          border-style: none;
+        }
+        @media (max-width:768px){
+          .modal{
+            padding-top:50px;
+          }
+        }
+      </style>
+      <div id="imageViewer" class="modal" >
+        <span id='closeBtn' class="button display-topright" style='color:white;font-size:30px;'>
+        ×
+        </span>
+        <div id='counter' class='display-topleft' ></div>
+        <div id='info' class='display-topleft btn' style="display: none;">
+          Description
+        </div>
+        <div class="container">
+          <slot name='images'><span style='color:white;'>No images to show</span></slot>
+          <div id='leftA' class="button" >❮</div>
+          <div id='rightA' class="button" >❯</div>
+        </div>
+      </div>`;
+
+      shadowRoot.querySelector('#closeBtn').addEventListener('click', e => {
+        this.style.display = 'none';
+        if(this.onclose!=undefined){
+          this.onclose()
+        }
+      });
+
+      if(this.noinfo){
+        shadowRoot.querySelector('#info').style.display='none';
+      }
+
+      //right arrow event
+      shadowRoot.querySelector('#rightA').addEventListener('click', e => {
+        this.nextImage();
+      });
+
+      //left arrow event
+      shadowRoot.querySelector('#leftA').addEventListener('click', e => {
+        this.prevImage();
+      });
+
+  }
+
+  get noinfo() {
+    return this.hasAttribute('noinfo');
+  }
+
+  populateChildren(){
+    if(this.children.length!=0){
+      var ch = this.children;
+      var cant = ch.length;
+      for (var i = 0; i < cant; i++) {
+        if(i == 0)
+          ch[i].style.display = 'block';
+        else
+          ch[i].style.display = 'none';
+
+        ch[i].style.margin = 'auto';
+        ch[i].style.maxWidth = '100%';
+        ch[i].style.maxHeight = '600px';
+      }
+      //counter
+      this.shadowRoot.querySelector('#counter').innerHTML = '1/'+cant;
+    } else {
+      //hide the arrows
+      this.shadowRoot.querySelector('#leftA').style.display = 'none';
+      this.shadowRoot.querySelector('#rightA').style.display = 'none';
+    }
+  }
+
+  activeImage(e){
+    var ch = this.children;
+    var cant = ch.length;
+    for (var i = 0; i < cant; i++) {
+      ch[i].style.display = 'none';
+    }
+    ch[e].style.display = 'block';
+    this.shadowRoot.querySelector('#counter').innerHTML = (e+1)+'/'+(cant);
+  }
+
+  addImage(e){
+    this.appendChild(e);
+    this.populateChildren();
+    //show the arrows
+    this.shadowRoot.querySelector('#leftA').style.display = 'block';
+    this.shadowRoot.querySelector('#rightA').style.display = 'block';
+  }
+
+  loadImgFrom(ele){
+    var el = ele.querySelectorAll('img');
+    this.style.display = 'block';
+    this.innerHTML = '';
+    for (var i = 0; i < el.length; i++) {
+      var src = el[i].getAttribute('src');
+      var newPic = document.createElement('img');
+      newPic.setAttribute('slot','images');
+      newPic.setAttribute('src',src);
+
+      //if have data-info
+      if(el[i].getAttribute('data-info'))
+            newPic.setAttribute('data-info',el[i].getAttribute('data-info'));
+
+      //adding to the component
+      this.addImage(newPic);
+    }
+  }
+
+  infoClick(title,fn){
+    this.shadowRoot.querySelector('#info').innerHTML = title;
+    this.shadowRoot.querySelector('#info').addEventListener('click', function func(event) {
+      fn(event);
+    });
+  }
+
+  nextImage(){
+    var ch = this.children;
+    var cant = ch.length;
+    for (var i = 0; i < cant; i++) {
+      if(ch[i].style.display == 'block'){
+        var actived = ch[0];
+        var index = 0;
+        if(i < (cant-1)){
+          actived = ch[i + 1];
+          index = i + 1;
+        }
+      }
+      ch[i].style.display = 'none';
+    }
+    actived.style.display = 'block';
+    this.shadowRoot.querySelector('#counter').innerHTML = (index+1)+'/'+(cant);
+  }
+
+  prevImage(){
+    var ch = this.children;
+    var cant = ch.length;
+    for (var i = 0; i < cant; i++) {
+      if(ch[i].style.display == 'block'){
+        var actived = ch[cant-1];
+        var index = cant-1;
+        if(i > 0){
+          actived = ch[i - 1];
+          index = i - 1;
+        }
+      }
+      ch[i].style.display = 'none';
+    }
+    actived.style.display = 'block';
+    this.shadowRoot.querySelector('#counter').innerHTML = (index+1)+'/'+(cant);
+  }
+
+  connectedCallback () {
+
+  }
+}
+window.customElements.define('globular-image-viewer', ImageViewer);
