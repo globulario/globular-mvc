@@ -2049,6 +2049,7 @@ export class FileExplorer extends HTMLElement {
                 if (dir.path == this.path) {
                     Model.eventHub.publish("set_dir_event", dir, true)
                 }
+                
                 this.fileNavigator.reload(dir)
             }, () => { }, true)
             //Model.eventHub.publish("set_dir_event", _dirs[this.path], true)
@@ -2175,24 +2176,7 @@ export class FileExplorer extends HTMLElement {
         }
     }
 
-    setDir(dir) {
-
-        // Set back the list and icon view
-        this.displayView()
-
-        // stop and hide the video player.
-        this.videoPlayer.style.display = "none"
-        this.videoPlayer.stop();
-
-
-        this.imageViewer.style.display = "none";
-        this.imageViewer.innerHTML = "";
-
-        // Set back the view when the image viewer is close.
-        this.imageViewer.onclose = () => {
-            this.displayView()
-        }
-
+    loadImages(dir) {
         // get all images in the directory
         let images_ = []
         for (var i = 0; i < dir.files.length; i++) {
@@ -2214,13 +2198,43 @@ export class FileExplorer extends HTMLElement {
                     let img = images[i]
                     img.name = images_[i].path
                     img.slot = "images"
-                    this.imageViewer.addImage(img)
+                    let exist = false;
+                    for(var i=0; i < this.imageViewer.children.length; i++){
+                        if(this.imageViewer.children[i].name == img.name){
+                            exist = true;
+                            break
+                        }
+                    }
+                    // append image only if is not already there...
+                    if(!exist){
+                        this.imageViewer.addImage(img)
+                    }
                 }
                 // Init the images...
                 this.imageViewer.populateChildren();
             }, images, images_, index)
         }
+    }
 
+    setDir(dir) {
+
+        // Set back the list and icon view
+        this.displayView()
+
+        // stop and hide the video player.
+        this.videoPlayer.style.display = "none"
+        this.videoPlayer.stop();
+
+
+        this.imageViewer.style.display = "none";
+        this.imageViewer.innerHTML = "";
+
+        // Set back the view when the image viewer is close.
+        this.imageViewer.onclose = () => {
+            this.displayView()
+        }
+
+        this.loadImages(dir)
 
         if (this.backNavigationBtn != null) {
             this.backNavigationBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
