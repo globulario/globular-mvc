@@ -22,7 +22,7 @@ import { MenuItemElement } from './menu/menuItem.js';
 import { createElement } from "./element.js";
 import { ItemManufacturer } from 'globular-web-client/catalog/catalog_pb';
 import { CreateDirRequest, GetThumbnailsResponse } from 'globular-web-client/file/file_pb';
-import { createArchive, createDir, deleteDir, deleteFile, downloadFileHttp, uploadFiles } from 'globular-web-client/api';
+import { createArchive, createDir, deleteDir, deleteFile, downloadFileHttp, renameFile, uploadFiles } from 'globular-web-client/api';
 import { ApplicationView } from '../ApplicationView';
 import { Application } from '../Application';
 // contain list of dir localy
@@ -179,7 +179,6 @@ export class FilesView extends HTMLElement {
                             downloadFileHttp(path_, name + ".tgz",
                                 () => {
                                     // Now I will remove the file from the server....
-
                                     deleteFile(Application.globular, path_,
                                         () => {
                                             console.log("file removed")
@@ -281,11 +280,12 @@ export class FilesView extends HTMLElement {
                 let index = 0;
                 let deleteFile_ = () => {
                     let f = files[index]
+                    let path = f.path.substring(0, f.path.lastIndexOf("/"))
                     index++
                     if (f.isDir) {
                         deleteDir(Application.globular, f.path,
                             () => {
-                                Model.eventHub.publish("reload_dir_event", f.path, false);
+                                Model.eventHub.publish("reload_dir_event", path, false);
                                 if (index < Object.keys(this.selected).length) {
                                     deleteFile_()
                                 } else {
@@ -296,7 +296,7 @@ export class FilesView extends HTMLElement {
                     } else {
                         deleteFile(Application.globular, f.path,
                             () => {
-                                Model.eventHub.publish("reload_dir_event", f.path, false);
+                                Model.eventHub.publish("reload_dir_event", path, false);
                                 if (index < Object.keys(this.selected).length) {
                                     deleteFile_()
                                 } else {
@@ -458,7 +458,90 @@ export class FilesView extends HTMLElement {
     rename(div, span, f) {
 
         console.log("rename ", div, span, f)
-        // first of all I will 
+        // first of all I will hide the span and append an input...
+        span.style.display = "none"
+
+        // Here I will use a simple paper-card with a paper input...
+        let html = `
+                    <style>
+                        #rename-file-dialog{
+                            display: flex;
+                            position: absolute;
+                            flex-direction: column;
+                            top: 115px;
+                            left: 0px;
+                        }
+    
+                        .rename-file-dialog-actions{
+                            font-size: .85rem;
+                            align-items: center;
+                            justify-content: flex-end;
+                            display: flex;
+                        }
+    
+                    </style>
+                    <paper-card id="rename-file-dialog">
+                        <div class="card-content">
+                            <paper-textarea id="rename-file-input" label="new folder name" value="${f.name}"></paper-textarea>
+                        </div>
+                        <div class="rename-file-dialog-actions">
+                            <paper-button id="rename-file-cancel-btn">Cancel</paper-button>
+                            <paper-button id="rename-file-ok-btn">Rename</paper-button>
+                        </div>
+                    </paper-card>
+                `
+        // only one dialog open at time.
+        if (div.querySelector("#rename-file-dialog") == undefined) {
+            let range = document.createRange()
+            div.appendChild(range.createContextualFragment(html))
+        }
+
+        let input = div.querySelector("#rename-file-input")
+        setTimeout(() => {
+            input.focus()
+            let index = f.name.lastIndexOf(".")
+            if (index == -1) {
+                input.inputElement.textarea.select();
+            } else {
+                input.inputElement.textarea.setSelectionRange(0, index)
+            }
+        }, 50)
+
+        let cancel_btn = div.querySelector("#rename-file-cancel-btn")
+
+        let rename_btn = div.querySelector("#rename-file-ok-btn")
+
+        // simply remove the dialog
+        cancel_btn.onclick = () => {
+            let dialog = div.querySelector("#rename-file-dialog")
+            dialog.parentNode.removeChild(dialog)
+            span.style.display = ""
+        }
+
+        input.onkeydown = (evt) => {
+            if (evt.keyCode == 13) {
+                rename_btn.click()
+            } else if (evt.keyCode == 27) {
+                cancel_btn.click()
+            }
+        }
+
+        rename_btn.onclick = (evt) => {
+            evt.stopPropagation();
+
+            let dialog = div.querySelector("#rename-file-dialog")
+            dialog.parentNode.removeChild(dialog)
+
+            span.style.display = ""
+            let path = f.path.substring(0, f.path.lastIndexOf("/"))
+
+            // Now I will rename the file or directory...
+            renameFile(Application.globular, path, input.value, f.name,
+                () => {
+                    // Refresh the parent folder...
+                    Model.eventHub.publish("reload_dir_event", path, false);
+                }, err => { ApplicationView.displayMessage(err, 3000) })
+        }
     }
 }
 
@@ -637,7 +720,8 @@ export class FilesListView extends FilesView {
 
 
             let span = row.querySelector("span")
-            span.onclick = () => {
+            span.onclick = (evt) => {
+                evt.stopPropagation();
                 if (f.mime.startsWith("video")) {
                     Model.eventHub.publish("__play_video__", f.path, true)
                 } else if (f.isDir) {
@@ -681,7 +765,8 @@ export class FilesListView extends FilesView {
                 if (f.isDir) {
                     fileListView.insertBefore(row, fileListView.firstChild);
                     let lnk = this.div.getElementsByClassName("file-lnk-ico")[0]
-                    lnk.onclick = () => {
+                    lnk.onclick = (evt) => {
+                        evt.stopPropagation();
                         Model.eventHub.publish("set_dir_event", _dirs[f._path], true)
                     }
 
@@ -1003,7 +1088,8 @@ export class FilesIconView extends FilesView {
                     let folderIcon = document.createRange().createContextualFragment(`<iron-icon icon="icons:folder"></iron-icon>`)
                     fileIconDiv.insertBefore(folderIcon, fileIconDiv.firstChild)
 
-                    fileIconDiv.onclick = () => {
+                    fileIconDiv.onclick = (evt) => {
+                        evt.stopPropagation();
                         Model.eventHub.publish("set_dir_event", _dirs[file._path], true)
                     }
 
@@ -1042,7 +1128,8 @@ export class FilesIconView extends FilesView {
                         w = (img.width / img.height) * h
                     }
 
-                    img.onclick = () => {
+                    img.onclick = (evt) => {
+                        evt.stopPropagation();
                         Model.eventHub.publish("__show_image__", file.path, true)
                     }
                 }
@@ -1250,7 +1337,8 @@ export class PathNavigator extends HTMLElement {
             }
 
             // Set the current directory to the clicked one.
-            title.onclick = () => {
+            title.onclick = (evt) => {
+                evt.stopPropagation();
                 _readDir(path_, (dir) => {
                     // Send read dir event.
                     Model.eventHub.publish("set_dir_event", _dirs[dir._path], true)
@@ -1335,7 +1423,7 @@ export class FileNavigator extends HTMLElement {
         if (this.dirs[dir.path] != undefined) {
             let div = this.div.querySelector(`#${this.dirs[dir.path].id}`)
             let parent = div.parentNode
-            let level =  delete this.dirs[dir.path].level
+            let level = delete this.dirs[dir.path].level
             if (div != null) {
                 parent.removeChild(div)
                 delete this.dirs[dir.path]
@@ -1434,7 +1522,8 @@ export class FileNavigator extends HTMLElement {
             shrinkBtn.style.cursor = "default"
         }
 
-        shrinkBtn.onclick = () => {
+        shrinkBtn.onclick = (evt) => {
+            evt.stopPropagation();
             shrinkBtn.style.display = "none";
             fileDiv.style.display = "none"
             dirIco.icon = "icons:folder"
@@ -1446,7 +1535,8 @@ export class FileNavigator extends HTMLElement {
             }
         }
 
-        expandBtn.onclick = () => {
+        expandBtn.onclick = (evt) => {
+            evt.stopPropagation();
             shrinkBtn.style.display = "block"
             fileDiv.style.display = "block"
             dirIco.icon = "icons:folder-open"
@@ -1458,7 +1548,8 @@ export class FileNavigator extends HTMLElement {
             }
         }
 
-        dirLnk.onclick = () => {
+        dirLnk.onclick = (evt) => {
+            evt.stopPropagation();
             Model.eventHub.publish("set_dir_event", _dirs[dir._path], true);
         }
 
@@ -1724,7 +1815,8 @@ export class FileExplorer extends HTMLElement {
         })
 
         // Here I will connect the windows resize event...
-        this.backNavigationBtn.onclick = () => {
+        this.backNavigationBtn.onclick = (evt) => {
+            evt.stopPropagation();
             let index = this.navigations.indexOf(this.path)
             index--
             if (index < this.navigations.length && index > -1) {
@@ -1732,7 +1824,8 @@ export class FileExplorer extends HTMLElement {
             }
         }
 
-        this.fowardNavigationBtn.onclick = () => {
+        this.fowardNavigationBtn.onclick = (evt) => {
+            evt.stopPropagation();
             let index = this.navigations.indexOf(this.path)
             index++
             if (index < this.navigations.length && index > -1) {
@@ -1740,8 +1833,8 @@ export class FileExplorer extends HTMLElement {
             }
         }
 
-        this.upwardNavigationBtn.onclick = () => {
-
+        this.upwardNavigationBtn.onclick = (evt) => {
+            evt.stopPropagation();
             if (this.path.split("/").length > 2) {
                 this.path = this.path.substring(0, this.path.lastIndexOf("/"))
                 Model.eventHub.publish("set_dir_event", _dirs[this.path], true)
@@ -1749,7 +1842,8 @@ export class FileExplorer extends HTMLElement {
         }
 
 
-        this.filesListBtn.onclick = () => {
+        this.filesListBtn.onclick = (evt) => {
+            evt.stopPropagation();
             this.imageViewer.style.display = "none"
             this.filesListView.style.display = ""
             this.filesIconView.style.display = "none"
@@ -1761,7 +1855,8 @@ export class FileExplorer extends HTMLElement {
             this.fileIconBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
         }
 
-        this.fileIconBtn.onclick = () => {
+        this.fileIconBtn.onclick = (evt) => {
+            evt.stopPropagation();
             this.imageViewer.style.display = "none"
             this.filesListBtn.classList.remove("active")
             this.fileIconBtn.classList.add("active")
@@ -1773,12 +1868,14 @@ export class FileExplorer extends HTMLElement {
             this.fileIconBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-active)")
         }
 
-        this.fileExplererCloseBtn.onclick = () => {
+        this.fileExplererCloseBtn.onclick = (evt) => {
+            evt.stopPropagation();
             this.close()
         }
 
         // Create a new directory here...
-        this.createDirectoryBtn.onclick = () => {
+        this.createDirectoryBtn.onclick = (evt) => {
+            evt.stopPropagation();
             // Here I will use a simple paper-card with a paper input...
             let html = `
                 <style>
@@ -1800,7 +1897,7 @@ export class FileExplorer extends HTMLElement {
                 </style>
                 <paper-card id="new-dir-dialog">
                     <div class="card-content">
-                        <paper-input id="new-dir-input" label="new folder name" value="Untitled Folder"></paper-input>
+                        <paper-textarea id="new-dir-input" label="new folder name" value="Untitled Folder"></paper-textarea>
                     </div>
                     <div class="new-dir-dialog-actions">
                         <paper-button id="new-dir-cancel-btn">Cancel</paper-button>
@@ -1817,7 +1914,7 @@ export class FileExplorer extends HTMLElement {
             let input = this.fileExplorerContent.querySelector("#new-dir-input")
             setTimeout(() => {
                 input.focus()
-                input.inputElement.inputElement.select();
+                input.inputElement.textarea.select();
             }, 50)
 
             let cancel_btn = this.fileExplorerContent.querySelector("#new-dir-cancel-btn")
@@ -1825,20 +1922,22 @@ export class FileExplorer extends HTMLElement {
             let create_btn = this.fileExplorerContent.querySelector("#new-dir-create-btn")
 
             // simply remove the dialog
-            cancel_btn.onclick = () => {
+            cancel_btn.onclick = (evt) => {
+                evt.stopPropagation();
                 let dialog = this.fileExplorerContent.querySelector("#new-dir-dialog")
                 dialog.parentNode.removeChild(dialog)
             }
 
-            input.onkeyup = (evt)=>{
-                if(evt.keyCode == 13){
+            input.onkeydown = (evt) => {
+                if (evt.keyCode == 13) {
                     create_btn.click()
-                }else if(evt.keyCode == 27){
+                } else if (evt.keyCode == 27) {
                     cancel_btn.click()
                 }
             }
 
-            create_btn.onclick = () => {
+            create_btn.onclick = (evt) => {
+                evt.stopPropagation();
                 let dialog = this.fileExplorerContent.querySelector("#new-dir-dialog")
                 dialog.parentNode.removeChild(dialog)
                 console.log("create directory: ", input.value)
@@ -1946,13 +2045,14 @@ export class FileExplorer extends HTMLElement {
         // must be call after file are deleted or renamed
         Model.eventHub.subscribe("reload_dir_event", () => { }, (path) => {
             console.log("file delete event received: ", path)
-            if (path.startsWith(this.path)) {
-                _readDir(this.path, (dir) => {
+            _readDir(path, (dir) => {
+                if (dir.path == this.path) {
                     Model.eventHub.publish("set_dir_event", dir, true)
-                    this.fileNavigator.reload(dir)
-                }, () => { }, true)
-                Model.eventHub.publish("set_dir_event", _dirs[this.path], true)
-            }
+                }
+                this.fileNavigator.reload(dir)
+            }, () => { }, true)
+            //Model.eventHub.publish("set_dir_event", _dirs[this.path], true)
+
         }, false)
 
         // Refresh the interface.
@@ -2349,9 +2449,8 @@ export class VideoPreview extends HTMLElement {
             <iron-icon id="play-btn" icon="av:play-circle-outline"></iron-icon>
             <paper-ripple></paper-ripple>
         </div>
-       
-       
         `
+
         this.images = []
 
         // give the focus to the input.
