@@ -609,7 +609,6 @@ export class ApplicationView extends View {
    * @param msg The message to display in toast!
    */
   public static displayMessage(msg: any, duration: number) {
-    console.log(msg)
     return M.toast({
       html: this.getErrorMessage(msg),
       displayLength: duration,

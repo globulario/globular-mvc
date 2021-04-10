@@ -21,8 +21,8 @@ import { DropdownMenuElement } from './menu/dropdownMenu.js';
 import { MenuItemElement } from './menu/menuItem.js';
 import { createElement } from "./element.js";
 import { ItemManufacturer } from 'globular-web-client/catalog/catalog_pb';
-import { GetThumbnailsResponse } from 'globular-web-client/file/file_pb';
-import { createArchive, deleteDir, deleteFile, downloadFileHttp, uploadFiles } from 'globular-web-client/api';
+import { CreateDirRequest, GetThumbnailsResponse } from 'globular-web-client/file/file_pb';
+import { createArchive, createDir, deleteDir, deleteFile, downloadFileHttp, uploadFiles } from 'globular-web-client/api';
 import { ApplicationView } from '../ApplicationView';
 import { Application } from '../Application';
 // contain list of dir localy
@@ -44,7 +44,6 @@ function getImage(callback, images, files, index) {
     let f = files[index];
     index++
 
-    // console.log(images[0])
     var xhr = new XMLHttpRequest();
     xhr.open('GET', f.path, true);
 
@@ -144,7 +143,7 @@ export class FilesView extends HTMLElement {
 
         this.downloadMenuItem.action = () => {
 
-            
+
             // Here I will create an archive from the selected files and dowload it...
             let files = [];
             for (var key in this.selected) {
@@ -159,7 +158,7 @@ export class FilesView extends HTMLElement {
                         downloadFileHttp(path, uuid + ".tgz",
                             () => {
                                 // Now I will remove the file from the server....
-                                console.log("file downloaded")
+
                                 deleteFile(Application.globular, path,
                                     () => {
                                         console.log("file removed")
@@ -169,18 +168,18 @@ export class FilesView extends HTMLElement {
                     }, err => { ApplicationView.displayMessage(err, 3000) })
             } else {
 
-                let path =this.menu.parentNode.parentNode.name
+                let path = this.menu.parentNode.parentNode.name
                 let name = path.substring(path.lastIndexOf("/") + 1)
 
                 // if the file is a directory I will create archive and download it.
-                if(this.menu.parentNode.parentNode.isDir){
+                if (this.menu.parentNode.parentNode.isDir) {
                     createArchive(Application.globular, [path], name,
                         path_ => {
                             // Download the file...
                             downloadFileHttp(path_, name + ".tgz",
                                 () => {
                                     // Now I will remove the file from the server....
-                                    console.log("file downloaded")
+
                                     deleteFile(Application.globular, path_,
                                         () => {
                                             console.log("file removed")
@@ -188,13 +187,13 @@ export class FilesView extends HTMLElement {
                                         err => { ApplicationView.displayMessage(err, 3000) })
                                 }, err => { ApplicationView.displayMessage(err, 3000) })
                         }, err => { ApplicationView.displayMessage(err, 3000) })
-                }else{
+                } else {
                     // simply download the file.
                     downloadFileHttp(path, name,
-                    () => {
-                        // Now I will remove the file from the server....
-                        console.log("file downloaded")
-                    }, err => { ApplicationView.displayMessage(err, 3000) })
+                        () => {
+                            // Now I will remove the file from the server....
+
+                        }, err => { ApplicationView.displayMessage(err, 3000) })
                 }
 
             }
@@ -217,10 +216,10 @@ export class FilesView extends HTMLElement {
             }
 
             // if not checked but selected with menu...
-            if(fileList.length == 0){
+            if (fileList.length == 0) {
                 let file = this.menu.parentNode.parentNode.file
                 fileList += `<div>${file.path}</div>`
-                
+
                 files.push(file)
             }
 
@@ -277,11 +276,6 @@ export class FilesView extends HTMLElement {
                     </div>`,
                         3000
                     );
-
-                    // I will publish file event to remove all file from interfaces...
-                    for (var fileName in this.selected) {
-                        Model.eventHub.publish("delete_file_" + this.selected[fileName].path + "_evt", {}, false);
-                    }
                 }
 
                 let index = 0;
@@ -291,6 +285,7 @@ export class FilesView extends HTMLElement {
                     if (f.isDir) {
                         deleteDir(Application.globular, f.path,
                             () => {
+                                Model.eventHub.publish("reload_dir_event", f.path, false);
                                 if (index < Object.keys(this.selected).length) {
                                     deleteFile_()
                                 } else {
@@ -301,6 +296,7 @@ export class FilesView extends HTMLElement {
                     } else {
                         deleteFile(Application.globular, f.path,
                             () => {
+                                Model.eventHub.publish("reload_dir_event", f.path, false);
                                 if (index < Object.keys(this.selected).length) {
                                     deleteFile_()
                                 } else {
@@ -316,7 +312,7 @@ export class FilesView extends HTMLElement {
             }
 
             noBtn.onclick = () => {
-                
+
                 toast.dismiss();
             }
 
@@ -325,8 +321,8 @@ export class FilesView extends HTMLElement {
         }
 
         this.renameMenuItem.action = () => {
-            console.log("rename menu click", this.path)
-
+            // Display the rename input...
+            this.menu.parentNode.parentNode.rename()
             this.menu.parentNode.removeChild(this.menu)
         }
 
@@ -457,6 +453,12 @@ export class FilesView extends HTMLElement {
 
     clearSelection() {
         this.selected = {}
+    }
+
+    rename(div, span, f) {
+
+        console.log("rename ", div, span, f)
+        // first of all I will 
     }
 }
 
@@ -617,7 +619,8 @@ export class FilesListView extends FilesView {
 
             let checkbox = row.querySelector("paper-checkbox")
             // Connect interface from various point...
-            checkbox.onclick = () => {
+            checkbox.onclick = (evt) => {
+                evt.stopPropagation();
                 Model.eventHub.publish("__file_select_unselect_" + f.path, checkbox.checked, true)
             }
 
@@ -632,17 +635,6 @@ export class FilesListView extends FilesView {
                 }
             }, true)
 
-            // The delete event...
-            Model.eventHub.subscribe("delete_file_" + f.path + "_evt",
-                () => { },
-                () => {
-                    // Remove the row...
-                    row.parentNode.removeChild(row)
-                    delete this.selected[f.path]
-                    dir.files = dir.files.filter(file => { return file.path != f.path; });
-
-                }, false);
-
 
             let span = row.querySelector("span")
             span.onclick = () => {
@@ -654,6 +646,7 @@ export class FilesListView extends FilesView {
                     Model.eventHub.publish("__show_image__", f.path, true)
                 }
             }
+
 
             // On mouse over event.
             row.onmouseover = () => {
@@ -678,6 +671,12 @@ export class FilesListView extends FilesView {
                     checkbox.style.visibility = "hidden"
                 }
             }
+
+            // Display the rename file box...
+            row.rename = () => {
+                this.rename(row, span, f)
+            }
+
             if (!f.name.startsWith(".")) {
                 if (f.isDir) {
                     fileListView.insertBefore(row, fileListView.firstChild);
@@ -952,12 +951,14 @@ export class FilesIconView extends FilesView {
                 fileIconDiv.isDir = file.isDir
                 fileIconDiv.file = file
 
+
                 // Now I will append the file name span...
                 let fileNameSpan = document.createElement("span")
 
                 let checkbox = fileIconDiv.querySelector("paper-checkbox")
 
-                checkbox.onclick = () => {
+                checkbox.onclick = (evt) => {
+                    evt.stopPropagation();
                     Model.eventHub.publish("__file_select_unselect_" + file.path, checkbox.checked, true)
                 }
 
@@ -971,17 +972,6 @@ export class FilesIconView extends FilesView {
                         delete this.selected[file.path]
                     }
                 }, true)
-
-                Model.eventHub.subscribe("delete_file_" + file.path + "_evt",
-                    () => { },
-                    () => {
-                        // Remove the row...
-                        fileIconDiv.parentNode.parentNode.removeChild(fileIconDiv.parentNode)
-                        delete this.selected[file.path]
-                        // remove it from it parent.
-                        filesByType[fileType] = filesByType[fileType].filter(f => { return f.path != file.path; });
-                        dir.files = dir.files.filter(f => { return f.path != file.path; });
-                    }, false);
 
                 // Here I will append the interation.
                 fileIconDiv.onmouseover = (evt) => {
@@ -1052,16 +1042,19 @@ export class FilesIconView extends FilesView {
                         w = (img.width / img.height) * h
                     }
 
-                    console.log("image width ", img.width, "image heigth", img.height)
                     img.onclick = () => {
                         Model.eventHub.publish("__show_image__", file.path, true)
                     }
                 }
 
-
                 fileNameSpan.innerHTML = file.name;
                 fileNameSpan.style.maxWidth = w + "px";
                 fileIconDiv.parentNode.appendChild(fileNameSpan);
+
+
+                fileIconDiv.rename = () => {
+                    this.rename(fileIconDiv, fileNameSpan, file)
+                }
 
             })
         }
@@ -1290,6 +1283,9 @@ export class FileNavigator extends HTMLElement {
         // List of listeners...
         this.navigationListener = ""
 
+        // Here I will keep the list of div in memory to be able to 
+        // reload it...
+        this.dirs = {}
 
         // The directory displayed in the navigator.
         this.dir = null
@@ -1333,7 +1329,21 @@ export class FileNavigator extends HTMLElement {
         this.div = this.shadowRoot.querySelector("#file-navigator-div");
     }
 
-
+    // remove div and reload it from it content...
+    reload(dir) {
+        console.log("reload dir ", dir)
+        if (this.dirs[dir.path] != undefined) {
+            let div = this.div.querySelector(`#${this.dirs[dir.path].id}`)
+            let parent = div.parentNode
+            let level =  delete this.dirs[dir.path].level
+            if (div != null) {
+                parent.removeChild(div)
+                delete this.dirs[dir.path]
+            }
+            // reload the div...
+            this.initTreeView(dir, parent, level)
+        }
+    }
 
     // Init the tree view.
     initTreeView(dir, div, level) {
@@ -1343,8 +1353,10 @@ export class FileNavigator extends HTMLElement {
             return;
         }
 
-        let id = dir.path.split("/").join("_").split(".").join("_").split("[").join("_").split("]").join("_").split("(").join("_").split(")").join("_").split("{").join("_").split("}").join("_");
-        //let id = "_" + uuidv4().split("-").join("_");
+        let id = "_" + uuidv4().split("-").join("_");
+        // keep it in memory 
+        this.dirs[dir.path] = { id: id, level: level }
+
         if (this.div.querySelector(`#${id}`) == undefined) {
             let name = dir.path.split("/").pop();
             let offset = 10 * level
@@ -1555,7 +1567,7 @@ export class FileExplorer extends HTMLElement {
         <style>
             ${theme}
             
-            iron-icon:hover{
+            paper-icon-button:hover{
                 cursor: pointer;
             }
 
@@ -1576,6 +1588,7 @@ export class FileExplorer extends HTMLElement {
                 display: flex;
                 flex-direction: column;
                 min-width: 800px;
+                position: relative;
             }
 
             paper-card{
@@ -1632,6 +1645,7 @@ export class FileExplorer extends HTMLElement {
                     <paper-icon-button id="navigation-upward-btn" icon="icons:arrow-upward"></paper-icon-button>
                     <globular-path-navigator id="globular-path-navigator" style="flex-grow: 1;"></globular-path-navigator>
                     <paper-icon-button id="navigation-cloud-upload-btn" icon="icons:cloud-upload"></paper-icon-button>
+                    <paper-icon-button id="navigation-create-dir-btn" icon="icons:create-new-folder"></paper-icon-button>
                     <paper-icon-button id="navigation-refresh-btn" icon="icons:refresh"></paper-icon-button>
                 </div>
                 <div id="file-explorer-layout">
@@ -1685,6 +1699,9 @@ export class FileExplorer extends HTMLElement {
 
         // The refresh button
         this.refreshBtn = this.shadowRoot.querySelector("#navigation-refresh-btn")
+
+        // The create directory button.
+        this.createDirectoryBtn = this.shadowRoot.querySelector("#navigation-create-dir-btn")
 
         // The upload file button.
         this.uploadBtn = this.shadowRoot.querySelector("#navigation-cloud-upload-btn")
@@ -1760,6 +1777,97 @@ export class FileExplorer extends HTMLElement {
             this.close()
         }
 
+        // Create a new directory here...
+        this.createDirectoryBtn.onclick = () => {
+            // Here I will use a simple paper-card with a paper input...
+            let html = `
+                <style>
+                    #new-dir-dialog{
+                        display: flex;
+                        position: absolute;
+                        flex-direction: column;
+                        right: 60px;
+                        top: 50px;
+                    }
+
+                    .new-dir-dialog-actions{
+                        font-size: .85rem;
+                        align-items: center;
+                        justify-content: flex-end;
+                        display: flex;
+                    }
+
+                </style>
+                <paper-card id="new-dir-dialog">
+                    <div class="card-content">
+                        <paper-input id="new-dir-input" label="new folder name" value="Untitled Folder"></paper-input>
+                    </div>
+                    <div class="new-dir-dialog-actions">
+                        <paper-button id="new-dir-cancel-btn">Cancel</paper-button>
+                        <paper-button id="new-dir-create-btn">Create</paper-button>
+                    </div>
+                </paper-card>
+            `
+            // only one dialog open at time.
+            if (this.fileExplorerContent.querySelector("#new-dir-dialog") == undefined) {
+                let range = document.createRange()
+                this.fileExplorerContent.appendChild(range.createContextualFragment(html))
+            }
+
+            let input = this.fileExplorerContent.querySelector("#new-dir-input")
+            setTimeout(() => {
+                input.focus()
+                input.inputElement.inputElement.select();
+            }, 50)
+
+            let cancel_btn = this.fileExplorerContent.querySelector("#new-dir-cancel-btn")
+
+            let create_btn = this.fileExplorerContent.querySelector("#new-dir-create-btn")
+
+            // simply remove the dialog
+            cancel_btn.onclick = () => {
+                let dialog = this.fileExplorerContent.querySelector("#new-dir-dialog")
+                dialog.parentNode.removeChild(dialog)
+            }
+
+            input.onkeyup = (evt)=>{
+                if(evt.keyCode == 13){
+                    create_btn.click()
+                }else if(evt.keyCode == 27){
+                    cancel_btn.click()
+                }
+            }
+
+            create_btn.onclick = () => {
+                let dialog = this.fileExplorerContent.querySelector("#new-dir-dialog")
+                dialog.parentNode.removeChild(dialog)
+                console.log("create directory: ", input.value)
+
+                // Here I will create a new folder...
+                // Set the request.
+                const rqst = new CreateDirRequest();
+                rqst.setPath(this.path);
+                rqst.setName(input.value);
+                let token = localStorage.getItem("user_token");
+
+                // Create a directory at the given path.
+                Application.globular.fileService
+                    .createDir(rqst, {
+                        token: token,
+                        application: Application.application,
+                        domain: Application.domain
+                    })
+                    .then(() => {
+                        // The new directory was created.
+                        Model.eventHub.publish("reload_dir_event", this.path, false);
+                    })
+                    .catch((err) => {
+                        ApplicationView.displayMessage(err, 3000)
+                    });
+            }
+
+        }
+
         // Refresh the root directory and send event to
         // refresh all the interface.
         this.refreshBtn.onclick = () => {
@@ -1826,6 +1934,27 @@ export class FileExplorer extends HTMLElement {
             )
         }
 
+
+        // File rename event.
+        Model.eventHub.subscribe("file_rename_event", () => { }, (path) => {
+            if (path.startsWith(this.path)) {
+                Model.eventHub.publish("set_dir_event", _dirs[this.path], true)
+            }
+        }, false)
+
+        // Reload the content of a dir with the actual dir content description on the server.
+        // must be call after file are deleted or renamed
+        Model.eventHub.subscribe("reload_dir_event", () => { }, (path) => {
+            console.log("file delete event received: ", path)
+            if (path.startsWith(this.path)) {
+                _readDir(this.path, (dir) => {
+                    Model.eventHub.publish("set_dir_event", dir, true)
+                    this.fileNavigator.reload(dir)
+                }, () => { }, true)
+                Model.eventHub.publish("set_dir_event", _dirs[this.path], true)
+            }
+        }, false)
+
         // Refresh the interface.
         if (this.upload_files_event_listener == null) {
             Model.eventHub.subscribe("upload_files_event", (uuid) => {
@@ -1882,7 +2011,6 @@ export class FileExplorer extends HTMLElement {
                 this.imageViewer.style.display = "block"
 
                 // Here I will set the active image.
-                console.log(path)
                 for (var i = 0; this.imageViewer.children.length; i++) {
                     if (this.imageViewer.children[i].name == path) {
                         this.imageViewer.activeImage(getElementIndex(this.imageViewer.children[i]))
@@ -1987,14 +2115,6 @@ export class FileExplorer extends HTMLElement {
                     img.name = images_[i].path
                     img.slot = "images"
                     this.imageViewer.addImage(img)
-                    // Connect the remove file event.
-                    Model.eventHub.subscribe("delete_file_" + images_[i].path + "_evt",
-                    () => { },
-                    () => {
-                        // Remove the row...
-                        this.imageViewer.removeChild(img)
-                        
-                    }, false);
                 }
                 // Init the images...
                 this.imageViewer.populateChildren();
@@ -2258,7 +2378,7 @@ export class VideoPreview extends HTMLElement {
         }
 
         // Play the video
-        this.container.onclick = (evt) => {
+        this.playBtn.onclick = this.container.onclick = (evt) => {
             this.play()
         }
 
@@ -2302,7 +2422,6 @@ export class VideoPreview extends HTMLElement {
      * Start display the image 
      */
     startPreview() {
-        console.log("start preview...")
         let index = 0;
 
         this.interval = setInterval(() => {

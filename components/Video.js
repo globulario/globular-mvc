@@ -50,14 +50,11 @@ export class VideoPlayer extends HTMLElement {
 
         // Get the parent size and set the max width of te
         window.addEventListener("resize", ()=>{
-            console.log(this.parentNode.offsetWidth)
             this.video.style.maxWidth = this.parentNode.offsetWidth + "px"
         });
     }
 
     play(path) {
-        console.log("---------> ", this.video.currentSrc)
-        console.log("---------> ", this.video.paused)
         if(!this.video.paused && this.video.currentSrc.endsWith(path)){
             // Do nothing...
             return
