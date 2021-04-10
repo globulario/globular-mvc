@@ -36,9 +36,9 @@ function _setDir(dir) {
     }
 }
 
-function getElementIndex (element) {
+function getElementIndex(element) {
     return Array.from(element.parentNode.children).indexOf(element);
-  }
+}
 
 function getImage(callback, images, files, index) {
     let f = files[index];
@@ -54,7 +54,7 @@ function getImage(callback, images, files, index) {
         if (rsp.currentTarget.status == 200) {
             var reader = new FileReader();
             reader.readAsDataURL(rsp.currentTarget.response);
-            reader.onload =  function(e){
+            reader.onload = function (e) {
                 let img = document.createElement("img")
                 img.src = e.target.result
                 images.push(img)
@@ -144,30 +144,63 @@ export class FilesView extends HTMLElement {
 
         this.downloadMenuItem.action = () => {
 
-            this.menu.parentNode.removeChild(this.menu)
+            
             // Here I will create an archive from the selected files and dowload it...
             let files = [];
             for (var key in this.selected) {
                 files.push(this.selected[key].path)
             }
+            if (files.length > 0) {
+                // Create a tempory name...
+                let uuid = uuidv4()
+                createArchive(Application.globular, files, uuid,
+                    path => {
+                        // Download the file...
+                        downloadFileHttp(path, uuid + ".tgz",
+                            () => {
+                                // Now I will remove the file from the server....
+                                console.log("file downloaded")
+                                deleteFile(Application.globular, path,
+                                    () => {
+                                        console.log("file removed")
+                                    },
+                                    err => { ApplicationView.displayMessage(err, 3000) })
+                            }, err => { ApplicationView.displayMessage(err, 3000) })
+                    }, err => { ApplicationView.displayMessage(err, 3000) })
+            } else {
 
-            // Create a tempory name...
-            let uuid = uuidv4()
-            console.log("download menu click", files)
-            createArchive(Application.globular, files, uuid,
-                path => {
-                    // Download the file...
-                    downloadFileHttp(path, uuid + ".tgz",
-                        () => {
-                            // Now I will remove the file from the server....
-                            console.log("file downloaded")
-                            deleteFile(Application.globular, path,
+                let path =this.menu.parentNode.parentNode.name
+                let name = path.substring(path.lastIndexOf("/") + 1)
+
+                // if the file is a directory I will create archive and download it.
+                if(this.menu.parentNode.parentNode.isDir){
+                    createArchive(Application.globular, [path], name,
+                        path_ => {
+                            // Download the file...
+                            downloadFileHttp(path_, name + ".tgz",
                                 () => {
-                                    console.log("file removed")
-                                },
-                                err => { ApplicationView.displayMessage(err, 3000) })
+                                    // Now I will remove the file from the server....
+                                    console.log("file downloaded")
+                                    deleteFile(Application.globular, path_,
+                                        () => {
+                                            console.log("file removed")
+                                        },
+                                        err => { ApplicationView.displayMessage(err, 3000) })
+                                }, err => { ApplicationView.displayMessage(err, 3000) })
                         }, err => { ApplicationView.displayMessage(err, 3000) })
-                }, err => { ApplicationView.displayMessage(err, 3000) })
+                }else{
+                    // simply download the file.
+                    downloadFileHttp(path, name,
+                    () => {
+                        // Now I will remove the file from the server....
+                        console.log("file downloaded")
+                    }, err => { ApplicationView.displayMessage(err, 3000) })
+                }
+
+            }
+
+            // Remove it from it parent...
+            this.menu.parentNode.removeChild(this.menu)
         }
 
         this.shareAccessMenuItem.action = () => {
@@ -176,10 +209,19 @@ export class FilesView extends HTMLElement {
         }
 
         this.deleteMenuItem.action = () => {
-
+            let files = []
             let fileList = ""
             for (var fileName in this.selected) {
                 fileList += `<div>${this.selected[fileName].path}</div>`
+                files.push(this.selected[fileName])
+            }
+
+            // if not checked but selected with menu...
+            if(fileList.length == 0){
+                let file = this.menu.parentNode.parentNode.file
+                fileList += `<div>${file.path}</div>`
+                
+                files.push(file)
             }
 
             let toast = ApplicationView.displayMessage(
@@ -244,8 +286,7 @@ export class FilesView extends HTMLElement {
 
                 let index = 0;
                 let deleteFile_ = () => {
-                    let name = Object.keys(this.selected)[index]
-                    let f = this.selected[name]
+                    let f = files[index]
                     index++
                     if (f.isDir) {
                         deleteDir(Application.globular, f.path,
@@ -275,6 +316,7 @@ export class FilesView extends HTMLElement {
             }
 
             noBtn.onclick = () => {
+                
                 toast.dismiss();
             }
 
@@ -284,6 +326,7 @@ export class FilesView extends HTMLElement {
 
         this.renameMenuItem.action = () => {
             console.log("rename menu click", this.path)
+
             this.menu.parentNode.removeChild(this.menu)
         }
 
@@ -410,6 +453,10 @@ export class FilesView extends HTMLElement {
     // Set the directory.
     setDir(dir) {
         /** Nothing to do here. */
+    }
+
+    clearSelection() {
+        this.selected = {}
     }
 }
 
@@ -561,8 +608,12 @@ export class FilesListView extends FilesView {
                 <td>${mime}</td>
                 <td>${size}</td>
             `
+
             let row = document.createElement("tr")
             row.innerHTML = html;
+            row.name = f.path
+            row.isDir = f.isDir
+            row.file = f
 
             let checkbox = row.querySelector("paper-checkbox")
             // Connect interface from various point...
@@ -589,6 +640,7 @@ export class FilesListView extends FilesView {
                     row.parentNode.removeChild(row)
                     delete this.selected[f.path]
                     dir.files = dir.files.filter(file => { return file.path != f.path; });
+
                 }, false);
 
 
@@ -896,6 +948,10 @@ export class FilesIconView extends FilesView {
 
                 section.appendChild(range.createContextualFragment(html))
                 let fileIconDiv = section.querySelector(`#${id}`)
+                fileIconDiv.name = file.path
+                fileIconDiv.isDir = file.isDir
+                fileIconDiv.file = file
+
                 // Now I will append the file name span...
                 let fileNameSpan = document.createElement("span")
 
@@ -1708,11 +1764,13 @@ export class FileExplorer extends HTMLElement {
         // refresh all the interface.
         this.refreshBtn.onclick = () => {
             _readDir(this.root, (dir) => {
-                /*
-                this.fileListView.selected = {}
-                this.filesIconView.selected = {}
-                */
                 Model.eventHub.publish("set_dir_event", _dirs[this.path], true)
+
+                // Clear selection.
+                this.filesListView.clearSelection()
+                this.filesIconView.clearSelection()
+
+                // set back the view mode.
                 this.displayView()
             }, this.onerror, true)
         }
@@ -1825,13 +1883,13 @@ export class FileExplorer extends HTMLElement {
 
                 // Here I will set the active image.
                 console.log(path)
-                for(var i=0; this.imageViewer.children.length; i++){
-                    if( this.imageViewer.children[i].name == path){
-                        this.imageViewer.activeImage( getElementIndex(this.imageViewer.children[i]))
+                for (var i = 0; this.imageViewer.children.length; i++) {
+                    if (this.imageViewer.children[i].name == path) {
+                        this.imageViewer.activeImage(getElementIndex(this.imageViewer.children[i]))
                         break
                     }
                 }
-                
+
 
             })
         }
@@ -1911,22 +1969,32 @@ export class FileExplorer extends HTMLElement {
         let images_ = []
         for (var i = 0; i < dir.files.length; i++) {
             if (dir.files[i].mime.startsWith("image")) {
-                images_.push(dir.files[i])
+                let f = dir.files[i]
+                images_.push(f)
+
             }
         }
 
         // Initialyse images from the server.
         let index = 0;
         let images = [];
-        
+
         // Set the images in the image viewer.
         if (images_.length > 0) {
             getImage((images) => {
-                for(var i=0; i < images.length;i++){
+                for (var i = 0; i < images.length; i++) {
                     let img = images[i]
                     img.name = images_[i].path
                     img.slot = "images"
                     this.imageViewer.addImage(img)
+                    // Connect the remove file event.
+                    Model.eventHub.subscribe("delete_file_" + images_[i].path + "_evt",
+                    () => { },
+                    () => {
+                        // Remove the row...
+                        this.imageViewer.removeChild(img)
+                        
+                    }, false);
                 }
                 // Init the images...
                 this.imageViewer.populateChildren();
