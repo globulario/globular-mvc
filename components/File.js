@@ -120,7 +120,19 @@ export class FilesView extends HTMLElement {
                 <iron-icon icon="social:group" style="height: 18px; width: 18px"></iron-icon>
                 <span style="margin-left: 10px;">Manage access</span>
             </menu-item-element>
-            <menu-item-element id="rename-menu-item" style="text-agling: left;" action="">
+            <menu-item-element separator="true"  id="cut-menu-item" style="text-agling: left;" action="">
+                <iron-icon icon="icons:content-cut" style="height: 18px; width: 18px"></iron-icon>
+                <span style="margin-left: 10px;">Cut</span>
+            </menu-item-element>
+            <menu-item-element id="copy-menu-item" style="text-agling: left;" action="">
+                <iron-icon icon="icons:content-copy" style="height: 18px; width: 18px"></iron-icon>
+                <span style="margin-left: 10px;">Copy</span>
+            </menu-item-element>
+            <menu-item-element id="paste-menu-item" style="text-agling: left;" action="">
+                <iron-icon icon="icons:content-paste" style="height: 18px; width: 18px"></iron-icon>
+                <span style="margin-left: 10px;">Paste</span>
+            </menu-item-element>
+            <menu-item-element separator="true"  id="rename-menu-item" style="text-agling: left;" action="">
                 <iron-icon icon="icons:create" style="height: 18px; width: 18px"></iron-icon>
                 <span style="margin-left: 10px;">Rename</span>
             </menu-item-element>
@@ -128,7 +140,7 @@ export class FilesView extends HTMLElement {
                 <iron-icon icon="icons:delete" style="height: 18px; width: 18px"></iron-icon>
                 <span style="margin-left: 10px;">Delete</span>
             </menu-item-element>
-            <menu-item-element id="download-menu-item" style="text-agling: left;" action="">
+            <menu-item-element separator="true"  id="download-menu-item" style="text-agling: left;" action="">
                 <iron-icon icon="icons:cloud-download" style="height: 18px; width: 18px"></iron-icon>
                 <span style="margin-left: 10px;">Download</span>
             </menu-item-element>
@@ -140,6 +152,11 @@ export class FilesView extends HTMLElement {
         this.renameMenuItem = this.menu.querySelector("#rename-menu-item")
         this.deleteMenuItem = this.menu.querySelector("#delete-menu-item")
         this.downloadMenuItem = this.menu.querySelector("#download-menu-item")
+
+        // Now the cut copy and paste menu...
+        this.cutMenuItem = this.menu.querySelector("#cut-menu-item")
+        this.copyMenuItem = this.menu.querySelector("#copy-menu-item")
+        this.pasteMenuItem = this.menu.querySelector("#paste-menu-item")
 
         this.downloadMenuItem.action = () => {
 
@@ -432,6 +449,11 @@ export class FilesView extends HTMLElement {
                 }
             }
         }
+
+        // Now I will display the menu as popup menu instead of the default menu...
+        // so cut copy and paste will work on the current directory and it more natural
+        // to use by the end user.
+
     }
 
     init() {
@@ -457,10 +479,6 @@ export class FilesView extends HTMLElement {
 
     rename(div, span, f) {
 
-        console.log("rename ", div, span, f)
-        // first of all I will hide the span and append an input...
-        span.style.display = "none"
-
         // Here I will use a simple paper-card with a paper input...
         let html = `
                     <style>
@@ -468,8 +486,10 @@ export class FilesView extends HTMLElement {
                             display: flex;
                             position: absolute;
                             flex-direction: column;
-                            top: 115px;
-                            left: 0px;
+                            top: ${div.offsetHeight + 3}px;
+                            left: 5px;
+                            min-width: 200px;
+                            z-index: 10000;
                         }
     
                         .rename-file-dialog-actions{
@@ -477,6 +497,14 @@ export class FilesView extends HTMLElement {
                             align-items: center;
                             justify-content: flex-end;
                             display: flex;
+                        }
+
+                        .card-content{
+                            background-color: var(--palette-background-paper);
+                        }
+
+                        .rename-file-dialog-actions{
+                            background-color: var(--palette-background-paper);
                         }
     
                     </style>
@@ -491,12 +519,18 @@ export class FilesView extends HTMLElement {
                     </paper-card>
                 `
         // only one dialog open at time.
-        if (div.querySelector("#rename-file-dialog") == undefined) {
+        let renameDialog = div.parentNode.querySelector("#rename-file-dialog")
+        if (renameDialog == undefined) {
             let range = document.createRange()
-            div.appendChild(range.createContextualFragment(html))
+            div.parentNode.appendChild(range.createContextualFragment(html))
+            renameDialog = div.parentNode.querySelector("#rename-file-dialog")
+            renameDialog.onmouseover = renameDialog.onmouseenter = (evt)=>{
+                evt.stopPropagation();
+            }
         }
 
-        let input = div.querySelector("#rename-file-input")
+
+        let input = div.parentNode.querySelector("#rename-file-input")
         setTimeout(() => {
             input.focus()
             let index = f.name.lastIndexOf(".")
@@ -507,13 +541,15 @@ export class FilesView extends HTMLElement {
             }
         }, 50)
 
-        let cancel_btn = div.querySelector("#rename-file-cancel-btn")
+        let cancel_btn = div.parentNode.querySelector("#rename-file-cancel-btn")
 
-        let rename_btn = div.querySelector("#rename-file-ok-btn")
+        let rename_btn = div.parentNode.querySelector("#rename-file-ok-btn")
 
         // simply remove the dialog
-        cancel_btn.onclick = () => {
-            let dialog = div.querySelector("#rename-file-dialog")
+        cancel_btn.onclick = (evt) => {
+            evt.stopPropagation();
+            
+            let dialog = div.parentNode.querySelector("#rename-file-dialog")
             dialog.parentNode.removeChild(dialog)
             span.style.display = ""
         }
@@ -529,7 +565,7 @@ export class FilesView extends HTMLElement {
         rename_btn.onclick = (evt) => {
             evt.stopPropagation();
 
-            let dialog = div.querySelector("#rename-file-dialog")
+            let dialog = div.parentNode.querySelector("#rename-file-dialog")
             dialog.parentNode.removeChild(dialog)
 
             span.style.display = ""
@@ -574,14 +610,10 @@ export class FilesListView extends FilesView {
                 transition: background 0.2s ease,padding 0.8s linear;
             }
 
-            tbody tr:hover {
-                -webkit-filter: invert(10%);
-                filter: invert(10%);
-            }
-
             .first-cell {
                 display: flex;
                 align-items: center;
+                position: relative;
             }
 
             .first-cell span{
@@ -734,6 +766,11 @@ export class FilesListView extends FilesView {
 
             // On mouse over event.
             row.onmouseover = () => {
+                // if a rename box is open I will not display the menu...
+                if(row.parentNode.querySelector("#rename-file-dialog")!=undefined){
+                    return
+                }
+
                 checkbox.style.visibility = "visible"
                 let item0 = this.menu.querySelector("#item-0")
                 // I will remove the background color for that item...
@@ -746,6 +783,8 @@ export class FilesListView extends FilesView {
                     item0.style.background = "none";
                     this.menu.style.display = "block"
                 }
+
+                row.style.filter = "invert(10%)";
             }
 
             // On mouseout event.
@@ -754,11 +793,12 @@ export class FilesListView extends FilesView {
                 if (!checkbox.checked) {
                     checkbox.style.visibility = "hidden"
                 }
+                row.style.filter = "";
             }
 
             // Display the rename file box...
             row.rename = () => {
-                this.rename(row, span, f)
+                this.rename(row.querySelector(".first-cell").children[2], span, f)
             }
 
             if (!f.name.startsWith(".")) {
@@ -896,6 +936,7 @@ export class FilesIconView extends FilesView {
                 display:flex; 
                 flex-direction: column;
                 align-items: center;
+                position: relative;
             }
 
             .file-icon-div:hover{
@@ -1885,6 +1926,7 @@ export class FileExplorer extends HTMLElement {
                         flex-direction: column;
                         right: 60px;
                         top: 50px;
+                        z-index: 10000;
                     }
 
                     .new-dir-dialog-actions{
@@ -1918,7 +1960,6 @@ export class FileExplorer extends HTMLElement {
             }, 50)
 
             let cancel_btn = this.fileExplorerContent.querySelector("#new-dir-cancel-btn")
-
             let create_btn = this.fileExplorerContent.querySelector("#new-dir-create-btn")
 
             // simply remove the dialog

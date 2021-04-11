@@ -1,53 +1,36 @@
-// Polymer dependencies
-import { PolymerElement, html } from '@polymer/polymer';
+import { theme } from "../../../globular-mvc/components/Theme.js";
 
-import { theme } from "./Theme";
+/**
+ * Sample empty component
+ */
+export class PermissionsManager extends HTMLElement {
+    // attributes.
 
-import '@polymer/paper-icon-button/paper-icon-button.js';
-import '@polymer/iron-icons/iron-icons.js';
-
-// List of imported functionality.
-import { randomUUID } from "../utility.js"
-
-class PermissionElement extends PolymerElement {
+    // Create the applicaiton view.
     constructor() {
-        super();
-    }
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
 
-    /**
-     * The internal component properties.
-     */
-    static get properties() {
-        return {
-            pagesize : Number
-        }
-    }
-
-    static get template() {
-        return html`
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
         <style>
             ${theme}
-            /** The permission panel **/
-            .globular-permissions-panel {
+            #container{
 
             }
-
         </style>
-        <div class="globular-permissions-panel">
-            
+        <div id="container">
         </div>
-    `;
-
+        `
+        // give the focus to the input.
+        let container = this.shadowRoot.querySelector("#container")
     }
 
-    /**
-     * That function is call when the table is ready to be diplay.
-     */
-    ready() {
-        super.ready();
-
-        
+    // The connection callback.
+    connectedCallback() {
     }
-
 }
-customElements.define('globular-permissions', TablePaginationElement);
+
+customElements.define('globular-permissions-manager', PermissionsManager)
+
