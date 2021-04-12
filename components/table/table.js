@@ -3,7 +3,6 @@ import { PolymerElement, html } from "@polymer/polymer/polymer-element.js";
 
 import { createElement } from "../element.js";
 import { fireResize, isString, exportToCsv, getCoords } from "../utility.js";
-import '../menu/menuItem.js';
 import '../menu/dropdownMenu.js';
 import './header.js'; // The maximum allowed number of row for a grid.
 import { theme } from "../Theme.js"

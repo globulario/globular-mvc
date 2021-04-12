@@ -17,8 +17,7 @@ import { theme } from './Theme';
 import { v4 as uuidv4 } from "uuid";
 
 // Menu to set action on files.
-import { DropdownMenuElement } from './menu/dropdownMenu.js';
-import { MenuItemElement } from './menu/menuItem.js';
+import { DropdownMenu, DropdownMenuItem } from './menu/dropdownMenu.js';
 import { createElement } from "./element.js";
 import { ItemManufacturer } from 'globular-web-client/catalog/catalog_pb';
 import { CreateDirRequest, GetThumbnailsResponse } from 'globular-web-client/file/file_pb';
@@ -108,44 +107,19 @@ export class FilesView extends HTMLElement {
         // Innitialisation of the layout.
         let id = "_" + uuidv4().split("-").join("_");
 
-        this.menu = new DropdownMenuElement()
-        this.menu.innerHTML = `
-        <menu-item-element id="item-0">
-            <iron-icon icon="more-vert"></iron-icon>
-            <menu-item-element id="share-menu-item" style="text-agling: left;" action="">
-                <iron-icon icon="folder-shared" style="height: 18px; width: 18px"></iron-icon>
-                <span style="margin-left: 10px;">Share</span>
-            </menu-item-element>
-            <menu-item-element id="manage-acess-menu-item" style="text-agling: left;" action="">
-                <iron-icon icon="social:group" style="height: 18px; width: 18px"></iron-icon>
-                <span style="margin-left: 10px;">Manage access</span>
-            </menu-item-element>
-            <menu-item-element separator="true"  id="cut-menu-item" style="text-agling: left;" action="">
-                <iron-icon icon="icons:content-cut" style="height: 18px; width: 18px"></iron-icon>
-                <span style="margin-left: 10px;">Cut</span>
-            </menu-item-element>
-            <menu-item-element id="copy-menu-item" style="text-agling: left;" action="">
-                <iron-icon icon="icons:content-copy" style="height: 18px; width: 18px"></iron-icon>
-                <span style="margin-left: 10px;">Copy</span>
-            </menu-item-element>
-            <menu-item-element id="paste-menu-item" style="text-agling: left;" action="">
-                <iron-icon icon="icons:content-paste" style="height: 18px; width: 18px"></iron-icon>
-                <span style="margin-left: 10px;">Paste</span>
-            </menu-item-element>
-            <menu-item-element separator="true"  id="rename-menu-item" style="text-agling: left;" action="">
-                <iron-icon icon="icons:create" style="height: 18px; width: 18px"></iron-icon>
-                <span style="margin-left: 10px;">Rename</span>
-            </menu-item-element>
-            <menu-item-element id="delete-menu-item" style="text-agling: left;" action="">
-                <iron-icon icon="icons:delete" style="height: 18px; width: 18px"></iron-icon>
-                <span style="margin-left: 10px;">Delete</span>
-            </menu-item-element>
-            <menu-item-element separator="true"  id="download-menu-item" style="text-agling: left;" action="">
-                <iron-icon icon="icons:cloud-download" style="height: 18px; width: 18px"></iron-icon>
-                <span style="margin-left: 10px;">Download</span>
-            </menu-item-element>
-        </menu-item-element>
+        let menuItemsHTML = `
+        <globular-dropdown-menu-item id="share-menu-item" icon="folder-shared" text="Share" action=""></globular-dropdown-menu-item>
+        <globular-dropdown-menu-item id="manage-acess-menu-item" icon="social:group" text="Manage access"action=""></globular-dropdown-menu-item>
+        <globular-dropdown-menu-item separator="true"  id="cut-menu-item"  icon="icons:content-cut" text="Paste" action=""></globular-dropdown-menu-item>
+        <globular-dropdown-menu-item id="copy-menu-item" icon="content-copy" text="Copy" action=""></globular-dropdown-menu-item>
+        <globular-dropdown-menu-item id="paste-menu-item" icon="icons:content-paste" action="" text="Paste"></globular-dropdown-menu-item>
+        <globular-dropdown-menu-item separator="true"  id="rename-menu-item" text="Rename" icon="icons:create" action=""> </globular-dropdown-menu-item>
+        <globular-dropdown-menu-item id="delete-menu-item" icon="icons:delete" action="" text="Delete"> </globular-dropdown-menu-item>
+        <globular-dropdown-menu-item separator="true"  id="download-menu-item" icon="icons:cloud-download" text="Download" action=""> </globular-dropdown-menu-item>
         `
+
+        this.menu = new DropdownMenu("icons:more-vert")
+        this.menu.innerHTML = menuItemsHTML
 
         this.shareAccessMenuItem = this.menu.querySelector("#share-menu-item")
         this.mananageAccessMenuItem = this.menu.querySelector("#manage-acess-menu-item")
@@ -159,8 +133,6 @@ export class FilesView extends HTMLElement {
         this.pasteMenuItem = this.menu.querySelector("#paste-menu-item")
 
         this.downloadMenuItem.action = () => {
-
-
             // Here I will create an archive from the selected files and dowload it...
             let files = [];
             for (var key in this.selected) {
@@ -233,7 +205,7 @@ export class FilesView extends HTMLElement {
 
             // if not checked but selected with menu...
             if (fileList.length == 0) {
-                let file = this.menu.parentNode.parentNode.file
+                let file = this.menu.file
                 fileList += `<div>${file.path}</div>`
 
                 files.push(file)
@@ -339,7 +311,7 @@ export class FilesView extends HTMLElement {
 
         this.renameMenuItem.action = () => {
             // Display the rename input...
-            this.menu.parentNode.parentNode.rename()
+            this.menu.rename()
             this.menu.parentNode.removeChild(this.menu)
         }
 
@@ -430,9 +402,14 @@ export class FilesView extends HTMLElement {
                   overflow: auto;
               }
 
+              popup-menu-element {
+                background-color: var(--palette-background-paper); 
+                color: var(--palette-text-primary);
+              }
+
           </style>
 
-          <div class="files-view-div" id="${id}">
+          <div class="files-view-div" /*oncontextmenu="return false;"*/ id="${id}">
           </div>
           `
         // get the div.
@@ -450,9 +427,32 @@ export class FilesView extends HTMLElement {
             }
         }
 
+        /** Remove the menu */
+        this.div.onmouseover = () => {
+            if (!this.menu.isOpen()) {
+                if (this.menu.parentNode != undefined) {
+                    this.menu.parentNode.removeChild(this.menu)
+                }
+            }
+        }
+
+        this.div.onclick = () => {
+            this.menu.close()
+            if (this.menu.parentNode != undefined) {
+                this.menu.parentNode.removeChild(this.menu)
+            }
+        }
+
         // Now I will display the menu as popup menu instead of the default menu...
         // so cut copy and paste will work on the current directory and it more natural
         // to use by the end user.
+        /*this.div.oncontextmenu = (e) => {
+            if (e.preventDefault != undefined)
+                e.preventDefault();
+            if (e.stopPropagation != undefined)
+                e.stopPropagation();
+
+        }*/
 
     }
 
@@ -477,7 +477,7 @@ export class FilesView extends HTMLElement {
         this.selected = {}
     }
 
-    rename(div, span, f) {
+    rename(parent, span, f, offset) {
 
         // Here I will use a simple paper-card with a paper input...
         let html = `
@@ -486,7 +486,7 @@ export class FilesView extends HTMLElement {
                             display: flex;
                             position: absolute;
                             flex-direction: column;
-                            top: ${div.offsetHeight + 3}px;
+                            top: ${offset}px;
                             left: 5px;
                             min-width: 200px;
                             z-index: 10000;
@@ -519,18 +519,18 @@ export class FilesView extends HTMLElement {
                     </paper-card>
                 `
         // only one dialog open at time.
-        let renameDialog = div.parentNode.querySelector("#rename-file-dialog")
+        let renameDialog = parent.querySelector("#rename-file-dialog")
         if (renameDialog == undefined) {
             let range = document.createRange()
-            div.parentNode.appendChild(range.createContextualFragment(html))
-            renameDialog = div.parentNode.querySelector("#rename-file-dialog")
-            renameDialog.onmouseover = renameDialog.onmouseenter = (evt)=>{
+            parent.appendChild(range.createContextualFragment(html))
+            renameDialog = parent.querySelector("#rename-file-dialog")
+            renameDialog.onmouseover = renameDialog.onmouseenter = (evt) => {
                 evt.stopPropagation();
             }
         }
 
 
-        let input = div.parentNode.querySelector("#rename-file-input")
+        let input = parent.querySelector("#rename-file-input")
         setTimeout(() => {
             input.focus()
             let index = f.name.lastIndexOf(".")
@@ -541,15 +541,15 @@ export class FilesView extends HTMLElement {
             }
         }, 50)
 
-        let cancel_btn = div.parentNode.querySelector("#rename-file-cancel-btn")
+        let cancel_btn = parent.querySelector("#rename-file-cancel-btn")
 
-        let rename_btn = div.parentNode.querySelector("#rename-file-ok-btn")
+        let rename_btn = parent.querySelector("#rename-file-ok-btn")
 
         // simply remove the dialog
         cancel_btn.onclick = (evt) => {
             evt.stopPropagation();
-            
-            let dialog = div.parentNode.querySelector("#rename-file-dialog")
+
+            let dialog = parent.querySelector("#rename-file-dialog")
             dialog.parentNode.removeChild(dialog)
             span.style.display = ""
         }
@@ -565,7 +565,7 @@ export class FilesView extends HTMLElement {
         rename_btn.onclick = (evt) => {
             evt.stopPropagation();
 
-            let dialog = div.parentNode.querySelector("#rename-file-dialog")
+            let dialog = parent.querySelector("#rename-file-dialog")
             dialog.parentNode.removeChild(dialog)
 
             span.style.display = ""
@@ -605,9 +605,17 @@ export class FilesListView extends FilesView {
         let id = "_" + uuidv4().split("-").join("_");
         let html = `
         <style>
+            tbody{
+                position: relative;
+            }
+
             tbody tr {
                 background-color: var(--palette-background-default);
                 transition: background 0.2s ease,padding 0.8s linear;
+            }
+
+            tr.active{
+                filter: invert(10%);
             }
 
             .first-cell {
@@ -620,6 +628,7 @@ export class FilesListView extends FilesView {
                 flex-grow: 1;
                 padding-top: 4px;
                 padding-left: 4px;
+                padding-right: 40px;
             }
 
             .first-cell span:hover{
@@ -633,6 +642,10 @@ export class FilesListView extends FilesView {
 
             .first-cell paper-icon-button {
                 min-width: 40px;
+            }
+
+            globular-dropdown-menu {
+                position: absolute;
             }
 
         </style>
@@ -653,32 +666,14 @@ export class FilesListView extends FilesView {
         this.div.innerHTML = html
 
         this.div.querySelector(`table`).onmouseleave = (evt) => {
-            let item0 = this.menu.querySelector("#item-0")
             evt.stopPropagation()
-            let isopen = false;
-            if (item0.menu != undefined) {
-                isopen = item0.menu.isopen
-            }
-            if (!isopen) {
-                this.menu.style.display = "none"
-            }
+
         }
 
         this.div.onclick = (evt) => {
             evt.stopPropagation()
-            let item0 = this.menu.querySelector("#item-0")
-            let isopen = false;
-            if (item0.menu != undefined) {
-                isopen = item0.menu.isopen
-            }
-            if (isopen) {
-                item0.click()
-                item0.menu.isopen = false;
-                //this.div.querySelector(`table`).mouseleave()
-                this.menu.parentNode.removeChild(this.menu)
-            }
-        }
 
+        }
 
         // get the info div that will contain the information.
         let fileListView = this.div.getElementsByClassName("files-list-view-info")[0]
@@ -728,9 +723,9 @@ export class FilesListView extends FilesView {
 
             let row = document.createElement("tr")
             row.innerHTML = html;
-            row.name = f.path
-            row.isDir = f.isDir
-            row.file = f
+
+            let rowId = "_" + uuidv4().split("-").join("_");
+            row.id = rowId;
 
             let checkbox = row.querySelector("paper-checkbox")
             // Connect interface from various point...
@@ -761,44 +756,63 @@ export class FilesListView extends FilesView {
                 } else if (f.mime.startsWith("image")) {
                     Model.eventHub.publish("__show_image__", f.path, true)
                 }
+                this.menu.close()
             }
 
+            row.onmouseenter = (evt) => {
+                evt.stopPropagation();
+                if (!this.menu.isOpen()) {
+
+
+                    this.div.querySelector(`tbody`).appendChild(this.menu)
+                    this.menu.style.top = row.offsetTop + "px";
+                    this.menu.style.left = row.children[0].offsetWidth - this.menu.offsetWidth + "px";
+                    this.menu.file = f
+
+                    this.menu.onmouseover = (evt) => {
+                        evt.stopPropagation();
+                        row.classList.add("active")
+                    }
+
+                    this.menu.onmouseout = (evt) => {
+                        evt.stopPropagation();
+                        row.classList.remove("active")
+                    }
+
+                    // set the rename function.
+                    this.menu.rename = () => {
+                        this.rename(this.menu.parentNode, span, f, row.offsetTop + row.offsetHeight + 6)
+                    }
+                }
+            }
+
+            row.onmouseout = (evt) => {
+                evt.stopPropagation();
+                if (!this.menu.isOpen()) {
+                    if (this.menu.parentNode != undefined) {
+
+                    }
+                }
+            }
 
             // On mouse over event.
-            row.onmouseover = () => {
+            row.onmouseover = (evt) => {
+                evt.stopPropagation();
                 // if a rename box is open I will not display the menu...
-                if(row.parentNode.querySelector("#rename-file-dialog")!=undefined){
+                if (row.parentNode.querySelector("#rename-file-dialog") != undefined) {
                     return
                 }
-
                 checkbox.style.visibility = "visible"
-                let item0 = this.menu.querySelector("#item-0")
-                // I will remove the background color for that item...
-                let isopen = false;
-                if (item0.menu != undefined) {
-                    isopen = item0.menu.isopen
-                }
-                if (!isopen) {
-                    row.querySelector(".first-cell").appendChild(this.menu)
-                    item0.style.background = "none";
-                    this.menu.style.display = "block"
-                }
-
-                row.style.filter = "invert(10%)";
+                row.classList.add("active")
             }
 
             // On mouseout event.
-            row.onmouseout = (evt) => {
+            row.onmouseleave = (evt) => {
                 evt.stopPropagation()
                 if (!checkbox.checked) {
                     checkbox.style.visibility = "hidden"
                 }
-                row.style.filter = "";
-            }
-
-            // Display the rename file box...
-            row.rename = () => {
-                this.rename(row.querySelector(".first-cell").children[2], span, f)
+                row.classList.remove("active")
             }
 
             if (!f.name.startsWith(".")) {
@@ -956,10 +970,17 @@ export class FilesIconView extends FilesView {
 
             }
 
-            .file-icon-div:hover {
-                -webkit-filter: invert(10%);
+            .file-icon-div.active{
                 filter: invert(10%);
             }
+
+            globular-dropdown-menu {
+                position: absolute;
+                top: -1px;
+                right: 0px;
+                z-index: 10000;
+            }
+
 
         </style>
         <div id="container">
@@ -971,29 +992,11 @@ export class FilesIconView extends FilesView {
         this.div.innerHTML = html
 
         this.div.querySelector(`#container`).onmouseleave = (evt) => {
-            let item0 = this.menu.querySelector("#item-0")
             evt.stopPropagation()
-            let isopen = false;
-            if (item0.menu != undefined) {
-                isopen = item0.menu.isopen
-            }
-            if (!isopen) {
-                this.menu.style.display = "none"
-            }
         }
 
         this.div.querySelector(`#container`).onclick = (evt) => {
             evt.stopPropagation()
-            let item0 = this.menu.querySelector("#item-0")
-            let isopen = false;
-            if (item0.menu != undefined) {
-                isopen = item0.menu.isopen
-            }
-            if (isopen) {
-                item0.click()
-                item0.menu.isopen = false;
-                this.menu.parentNode.removeChild(this.menu)
-            }
         }
 
         let filesByType = {};
@@ -1073,10 +1076,6 @@ export class FilesIconView extends FilesView {
 
                 section.appendChild(range.createContextualFragment(html))
                 let fileIconDiv = section.querySelector(`#${id}`)
-                fileIconDiv.name = file.path
-                fileIconDiv.isDir = file.isDir
-                fileIconDiv.file = file
-
 
                 // Now I will append the file name span...
                 let fileNameSpan = document.createElement("span")
@@ -1101,26 +1100,18 @@ export class FilesIconView extends FilesView {
 
                 // Here I will append the interation.
                 fileIconDiv.onmouseover = (evt) => {
-
+                    evt.stopPropagation();
                     checkbox.style.display = "block"
-                    let item0 = this.menu.querySelector("#item-0")
-                    // I will remove the background color for that item...
-                    let isopen = false;
-                    if (item0.menu != undefined) {
-                        isopen = item0.menu.isopen
-                    }
-                    if (!isopen) {
-                        fileIconDiv.querySelector(".menu-div").appendChild(this.menu)
-                        item0.style.background = "none";
-                        this.menu.style.display = "block"
-                    }
+                    fileIconDiv.classList.add("active")
                 }
 
                 fileIconDiv.onmouseout = (evt) => {
+                    evt.stopPropagation();
                     let checkbox = fileIconDiv.querySelector("paper-checkbox")
                     if (!checkbox.checked) {
                         checkbox.style.display = "none"
                     }
+                    fileIconDiv.classList.remove("active")
                 }
 
                 if (file.isDir) {
@@ -1133,7 +1124,6 @@ export class FilesIconView extends FilesView {
                         evt.stopPropagation();
                         Model.eventHub.publish("set_dir_event", _dirs[file._path], true)
                     }
-
                 } else if (fileType == "video") {
                     /** In that case I will display the vieo preview. */
                     if (hidden != null) {
@@ -1179,10 +1169,31 @@ export class FilesIconView extends FilesView {
                 fileNameSpan.style.maxWidth = w + "px";
                 fileIconDiv.parentNode.appendChild(fileNameSpan);
 
+                fileIconDiv.onmouseenter = (evt) => {
+                    evt.stopPropagation();
+                    if (!this.menu.isOpen()) {
 
-                fileIconDiv.rename = () => {
-                    this.rename(fileIconDiv, fileNameSpan, file)
+                        fileIconDiv.parentNode.appendChild(this.menu)
+
+                        this.menu.onmouseover = (evt) => {
+                            evt.stopPropagation();
+                            fileIconDiv.classList.add("active")
+                        }
+
+                        this.menu.onmouseout = (evt) => {
+                            evt.stopPropagation();
+                            fileIconDiv.classList.remove("active")
+                        }
+
+                        this.menu.file = file;
+
+                        // set the rename function.
+                        this.menu.rename = () => {
+                            this.rename(this.menu.parentNode, fileNameSpan, file, fileIconDiv.offsetHeight + 3)
+                        }
+                    }
                 }
+
 
             })
         }
@@ -2090,7 +2101,7 @@ export class FileExplorer extends HTMLElement {
                 if (dir.path == this.path) {
                     Model.eventHub.publish("set_dir_event", dir, true)
                 }
-                
+
                 this.fileNavigator.reload(dir)
             }, () => { }, true)
             //Model.eventHub.publish("set_dir_event", _dirs[this.path], true)
@@ -2240,14 +2251,14 @@ export class FileExplorer extends HTMLElement {
                     img.name = images_[i].path
                     img.slot = "images"
                     let exist = false;
-                    for(var i=0; i < this.imageViewer.children.length; i++){
-                        if(this.imageViewer.children[i].name == img.name){
+                    for (var i = 0; i < this.imageViewer.children.length; i++) {
+                        if (this.imageViewer.children[i].name == img.name) {
                             exist = true;
                             break
                         }
                     }
                     // append image only if is not already there...
-                    if(!exist){
+                    if (!exist) {
                         this.imageViewer.addImage(img)
                     }
                 }
