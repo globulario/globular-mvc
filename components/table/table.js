@@ -6,6 +6,7 @@ import { fireResize, isString, exportToCsv, getCoords } from "../utility.js";
 import '../menu/dropdownMenu.js';
 import './header.js'; // The maximum allowed number of row for a grid.
 import { theme } from "../Theme.js"
+import { DropdownMenu, DropdownMenuItem} from "../menu/dropdownMenu.js";
 
 var maxRowNumber = 1000;
 var lastWidth = 0;
@@ -30,6 +31,7 @@ export class TableElement extends PolymerElement {
 
     this.header = null;
     this.menu = null;
+    this.hidefilter = true;
 
     // Cells are created once then recycled for optimization purposes
     this.cells = [];
@@ -175,8 +177,8 @@ export class TableElement extends PolymerElement {
         }
 
         if (table.menu != undefined) {
-          table.style.marginLeft = table.menu.element.offsetWidth + 4 + "px";
-          table.menu.element.style.left = -1 * (table.menu.element.offsetWidth + 2) + "px";
+          table.style.marginLeft = table.menu.offsetWidth + 4 + "px";
+          table.menu.style.left = -1 * (table.menu.offsetWidth + 2) + "px";
         }
       };
     }(this.tiles, this.children[0], this);
@@ -266,7 +268,7 @@ export class TableElement extends PolymerElement {
         this.createCells();
       }
 
-      if (values.length > 0 && this.scrollDiv !=undefined) {
+      if (values.length > 0 && this.scrollDiv != undefined) {
         var scrollBarWidth = this.scrollDiv.element.offsetWidth - this.scrollDiv.element.clientWidth;
 
         for (var i = 0; i + this.index < values.length && i < max; i++) {
@@ -318,7 +320,7 @@ export class TableElement extends PolymerElement {
             }
           }
         }
-      } else if(this.scrollDiv!=undefined) {
+      } else if (this.scrollDiv != undefined) {
         // hide the scroll div.
         this.scrollDiv.element.style.display = "none";
       }
@@ -378,128 +380,27 @@ export class TableElement extends PolymerElement {
 
     // Create the table dropdown menu.
     if (!this.hidemenu) {
-      this.menu = createElement(null, {
-        "tag": "dropdown-menu-element"
-      });
+      this.menu = new DropdownMenu("menu")
 
-      this.menu.appendElement({
-        "tag": "menu-item-element",
-        "id": "item-0"
-      }).down().appendElement({
-        "tag": "iron-icon",
-        "icon": "menu"
-      }) // Item to remove all sorting menus.
-        .appendElement({
-          "tag": "menu-item-element",
-          "id": "unorder-menu-item",
-          "style": "text-agling: left;",
-          "action": ""
-        }).down().appendElement({
-          "tag": "iron-icon",
-          "icon": "sort",
-          "style": "height: 18px; width: 18px"
-        }).appendElement({
-          "tag": "span",
-          "innerHtml": "remove all sorter",
-          "style": "margin-left: 10px;"
-        }).up() // Now filtering
-        .appendElement({
-          "tag": "menu-item-element",
-          "id": "filter-menu-item",
-          "style": "text-agling: left;"
-        }).down().appendElement({
-          "tag": "iron-icon",
-          "id": "filter-menu-item-icon",
-          "icon": "filter-list",
-          "style": "height: 18px; width: 18px"
-        }).appendElement({
-          "tag": "span",
-          "id": "filter-menu-item-span",
-          "innerHtml": "filtering",
-          "style": "margin-left: 10px;"
-        }) // Item to remove all filters
-        .appendElement({
-          "tag": "menu-item-element",
-          "id": "unfilter-menu-item",
-          "style": "text-agling: left;",
-          "action": ""
-        }).down().appendElement({
-          "tag": "span",
-          "innerHtml": "remove all filter",
-          "style": "margin-left: 10px;"
-        }).up().appendElement({
-          "tag": "menu-item-element",
-          "separator": "true",
-          "style": "text-agling: left;"
-        }).down().appendElement({
-          "tag": "div",
-          "id": "filter-menu-items",
-          "style": "text-agling: left; display: flex; flex-direction: column;"
-        }).up().up() // The export menu button.
-        .appendElement({
-          "tag": "menu-item-element",
-          "separator": "true",
-          "style": "text-agling: left;"
-        }) // Item to delete filtered values
-        .appendElement({
-          "tag": "menu-item-element",
-          "id": "delete-filtere-menu-item",
-          "style": "text-agling: left;",
-          "action": this.ondeletefiltered
-        }).down().appendElement({
-          "tag": "iron-icon",
-          "icon": "delete",
-          "style": "height: 18px; width: 18px"
-        }).appendElement({
-          "tag": "span",
-          "innerHtml": "delete filtered",
-          "style": "margin-left: 10px;"
-        }).up()
-        .appendElement({
-          "tag": "menu-item-element",
-          "separator": "true",
-          "style": "text-agling: left;"
-        }) // Item to delete all values
-        .appendElement({
-          "tag": "menu-item-element",
-          "id": "delete-all-data-menu-item",
-          "style": "text-agling: left;",
-          "action": this.ondeleteall
-        }).down().appendElement({
-          "tag": "iron-icon",
-          "icon": "delete",
-          "style": "height: 18px; width: 18px"
-        }).appendElement({
-          "tag": "span",
-          "innerHtml": "delete all data",
-          "style": "margin-left: 10px;"
-        }).up()
-        .appendElement({
-          "tag": "menu-item-element",
-          "separator": "true",
-          "style": "text-agling: left;"
-        }) // Item to export csv file
-        .appendElement({
-          "tag": "menu-item-element",
-          "id": "export-menu-item",
-          "style": "text-agling: left;",
-          "action": this.onexport
-        }).down().appendElement({
-          "tag": "iron-icon",
-          "icon": "file-download",
-          "style": "height: 18px; width: 18px"
-        }).appendElement({
-          "tag": "span",
-          "innerHtml": "export",
-          "style": "margin-left: 10px;"
-        });
+      this.menu.innerHTML =
+        `
+        <globular-dropdown-menu-item id="unorder-menu-item" icon="sort" text="remove all sorter"></globular-dropdown-menu-item>
+        <globular-dropdown-menu-item  id="filter-menu-item" icon="filter-list" text="filtering" action="">
+              <globular-dropdown-menu-item id="unfilter-menu-item" text="remove all filter"></globular-dropdown-menu-item>
+              <globular-dropdown-menu-item id="filter-menu-items" separator="true" text=""; style="display: none">
+              </globular-dropdown-menu-item>
+        </globular-dropdown-menu-item>
+        <globular-dropdown-menu-item separator="true" id="delete-filtered-menu-item" icon="delete" text="delete filtered"></globular-dropdown-menu-item>
+        <globular-dropdown-menu-item  id="delete-all-data-menu-item" icon="delete" text="delete all"></globular-dropdown-menu-item>
+        <globular-dropdown-menu-item  id="export-menu-item" icon="file-download" text="export"></globular-dropdown-menu-item>
+      `
 
       // Append the element in the body so it will alway be visible.
-      this.appendChild(this.menu.element);
-      this.menu.element.style.position = "absolute";
+      this.appendChild(this.menu);
+      this.menu.style.position = "absolute";
 
-      this.style.marginLeft = this.menu.element.offsetWidth + 4 + "px";
-      this.menu.element.style.left = -1 * (this.menu.element.offsetWidth + 2) + "px";
+      this.style.marginLeft = this.menu.offsetWidth + 4 + "px";
+      this.menu.style.left = -1 * (this.menu.offsetWidth + 2) + "px";
 
       // Make the table resize on display.
       var intersectionObserver = new IntersectionObserver(function (entries) {
@@ -512,55 +413,51 @@ export class TableElement extends PolymerElement {
       intersectionObserver.observe(this); // append in the body.
 
       if (this.onexport == undefined) {
+
         // export csv file by default.
-        this.menu.getChildById("export-menu-item").element.action = function (table) {
-          return function () {
-            // Here I will get the filtered data.
-            if (Object.keys(table.filtered).length > 0) {
-              exportToCsv("data.csv", Object.values(table.filtered));
-            } else {
-              exportToCsv("data.csv", table.data);
-            }
-          };
-        }(this);
+        this.menu.querySelector("#export-menu-item").action = () => {
+          // Here I will get the filtered data.
+          if (Object.keys(this.filtered).length > 0) {
+            exportToCsv("data.csv", Object.values(this.filtered));
+          } else {
+            exportToCsv("data.csv", this.data);
+          }
+        };
       } // Remove the ordering
 
+      this.menu.querySelector("#unorder-menu-item").action = () => {
+        for (var i = 0; i < this.sorters.length; i++) {
+          var sorter = this.sorters[i];
+          sorter.childSorter = null;
+          sorter.state = undefined;
+          sorter.unset();
+        } // sort the table.
 
-      this.menu.getChildById("unorder-menu-item").element.action = function (table) {
-        return function () {
-          for (var i = 0; i < table.sorters.length; i++) {
-            var sorter = table.sorters[i];
-            sorter.childSorter = null;
-            sorter.state = undefined;
-            sorter.unset();
-          } // sort the table.
-
-
-          table.sort();
-          table.refresh(); // refresh the result.
-        };
-      }(this); // Renove the filtering
+        this.sort();
+        this.refresh(); // refresh the result.
+      }
 
 
-      this.menu.getChildById("unfilter-menu-item").element.action = function (table) {
-        return function () {
-          // Now I will remove all filters...
-          for (var i = 0; i < table.filters.length; i++) {
-            if (table.filters[i].filter != null) {
-              if (table.filters[i].filter.expressions.length > 0 || table.filters[i].filter.filters.length > 0) {
-                table.filters[i].filter.clear();
-              }
+      this.menu.querySelector("#unfilter-menu-item").action = () => {
+
+        // Now I will remove all filters...
+        for (var i = 0; i < this.filters.length; i++) {
+          if (this.filters[i].filter != null) {
+            if (this.filters[i].filter.expressions.length > 0 || this.filters[i].filter.filters.length > 0) {
+              this.filters[i].filter.clear();
             }
           }
+        }
 
-          table.filter();
-          table.refresh(); // refresh the result.
-        };
-      }(this);
+        this.filter();
+        this.refresh(); // refresh the result.
+      };
+
     } // Fix the style of the element.
 
-    this.menu.getChildById("delete-filtere-menu-item").element.style.display = "none"
-    this.menu.getChildById("delete-all-data-menu-item").element.style.display = "none"
+    this.menu.querySelector("#delete-filtered-menu-item").style.display = "none"
+    this.menu.querySelector("#delete-all-data-menu-item").style.display = "none"
+
 
     this.style.display = "flex";
     this.style.flexDirection = "column"; // Create the body of table after the header...
@@ -871,55 +768,35 @@ export class TableElement extends PolymerElement {
       }
     } // Now I will set the filter in the menu.
 
+    let filterMenuItems = this.menu.querySelector("#filter-menu-items");
 
-    if (!this.hidefilter) {
-      var filterMenuItems = this.menu.getChildById("filter-menu-items");
-      filterMenuItems.element.parentNode.addEventListener("mouseover", function () {
-        this.style.backgroundColor = "";
-      }); // hidden by default.
-      // Here I will remove existing filer and expression and recreated it.
-
-      filterMenuItems.removeAllChilds();
+    if (filters.length > 0) {
+  
+      filterMenuItems.style.display = "block"
+      filterMenuItems.innerHTML = "";
 
       for (var i = 0; i < filters.length; i++) {
         // So here I will create the menu item asscoiated with each filter and given.
-        var filter = filters[i];
+        let filter = filters[i];
 
         if (filter.expressions.length > 0 || filter.filters.length > 0) {
-          var filterMenuDiv = filterMenuItems.appendElement({
-            "tag": "div",
-            "style": "display: flex; justify-items: center; align-items: center;"
-          }).down();
-          this.deleteBtn = filterMenuDiv.appendElement({
-            "tag": "paper-icon-button",
-            "icon": "close",
-            "style": "height: 18px; width: 18px; padding: 1px;"
-          }).down();
-          filterMenuDiv.appendElement({
-            "tag": "div",
-            "style": "padding-left: 5px;",
-            "innerHtml": filter.parent.headerCell.innerText
-          });
+          let text = filter.parent.headerCell.innerText
+          let menuItem = new DropdownMenuItem("icons:close", text)
+          menuItem.slot = "subitems"
 
-          filterMenuDiv.element.onmouseover = function () {
-            this.style.backgroundColor = "rgb(232, 232, 232)";
-          };
+          menuItem.action = () => {
+            menuItem.parentNode.removeChild(menuItem);
+            filter.clearFileterBtn.element.click();
+            this.filter();
+            this.refresh();
+          }
 
-          filterMenuDiv.element.onmouseout = function () {
-            this.style.backgroundColor = "";
-          };
-
-          this.deleteBtn.element.onclick = function (filter, filterMenuItems, filterMenuDiv, table) {
-            return function () {
-              filterMenuItems.removeElement(filterMenuDiv);
-              filter.clearFileterBtn.element.click();
-              table.filter();
-              table.refresh();
-            };
-          }(filter, filterMenuItems, filterMenuDiv, this);
+          filterMenuItems.appendChild(menuItem)
         }
       }
-    } // In that case I will call the onfilter event.
+    } else{
+      filterMenuItems.style.display = "none"
+    }// In that case I will call the onfilter event.
 
 
     for (var i = 0; i < this.filters.length; i++) {

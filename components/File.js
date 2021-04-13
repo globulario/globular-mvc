@@ -99,8 +99,15 @@ export class FilesView extends HTMLElement {
         // The active explorer path.
         this.path = undefined
 
+        // The current directory.
+        this.__dir__ = null;
+
         // The list of files to delete
         this.selected = {};
+
+        // keep the operation to do...
+        this.edit = "";
+        this.paperTray = null;
 
         // The function will be call in case of error.
         this.onerror = undefined;
@@ -110,7 +117,7 @@ export class FilesView extends HTMLElement {
         let menuItemsHTML = `
         <globular-dropdown-menu-item id="share-menu-item" icon="folder-shared" text="Share" action=""></globular-dropdown-menu-item>
         <globular-dropdown-menu-item id="manage-acess-menu-item" icon="social:group" text="Manage access"action=""></globular-dropdown-menu-item>
-        <globular-dropdown-menu-item separator="true"  id="cut-menu-item"  icon="icons:content-cut" text="Paste" action=""></globular-dropdown-menu-item>
+        <globular-dropdown-menu-item separator="true"  id="cut-menu-item"  icon="icons:content-cut" text="Cut" action=""></globular-dropdown-menu-item>
         <globular-dropdown-menu-item id="copy-menu-item" icon="content-copy" text="Copy" action=""></globular-dropdown-menu-item>
         <globular-dropdown-menu-item id="paste-menu-item" icon="icons:content-paste" action="" text="Paste"></globular-dropdown-menu-item>
         <globular-dropdown-menu-item separator="true"  id="rename-menu-item" text="Rename" icon="icons:create" action=""> </globular-dropdown-menu-item>
@@ -132,6 +139,51 @@ export class FilesView extends HTMLElement {
         this.copyMenuItem = this.menu.querySelector("#copy-menu-item")
         this.pasteMenuItem = this.menu.querySelector("#paste-menu-item")
 
+        this.cutMenuItem.action = () => {
+            this.edit = "cut"
+            this.paperTray = [];
+            for (var key in this.selected) {
+                this.paperTray.push(this.selected[key].path)
+            }
+
+            // Append file to file menu
+            if(this.paperTray.length == 0){
+                this.paperTray.push(this.menu.file)
+            }
+
+            // Remove it from it parent...
+            this.menu.parentNode.removeChild(this.menu)
+        }
+
+        this.copyMenuItem.action = () => {
+
+            this.edit = "copy"
+            this.paperTray = [];
+            for (var key in this.selected) {
+                this.paperTray.push(this.selected[key].path)
+            }
+
+            // Append file to file menu
+            if(this.paperTray.length == 0){
+                this.paperTray.push(this.menu.file)
+            }
+
+            // Remove it from it parent...
+            this.menu.parentNode.removeChild(this.menu)
+        }
+
+        this.pasteMenuItem.action = () => {
+            console.log(this.edit, this.paperTray)
+            if(this.edit == "cut"){
+                // Here I will call move on the file manager
+            }else if(this.edit == "copy"){
+                // Here I will call copy
+            }
+
+            // Remove it from it parent...
+            this.menu.parentNode.removeChild(this.menu)
+        }
+
         this.downloadMenuItem.action = () => {
             // Here I will create an archive from the selected files and dowload it...
             let files = [];
@@ -147,7 +199,6 @@ export class FilesView extends HTMLElement {
                         downloadFileHttp(path, uuid + ".tgz",
                             () => {
                                 // Now I will remove the file from the server....
-
                                 deleteFile(Application.globular, path,
                                     () => {
                                         console.log("file removed")
@@ -157,7 +208,7 @@ export class FilesView extends HTMLElement {
                     }, err => { ApplicationView.displayMessage(err, 3000) })
             } else {
 
-                let path = this.menu.parentNode.parentNode.name
+                let path = this.menu.file.path
                 let name = path.substring(path.lastIndexOf("/") + 1)
 
                 // if the file is a directory I will create archive and download it.
@@ -207,7 +258,6 @@ export class FilesView extends HTMLElement {
             if (fileList.length == 0) {
                 let file = this.menu.file
                 fileList += `<div>${file.path}</div>`
-
                 files.push(file)
             }
 
@@ -301,7 +351,6 @@ export class FilesView extends HTMLElement {
             }
 
             noBtn.onclick = () => {
-
                 toast.dismiss();
             }
 
@@ -446,13 +495,29 @@ export class FilesView extends HTMLElement {
         // Now I will display the menu as popup menu instead of the default menu...
         // so cut copy and paste will work on the current directory and it more natural
         // to use by the end user.
-        /*this.div.oncontextmenu = (e) => {
+        /*
+        this.div.oncontextmenu = (e) => {
             if (e.preventDefault != undefined)
                 e.preventDefault();
             if (e.stopPropagation != undefined)
                 e.stopPropagation();
 
-        }*/
+            // Append the menu...
+            if (this.menu.parentNode != undefined) {
+                this.menu.parentNode.removeChild(this.menu)
+            }
+
+            this.menu.file = this.__dir__
+            this.menu.rename = () => {
+                this.rename(this.div, this.__dir__, 0);
+            }
+
+            this.menu.hideBtn()
+
+            document.body.appendChild(this.menu)
+            this.menu.open()
+        }
+        */
 
     }
 
@@ -463,21 +528,19 @@ export class FilesView extends HTMLElement {
                 /** Nothin here. */
             },
             (dir) => {
+                this.__dir__ = dir
                 this.setDir(dir)
             }, true
         )
-    }
-
-    // Set the directory.
-    setDir(dir) {
-        /** Nothing to do here. */
     }
 
     clearSelection() {
         this.selected = {}
     }
 
-    rename(parent, span, f, offset) {
+    rename(parent, f, offset) {
+        console.log(parent)
+        console.log(offset)
 
         // Here I will use a simple paper-card with a paper input...
         let html = `
@@ -486,7 +549,6 @@ export class FilesView extends HTMLElement {
                             display: flex;
                             position: absolute;
                             flex-direction: column;
-                            top: ${offset}px;
                             left: 5px;
                             min-width: 200px;
                             z-index: 10000;
@@ -508,7 +570,7 @@ export class FilesView extends HTMLElement {
                         }
     
                     </style>
-                    <paper-card id="rename-file-dialog">
+                    <paper-card id="rename-file-dialog" style="top: ${offset}px;">
                         <div class="card-content">
                             <paper-textarea id="rename-file-input" label="new folder name" value="${f.name}"></paper-textarea>
                         </div>
@@ -529,6 +591,8 @@ export class FilesView extends HTMLElement {
             }
         }
 
+        renameDialog.style.top = offset + "px";
+
 
         let input = parent.querySelector("#rename-file-input")
         setTimeout(() => {
@@ -542,7 +606,6 @@ export class FilesView extends HTMLElement {
         }, 50)
 
         let cancel_btn = parent.querySelector("#rename-file-cancel-btn")
-
         let rename_btn = parent.querySelector("#rename-file-ok-btn")
 
         // simply remove the dialog
@@ -551,7 +614,6 @@ export class FilesView extends HTMLElement {
 
             let dialog = parent.querySelector("#rename-file-dialog")
             dialog.parentNode.removeChild(dialog)
-            span.style.display = ""
         }
 
         input.onkeydown = (evt) => {
@@ -567,8 +629,6 @@ export class FilesView extends HTMLElement {
 
             let dialog = parent.querySelector("#rename-file-dialog")
             dialog.parentNode.removeChild(dialog)
-
-            span.style.display = ""
             let path = f.path.substring(0, f.path.lastIndexOf("/"))
 
             // Now I will rename the file or directory...
@@ -598,9 +658,11 @@ export class FilesListView extends FilesView {
      * @param {*} dir 
      */
     setDir(dir) {
+
         if (dir.name.startsWith(".")) {
             return;
         }
+
         this.div.innerHTML = "";
         let id = "_" + uuidv4().split("-").join("_");
         let html = `
@@ -763,7 +825,7 @@ export class FilesListView extends FilesView {
                 evt.stopPropagation();
                 if (!this.menu.isOpen()) {
 
-
+                    this.menu.showBtn()
                     this.div.querySelector(`tbody`).appendChild(this.menu)
                     this.menu.style.top = row.offsetTop + "px";
                     this.menu.style.left = row.children[0].offsetWidth - this.menu.offsetWidth + "px";
@@ -781,7 +843,7 @@ export class FilesListView extends FilesView {
 
                     // set the rename function.
                     this.menu.rename = () => {
-                        this.rename(this.menu.parentNode, span, f, row.offsetTop + row.offsetHeight + 6)
+                        this.rename(this.menu.parentNode, f, row.offsetTop + row.offsetHeight + 6)
                     }
                 }
             }
@@ -862,6 +924,7 @@ export class FilesIconView extends FilesView {
      * @param {*} dir 
      */
     setDir(dir) {
+
         if (dir.name.startsWith(".")) {
             return;
         }
@@ -894,7 +957,6 @@ export class FilesIconView extends FilesView {
                 border-bottom: 2px solid;
                 border-color: var(--palette-divider);
                 width: 66.66%;
-               
             }
 
             .file-type-section .content {
@@ -1172,7 +1234,7 @@ export class FilesIconView extends FilesView {
                 fileIconDiv.onmouseenter = (evt) => {
                     evt.stopPropagation();
                     if (!this.menu.isOpen()) {
-
+                        this.menu.showBtn()
                         fileIconDiv.parentNode.appendChild(this.menu)
 
                         this.menu.onmouseover = (evt) => {
@@ -1189,17 +1251,13 @@ export class FilesIconView extends FilesView {
 
                         // set the rename function.
                         this.menu.rename = () => {
-                            this.rename(this.menu.parentNode, fileNameSpan, file, fileIconDiv.offsetHeight + 3)
+                            this.rename(this.menu.parentNode, file, fileIconDiv.offsetHeight + 6)
                         }
                     }
                 }
-
-
             })
         }
-
     }
-
 }
 
 customElements.define('globular-files-icon-view', FilesIconView)
@@ -2218,7 +2276,10 @@ export class FileExplorer extends HTMLElement {
         this.root = root
     }
 
-    displayView() {
+    displayView(dir) {
+        this.filesListView.__dir__ = dir
+        this.filesIconView.__dir__ = dir
+
         if (this.filesListBtn.classList.contains("active")) {
             this.filesListView.style.display = ""
             this.filesIconView.style.display = "none"
@@ -2271,7 +2332,7 @@ export class FileExplorer extends HTMLElement {
     setDir(dir) {
 
         // Set back the list and icon view
-        this.displayView()
+        this.displayView(dir)
 
         // stop and hide the video player.
         this.videoPlayer.style.display = "none"
