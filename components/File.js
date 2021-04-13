@@ -17,7 +17,7 @@ import { theme } from './Theme';
 import { v4 as uuidv4 } from "uuid";
 
 // Menu to set action on files.
-import { DropdownMenu, DropdownMenuItem } from './menu/dropdownMenu.js';
+import { DropdownMenu } from './dropdownMenu.js';
 import { createElement } from "./element.js";
 import { ItemManufacturer } from 'globular-web-client/catalog/catalog_pb';
 import { CreateDirRequest, GetThumbnailsResponse } from 'globular-web-client/file/file_pb';
@@ -176,6 +176,10 @@ export class FilesView extends HTMLElement {
             console.log(this.edit, this.paperTray)
             if(this.edit == "cut"){
                 // Here I will call move on the file manager
+                let copyFile = ()=>{
+
+                }
+                
             }else if(this.edit == "copy"){
                 // Here I will call copy
             }
