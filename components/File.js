@@ -20,7 +20,7 @@ import { v4 as uuidv4 } from "uuid";
 import { DropdownMenu } from './dropdownMenu.js';
 import { createElement } from "./element.js";
 import { ItemManufacturer } from 'globular-web-client/catalog/catalog_pb';
-import { CreateDirRequest, GetThumbnailsResponse } from 'globular-web-client/file/file_pb';
+import { CopyRequest, CreateDirRequest, GetThumbnailsResponse, MoveRequest } from 'globular-web-client/file/file_pb';
 import { createArchive, createDir, deleteDir, deleteFile, downloadFileHttp, renameFile, uploadFiles } from 'globular-web-client/api';
 import { ApplicationView } from '../ApplicationView';
 import { Application } from '../Application';
@@ -147,9 +147,12 @@ export class FilesView extends HTMLElement {
             }
 
             // Append file to file menu
-            if(this.paperTray.length == 0){
-                this.paperTray.push(this.menu.file)
+            if (this.paperTray.length == 0) {
+                this.paperTray.push(this.menu.file.path)
             }
+
+            // empty the selection.
+            this.selected = {}
 
             // Remove it from it parent...
             this.menu.parentNode.removeChild(this.menu)
@@ -164,24 +167,26 @@ export class FilesView extends HTMLElement {
             }
 
             // Append file to file menu
-            if(this.paperTray.length == 0){
-                this.paperTray.push(this.menu.file)
+            if (this.paperTray.length == 0) {
+                this.paperTray.push(this.menu.file.path)
             }
+
+            // empty the selection.
+            this.selected = {}
 
             // Remove it from it parent...
             this.menu.parentNode.removeChild(this.menu)
         }
 
         this.pasteMenuItem.action = () => {
-            console.log(this.edit, this.paperTray)
-            if(this.edit == "cut"){
-                // Here I will call move on the file manager
-                let copyFile = ()=>{
 
-                }
-                
-            }else if(this.edit == "copy"){
+            if (this.edit == "copy") {
+                // Here I will call move on the file manager
+                this.copy(this.menu.file.path)
+
+            } else if (this.edit == "cut") {
                 // Here I will call copy
+                this.move(this.menu.file.path)
             }
 
             // Remove it from it parent...
@@ -525,6 +530,70 @@ export class FilesView extends HTMLElement {
 
     }
 
+    /**
+     * Copy file to a given path
+     * @param {*} path 
+     */
+    copy(path){
+
+        let rqst = new CopyRequest
+        rqst.setPath(path)
+        rqst.setFilesList(this.paperTray)
+
+        let token = localStorage.getItem("user_token");
+
+        // Create a directory at the given path.
+        Application.globular.fileService
+            .copy(rqst, {
+                token: token,
+                application: Application.application,
+                domain: Application.domain
+            }).then(() => {
+                this.paperTray = []
+                this.edit = ""
+                Model.eventHub.publish("reload_dir_event", path, false);
+            })
+            .catch(err => { 
+                this.paperTray = []
+                this.edit = ""
+                ApplicationView.displayMessage(err, 3000) 
+            })
+    }
+
+    /**
+     * Move file to a given path...
+     * @param {*} path 
+     */
+    move(path){
+        let rqst = new MoveRequest
+        rqst.setPath(path)
+        rqst.setFilesList(this.paperTray)
+
+        let token = localStorage.getItem("user_token");
+
+        // Create a directory at the given path.
+        Application.globular.fileService
+            .move(rqst, {
+                token: token,
+                application: Application.application,
+                domain: Application.domain
+            }).then(() => {
+                for(var i=0; i < this.paperTray.length; i++){
+                    let f = this.paperTray[i]
+                    let path_ = f.substring(0, f.lastIndexOf("/"))
+                    Model.eventHub.publish("reload_dir_event", path_, false);
+                }
+                this.paperTray = []
+                this.edit = ""
+                Model.eventHub.publish("reload_dir_event", path, false);
+            })
+            .catch(err => { 
+                this.paperTray = []
+                this.edit = ""
+                ApplicationView.displayMessage(err, 3000) 
+            })
+    }
+
     init() {
         // The the path
         Model.eventHub.subscribe("set_dir_event",
@@ -543,9 +612,6 @@ export class FilesView extends HTMLElement {
     }
 
     rename(parent, f, offset) {
-        console.log(parent)
-        console.log(offset)
-
         // Here I will use a simple paper-card with a paper input...
         let html = `
                     <style>
@@ -1047,6 +1113,10 @@ export class FilesIconView extends FilesView {
                 z-index: 10000;
             }
 
+            iron-icon {
+                height: 48px;
+                width: 48px;
+            }
 
         </style>
         <div id="container">
@@ -1186,10 +1256,14 @@ export class FilesIconView extends FilesView {
                     let folderIcon = document.createRange().createContextualFragment(`<iron-icon icon="icons:folder"></iron-icon>`)
                     fileIconDiv.insertBefore(folderIcon, fileIconDiv.firstChild)
 
+
                     fileIconDiv.onclick = (evt) => {
                         evt.stopPropagation();
                         Model.eventHub.publish("set_dir_event", _dirs[file._path], true)
                     }
+
+                    folderIcon.draggable = false
+
                 } else if (fileType == "video") {
                     /** In that case I will display the vieo preview. */
                     if (hidden != null) {
@@ -1207,7 +1281,7 @@ export class FilesIconView extends FilesView {
                                             fileNameSpan.style.maxWidth = w + "px";
                                         })
                                         fileIconDiv.insertBefore(preview, fileIconDiv.firstChild)
-
+                                        preview.draggable = false
                                     }
                                 }
                                 break;
@@ -1219,6 +1293,7 @@ export class FilesIconView extends FilesView {
                     /** Display the thumbnail. */
                     let img = document.createElement("img")
                     img.src = file.thumbnail
+                    img.draggable = false
 
                     fileIconDiv.insertBefore(img, fileIconDiv.firstChild)
                     if (img.width > 0 && img.height > 0) {
@@ -1228,6 +1303,61 @@ export class FilesIconView extends FilesView {
                     img.onclick = (evt) => {
                         evt.stopPropagation();
                         Model.eventHub.publish("__show_image__", file.path, true)
+                    }
+                }
+
+                fileIconDiv.draggable = true
+
+                fileIconDiv.ondragstart = (evt)=>{
+                    evt.dataTransfer.setData('file', file.path);
+                    evt.stopPropagation(); 
+                    fileIconDiv.style.opacity = '0.4'; 
+                }
+
+                fileIconDiv.ondragend = (evt)=>{
+                    evt.stopPropagation(); 
+                    fileIconDiv.style.opacity = '1'; 
+                }
+
+                if (file.isDir) {
+                    fileIconDiv.ondragover = (evt)=>{
+                        evt.preventDefault()
+                        console.log("-----------> drag enter... ", file.path)
+                        fileIconDiv.children[0].icon = "icons:folder-open"
+                    }
+
+                    fileIconDiv.ondragleave = ()=>{
+                        console.log("-----------> drag leave... ", file.path)
+                        fileIconDiv.children[0].icon = "icons:folder"
+                    }
+
+                    fileIconDiv.ondrop = (evt)=>{
+                        evt.stopPropagation(); 
+                        let f = evt.dataTransfer.getData('file')
+                       
+                        console.log(f)
+                        console.log("-----------> drop ", f, " to ... ", file.path)
+                        fileIconDiv.children[0].icon = "icons:folder"
+                        if(this.edit.length == 0){
+                            this.edit = "cut"
+                        }
+
+                        this.paperTray = [];
+                        for (var key in this.selected) {
+                            this.paperTray.push(this.selected[key].path)
+                        }
+            
+                        // Append file to file menu
+                        if (this.paperTray.length == 0) {
+                            this.paperTray.push(f)
+                        }
+
+                        if(this.edit == "cut"){
+                            this.move(file.path)
+                        }else if(this.edit == "copy"){
+                            this.copy(file.path)
+                        }
+                        
                     }
                 }
 
@@ -2315,6 +2445,7 @@ export class FileExplorer extends HTMLElement {
                     let img = images[i]
                     img.name = images_[i].path
                     img.slot = "images"
+                    img.draggable = false;
                     let exist = false;
                     for (var i = 0; i < this.imageViewer.children.length; i++) {
                         if (this.imageViewer.children[i].name == img.name) {
@@ -2576,7 +2707,7 @@ export class VideoPreview extends HTMLElement {
 
             }
         </style>
-       <div id = "container" >
+       <div id = "container" draggable="false" >
             <iron-icon id="play-btn" icon="av:play-circle-outline"></iron-icon>
             <paper-ripple></paper-ripple>
         </div>
@@ -2657,6 +2788,7 @@ export class VideoPreview extends HTMLElement {
         this.interval = setInterval(() => {
 
             let img = this.images[index]
+            img.draggable = false;
             if (img != undefined) {
                 while (this.container.children.length > 2) {
                     this.container.removeChild(this.container.children[this.container.children.length - 1])
