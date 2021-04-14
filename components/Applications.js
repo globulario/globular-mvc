@@ -192,7 +192,6 @@ export class ApplicationsPanel extends HTMLElement {
                 </div>
                 <paper-tooltip for="${application._id}_div" style="font-size: .85rem;" role="tooltip" tabindex="-1">${application.description}</paper-tooltip>
                 `
-                console.log("---> application ", application)
                 let container = this.shadowRoot.querySelector(".container")
                 container.appendChild(range.createContextualFragment(html))
                 let div_ = container.querySelector(`#${application._id}_div`)
@@ -211,6 +210,10 @@ export class ApplicationsPanel extends HTMLElement {
                     img.src = application.icon;
                     title.innerHTML = application._id;
                     title.title = application._id;
+                    
+                    if(application.alias.length > 0){
+                        title.innerHTML =application.alias
+                    }
 
                     div_.onclick = () => {
                         lnk.click()

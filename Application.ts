@@ -427,10 +427,10 @@ export class Application extends Model {
               );
               this.view.init();
             } else {
-              ApplicationView.displayMessage(
+              console.log(
                 "no application information found for " +
                 this.name +
-                " make sure your application has the correct name in your class derived from Application!", 3000
+                " make sure your application has the correct name in your class derived from Application!"
               );
             }
             initCallback();
