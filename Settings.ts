@@ -4,9 +4,15 @@ import { Account } from "./Account";
 import { Application } from "./Application";
 import { ApplicationView } from "./ApplicationView";
 import { FileExplorer } from "./components/File";
+import { RoleManager} from "./components/Role"
+import { GroupManager} from "./components/Group"
 import { ImageCropperSetting, ImageSetting, SettingsMenu, SettingsPanel, ComplexSetting, EmailSetting, StringSetting, TextAreaSetting } from "./components/Settings";
 import { Model } from "./Model";
 import { mergeTypedArrays, uint8arrayToStringMethod } from "./Utility"
+import { FindResp } from "globular-web-client/persistence/persistence_pb";
+import "@polymer/iron-icons/social-icons";
+import "@polymer/iron-icons/notification-icons";
+
 export class Settings {
 
     protected settingsMenu: SettingsMenu;
@@ -192,6 +198,111 @@ export class ApplicationSettings extends Settings {
                 }
             }, true)
     }
+
+}
+
+
+/**
+ * Model to save application settings.
+ */
+export class RoleSettings extends Settings {
+    roleManager: RoleManager;
+
+    // The application.
+    constructor(settingsMenu: SettingsMenu, settingsPanel: SettingsPanel) {
+        super(settingsMenu, settingsPanel);
+
+        this.settingsMenu.appendSettingsMenuItem("notification:enhanced-encryption", "Roles");
+
+        let roleSettingPage = <any>this.settingsPanel.appendSettingsPage("Roles");
+
+        // Append a title.
+        let html = `
+            <style>
+            .title {
+                font-size: 1.25rem;
+                text-transform: uppercase;
+                color: var(--cr-primary-text-color);
+                font-weight: 400;
+                letter-spacing: .25px;
+                margin-bottom: 12px;
+                margin-top: var(--cr-section-vertical-margin);
+                outline: none;
+                padding-bottom: 4px;
+                padding-top: 16px;
+            }
+
+            .subtitle{
+                font-size: 1rem;
+                text-align: left;
+                padding-bottom: 15px;
+            }
+
+            </style>
+            <div class="title">
+                Roles 
+            </div>
+            <span class="subtitle" style="font-size: 1rem;">roles are defines in package.json </span>
+        `
+        // Display the file explorer...
+        roleSettingPage.appendChild(document.createRange().createContextualFragment(html));
+        this.roleManager = new RoleManager()
+        roleSettingPage.appendChild(this.roleManager)
+    }
+
+
+}
+
+
+/**
+ * Model to save application settings.
+ */
+export class GroupSettings extends Settings {
+    groupManager: GroupManager;
+
+    // The application.
+    constructor(settingsMenu: SettingsMenu, settingsPanel: SettingsPanel) {
+        super(settingsMenu, settingsPanel);
+
+        this.settingsMenu.appendSettingsMenuItem("social:people", "Groups");
+
+        let groupSettingPage = <any>this.settingsPanel.appendSettingsPage("Groups");
+
+        // Append a title.
+        let html = `
+            <style>
+            .title {
+                font-size: 1.25rem;
+                text-transform: uppercase;
+                color: var(--cr-primary-text-color);
+                font-weight: 400;
+                letter-spacing: .25px;
+                margin-bottom: 12px;
+                margin-top: var(--cr-section-vertical-margin);
+                outline: none;
+                padding-bottom: 4px;
+                padding-top: 16px;
+            }
+
+            .subtitle{
+                font-size: 1rem;
+                text-align: left;
+                padding-bottom: 15px;
+            }
+
+            </style>
+            <div class="title">
+                Groups 
+            </div>
+            <span class="subtitle" style="font-size: 1rem;">groups are use to manage ressource access like files.</span>
+        `
+        // Display the file explorer...
+        groupSettingPage.appendChild(document.createRange().createContextualFragment(html));
+        this.groupManager = new GroupManager()
+        groupSettingPage.appendChild(this.groupManager)
+
+    }
+
 
 }
 

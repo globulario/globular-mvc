@@ -2,7 +2,7 @@ import { View } from "./View";
 import * as M from "materialize-css";
 import "materialize-css/sass/materialize.scss";
 import { Account } from "./Account";
-import { ApplicationSettings, FileSettings, LogSettings, UserSettings } from "./Settings"
+import { ApplicationSettings, FileSettings, GroupSettings, LogSettings, RoleSettings, UserSettings } from "./Settings"
 import { Model } from "./Model";
 import { DockerNames } from "./components/RandomName"
 
@@ -661,6 +661,12 @@ export class ApplicationView extends View {
     // The application settings...
     let applicationSettings = new ApplicationSettings(this.application, this.settingsMenu, this.settingsPanel);
 
+    // Manage roles
+    let roleSettings = new RoleSettings(this.settingsMenu, this.settingsPanel)
+
+    // Manage groups
+    let groupSettings = new GroupSettings(this.settingsMenu, this.settingsPanel)
+
     // The file settings
     let fileSettings = new FileSettings(this.settingsMenu, this.settingsPanel);
 
@@ -668,7 +674,7 @@ export class ApplicationView extends View {
     let logs = new LogSettings(this.settingsMenu, this.settingsPanel);
 
     // Set the file explorer...
-    this.fileExplorer.setRoot("/users/" + account.id)
+    this.fileExplorer.setRoot("/users/" + account.name)
     this._fileExplorer.init();
     
     // Set the onerror callback for the component.
