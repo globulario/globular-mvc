@@ -221,7 +221,7 @@ export class FilesView extends HTMLElement {
                 let name = path.substring(path.lastIndexOf("/") + 1)
 
                 // if the file is a directory I will create archive and download it.
-                if (this.menu.parentNode.parentNode.isDir) {
+                if (this.menu.file.isDir) {
                     createArchive(Application.globular, [path], name,
                         path_ => {
                             // Download the file...
@@ -492,6 +492,18 @@ export class FilesView extends HTMLElement {
                     this.menu.parentNode.removeChild(this.menu)
                 }
             }
+
+            let checkboxs = this.div.querySelectorAll("paper-checkbox")
+            for (var i = 0; i < checkboxs.length; i++) {
+                if (!checkboxs[i].checked) {
+                    checkboxs[i].style.display = "none"
+                }
+            }
+
+            let fileIconDivs = this.div.querySelectorAll(".file-icon-div")
+            for (var i = 0; i < fileIconDivs.length; i++) {
+                fileIconDivs[i].classList.remove("active")
+            }
         }
 
         this.div.onclick = () => {
@@ -534,7 +546,7 @@ export class FilesView extends HTMLElement {
      * Copy file to a given path
      * @param {*} path 
      */
-    copy(path){
+    copy(path) {
 
         let rqst = new CopyRequest
         rqst.setPath(path)
@@ -553,10 +565,10 @@ export class FilesView extends HTMLElement {
                 this.edit = ""
                 Model.eventHub.publish("reload_dir_event", path, false);
             })
-            .catch(err => { 
+            .catch(err => {
                 this.paperTray = []
                 this.edit = ""
-                ApplicationView.displayMessage(err, 3000) 
+                ApplicationView.displayMessage(err, 3000)
             })
     }
 
@@ -564,7 +576,7 @@ export class FilesView extends HTMLElement {
      * Move file to a given path...
      * @param {*} path 
      */
-    move(path){
+    move(path) {
         let rqst = new MoveRequest
         rqst.setPath(path)
         rqst.setFilesList(this.paperTray)
@@ -578,7 +590,7 @@ export class FilesView extends HTMLElement {
                 application: Application.application,
                 domain: Application.domain
             }).then(() => {
-                for(var i=0; i < this.paperTray.length; i++){
+                for (var i = 0; i < this.paperTray.length; i++) {
                     let f = this.paperTray[i]
                     let path_ = f.substring(0, f.lastIndexOf("/"))
                     Model.eventHub.publish("reload_dir_event", path_, false);
@@ -587,10 +599,10 @@ export class FilesView extends HTMLElement {
                 this.edit = ""
                 Model.eventHub.publish("reload_dir_event", path, false);
             })
-            .catch(err => { 
+            .catch(err => {
                 this.paperTray = []
                 this.edit = ""
-                ApplicationView.displayMessage(err, 3000) 
+                ApplicationView.displayMessage(err, 3000)
             })
     }
 
@@ -605,6 +617,39 @@ export class FilesView extends HTMLElement {
                 this.setDir(dir)
             }, true
         )
+
+        // The drop file event.
+        Model.eventHub.subscribe("drop_file_event", () => { }, infos => {
+
+            // Hide the icon parent div.
+            let div = this.div.querySelector("#" + infos.id) 
+            if(div!=undefined){
+                div.parentNode.style.display = "none"
+            }else{
+                console.log("div with id ", infos.id, "dosent exist in ", this.div)
+            }
+           
+
+            if (this.edit.length == 0) {
+                this.edit = "cut"
+            }
+
+            this.paperTray = [];
+            for (var key in this.selected) {
+                this.paperTray.push(this.selected[key].path)
+            }
+
+            // Append file to file menu
+            if (this.paperTray.length == 0) {
+                this.paperTray.push(infos.file)
+            }
+
+            if (this.edit == "cut") {
+                this.move(infos.dir)
+            } else if (this.edit == "copy") {
+                this.copy(infos.dir)
+            }
+        }, true)
     }
 
     clearSelection() {
@@ -1247,7 +1292,11 @@ export class FilesIconView extends FilesView {
                     if (!checkbox.checked) {
                         checkbox.style.display = "none"
                     }
-                    fileIconDiv.classList.remove("active")
+
+                    let fileIconDivs = this.div.querySelectorAll(".file-icon-div")
+                    for (var i = 0; i < fileIconDivs.length; i++) {
+                        fileIconDivs[i].classList.remove("active")
+                    }
                 }
 
                 if (file.isDir) {
@@ -1308,56 +1357,37 @@ export class FilesIconView extends FilesView {
 
                 fileIconDiv.draggable = true
 
-                fileIconDiv.ondragstart = (evt)=>{
+                fileIconDiv.ondragstart = (evt) => {
                     evt.dataTransfer.setData('file', file.path);
-                    evt.stopPropagation(); 
-                    fileIconDiv.style.opacity = '0.4'; 
+                    evt.dataTransfer.setData('id', fileIconDiv.id)
+                    evt.stopPropagation();
+                    fileIconDiv.style.opacity = '0.4';
                 }
 
-                fileIconDiv.ondragend = (evt)=>{
-                    evt.stopPropagation(); 
-                    fileIconDiv.style.opacity = '1'; 
+                fileIconDiv.ondragend = (evt) => {
+                    evt.stopPropagation();
+                    fileIconDiv.style.opacity = '1';
                 }
 
                 if (file.isDir) {
-                    fileIconDiv.ondragover = (evt)=>{
+                    fileIconDiv.ondragover = (evt) => {
                         evt.preventDefault()
-                        console.log("-----------> drag enter... ", file.path)
                         fileIconDiv.children[0].icon = "icons:folder-open"
                     }
 
-                    fileIconDiv.ondragleave = ()=>{
-                        console.log("-----------> drag leave... ", file.path)
+                    fileIconDiv.ondragleave = () => {
                         fileIconDiv.children[0].icon = "icons:folder"
                     }
 
-                    fileIconDiv.ondrop = (evt)=>{
-                        evt.stopPropagation(); 
+                    fileIconDiv.ondrop = (evt) => {
+                        evt.stopPropagation();
                         let f = evt.dataTransfer.getData('file')
-                       
-                        console.log(f)
-                        console.log("-----------> drop ", f, " to ... ", file.path)
+                        let id = evt.dataTransfer.getData('id')
                         fileIconDiv.children[0].icon = "icons:folder"
-                        if(this.edit.length == 0){
-                            this.edit = "cut"
-                        }
 
-                        this.paperTray = [];
-                        for (var key in this.selected) {
-                            this.paperTray.push(this.selected[key].path)
-                        }
-            
-                        // Append file to file menu
-                        if (this.paperTray.length == 0) {
-                            this.paperTray.push(f)
-                        }
 
-                        if(this.edit == "cut"){
-                            this.move(file.path)
-                        }else if(this.edit == "copy"){
-                            this.copy(file.path)
-                        }
-                        
+                        // Create drop_file_event...
+                        Model.eventHub.publish("drop_file_event", { file: f, dir: file.path, id: id }, true)
                     }
                 }
 
@@ -1367,6 +1397,23 @@ export class FilesIconView extends FilesView {
 
                 fileIconDiv.onmouseenter = (evt) => {
                     evt.stopPropagation();
+                    let checkboxs = this.div.querySelectorAll("paper-checkbox")
+                    for (var i = 0; i < checkboxs.length; i++) {
+                        if (!checkboxs[i].checked) {
+                            checkboxs[i].style.display = "none"
+                        }
+                    }
+
+                    let fileIconDivs = this.div.querySelectorAll(".file-icon-div")
+                    for (var i = 0; i < fileIconDivs.length; i++) {
+                        fileIconDivs[i].classList.remove("active")
+                    }
+
+                    fileIconDiv.classList.add("active")
+
+                    // display the actual checkbox...
+                    checkbox.style.display = "block"
+
                     if (!this.menu.isOpen()) {
                         this.menu.showBtn()
                         fileIconDiv.parentNode.appendChild(this.menu)
@@ -1740,6 +1787,24 @@ export class FileNavigator extends HTMLElement {
         let dirLnk = this.shadowRoot.getElementById(id + "_directory_lnk")
         let dirIco = this.shadowRoot.getElementById(id + "_directory_icon")
 
+        dirLnk.ondragover = (evt) => {
+            evt.preventDefault()
+            dirIco.icon = "icons:folder-open"
+        }
+
+        dirLnk.ondragleave = () => {
+            dirIco.icon = "icons:folder"
+        }
+
+        dirLnk.ondrop = (evt) => {
+            evt.stopPropagation();
+            let f = evt.dataTransfer.getData('file')
+            let id = evt.dataTransfer.getData('id')
+            dirIco.icon = "icons:folder"
+
+            Model.eventHub.publish("drop_file_event", { file: f, dir: dir.path, id: id }, true)
+        }
+
         let hasSubdir = false;
         let fileDiv = this.shadowRoot.getElementById(id + "_files_div")
 
@@ -1896,6 +1961,9 @@ export class FileExplorer extends HTMLElement {
         this.fowardNavigationBtn = undefined
         this.upwardNavigationBtn = undefined
         this.lstNavigationBtn = undefined
+
+        // The paper tray
+        this.paperTray = undefined;
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -2788,8 +2856,8 @@ export class VideoPreview extends HTMLElement {
         this.interval = setInterval(() => {
 
             let img = this.images[index]
-            img.draggable = false;
             if (img != undefined) {
+                img.draggable = false;
                 while (this.container.children.length > 2) {
                     this.container.removeChild(this.container.children[this.container.children.length - 1])
                 }
@@ -2828,3 +2896,46 @@ export class VideoPreview extends HTMLElement {
 
 customElements.define('globular-video-preview', VideoPreview)
 
+
+/**
+ * That class is use to keep list of cut and paste file/directory.
+ * TODO see if it's necessary...
+ */
+export class PaperTray extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor() {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+    }
+
+    // The connection callback.
+    connectedCallback() {
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+            ${theme}
+            #container{
+
+            }
+
+        </style>
+        <div id="container">
+            <iron-icon icon="icons:content-paste"> </iron-icon>
+        </div>
+        `
+        // give the focus to the input.
+        let container = this.shadowRoot.querySelector("#container")
+
+    }
+
+    // Call search event.
+    hello() {
+
+    }
+}
+
+customElements.define('globular-paper-tray', PaperTray)
