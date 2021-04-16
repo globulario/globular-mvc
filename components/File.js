@@ -201,7 +201,7 @@ export class FilesView extends HTMLElement {
             }
             if (files.length > 0) {
                 // Create a tempory name...
-                let uuid = uuidv4()
+                let uuid = "_" + uuidv4().split("-").join("_");
                 createArchive(Application.globular, files, uuid,
                     path => {
                         // Download the file...
@@ -1478,6 +1478,13 @@ export class PathNavigator extends HTMLElement {
                     align-items: center;
                 }
 
+                #path-navigator-box span{
+                    max-width: 150px;
+                    white-space: nowrap;
+                    overflow: hidden !important;
+                    text-overflow: ellipsis;
+                }
+
 
             </style>
 
@@ -1706,6 +1713,14 @@ export class FileNavigator extends HTMLElement {
 
         // The get the root div.
         this.div = this.shadowRoot.querySelector("#file-navigator-div");
+    }
+
+    hide(){
+        this.div.style.display = "none"
+    }
+
+    show(){
+        this.div.style.display = ""
     }
 
     // remove div and reload it from it content...
@@ -2324,6 +2339,16 @@ export class FileExplorer extends HTMLElement {
         }
     }
 
+    hideNavigator(){
+        this.fileNavigator.hide()
+        window.dispatchEvent(new Event('resize'));
+    }
+
+    showNavigator(){
+        this.fileNavigator.show()
+        window.dispatchEvent(new Event('resize'));
+    }
+
     // Set the file explorer directory.
     init() {
         // Init the path navigator
@@ -2684,7 +2709,10 @@ export class FileExplorer extends HTMLElement {
             this.onclose();
 
         }
-        this.parent.removeChild(this)
+        if(this.parentNode!=null){
+            this.parentNode.removeChild(this)
+        }
+       
     }
 
     maximize() {

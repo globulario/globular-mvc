@@ -5,6 +5,7 @@ import '@polymer/iron-icons/iron-icons.js';
 import '@polymer/iron-icons/image-icons';
 import '@polymer/paper-input/paper-input.js';
 import { theme } from "./Theme";
+import { dataURIToBlob } from './utility';
 export class Camera extends HTMLElement {
 
     constructor() {
@@ -159,7 +160,8 @@ export class Camera extends HTMLElement {
         this._savebutton.onclick = () => {
             // create event that save the image.
             if (this.onsave != undefined) {
-                this.onsave({ image: this._photo })
+                
+                this.onsave(this._photo.src)
             }
             // delete the picture.
             this._deletebutton.click()
@@ -265,7 +267,11 @@ export class Camera extends HTMLElement {
             this._camera.style.display = "none"
             this._openbutton.style.display = ""
             this._video.pause();
-            this._stream.getTracks()[0].stop();
+            const tracks = this._video.srcObject.getTracks();
+            tracks.forEach((track) =>{
+              track.stop();
+            });
+
             this._video.currentTime = 0;
             this._video.removeEventListener('canplay', play);
             this.clearphoto()
@@ -286,8 +292,18 @@ export class Camera extends HTMLElement {
         }
     }
 
+    open(){
+        this._openbutton.click()
+        if (this.onopen != undefined) {
+            this.onopen();
+        }
+    }
+
     close() {
         this._closebutton.click(); // close the camera.
+        if (this.onclose != undefined) {
+            this.onclose();
+        }
     }
 
     takepicture() {

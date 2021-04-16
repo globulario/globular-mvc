@@ -180,6 +180,7 @@ dropdown-menu-element{
    flex-grow: 1;
    --iron-icon-fill-color:var(--palette-text-primary);
 }
+
 /*
 #workspace globular-settings-panel{
    display: flex;

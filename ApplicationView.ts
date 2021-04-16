@@ -36,7 +36,7 @@ const nameGenrator = new DockerNames();
 // Must be imported to overide the materialyse style
 import "./style.css"
 import { rgbToHsl } from "./components/utility";
-import { uploadFiles } from "globular-web-client/api";
+import { readDir, uploadFiles } from "globular-web-client/api";
 
 /**
  * Application view made use of Web-component and Materialyse to create a basic application
@@ -178,6 +178,7 @@ export class ApplicationView extends View {
     // That function will be call when the file is saved.
     this._camera.onsaved = (path: string, name: string) => {
       console.log("----> save success!");
+      
     };
 
     // Now the save funciton..
@@ -191,7 +192,7 @@ export class ApplicationView extends View {
 
     // The file menu
     this.filesMenu = new FilesMenu(this._fileExplorer);
-    
+
     // set the global varialbe...
     applicationView = this;
   }
@@ -417,17 +418,17 @@ export class ApplicationView extends View {
 
     // Upload file event.
     Model.eventHub.subscribe(
-      "__upload_files_event__",(uuid)=>{},
-      (evt:any)=>{
+      "__upload_files_event__", (uuid) => { },
+      (evt: any) => {
         this.wait("files are uploading please wait...")
-        uploadFiles(evt.path, evt.files, ()=>{
+        uploadFiles(evt.path, evt.files, () => {
           ApplicationView.displayMessage("your files was successfully uploaded!", 3000)
           this.resume()
           // Publish network event.
           Model.eventHub.publish("upload_files_event", evt.path, false)
-      })
+        })
       }
-      ,true
+      , true
     )
 
     /**
@@ -676,7 +677,7 @@ export class ApplicationView extends View {
     // Set the file explorer...
     this.fileExplorer.setRoot("/users/" + account.name)
     this._fileExplorer.init();
-    
+
     // Set the onerror callback for the component.
     this._fileExplorer.onerror = (err: any) => {
       ApplicationView.displayMessage(err, 4000)
@@ -763,6 +764,61 @@ export class ApplicationView extends View {
 
   }
 
+
+  showCamera(onclose: () => void, onsave: (picture: any) => void) {
+
+    // Here I will create a non-selectable div and put camera in center of it...
+    document.body.style.position = "relative"
+    let modal = document.createElement("div")
+    modal.style.position = "fixed"
+    modal.style.top = "0px"
+    modal.style.bottom = "0px"
+    modal.style.left = "0px"
+    modal.style.right = "0px"
+    modal.style.zIndex = "10000";
+    modal.style.background = "rgba(0.0, 0.0, 0.0, .85)"
+
+    document.body.appendChild(modal)
+    this.camera.onclose = () => {
+      this.camera.parentNode.removeChild(this.camera)
+      modal.parentNode.removeChild(modal)
+      if (onclose != null) {
+        onclose()
+      }
+    }
+
+    modal.appendChild(this.camera)
+
+    this.camera.onsave = onsave
+
+    this.camera.open();
+  }
+
+  showFilebrowser(path:string, onclose:()=>void){
+
+    document.body.style.position = "relative"
+    let modal = document.createElement("div")
+    modal.style.position = "fixed"
+    modal.style.top = "0px"
+    modal.style.bottom = "0px"
+    modal.style.left = "0px"
+    modal.style.right = "0px"
+    modal.style.zIndex = "10000";
+    modal.style.background = "rgba(0.0, 0.0, 0.0, .85)"
+    document.body.appendChild(modal)
+
+    let fileExplorer = new FileExplorer
+    fileExplorer.setRoot(path)
+    fileExplorer.init()
+    fileExplorer.open(modal)
+
+    fileExplorer.onclose = ()=>{
+      fileExplorer.parentNode.removeChild(fileExplorer)
+      modal.parentNode.removeChild(modal)
+    }
+
+    return fileExplorer
+  }
 
   ///////////////////////////////////////////////////////////////////////////////////////////
   // Conversations
@@ -997,7 +1053,7 @@ export class ApplicationView extends View {
         // Publish the list of participant with the account removed from it.
         let participants = conversation.getParticipantsList()
         participants.splice(participants.indexOf(this.application.account.id), 1)
-        Model.eventHub.publish(`leave_conversation_${conversation.getUuid()}_evt`, JSON.stringify(participants) , false)
+        Model.eventHub.publish(`leave_conversation_${conversation.getUuid()}_evt`, JSON.stringify(participants), false)
         ApplicationView.displayMessage(
           "<iron-icon icon='communication:message' style='margin-right: 10px;'></iron-icon><div>Conversation named " +
           conversation.getName() +
