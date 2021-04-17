@@ -13,6 +13,8 @@ import { Model } from '../Model';
 import { File } from "../File";
 import { Menu } from './Menu';
 import { VideoPlayer } from './Video'
+import { AudioPlayer } from './Audio'
+import { } from './Reader'
 import { theme } from './Theme';
 import { v4 as uuidv4 } from "uuid";
 
@@ -622,13 +624,13 @@ export class FilesView extends HTMLElement {
         Model.eventHub.subscribe("drop_file_event", () => { }, infos => {
 
             // Hide the icon parent div.
-            let div = this.div.querySelector("#" + infos.id) 
-            if(div!=undefined){
+            let div = this.div.querySelector("#" + infos.id)
+            if (div != undefined) {
                 div.parentNode.style.display = "none"
-            }else{
+            } else {
                 console.log("div with id ", infos.id, "dosent exist in ", this.div)
             }
-           
+
 
             if (this.edit.length == 0) {
                 this.edit = "cut"
@@ -666,7 +668,7 @@ export class FilesView extends HTMLElement {
                             flex-direction: column;
                             left: 5px;
                             min-width: 200px;
-                            z-index: 10000;
+                            z-index: 100;
                         }
     
                         .rename-file-dialog-actions{
@@ -1155,7 +1157,7 @@ export class FilesIconView extends FilesView {
                 position: absolute;
                 top: -1px;
                 right: 0px;
-                z-index: 10000;
+                z-index: 100;
             }
 
             iron-icon {
@@ -1338,7 +1340,7 @@ export class FilesIconView extends FilesView {
                         }
                     }
 
-                } else if (fileType == "image") {
+                } else if (file.thumbnail != undefined) {
                     /** Display the thumbnail. */
                     let img = document.createElement("img")
                     img.src = file.thumbnail
@@ -1348,10 +1350,25 @@ export class FilesIconView extends FilesView {
                     if (img.width > 0 && img.height > 0) {
                         w = (img.width / img.height) * h
                     }
+                    if (fileType == "image") {
+                        img.onclick = (evt) => {
+                            evt.stopPropagation();
+                            Model.eventHub.publish("__show_image__", file.path, true)
+                        }
+                    } else if (fileType == "audio") {
 
-                    img.onclick = (evt) => {
-                        evt.stopPropagation();
-                        Model.eventHub.publish("__show_image__", file.path, true)
+                        img.onclick = (evt) => {
+                            evt.stopPropagation();
+                            Model.eventHub.publish("__play_audio__", file.path, true)
+                        }
+
+                    } else {
+                        // here I will try the file viewer.
+
+                        img.onclick = (evt) => {
+                            evt.stopPropagation();
+                            Model.eventHub.publish("__read_file__", file.path, true)
+                        }
                     }
                 }
 
@@ -1479,10 +1496,11 @@ export class PathNavigator extends HTMLElement {
                 }
 
                 #path-navigator-box span{
+                    
                     max-width: 150px;
                     white-space: nowrap;
-                    overflow: hidden !important;
                     text-overflow: ellipsis;
+                    
                 }
 
 
@@ -1529,6 +1547,7 @@ export class PathNavigator extends HTMLElement {
             title.style.position = "relative"
             title.innerHTML = dir
             let path_ = path += "/" + dir
+
             let directoriesDiv = null
             if (index < values.length - 1) {
                 // Here I will also append a button to go to a given path.
@@ -1561,7 +1580,7 @@ export class PathNavigator extends HTMLElement {
                     directoriesDiv.style.flexDirection = "column"
                     directoriesDiv.style.position = "absolute"
                     directoriesDiv.style.padding = "5px"
-                    directoriesDiv.style.zIndex = "100";
+                    directoriesDiv.style.zIndex = "10000";
                     directoriesDiv.style.top = title.offsetHeight + "px"
                     directoriesDiv.style.right = "0px"
                     directoriesDiv.style.backgroundColor = "var(--palette-background-paper)"
@@ -1715,11 +1734,11 @@ export class FileNavigator extends HTMLElement {
         this.div = this.shadowRoot.querySelector("#file-navigator-div");
     }
 
-    hide(){
+    hide() {
         this.div.style.display = "none"
     }
 
-    show(){
+    show() {
         this.div.style.display = ""
     }
 
@@ -1947,6 +1966,7 @@ export class FileExplorer extends HTMLElement {
         this.set_dir_event_listener = null;
         this.upload_files_event_listener = null;
         this.__play_video__listener = null;
+        this.__play_audio__listener = null;
         this.__show_image__listener = null;
 
         // Interface elements...
@@ -2041,6 +2061,9 @@ export class FileExplorer extends HTMLElement {
 
             }
     
+            #globular-audio-player{
+                display: none;
+            }
 
             #globular-video-player{
                 display: none;
@@ -2074,6 +2097,8 @@ export class FileExplorer extends HTMLElement {
                         <globular-files-list-view id="globular-files-list-view" style="display:none;" ></globular-files-list-view>
                         <globular-files-icon-view id="globular-files-icon-view"></globular-files-icon-view>
                         <globular-video-player id="globular-video-player"></globular-video-player>
+                        <globular-audio-player id="globular-audio-player"></globular-audio-player>
+                        <globular-file-reader id="globular-file-reader"></globular-file-reader>
                         <globular-image-viewer id="globular-image-viewer"></globular-image-viewer>
                         <div style="position: absolute; bottom: 8px; right: 8px; display: flex; background-color:var(--palette-background-default);" >
                             
@@ -2102,6 +2127,12 @@ export class FileExplorer extends HTMLElement {
 
         // The video player
         this.videoPlayer = this.shadowRoot.querySelector("#globular-video-player")
+
+        // The file reader
+        this.fileReader = this.shadowRoot.querySelector("#globular-file-reader")
+
+        // The audio player 
+        this.audioPlayer = this.shadowRoot.querySelector("#globular-audio-player")
 
         // The image viewer
         this.imageViewer = this.shadowRoot.querySelector("#globular-image-viewer")
@@ -2176,6 +2207,9 @@ export class FileExplorer extends HTMLElement {
             this.filesIconView.style.display = "none"
             this.videoPlayer.stop();
             this.videoPlayer.style.display = "none"
+            this.audioPlayer.stop();
+            this.audioPlayer.style.display = "none"
+            this.fileReader.style.display = "none"
             this.filesListBtn.classList.add("active")
             this.fileIconBtn.classList.remove("active")
             this.filesListBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-active)")
@@ -2191,6 +2225,9 @@ export class FileExplorer extends HTMLElement {
             this.filesIconView.style.display = ""
             this.videoPlayer.stop();
             this.videoPlayer.style.display = "none"
+            this.audioPlayer.stop();
+            this.audioPlayer.style.display = "none"
+            this.fileReader.style.display = "none"
             this.filesListBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
             this.fileIconBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-active)")
         }
@@ -2212,7 +2249,7 @@ export class FileExplorer extends HTMLElement {
                         flex-direction: column;
                         right: 60px;
                         top: 50px;
-                        z-index: 10000;
+                        z-index: 100;
                     }
 
                     .new-dir-dialog-actions{
@@ -2339,12 +2376,12 @@ export class FileExplorer extends HTMLElement {
         }
     }
 
-    hideNavigator(){
+    hideNavigator() {
         this.fileNavigator.hide()
         window.dispatchEvent(new Event('resize'));
     }
 
-    showNavigator(){
+    showNavigator() {
         this.fileNavigator.show()
         window.dispatchEvent(new Event('resize'));
     }
@@ -2419,14 +2456,51 @@ export class FileExplorer extends HTMLElement {
                 // hide the content.
                 this.filesListView.style.display = "none"
                 this.filesIconView.style.display = "none"
-
                 this.videoPlayer.style.display = "block"
-
-                this.videoPlayer.__playing = true;
 
                 // Display the video only if the path match the video player /applications vs /users
                 this.videoPlayer.play(path)
 
+            })
+        }
+
+        // Play audio
+        if (this.__play_audio__listener == null) {
+            Model.eventHub.subscribe("__play_audio__", (uuid) => {
+                this.__play_audio__listener = uuid
+            }, (path) => {
+                if (!path.startsWith(this.root)) {
+                    return
+                }
+
+                // hide the content.
+                this.filesListView.style.display = "none"
+                this.filesIconView.style.display = "none"
+
+                this.audioPlayer.style.display = "block"
+
+                // Display the video only if the path match the video player /applications vs /users
+                this.audioPlayer.play(path)
+
+            })
+        }
+
+        // Read file
+        if (this.__file_reader__listener == null) {
+            Model.eventHub.subscribe("__read_file__", (uuid) => {
+                this.__file_reader__listener = uuid
+            }, (path) => {
+                if (!path.startsWith(this.root)) {
+                    return
+                }
+
+                // hide the content.
+                this.filesListView.style.display = "none"
+                this.filesIconView.style.display = "none"
+                this.fileReader.style.display = "block"
+
+                // Display the video only if the path match the video player /applications vs /users
+                this.fileReader.read(path)
             })
         }
 
@@ -2566,6 +2640,10 @@ export class FileExplorer extends HTMLElement {
         this.videoPlayer.style.display = "none"
         this.videoPlayer.stop();
 
+        this.audioPlayer.style.display = "none"
+        this.audioPlayer.stop();
+
+        this.fileReader.style.display = "none"
 
         this.imageViewer.style.display = "none";
         this.imageViewer.innerHTML = "";
@@ -2629,40 +2707,42 @@ export class FileExplorer extends HTMLElement {
             let range = document.createRange()
 
             for (let path of this.navigations) {
-                let html = `
+                if (path.indexOf(".hidden") == -1) {
+                    let html = `
                     <div style="display: flex; align-items: center;">
                         <iron-icon style="height: 16px;"></iron-icon><div> ${path.split("/").pop()} </div>
                     </div>
                 `
-                navigationLst.appendChild(range.createContextualFragment(html));
-                let index = navigationLst.children.length - 1
-                let navigationLine = navigationLst.children[index]
-                let _index = this.navigations.indexOf(dir.path)
-                if (index < _index) {
-                    navigationLine.children[0].icon = "icons:arrow-back"
-                } else if (index > _index) {
-                    navigationLine.children[0].icon = "icons:arrow-forward"
-                } else {
-                    navigationLine.children[0].icon = "icons:check"
-                }
+                    navigationLst.appendChild(range.createContextualFragment(html));
+                    let index = navigationLst.children.length - 1
+                    let navigationLine = navigationLst.children[index]
+                    let _index = this.navigations.indexOf(dir.path)
+                    if (index < _index) {
+                        navigationLine.children[0].icon = "icons:arrow-back"
+                    } else if (index > _index) {
+                        navigationLine.children[0].icon = "icons:arrow-forward"
+                    } else {
+                        navigationLine.children[0].icon = "icons:check"
+                    }
 
-                navigationLine.onmouseover = () => {
-                    navigationLine.style.cursor = "pointer"
-                    navigationLine.style.setProperty("background-color", "var(--palette-background-default)")
-                    navigationLine.children[0].style.setProperty("background-color", "var(--palette-background-default)")
-                    navigationLine.children[1].style.setProperty("background-color", "var(--palette-background-default)")
-                }
+                    navigationLine.onmouseover = () => {
+                        navigationLine.style.cursor = "pointer"
+                        navigationLine.style.setProperty("background-color", "var(--palette-background-default)")
+                        navigationLine.children[0].style.setProperty("background-color", "var(--palette-background-default)")
+                        navigationLine.children[1].style.setProperty("background-color", "var(--palette-background-default)")
+                    }
 
-                navigationLine.onmouseleave = () => {
-                    navigationLine.style.cursor = "default"
-                    navigationLine.style.setProperty("background-color", "var(--palette-background-paper)")
-                    navigationLine.children[0].style.setProperty("background-color", "var(--palette-background-paper)")
-                    navigationLine.children[1].style.setProperty("background-color", "var(--palette-background-paper)")
-                }
+                    navigationLine.onmouseleave = () => {
+                        navigationLine.style.cursor = "default"
+                        navigationLine.style.setProperty("background-color", "var(--palette-background-paper)")
+                        navigationLine.children[0].style.setProperty("background-color", "var(--palette-background-paper)")
+                        navigationLine.children[1].style.setProperty("background-color", "var(--palette-background-paper)")
+                    }
 
-                navigationLine.onclick = () => {
-                    navigationLst.style.display = "none"
-                    Model.eventHub.publish("set_dir_event", _dirs[this.navigations[index]], true)
+                    navigationLine.onclick = () => {
+                        navigationLst.style.display = "none"
+                        Model.eventHub.publish("set_dir_event", _dirs[this.navigations[index]], true)
+                    }
                 }
             }
 
@@ -2709,10 +2789,10 @@ export class FileExplorer extends HTMLElement {
             this.onclose();
 
         }
-        if(this.parentNode!=null){
+        if (this.parentNode != null) {
             this.parentNode.removeChild(this)
         }
-       
+
     }
 
     maximize() {

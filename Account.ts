@@ -576,7 +576,7 @@ export class Account extends Model {
                 this.hasData = false;
                 // onError(err);
                 // Call success callback ...
-                if (callback != undefined) {
+                if (callback != undefined && this.session!=null) {
                     this.session.initData(() => {
                         callback(this);
                     }, onError)
