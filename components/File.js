@@ -2843,6 +2843,7 @@ export class VideoPreview extends HTMLElement {
         this.width = height;
         this.height = height;
         this.onresize = onresize;
+        this.previews = previews;
 
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
@@ -2911,7 +2912,7 @@ export class VideoPreview extends HTMLElement {
                     }
 
                 }
-            }, this.images, previews, index)
+            }, this.images, [previews[0]], index) // Download the first image only...
         }
 
         // Play the video
@@ -2938,10 +2939,33 @@ export class VideoPreview extends HTMLElement {
         // Connect events
         this.container.onmouseenter = (evt) => {
             evt.stopPropagation();
-            this.playBtn.style.display = "block";
-            if (this.interval == null && !is_over_play_btn) {
-                this.startPreview();
+            if (this.images.length == 1) {
+                getImage((images) => {
+                    this.images = images
+                    if (this.images.length > 0) {
+                        this.container.appendChild(this.images[0])
+                        this.width = this.images[0].width
+                        this.height = this.images[0].height
+
+                        this.playBtn.style.display = "block";
+                        if (this.interval == null && !is_over_play_btn) {
+                            this.startPreview();
+                        }
+
+                        if (this.onresize != undefined) {
+                            this.onresize()
+                        }
+
+                    }
+                }, this.images, previews, index) // Download the first image only...
+            } else if (this.images.length > 1) {
+                this.playBtn.style.display = "block";
+                if (this.interval == null && !is_over_play_btn) {
+                    this.startPreview();
+                }
             }
+
+
         }
 
         this.container.onmouseout = (evt) => {
