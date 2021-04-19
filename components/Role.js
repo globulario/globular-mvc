@@ -128,11 +128,11 @@ export class RolePanel extends HTMLElement {
                     <paper-ripple class="circle" recenters=""></paper-ripple>
                 </div>
             </div>
-            <iron-collapse id="conversation-infos-collapse"></iron-collapse>
+            <iron-collapse id="collapase-panel"></iron-collapse>
         </div>
         `
 
-        let content = this.shadowRoot.querySelector("#conversation-infos-collapse")
+        let content = this.shadowRoot.querySelector("#collapase-panel")
         this.hideBtn = this.shadowRoot.querySelector("#hide-btn")
         // give the focus to the input.
         this.hideBtn.onclick = () => {

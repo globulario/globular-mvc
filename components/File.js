@@ -20,13 +20,10 @@ import { v4 as uuidv4 } from "uuid";
 
 // Menu to set action on files.
 import { DropdownMenu } from './dropdownMenu.js';
-import { createElement } from "./element.js";
-import { ItemManufacturer } from 'globular-web-client/catalog/catalog_pb';
 import { CopyRequest, CreateDirRequest, GetThumbnailsResponse, MoveRequest } from 'globular-web-client/file/file_pb';
-import { createArchive, deleteDir, deleteFile, downloadFileHttp, renameFile } from 'globular-web-client/api';
+import { createArchive, deleteDir, deleteFile, downloadFileHttp, renameFile, uploadFiles } from 'globular-web-client/api';
 import { ApplicationView } from '../ApplicationView';
 import { Application } from '../Application';
-
 
 function getElementIndex(element) {
     return Array.from(element.parentNode.children).indexOf(element);
@@ -77,11 +74,11 @@ function _readDir(path, callback, errorCallback) {
 
 }
 
-function _publishSetDirEvent(path){
-    _readDir(path, (dir)=>{
+function _publishSetDirEvent(path) {
+    _readDir(path, (dir) => {
         console.log(dir)
         Model.eventHub.publish("set_dir_event", dir, true)
-    }, err=>{console.log(err)})
+    }, err => { console.log(err) })
 }
 
 /**
@@ -453,6 +450,7 @@ export class FilesView extends HTMLElement {
                   top: 0px;
                   left: 0px;
                   bottom: 0px;
+                  padding-bottom: 40px;
                   right: 0px;
                   overflow: auto;
               }
@@ -826,10 +824,10 @@ export class FilesListView extends FilesView {
         <table>
             <thead class="files-list-view-header">
                 <tr>
-                    <th class="name_header_div files-list-view-header">Nom</th>
-                    <th class="modified_header_div files-list-view-header">Modifié le</th>
+                    <th class="name_header_div files-list-view-header">Name</th>
+                    <th class="modified_header_div files-list-view-header">Modifiy</th>
                     <th class="mime_header_div files-list-view-header">Type</th>
-                    <th class="size_header_div files-list-view-header">Taille</th>
+                    <th class="size_header_div files-list-view-header">Size</th>
                 </tr>
             </thead>
             <tbody id=${id}"_files_list_view_info" class="files-list-view-info"></tbody>
@@ -2106,8 +2104,9 @@ export class FileExplorer extends HTMLElement {
                         <globular-audio-player id="globular-audio-player"></globular-audio-player>
                         <globular-file-reader id="globular-file-reader"></globular-file-reader>
                         <globular-image-viewer id="globular-image-viewer"></globular-image-viewer>
+                       
                         <div style="position: absolute; bottom: 8px; right: 8px; display: flex; background-color:var(--palette-background-default);" >
-                            
+                            <globular-files-uploader></globular-files-uploader>
                             <paper-icon-button id="files-icon-btn" class="active" icon="icons:view-module" style="--iron-icon-fill-color: var(--palette-action-active);"></paper-icon-button>
                             <paper-icon-button id="files-list-btn" icon="icons:view-list" style="--iron-icon-fill-color: var(--palette-action-disabled);"></paper-icon-button>
                         </div>
@@ -2133,6 +2132,9 @@ export class FileExplorer extends HTMLElement {
 
         // The video player
         this.videoPlayer = this.shadowRoot.querySelector("#globular-video-player")
+
+        // The file uploader
+        this.filesUploader = this.shadowRoot.querySelector("globular-files-uploader")
 
         // The file reader
         this.fileReader = this.shadowRoot.querySelector("#globular-file-reader")
@@ -2341,7 +2343,7 @@ export class FileExplorer extends HTMLElement {
         // refresh all the interface.
         this.refreshBtn.onclick = () => {
             _readDir(this.root, (dir) => {
-                
+
                 _publishSetDirEvent(this.path)
 
                 // Clear selection.
@@ -2376,9 +2378,7 @@ export class FileExplorer extends HTMLElement {
             fileInput.click()
             // this.pathNavigator
             fileInput.onchange = () => {
-                //ApplicationView.wait("upload files... please wait")
-                Model.eventHub.publish("__upload_files_event__", { path: this.path, files: fileInput.files }, true)
-
+                this.filesUploader.uploadFiles(this.path, fileInput.files)
             }
         }
     }
@@ -2401,6 +2401,9 @@ export class FileExplorer extends HTMLElement {
         // Init the files views
         this.filesListView.init();
         this.filesIconView.init();
+
+        // Init file upload event listener...
+        this.filesUploader.init();
 
         if (this.set_dir_event_listener == null) {
             Model.eventHub.subscribe("set_dir_event",
@@ -3037,12 +3040,10 @@ export class VideoPreview extends HTMLElement {
 
 customElements.define('globular-video-preview', VideoPreview)
 
-
 /**
- * That class is use to keep list of cut and paste file/directory.
- * TODO see if it's necessary...
+ * That object is use to help make applications more responding when files are uploading...
  */
-export class PaperTray extends HTMLElement {
+export class FilesUploader extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
@@ -3050,33 +3051,190 @@ export class PaperTray extends HTMLElement {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
-    }
-
-    // The connection callback.
-    connectedCallback() {
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
             ${theme}
             #container{
+                position: relative;
+            }
 
+            iron-collapse {
+                display: none;
+                position: absolute;
+                bottom: 40px;
+                right: -80px;
+            }
+
+            paper-icon-button .active{
+
+            }
+
+            paper-icon-button {
+
+            }
+
+            .content{
+
+            }
+
+            td {
+                text-align: center;
+                vertical-align: middle;
+            }
+
+
+            tbody{
+                position: relative;
+            }
+
+            tbody tr {
+                background-color: var(--palette-background-default);
+                transition: background 0.2s ease,padding 0.8s linear;
+            }
+
+            tr.active{
+                filter: invert(10%);
             }
 
         </style>
         <div id="container">
-            <iron-icon icon="icons:content-paste"> </iron-icon>
+            <iron-collapse id="collapase-panel">
+                <paper-card class="content">
+                    <div class="card-content" style="padding: 0px;">
+                        <table>
+                            <thead class="files-list-view-header">
+                                <tr>
+                                    <th></th>
+                                    <th class="name_header_div files-list-view-header">Name</th>
+                                    <th class="mime_header_div files-list-view-header" style="min-width: 110px;">Destination</th>
+                                    <th class="size_header_div files-list-view-header" style="min-width: 80px;">Size</th>
+                                </tr>
+                            </thead>
+                            <tbody class="files-list-view-info">
+                            </tbody>
+                        </table>
+                    </div>
+                </paper-card>
+            </iron-collapse>
+            <paper-icon-button icon="icons:file-upload"> </paper-icon-button>
         </div>
         `
         // give the focus to the input.
         let container = this.shadowRoot.querySelector("#container")
+        this.files = this.shadowRoot.querySelector("tbody")
+        this.btn = this.shadowRoot.querySelector("paper-icon-button")
+
+        let content = this.shadowRoot.querySelector("#collapase-panel")
+        // give the focus to the input.
+        this.btn.onclick = () => {
+            content.toggle();
+        }
+
+        this.btn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
 
     }
 
-    // Call search event.
-    hello() {
+    init() {
+        // Upload file event.
+        Model.eventHub.subscribe(
+            "__upload_files_event__", (uuid) => { },
+            (evt) => {
+
+
+            }
+            , true
+        )
+    }
+
+    uploadFiles(path, files) {
+        // So here I will create the upload file jobs...
+        /*
+        uploadFiles(path, files, () => {
+            ApplicationView.displayMessage("your files was successfully uploaded!", 3000)
+            this.resume()
+            // Publish network event.
+            Model.eventHub.publish("upload_files_event", path, false)
+        })
+        */
+
+        // So here I will try to get the most information from the backend to be able to keep the user inform about what append 
+        // whit uploading files process.
+        console.log("upload files: ",files)
+        if (files.length > 0) {
+            this.btn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-active)")
+            this.shadowRoot.querySelector("iron-collapse").style.display = "block";
+        }
+        let range = document.createRange()
+        for (var i = 0; i < files.length; i++) {
+            let f = files[i]
+            let size = ""
+
+            if (f.size > 1024) {
+                if (f.size > 1024 * 1024) {
+                    if (f.size > 1024 * 1024 * 1024) {
+                        let fileSize = f.size / (1024 * 1024 * 1024);
+
+                        size = fileSize.toFixed(2) + " Gb";
+                    } else {
+                        let fileSize = f.size / (1024 * 1024);
+                        size = fileSize.toFixed(2) + " Mb";
+                    }
+                } else {
+                    let fileSize = f.size / 1024;
+                    size = fileSize.toFixed(2) + " Kb";
+                }
+            } else {
+                size = f.size + " bytes";
+            }
+
+            let row = document.createElement("tr")
+            let cancelCell = document.createElement("td")
+            let cancelBtn = document.createElement("paper-icon-button")
+            cancelBtn.icon = "icons:close"
+            cancelCell.appendChild(cancelBtn)
+            let cellSource = document.createElement("td")
+            cellSource.style.textAlign = "left"
+            cellSource.style.paddingLeft = "5px"
+            cellSource.innerHTML = f.name;
+            let cellDest = document.createElement("td")
+            cellDest.style.textAlign = "left"
+            cellDest.style.paddingLeft = "5px"
+            cellDest.innerHTML = path;
+            let cellSize = document.createElement("td")
+            cellSize.innerHTML = size;
+            row.appendChild(cancelCell)
+            row.appendChild(cellSource);
+            row.appendChild(cellDest);
+            row.appendChild(cellSize);
+
+            // Append to files panels.
+            this.files.appendChild(row)
+        }
+
+        // Upload file one by one and 
+        let uploadFile = (index, callback) => {
+            let f = files[index]
+            index++
+            uploadFiles(path, [f], () => {
+                ApplicationView.displayMessage("File "+ f.name + " was uploaded", 2000)
+                this.files.removeChild(this.files.children[0])
+                Model.eventHub.publish("reload_dir_event", path, false);
+                if (index < files.length) {
+                    uploadFile(index, callback)
+                } else {
+                    callback()
+                }
+            })
+        }
+
+        // Start file upload!
+        uploadFile(0, () => {
+            ApplicationView.displayMessage("All files are now uploaded!", 2000)
+        })
 
     }
 }
 
-customElements.define('globular-paper-tray', PaperTray)
+customElements.define('globular-files-uploader', FilesUploader)

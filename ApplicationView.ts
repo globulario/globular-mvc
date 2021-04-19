@@ -416,21 +416,6 @@ export class ApplicationView extends View {
       true
     );
 
-    // Upload file event.
-    Model.eventHub.subscribe(
-      "__upload_files_event__", (uuid) => { },
-      (evt: any) => {
-        this.wait("files are uploading please wait...")
-        uploadFiles(evt.path, evt.files, () => {
-          ApplicationView.displayMessage("your files was successfully uploaded!", 3000)
-          this.resume()
-          // Publish network event.
-          Model.eventHub.publish("upload_files_event", evt.path, false)
-        })
-      }
-      , true
-    )
-
     /**
      * The resize listener.
      */
