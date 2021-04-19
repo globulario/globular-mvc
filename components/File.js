@@ -1130,16 +1130,17 @@ export class FilesIconView extends FilesView {
             }
 
             .file-div span {
-                /*
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                */
                word-wrap: break-word;
                text-align: center;
                max-height: 200px;
                overflow-y: hidden;
 
+            }
+
+            .file-path-name {
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
 
             .file-icon-div.active{
@@ -1499,12 +1500,12 @@ export class PathNavigator extends HTMLElement {
                     align-items: center;
                 }
 
-                #path-navigator-box span{
-                    
-                    max-width: 150px;
+                .path-navigator-box-span{
+                    display: inherit;
+                    max-width: 200px;
                     white-space: nowrap;
                     text-overflow: ellipsis;
-                    
+                    overflow: hidden;
                 }
 
 
@@ -1547,10 +1548,19 @@ export class PathNavigator extends HTMLElement {
         let path = ""
 
         for (const dir of values) {
+            let titleDiv = document.createElement("div")
+            titleDiv.style.display = "flex"
+            titleDiv.style.position = "relative"
+
             let title = document.createElement("span")
-            title.style.position = "relative"
+            title.className = "path-navigator-box-span"
+            title.style.display = "inline"
+            if(dir.length > 20){
+                title.title = dir 
+            }
             title.innerHTML = dir
             let path_ = path += "/" + dir
+            titleDiv.appendChild(title)
 
             let directoriesDiv = null
             if (index < values.length - 1) {
@@ -1558,7 +1568,7 @@ export class PathNavigator extends HTMLElement {
                 let btn = document.createElement("iron-icon")
                 btn.style.position = "relative"
                 btn.icon = "icons:chevron-right"
-                title.appendChild(btn)
+                titleDiv.appendChild(btn)
 
                 // Display the list of all subdirectories...
                 btn.onclick = (evt) => {
@@ -1591,14 +1601,18 @@ export class PathNavigator extends HTMLElement {
                     directoriesDiv.style.color = "var(--palette-text-primary)"
 
                     _readDir(path_, (dir) => {
+
                         // Send read dir event.
                         for (let subDir of dir.files) {
+                            let subDirDiv = document.createElement("div")
+
                             let subDirSpan = document.createElement("span")
                             subDirSpan.innerHTML = subDir.name;
                             subDirSpan.padding = "4px"
+                            subDirDiv.appendChild(subDirSpan)
 
                             if (subDir.isDir) {
-                                directoriesDiv.appendChild(subDirSpan)
+                                directoriesDiv.appendChild(subDirDiv)
 
                                 // Here I will set the span event.
                                 subDirSpan.onmouseover = () => {
@@ -1666,7 +1680,7 @@ export class PathNavigator extends HTMLElement {
                 }, this.onerror)
             }
 
-            this.div.appendChild(title)
+            this.div.appendChild(titleDiv)
         }
     }
 
@@ -1967,11 +1981,8 @@ export class FileExplorer extends HTMLElement {
         this.onopen = undefined;
 
         // Event listener...
-        this.set_dir_event_listener = null;
-        this.upload_files_event_listener = null;
-        this.__play_video__listener = null;
-        this.__play_audio__listener = null;
-        this.__show_image__listener = null;
+        this.listeners = {}
+
 
         // Interface elements...
         // The main explorer button
@@ -2135,7 +2146,7 @@ export class FileExplorer extends HTMLElement {
 
         // The file uploader
         this.filesUploader = this.shadowRoot.querySelector("globular-files-uploader")
-        
+
 
         // The file reader
         this.fileReader = this.shadowRoot.querySelector("#globular-file-reader")
@@ -2357,9 +2368,9 @@ export class FileExplorer extends HTMLElement {
         }
 
         // refresh the interface when file is uploaded.
-        this.filesUploader.onuploaded = (file)=>{
+        this.filesUploader.onuploaded = (file) => {
             //this.refreshBtn.click();
-            _publishSetDirEvent(this.path)
+            // _publishSetDirEvent(this.path)
         }
 
         if (this.hasAttribute("maximized")) {
@@ -2412,10 +2423,11 @@ export class FileExplorer extends HTMLElement {
         // Init file upload event listener...
         this.filesUploader.init();
 
-        if (this.set_dir_event_listener == null) {
+        if (this.listeners["set_dir_event"] == undefined) {
+
             Model.eventHub.subscribe("set_dir_event",
                 (uuid) => {
-                    this.set_dir_event_listener = uuid;
+                    this.listeners["set_dir_event"] = uuid;
                 },
                 (dir) => {
                     // keep the active path.
@@ -2425,30 +2437,39 @@ export class FileExplorer extends HTMLElement {
         }
 
 
+
         // File rename event.
-        Model.eventHub.subscribe("file_rename_event", () => { }, (path) => {
-            if (path.startsWith(this.path)) {
-                _publishSetDirEvent(this.path)
-            }
-        }, false)
+        if (this.listeners["file_rename_event"] == undefined) {
+            Model.eventHub.subscribe("file_rename_event",
+                (uuid) => {
+                    this.listeners["file_rename_event"] = uuid;
+                }, (path) => {
+                    if (path.startsWith(this.path)) {
+                        _publishSetDirEvent(this.path)
+                    }
+                }, false)
+        }
 
         // Reload the content of a dir with the actual dir content description on the server.
         // must be call after file are deleted or renamed
-        Model.eventHub.subscribe("reload_dir_event", () => { }, (path) => {
-            console.log("file delete event received: ", path)
-            _readDir(path, (dir) => {
-                if (dir.path == this.path) {
-                    Model.eventHub.publish("set_dir_event", dir, true)
-                }
-
-                this.fileNavigator.reload(dir)
-            }, () => { }, true)
-        }, false)
+        if (this.listeners["reload_dir_event"] == undefined) {
+            Model.eventHub.subscribe("reload_dir_event",
+                (uuid) => {
+                    this.listeners["reload_dir_event"] = uuid
+                }, (path) => {
+                    _readDir(path, (dir) => {
+                        if (dir.path == this.path) {
+                            Model.eventHub.publish("set_dir_event", dir, true)
+                        }
+                        this.fileNavigator.reload(dir)
+                    }, () => { }, true)
+                }, false)
+        }
 
         // Refresh the interface.
-        if (this.upload_files_event_listener == null) {
+        if (this.listeners["upload_files_event"] == undefined) {
             Model.eventHub.subscribe("upload_files_event", (uuid) => {
-                this.upload_files_event_listener = uuid
+                this.listeners["upload_files_event"] = uuid
             },
                 evt => {
                     if (evt == this.path) {
@@ -2460,11 +2481,11 @@ export class FileExplorer extends HTMLElement {
 
 
         // Play the video...
-        if (this.__play_video__listener == null) {
+        if (this.listeners["__play_video__"] == undefined) {
             Model.eventHub.subscribe("__play_video__", (uuid) => {
-                this.__play_video__listener = uuid
+                this.listeners["__play_video__"] = uuid
             }, (path) => {
-                if (!path.startsWith(this.root)) {
+                if (!path.startsWith(this.path)) {
                     return
                 }
 
@@ -2480,11 +2501,11 @@ export class FileExplorer extends HTMLElement {
         }
 
         // Play audio
-        if (this.__play_audio__listener == null) {
+        if (this.listeners["__play_audio__"] == undefined) {
             Model.eventHub.subscribe("__play_audio__", (uuid) => {
-                this.__play_audio__listener = uuid
+                this.listeners["__play_audio__"] = uuid
             }, (path) => {
-                if (!path.startsWith(this.root)) {
+                if (!path.startsWith(this.path)) {
                     return
                 }
 
@@ -2501,11 +2522,11 @@ export class FileExplorer extends HTMLElement {
         }
 
         // Read file
-        if (this.__file_reader__listener == null) {
+        if (this.listeners["__read_file__"] == undefined) {
             Model.eventHub.subscribe("__read_file__", (uuid) => {
-                this.__file_reader__listener = uuid
+                this.listeners["__read_file__"] = uuid
             }, (path) => {
-                if (!path.startsWith(this.root)) {
+                if (!path.startsWith(this.path)) {
                     return
                 }
 
@@ -2520,13 +2541,13 @@ export class FileExplorer extends HTMLElement {
         }
 
         // Show image...
-        if (this.__show_image__listener == null) {
+        if (this.listeners["__show_image__"] == undefined) {
             Model.eventHub.subscribe("__show_image__", (uuid) => {
-                this.__show_image__listener = uuid
+                this.listeners["__show_image__"] = uuid
             }, (path) => {
 
                 // Display image...
-                if (!path.startsWith(this.root)) {
+                if (!path.startsWith(this.path)) {
                     return
                 }
 
@@ -2815,6 +2836,12 @@ export class FileExplorer extends HTMLElement {
 
     hideActions() {
         this.shadowRoot.querySelector(".card-actions").style.display = "none";
+    }
+
+    delete(){
+        for(let evt in this.listeners){
+            Model.eventHub.unSubscribe(evt, this.listeners[evt] )
+        }
     }
 }
 
@@ -3158,7 +3185,7 @@ export class FilesUploader extends HTMLElement {
     }
 
     uploadFiles(path, files) {
-    
+
         // So here I will try to get the most information from the backend to be able to keep the user inform about what append 
         // whit uploading files process.
         if (files.length > 0) {
@@ -3217,11 +3244,12 @@ export class FilesUploader extends HTMLElement {
             let f = files[index]
             index++
             uploadFiles(path, [f], () => {
-                ApplicationView.displayMessage("File "+ f.name + " was uploaded", 2000)
+                ApplicationView.displayMessage("File " + f.name + " was uploaded", 2000)
                 this.files.removeChild(this.files.children[0])
-                if(this.onuploaded != undefined){
+                if (this.onuploaded != undefined) {
                     this.onuploaded(f)
                 }
+                Model.eventHub.publish("reload_dir_event", path, false)
 
                 if (index < files.length) {
                     uploadFile(index, callback)

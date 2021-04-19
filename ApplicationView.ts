@@ -793,6 +793,12 @@ export class ApplicationView extends View {
     document.body.appendChild(modal)
 
     let fileExplorer = new FileExplorer
+    fileExplorer.style.position = "fixed"
+    fileExplorer.style.top = "20px"
+    fileExplorer.style.bottom = "20px"
+    fileExplorer.style.left = "5%"
+    fileExplorer.style.right = "5%"
+
     fileExplorer.setRoot(path)
     fileExplorer.init()
     fileExplorer.open(modal)
@@ -800,6 +806,8 @@ export class ApplicationView extends View {
     fileExplorer.onclose = ()=>{
       fileExplorer.parentNode.removeChild(fileExplorer)
       modal.parentNode.removeChild(modal)
+      fileExplorer.delete() // remove all listeners.
+      fileExplorer = null;
     }
 
     return fileExplorer
