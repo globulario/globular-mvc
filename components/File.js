@@ -2135,6 +2135,7 @@ export class FileExplorer extends HTMLElement {
 
         // The file uploader
         this.filesUploader = this.shadowRoot.querySelector("globular-files-uploader")
+        
 
         // The file reader
         this.fileReader = this.shadowRoot.querySelector("#globular-file-reader")
@@ -2353,6 +2354,12 @@ export class FileExplorer extends HTMLElement {
                 // set back the view mode.
                 this.displayView()
             }, this.onerror)
+        }
+
+        // refresh the interface when file is uploaded.
+        this.filesUploader.onuploaded = (file)=>{
+            //this.refreshBtn.click();
+            _publishSetDirEvent(this.path)
         }
 
         if (this.hasAttribute("maximized")) {
@@ -3052,6 +3059,8 @@ export class FilesUploader extends HTMLElement {
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
 
+        this.onuploaded = null;
+
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
@@ -3149,19 +3158,9 @@ export class FilesUploader extends HTMLElement {
     }
 
     uploadFiles(path, files) {
-        // So here I will create the upload file jobs...
-        /*
-        uploadFiles(path, files, () => {
-            ApplicationView.displayMessage("your files was successfully uploaded!", 3000)
-            this.resume()
-            // Publish network event.
-            Model.eventHub.publish("upload_files_event", path, false)
-        })
-        */
-
+    
         // So here I will try to get the most information from the backend to be able to keep the user inform about what append 
         // whit uploading files process.
-        console.log("upload files: ",files)
         if (files.length > 0) {
             this.btn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-active)")
             this.shadowRoot.querySelector("iron-collapse").style.display = "block";
@@ -3220,7 +3219,10 @@ export class FilesUploader extends HTMLElement {
             uploadFiles(path, [f], () => {
                 ApplicationView.displayMessage("File "+ f.name + " was uploaded", 2000)
                 this.files.removeChild(this.files.children[0])
-                Model.eventHub.publish("reload_dir_event", path, false);
+                if(this.onuploaded != undefined){
+                    this.onuploaded(f)
+                }
+
                 if (index < files.length) {
                     uploadFile(index, callback)
                 } else {
