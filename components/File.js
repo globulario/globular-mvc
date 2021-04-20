@@ -1555,8 +1555,8 @@ export class PathNavigator extends HTMLElement {
             let title = document.createElement("span")
             title.className = "path-navigator-box-span"
             title.style.display = "inline"
-            if(dir.length > 20){
-                title.title = dir 
+            if (dir.length > 20) {
+                title.title = dir
             }
             title.innerHTML = dir
             let path_ = path += "/" + dir
@@ -2444,7 +2444,7 @@ export class FileExplorer extends HTMLElement {
                 (uuid) => {
                     this.listeners["file_rename_event"] = uuid;
                 }, (path) => {
-                    if (path.startsWith(this.path)) {
+                    if (path.startsWith(this.getRoot())) {
                         _publishSetDirEvent(this.path)
                     }
                 }, false)
@@ -2485,19 +2485,9 @@ export class FileExplorer extends HTMLElement {
             Model.eventHub.subscribe("__play_video__", (uuid) => {
                 this.listeners["__play_video__"] = uuid
             }, (path) => {
-                if (!path.startsWith(this.path)) {
-                    return
-                }
+                this.playVideo(path)
 
-                // hide the content.
-                this.filesListView.style.display = "none"
-                this.filesIconView.style.display = "none"
-                this.videoPlayer.style.display = "block"
-
-                // Display the video only if the path match the video player /applications vs /users
-                this.videoPlayer.play(path)
-
-            })
+            }, true)
         }
 
         // Play audio
@@ -2505,20 +2495,9 @@ export class FileExplorer extends HTMLElement {
             Model.eventHub.subscribe("__play_audio__", (uuid) => {
                 this.listeners["__play_audio__"] = uuid
             }, (path) => {
-                if (!path.startsWith(this.path)) {
-                    return
-                }
+                this.playAudio(path)
 
-                // hide the content.
-                this.filesListView.style.display = "none"
-                this.filesIconView.style.display = "none"
-
-                this.audioPlayer.style.display = "block"
-
-                // Display the video only if the path match the video player /applications vs /users
-                this.audioPlayer.play(path)
-
-            })
+            }, true)
         }
 
         // Read file
@@ -2526,18 +2505,8 @@ export class FileExplorer extends HTMLElement {
             Model.eventHub.subscribe("__read_file__", (uuid) => {
                 this.listeners["__read_file__"] = uuid
             }, (path) => {
-                if (!path.startsWith(this.path)) {
-                    return
-                }
-
-                // hide the content.
-                this.filesListView.style.display = "none"
-                this.filesIconView.style.display = "none"
-                this.fileReader.style.display = "block"
-
-                // Display the video only if the path match the video player /applications vs /users
-                this.fileReader.read(path)
-            })
+                this.readFile(path)
+            }, true)
         }
 
         // Show image...
@@ -2546,28 +2515,10 @@ export class FileExplorer extends HTMLElement {
                 this.listeners["__show_image__"] = uuid
             }, (path) => {
 
-                // Display image...
-                if (!path.startsWith(this.path)) {
-                    return
-                }
-
-                // hide the content.
-                this.filesListView.style.display = "none"
-                this.filesIconView.style.display = "none"
-
-                // Display the image viewer...
-                this.imageViewer.style.display = "block"
-
-                // Here I will set the active image.
-                for (var i = 0; this.imageViewer.children.length; i++) {
-                    if (this.imageViewer.children[i].name == path) {
-                        this.imageViewer.activeImage(getElementIndex(this.imageViewer.children[i]))
-                        break
-                    }
-                }
+                this.showImage(path)
 
 
-            })
+            }, true)
         }
 
         _readDir(this.root, (dir) => {
@@ -2610,6 +2561,77 @@ export class FileExplorer extends HTMLElement {
 
     setRoot(root) {
         this.root = root
+    }
+
+
+    getRoot(){
+        let values = this.root.split("/")
+        return "/" + values[1] + "/" + values[2]
+    }
+
+    playVideo(path) {
+        if (!path.startsWith(this.getRoot())) {
+            return
+        }
+
+        // hide the content.
+        this.filesListView.style.display = "none"
+        this.filesIconView.style.display = "none"
+        this.videoPlayer.style.display = "block"
+
+        // Display the video only if the path match the video player /applications vs /users
+        this.videoPlayer.play(path)
+    }
+
+    playAudio(path) {
+        if (!path.startsWith(this.getRoot())) {
+            return
+        }
+
+        // hide the content.
+        this.filesListView.style.display = "none"
+        this.filesIconView.style.display = "none"
+
+        this.audioPlayer.style.display = "block"
+
+        // Display the video only if the path match the video player /applications vs /users
+        this.audioPlayer.play(path)
+    }
+
+    readFile(path) {
+        if (!path.startsWith(this.getRoot())) {
+            return
+        }
+
+        // hide the content.
+        this.filesListView.style.display = "none"
+        this.filesIconView.style.display = "none"
+        this.fileReader.style.display = "block"
+
+        // Display the video only if the path match the video player /applications vs /users
+        this.fileReader.read(path)
+    }
+
+    showImage(path) {
+        // Display image...
+        if (!path.startsWith(this.getRoot())) {
+            return
+        }
+
+        // hide the content.
+        this.filesListView.style.display = "none"
+        this.filesIconView.style.display = "none"
+
+        // Display the image viewer...
+        this.imageViewer.style.display = "block"
+
+        // Here I will set the active image.
+        for (var i = 0; this.imageViewer.children.length; i++) {
+            if (this.imageViewer.children[i].name == path) {
+                this.imageViewer.activeImage(getElementIndex(this.imageViewer.children[i]))
+                break
+            }
+        }
     }
 
     displayView(dir) {
@@ -2838,9 +2860,9 @@ export class FileExplorer extends HTMLElement {
         this.shadowRoot.querySelector(".card-actions").style.display = "none";
     }
 
-    delete(){
-        for(let evt in this.listeners){
-            Model.eventHub.unSubscribe(evt, this.listeners[evt] )
+    delete() {
+        for (let evt in this.listeners) {
+            Model.eventHub.unSubscribe(evt, this.listeners[evt])
         }
     }
 }
@@ -2886,6 +2908,7 @@ export class VideoPreview extends HTMLElement {
         this.onresize = onresize;
         this.previews = previews;
         this.onpreview = null;
+        this.onplay = null;
 
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
@@ -3068,6 +3091,9 @@ export class VideoPreview extends HTMLElement {
      */
     play() {
         Model.eventHub.publish("__play_video__", this.path, true)
+        if(this.onplay!=undefined){
+            this.onplay(this.path)
+        }
     }
 
 }
