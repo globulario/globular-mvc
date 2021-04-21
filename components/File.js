@@ -8,6 +8,7 @@ import '@polymer/paper-checkbox/paper-checkbox.js';
 import '@polymer/iron-icons/editor-icons.js'
 import "@polymer/iron-icons/social-icons";
 import "@polymer/iron-icons/av-icons";
+import "@polymer/paper-progress/paper-progress.js"
 
 import { Model } from '../Model';
 import { File } from "../File";
@@ -20,7 +21,7 @@ import { v4 as uuidv4 } from "uuid";
 
 // Menu to set action on files.
 import { DropdownMenu } from './dropdownMenu.js';
-import { CopyRequest, CreateDirRequest, GetThumbnailsResponse, MoveRequest } from 'globular-web-client/file/file_pb';
+import { CopyRequest, CreateDirRequest, MoveRequest } from 'globular-web-client/file/file_pb';
 import { createArchive, deleteDir, deleteFile, downloadFileHttp, renameFile, uploadFiles } from 'globular-web-client/api';
 import { ApplicationView } from '../ApplicationView';
 import { Application } from '../Application';
@@ -1309,42 +1310,40 @@ export class FilesIconView extends FilesView {
 
                     folderIcon.draggable = false
 
-                } else if (fileType == "video") {
+                } else if (fileType == "video" && hidden != null) {
                     /** In that case I will display the vieo preview. */
-                    if (hidden != null) {
-                        for (var i = 0; i < hidden.files.length; i++) {
-                            let file_ = hidden.files[i]
-                            if (file.name.startsWith(file_.name)) {
-                                for (var j = 0; j < file_.files.length; j++) {
-                                    let file__ = file_.files[j]
-                                    if (file__.name == "__preview__") {
-                                        let files__ = file__.files;
-                                        let preview = new VideoPreview(file.path, files__, h, () => {
-                                            if (preview.width > 0 && preview.height > 0) {
-                                                w = (preview.width / preview.height) * h
-                                            }
-                                            fileNameSpan.style.maxWidth = w + "px";
-                                        })
 
-                                        preview.name = file.name;
-                                        preview.onpreview = () => {
-                                            let previews = this.div.querySelectorAll("globular-video-preview")
-                                            previews.forEach(p => {
-                                                // stop all other preview...
-                                                if (preview.name != p.name) {
-                                                    p.stopPreview()
-                                                }
-                                            })
+                    for (var i = 0; i < hidden.files.length; i++) {
+                        let file_ = hidden.files[i]
+                        if (file.name.startsWith(file_.name)) {
+                            for (var j = 0; j < file_.files.length; j++) {
+                                let file__ = file_.files[j]
+                                if (file__.name == "__preview__") {
+                                    let files__ = file__.files;
+                                    let preview = new VideoPreview(file.path, files__, h, () => {
+                                        if (preview.width > 0 && preview.height > 0) {
+                                            w = (preview.width / preview.height) * h
                                         }
-                                        fileIconDiv.insertBefore(preview, fileIconDiv.firstChild)
-                                        preview.draggable = false
+                                        fileNameSpan.style.maxWidth = w + "px";
+                                    })
+
+                                    preview.name = file.name;
+                                    preview.onpreview = () => {
+                                        let previews = this.div.querySelectorAll("globular-video-preview")
+                                        previews.forEach(p => {
+                                            // stop all other preview...
+                                            if (preview.name != p.name) {
+                                                p.stopPreview()
+                                            }
+                                        })
                                     }
+                                    fileIconDiv.insertBefore(preview, fileIconDiv.firstChild)
+                                    preview.draggable = false
                                 }
-                                break;
                             }
+                            break;
                         }
                     }
-
                 } else if (file.thumbnail != undefined) {
                     /** Display the thumbnail. */
                     let img = document.createElement("img")
@@ -2564,7 +2563,7 @@ export class FileExplorer extends HTMLElement {
     }
 
 
-    getRoot(){
+    getRoot() {
         let values = this.root.split("/")
         return "/" + values[1] + "/" + values[2]
     }
@@ -3091,7 +3090,7 @@ export class VideoPreview extends HTMLElement {
      */
     play() {
         Model.eventHub.publish("__play_video__", this.path, true)
-        if(this.onplay!=undefined){
+        if (this.onplay != undefined) {
             this.onplay(this.path)
         }
     }
@@ -3138,7 +3137,8 @@ export class FilesUploader extends HTMLElement {
             }
 
             .content{
-
+                max-height: 500px;
+                overflow-y: auto;
             }
 
             td {
@@ -3249,17 +3249,25 @@ export class FilesUploader extends HTMLElement {
             let cellSource = document.createElement("td")
             cellSource.style.textAlign = "left"
             cellSource.style.paddingLeft = "5px"
-            cellSource.innerHTML = f.name;
+            cellSource.innerHTML = `
+                <div style="display: flex; flex-direction: column;">
+                    <span style="background-color:var(--palette-background-default);">${f.name}</span>
+                    <paper-progress value=0 class="blue"></paper-progress>
+                </div>`;
             let cellDest = document.createElement("td")
             cellDest.style.textAlign = "left"
             cellDest.style.paddingLeft = "5px"
-            cellDest.innerHTML = path;
+            cellDest.innerHTML = `<span style="background-color:var(--palette-background-default);">${path}</span>`;
             let cellSize = document.createElement("td")
             cellSize.innerHTML = size;
             row.appendChild(cancelCell)
             row.appendChild(cellSource);
             row.appendChild(cellDest);
             row.appendChild(cellSize);
+
+            cancelBtn.onclick = () => {
+                row.style.display = "none";
+            }
 
             // Append to files panels.
             this.files.appendChild(row)
@@ -3269,20 +3277,41 @@ export class FilesUploader extends HTMLElement {
         let uploadFile = (index, callback) => {
             let f = files[index]
             index++
-            uploadFiles(path, [f], () => {
-                ApplicationView.displayMessage("File " + f.name + " was uploaded", 2000)
+            if (this.files.children[0].style.display == "none") {
+                // simply pass over...
                 this.files.removeChild(this.files.children[0])
-                if (this.onuploaded != undefined) {
-                    this.onuploaded(f)
-                }
-                Model.eventHub.publish("reload_dir_event", path, false)
-
                 if (index < files.length) {
                     uploadFile(index, callback)
                 } else {
                     callback()
                 }
-            })
+            }else{
+                uploadFiles(path, [f], () => {
+                    ApplicationView.displayMessage("File " + f.name + " was uploaded", 2000)
+
+                    this.files.removeChild(this.files.children[0])
+                    if (this.onuploaded != undefined) {
+                        this.onuploaded(f)
+                    }
+                    Model.eventHub.publish("reload_dir_event", path, false)
+
+                    if (index < files.length) {
+                        uploadFile(index, callback)
+                    } else {
+                        callback()
+                    }
+                },
+                    event => {
+                        console.log(event)
+                        ApplicationView.displayMessage("Upload failed!", 3000)
+                    },
+                    event => {
+                        console.log(event)
+                        let progress = this.files.children[0].querySelector("paper-progress")
+                        progress.value = (event.loaded / event.total) * 100
+                        console.log("Uploaded " + event.loaded + " bytes of " + event.total)
+                    })
+            }
         }
 
         // Start file upload!
