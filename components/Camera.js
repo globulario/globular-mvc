@@ -3,6 +3,7 @@
 import '@polymer/paper-icon-button/paper-icon-button.js';
 import '@polymer/iron-icons/iron-icons.js';
 import '@polymer/iron-icons/image-icons';
+import '@polymer/iron-icons/av-icons';
 import '@polymer/paper-input/paper-input.js';
 import { theme } from "./Theme";
 import { dataURIToBlob } from './utility';
@@ -10,18 +11,23 @@ export class Camera extends HTMLElement {
 
     constructor() {
         super()
+        this.type = ""
         this._device = null;
         this._camera = null;
         this._video = null;
+        this._audio = null;
         this._canvas = null;
         this._photo = null;
-        this._openbutton = null;
-        this._startbutton = null;
-        this._closebutton = null;
+        this._openButton = null;
+        this._takePictureButton = null;
+        this._closeButton = null;
         this._width_inupt = null;
-        this._savebutton = null;
-        this._deletebutton = null;
+        this._saveButton = null;
+        this._deleteButton = null;
         this._camera_options = null;
+
+        // The record blink button
+        this.recording_interval = null;
 
         // That event will be call when a picture is taken.
         // It will return the image.
@@ -33,6 +39,8 @@ export class Camera extends HTMLElement {
         // Called when the camera is close.
         this.onclose = null;
 
+        // Called when video is recorded.
+        this.onvideo = null;
 
         // Set default attribute values.
         this._width = 640;
@@ -41,10 +49,12 @@ export class Camera extends HTMLElement {
         }
         this.streaming = false;
         this._stream = null;
+        this._recorder = null;
+        this._data = null
 
         // save callback.
-        this.onsave = null;
-        this.onsaved = null;
+        this.onsaveimage = null;
+        this.onsavevideo = null;
 
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
@@ -96,6 +106,7 @@ export class Camera extends HTMLElement {
 
                 .camera .card-content{
                     padding-top: 24px;
+                    position: relative;
                 }
 
                 .output{
@@ -115,9 +126,27 @@ export class Camera extends HTMLElement {
                     scroll-behavior: smooth;
                 }
 
+                #recording-icon{
+                    --iron-icon-fill-color: red;
+                }
+
+                .blink {
+                    animation: blink-animation 1s steps(5, start) infinite;
+                    -webkit-animation: blink-animation 1s steps(5, start) infinite;
+                  }
+                  @keyframes blink-animation {
+                    to {
+                      visibility: hidden;
+                    }
+                  }
+                  @-webkit-keyframes blink-animation {
+                    to {
+                      visibility: hidden;
+                    }
+                  }
             </style>
 
-            <paper-icon-button id="openbutton" icon="image:camera-alt"></paper-icon-button>
+            <paper-icon-button id="open-button" icon="image:camera-alt"></paper-icon-button>
 
             <paper-card id="camera" class="camera" style="display: none;">
                 <select  id="camera_options"></select >
@@ -126,17 +155,19 @@ export class Camera extends HTMLElement {
                     <img id="photo" style="display: none;">
                 </div>
                 <div class="card-actions">
-                    <paper-icon-button id="close_btn" icon="close"></paper-icon-button>
+                    <paper-icon-button id="close-btn" icon="close"></paper-icon-button>
                     <span style="flex-grow: 1;"></span>
+                    <paper-icon-button id="stop-rercoding-button" style="display:none;" icon="av:stop"></paper-icon-button>
+                    <paper-icon-button id="recording-button" icon="av:videocam"></paper-icon-button>
                     <div style="display: flex;">
-                        <paper-icon-button id="startbutton" icon="image:add-a-photo"></paper-icon-button>
+                        <paper-icon-button id="start-button" icon="image:add-a-photo"></paper-icon-button>
                         <paper-input label="width" type="number" no-label-float  id="width-input" style="padding-left: 10px; width: 5em; text-align: right; vertical-align: baseline;">
                             <div slot="suffix">px</div>
                         </paper-input>
                     </div>
                     <div style="display: none;">
-                        <paper-icon-button id="savebutton" icon="save" ></paper-icon-button>
-                        <paper-icon-button id="deletebutton" icon="delete"></paper-icon-button>
+                        <paper-icon-button id="save-button" icon="save" ></paper-icon-button>
+                        <paper-icon-button id="delete-button" icon="delete"></paper-icon-button>
                     </div>
                 </div>
             </paper-card>
@@ -144,27 +175,36 @@ export class Camera extends HTMLElement {
             <canvas id="canvas" style="display: none;"></canvas>
         `
 
+        // List of interface buttons and menu.
         this._width_inupt = this.shadowRoot.getElementById('width-input');
         this._video = this.shadowRoot.getElementById('video');
         this._canvas = this.shadowRoot.getElementById('canvas');
         this._photo = this.shadowRoot.getElementById('photo');
-        this._startbutton = this.shadowRoot.getElementById('startbutton');
-        this._openbutton = this.shadowRoot.getElementById('openbutton');
-        this._closebutton = this.shadowRoot.getElementById('close_btn')
+        this._takePictureButton = this.shadowRoot.getElementById('start-button');
+        this._openButton = this.shadowRoot.getElementById('open-button');
+        this._closeButton = this.shadowRoot.getElementById('close-btn')
         this._camera = this.shadowRoot.getElementById('camera');
-        this._savebutton = this.shadowRoot.getElementById('savebutton');
-        this._deletebutton = this.shadowRoot.getElementById('deletebutton');
+        this._saveButton = this.shadowRoot.getElementById('save-button');
+        this._deleteButton = this.shadowRoot.getElementById('delete-button');
         this._camera_options = this.shadowRoot.getElementById('camera_options');
+        this._startRecordingButton = this.shadowRoot.getElementById('recording-button');
+        this._stopRecordingButton = this.shadowRoot.getElementById('stop-rercoding-button');
 
         // get the list of available cameras.
-        this._savebutton.onclick = () => {
-            // create event that save the image.
-            if (this.onsave != undefined) {
-                
-                this.onsave(this._photo.src)
+        this._saveButton.onclick = () => {
+            // create event that save the image/video
+            if (this.type == "photo") {
+                if (this.onsaveimage != undefined) {
+                    this.onsaveimage(this._photo.src)
+                }
+            } else {
+                if (this.onsavevideo != undefined) {
+                    this.onsavevideo(this._data)
+                }
             }
+
             // delete the picture.
-            this._deletebutton.click()
+            this._deleteButton.click()
         }
 
         this._camera_options.onchange = () => {
@@ -177,7 +217,7 @@ export class Camera extends HTMLElement {
                 });
             }
 
-            navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: this._device } }, audio: false })
+            navigator.mediaDevices.getUserMedia({ audio: true, video: { deviceId: { exact: this._device } }})
                 .then((stream) => {
                     this._stream = stream;
                     this._video.srcObject = stream;
@@ -198,9 +238,9 @@ export class Camera extends HTMLElement {
         /**
          * Display the camera.
          */
-        this._openbutton.onclick = () => {
+        this._openButton.onclick = () => {
 
-            this._openbutton.style.display = "none"
+            this._openButton.style.display = "none"
 
 
             const open = () => {
@@ -213,7 +253,7 @@ export class Camera extends HTMLElement {
                  * receive each frame of video from the camera and react when the button is clicked 
                  * to capture an image.
                  */
-                navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: this._device } }, audio: false })
+                navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: this._device } }, audio: true })
                     .then((stream) => {
                         this._stream = stream;
                         this._video.srcObject = stream;
@@ -221,11 +261,28 @@ export class Camera extends HTMLElement {
                         this._video.play();
                         this._camera.style.display = ""
 
-                        this._startbutton.addEventListener('click', (ev) => {
+                        // Take picture event.
+                        this._takePictureButton.onclick = (ev) => {
+                            this.type = "photo"
                             this.width = this._width_inupt.value
                             this.takepicture();
                             ev.preventDefault();
-                        }, false);
+                        };
+
+                        // Start recording video
+                        this._startRecordingButton.onclick = (ev) => {
+                            this.type = "video"
+                            // Start recording.
+                            this.startRecording()
+                            ev.preventDefault();
+                        }
+
+                        // Stop recording video.
+                        this._stopRecordingButton.onclick = (ev) => {
+                            this.stopRecording()
+                            ev.preventDefault();
+                        }
+
 
                         if (this.onopen != undefined) {
                             this.onopen();
@@ -263,13 +320,13 @@ export class Camera extends HTMLElement {
 
         }
 
-        this._closebutton.onclick = () => {
+        this._closeButton.onclick = () => {
             this._camera.style.display = "none"
-            this._openbutton.style.display = ""
+            this._openButton.style.display = ""
             this._video.pause();
             const tracks = this._video.srcObject.getTracks();
-            tracks.forEach((track) =>{
-              track.stop();
+            tracks.forEach((track) => {
+                track.stop();
             });
 
             this._video.currentTime = 0;
@@ -280,7 +337,7 @@ export class Camera extends HTMLElement {
             }
         }
 
-        this._deletebutton.onclick = () => {
+        this._deleteButton.onclick = () => {
             this.clearphoto()
         }
 
@@ -292,20 +349,66 @@ export class Camera extends HTMLElement {
         }
     }
 
-    open(){
-        this._openbutton.click()
+    open() {
+        this._openButton.click()
         if (this.onopen != undefined) {
             this.onopen();
         }
     }
 
     close() {
-        this._closebutton.click(); // close the camera.
+        this._closeButton.click(); // close the camera.
         if (this.onclose != undefined) {
             this.onclose();
         }
     }
 
+    /** Start recording a video */
+    startRecording() {
+        this._startRecordingButton.style.display = "none"
+        this._takePictureButton.parentNode.style.display = "none"
+        this._stopRecordingButton.style.display = "block"
+        this._recorder = new MediaRecorder(this._stream);
+        this._data = [];
+        this._recorder.ondataavailable = event => this._data.push(event.data);
+        this._recorder.start();
+
+        // Here I will append an iron icon and make it blink to tell
+        // the user is recording a video.
+        let recording_icon = document.createElement("iron-icon")
+        recording_icon.icon = "av:fiber-manual-record"
+        recording_icon.id = "recording-icon"
+        recording_icon.style.position = "absolute"
+        recording_icon.style.top = "35px"
+        recording_icon.style.left = "25px"
+        recording_icon.className = "blink"
+
+        recording_icon.style.zIndex = 100;
+
+        let content = this.shadowRoot.querySelector(".card-content")
+        content.appendChild(recording_icon)
+
+    }
+
+    /** Stop recording a video */
+    stopRecording() {
+        this._recorder.stop()
+
+        // Remove the blinking camera button.
+        let recording_icon = this.shadowRoot.querySelector("#recording-icon")
+        recording_icon.parentNode.removeChild(recording_icon)
+
+        // display the save picture button.
+        this._stopRecordingButton.style.display = "none"
+        this._saveButton.parentNode.style.display = "flex"
+
+        // Call on picture with the data from the image as blob.
+        if (this.onvideo != undefined) {
+            this.onvideo(this._data)
+        }
+    }
+
+    /** Take a picture */
     takepicture() {
         if (this._width && this._height) {
             var context = this._canvas.getContext('2d');
@@ -318,11 +421,13 @@ export class Camera extends HTMLElement {
 
             // Here I will hide the video
             this._video.style.display = "none"
+            this._startRecordingButton.style.display = "none"
+            this._stopRecordingButton.style.display = "none"
             this._photo.style.display = "block"
 
             // display the save picture button.
-            this._savebutton.parentNode.style.display = "flex"
-            this._startbutton.parentNode.style.display = "none"
+            this._saveButton.parentNode.style.display = "flex"
+            this._takePictureButton.parentNode.style.display = "none"
 
             // Call on picture with the data from the image as blob.
             if (this.onpicture != undefined) {
@@ -342,13 +447,17 @@ export class Camera extends HTMLElement {
 
         var data = this._canvas.toDataURL('image/png');
         this._photo.setAttribute('src', data);
+
         // Here I will hide the video
         this._video.style.display = "block"
+        this._stopRecordingButton.style.display = "none"
         this._photo.style.display = "none"
 
         // display the save picture button.
-        this._savebutton.parentNode.style.display = "none"
-        this._startbutton.parentNode.style.display = "flex"
+        this._saveButton.parentNode.style.display = "none"
+        this._takePictureButton.parentNode.style.display = "flex"
+        this._startRecordingButton.style.display = "block"
+        this._stopRecordingButton.style.display = "none"
     }
 
     /**

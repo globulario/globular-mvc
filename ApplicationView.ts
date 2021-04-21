@@ -175,16 +175,16 @@ export class ApplicationView extends View {
     // The search bar to give end user the power to search almost anything...
     this._searchBar = new SearchBar();
 
-    // That function will be call when the file is saved.
-    this._camera.onsaved = (path: string, name: string) => {
-      console.log("----> save success!");
-      
-    };
 
     // Now the save funciton..
-    this._camera.onsave = (picture: any) => {
+    this._camera.onsaveimage = (picture: any) => {
       // save image from the picture.
       console.log("save picture:", picture);
+    };
+
+    this._camera.onsavevideo = (video: any) => {
+      // save image from the picture.
+      console.log("save video:", video);
     };
 
     // The file explorer object.
@@ -750,7 +750,7 @@ export class ApplicationView extends View {
   }
 
 
-  showCamera(onclose: () => void, onsave: (picture: any) => void) {
+  showCamera(onclose: () => void, onsaveimage: (picture: any) => void, onsavevideo:(video:any)=>void) {
 
     // Here I will create a non-selectable div and put camera in center of it...
     document.body.style.position = "relative"
@@ -774,7 +774,8 @@ export class ApplicationView extends View {
 
     modal.appendChild(this.camera)
 
-    this.camera.onsave = onsave
+    this.camera.onsaveimage = onsaveimage
+    this.camera.onsavevideo = onsavevideo
 
     this.camera.open();
   }
