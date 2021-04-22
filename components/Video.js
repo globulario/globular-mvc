@@ -1,6 +1,7 @@
 
 import { theme } from "./Theme";
 import { Model } from '../Model';
+import { Application } from "../Application";
 
 Object.defineProperty(HTMLMediaElement.prototype, 'playing', {
     get: function(){
@@ -55,6 +56,7 @@ export class VideoPlayer extends HTMLElement {
     }
 
     play(path) {
+
         if(!this.video.paused && this.video.currentSrc.endsWith(path)){
             // Do nothing...
             return
@@ -64,8 +66,16 @@ export class VideoPlayer extends HTMLElement {
             return
         }
 
+        // set the complete url.
+        let url = window.location.protocol + "//" + window.location.hostname  + ":"
+        if(Application.globular.config.Protocol == "https"){
+            url += Application.globular.config.PortHttps
+        }else{
+            url += Application.globular.config.PortHttp
+        }
+    
         // Set the path and play.
-        this.video.src = path
+        this.video.src = url + path
    
         this.video.style.maxWidth = this.parentNode.offsetWidth + "px"
     }

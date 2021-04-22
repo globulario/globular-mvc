@@ -34,8 +34,18 @@ function getImage(callback, images, files, index) {
     let f = files[index];
     index++
 
+    // set the url for the image.
+    let url = window.location.protocol + "//" + window.location.hostname  + ":"
+    if(Application.globular.config.Protocol == "https"){
+        url += Application.globular.config.PortHttps
+    }else{
+        url += Application.globular.config.PortHttp
+    }
+
+    url += f.path
+
     var xhr = new XMLHttpRequest();
-    xhr.open('GET', f.path, true);
+    xhr.open('GET', url, true);
 
     // Set responseType to 'arraybuffer', we want raw binary data buffer
     xhr.responseType = 'blob';
@@ -220,6 +230,7 @@ export class FilesView extends HTMLElement {
                     createArchive(Application.globular, [path], name,
                         path_ => {
                             // Download the file...
+                            console.log("dowload file: ", path_)
                             downloadFileHttp(path_, name + ".tgz",
                                 () => {
                                     // Now I will remove the file from the server....
@@ -232,6 +243,7 @@ export class FilesView extends HTMLElement {
                         }, err => { ApplicationView.displayMessage(err, 3000) })
                 } else {
                     // simply download the file.
+                    console.log("dowload file: ", path)
                     downloadFileHttp(path, name,
                         () => {
                             // Now I will remove the file from the server....
@@ -510,12 +522,12 @@ export class FilesView extends HTMLElement {
         }
 
         this.div.ondrop = (evt) => {
-  
+
             evt.preventDefault()
 
-            if(evt.dataTransfer.files.length > 0){
+            if (evt.dataTransfer.files.length > 0) {
                 // So here I will simply upload the files...
-                Model.eventHub.publish("__upload_files_event__", {path:this.__dir__.path, files:evt.dataTransfer.files}, true)
+                Model.eventHub.publish("__upload_files_event__", { path: this.__dir__.path, files: evt.dataTransfer.files }, true)
             }
         }
 
@@ -1411,17 +1423,17 @@ export class FilesIconView extends FilesView {
                     }
 
                     fileIconDiv.ondrop = (evt) => {
-  
+
                         evt.preventDefault()
 
-                        if(evt.dataTransfer.files.length > 0){
+                        if (evt.dataTransfer.files.length > 0) {
                             // So here I will simply upload the files...
-                            Model.eventHub.publish("__upload_files_event__", {path:file.path, files:evt.dataTransfer.files}, true)
-                        }else{
+                            Model.eventHub.publish("__upload_files_event__", { path: file.path, files: evt.dataTransfer.files }, true)
+                        } else {
                             let f = evt.dataTransfer.getData('file')
                             let id = evt.dataTransfer.getData('id')
                             fileIconDiv.children[0].icon = "icons:folder"
-    
+
                             // Create drop_file_event...
                             Model.eventHub.publish("drop_file_event", { file: f, dir: file.path, id: id }, true)
                         }
@@ -3126,7 +3138,7 @@ export class FilesUploader extends HTMLElement {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
-
+        
         this.onuploaded = null;
 
         // Innitialisation of the layout.
@@ -3215,6 +3227,7 @@ export class FilesUploader extends HTMLElement {
     }
 
     init() {
+
         // Upload file event.
         Model.eventHub.subscribe(
             "__upload_files_event__", (uuid) => { },
@@ -3301,7 +3314,14 @@ export class FilesUploader extends HTMLElement {
                 } else {
                     callback()
                 }
-            }else{
+            } else {
+
+                // Take the port number from actual globular service conection.
+                let port = Application.globular.config.PortHttp
+                if(Application.globular.config.Protocol=="https"){
+                    port = Application.globular.config.PortHttps
+                }
+
                 uploadFiles(path, [f], () => {
                     ApplicationView.displayMessage("File " + f.name + " was uploaded", 2000)
 
@@ -3326,7 +3346,7 @@ export class FilesUploader extends HTMLElement {
                         let progress = this.files.children[0].querySelector("paper-progress")
                         progress.value = (event.loaded / event.total) * 100
                         console.log("Uploaded " + event.loaded + " bytes of " + event.total)
-                    })
+                    },  port)
             }
         }
 

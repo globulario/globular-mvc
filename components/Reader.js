@@ -1,5 +1,6 @@
 import { theme } from "./Theme";
 import { Model } from '../Model';
+import { Application } from "../Application";
 
 /**
  * Sample empty component
@@ -39,10 +40,15 @@ export class FileReader extends HTMLElement {
 
     read(path) {
         // Read the file...
-        let location = window.location;
-
+        let url = window.location.protocol + "//" + window.location.hostname  + ":"
+        if(Application.globular.config.Protocol == "https"){
+            url += Application.globular.config.PortHttps
+        }else{
+            url += Application.globular.config.PortHttp
+        }
+    
         // Set the file location.
-        this.frame.src = location.protocol + '//' + location.hostname + (location.port ? ':' + location.port : '') + path
+        this.frame.src =url + path
         this.frame.style.height = this.parentNode.offsetHeight + "px"
         // must be white...
         this.frame.style.background = "white";
