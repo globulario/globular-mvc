@@ -509,6 +509,16 @@ export class FilesView extends HTMLElement {
             }
         }
 
+        this.div.ondrop = (evt) => {
+  
+            evt.preventDefault()
+
+            if(evt.dataTransfer.files.length > 0){
+                // So here I will simply upload the files...
+                Model.eventHub.publish("__upload_files_event__", {path:this.__dir__.path, files:evt.dataTransfer.files}, true)
+            }
+        }
+
         // Now I will display the menu as popup menu instead of the default menu...
         // so cut copy and paste will work on the current directory and it more natural
         // to use by the end user.
@@ -615,7 +625,7 @@ export class FilesView extends HTMLElement {
         )
 
         // The drop file event.
-        Model.eventHub.subscribe("drop_file_event", () => { }, infos => {
+        Model.eventHub.subscribe("drop_file_event", (uuid) => { }, infos => {
 
             // Hide the icon parent div.
             let div = this.div.querySelector("#" + infos.id)
@@ -1401,14 +1411,20 @@ export class FilesIconView extends FilesView {
                     }
 
                     fileIconDiv.ondrop = (evt) => {
-                        evt.stopPropagation();
-                        let f = evt.dataTransfer.getData('file')
-                        let id = evt.dataTransfer.getData('id')
-                        fileIconDiv.children[0].icon = "icons:folder"
+  
+                        evt.preventDefault()
 
-
-                        // Create drop_file_event...
-                        Model.eventHub.publish("drop_file_event", { file: f, dir: file.path, id: id }, true)
+                        if(evt.dataTransfer.files.length > 0){
+                            // So here I will simply upload the files...
+                            Model.eventHub.publish("__upload_files_event__", {path:file.path, files:evt.dataTransfer.files}, true)
+                        }else{
+                            let f = evt.dataTransfer.getData('file')
+                            let id = evt.dataTransfer.getData('id')
+                            fileIconDiv.children[0].icon = "icons:folder"
+    
+                            // Create drop_file_event...
+                            Model.eventHub.publish("drop_file_event", { file: f, dir: file.path, id: id }, true)
+                        }
                     }
                 }
 
@@ -3203,7 +3219,7 @@ export class FilesUploader extends HTMLElement {
         Model.eventHub.subscribe(
             "__upload_files_event__", (uuid) => { },
             (evt) => {
-
+                this.uploadFiles(evt.path, evt.files)
 
             }
             , true
