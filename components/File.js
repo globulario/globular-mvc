@@ -25,6 +25,7 @@ import { CopyRequest, CreateDirRequest, MoveRequest } from 'globular-web-client/
 import { createArchive, deleteDir, deleteFile, downloadFileHttp, renameFile, uploadFiles } from 'globular-web-client/api';
 import { ApplicationView } from '../ApplicationView';
 import { Application } from '../Application';
+import { RunCmdRequest } from 'globular-web-client/admin/admin_pb';
 
 function getElementIndex(element) {
     return Array.from(element.parentNode.children).indexOf(element);
@@ -35,10 +36,10 @@ function getImage(callback, images, files, index) {
     index++
 
     // set the url for the image.
-    let url = window.location.protocol + "//" + window.location.hostname  + ":"
-    if(Application.globular.config.Protocol == "https"){
+    let url = window.location.protocol + "//" + window.location.hostname + ":"
+    if (Application.globular.config.Protocol == "https") {
         url += Application.globular.config.PortHttps
-    }else{
+    } else {
         url += Application.globular.config.PortHttp
     }
 
@@ -518,16 +519,6 @@ export class FilesView extends HTMLElement {
             this.menu.close()
             if (this.menu.parentNode != undefined) {
                 this.menu.parentNode.removeChild(this.menu)
-            }
-        }
-
-        this.div.ondrop = (evt) => {
-
-            evt.preventDefault()
-
-            if (evt.dataTransfer.files.length > 0) {
-                // So here I will simply upload the files...
-                Model.eventHub.publish("__upload_files_event__", { path: this.__dir__.path, files: evt.dataTransfer.files }, true)
             }
         }
 
@@ -1074,6 +1065,7 @@ export class FilesIconView extends FilesView {
                 display: flex;
                 flex-direction: column;
                 padding: 8px;
+                min-height: 400px;
             }
 
             /** The file section */
@@ -1197,6 +1189,50 @@ export class FilesIconView extends FilesView {
 
         this.div.querySelector(`#container`).onclick = (evt) => {
             evt.stopPropagation()
+        }
+
+        this.div.querySelector(`#container`).ondrop = (evt) => {
+
+            evt.preventDefault()
+            console.log("---------------> drop event... ",)
+            
+
+            if (evt.dataTransfer.files.length > 0) {
+                // So here I will simply upload the files...
+                Model.eventHub.publish("__upload_files_event__", { path: this.__dir__.path, files: evt.dataTransfer.files }, true)
+            }else if( evt.dataTransfer.getData("Url") != undefined){
+                // Here we got an url...
+                let url = evt.dataTransfer.getData("Url");
+                // Depending of your need... or the hour of the day.
+                /*if(url.startsWith("https://www.youtube.com") 
+                    || url.startsWith("https://www.pornhub.com")
+                    || url.startsWith("https://xhamster.com")
+                    ){*/
+       
+                    // Just beat it!
+                    // youtube-dl -f mp4 -o "/tmp/%(title)s.%(ext)s" https://www.youtube.com/watch?v=oRdxUFDoQe0&list=PLCD0445C57F2B7F41&index=12&ab_channel=michaeljacksonVEVO
+                    // In that case I will made use of the fabulous youtube-dl command line.
+                    let rqst = new RunCmdRequest
+                    rqst.setCmd("youtube-dl")
+                    let dest = "/home/dave/go/src/github.com/globulario/Globular/data/files"+ this.__dir__.path + "/%(title)s.%(ext)s"
+                    rqst.setArgsList(["-f", "mp4", "-o", dest, url])
+                    rqst.setBlocking(false)
+                   
+                    Application.globular.adminService.runCmd(rqst, {application:Application.application, domain:Application.domain, token:localStorage.getItem("user_token")})
+                        .then(()=>{
+                            console.log("file is uploaded in tmp dir...")
+                            //Model.eventHub.publish("reload_dir_event", this.path, false);
+                        }).catch(err=>{ApplicationView.displayMessage(err, 3000)})
+
+                    
+                //}
+            }
+        }
+
+        this.div.querySelector(`#container`).ondragover = (evt) => {
+            evt.preventDefault()
+            console.log("---------------> drag over... ", evt)
+            
         }
 
         let filesByType = {};
@@ -3138,7 +3174,7 @@ export class FilesUploader extends HTMLElement {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
-        
+
         this.onuploaded = null;
 
         // Innitialisation of the layout.
@@ -3318,25 +3354,26 @@ export class FilesUploader extends HTMLElement {
 
                 // Take the port number from actual globular service conection.
                 let port = Application.globular.config.PortHttp
-                if(Application.globular.config.Protocol=="https"){
+                if (Application.globular.config.Protocol == "https") {
                     port = Application.globular.config.PortHttps
                 }
 
-                uploadFiles(path, [f], () => {
-                    ApplicationView.displayMessage("File " + f.name + " was uploaded", 2000)
+                uploadFiles(path, [f],
+                    () => {
+                        ApplicationView.displayMessage("File " + f.name + " was uploaded", 2000)
 
-                    this.files.removeChild(this.files.children[0])
-                    if (this.onuploaded != undefined) {
-                        this.onuploaded(f)
-                    }
-                    Model.eventHub.publish("reload_dir_event", path, false)
+                        this.files.removeChild(this.files.children[0])
+                        if (this.onuploaded != undefined) {
+                            this.onuploaded(f)
+                        }
+                        Model.eventHub.publish("reload_dir_event", path, false)
 
-                    if (index < files.length) {
-                        uploadFile(index, callback)
-                    } else {
-                        callback()
-                    }
-                },
+                        if (index < files.length) {
+                            uploadFile(index, callback)
+                        } else {
+                            callback()
+                        }
+                    },
                     event => {
                         console.log(event)
                         ApplicationView.displayMessage("Upload failed!", 3000)
@@ -3346,7 +3383,11 @@ export class FilesUploader extends HTMLElement {
                         let progress = this.files.children[0].querySelector("paper-progress")
                         progress.value = (event.loaded / event.total) * 100
                         console.log("Uploaded " + event.loaded + " bytes of " + event.total)
-                    },  port)
+                    },
+                    event => {
+                        console.log("abort file upload event", event);
+                    },
+                    port)
             }
         }
 

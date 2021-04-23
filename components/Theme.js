@@ -87,8 +87,13 @@ export let theme = `
   
   :host-context(globular-login-box, globular-register-box){
     position: fixed;
+    /*
     top: 20%;
     left: calc(50% - 340px / 2);
+    */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
   }
 
   :host-context(#toolbar) {
