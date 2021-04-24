@@ -44,16 +44,20 @@ export let theme = `
     /** Background **/
     --palette-background-default: #fafafa;
     --palette-background-paper: #fff;
+
     /** Divider **/
     --palette-divider: rgba(0, 0, 0, 0.12);
+
     /** webcomponents colors **/
     --paper-icon-button-ink-color: var(--palette-text-primary);
+
     --iron-icon-fill-color: var(--palette-text-primary);
     --paper-input-container-focus-color: var(--palette-primary-light);
     --paper-input-container-input-color: var(--palette-text-primary);
     --paper-checkbox-unchecked-background-color: var(--palette-action-disabled);
     --paper-checkbox-unchecked-color: var(--palette-action-disabled);
     --paper-checkbox-unchecked-ink-color: var(--palette-action-disabled);
+
     /**/
     --paper-checkbox-checkmark-color: var(--palette-text-accent);
     --paper-checkbox-label-color: rgb(195, 195, 195));
@@ -61,6 +65,15 @@ export let theme = `
     --paper-checkbox-checked-ink-color: var(--palette-primary-main);
     --paper-checkbox-label-checked-color: var(--palette-text-primary);
     --paper-checkbox-error-color: var(--palette-error-main);
+
+
+    --paper-radio-button-checked-color: var(--palette-text-accent);
+    --paper-radio-button-checked-ink-color: var(--palette-text-accent);
+    --paper-radio-button-unchecked-color: var(--palette-action-disabled);
+    --paper-radio-button-unchecked-ink-color: var(--palette-action-disabled);
+    --paper-radio-button-label-color: var(--palette-primary-main);
+
+
     --dark-mode-shadow: 0 1px 3px 0 rgba(0, 0, 0, .3), 0 4px 8px 3px rgba(0, 0, 0, .15);
   }
 
@@ -87,10 +100,6 @@ export let theme = `
   
   :host-context(globular-login-box, globular-register-box){
     position: fixed;
-    /*
-    top: 20%;
-    left: calc(50% - 340px / 2);
-    */
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
@@ -115,6 +124,18 @@ export let theme = `
 
   paper-tab {
     --paper-tab-ink: var(--palette-text-accent);
+  }
+
+  paper-radio-button {
+    --paper-radio-button-checked-color: var(--palette-primary-main);
+    --paper-radio-button-checked-ink-color: var(--palette-primary-main);
+    --paper-radio-button-unchecked-color: var(--palette-action-disabled);
+    --paper-radio-button-unchecked-ink-color: var(--palette-action-disabled);
+    --paper-radio-button-label-color: var(--palette-action-disabled);
+  }
+
+  paper-radio-button[checked]{
+    --paper-radio-button-label-color: var(--palette-text-accent);
   }
 
   paper-card {

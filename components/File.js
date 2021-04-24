@@ -1195,44 +1195,83 @@ export class FilesIconView extends FilesView {
 
             evt.preventDefault()
             console.log("---------------> drop event... ",)
-            
+
 
             if (evt.dataTransfer.files.length > 0) {
                 // So here I will simply upload the files...
                 Model.eventHub.publish("__upload_files_event__", { path: this.__dir__.path, files: evt.dataTransfer.files }, true)
-            }else if( evt.dataTransfer.getData("Url") != undefined){
+            } else if (evt.dataTransfer.getData("Url") != undefined) {
                 // Here we got an url...
                 let url = evt.dataTransfer.getData("Url");
                 // Depending of your need... or the hour of the day.
-                /*if(url.startsWith("https://www.youtube.com") 
-                    || url.startsWith("https://www.pornhub.com")
-                    || url.startsWith("https://xhamster.com")
-                    ){*/
-       
-                    // Just beat it!
-                    // youtube-dl -f mp4 -o "/tmp/%(title)s.%(ext)s" https://www.youtube.com/watch?v=oRdxUFDoQe0&list=PLCD0445C57F2B7F41&index=12&ab_channel=michaeljacksonVEVO
-                    // In that case I will made use of the fabulous youtube-dl command line.
+
+
+                // Just beat it!
+                // youtube-dl -f mp4 -o "/tmp/%(title)s.%(ext)s" https://www.youtube.com/watch?v=oRdxUFDoQe0&list=PLCD0445C57F2B7F41&index=12&ab_channel=michaeljacksonVEVO
+                // In that case I will made use of the fabulous youtube-dl command line.
+                let toast = ApplicationView.displayMessage(`
+                        <style>
+                            ${theme}
+
+
+                        </style>
+                        <div id="select-media-dialog">
+                            <span>What kind of file to you want to create?</span>
+                            <div style="display: flex; justify-content: center;">
+                                <paper-radio-group>
+                                    <paper-radio-button id="media-type-mp4" name="media-type" checked>Video (mp4)</paper-radio-button>
+                                    <paper-radio-button id="media-type-mp3"  name="media-type">Audio (mp3)</paper-radio-button>
+                                </paper-radio-group>
+                            </div>
+                            <div style="display: flex; justify-content: flex-end;">
+                                <paper-button id="upload-lnk-ok-button">Ok</paper-button>
+                                <paper-button id="upload-lnk-cancel-button">Cancel</paper-button>
+                            </div>
+                        </div>
+                    `, 60 * 1000)
+                
+                let mp4Radio =  toast.el.querySelector("#media-type-mp4")
+                let mp3Radio =  toast.el.querySelector("#media-type-mp3")
+
+                mp4Radio.onclick = ()=>{
+                    mp3Radio.checked = !mp3Radio.checked
+                }
+ 
+                mp3Radio.onclick = ()=>{
+                    mp4Radio.checked = !mp3Radio.checked
+                }
+ 
+                let okBtn = toast.el.querySelector("#upload-lnk-ok-button")
+                okBtn.onclick = () => {
                     let rqst = new RunCmdRequest
                     rqst.setCmd("youtube-dl")
-                    let dest = "/home/dave/go/src/github.com/globulario/Globular/data/files"+ this.__dir__.path + "/%(title)s.%(ext)s"
-                    rqst.setArgsList(["-f", "mp4", "-o", dest, url])
-                    rqst.setBlocking(false)
-                   
-                    Application.globular.adminService.runCmd(rqst, {application:Application.application, domain:Application.domain, token:localStorage.getItem("user_token")})
-                        .then(()=>{
-                            console.log("file is uploaded in tmp dir...")
-                            //Model.eventHub.publish("reload_dir_event", this.path, false);
-                        }).catch(err=>{ApplicationView.displayMessage(err, 3000)})
-
+                    let dest = "/home/dave/go/src/github.com/globulario/Globular/data/files" + this.__dir__.path + "/%(title)s.%(ext)s"
+                    if(mp3Radio.checked){
+                        rqst.setArgsList(["-f", "bestaudio", "--extract-audio", "--audio-format", "mp3", "--audio-quality", "0", "-o", dest, url]);
+                    }else{
+                        rqst.setArgsList(["-f", "mp4", "-o", dest, url])
+                    }
                     
-                //}
+                    rqst.setBlocking(false)
+
+                    Application.globular.adminService.runCmd(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+                        .then(() => {
+                            ApplicationView.displayMessage("Your file will be uploaded...", 3000)
+                        }).catch(err => { ApplicationView.displayMessage(err, 3000) })
+                    toast.dismiss();
+                }
+
+                let cancelBtn = toast.el.querySelector("#upload-lnk-cancel-button")
+                cancelBtn.onclick = () => {
+                    toast.dismiss();
+                }
+
+
             }
         }
 
         this.div.querySelector(`#container`).ondragover = (evt) => {
             evt.preventDefault()
-            console.log("---------------> drag over... ", evt)
-            
         }
 
         let filesByType = {};
