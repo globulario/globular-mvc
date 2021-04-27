@@ -763,6 +763,134 @@ export class FilesView extends HTMLElement {
                 }, err => { ApplicationView.displayMessage(err, 3000) })
         }
     }
+
+    // The ondrop evt...
+    ondrop(evt) {
+        let lnk = evt.dataTransfer.getData('text/html');
+        if (evt.dataTransfer.files.length > 0) {
+            // So here I will simply upload the files...
+            Model.eventHub.publish("__upload_files_event__", { path: this.__dir__.path, files: evt.dataTransfer.files, lnk:lnk }, true)
+        } else if (evt.dataTransfer.getData("Url") != undefined) {
+            // Here we got an url...
+            let url = evt.dataTransfer.getData("Url");
+
+            // TODO get it from the configuration object globular.config["Data"]
+            let root = "/home/dave/go/src/github.com/globulario/Globular/data"
+
+            // Depending of your need... or the hour of the day.
+            if (url.endsWith(".torrent") || url.startsWith("magnet:")) {
+                // there is the way to install the torrent client on the server side.
+                // https://www.maketecheasier.com/how-to-download-torrents-from-the-command-line-in-ubuntu/
+                // there is an exemple of the command called on the sever side.
+                let dest = root + "/files" + this.__dir__.path
+                let rqst = new RunCmdRequest
+                rqst.setCmd("transmission-cli")
+                rqst.setArgsList(["-f", "killall transmission-cli", url, "-w", dest])
+                rqst.setBlocking(true)
+
+                let stream = Application.globular.adminService.runCmd(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+                let pid = -1;
+
+                // Here I will create a local event to be catch by the file uploader...
+                stream.on("data", (rsp) => {
+                    if (rsp.getPid() != null) {
+                        pid = rsp.getPid()
+                    }
+                    // Publish local event.
+                    Model.eventHub.publish("__upload_torrent_event__", { pid: pid, path: this.__dir__.path, infos: rsp.getResult(), done: false, lnk:lnk }, true);
+                });
+
+                stream.on("status", (status) => {
+                    if (status.code === 0) {
+                        Model.eventHub.publish("__upload_torrent_event__", { pid: pid, path: this.__dir__.path, infos: rsp.getResult(), done: true, lnk:lnk }, true);
+                    } else {
+                        // error here...
+                        ApplicationView.displayMessage(status.details, 3000)
+                    }
+                });
+
+                return;
+            }
+
+            // Just beat it!
+            // youtube-dl -f mp4 -o "/tmp/%(title)s.%(ext)s" https://www.youtube.com/watch?v=oRdxUFDoQe0&list=PLCD0445C57F2B7F41&index=12&ab_channel=michaeljacksonVEVO
+            // In that case I will made use of the fabulous youtube-dl command line.
+            let toast = ApplicationView.displayMessage(`
+                    <style>
+                        ${theme}
+
+
+                    </style>
+                    <div id="select-media-dialog">
+                        <span>What kind of file to you want to create?</span>
+                        <div style="display: flex; justify-content: center;">
+                            <paper-radio-group>
+                                <paper-radio-button id="media-type-mp4" name="media-type" checked>Video (mp4)</paper-radio-button>
+                                <paper-radio-button id="media-type-mp3"  name="media-type">Audio (mp3)</paper-radio-button>
+                            </paper-radio-group>
+                        </div>
+                        <div style="display: flex; justify-content: flex-end;">
+                            <paper-button id="upload-lnk-ok-button">Ok</paper-button>
+                            <paper-button id="upload-lnk-cancel-button">Cancel</paper-button>
+                        </div>
+                    </div>
+                `, 60 * 1000)
+
+            let mp4Radio = toast.el.querySelector("#media-type-mp4")
+            let mp3Radio = toast.el.querySelector("#media-type-mp3")
+
+            mp4Radio.onclick = () => {
+                mp3Radio.checked = !mp3Radio.checked
+            }
+
+            mp3Radio.onclick = () => {
+                mp4Radio.checked = !mp3Radio.checked
+            }
+
+            let okBtn = toast.el.querySelector("#upload-lnk-ok-button")
+            okBtn.onclick = () => {
+                let rqst = new RunCmdRequest
+                rqst.setCmd("youtube-dl")
+                let dest = root + "/files" + this.__dir__.path + "/%(title)s.%(ext)s"
+                if (mp3Radio.checked) {
+                    rqst.setArgsList(["-f", "bestaudio", "--extract-audio", "--audio-format", "mp3", "--audio-quality", "0", "-o", dest, url]);
+                } else {
+                    rqst.setArgsList(["-f", "mp4", "-o", dest, url])
+                }
+
+                rqst.setBlocking(true)
+                let stream = Application.globular.adminService.runCmd(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+                let pid = -1;
+
+                // Here I will create a local event to be catch by the file uploader...
+                stream.on("data", (rsp) => {
+                    if (rsp.getPid() != null) {
+                        pid = rsp.getPid()
+                    }
+                    // Publish local event.
+                    Model.eventHub.publish("__upload_link_event__", { pid: pid, path: this.__dir__.path, infos: rsp.getResult(), done: false, lnk:lnk }, true);
+                });
+
+                stream.on("status", (status) => {
+                    if (status.code === 0) {
+                        Model.eventHub.publish("__upload_link_event__", { pid: pid, path: this.__dir__.path, infos: "", done: true, lnk:lnk }, true);
+                    } else {
+                        // error here...
+                        ApplicationView.displayMessage(status.details, 3000)
+                    }
+                });
+
+                toast.dismiss();
+            }
+
+            let cancelBtn = toast.el.querySelector("#upload-lnk-cancel-button")
+            cancelBtn.onclick = () => {
+                toast.dismiss();
+            }
+
+
+        }
+    }
 }
 
 /**
@@ -854,6 +982,15 @@ export class FilesListView extends FilesView {
         this.div.querySelector(`table`).onmouseleave = (evt) => {
             evt.stopPropagation()
 
+        }
+
+        this.div.querySelector(`table`).ondrop = (evt) => {
+            evt.preventDefault()
+            this.ondrop(evt)
+        }
+
+        this.div.querySelector(`table`).ondragover = (evt) => {
+            evt.preventDefault()
         }
 
         this.div.onclick = (evt) => {
@@ -1056,7 +1193,7 @@ export class FilesIconView extends FilesView {
         this.div.innerHTML = "";
         let h = this.imageHeight; // the heigth of the image/icon div
         let w = this.imageHeight;
-        let hidden = null;
+        let hiddens = {};
 
         let html = `
         <style>
@@ -1192,82 +1329,8 @@ export class FilesIconView extends FilesView {
         }
 
         this.div.querySelector(`#container`).ondrop = (evt) => {
-
             evt.preventDefault()
-            console.log("---------------> drop event... ",)
-
-
-            if (evt.dataTransfer.files.length > 0) {
-                // So here I will simply upload the files...
-                Model.eventHub.publish("__upload_files_event__", { path: this.__dir__.path, files: evt.dataTransfer.files }, true)
-            } else if (evt.dataTransfer.getData("Url") != undefined) {
-                // Here we got an url...
-                let url = evt.dataTransfer.getData("Url");
-                // Depending of your need... or the hour of the day.
-
-
-                // Just beat it!
-                // youtube-dl -f mp4 -o "/tmp/%(title)s.%(ext)s" https://www.youtube.com/watch?v=oRdxUFDoQe0&list=PLCD0445C57F2B7F41&index=12&ab_channel=michaeljacksonVEVO
-                // In that case I will made use of the fabulous youtube-dl command line.
-                let toast = ApplicationView.displayMessage(`
-                        <style>
-                            ${theme}
-
-
-                        </style>
-                        <div id="select-media-dialog">
-                            <span>What kind of file to you want to create?</span>
-                            <div style="display: flex; justify-content: center;">
-                                <paper-radio-group>
-                                    <paper-radio-button id="media-type-mp4" name="media-type" checked>Video (mp4)</paper-radio-button>
-                                    <paper-radio-button id="media-type-mp3"  name="media-type">Audio (mp3)</paper-radio-button>
-                                </paper-radio-group>
-                            </div>
-                            <div style="display: flex; justify-content: flex-end;">
-                                <paper-button id="upload-lnk-ok-button">Ok</paper-button>
-                                <paper-button id="upload-lnk-cancel-button">Cancel</paper-button>
-                            </div>
-                        </div>
-                    `, 60 * 1000)
-                
-                let mp4Radio =  toast.el.querySelector("#media-type-mp4")
-                let mp3Radio =  toast.el.querySelector("#media-type-mp3")
-
-                mp4Radio.onclick = ()=>{
-                    mp3Radio.checked = !mp3Radio.checked
-                }
- 
-                mp3Radio.onclick = ()=>{
-                    mp4Radio.checked = !mp3Radio.checked
-                }
- 
-                let okBtn = toast.el.querySelector("#upload-lnk-ok-button")
-                okBtn.onclick = () => {
-                    let rqst = new RunCmdRequest
-                    rqst.setCmd("youtube-dl")
-                    let dest = "/home/dave/go/src/github.com/globulario/Globular/data/files" + this.__dir__.path + "/%(title)s.%(ext)s"
-                    if(mp3Radio.checked){
-                        rqst.setArgsList(["-f", "bestaudio", "--extract-audio", "--audio-format", "mp3", "--audio-quality", "0", "-o", dest, url]);
-                    }else{
-                        rqst.setArgsList(["-f", "mp4", "-o", dest, url])
-                    }
-                    
-                    rqst.setBlocking(false)
-
-                    Application.globular.adminService.runCmd(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
-                        .then(() => {
-                            ApplicationView.displayMessage("Your file will be uploaded...", 3000)
-                        }).catch(err => { ApplicationView.displayMessage(err, 3000) })
-                    toast.dismiss();
-                }
-
-                let cancelBtn = toast.el.querySelector("#upload-lnk-cancel-button")
-                cancelBtn.onclick = () => {
-                    toast.dismiss();
-                }
-
-
-            }
+            this.ondrop(evt)
         }
 
         this.div.querySelector(`#container`).ondragover = (evt) => {
@@ -1315,9 +1378,14 @@ export class FilesIconView extends FilesView {
 
             if (!f.name.startsWith(".")) {
                 filesByType[fileType].push(f)
-            } else {
+            } else if (f.name.startsWith(".hidden")) {
                 // The hidden dir.
-                hidden = f
+                if (f.files != undefined) {
+                    f.files.forEach(file_ => {
+                        let path = file_.path.replace("/.hidden/", "/")
+                        hiddens[path] = file_
+                    })
+                }
             }
 
         }
@@ -1393,6 +1461,14 @@ export class FilesIconView extends FilesView {
                     }
                 }
 
+                // The parent path
+                let parentPath = ""
+                if (file.isDir) {
+                    parentPath = file.path.substring(0, file.path.lastIndexOf("/"))
+                } else {
+                    parentPath = file.path.substring(0, file.path.lastIndexOf("."))
+                }
+
                 if (file.isDir) {
 
                     // Here I will create a folder mosaic from the folder content...
@@ -1407,39 +1483,35 @@ export class FilesIconView extends FilesView {
 
                     folderIcon.draggable = false
 
-                } else if (fileType == "video" && hidden != null) {
+                } else if (fileType == "video" && hiddens[parentPath] != undefined) {
                     /** In that case I will display the vieo preview. */
-
-                    for (var i = 0; i < hidden.files.length; i++) {
-                        let file_ = hidden.files[i]
-                        if (file.name.startsWith(file_.name)) {
-                            for (var j = 0; j < file_.files.length; j++) {
-                                let file__ = file_.files[j]
-                                if (file__.name == "__preview__") {
-                                    let files__ = file__.files;
-                                    let preview = new VideoPreview(file.path, files__, h, () => {
-                                        if (preview.width > 0 && preview.height > 0) {
-                                            w = (preview.width / preview.height) * h
-                                        }
-                                        fileNameSpan.style.maxWidth = w + "px";
-                                    })
-
-                                    preview.name = file.name;
-                                    preview.onpreview = () => {
-                                        let previews = this.div.querySelectorAll("globular-video-preview")
-                                        previews.forEach(p => {
-                                            // stop all other preview...
-                                            if (preview.name != p.name) {
-                                                p.stopPreview()
-                                            }
-                                        })
-                                    }
-                                    fileIconDiv.insertBefore(preview, fileIconDiv.firstChild)
-                                    preview.draggable = false
+                    let file_ = hiddens[parentPath];
+                    for (var j = 0; j < file_.files.length; j++) {
+                        let file__ = file_.files[j]
+                        if (file__.name == "__preview__") {
+                            let files__ = file__.files;
+                            let preview = new VideoPreview(file.path, files__, h, () => {
+                                if (preview.width > 0 && preview.height > 0) {
+                                    w = (preview.width / preview.height) * h
                                 }
+                                fileNameSpan.style.maxWidth = w + "px";
+                            })
+
+                            preview.name = file.name;
+                            preview.onpreview = () => {
+                                let previews = this.div.querySelectorAll("globular-video-preview")
+                                previews.forEach(p => {
+                                    // stop all other preview...
+                                    if (preview.name != p.name) {
+                                        p.stopPreview()
+                                    }
+                                })
                             }
-                            break;
+                            fileIconDiv.insertBefore(preview, fileIconDiv.firstChild)
+                            preview.draggable = false
                         }
+
+                        break;
                     }
                 } else if (file.thumbnail != undefined) {
                     /** Display the thumbnail. */
@@ -1898,6 +1970,14 @@ export class FileNavigator extends HTMLElement {
                     #${id}:hover{
                         cursor: pointer;
                     }
+                    #folder-name-span{
+                        max-width: 200px;
+                        margin-left: 5px;
+                        white-space: nowrap;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+
+                    }
                 </style>
 
                 <div id="${id}" style="padding-left: ${offset}px;">
@@ -1906,7 +1986,7 @@ export class FileNavigator extends HTMLElement {
                         <iron-icon id="${id}_shrink_btn" icon="icons:expand-more" style="--iron-icon-fill-color:var(--palette-action-active); display: none;"></iron-icon>
                         <div id="${id}_directory_lnk" class="directory-lnk">
                             <iron-icon id="${id}_directory_icon" icon="icons:folder"></iron-icon>
-                            <span style="margin-left: 5px;"> ${name}</span>
+                            <span class="folder-name-span" title="${name}" style="margin-left: 5px;"> ${name}</span>
                         </div>
                         <paper-ripple recenters></paper-ripple>
                     </div>
@@ -2467,12 +2547,6 @@ export class FileExplorer extends HTMLElement {
                 // set back the view mode.
                 this.displayView()
             }, this.onerror)
-        }
-
-        // refresh the interface when file is uploaded.
-        this.filesUploader.onuploaded = (file) => {
-            //this.refreshBtn.click();
-            // _publishSetDirEvent(this.path)
         }
 
         if (this.hasAttribute("maximized")) {
@@ -3214,8 +3288,6 @@ export class FilesUploader extends HTMLElement {
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
 
-        this.onuploaded = null;
-
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
@@ -3239,7 +3311,7 @@ export class FilesUploader extends HTMLElement {
 
             }
 
-            .content{
+            .card-content{
                 max-height: 500px;
                 overflow-y: auto;
             }
@@ -3247,6 +3319,7 @@ export class FilesUploader extends HTMLElement {
             td {
                 text-align: center;
                 vertical-align: middle;
+                white-space: nowrap;
             }
 
 
@@ -3267,8 +3340,13 @@ export class FilesUploader extends HTMLElement {
         <div id="container">
             <iron-collapse id="collapase-panel">
                 <paper-card class="content">
+                    <paper-tabs selected="0" style="background: var(--palette-background-default);">
+                        <paper-tab id="file-upload-tab">Files</paper-tab>
+                        <paper-tab id="links-download-tab">Links</paper-tab>
+                        <paper-tab id="torrents-dowload-tab">Torrents</paper-tab>
+                    </paper-tabs>
                     <div class="card-content" style="padding: 0px;">
-                        <table>
+                        <table id="files-upload-table">
                             <thead class="files-list-view-header">
                                 <tr>
                                     <th></th>
@@ -3277,7 +3355,29 @@ export class FilesUploader extends HTMLElement {
                                     <th class="size_header_div files-list-view-header" style="min-width: 80px;">Size</th>
                                 </tr>
                             </thead>
-                            <tbody class="files-list-view-info">
+                            <tbody id="file-upload-tbody" class="files-list-view-info">
+                            </tbody>
+                        </table>
+                        <table id="links-download-table" style="display: none;">
+                            <thead class="files-list-view-header">
+                                <tr>
+                                    <th></th>
+                                    <th class="name_header_div files-list-view-header">Detail</th>
+                                    <th class="mime_header_div files-list-view-header" style="min-width: 110px;">Destination</th>
+                                </tr>
+                            </thead>
+                            <tbody id="links-download-tbody" class="files-list-view-info">
+                            </tbody>
+                        </table>
+                        <table id="torrents-download-table" style="display: none;">
+                            <thead class="files-list-view-header">
+                                <tr>
+                                    <th></th>
+                                    <th class="name_header_div files-list-view-header">Detail</th>
+                                    <th class="mime_header_div files-list-view-header" style="min-width: 110px;">Destination</th>
+                                </tr>
+                            </thead>
+                            <tbody id="torrent-download-tbody" class="files-list-view-info">
                             </tbody>
                         </table>
                     </div>
@@ -3286,15 +3386,62 @@ export class FilesUploader extends HTMLElement {
             <paper-icon-button icon="icons:file-upload"> </paper-icon-button>
         </div>
         `
-        // give the focus to the input.
-        let container = this.shadowRoot.querySelector("#container")
-        this.files = this.shadowRoot.querySelector("tbody")
+        // The body where upload files info are displayed
+        this.files_upload_table = this.shadowRoot.querySelector("#file-upload-tbody")
+
+        // The body where torrents files will be displayed.
+        this.torrent_download_table = this.shadowRoot.querySelector("#torrent-download-tbody")
+
+        // The list of link where link's 
+        this.links_download_table = this.shadowRoot.querySelector("#links-download-tbody")
+
+        // The tabs...
+        this.filesUploadTab = this.shadowRoot.querySelector("#file-upload-tab")
+        this.torrentsDowloadTab = this.shadowRoot.querySelector("#torrents-dowload-tab")
+        this.linksDownloadTab = this.shadowRoot.querySelector("#links-download-tab")
+
+        // So here I will set the tab interractions.
+        this.filesUploadTab.onclick = () => {
+            let tables = this.shadowRoot.querySelectorAll("table")
+            for (var i = 0; i < tables.length; i++) {
+                tables[i].style.display = "none"
+            }
+
+            this.shadowRoot.querySelector("#files-upload-table").style.display = "block"
+        }
+
+        this.torrentsDowloadTab.onclick = () => {
+            let tables = this.shadowRoot.querySelectorAll("table")
+            for (var i = 0; i < tables.length; i++) {
+                tables[i].style.display = "none"
+            }
+
+            this.shadowRoot.querySelector("#torrents-download-table").style.display = "block"
+        }
+
+        this.linksDownloadTab.onclick = () => {
+            let tables = this.shadowRoot.querySelectorAll("table")
+            for (var i = 0; i < tables.length; i++) {
+                tables[i].style.display = "none"
+            }
+
+            this.shadowRoot.querySelector("#links-download-table").style.display = "block"
+        }
+
+        // The hide and show button.
         this.btn = this.shadowRoot.querySelector("paper-icon-button")
 
         let content = this.shadowRoot.querySelector("#collapase-panel")
         // give the focus to the input.
         this.btn.onclick = () => {
             content.toggle();
+            if (this.files_upload_table.children.length > 0) {
+                this.btn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-active)")
+                this.shadowRoot.querySelector("iron-collapse").style.display = "block";
+            } else {
+                //this.btn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
+                //this.shadowRoot.querySelector("iron-collapse").style.display = "none";
+            }
         }
 
         this.btn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
@@ -3302,7 +3449,6 @@ export class FilesUploader extends HTMLElement {
     }
 
     init() {
-
         // Upload file event.
         Model.eventHub.subscribe(
             "__upload_files_event__", (uuid) => { },
@@ -3312,8 +3458,213 @@ export class FilesUploader extends HTMLElement {
             }
             , true
         )
+
+        // Upload link (youtube, pornhub...)
+        Model.eventHub.subscribe(
+            "__upload_link_event__", (uuid) => { },
+            (evt) => {
+                this.uploadLink(evt.pid, evt.path, evt.infos, evt.lnk, evt.done)
+            }
+            , true
+        )
+
+        // Upload torrent files.
+        Model.eventHub.subscribe(
+            "__upload_torrent_event__", (uuid) => { },
+            (evt) => {
+                this.uploadTorrent(evt.pid, evt.path, evt.infos, evt.lnk, evt.done)
+            }
+            , true
+        )
     }
 
+    /**
+     * Format file size from bytes to Gb, Mb or Kb...
+     * @param {*} f_size 
+     * @returns 
+     */
+    getFileSizeString(f_size) {
+
+        // In case of already converted values...
+        if (typeof f_size === 'string' || f_size instanceof String) {
+            return f_size
+        }
+
+        let size = ""
+
+        if (f_size > 1024) {
+            if (f_size > 1024 * 1024) {
+                if (f_size > 1024 * 1024 * 1024) {
+                    let fileSize = f_size / (1024 * 1024 * 1024);
+                    size = fileSize.toFixed(2) + " Gb";
+                } else {
+                    let fileSize = f_size / (1024 * 1024);
+                    size = fileSize.toFixed(2) + " Mb";
+                }
+            } else {
+                let fileSize = f_size / 1024;
+                size = fileSize.toFixed(2) + " Kb";
+            }
+        } else {
+            size = f.size + " bytes";
+        }
+
+        return size
+    }
+
+    /**
+     * Dowload a video on globular server from a link.
+     * @param {*} pid The pid of the server command associated with that link
+     * @param {*} path The path on the server where the video will be saved
+     * @param {*} infos The infos receive about the file transfert.
+     */
+    uploadLink(pid, path, infos, lnk, done) {
+
+        let id = "link-download-row-" + pid
+        let row = this.shadowRoot.querySelector("#" + id)
+
+        if (done) {
+            let span_title = this.links_download_table.querySelector("#" + id + "_title")
+            ApplicationView.displayMessage("File " + span_title.innerHTML + " was now uploaded!", 3000)
+            row.parentNode.removeChild(row)
+            return
+        }
+
+        // display the button.
+        this.btn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-active)")
+        this.shadowRoot.querySelector("iron-collapse").style.display = "block";
+
+        if (row == undefined) {
+            let row = document.createElement("tr")
+            row.id = id
+            let cancelCell = document.createElement("td")
+            let cancelBtn = document.createElement("paper-icon-button")
+            cancelBtn.icon = "icons:close"
+            cancelCell.appendChild(cancelBtn)
+            let cellSource = document.createElement("td")
+            cellSource.style.textAlign = "left"
+            cellSource.style.paddingLeft = "5px"
+            cellSource.innerHTML = `
+            <div style="display: flex; flex-direction: column;">
+                <span id="${id}_title" style="background-color:var(--palette-background-default);">${infos}</span>
+                <span id="${id}_infos" style="background-color:var(--palette-background-default);"></span>
+            </div>`;
+            let cellDest = document.createElement("td")
+            cellDest.style.textAlign = "left"
+            cellDest.style.paddingLeft = "5px"
+            cellDest.innerHTML = `<span style="background-color:var(--palette-background-default);">${path}</span>`;
+
+            row.appendChild(cancelCell)
+            row.appendChild(cellSource);
+            row.appendChild(cellDest);
+
+            cancelBtn.onclick = () => {
+                row.style.display = "none";
+            }
+
+            // Append to files panels.
+            this.links_download_table.appendChild(row)
+            this.btn.click()
+            this.linksDownloadTab.click();
+        } else {
+
+            if (infos.startsWith("[download] Destination:")) {
+                let span_title = this.links_download_table.querySelector("#" + id + "_title")
+                span_title.innerHTML = infos.substring(infos.lastIndexOf("/") + 1)
+            } else {
+                let span_infos = this.links_download_table.querySelector("#" + id + "_infos")
+                span_infos.innerHTML = infos.trim();
+            }
+        }
+
+    }
+
+    /**
+     * Dowload a torrent on globular server.
+     * @param {*} pid The pid of the torrent command on the server side.
+     * @param {*} path The path of the torrent on the server
+     * @param {*} infos The infos receive from about the file transfert.
+     * @param {*} done If true 
+     */
+    uploadTorrent(pid, path, infos, lnk, done) {
+
+        let id = "torrent-download-row-" + pid
+        let row = this.shadowRoot.querySelector("#" + id)
+
+        if (done) {
+            let span_title = this.links_download_table.querySelector("#" + id + "_title")
+            ApplicationView.displayMessage("File " + span_title.innerHTML + " was now uploaded!", 3000)
+            row.parentNode.removeChild(row)
+            return
+        }
+
+        // display the button.
+        this.btn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-active)")
+        this.shadowRoot.querySelector("iron-collapse").style.display = "block";
+
+        if (row == undefined) {
+            let row = document.createElement("tr")
+            row.id = id
+            let cancelCell = document.createElement("td")
+            let cancelBtn = document.createElement("paper-icon-button")
+            cancelBtn.icon = "icons:close"
+            cancelCell.appendChild(cancelBtn)
+            let cellSource = document.createElement("td")
+            cellSource.style.textAlign = "left"
+            cellSource.style.paddingLeft = "5px"
+            cellSource.innerHTML = `
+            <style>
+                a {
+                    color: var(--palette-text-primary);
+                }
+
+                a span{
+                    padding: 2px;
+                }
+
+                a img{
+                    display: none;
+                }
+                
+            </style>
+            <div style="display: flex; flex-direction: column;">
+                <span id="${id}_title" style="background-color:var(--palette-background-default);">${lnk}</span>
+                <span id="${id}_infos" style="background-color:var(--palette-background-default);"></span>
+            </div>`;
+            let cellDest = document.createElement("td")
+            cellDest.style.textAlign = "left"
+            cellDest.style.paddingLeft = "5px"
+            cellDest.innerHTML = `<span style="background-color:var(--palette-background-default);">${path}</span>`;
+
+            row.appendChild(cancelCell)
+            row.appendChild(cellSource);
+            row.appendChild(cellDest);
+
+            cancelBtn.onclick = () => {
+                row.style.display = "none";
+            }
+
+            // Append to files panels.
+            this.torrent_download_table.appendChild(row)
+            this.btn.click()
+            this.torrentsDowloadTab.click();
+        } else {
+            console.log(infos)
+            let span_infos = row.querySelector("#" + id + "_infos")
+            if (infos.startsWith("Progress:") && infos.trim().endsWith("]")) {
+                span_infos.innerHTML = infos.trim();
+            } else {
+               // span_infos.innerHTML += infos.trim();
+            }
+        }
+
+    }
+
+    /**
+     * Upload files from local computer to globular server
+     * @param {*} path 
+     * @param {*} files 
+     */
     uploadFiles(path, files) {
 
         // So here I will try to get the most information from the backend to be able to keep the user inform about what append 
@@ -3322,29 +3673,11 @@ export class FilesUploader extends HTMLElement {
             this.btn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-active)")
             this.shadowRoot.querySelector("iron-collapse").style.display = "block";
         }
-        let range = document.createRange()
+
+        // Upload files panel...
         for (var i = 0; i < files.length; i++) {
             let f = files[i]
-            let size = ""
-
-            if (f.size > 1024) {
-                if (f.size > 1024 * 1024) {
-                    if (f.size > 1024 * 1024 * 1024) {
-                        let fileSize = f.size / (1024 * 1024 * 1024);
-
-                        size = fileSize.toFixed(2) + " Gb";
-                    } else {
-                        let fileSize = f.size / (1024 * 1024);
-                        size = fileSize.toFixed(2) + " Mb";
-                    }
-                } else {
-                    let fileSize = f.size / 1024;
-                    size = fileSize.toFixed(2) + " Kb";
-                }
-            } else {
-                size = f.size + " bytes";
-            }
-
+            let size = this.getFileSizeString(f.size)
             let row = document.createElement("tr")
             let cancelCell = document.createElement("td")
             let cancelBtn = document.createElement("paper-icon-button")
@@ -3356,7 +3689,7 @@ export class FilesUploader extends HTMLElement {
             cellSource.innerHTML = `
                 <div style="display: flex; flex-direction: column;">
                     <span style="background-color:var(--palette-background-default);">${f.name}</span>
-                    <paper-progress value=0 class="blue"></paper-progress>
+                    <paper-progress value=0 style="width: 100%;"></paper-progress>
                 </div>`;
             let cellDest = document.createElement("td")
             cellDest.style.textAlign = "left"
@@ -3374,16 +3707,19 @@ export class FilesUploader extends HTMLElement {
             }
 
             // Append to files panels.
-            this.files.appendChild(row)
+            this.files_upload_table.appendChild(row)
+            this.btn.click()
         }
+
+
 
         // Upload file one by one and 
         let uploadFile = (index, callback) => {
             let f = files[index]
             index++
-            if (this.files.children[0].style.display == "none") {
+            if (this.files_upload_table.children[0].style.display == "none") {
                 // simply pass over...
-                this.files.removeChild(this.files.children[0])
+                this.files_upload_table.removeChild(this.files_upload_table.children[0])
                 if (index < files.length) {
                     uploadFile(index, callback)
                 } else {
@@ -3399,14 +3735,6 @@ export class FilesUploader extends HTMLElement {
 
                 uploadFiles(path, [f],
                     () => {
-                        ApplicationView.displayMessage("File " + f.name + " was uploaded", 2000)
-
-                        this.files.removeChild(this.files.children[0])
-                        if (this.onuploaded != undefined) {
-                            this.onuploaded(f)
-                        }
-                        Model.eventHub.publish("reload_dir_event", path, false)
-
                         if (index < files.length) {
                             uploadFile(index, callback)
                         } else {
@@ -3418,10 +3746,17 @@ export class FilesUploader extends HTMLElement {
                         ApplicationView.displayMessage("Upload failed!", 3000)
                     },
                     event => {
-                        console.log(event)
-                        let progress = this.files.children[0].querySelector("paper-progress")
+                        let progress = this.files_upload_table.children[0].querySelector("paper-progress")
                         progress.value = (event.loaded / event.total) * 100
-                        console.log("Uploaded " + event.loaded + " bytes of " + event.total)
+                        if (event.loaded == event.total) {
+                            ApplicationView.displayMessage("File " + f.name + " was uploaded", 2000)
+                            this.files.removeChild(this.files_upload_table.children[0])
+                            if (this.files_upload_table.children == 0) {
+                                this.btn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
+                                this.shadowRoot.querySelector("iron-collapse").style.display = "none";
+                                Model.eventHub.publish("reload_dir_event", path, false)
+                            }
+                        }
                     },
                     event => {
                         console.log("abort file upload event", event);
@@ -3433,6 +3768,7 @@ export class FilesUploader extends HTMLElement {
         // Start file upload!
         uploadFile(0, () => {
             ApplicationView.displayMessage("All files are now uploaded!", 2000)
+            this.btn.click()
         })
 
     }
