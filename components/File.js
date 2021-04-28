@@ -3750,7 +3750,7 @@ export class FilesUploader extends HTMLElement {
                         progress.value = (event.loaded / event.total) * 100
                         if (event.loaded == event.total) {
                             ApplicationView.displayMessage("File " + f.name + " was uploaded", 2000)
-                            this.files.removeChild(this.files_upload_table.children[0])
+                            this.files_upload_table.removeChild(this.files_upload_table.children[0])
                             if (this.files_upload_table.children == 0) {
                                 this.btn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
                                 this.shadowRoot.querySelector("iron-collapse").style.display = "none";

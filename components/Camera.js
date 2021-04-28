@@ -190,8 +190,9 @@ export class Camera extends HTMLElement {
         this._startRecordingButton = this.shadowRoot.getElementById('recording-button');
         this._stopRecordingButton = this.shadowRoot.getElementById('stop-rercoding-button');
 
+
         // get the list of available cameras.
-        this._saveButton.onclick = () => {
+        this._saveButton.ontouchend =  this._saveButton.onclick = () => {
             // create event that save the image/video
             if (this.type == "photo") {
                 if (this.onsaveimage != undefined) {
@@ -204,7 +205,7 @@ export class Camera extends HTMLElement {
             }
 
             // delete the picture.
-            this._deleteButton.click()
+            this.clearphoto();
         }
 
         this._camera_options.onchange = () => {
@@ -235,13 +236,9 @@ export class Camera extends HTMLElement {
             }
         }
 
-        /**
-         * Display the camera.
-         */
-        this._openButton.onclick = () => {
-
+        this.onpen_event_listener = ()=>{
+            
             this._openButton.style.display = "none"
-
 
             const open = () => {
 
@@ -262,7 +259,7 @@ export class Camera extends HTMLElement {
                         this._camera.style.display = ""
 
                         // Take picture event.
-                        this._takePictureButton.onclick = (ev) => {
+                        this._takePictureButton.ontouchend = this._takePictureButton.onclick = (ev) => {
                             this.type = "photo"
                             this.width = this._width_inupt.value
                             this.takepicture();
@@ -270,7 +267,7 @@ export class Camera extends HTMLElement {
                         };
 
                         // Start recording video
-                        this._startRecordingButton.onclick = (ev) => {
+                        this._startRecordingButton.ontouchend = this._startRecordingButton.onclick = (ev) => {
                             this.type = "video"
                             // Start recording.
                             this.startRecording()
@@ -278,7 +275,7 @@ export class Camera extends HTMLElement {
                         }
 
                         // Stop recording video.
-                        this._stopRecordingButton.onclick = (ev) => {
+                        this._stopRecordingButton.ontouchend = this._stopRecordingButton.onclick = (ev) => {
                             this.stopRecording()
                             ev.preventDefault();
                         }
@@ -317,10 +314,18 @@ export class Camera extends HTMLElement {
                 // simply open the camera...
                 open();
             }
+        }
+        
+        /**
+         * Display the camera.
+         */
+        this._openButton.onclick = () => {
+
+            this.onpen_event_listener();
 
         }
 
-        this._closeButton.onclick = () => {
+        this.close_event_listener= ()=>{
             this._camera.style.display = "none"
             this._openButton.style.display = ""
             this._video.pause();
@@ -337,7 +342,11 @@ export class Camera extends HTMLElement {
             }
         }
 
-        this._deleteButton.onclick = () => {
+        this._closeButton.ontouchend = this._closeButton.onclick = () => {
+            this.close_event_listener();
+        }
+
+        this._deleteButton.ontouchend = this._deleteButton.onclick = () => {
             this.clearphoto()
         }
 
@@ -349,15 +358,17 @@ export class Camera extends HTMLElement {
         }
     }
 
+    
+
     open() {
-        this._openButton.click()
+        this.onpen_event_listener();
         if (this.onopen != undefined) {
             this.onopen();
         }
     }
 
     close() {
-        this._closeButton.click(); // close the camera.
+        this.close_event_listener(); // close the camera.
         if (this.onclose != undefined) {
             this.onclose();
         }
