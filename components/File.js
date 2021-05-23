@@ -775,7 +775,8 @@ export class FilesView extends HTMLElement {
             let url = evt.dataTransfer.getData("Url");
 
             // TODO get it from the configuration object globular.config["Data"]
-            let root = "/home/dave/go/src/github.com/globulario/Globular/data"
+            let root = Model.globular.config["DataPath"]
+            //"/home/dave/go/src/github.com/globulario/Globular/data"
 
             // Depending of your need... or the hour of the day.
             if (url.endsWith(".torrent") || url.startsWith("magnet:")) {
@@ -818,8 +819,6 @@ export class FilesView extends HTMLElement {
             let toast = ApplicationView.displayMessage(`
                     <style>
                         ${theme}
-
-
                     </style>
                     <div id="select-media-dialog">
                         <span>What kind of file to you want to create?</span>
@@ -2165,7 +2164,6 @@ export class FileExplorer extends HTMLElement {
         // Event listener...
         this.listeners = {}
 
-
         // Interface elements...
         // The main explorer button
         this.fileExplorerBox = undefined
@@ -2611,8 +2609,6 @@ export class FileExplorer extends HTMLElement {
                 }, true
             )
         }
-
-
 
         // File rename event.
         if (this.listeners["file_rename_event"] == undefined) {
@@ -3751,11 +3747,11 @@ export class FilesUploader extends HTMLElement {
                         if (event.loaded == event.total) {
                             ApplicationView.displayMessage("File " + f.name + " was uploaded", 2000)
                             this.files_upload_table.removeChild(this.files_upload_table.children[0])
-                            if (this.files_upload_table.children == 0) {
+                            if (this.files_upload_table.children.length == 0) {
                                 this.btn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
                                 this.shadowRoot.querySelector("iron-collapse").style.display = "none";
-                                Model.eventHub.publish("reload_dir_event", path, false)
                             }
+                            Model.eventHub.publish("reload_dir_event", path, false)
                         }
                     },
                     event => {

@@ -143,7 +143,10 @@ export class Application extends Model {
    * @param callback 
    */
   initApplicationConfig(callback: (config: any) => void, errorCallback: (err: any) => void) {
-    getFileConfig(window.location.toString() + "config.json",
+    // remove
+    let url = window.location.toString()
+    url = url.replace("index.html", "")
+    getFileConfig( url + "config.json",
       (config: any) => {
         callback(config)
       }, errorCallback)
