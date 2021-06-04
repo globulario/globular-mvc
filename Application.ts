@@ -1,5 +1,6 @@
 import { Model } from "./Model";
 import * as resource from "globular-web-client/resource/resource_pb";
+import * as authentication from "globular-web-client/authentication/authentication_pb"
 //import 'source-map-support/register' // That resolve the error map and give real source name and plage in function.
 import * as jwt from "jwt-decode";
 import { ApplicationView } from "./ApplicationView";
@@ -508,7 +509,44 @@ export class Application extends Model {
     callback: (infos: Array<any>) => void,
     errorCallback: (err: any) => void
   ) {
-    let rqst = new resource.GetAllApplicationsInfoRqst();
+
+    const rqst = new resource.GetApplicationsRqst();
+
+    const stream = Model.globular.resourceService.getApplications(rqst, {
+      application: Model.application.length > 0 ? Model.application : Model.globular.config.IndexApplication,
+      domain: Model.domain,
+    });
+  
+    let applications = new Array<resource.Application>();
+  
+    stream.on("data", (rsp: resource.GetApplicationsRsp) => {
+      applications = applications.concat(rsp.getApplicationsList());
+    });
+  
+    stream.on("status", (status) => {
+      if (status.code === 0) {
+
+        Application.infos = new Map<string, any>();
+        for (var i = 0; i < applications.length; i++) {
+          // Keep application info up to date.
+          Application.eventHub.subscribe(`update_application_${applications[i].getId()}_settings_evt`,
+            (uuid: string) => {
+
+            },
+            (__application_info__: string) => {
+              // Set the icon...
+              let info = JSON.parse(__application_info__)
+              Application.infos.set(applications[i].getId(), info);
+            }, false)
+        }
+
+        callback(applications);
+      } else {
+        errorCallback({ message: status.details });
+      }
+    });
+/*
+    let rqst = new resource.GetApplicationsRqst();
 
     Model.globular.resourceService
       .getAllApplicationsInfo(rqst, {})
@@ -537,6 +575,7 @@ export class Application extends Model {
         callback(infos);
       })
       .catch(errorCallback);
+      */
   }
 
   /**
@@ -573,7 +612,7 @@ export class Application extends Model {
     initCallback: (account: Account) => void,
     onError: (err: any) => void
   ) {
-    let rqst = new resource.RefreshTokenRqst();
+    let rqst = new authentication.RefreshTokenRqst();
     let existingToken = localStorage.getItem("user_token");
     if (existingToken == undefined) {
       onError("No token found to be refresh!");
@@ -587,9 +626,9 @@ export class Application extends Model {
 
     rqst.setToken(existingToken);
 
-    Model.globular.resourceService
+    Model.globular.authenticationService
       .refreshToken(rqst)
-      .then((rsp: resource.RefreshTokenRsp) => {
+      .then((rsp: authentication.RefreshTokenRsp) => {
         // Refresh the token at session timeout
         let token = rsp.getToken();
 
@@ -775,14 +814,14 @@ export class Application extends Model {
     onLogin: (account: Account) => void,
     onError: (err: any) => void
   ) {
-    let rqst = new resource.AuthenticateRqst();
+    let rqst = new authentication.AuthenticateRqst();
     rqst.setName(email);
     rqst.setPassword(password);
     this.view.wait("<div>log in</div><div>" + email + "</div><div>...</div>");
 
-    Model.globular.resourceService
+    Model.globular.authenticationService
       .authenticate(rqst)
-      .then((rsp: resource.AuthenticateRsp) => {
+      .then((rsp: authentication.AuthenticateRsp) => {
         // Here I will set the token in the localstorage.
         let token = rsp.getToken();
         let decoded = jwt(token);

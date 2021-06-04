@@ -184,35 +184,35 @@ export class ApplicationsPanel extends HTMLElement {
             for (var i = 0; i < infos.length; i++) {
                 let application = infos[i]
                 let html = `
-                <div id="${application._id}_div" class="application-div">
+                <div id="${application.getId()}_div" class="application-div">
                     <paper-ripple recenters></paper-ripple>
-                    <img id="${application._id}_img"></img>
-                    <span id="${application._id}_span"></span>
-                    <a id="${application._id}_lnk" style="display: none;"></a>
+                    <img id="${application.getId()}_img"></img>
+                    <span id="${application.getId()}_span"></span>
+                    <a id="${application.getId()}_lnk" style="display: none;"></a>
                 </div>
-                <paper-tooltip for="${application._id}_div" style="font-size: .85rem;" role="tooltip" tabindex="-1">${application.description}</paper-tooltip>
+                <paper-tooltip for="${application.getId()}_div" style="font-size: .85rem;" role="tooltip" tabindex="-1">${application.getDescription()}</paper-tooltip>
                 `
                 let container = this.shadowRoot.querySelector(".container")
                 container.appendChild(range.createContextualFragment(html))
-                let div_ = container.querySelector(`#${application._id}_div`)
+                let div_ = container.querySelector(`#${application.getId()}_div`)
 
                 if (div_ != null) {
                     if (this.size == "normal") {
                         div_.classList.add("normal")
                     }
 
-                    let img = this.shadowRoot.getElementById(application._id + "_img")
-                    let lnk = this.shadowRoot.getElementById(application._id + "_lnk")
+                    let img = this.shadowRoot.getElementById(application.getId() + "_img")
+                    let lnk = this.shadowRoot.getElementById(application.getId() + "_lnk")
                     var currentLocation = window.location;
-                    lnk.href = currentLocation.origin + application.path;
+                    lnk.href = currentLocation.origin + application.getPath();
 
-                    let title = this.shadowRoot.getElementById(application._id + "_span")
-                    img.src = application.icon;
-                    title.innerHTML = application._id;
-                    title.title = application._id;
+                    let title = this.shadowRoot.getElementById(application.getId() + "_span")
+                    img.src = application.getIcon();
+                    title.innerHTML = application.getId();
+                    title.title = application.getId();
                     
-                    if(application.alias.length > 0){
-                        title.innerHTML =application.alias
+                    if(application.getAlias().length > 0){
+                        title.innerHTML =application.getAlias()
                     }
 
                     div_.onclick = () => {
@@ -220,7 +220,7 @@ export class ApplicationsPanel extends HTMLElement {
                     }
 
                     // Keep the image up to date.
-                    Application.eventHub.subscribe(`update_application_${application._id}_settings_evt`,
+                    Application.eventHub.subscribe(`update_application_${application.getId()}_settings_evt`,
                         (uuid) => {
 
                         },

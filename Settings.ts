@@ -1,4 +1,4 @@
-import { SetEmailResponse } from "globular-web-client/admin/admin_pb";
+//import { SetEmailResponse } from "globular-web-client/admin/admin_pb";
 import { ClearAllLogRqst, DeleteLogRqst, DeleteLogRsp, GetLogRqst, GetLogRsp, LogInfo } from "globular-web-client/log/log_pb";
 import { Account } from "./Account";
 import { Application } from "./Application";
