@@ -1,199 +1,10 @@
 import { Model } from "./Model";
 import { FindOneRqst, FindResp, FindRqst, ReplaceOneRqst, ReplaceOneRsp } from "globular-web-client/persistence/persistence_pb";
-import * as RessourceService from "globular-web-client/resource/resource_pb";
+import * as ResourceService from "globular-web-client/resource/resource_pb";
 import { mergeTypedArrays, uint8arrayToStringMethod } from "./Utility";
 import { GetThumbnailsResponse } from "globular-web-client/file/file_pb";
 import { Group } from "./Group";
 import { ApplicationView } from "./ApplicationView";
-
-/**
- * The session object will keep information about the
- * the account.
- */
-export enum SessionState {
-    Online,
-    Offline,
-    Away
-}
-
-export class Session extends Model {
-    private _id: string;
-    private account: Account;
-
-    private state_: SessionState;
-    private lastStateTime: Date; // Keep track ot the last session state.
-
-    public get state(): SessionState {
-        return this.state_;
-    }
-
-    // Set the session state.
-    public set state(value: SessionState) {
-        this.state_ = value;
-        this.lastStateTime = new Date();
-    }
-
-    // The link to the account.
-    constructor(account: Account, state: number = 1, lastStateTime?: string) {
-        super();
-        this.account = account;
-        this._id = this.account.id;
-
-        if (state == 0) {
-            this.state = SessionState.Online;
-        } else if (state == 1) {
-            this.state = SessionState.Offline;
-        } else if (state == 2) {
-            this.state = SessionState.Away;
-        }
-
-        if (lastStateTime != undefined) {
-            this.lastStateTime = new Date(lastStateTime)
-        }
-
-        // So here I will lisen on session change event and keep this object with it.
-        Model.eventHub.subscribe(`session_state_${this.account.id}_change_event`,
-            (uuid: string) => {
-                /** nothing special here... */
-            },
-            (evt: string) => {
-                let obj = JSON.parse(evt)
-                // update the session state from the network.
-                this.state_ = obj.state;
-                this.lastStateTime = new Date(obj.lastStateTime);
-
-            }, false)
-
-        Model.eventHub.subscribe(`__session_state_${this.account.id}_change_event__`,
-            (uuid: string) => {
-                /** nothing special here... */
-            },
-            (obj: any) => {
-                console.log("session state was change...")
-                // Set the object state from the object and save it...
-                this.state_ = obj.state;
-                this.lastStateTime = obj.lastStateTime;
-
-                this.save(() => {
-                    /* nothing here*/
-                }, (err: any) => {
-                    ApplicationView.displayMessage(err, 3000)
-                })
-            }, true)
-    }
-
-    initData(initCallback: () => void, errorCallback: (err: any) => void) {
-
-        // In that case I will get the values from the database...
-        let rqst = new FindOneRqst();
-        rqst.setId("local_resource");
-        if (this.account.id == "sa") {
-            rqst.setDatabase("local_resource");
-        } else {
-            let db = this.account.name.split("@").join("_").split(".").join("_") + "_db";
-            rqst.setDatabase(db);
-        }
-
-        rqst.setCollection("Sessions");
-
-        // Find the account by id or by name... both must be unique in the backend.
-        rqst.setQuery(`{"_id":"${this.account.id}"}`); // search by name and not id... the id will be retreived.
-
-        // call persist data
-        Model.globular.persistenceService
-            .findOne(rqst, {
-                token: localStorage.getItem("user_token"),
-                application: Model.application,
-                domain: Model.domain
-            })
-            .then((rsp: any) => {
-                let obj = rsp.getResult().toJavaScript()
-                this._id = obj._id;
-                this.state_ = obj.state;
-                this.lastStateTime = new Date(obj.lastStateTime);
-                Account.getAccount(this._id , 
-                    (account: Account)=>{
-                        // Here I will connect local event to react with interface element...
-                        this.account = account;
-
-                        initCallback()
-                    }, errorCallback)
-
-            })
-            .catch((err: any) => {
-                // In that case I will save defaut session values...
-                this.save(() => {
-                    initCallback()
-                }, errorCallback)
-            });
-    }
-
-    toString(): string {
-        // return the basic infomration to be store in the database.
-        let lastStateTime: String
-        if (typeof this.lastStateTime === 'string' || this.lastStateTime instanceof String){
-            lastStateTime = this.lastStateTime;
-        }else{
-            lastStateTime = this.lastStateTime.toISOString()
-        }
-        return `{"_id":"${this._id}", "state":${this.state.toString()}, "lastStateTime":"${lastStateTime}"}`
-    }
-
-    // Init from the db...
-    fromObject(obj: any) {
-        this._id = obj._id;
-        Account.getAccount(this._id, (account:Account)=>{this.account = account}, (err:any)=>{console.log(err)})
-
-        if (obj.state == 0) {
-            this.state = SessionState.Online;
-        } else if (obj.state == 1) {
-            this.state = SessionState.Offline;
-        } else if (obj.state == 2) {
-            this.state = SessionState.Away;
-        }
-        if (typeof obj.lastStateTime === 'string' || obj.lastStateTime instanceof String) {
-            obj.lastStateTime = new Date(obj.lastStateTime)
-        } else {
-            this.lastStateTime = obj.lastStateTime;
-        }
-    }
-
-    // Save session state in the databese.
-    save(onSave: () => void, onError: (err: any) => void) {
-        let rqst = new ReplaceOneRqst();
-        rqst.setId("local_resource");
-
-        if (this.account.id == "sa") {
-            rqst.setDatabase("local_resource");
-        } else {
-            let db = this.account.name.split("@").join("_").split(".").join("_") + "_db";
-            rqst.setDatabase(db);
-        }
-
-        let collection = "Sessions";
-        let data = this.toString();
-        rqst.setCollection(collection);
-        rqst.setQuery(`{"_id":"` + this.account.id + `"}`);
-        rqst.setValue(data);
-        rqst.setOptions(`[{"upsert": true}]`);
-
-        // call persist data
-        Model.globular.persistenceService
-            .replaceOne(rqst, {
-                token: localStorage.getItem("user_token"),
-                application: Model.application,
-                domain: Model.domain
-            })
-            .then((rsp: ReplaceOneRsp) => {
-                // Here I will return the value with it
-                Model.eventHub.publish(`session_state_${this._id}_change_event`, this.toString(), false)
-                onSave();
-            })
-            .catch((err: any) => {
-                onError(err);
-            });
-    }
-}
 
 /**
  * Basic account class that contain the user id and email.
@@ -205,11 +16,11 @@ export class Account extends Model {
     private groups_: Array<any>;
 
     // keep the session information.
-    private session_: Session;
-    public get session(): Session {
+    private session_: ResourceService.Session;
+    public get session(): ResourceService.Session {
         return this.session_;
     }
-    public set session(value: Session) {
+    public set session(value: ResourceService.Session) {
         this.session_ = value;
     }
 
@@ -328,47 +139,35 @@ export class Account extends Model {
         }
 
         if (Account.accounts[id] != null) {
-            if(id=="sa"||id=="guest"){
-                Account.accounts[id].session = new Session(Account.accounts[id], 1, new Date().toISOString())
-            }
             successCallback(Account.accounts[id]);
             return
         }
 
-
-        let rqst = new FindOneRqst();
-        rqst.setId("local_resource");
-        rqst.setDatabase("local_resource");
-
-        let collection = "Accounts";
-        rqst.setCollection(collection);
-
-        // Find the account by id or by name... both must be unique in the backend.
+        let rqst = new ResourceService.GetAccountsRqst
         rqst.setQuery(`{"$or":[{"_id":"${id}"},{"name":"${id}"} ]}`); // search by name and not id... the id will be retreived.
         rqst.setOptions(`[{"Projection":{"_id":1, "email":1, "name":1, "groups":1, "organizations":1, "roles":1}}]`);
 
-        // call persist data
-        Model.globular.persistenceService
-            .findOne(rqst, {
-                token: localStorage.getItem("user_token"),
-                application: Model.application,
-                domain: Model.domain
-            })
-            .then((rsp: any) => {
-                let data = rsp.getResult().toJavaScript();
-                let account = new Account(data._id, data.email, data.name)
-                account.initData(() => {
-                    Account.accounts[data._id] = account;
-                    // here I will initialyse groups...
-                    account.groups_ = data.groups;
+        let stream = Model.globular.resourceService.getAccounts(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+        let accounts_ = new Array<ResourceService.Account>();
 
+        stream.on("data", (rsp) => {
+            accounts_ = accounts_.concat(rsp.getAccountsList())
+        });
+
+        stream.on("status", (status) => {
+            if (status.code == 0) {
+                let data = accounts_[0]
+                let account = new Account(data.getId(), data.getEmail(), data.getName())
+                account.initData(() => {
+                    Account.accounts[data.getId()] = account;
+                    // here I will initialyse groups...
+                    account.groups_ = data.getGroupsList();
                     successCallback(account)
                 }, errorCallback)
-            })
-            .catch((err: any) => {
-                console.log(err)
-                errorCallback(err);
-            });
+            } else {
+                errorCallback(status.details);
+            }
+        })
     }
 
     /**
@@ -465,16 +264,20 @@ export class Account extends Model {
         successCallback: (results: any) => void,
         errorCallback: (err: any) => void
     ) {
+        // Nothing to read if the user is the sa
+        if (userName == "sa") {
+            successCallback([]);
+        }
+
         let rqst = new FindOneRqst();
-        rqst.setId("local_resource");
 
         // remove unwanted characters
-        if (userName == "sa") {
-            rqst.setDatabase("local_resource");
-        } else {
-            let db = userName.split("@").join("_").split(".").join("_") + "_db";
-            rqst.setDatabase(db);
-        }
+        let id = userName.split("@").join("_").split(".").join("_")
+        let db = id + "_db";
+
+        // set the connection id.
+        rqst.setId(id);
+        rqst.setDatabase(db);
 
         let collection = "user_data";
         rqst.setCollection(collection);
@@ -518,9 +321,6 @@ export class Account extends Model {
         }
         this.profilPicture = data["profilPicture_"];
 
-        // Create the empty session...
-        this.session = new Session(this);
-
     }
 
     /**
@@ -529,6 +329,7 @@ export class Account extends Model {
      */
     initData(callback: (account: Account) => void, onError: (err: any) => void) {
         let userName = this.name
+
 
         // Retreive user data... 
         Account.readOneUserData(
@@ -559,15 +360,21 @@ export class Account extends Model {
                 Account.getContacts(this, `{}`,
                     (contacts: []) => {
                         // Set the list of contacts (received invitation, sent invitation and actual contact id's)
-                        this.session.initData(() => {
+                        /*
+                         this.session.initData(() => {
                             callback(this);
                         }, onError)
+                        */
+                        callback(this);
 
                     },
                     (err: any) => {
+                        /*
                         this.session.initData(() => {
                             callback(this);
                         }, onError)
+                        */
+                        callback(this);
                     })
 
 
@@ -576,10 +383,13 @@ export class Account extends Model {
                 this.hasData = false;
                 // onError(err);
                 // Call success callback ...
-                if (callback != undefined && this.session!=null) {
+                if (callback != undefined && this.session != null) {
+                    /*
                     this.session.initData(() => {
                         callback(this);
                     }, onError)
+                    */
+                    callback(this);
                 }
             }
         );
@@ -607,15 +417,20 @@ export class Account extends Model {
     ) {
         let userName = this.name;
 
-        let rqst = new ReplaceOneRqst();
+        // nothing to do in case of the sa
         if (userName == "sa") {
-            rqst.setId("local_resource");
-            rqst.setDatabase("local_resource");
-        } else {
-            let db = userName.split("@").join("_").split(".").join("_") + "_db";
-            rqst.setId(db);
-            rqst.setDatabase(db);
+            callback(this);
+            return
         }
+
+        // save the user_data
+        let rqst = new ReplaceOneRqst();
+        let id = userName.split("@").join("_").split(".").join("_");
+        let db = id + "_db";
+
+        // set the connection infos,
+        rqst.setId(id);
+        rqst.setDatabase(db);
 
         let collection = "user_data";
         // save only user data and not the how user info...
@@ -642,7 +457,7 @@ export class Account extends Model {
             });
     }
 
-    toString():string{
+    toString(): string {
         return JSON.stringify({ _id: this.id, firstName_: this.firstName, lastName_: this.lastName, middleName_: this.middleName, profilPicture_: this.profilPicture });
     }
 
@@ -650,15 +465,19 @@ export class Account extends Model {
 
         // Insert the notification in the db.
         let rqst = new FindRqst();
-        rqst.setId("local_resource");
 
         if (account.id == "sa") {
-            rqst.setId("local_resource");
-
-        } else {
-            let db = account.name.split("@").join("_").split(".").join("_") + "_db";
-            rqst.setDatabase(db);
+            callback([]);
+            return;
         }
+
+        // set connection infos.
+        let id = account.name.split("@").join("_").split(".").join("_")
+        let db = id + "_db";
+
+        rqst.setId(id);
+        rqst.setDatabase(db);
+
 
         rqst.setCollection("Contacts");
         rqst.setQuery(query);
@@ -689,14 +508,19 @@ export class Account extends Model {
 
     public static setContact(from: Account, status_from: string, to: Account, status_to: string, successCallback: () => void, errorCallback: (err: any) => void) {
         // So here I will save the contact invitation into pending contact invitation collection...
-        let rqst = new ReplaceOneRqst();
-        rqst.setId("local_resource");
+
         if (from.id == "sa") {
-            rqst.setDatabase("local_resource");
-        } else {
-            let db = from.name.split("@").join("_").split(".").join("_") + "_db";
-            rqst.setDatabase(db);
+            successCallback() // nothing here.
+            return
         }
+
+        let rqst = new ReplaceOneRqst();
+
+        // set connection id.
+        let id = from.name.split("@").join("_").split(".").join("_");
+        let db = id + "_db";
+        rqst.setId(id);
+        rqst.setDatabase(db);
 
         // Keep track of pending sended invitations.
         let collection = "Contacts";
@@ -719,16 +543,18 @@ export class Account extends Model {
                 // So Here I will send network event...
                 Model.eventHub.publish(status_from + "_" + from.id + "_evt", sentInvitation, false)
 
+                if (to.id == "sa") {
+                    successCallback()
+                    return
+                }
+
                 // Here I will return the value with it
                 let rqst = new ReplaceOneRqst();
-                rqst.setId("local_resource");
 
-                if (to.id == "sa") {
-                    rqst.setDatabase("local_resource");
-                } else {
-                    let db = to.name.split("@").join("_").split(".").join("_") + "_db";
-                    rqst.setDatabase(db);
-                }
+                let id = to.name.split("@").join("_").split(".").join("_");
+                let db = id + "_db";
+                rqst.setId(id);
+                rqst.setDatabase(db);
 
                 // Keep track of pending sended invitations.
                 let collection = "Contacts";
@@ -759,11 +585,11 @@ export class Account extends Model {
 
     // Get all account data...
     static getAccounts(query: string, callback: (accounts: Array<Account>) => void, errorCallback: (err: any) => void) {
-        let rqst = new RessourceService.GetAccountsRqst
+        let rqst = new ResourceService.GetAccountsRqst
         rqst.setQuery(query)
 
         let stream = Model.globular.resourceService.getAccounts(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
-        let accounts_ = new Array<RessourceService.Account>();
+        let accounts_ = new Array<ResourceService.Account>();
 
         stream.on("data", (rsp) => {
             accounts_ = accounts_.concat(rsp.getAccountsList())

@@ -4,7 +4,7 @@ import * as authentication from "globular-web-client/authentication/authenticati
 //import 'source-map-support/register' // That resolve the error map and give real source name and plage in function.
 import * as jwt from "jwt-decode";
 import { ApplicationView } from "./ApplicationView";
-import { Account, SessionState, Session } from "./Account";
+import { Account } from "./Account";
 import { NotificationType, Notification } from "./Notification";
 
 import {
@@ -13,7 +13,10 @@ import {
   FindResp,
   UpdateOneRqst,
   UpdateOneRsp,
-  DeleteOneRqst
+  DeleteOneRqst,
+  CreateConnectionRqst,
+  Connection,
+  StoreType
 } from "globular-web-client/persistence/persistence_pb";
 import { v4 as uuidv4 } from "uuid";
 import { mergeTypedArrays, uint8arrayToStringMethod } from "./Utility";
@@ -147,7 +150,7 @@ export class Application extends Model {
     // remove
     let url = window.location.toString()
     url = url.replace("index.html", "")
-    getFileConfig( url + "config.json",
+    getFileConfig(url + "config.json",
       (config: any) => {
         callback(config)
       }, errorCallback)
@@ -169,34 +172,34 @@ export class Application extends Model {
 
       // So here I will intercept all error and log it on the server log.
       // This error will be available in the setting -> error(s)
-      window.onerror = (message, source, lineno, colno, error) => { 
+      window.onerror = (message, source, lineno, colno, error) => {
         let info = new LogInfo
-        info.setDate(Math.trunc(Date.now()/1000))
+        info.setDate(Math.trunc(Date.now() / 1000))
         info.setLevel(LogLevel.ERROR_MESSAGE)
         info.setApplication(Application.application)
         info.setUserid("")
         info.setUsername("")
-        if(this.account != undefined){
+        if (this.account != undefined) {
           info.setUserid(this.account.id)
           info.setUsername(this.account.name)
         }
-        
+
         info.setMethod(error.name + " " + error.message)
         info.setMessage(error.stack.toString())
 
         let rqst = new LogRqst
         rqst.setInfo(info)
-        
+
         Model.globular.logService.log(rqst, {
           token: localStorage.getItem("user_token"),
           application: Model.application,
           domain: Model.domain,
-        }).then((rsp:LogRsp)=>{
+        }).then((rsp: LogRsp) => {
           console.log("info was log!")
         })
-        .catch((err:any)=>{
-           ApplicationView.displayMessage(err, 3000)
-        })
+          .catch((err: any) => {
+            ApplicationView.displayMessage(err, 3000)
+          })
 
       };
 
@@ -281,12 +284,12 @@ export class Application extends Model {
           this.register_event_listener = uuid;
         },
         (version: string) => {
-         
+
           if (this.account == undefined) {
             // reload the page...
-             location.reload();
-          }else{
-            
+            location.reload();
+          } else {
+
             // 
             ApplicationView.displayMessage(`
             <div style="display: flex; flex-direction: column">
@@ -386,12 +389,11 @@ export class Application extends Model {
         (notification: any) => {
           notification = Notification.fromObject(notification);
           let rqst = new DeleteOneRqst();
-
           if (this.account.id == "sa") {
-            rqst.setId("local_resource");
-            rqst.setDatabase("local_resource");
+            return
           } else {
-            let db = this.account.name.split("@").join("_").split(".").join("_") + "_db";
+            let id = this.account.name.split("@").join("_").split(".").join("_")
+            let db = id + "_db";
             rqst.setId(db);
             rqst.setDatabase(db);
           }
@@ -516,17 +518,17 @@ export class Application extends Model {
       application: Model.application.length > 0 ? Model.application : Model.globular.config.IndexApplication,
       domain: Model.domain,
     });
-  
+
     let applications = new Array<resource.Application>();
-  
+
     stream.on("data", (rsp: resource.GetApplicationsRsp) => {
       applications = applications.concat(rsp.getApplicationsList());
     });
-  
+
     stream.on("status", (status) => {
       if (status.code === 0) {
 
-        Application.infos = new Map<string, any>();
+        Application.infos = new Map<string, resource.Application>();
         for (var i = 0; i < applications.length; i++) {
           // Keep application info up to date.
           Application.eventHub.subscribe(`update_application_${applications[i].getId()}_settings_evt`,
@@ -536,8 +538,11 @@ export class Application extends Model {
             (__application_info__: string) => {
               // Set the icon...
               let info = JSON.parse(__application_info__)
+
               Application.infos.set(applications[i].getId(), info);
             }, false)
+
+          Application.infos.set(applications[i].getId(), applications[i]);
         }
 
         callback(applications);
@@ -545,37 +550,6 @@ export class Application extends Model {
         errorCallback({ message: status.details });
       }
     });
-/*
-    let rqst = new resource.GetApplicationsRqst();
-
-    Model.globular.resourceService
-      .getAllApplicationsInfo(rqst, {})
-      .then((rsp: resource.GetAllApplicationsInfoRsp) => {
-        let infos = [];
-        Application.infos = new Map<string, any>();
-        for (var i = 0; i < rsp.getApplicationsList().length; i++) {
-          let info = rsp.getApplicationsList()[i].toJavaScript();
-          let id = <string>info["_id"];
-          Application.infos.set(id, info);
-          infos.push(info);
-
-          // Keep application info up to date.
-          Application.eventHub.subscribe(`update_application_${id}_settings_evt`,
-            (uuid: string) => {
-
-            },
-            (__application_info__: string) => {
-              // Set the icon...
-              let info = JSON.parse(__application_info__)
-              Application.infos.set(id, info);
-
-            }, false)
-        }
-
-        callback(infos);
-      })
-      .catch(errorCallback);
-      */
   }
 
   /**
@@ -633,7 +607,7 @@ export class Application extends Model {
         let token = rsp.getToken();
 
         let decoded = jwt(token);
-        let id =  (<any>decoded).id;
+        let id = (<any>decoded).id;
         let userName = (<any>decoded).username;
         let email = (<any>decoded).email;
 
@@ -675,6 +649,7 @@ export class Application extends Model {
         parseInt(localStorage.getItem("token_expired"), 10) <
         Math.floor(Date.now() / 1000);
       if (isExpired) {
+        console.log("need to refresh token")
         this.refreshToken(
           (account: Account) => {
             this.account = account;
@@ -769,7 +744,8 @@ export class Application extends Model {
         Account.getAccount(contact._id, (account: Account) => {
 
           const obj = JSON.parse(evt)
-          account.session = new Session(contact._id, obj.state, obj.lastStateTime);
+          // account.session = new Session(contact._id, obj.state, obj.lastStateTime);
+          console.log("set account session state with ", obj)
 
 
           // Here I will ask the user for confirmation before actually delete the contact informations.
@@ -822,6 +798,7 @@ export class Application extends Model {
     Model.globular.authenticationService
       .authenticate(rqst)
       .then((rsp: authentication.AuthenticateRsp) => {
+
         // Here I will set the token in the localstorage.
         let token = rsp.getToken();
         let decoded = jwt(token);
@@ -836,69 +813,118 @@ export class Application extends Model {
         localStorage.setItem("user_name", userName);
         localStorage.setItem("user_id", id);
 
-        Account.getAccount(id, (account: Account) => {
-          this.account = account;
-          this.account.session.state = SessionState.Online;
-          onLogin(account);
+        let rqst = new CreateConnectionRqst
+        let connectionId = userName.split("@").join("_").split(".").join("_");
 
-          // When new contact is accepted.
-          Model.eventHub.subscribe("accepted_" + account.id + "_evt",
-            (uuid) => { },
-            (evt) => {
-              let invitation = JSON.parse(evt);
-              this.addContactListener(invitation)
-            },
-            false)
+        // So here i will open the use database connection.
+        let connection = new Connection
+        connection.setId(connectionId)
+        connection.setUser(id)
+        connection.setPassword(password)
+        connection.setStore(StoreType.MONGO)
+        connection.setName(id + "_db")
+        connection.setPort(27017)
+        connection.setTimeout(60)
+        connection.setHost(Application.domain)
 
-          Model.eventHub.subscribe("deleted_" + account.id + "_evt",
-            (uuid) => { },
-            (evt) => {
-              let invitation = JSON.parse(evt);
-              Model.eventHub.unSubscribe(`session_state_${invitation._id}_change_event`, this.contactsListener[invitation._id])
-            },
-            false)
+        rqst.setConnection(connection)
+        Model.globular.persistenceService.createConnection(rqst, {
+          token: localStorage.getItem("user_token"),
+          application: Model.application,
+          domain: Model.domain
+        }).then(() => {
 
+          Account.getAccount(id, (account: Account) => {
+            this.account = account;
 
+            // sa dosent have any conversation or any contact...
+            if (this.account.id == "sa") {
+              this.view.resume();
+              return
+            }
 
-          Model.eventHub.publish(`__session_state_${this.account.id}_change_event__`, this.account.session, true)
-
-          // retreive the contacts
-          Account.getContacts(this.account, `{"status":"accepted"}`, (contacts: Array<Account>) => {
-            contacts.forEach(contact => {
-              this.addContactListener(contact)
+            // so here I will get the session for the account...
+            let rqst = new resource.GetSessionRequest
+            rqst.setAccountid(id)
+            Model.globular.resourceService.getSession(rqst, {
+              token: localStorage.getItem("user_token"),
+              application: Model.application,
+              domain: Model.domain
             })
-          },
-            (err: any) => {
-              ApplicationView.displayMessage(err, 3000)
-            })
+              .then((rsp: resource.GetSessionResponse) => {
 
-          // Retreive conversations...
-          ConversationManager.loadConversation(this.account,
-            (conversations: Conversations) => {
-              Model.eventHub.publish("__load_conversations_event__", conversations.getConversationsList(), true)
-            },
-            (err: any) => {
-              /* this.displayMessage(err, 3000)*/
-              /** no conversation found... */
-            })
+                console.log("-------------> Here I'am! ", account.id)
+                this.account.session = rsp.getSession()
+                onLogin(account);
 
-          // Connect to to the conversation manager.
-          ConversationManager.connect(
-            () => {
-              /* Nothing to do here **/
-            }, (err: any) => {
-              ApplicationView.displayMessage(err, 3000)
-            })
+                // When new contact is accepted.
+                Model.eventHub.subscribe("accepted_" + account.id + "_evt",
+                  (uuid) => { },
+                  (evt) => {
+                    let invitation = JSON.parse(evt);
+                    this.addContactListener(invitation)
+                  },
+                  false)
 
-          this.view.resume();
+                Model.eventHub.subscribe("deleted_" + account.id + "_evt",
+                  (uuid) => { },
+                  (evt) => {
+                    let invitation = JSON.parse(evt);
+                    Model.eventHub.unSubscribe(`session_state_${invitation._id}_change_event`, this.contactsListener[invitation._id])
+                  },
+                  false)
 
-          // Start refresh as needed.
-          this.startRefreshToken();
 
-        }, (err: any) => {
-          this.view.resume();
-          onError(err);
+                Model.eventHub.publish(`__session_state_${this.account.id}_change_event__`, this.account.session, true)
+
+                // retreive the contacts
+                Account.getContacts(this.account, `{"status":"accepted"}`, (contacts: Array<Account>) => {
+                  contacts.forEach(contact => {
+                    this.addContactListener(contact)
+                  })
+                },
+                  (err: any) => {
+                    ApplicationView.displayMessage(err, 3000)
+                  })
+
+                // Retreive conversations...
+                ConversationManager.loadConversation(this.account,
+                  (conversations: Conversations) => {
+                    Model.eventHub.publish("__load_conversations_event__", conversations.getConversationsList(), true)
+                  },
+                  (err: any) => {
+                    /* this.displayMessage(err, 3000)*/
+                    /** no conversation found... */
+                  })
+
+                // Connect to to the conversation manager.
+                ConversationManager.connect(
+                  () => {
+                    /* Nothing to do here **/
+                  }, (err: any) => {
+                    ApplicationView.displayMessage(err, 3000)
+                  })
+
+                this.view.resume();
+
+                // Start refresh as needed.
+                this.startRefreshToken();
+
+              }).catch((err: any) => {
+                console.log(err)
+              })
+
+
+          }, (err: any) => {
+            this.view.resume();
+            onError(err);
+          })
+        }).catch((err: any) => {
+          console.log(err)
         })
+
+
+
       })
       .catch((err) => {
         this.view.resume();
@@ -918,7 +944,7 @@ export class Application extends Model {
     Model.eventHub.publish("logout_event", this.account, true);
 
     // So here I will set the account session state to onlise.
-    this.account.session.state = SessionState.Offline;
+    this.account.session.setState(resource.SessionState.OFFLINE);
     Model.eventHub.publish(`__session_state_${this.account.id}_change_event__`, this.account.session, true)
 
     // Set room to undefined.
@@ -1011,16 +1037,10 @@ export class Application extends Model {
     value = `{"$set":{${value}}}`
 
     // Get the actual value and set values from info.
-    const rqst = new UpdateOneRqst
-    rqst.setId("local_resource");
-    rqst.setDatabase("local_resource");
-    rqst.setCollection("Applications");
-    rqst.setQuery(`{"_id":"${id}"}`);
-    rqst.setValue(value);
-    rqst.setOptions(`[{"upsert": true}]`)
-
-    // Update the applaction general informations.
-    Model.globular.persistenceService.updateOne(rqst, {
+    const rqst = new resource.UpdateApplicationRqst
+    rqst.setApplicationid(id)
+    rqst.setValues(value)
+    Model.globular.resourceService.updateApplication(rqst, {
       token: localStorage.getItem("user_token"),
       application: Model.application,
       domain: Model.domain,
@@ -1078,37 +1098,25 @@ export class Application extends Model {
     onError: (err: any) => void
   ) {
     // first of all I will save the notificaiton.
+    let rqst = new resource.CreateNotificationRqst
 
-    // Insert the notification in the db.
-    let rqst = new InsertOneRqst();
-
+    // init the notification infos.
+    let notification_ = new resource.Notification
+    notification_.setDate(notification.date.getTime() / 1000)
+    notification_.setId(notification.id)
+    notification_.setMessage(notification.text)
     if (notification.type == NotificationType.Application) {
-      let db: string;
-      db = Model.application + "_db";
-      console.log(Application.getApplicationInfo(this.name));
-      notification.sender = JSON.stringify(
+      notification_.setSender(JSON.stringify(
         Application.getApplicationInfo(this.name)
-      );
-      rqst.setId(db);
-      rqst.setDatabase(db);
+      ));
     } else {
-      rqst.setId("local_resource");
-      if (this.account.id == "sa") {
-        rqst.setDatabase("local_resource");
-      } else {
-        let db = notification.recipient.split("@").join("_").split(".").join("_") + "_db";
-        rqst.setDatabase(db);
-      }
-      // attach account informations.
-      notification.sender = this.account.toString();
+      notification_.setSender(this.account.toString())
     }
 
-    rqst.setCollection("Notifications");
-    rqst.setData(notification.toString());
+    rqst.setNotification(notification_)
 
-    // Save the nofiction on the server.
-    Model.globular.persistenceService
-      .insertOne(rqst, {
+    Model.globular.resourceService
+      .createNotification(rqst, {
         token: localStorage.getItem("user_token"),
         application: Model.application,
         domain: Model.domain,
@@ -1139,56 +1147,42 @@ export class Application extends Model {
     callback: (notifications: Array<Notification>) => void,
     errorCallback: (err: any) => void
   ) {
-    // So here I will get the list of notification for the given type.
-    let db: string;
-    let query: string;
 
-    // Insert the notification in the db.
-    let rqst = new FindRqst();
+    // So here I will get the list of notification for the given type.
+    let rqst = new resource.GetNotificationsRqst
 
     if (type == NotificationType.Application) {
-      db = Model.application + "_db";
-      query = `{"_recipient":"${Model.application}"}`;
-      rqst.setId(db);
-      rqst.setDatabase(db);
+      rqst.setRecipient(Model.application)
     } else {
       if (this.account.id == "sa") {
-        rqst.setId("local_resource");
-        rqst.setDatabase("local_resource");
+        callback([]);
+        return
       } else {
-        let db = this.account.name.split("@").join("_").split(".").join("_") + "_db";
-        rqst.setId(db);
-        rqst.setDatabase(db);
+        rqst.setRecipient(this.account.id)
       }
-      query = `{"_recipient":"${this.account.name}"}`; // here I made use of the account name not it id as recipiant...
     }
 
-    rqst.setCollection("Notifications");
-
-    rqst.setQuery(query);
-    let stream = Model.globular.persistenceService.find(rqst, {
+    let stream = Model.globular.resourceService.getNotifications(rqst, {
       token: localStorage.getItem("user_token"),
       application: Model.application,
       domain: Model.domain,
     });
 
-    let data: any;
-    data = [];
+    let notifications = new Array<resource.Notification>();
 
-    stream.on("data", (rsp: FindResp) => {
-      data = mergeTypedArrays(data, rsp.getData());
+    stream.on("data", (rsp: resource.GetNotificationsRsp) => {
+      // data = mergeTypedArrays(data, rsp.getData());
+      notifications.concat(rsp.getNotificationsList())
     });
 
     stream.on("status", (status) => {
       if (status.code == 0) {
-        uint8arrayToStringMethod(data, (str: string) => {
-          let objects = JSON.parse(str);
-          let notifications = new Array<Notification>();
-          for (var i = 0; i < objects.length; i++) {
-            notifications.push(Notification.fromObject(objects[i]));
-          }
-          callback(notifications);
-        });
+        let notifications_ = new Array<Notification>();
+        for (var i = 0; i < notifications.length; i++) {
+          notifications_.push(Notification.fromObject(notifications[i]));
+        }
+        callback(notifications_);
+
       } else {
         // In case of error I will return an empty array
         callback([]);
@@ -1201,7 +1195,9 @@ export class Application extends Model {
   /**
    * Remove all notification.
    */
-  clearNotifications(type: NotificationType) { }
+  clearNotifications(type: NotificationType) {
+
+  }
 
   ///////////////////////////////////////////////////////////////////
   // Invite to a conversation.

@@ -775,7 +775,8 @@ export class FilesView extends HTMLElement {
             let url = evt.dataTransfer.getData("Url");
 
             // TODO get it from the configuration object globular.config["Data"]
-            let root = Model.globular.config["DataPath"]
+            // Model.globular.config["DataPath"]
+            let root = "/var/globular/data" 
             //"/home/dave/go/src/github.com/globulario/Globular/data"
 
             // Depending of your need... or the hour of the day.

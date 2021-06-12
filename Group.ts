@@ -1,6 +1,7 @@
 import { FindOneRqst, ReplaceOneRqst, ReplaceOneRsp } from "globular-web-client/persistence/persistence_pb";
 import { Model } from "./Model";
 import {Account} from "./Account"
+import * as resource  from "globular-web-client/resource/resource_pb";
 
 /**
  * Group are use to aggregate accounts.
@@ -36,24 +37,18 @@ export class Group extends Model {
   
     initData(initCallback:()=>void, errorCallback: (err: any)=>void) {
 
-        // In that case I will get the values from the database...
-        let rqst = new FindOneRqst();
-        rqst.setId("local_resource");
-        rqst.setDatabase("local_resource");
-        rqst.setCollection("Groups");
+        let rqst = new resource.GetGroupsRqst
+        rqst.setQuery(`{"_id":"${this._id}"}`)
+        let stream = Model.globular.resourceService.getGroups(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+        let groups_ = new Array<resource.Group>();
 
-        // Find the account by id or by name... both must be unique in the backend.
-        rqst.setQuery(`{"_id":"${this._id}"}`); // search by name and not id... the id will be retreived.
+        stream.on("data", (rsp) => {
+            groups_ = groups_.concat(rsp.getGroupsList())
+        });
 
-        // call persist data
-        Model.globular.persistenceService
-            .findOne(rqst, {
-                token: localStorage.getItem("user_token"),
-                application: Model.application,
-                domain: Model.domain
-            })
-            .then((rsp: any) => {
-                let obj = rsp.getResult().toJavaScript()
+        stream.on("status", (status) => {
+            if (status.code == 0) {
+                let obj = groups_[0]
                 this.fromObject(obj)
 
                 // keep in the local map.
@@ -61,8 +56,10 @@ export class Group extends Model {
 
                 // Here I will connect local event to react with interface element...
                 initCallback()
-            })
-            .catch(errorCallback);
+            }else{
+                errorCallback(status.details)
+            }
+        })
     }
 
     // Retreive a given group.
@@ -86,31 +83,26 @@ export class Group extends Model {
 
     // Save the group.
     save(successCallback:(g:Group)=>void, errorCallback:(err:any)=>void){
-        let rqst = new ReplaceOneRqst();
-        rqst.setId("local_resource");
-        rqst.setDatabase("local_resource");
-        let collection = "Groups";
-        let data = this.toString();
-        rqst.setCollection(collection);
-        rqst.setQuery(`{"_id":"` + this._id + `"}`);
-        rqst.setValue(data);
-        rqst.setOptions(`[{"upsert": true}]`);
 
-        // call persist data
-        Model.globular.persistenceService
-            .replaceOne(rqst, {
-                token: localStorage.getItem("user_token"),
-                application: Model.application,
-                domain: Model.domain
-            })
-            .then((rsp: ReplaceOneRsp) => {
-                // Here I will return the value with it
-                Model.eventHub.publish(`update_group_${this._id}_data_evt`, data, false)
-                successCallback(this);
-            })
-            .catch((err: any) => {
-                errorCallback(err);
-            });
+        let rqst = new resource.UpdateGroupRqst
+        rqst.setGroupid(this._id)
+        let data = this.toString();
+        rqst.setValues(data)
+
+        Model.globular.resourceService.updateGroup(rqst, {
+            token: localStorage.getItem("user_token"),
+            application: Model.application,
+            domain: Model.domain
+        })
+        .then((rsp: ReplaceOneRsp) => {
+            // Here I will return the value with it
+            Model.eventHub.publish(`update_group_${this._id}_data_evt`, data, false)
+            successCallback(this);
+        })
+        .catch((err: any) => {
+            errorCallback(err);
+        });
+
     }
 
     // Return the list of members as Account objects.

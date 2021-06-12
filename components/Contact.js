@@ -14,9 +14,6 @@ import '@polymer/iron-autogrow-textarea/iron-autogrow-textarea.js';
 import '@polymer/paper-tabs/paper-tabs.js';
 import '@polymer/paper-tabs/paper-tab.js';
 
-import { SessionState } from './Session'
-import { Autocomplete } from './Autocomplete'
-
 import { Menu } from './Menu';
 import { theme } from "./Theme";
 import { Account } from "../Account"
