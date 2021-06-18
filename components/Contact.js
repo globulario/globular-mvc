@@ -19,6 +19,7 @@ import { theme } from "./Theme";
 import { Account } from "../Account"
 import { Model } from "../Model"
 import { ApplicationView } from '../ApplicationView';
+import "./Autocomplete"
 
 /**
  * Login/Register functionality.
@@ -100,7 +101,7 @@ export class ContactsMenu extends Menu {
             </style>
             <div id="Contacts-div">
                 <div id="header" style="width: 100%;">
-                    <globular-autocomplete type="email" label="Search" id="invite_contact_input" width="${this.width - 10}" style="flex-grow: 1;"></globular-autocomplete>
+                    <globular-autocomplete type="email" label="Search Contact" id="invite_contact_input" width="${this.width - 10}" style="flex-grow: 1;"></globular-autocomplete>
                     <paper-tabs selected="0">
                         <paper-tab id="contacts-tab">
                             <span id="contacts-label">Contacts</span>
@@ -827,7 +828,6 @@ export class ContactCard extends HTMLElement {
 
     // Set the invite button...
     setInviteButton(onInviteConctact) {
-
         this.innerHtml = ""
         let range = document.createRange()
         this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.85em; width: 20px; align-self: flex-end;" id="invite_btn">Invite</paper-button>`))
