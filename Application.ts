@@ -8,10 +8,6 @@ import { Account } from "./Account";
 import { NotificationType, Notification } from "./Notification";
 
 import {
-  InsertOneRqst,
-  FindRqst,
-  FindResp,
-  UpdateOneRqst,
   UpdateOneRsp,
   DeleteOneRqst,
   CreateConnectionRqst,
@@ -23,6 +19,7 @@ import { mergeTypedArrays, uint8arrayToStringMethod } from "./Utility";
 import { ConversationManager } from "./Conversation";
 import { Conversations } from "globular-web-client/conversation/conversation_pb";
 import { LogInfo, LogLevel, LogRqst, LogRsp } from "globular-web-client/log/log_pb";
+import { Session, SessionState } from "./Session";
 
 // Get the configuration from url
 function getFileConfig(url: string, callback: (obj: any) => void, errorcallback: (err: any) => void) {
@@ -388,36 +385,7 @@ export class Application extends Model {
         },
         (notification: any) => {
           notification = Notification.fromObject(notification);
-          let rqst = new DeleteOneRqst();
-          if (this.account.id == "sa") {
-            return
-          } else {
-            let id = this.account.name.split("@").join("_").split(".").join("_")
-            let db = id + "_db";
-            rqst.setId(db);
-            rqst.setDatabase(db);
-          }
-
-          rqst.setCollection("Notifications");
-          rqst.setQuery(`{"_id":"${notification.id}"}`);
-          Model.globular.persistenceService
-            .deleteOne(rqst, {
-              token: localStorage.getItem("user_token"),
-              application: Model.application,
-              domain: Model.domain,
-            })
-            .then(() => {
-              // The notification is not deleted so I will send network event to remove it from
-              // the display.
-              Model.eventHub.publish(
-                notification.id + "_delete_notification_event",
-                notification.toString(),
-                false
-              );
-            })
-            .catch((err: any) => {
-              ApplicationView.displayMessage(err, 4000);
-            });
+          this.removeNotification(notification);
         },
         true
       );
@@ -735,7 +703,7 @@ export class Application extends Model {
 
   // Display message when contact state change.
   addContactListener(contact: any) {
-
+    
     Model.eventHub.subscribe(`session_state_${contact._id}_change_event`,
       (uuid: string) => {
         this.contactsListener[contact._id] = uuid;
@@ -844,75 +812,62 @@ export class Application extends Model {
             }
 
             // so here I will get the session for the account...
-            let rqst = new resource.GetSessionRequest
-            rqst.setAccountid(id)
-            Model.globular.resourceService.getSession(rqst, {
-              token: localStorage.getItem("user_token"),
-              application: Model.application,
-              domain: Model.domain
-            })
-              .then((rsp: resource.GetSessionResponse) => {
+            this.account.session = new Session(this.account, SessionState.Online, Math.floor(Date.now() / 1000))
+            onLogin(account);
 
-                console.log("-------------> Here I'am! ", account.id)
-                this.account.session = rsp.getSession()
-                onLogin(account);
+            // When new contact is accepted.
+            Model.eventHub.subscribe("accepted_" + account.id + "_evt",
+              (uuid) => { },
+              (evt) => {
+                let invitation = JSON.parse(evt);
+                this.addContactListener(invitation)
+              },
+              false)
 
-                // When new contact is accepted.
-                Model.eventHub.subscribe("accepted_" + account.id + "_evt",
-                  (uuid) => { },
-                  (evt) => {
-                    let invitation = JSON.parse(evt);
-                    this.addContactListener(invitation)
-                  },
-                  false)
-
-                Model.eventHub.subscribe("deleted_" + account.id + "_evt",
-                  (uuid) => { },
-                  (evt) => {
-                    let invitation = JSON.parse(evt);
-                    Model.eventHub.unSubscribe(`session_state_${invitation._id}_change_event`, this.contactsListener[invitation._id])
-                  },
-                  false)
+            Model.eventHub.subscribe("deleted_" + account.id + "_evt",
+              (uuid) => { },
+              (evt) => {
+                let invitation = JSON.parse(evt);
+                Model.eventHub.unSubscribe(`session_state_${invitation._id}_change_event`, this.contactsListener[invitation._id])
+              },
+              false)
 
 
-                Model.eventHub.publish(`__session_state_${this.account.id}_change_event__`, this.account.session, true)
+            Model.eventHub.publish(`__session_state_${this.account.id}_change_event__`, this.account.session, true)
 
-                // retreive the contacts
-                Account.getContacts(this.account, `{"status":"accepted"}`, (contacts: Array<Account>) => {
-                  contacts.forEach(contact => {
-                    this.addContactListener(contact)
-                  })
-                },
-                  (err: any) => {
-                    ApplicationView.displayMessage(err, 3000)
-                  })
-
-                // Retreive conversations...
-                ConversationManager.loadConversation(this.account,
-                  (conversations: Conversations) => {
-                    Model.eventHub.publish("__load_conversations_event__", conversations.getConversationsList(), true)
-                  },
-                  (err: any) => {
-                    /* this.displayMessage(err, 3000)*/
-                    /** no conversation found... */
-                  })
-
-                // Connect to to the conversation manager.
-                ConversationManager.connect(
-                  () => {
-                    /* Nothing to do here **/
-                  }, (err: any) => {
-                    ApplicationView.displayMessage(err, 3000)
-                  })
-
-                this.view.resume();
-
-                // Start refresh as needed.
-                this.startRefreshToken();
-
-              }).catch((err: any) => {
-                console.log(err)
+            // retreive the contacts
+            Account.getContacts(this.account, `{"status":"accepted"}`, (contacts: Array<Account>) => {
+              contacts.forEach(contact => {
+                this.addContactListener(contact)
               })
+            },
+              (err: any) => {
+                ApplicationView.displayMessage(err, 3000)
+              })
+
+            // Retreive conversations...
+            ConversationManager.loadConversation(this.account,
+              (conversations: Conversations) => {
+                Model.eventHub.publish("__load_conversations_event__", conversations.getConversationsList(), true)
+              },
+              (err: any) => {
+                /* this.displayMessage(err, 3000)*/
+                /** no conversation found... */
+              })
+
+            // Connect to to the conversation manager.
+            ConversationManager.connect(
+              () => {
+                /* Nothing to do here **/
+              }, (err: any) => {
+                ApplicationView.displayMessage(err, 3000)
+              })
+
+            this.view.resume();
+
+            // Start refresh as needed.
+            this.startRefreshToken();
+
 
 
           }, (err: any) => {
@@ -944,7 +899,8 @@ export class Application extends Model {
     Model.eventHub.publish("logout_event", this.account, true);
 
     // So here I will set the account session state to onlise.
-    this.account.session.setState(resource.SessionState.OFFLINE);
+    this.account.session.state = SessionState.Offline;
+
     Model.eventHub.publish(`__session_state_${this.account.id}_change_event__`, this.account.session, true)
 
     // Set room to undefined.
@@ -1102,15 +1058,16 @@ export class Application extends Model {
 
     // init the notification infos.
     let notification_ = new resource.Notification
-    notification_.setDate(notification.date.getTime() / 1000)
     notification_.setId(notification.id)
+    notification_.setDate(Math.floor(notification.date.getTime() / 1000))
     notification_.setMessage(notification.text)
+    notification_.setRecipient(notification.recipient)
     if (notification.type == NotificationType.Application) {
-      notification_.setSender(JSON.stringify(
-        Application.getApplicationInfo(this.name)
-      ));
+      notification_.setSender(Model.application)
+      notification_.setNotificationType(resource.NotificationType.APPLICATION_NOTIFICATION)
     } else {
-      notification_.setSender(this.account.toString())
+      notification_.setNotificationType(resource.NotificationType.USER_NOTIFICATION)
+      notification_.setSender(this.account.id)
     }
 
     rqst.setNotification(notification_)
@@ -1154,12 +1111,7 @@ export class Application extends Model {
     if (type == NotificationType.Application) {
       rqst.setRecipient(Model.application)
     } else {
-      if (this.account.id == "sa") {
-        callback([]);
-        return
-      } else {
-        rqst.setRecipient(this.account.id)
-      }
+      rqst.setRecipient(this.account.id)
     }
 
     let stream = Model.globular.resourceService.getNotifications(rqst, {
@@ -1171,17 +1123,22 @@ export class Application extends Model {
     let notifications = new Array<resource.Notification>();
 
     stream.on("data", (rsp: resource.GetNotificationsRsp) => {
-      // data = mergeTypedArrays(data, rsp.getData());
-      notifications.concat(rsp.getNotificationsList())
+      notifications = notifications.concat(rsp.getNotificationsList())
     });
 
     stream.on("status", (status) => {
       if (status.code == 0) {
         let notifications_ = new Array<Notification>();
         for (var i = 0; i < notifications.length; i++) {
-          notifications_.push(Notification.fromObject(notifications[i]));
+          // Here I will convert the notification from resource object to 
+          // my own Notification type.
+          let n = new Notification(notifications[i].getSender(), notifications[i].getNotificationType().valueOf(),notifications[i].getRecipient(), notifications[i].getMessage(), new Date(notifications[i].getDate() * 1000) )
+          n.id = notifications[i].getId();
+
+          notifications_.push(n);
         }
-        callback(notifications_);
+
+        callback(notifications_)
 
       } else {
         // In case of error I will return an empty array
@@ -1190,7 +1147,32 @@ export class Application extends Model {
     });
   }
 
-  removeNotification(notification: Notification) { }
+  removeNotification(notification: Notification) {
+    
+          let rqst = new resource.DeleteNotificationRqst
+
+          rqst.setId(notification.id)
+          rqst.setRecipient(notification.recipient)
+
+          Model.globular.resourceService
+            .deleteNotification(rqst, {
+              token: localStorage.getItem("user_token"),
+              application: Model.application,
+              domain: Model.domain,
+            })
+            .then(() => {
+              // The notification is not deleted so I will send network event to remove it from
+              // the display.
+              Model.eventHub.publish(
+                notification.id + "_delete_notification_event",
+                notification.toString(),
+                false
+              );
+            })
+            .catch((err: any) => {
+              ApplicationView.displayMessage(err, 4000);
+            });
+   }
 
   /**
    * Remove all notification.
@@ -1205,6 +1187,7 @@ export class Application extends Model {
   onInviteParticipant(evt: any) {
     // Create a user notification.
     let notification = new Notification(
+      this.account.id,
       NotificationType.User,
       evt["participant"],
       `
@@ -1236,6 +1219,7 @@ export class Application extends Model {
   onInviteContact(contact: Account) {
     // Create a user notification.
     let notification = new Notification(
+      this.account.id,
       NotificationType.User,
       contact.name,
       `
@@ -1267,6 +1251,7 @@ export class Application extends Model {
   onAcceptContactInvitation(contact: Account) {
     // Create a user notification.
     let notification = new Notification(
+      this.account.id,
       NotificationType.User,
       contact.name,
       `
@@ -1298,6 +1283,7 @@ export class Application extends Model {
   // Decline contact invitation.
   onDeclineContactInvitation(contact: Account) {
     let notification = new Notification(
+      this.account.id,
       NotificationType.User,
       contact.name,
       `
@@ -1329,6 +1315,7 @@ export class Application extends Model {
   // Revoke contact invitation.
   onRevokeContactInvitation(contact: Account) {
     let notification = new Notification(
+      this.account.id,
       NotificationType.User,
       contact.name,
       `
@@ -1360,6 +1347,7 @@ export class Application extends Model {
   // Delete contact invitation.
   onDeleteContact(contact: Account) {
     let notification = new Notification(
+      this.account.id,
       NotificationType.User,
       contact.name,
       `

@@ -427,7 +427,7 @@ export class NotificationMenu extends Menu {
         notificationDiv.onmouseover = () => {
             notificationDiv.style.transition
             notificationDiv.style.cursor = "pointer"
-            if (notification._type == 2) {
+            if (notification._type == 0) {
                 closeBtn.style.display = "block"
             }
         }
@@ -435,7 +435,7 @@ export class NotificationMenu extends Menu {
         notificationDiv.onmouseleave = () => {
             notificationDiv.style.backgroundColor = ""
             notificationDiv.style.cursor = "default"
-            if (notification._type == 2) {
+            if (notification._type == 0) {
                 closeBtn.style.display = "none"
             }
         }
@@ -448,13 +448,12 @@ export class NotificationMenu extends Menu {
             img.style.borderRadius = "0px"
             img.style.width = "24px"
             img.style.height = "24px"
-        } else if (notification._type == 2) {
+        } else if (notification._type == 0) {
             this.userNotificationsDiv.style.display = ""
-            let obj = JSON.parse(notification._sender)
             let img = this.shadowRoot.getElementById(`div_${notification._id}_img`)
             let ico = this.shadowRoot.getElementById(`div_${notification._id}_ico`)
             let span = this.shadowRoot.getElementById(`div_${notification._id}_span`)
-            Account.getAccount(obj._id, (account) => {
+            Account.getAccount(notification._sender, (account) => {
                 if (account.profilPicture_ != undefined) {
                     img.style.display = "block"
                     ico.style.display = "none"

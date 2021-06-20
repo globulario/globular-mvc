@@ -2,10 +2,8 @@ import { Model } from "./Model";
 import { FindOneRqst, FindResp, FindRqst, ReplaceOneRqst, ReplaceOneRsp } from "globular-web-client/persistence/persistence_pb";
 import * as ResourceService from "globular-web-client/resource/resource_pb";
 import { mergeTypedArrays, uint8arrayToStringMethod } from "./Utility";
-import { GetThumbnailsResponse } from "globular-web-client/file/file_pb";
 import { Group } from "./Group";
-import { ApplicationView } from "./ApplicationView";
-
+import { Session } from "./Session"
 /**
  * Basic account class that contain the user id and email.
  */
@@ -16,11 +14,11 @@ export class Account extends Model {
     private groups_: Array<any>;
 
     // keep the session information.
-    private session_: ResourceService.Session;
-    public get session(): ResourceService.Session {
+    private session_: Session;
+    public get session(): Session {
         return this.session_;
     }
-    public set session(value: ResourceService.Session) {
+    public set session(value: Session) {
         this.session_ = value;
     }
 
@@ -122,20 +120,6 @@ export class Account extends Model {
         if (Account.accounts == null) {
             // Set the accouts map
             Account.accounts = {}
-
-            // Set the defaut account...
-
-            // The super administrator
-            let sa = new Account("sa", Model.globular.config.AdminEmail, "sa")
-            sa.firstName = "Super"
-            sa.lastName = "Administrator"
-            Account.accounts["sa"] = sa;
-
-            // The limited guest account
-            let guest = new Account("guest", Model.globular.config.AdminEmail, "guest")
-            guest.firstName = "Anonymous"
-            guest.lastName = "User"
-            Account.accounts["guest"] = guest;
         }
 
         if (Account.accounts[id] != null) {
@@ -330,7 +314,6 @@ export class Account extends Model {
     initData(callback: (account: Account) => void, onError: (err: any) => void) {
         let userName = this.name
 
-
         // Retreive user data... 
         Account.readOneUserData(
             `{"$or":[{"_id":"${this.id}"},{"name":"${this.id}"} ]}`, // The query is made on the user database and not local_ressource Accounts here so name is name_ here
@@ -356,24 +339,24 @@ export class Account extends Model {
 
                 // Keep in the local map...
                 Account.setAccount(this)
-
                 Account.getContacts(this, `{}`,
                     (contacts: []) => {
                         // Set the list of contacts (received invitation, sent invitation and actual contact id's)
-                        /*
-                         this.session.initData(() => {
+                        if (this.session != null) {
+                            this.session.initData(() => {
+                                callback(this);
+                            }, onError)
+                        } else {
+                            // call it onnce.
                             callback(this);
-                        }, onError)
-                        */
-                        callback(this);
+                        }
+
 
                     },
                     (err: any) => {
-                        /*
                         this.session.initData(() => {
                             callback(this);
                         }, onError)
-                        */
                         callback(this);
                     })
 
@@ -384,11 +367,9 @@ export class Account extends Model {
                 // onError(err);
                 // Call success callback ...
                 if (callback != undefined && this.session != null) {
-                    /*
                     this.session.initData(() => {
                         callback(this);
                     }, onError)
-                    */
                     callback(this);
                 }
             }
@@ -478,7 +459,6 @@ export class Account extends Model {
         rqst.setId(id);
         rqst.setDatabase(db);
 
-
         rqst.setCollection("Contacts");
         rqst.setQuery(query);
         let stream = Model.globular.persistenceService.find(rqst, {
@@ -507,80 +487,52 @@ export class Account extends Model {
     }
 
     public static setContact(from: Account, status_from: string, to: Account, status_to: string, successCallback: () => void, errorCallback: (err: any) => void) {
+        
         // So here I will save the contact invitation into pending contact invitation collection...
+        let rqst = new ResourceService.SetAccountContactRqst
+        rqst.setAccountid(from.id)
 
-        if (from.id == "sa") {
-            successCallback() // nothing here.
-            return
-        }
+        let contact = new ResourceService.Contact
+        contact.setId(to.id)
+        contact.setStatus(status_from)
+        contact.setInvitationtime(Math.round(Date.now() / 1000))
+        rqst.setContact(contact)
 
-        let rqst = new ReplaceOneRqst();
-
-        // set connection id.
-        let id = from.name.split("@").join("_").split(".").join("_");
-        let db = id + "_db";
-        rqst.setId(id);
-        rqst.setDatabase(db);
-
-        // Keep track of pending sended invitations.
-        let collection = "Contacts";
-        rqst.setCollection(collection);
-
-        rqst.setQuery(`{"_id":"${to.id}"}`);
-        let sentInvitation = `{"_id":"${to.id}", "invitationTime":${new Date().getTime()}, "status":"${status_from}"}`
-        rqst.setValue(sentInvitation);
-        rqst.setOptions(`[{"upsert": true}]`);
-
-        // call persist data
-        Model.globular.persistenceService
-            .replaceOne(rqst, {
-                token: localStorage.getItem("user_token"),
-                application: Model.application,
-                domain: Model.domain
-            })
-            .then((rsp: ReplaceOneRsp) => {
-
-                // So Here I will send network event...
+        Model.globular.resourceService.setAccountContact(rqst, {
+            token: localStorage.getItem("user_token"),
+            application: Model.application,
+            domain: Model.domain
+        })
+            .then((rsp: ResourceService.SetAccountContactRsp) => {
+                let sentInvitation = `{"_id":"${to.id}", "invitationTime":${Math.floor(Date.now()/1000)}, "status":"${status_from}"}`
                 Model.eventHub.publish(status_from + "_" + from.id + "_evt", sentInvitation, false)
 
-                if (to.id == "sa") {
-                    successCallback()
-                    return
-                }
-
                 // Here I will return the value with it
-                let rqst = new ReplaceOneRqst();
+                let rqst = new ResourceService.SetAccountContactRqst
+                rqst.setAccountid(to.id)
 
-                let id = to.name.split("@").join("_").split(".").join("_");
-                let db = id + "_db";
-                rqst.setId(id);
-                rqst.setDatabase(db);
-
-                // Keep track of pending sended invitations.
-                let collection = "Contacts";
-                rqst.setCollection(collection);
-
-                rqst.setQuery(`{"_id":"${from.id}"}`);
-                let receivedInvitation = `{"_id":"${from.id}", "invitationTime":${new Date().getTime()}, "status":"${status_to}"}`
-                rqst.setValue(receivedInvitation);
-                rqst.setOptions(`[{"upsert": true}]`);
-
+                let contact = new ResourceService.Contact
+                contact.setId(from.id)
+                contact.setStatus(status_from)
+                contact.setInvitationtime(Math.round(Date.now() / 1000))
+                rqst.setContact(contact)
+               
                 // call persist data
-                Model.globular.persistenceService
-                    .replaceOne(rqst, {
+                Model.globular.resourceService
+                    .setAccountContact(rqst, {
                         token: localStorage.getItem("user_token"),
                         application: Model.application,
                         domain: Model.domain
                     })
                     .then((rsp: ReplaceOneRsp) => {
                         // Here I will return the value with it
+                        let receivedInvitation = `{"_id":"${from.id}", "invitationTime":${Math.floor(Date.now()/1000)}, "status":"${status_to}"}`
                         Model.eventHub.publish(status_to + "_" + to.id + "_evt", receivedInvitation, false)
                         successCallback();
-
                     })
                     .catch(errorCallback);
-            })
-            .catch(errorCallback);
+            }).catch(errorCallback);
+
     }
 
     // Get all account data...

@@ -1,8 +1,9 @@
 import { Model } from "./Model";
 
 export enum NotificationType{
+    User =0,
     Application = 1,
-    User =2
+    System = 2   
 }
 
 /**
@@ -65,12 +66,13 @@ export class Notification  extends Model{
      * @param recipient 
      * @param text 
      */
-    constructor(type?:NotificationType, recipient?: string, text?: string, date?:Date){
+    constructor(sender?: string, type?:NotificationType, recipient?: string, text?: string, date?:Date){
         super();
 
         this._recipient = recipient;
         this._type = type;
         this._text = text;
+        this._sender = sender;
 
         // set the date or create it...
         if(date!=undefined){
@@ -83,7 +85,7 @@ export class Notification  extends Model{
     }
 
     toString(): string {
-        return JSON.stringify({_id:this._id, _text:this._text, _type:this._type, _recipient:this._recipient, _sender:this.sender, _date:this._date.getTime()/1000})
+        return JSON.stringify({_id:this._id, _text:this._text, _type:this._type, _recipient:this._recipient, _sender:this.sender, _date: Math.floor(this._date.getTime())/1000})
     }
 
     /**
@@ -91,7 +93,6 @@ export class Notification  extends Model{
      * @param json The class data.
      */
     static fromString(json: string):any{
-        console.log(json)
         return Notification.fromObject(JSON.parse(json))
     }
 

@@ -5,7 +5,8 @@ import { Model } from "../Model"
 import "@polymer/iron-icons/device-icons";
 import "@polymer/iron-icon/iron-icon.js";
 import '@polymer/paper-toggle-button/paper-toggle-button.js';
-
+import { Session } from '../Session'
+import { ApplicationView } from "../ApplicationView";
 
 let accountId = ""
 let away = false; // does not want to be see
@@ -104,11 +105,13 @@ export class SessionState extends HTMLElement {
                     // Here I will set the user session...
                     session.state = 2;
                     session.lastStateTime = new Date();
+                    this.stateName.innerHTML = "Away"
                     away = true;
                 } else {
                     session.state = 0;
                     session.lastStateTime = sessionTime; // set back the session time.
                     away = false;
+                    this.stateName.innerHTML = "Online"
                 }
 
                 Model.eventHub.publish(`__session_state_${this.account.id}_change_event__`, session, true)
@@ -139,10 +142,11 @@ export class SessionState extends HTMLElement {
      * Initialyse the session panel values.
      */
     init() {
-        this.setSessionInfo(this.account.session)
+
         if (this.hasAttribute("editable")) {
             sessionTime = this.account.session.lastStateTime;
         }
+
         Model.eventHub.subscribe(`session_state_${this.account.id}_change_event`,
             (uuid) => {
                 /** nothing special here... */
@@ -153,9 +157,29 @@ export class SessionState extends HTMLElement {
 
             }, false)
 
+        this.setSessionInfo(account.session)
+
     }
 
+    // Set the session infos.
     setSessionInfo(session) {
+        // Here I will get the session info if no session was initialysed.
+        if (session == null) {
+            if (this.account.session == null) {
+                this.style.display = "none"
+                // this.setSessionInfo(this.account.session)
+                if (this.account.session == null) {
+                    this.account.session = new Session(this.account)
+                    this.account.session.initData(() => {
+                        this.setSessionInfo(this.account.session)
+                    }, (err) => { ApplicationView.displayMessage(err, 3000) })
+                }
+                return
+            }
+            session = this.account.session
+        }
+
+        this.style.display = ""
         // depending if session is obj or typescript class
         // it can affect it values.
         let state = 1

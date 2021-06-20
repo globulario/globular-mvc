@@ -8,8 +8,6 @@ import { RoleManager} from "./components/Role"
 import { GroupManager} from "./components/Group"
 import { ImageCropperSetting, ImageSetting, SettingsMenu, SettingsPanel, ComplexSetting, EmailSetting, StringSetting, TextAreaSetting } from "./components/Settings";
 import { Model } from "./Model";
-import { mergeTypedArrays, uint8arrayToStringMethod } from "./Utility"
-import { FindResp } from "globular-web-client/persistence/persistence_pb";
 import "@polymer/iron-icons/social-icons";
 import "@polymer/iron-icons/notification-icons";
 
