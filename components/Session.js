@@ -8,15 +8,13 @@ import '@polymer/paper-toggle-button/paper-toggle-button.js';
 import { Session } from '../Session'
 import { ApplicationView } from "../ApplicationView";
 import { v4 as uuidv4 } from "uuid";
+import { LogInfo } from "globular-web-client/log/log_pb";
 
 // This variables are for the active user.
 let accountId = ""
 let away = false; // does not want to be see
 let timeout = null; // use it to make the event less anoying...
 let sessionTime = null;
-
-// The list of listeners.
-let listeners = {};
 
 // When the applicaiton lost focus away state will be set to the logged user.
 document.addEventListener('visibilitychange', function () {
@@ -55,6 +53,7 @@ export class SessionState extends HTMLElement {
         this.interval = null;
         let sessionStateId = "_" + uuidv4();
         let sessionTimerId = "_" + uuidv4();
+        this.sessionChangeListener = ""
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -132,8 +131,6 @@ export class SessionState extends HTMLElement {
 
             Account.getAccount(this.getAttribute("account"), (val) => {
                 this.account = val;
-                this.init();
-
             }, (err) => {
                 ApplicationView.displayMessage(err, 3000)
             })
@@ -150,13 +147,9 @@ export class SessionState extends HTMLElement {
         }
 
         // unsubscribe first.
-        if (listeners[`session_state_${this.account.id}_change_event`] != undefined) {
-            Model.eventHub.unSubscribe(`session_state_${this.account.id}_change_event`, listeners[`session_state_${this.account.id}_change_event`])
-        }
-
         Model.eventHub.subscribe(`session_state_${this.account.id}_change_event`,
             (uuid) => {
-                listeners[`session_state_${this.account.id}_change_event`] = uuid;
+                this.sessionChangeListener = uuid;
             },
             (evt) => {
                 // Set the value here...
@@ -164,17 +157,13 @@ export class SessionState extends HTMLElement {
                 if (this.account.session == null) {
                     this.account.session = new Session(this.account, obj.state, obj.lastStateTime)
                 } else {
-                    this.account.session.lastStateTime = new Date(obj.lastStateTime * 1000)
-                    this.account.session.state = obj.state
+                    this.account.session.lastStateTime_ = new Date(obj.lastStateTime * 1000)
+                    this.account.session.state_ = obj.state
                 }
             }, false)
 
 
-        // depending if session is obj or typescript class
-        // it can affect it values.
-        if (this.interval != undefined) {
-            clearInterval(this.interval);
-        }
+
         // Start display time at each second...
         this.interval = setInterval(() => {
             this.displayDelay()
@@ -211,14 +200,24 @@ export class SessionState extends HTMLElement {
         } else {
             this.lastStateTime.innerHTML = Math.floor(delay / (60 * 60 * 24)) + " days ago"
         }
-
-
     }
 
 
     // The connection callback.
     connectedCallback() {
+        // When the element is put in the dom.
+        this.init();
+    }
 
+    // Disconnect the element from the view.
+    disconnectedCallback() {
+        // it can affect it values.
+        if (this.interval != undefined) {
+            clearInterval(this.interval);
+        }
+        if(this.sessionChangeListener.length > 0){
+            Model.eventHub.unSubscribe(`session_state_${this.account.id}_change_event`, this.sessionChangeListener)
+        }
     }
 }
 
