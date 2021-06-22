@@ -712,12 +712,14 @@ export class Application extends Model {
         Account.getAccount(contact._id, (account: Account) => {
 
           const obj = JSON.parse(evt)
-          // account.session = new Session(contact._id, obj.state, obj.lastStateTime);
-          console.log("set account session state with ", obj)
-
-
+          if(account.session == null){
+            account.session = new Session(contact._id, obj.state, obj.lastStateTime);
+          }else{
+            account.session.lastStateTime = new Date( obj.lastStateTime *  1000)
+            account.session.state = obj.state
+          }
           // Here I will ask the user for confirmation before actually delete the contact informations.
-          let toast = ApplicationView.displayMessage(
+          let toast = <any> ApplicationView.displayMessage(
             `
           <style>
             #contact-session-info-box{
@@ -743,8 +745,8 @@ export class Application extends Model {
             5000 // 15 sec...
           );
         }, (err: any) => { })
-
-
+        
+       
       }, false)
   }
   /**

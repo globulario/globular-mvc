@@ -14,11 +14,18 @@ import * as resource from "globular-web-client/resource/resource_pb";
 }
 
 export class Session extends Model {
+    // private members.
     private _id: string;
     private account: Account;
-
     private state_: SessionState;
-    private lastStateTime: Date; // Keep track ot the last session state.
+    private lastStateTime_: Date; // Keep track ot the last session state.
+
+    public get lastStateTime(): Date {
+        return this.lastStateTime_;
+    }
+    public set lastStateTime(value: Date) {
+        this.lastStateTime_ = value;
+    }
 
     public get state(): SessionState {
         return this.state_;
@@ -57,7 +64,7 @@ export class Session extends Model {
                 let obj = JSON.parse(evt)
                 // update the session state from the network.
                 this.state_ = obj.state;
-                this.lastStateTime = new Date(obj.lastStateTime);
+                this.lastStateTime = new Date(obj.lastStateTime * 1000); // a number to date
 
             }, false)
 
@@ -69,7 +76,7 @@ export class Session extends Model {
                 console.log("session state was change...")
                 // Set the object state from the object and save it...
                 this.state_ = obj.state;
-                this.lastStateTime =  obj.lastStateTime //new Date(obj.lastStateTime * 1000);
+                this.lastStateTime =  obj.lastStateTime; // already a date
 
                 this.save(() => {
                     /* nothing here*/
@@ -117,7 +124,6 @@ export class Session extends Model {
 
     toString(): string {
         // return the basic infomration to be store in the database.
-        console.log(this.lastStateTime)
         return `{"_id":"${this._id}", "state":${this.state.toString()}, "lastStateTime":"${ Math.floor(this.lastStateTime.getTime()/1000)}"}`
     }
 
@@ -144,7 +150,7 @@ export class Session extends Model {
 
         // save the actual session informations.
         session.setAccountid(this.account.id)
-        session.setLastStateTime(Math.floor(Date.now()/1000))
+        session.setLastStateTime(Math.floor(this.lastStateTime.getTime()/1000))
         if(this.state == SessionState.Away){
             session.setState( resource.SessionState.AWAY)
         }else if(this.state == SessionState.Online){
