@@ -159,7 +159,6 @@ export class Session extends Model {
             session.setState( resource.SessionState.OFFLINE)
         }
         
-        session.setToken(localStorage.getItem("user_token"))
         session.setExpireAt(parseInt(localStorage.getItem("token_expired")))
         
         rqst.setSession(session)

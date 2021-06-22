@@ -613,8 +613,9 @@ export class Application extends Model {
     this.initNotifications();
 
     let __setInterval = setInterval(() => {
+
       let isExpired =
-        parseInt(localStorage.getItem("token_expired"), 10) <
+        parseInt(localStorage.getItem("token_expired"), 10) - 5 <
         Math.floor(Date.now() / 1000);
       if (isExpired) {
         console.log("need to refresh token")
