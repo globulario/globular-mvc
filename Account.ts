@@ -142,6 +142,10 @@ export class Account extends Model {
             if (status.code == 0) {
                 let data = accounts_[0]
                 let account = new Account(data.getId(), data.getEmail(), data.getName())
+                
+                // so here I will get the session for the account...
+                account.session = new Session(account)
+
                 account.initData(() => {
                     Account.accounts[data.getId()] = account;
                     // here I will initialyse groups...
@@ -339,25 +343,18 @@ export class Account extends Model {
 
                 // Keep in the local map...
                 Account.setAccount(this)
+
                 Account.getContacts(this, `{}`,
                     (contacts: []) => {
                         // Set the list of contacts (received invitation, sent invitation and actual contact id's)
-                        if (this.session != null) {
-                            this.session.initData(() => {
-                                callback(this);
-                            }, onError)
-                        } else {
-                            // call it onnce.
+                        this.session.initData(() => {
                             callback(this);
-                        }
-
-
+                        }, onError)
                     },
                     (err: any) => {
                         this.session.initData(() => {
                             callback(this);
                         }, onError)
-                        callback(this);
                     })
 
 

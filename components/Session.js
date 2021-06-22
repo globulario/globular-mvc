@@ -154,12 +154,9 @@ export class SessionState extends HTMLElement {
             (evt) => {
                 // Set the value here...
                 let obj = JSON.parse(evt)
-                if (this.account.session == null) {
-                    this.account.session = new Session(this.account, obj.state, obj.lastStateTime)
-                } else {
-                    this.account.session.lastStateTime_ = new Date(obj.lastStateTime * 1000)
-                    this.account.session.state_ = obj.state
-                }
+                this.account.session.lastStateTime_ = new Date(obj.lastStateTime * 1000)
+                this.account.session.state_ = obj.state
+
             }, false)
 
 
@@ -215,7 +212,7 @@ export class SessionState extends HTMLElement {
         if (this.interval != undefined) {
             clearInterval(this.interval);
         }
-        if(this.sessionChangeListener.length > 0){
+        if (this.sessionChangeListener.length > 0) {
             Model.eventHub.unSubscribe(`session_state_${this.account.id}_change_event`, this.sessionChangeListener)
         }
     }

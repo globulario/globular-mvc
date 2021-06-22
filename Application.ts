@@ -704,23 +704,19 @@ export class Application extends Model {
 
   // Display message when contact state change.
   addContactListener(contact: any) {
-    
+
     Model.eventHub.subscribe(`session_state_${contact._id}_change_event`,
       (uuid: string) => {
         this.contactsListener[contact._id] = uuid;
       },
       (evt: string) => {
         Account.getAccount(contact._id, (account: Account) => {
-
           const obj = JSON.parse(evt)
-          if(account.session == null){
-            account.session = new Session(contact._id, obj.state, obj.lastStateTime);
-          }else{
-            account.session.lastStateTime = new Date( obj.lastStateTime *  1000)
-            account.session.state = obj.state
-          }
+          account.session.lastStateTime = new Date(obj.lastStateTime * 1000)
+          account.session.state = obj.state
+
           // Here I will ask the user for confirmation before actually delete the contact informations.
-          let toast = <any> ApplicationView.displayMessage(
+          let toast = <any>ApplicationView.displayMessage(
             `
           <style>
             #contact-session-info-box{
@@ -746,8 +742,8 @@ export class Application extends Model {
             5000 // 15 sec...
           );
         }, (err: any) => { })
-        
-       
+
+
       }, false)
   }
   /**
@@ -815,7 +811,12 @@ export class Application extends Model {
             }
 
             // so here I will get the session for the account...
-            this.account.session = new Session(this.account, SessionState.Online, Math.floor(Date.now() / 1000))
+            this.account.session.state = SessionState.Online;
+            this.account.session.lastStateTime = new Date()
+            this.account.session.save(() => { }, (err: any) => {
+              ApplicationView.displayMessage(err, 3000)
+            })
+
             onLogin(account);
 
             // When new contact is accepted.
@@ -1135,7 +1136,7 @@ export class Application extends Model {
         for (var i = 0; i < notifications.length; i++) {
           // Here I will convert the notification from resource object to 
           // my own Notification type.
-          let n = new Notification(notifications[i].getSender(), notifications[i].getNotificationType().valueOf(),notifications[i].getRecipient(), notifications[i].getMessage(), new Date(notifications[i].getDate() * 1000) )
+          let n = new Notification(notifications[i].getSender(), notifications[i].getNotificationType().valueOf(), notifications[i].getRecipient(), notifications[i].getMessage(), new Date(notifications[i].getDate() * 1000))
           n.id = notifications[i].getId();
 
           notifications_.push(n);
@@ -1151,31 +1152,31 @@ export class Application extends Model {
   }
 
   removeNotification(notification: Notification) {
-    
-          let rqst = new resource.DeleteNotificationRqst
 
-          rqst.setId(notification.id)
-          rqst.setRecipient(notification.recipient)
+    let rqst = new resource.DeleteNotificationRqst
 
-          Model.globular.resourceService
-            .deleteNotification(rqst, {
-              token: localStorage.getItem("user_token"),
-              application: Model.application,
-              domain: Model.domain,
-            })
-            .then(() => {
-              // The notification is not deleted so I will send network event to remove it from
-              // the display.
-              Model.eventHub.publish(
-                notification.id + "_delete_notification_event",
-                notification.toString(),
-                false
-              );
-            })
-            .catch((err: any) => {
-              ApplicationView.displayMessage(err, 4000);
-            });
-   }
+    rqst.setId(notification.id)
+    rqst.setRecipient(notification.recipient)
+
+    Model.globular.resourceService
+      .deleteNotification(rqst, {
+        token: localStorage.getItem("user_token"),
+        application: Model.application,
+        domain: Model.domain,
+      })
+      .then(() => {
+        // The notification is not deleted so I will send network event to remove it from
+        // the display.
+        Model.eventHub.publish(
+          notification.id + "_delete_notification_event",
+          notification.toString(),
+          false
+        );
+      })
+      .catch((err: any) => {
+        ApplicationView.displayMessage(err, 4000);
+      });
+  }
 
   /**
    * Remove all notification.

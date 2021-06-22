@@ -231,9 +231,9 @@ export class ApplicationView extends View {
         this.login_event_listener = uuid;
       },
       (account: Account) => {
+
         this.onLogin(account);
-
-
+        
         // Here I will set contact menu actions.
 
         // On invite contact action.

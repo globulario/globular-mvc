@@ -170,7 +170,7 @@ export class ConversationManager {
         succesCallback(conversation, messages)
 
         let participants = conversation.getParticipantsList()
-        console.log(participants)
+
         // network event.
         Model.eventHub.publish(`leave_conversation_${conversationUuid}_evt`, JSON.stringify(participants), false)
       } else {
@@ -202,7 +202,7 @@ export class ConversationManager {
     }).then((rsp: LeaveConversationResponse) => {
       successCallback();
       let participants = rsp.getConversation().getParticipantsList()
-      console.log(participants)
+
       // network event.
       Model.eventHub.publish(`leave_conversation_${conversationUuid}_evt`, JSON.stringify(participants), false)
 
