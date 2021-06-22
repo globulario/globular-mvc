@@ -69,7 +69,7 @@ export class Session extends Model {
                 console.log("session state was change...")
                 // Set the object state from the object and save it...
                 this.state_ = obj.state;
-                this.lastStateTime = obj.lastStateTime;
+                this.lastStateTime =  obj.lastStateTime //new Date(obj.lastStateTime * 1000);
 
                 this.save(() => {
                     /* nothing here*/
@@ -117,7 +117,8 @@ export class Session extends Model {
 
     toString(): string {
         // return the basic infomration to be store in the database.
-        return `{"_id":"${this._id}", "state":${this.state.toString()}, "lastStateTime":"${this.lastStateTime.toISOString()}"}`
+        console.log(this.lastStateTime)
+        return `{"_id":"${this._id}", "state":${this.state.toString()}, "lastStateTime":"${ Math.floor(this.lastStateTime.getTime()/1000)}"}`
     }
 
     // Init from the db...
@@ -143,7 +144,7 @@ export class Session extends Model {
 
         // save the actual session informations.
         session.setAccountid(this.account.id)
-        session.setLastStateTime(Math.floor(this.lastStateTime.getTime()/1000))
+        session.setLastStateTime(Math.floor(Date.now()/1000))
         if(this.state == SessionState.Away){
             session.setState( resource.SessionState.AWAY)
         }else if(this.state == SessionState.Online){

@@ -18,10 +18,10 @@ document.addEventListener('visibilitychange', function () {
     if (accountId.length > 0 && !away) {
         if (document.visibilityState == 'hidden') {
             timeout = setTimeout(() => {
-                Model.eventHub.publish(`__session_state_${accountId}_change_event__`, { _id: accountId, state: 2, lastStateTime: new Date().toISOString() }, true)
+                Model.eventHub.publish(`__session_state_${accountId}_change_event__`, { _id: accountId, state: 2, lastStateTime: new Date() }, true)
             }, 30 * 1000)
         } else {
-            Model.eventHub.publish(`__session_state_${accountId}_change_event__`, { _id: accountId, state: 0, lastStateTime: sessionTime }, true)
+            Model.eventHub.publish(`__session_state_${accountId}_change_event__`, { _id: accountId, state: 0, lastStateTime: sessionTime}, true)
             if (timeout != undefined) {
                 clearTimeout(timeout)
             }
@@ -205,7 +205,7 @@ export class SessionState extends HTMLElement {
         // Start display time of session here.
         this.interval = setInterval(() => {
             let now = new Date();
-            let lastStateTime = new Date(session.lastStateTime)
+            let lastStateTime = new Date(session.lastStateTime * 1000)
             let delay = Math.floor((now.getTime() - lastStateTime.getTime()) / 1000);
             if (delay < 60) {
                 this.lastStateTime.innerHTML = delay + " seconds ago"
