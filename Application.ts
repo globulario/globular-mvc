@@ -678,7 +678,7 @@ export class Application extends Model {
 
         // Callback on login.
         this.account = new Account(name, email, name);
-        if (name != "sa") {
+      
           this.account.initData(
             (account: Account) => {
               this.view.resume();
@@ -690,7 +690,7 @@ export class Application extends Model {
               onError(err);
             }
           );
-        }
+        
 
         this.startRefreshToken();
       })
@@ -803,12 +803,6 @@ export class Application extends Model {
 
           Account.getAccount(id, (account: Account) => {
             this.account = account;
-
-            // sa dosent have any conversation or any contact...
-            if (this.account.id == "sa") {
-              this.view.resume();
-              return
-            }
 
             // so here I will get the session for the account...
             this.account.session.state = SessionState.Online;

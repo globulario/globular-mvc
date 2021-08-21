@@ -117,6 +117,10 @@ export class Account extends Model {
      * @param errorCallback Error Callback.
      */
     public static getAccount(id: string, successCallback: (account: Account) => void, errorCallback: (err: any) => void) {
+        if(id.length == 0){
+            errorCallback("No account id given to getAccount function!")
+            return
+        }
         if (Account.accounts == null) {
             // Set the accouts map
             Account.accounts = {}
@@ -252,10 +256,7 @@ export class Account extends Model {
         successCallback: (results: any) => void,
         errorCallback: (err: any) => void
     ) {
-        // Nothing to read if the user is the sa
-        if (userName == "sa") {
-            successCallback([]);
-        }
+
 
         let rqst = new FindOneRqst();
 
@@ -395,12 +396,6 @@ export class Account extends Model {
     ) {
         let userName = this.name;
 
-        // nothing to do in case of the sa
-        if (userName == "sa") {
-            callback(this);
-            return
-        }
-
         // save the user_data
         let rqst = new ReplaceOneRqst();
         let id = userName.split("@").join("_").split(".").join("_");
@@ -443,11 +438,6 @@ export class Account extends Model {
 
         // Insert the notification in the db.
         let rqst = new FindRqst();
-
-        if (account.id == "sa") {
-            callback([]);
-            return;
-        }
 
         // set connection infos.
         let id = account.name.split("@").join("_").split(".").join("_")

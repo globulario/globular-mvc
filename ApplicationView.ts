@@ -203,6 +203,7 @@ export class ApplicationView extends View {
     this.settingsMenu = new SettingsMenu();
 
     this.settingsPanel = new SettingsPanel();
+    this.settingsPanel.id = "globular-setting-panel"
 
     // init listener's in the layout.
     this.layout.init();
@@ -698,7 +699,7 @@ export class ApplicationView extends View {
 
   onSettings() {
     if (this.getWorkspace().childNodes.length > 0) {
-      if (this.getWorkspace().childNodes[0].nodeName == "GLOBULAR-SETTINGS-PANEL") {
+      if (this.getWorkspace().childNodes[0].id == "globular-setting-panel") {
         return
       }
     }

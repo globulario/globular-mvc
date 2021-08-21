@@ -53,11 +53,14 @@ export class SettingsMenu extends HTMLElement {
   connectedCallback() {
 
     // Set the first item after the Exit menu of course.
+    this.show()
+    
+  }
+
+  show(){
     if (this.container.childNodes.length > 1) {
       this.container.childNodes[1].click()
-    } else {
-      this.container.firstChild.click()
-    }
+    } 
   }
 
   clear() {
@@ -327,22 +330,6 @@ export class Settings extends HTMLElement {
             padding: 0px;
         }
 
-        ::slotted(globular-setting:not(:last-child)) {
-          border-bottom: 1px solid #e0e0e0;
-        }
-
-        ::slotted(globular-complex-setting:not(:last-child)) {
-          border-bottom: 1px solid #e0e0e0;
-        }
-
-        ::slotted(globular-string-setting:not(:last-child)) {
-          border-bottom: 1px solid #e0e0e0;
-        }
-
-
-        ::slotted(globular-email-setting:not(:last-child)) {
-          border-bottom: 1px solid #e0e0e0;
-        }
 
         @media only screen and (max-width: 800px) {
           .card-content{
@@ -685,6 +672,58 @@ export class ComplexSetting extends Setting {
 }
 
 customElements.define("globular-complex-setting", ComplexSetting);
+
+/**
+ * Set string setting...
+ */
+ export class ReadOnlyStringSetting extends Setting {
+  constructor(name, description) {
+    super(name, description);
+    this.onchange = null;
+
+    let html = `
+      <style>
+      ${theme}
+      #setting-span{
+         flex-grow: 1;
+        }
+      </style>
+      <span id="setting-span" label=""></span>
+    `
+    let range = document.createRange();
+    this.title = description;
+
+    this.shadowRoot.insertBefore(range.createContextualFragment(html), this.description)
+    this.span = this.shadowRoot.getElementById("setting-span");
+
+    this.description.style.display = "none";
+    this.setAttribute("title", "")
+    if (description.length > 0) {
+      this.span.label = description;
+    }
+    this.span.setAttribute("title", description);
+    this.span.onblur = () => {
+      if (this.onblur != null) {
+        this.onblur()
+      }
+    }
+  }
+
+  getElement() {
+    return this.span;
+  }
+
+  getValue() {
+    return this.span.innerHTML
+  }
+
+  setValue(value) {
+    this.span.innerHTML = value;
+  }
+
+}
+
+customElements.define("globular-read-only-string-setting", ReadOnlyStringSetting);
 
 /**
  * Set string setting...
@@ -1043,10 +1082,7 @@ export class DropdownSetting extends Setting {
         }
       </style>
       <paper-dropdown-menu id="setting-input" label="The best day ever" raised>
-        <paper-listbox class ="dropdown-content">
-          <template is="dom-repeat" items="{{itemsArray}}">
-            <paper-item>{{item}}</paper-item>
-          </template>
+        <paper-listbox slot="dropdown-content" selected="1">
         </paper-listbox>
       </paper-dropdown-menu>
     `
@@ -1078,10 +1114,102 @@ export class DropdownSetting extends Setting {
 
   setDropdownList(valueArray) {
     this.itemsArray = valueArray
+    let lst = this.shadowRoot.querySelector("paper-listbox")
+    for(var i=0; i < valueArray.length; i++){
+
+      let item = document.createRange().createContextualFragment(`<paper-item>${valueArray[i]}</paper-item>`)
+
+      lst.appendChild(item)
+    }
   }
 }
 
 customElements.define("globular-dropdown-setting", DropdownSetting);
+
+
+export class StringListSetting extends Setting {
+  constructor(name, description) {
+    super(name, description);
+
+    let html = `
+      <style>
+      ${theme}
+      #setting-input{
+         flex-grow: 1;
+        }
+
+      #container{
+        flex-grow: 1;
+        position: relative;
+      }
+
+      #new_item_btn{
+        position: absolute;
+        top: -15px;
+        right: 0px;
+      }
+
+      </style>
+      <div id="container">
+        <paper-icon-button id="new_item_btn"  icon="add"></paper-icon-button>
+      </div>
+    `
+    let range = document.createRange();
+    this.title = description;
+
+    this.shadowRoot.insertBefore(range.createContextualFragment(html), this.description)
+    this.div = this.shadowRoot.getElementById("container");
+
+    this.description.style.display = "none";
+    this.setAttribute("title", "")
+    if (description.length > 0) {
+      this.div.label = description;
+    }
+    this.div.setAttribute("title", description);
+
+    this.appendValueBtn = this.shadowRoot.querySelector("#new_item_btn")
+
+    this.appendValueBtn.onclick = ()=>{
+      let inputs = this.shadowRoot.querySelectorAll("paper-input");
+      let input = this.appendValue(inputs.length, "")
+      setTimeout(()=>{input.focus()}, 50)
+      
+    }
+  }
+
+  getElement() {
+    return this.div;
+  }
+
+  appendValue(index, value){
+    let item = document.createRange().createContextualFragment(`
+    <div id="item_div_${index}" style="display: flex; align-items: flex-end;">
+      <paper-input style="flex-grow: 1;" id="item_${index}"></paper-input>
+      <paper-icon-button id="item_delete_${index}"  icon="delete"></paper-icon-button>
+    </div>`)
+    this.div.appendChild(item)
+    let input = this.div.querySelector("#item_" + index )
+    let deleteBtn = this.div.querySelector("#item_delete_" + index )
+    deleteBtn.onclick = ()=>{
+      let div = input.parentNode
+      div.parentNode.removeChild(div);
+    }
+
+    input.value = value
+    return input
+  }
+
+  setValues(valueArray) {
+    if(valueArray== null){
+      return
+    }
+    for(var i=0; i < valueArray.length; i++){
+      this.appendValue(i, valueArray[i])
+    }
+  }
+}
+
+customElements.define("globular-string-list-setting", StringListSetting);
 
 /**
  * Add email validation to the string setting.
@@ -1137,3 +1265,40 @@ export class YesNoSetting extends Setting {
 }
 
 customElements.define("globular-yes-no-setting", YesNoSetting);
+
+/**
+ * Button to attach action in the setting panel.
+ */
+ export class ActionSetting extends Setting {
+  constructor(name, description, onclick) {
+    super(name, description)
+
+    let html = `
+    <style>
+    ${theme}
+      #bnt-div{
+       display: flex;
+      }
+
+      #bnt-div paper-button{
+        font-size: .85rem;
+        height: fit-content;
+        border: none;
+        color: var(--palette-text-accent);
+        background: var(--palette-warning-dark);
+        max-height: 32px;
+      }
+
+    </style>
+    <div id="bnt-div">
+      <paper-button class=" " id="btn" raised>${name}</paper-button>
+    </div>
+  `
+    let range = document.createRange();
+    this.shadowRoot.appendChild(range.createContextualFragment(html))
+    this.onclick = onclick
+    this.shadowRoot.getElementById("btn").onclick = this.onclick;
+  }
+}
+
+customElements.define("globular-action-setting", ActionSetting);

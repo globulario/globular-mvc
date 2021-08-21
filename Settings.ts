@@ -50,7 +50,7 @@ export class UserSettings extends Settings {
         this.settingsMenu.appendSettingsMenuItem("account-box", "User");
 
         // Create General informations setting's
-        let userSettingsPage = <any>this.settingsPanel.appendSettingsPage("User");
+        let userSettingsPage = <any>settingsPanel.appendSettingsPage("User");
 
         // Create general user settings ...
         let generalSettings = userSettingsPage.appendSettings("General", "Those information's can be view by other's user's");
@@ -133,9 +133,9 @@ export class ApplicationSettings extends Settings {
 
         let info = Application.getApplicationInfo(application.name)
 
-        this.settingsMenu.appendSettingsMenuItem("settings-applications", "Application");
+        settingsMenu.appendSettingsMenuItem("settings-applications", "Application");
 
-        let applicationSettingPage = <any>this.settingsPanel.appendSettingsPage("Application");
+        let applicationSettingPage = <any>settingsPanel.appendSettingsPage("Application");
 
         let generalSettings = applicationSettingPage.appendSettings("General", "General application settings.");
 
@@ -222,9 +222,9 @@ export class RoleSettings extends Settings {
     constructor(settingsMenu: SettingsMenu, settingsPanel: SettingsPanel) {
         super(settingsMenu, settingsPanel);
 
-        this.settingsMenu.appendSettingsMenuItem("notification:enhanced-encryption", "Roles");
+        settingsMenu.appendSettingsMenuItem("notification:enhanced-encryption", "Roles");
 
-        let roleSettingPage = <any>this.settingsPanel.appendSettingsPage("Roles");
+        let roleSettingPage = <any>settingsPanel.appendSettingsPage("Roles");
 
         // Append a title.
         let html = `
@@ -274,9 +274,9 @@ export class GroupSettings extends Settings {
     constructor(settingsMenu: SettingsMenu, settingsPanel: SettingsPanel) {
         super(settingsMenu, settingsPanel);
 
-        this.settingsMenu.appendSettingsMenuItem("social:people", "Groups");
+        settingsMenu.appendSettingsMenuItem("social:people", "Groups");
 
-        let groupSettingPage = <any>this.settingsPanel.appendSettingsPage("Groups");
+        let groupSettingPage = <any>settingsPanel.appendSettingsPage("Groups");
 
         // Append a title.
         let html = `
@@ -326,9 +326,9 @@ export class FileSettings extends Settings {
     constructor(settingsMenu: SettingsMenu, settingsPanel: SettingsPanel) {
         super(settingsMenu, settingsPanel);
 
-        this.settingsMenu.appendSettingsMenuItem("folder-shared", "Files");
+        settingsMenu.appendSettingsMenuItem("folder-shared", "Files");
 
-        let fileSettingPage = <any>this.settingsPanel.appendSettingsPage("Files");
+        let fileSettingPage = <any>settingsPanel.appendSettingsPage("Files");
 
         this.fileExplorer = new FileExplorer;
         this.fileExplorer.setRoot("/applications/" + Model.application)
@@ -379,8 +379,8 @@ export class LogSettings extends Settings {
     constructor(settingsMenu: SettingsMenu, settingsPanel: SettingsPanel) {
         super(settingsMenu, settingsPanel);
         this.infos = new Array<LogInfo>();
-        this.settingsMenu.appendSettingsMenuItem("error", "Errors");
-        let logSettingPage = <any>this.settingsPanel.appendSettingsPage("Errors");
+        settingsMenu.appendSettingsMenuItem("error", "Errors");
+        let logSettingPage = <any>settingsPanel.appendSettingsPage("Errors");
 
         // Append a title.
         let html = `

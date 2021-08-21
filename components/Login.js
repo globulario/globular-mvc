@@ -35,6 +35,7 @@ export class Login extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
+
  
             #login_div span:hover{
                 cursor:pointer;
@@ -125,6 +126,10 @@ export class LoginBox extends HTMLElement {
             #login_box{
                 z-index: 1000;
                 min-width: 340px;
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
             }
 
             #login_box .card-actions {
@@ -247,6 +252,10 @@ export class RegisterBox extends HTMLElement {
                     margin-left: auto;
                     margin-right: auto;
                     margin-bottom: 20px;
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
                 }
 
                 #register_box{
