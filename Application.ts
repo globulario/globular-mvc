@@ -397,7 +397,7 @@ export class Application extends Model {
             let appInfo = Application.getApplicationInfo(this.name);
             if (appInfo != undefined) {
               (<ApplicationView>this.view).setIcon(
-                Application.getApplicationInfo(this.name).icon
+                Application.getApplicationInfo(this.name).getIcon()
               );
               this.view.init();
             } else {
@@ -524,7 +524,7 @@ export class Application extends Model {
    * Return application infos.
    * @param id
    */
-  static getApplicationInfo(id: string): any {
+  static getApplicationInfo(id: string): resource.Application {
     return Application.infos.get(id);
   }
 

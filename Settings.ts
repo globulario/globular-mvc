@@ -142,18 +142,28 @@ export class ApplicationSettings extends Settings {
         // The application icon
         let applicationSetting = new ComplexSetting("Icon", "Change application icon")
         let iconSetting = new ImageSetting("Icon", "Click here to change " + application.name + " icon")
-        let icon = info.icon
+        let icon = info.getIcon()
         iconSetting.setValue(icon)
 
         applicationSetting.addSetting(iconSetting);
 
         generalSettings.addSetting(applicationSetting)
 
+        // The application alias (can be space separated values name.)
+        let aliasSetting = new TextAreaSetting("Alias", "Application name alias")
+        let alias = "";
+        if (info.getAlias() != undefined) {
+            alias = info.getAlias();
+        }
+
+        aliasSetting.setValue(alias)
+        generalSettings.addSetting(aliasSetting)
+
         // Application name and title must be change by the developper only...
         let descriptionSetting = new TextAreaSetting("Description", "")
         let description = "";
-        if (info.description != undefined) {
-            description = info.description;
+        if (info.getDescription() != undefined) {
+            description = info.getDescription();
         }
 
         descriptionSetting.setValue(description)
@@ -180,7 +190,7 @@ export class ApplicationSettings extends Settings {
             (needSave: boolean) => {
                 if (needSave) {
                     // Set the infos.
-                    Application.saveApplicationInfo(application.name, { "icon": iconSetting.getValue(), "description": descriptionSetting.getValue() },
+                    Application.saveApplicationInfo(application.name, { "icon": iconSetting.getValue(), "description": descriptionSetting.getValue(), "alias":aliasSetting.getValue() },
                         (info: any) => {
                             const data = JSON.stringify(info)
                             Application.eventHub.publish(`update_application_${info._id}_settings_evt`, data, false)
@@ -189,10 +199,12 @@ export class ApplicationSettings extends Settings {
                             ApplicationView.displayMessage(err, 3000)
                             iconSetting.setValue(icon) // set back the value...
                             descriptionSetting.setValue(description)
+                            descriptionSetting.setValue(alias)
                         })
                 } else {
                     iconSetting.setValue(icon) // set back the value...
                     descriptionSetting.setValue(description)
+                    descriptionSetting.setValue(alias)
                 }
             }, true)
     }

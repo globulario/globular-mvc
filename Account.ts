@@ -510,7 +510,7 @@ export class Account extends Model {
 
                 let contact = new ResourceService.Contact
                 contact.setId(from.id)
-                contact.setStatus(status_from)
+                contact.setStatus(status_to)
                 contact.setInvitationtime(Math.round(Date.now() / 1000))
                 rqst.setContact(contact)
                
