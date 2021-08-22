@@ -568,6 +568,10 @@ export class Setting extends HTMLElement {
 
   getDescription() { return this.description.innerText; }
 
+  setDescription(value){
+    this.description.innerText = value
+  }
+
 }
 
 customElements.define("globular-setting", Setting);
@@ -725,6 +729,56 @@ customElements.define("globular-complex-setting", ComplexSetting);
 
 customElements.define("globular-read-only-string-setting", ReadOnlyStringSetting);
 
+/**
+ * Set string setting...
+ */
+ export class LinkSetting extends Setting {
+  constructor(name, description) {
+    super(name, description);
+    this.onchange = null;
+
+    let html = `
+      <style>
+      ${theme}
+      #setting-span{
+         flex-grow: 1;
+         color: var(--cr-primary-text-color);
+        }
+      </style>
+      <a style="color: var(--cr-primary-text-color);" target="_blank" rel="noopener noreferrer" id="setting-url" label=""></a>
+    `
+    let range = document.createRange();
+    this.title = description;
+
+    this.shadowRoot.insertBefore(range.createContextualFragment(html), this.description)
+    this.link = this.shadowRoot.getElementById("setting-url");
+
+    this.description.style.display = "none";
+    this.setAttribute("title", "")
+    if (description.length > 0) {
+      this.link.label = description;
+    }
+    this.link.setAttribute("title", description);
+  }
+
+  getElement() {
+    return this.link;
+  }
+
+  getValue() {
+    return this.link.innerHTML
+  }
+
+  setValue(value) {
+    this.link.innerHTML = value;
+  }
+
+  setUrl(url) {
+    this.link.setAttribute("href", url)
+  }
+}
+
+customElements.define("globular-link-setting", LinkSetting);
 /**
  * Set string setting...
  */
@@ -1082,7 +1136,7 @@ export class DropdownSetting extends Setting {
         }
       </style>
       <paper-dropdown-menu id="setting-input" label="The best day ever" raised>
-        <paper-listbox slot="dropdown-content" selected="1">
+        <paper-listbox slot="dropdown-content">
         </paper-listbox>
       </paper-dropdown-menu>
     `
@@ -1098,6 +1152,10 @@ export class DropdownSetting extends Setting {
       this.input.label = description;
     }
     this.input.setAttribute("title", description);
+
+    this.input.onclick = (evt) => {
+      this.onchange(evt)
+    }
   }
 
   getElement() {
@@ -1122,6 +1180,7 @@ export class DropdownSetting extends Setting {
       lst.appendChild(item)
     }
   }
+
 }
 
 customElements.define("globular-dropdown-setting", DropdownSetting);
@@ -1206,6 +1265,16 @@ export class StringListSetting extends Setting {
     for(var i=0; i < valueArray.length; i++){
       this.appendValue(i, valueArray[i])
     }
+  }
+
+  getValues(){
+    let inputs = this.shadowRoot.querySelectorAll("paper-input");
+    let values = []
+    for(var i=0; i < inputs.length; i++){
+      values.push(inputs[i].value)
+    }
+
+    return values;
   }
 }
 
