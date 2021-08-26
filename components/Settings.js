@@ -54,13 +54,13 @@ export class SettingsMenu extends HTMLElement {
 
     // Set the first item after the Exit menu of course.
     this.show()
-    
+
   }
 
-  show(){
+  show() {
     if (this.container.childNodes.length > 1) {
       this.container.childNodes[1].click()
-    } 
+    }
   }
 
   clear() {
@@ -145,8 +145,8 @@ export class SettingsSideMenuItem extends HTMLElement {
   connectedCallback() {
     this.container = this.shadowRoot.getElementById("container")
     this.titleDiv = this.shadowRoot.getElementById("title-div")
-    if(this.hasAttribute("icon")){
-      if(this.getAttribute("icon").length == 0){
+    if (this.hasAttribute("icon")) {
+      if (this.getAttribute("icon").length == 0) {
         this.shadowRoot.querySelector("#icon").style.display = "none";
       }
     }
@@ -265,7 +265,7 @@ export class SettingsPage extends HTMLElement {
   }
 
   connectedCallback() {
- 
+
   }
 
   // Model.eventHub must be init.
@@ -568,7 +568,7 @@ export class Setting extends HTMLElement {
 
   getDescription() { return this.description.innerText; }
 
-  setDescription(value){
+  setDescription(value) {
     this.description.innerText = value
   }
 
@@ -680,7 +680,7 @@ customElements.define("globular-complex-setting", ComplexSetting);
 /**
  * Set string setting...
  */
- export class ReadOnlyStringSetting extends Setting {
+export class ReadOnlyStringSetting extends Setting {
   constructor(name, description) {
     super(name, description);
     this.onchange = null;
@@ -732,7 +732,7 @@ customElements.define("globular-read-only-string-setting", ReadOnlyStringSetting
 /**
  * Set string setting...
  */
- export class LinkSetting extends Setting {
+export class LinkSetting extends Setting {
   constructor(name, description) {
     super(name, description);
     this.onchange = null;
@@ -1087,20 +1087,20 @@ export class ImageCropperSetting extends Setting {
     this.shadowRoot.getElementById("icon-right").style.display = "none";
     this.cropper = this.shadowRoot.getElementById("mycrop")
     this.camera = this.shadowRoot.getElementById("polaroid")
-    this.camera.onpicture = (data)=>{
+    this.camera.onpicture = (data) => {
       this.camera.close();
       this.cropper.setImage(data);
     }
 
-    if(dataUrl != undefined){
+    if (dataUrl != undefined) {
       this.cropper.setCropImage(dataUrl)
     }
 
-    this.camera.onopen = ()=>{
+    this.camera.onopen = () => {
       this.cropper.style.display = "none";
     }
 
-    this.camera.onclose = ()=>{
+    this.camera.onclose = () => {
       this.cropper.style.display = "";
     }
   }
@@ -1173,7 +1173,7 @@ export class DropdownSetting extends Setting {
   setDropdownList(valueArray) {
     this.itemsArray = valueArray
     let lst = this.shadowRoot.querySelector("paper-listbox")
-    for(var i=0; i < valueArray.length; i++){
+    for (var i = 0; i < valueArray.length; i++) {
 
       let item = document.createRange().createContextualFragment(`<paper-item>${valueArray[i]}</paper-item>`)
 
@@ -1219,6 +1219,19 @@ export class StringListSetting extends Setting {
     this.shadowRoot.insertBefore(range.createContextualFragment(html), this.description)
     this.div = this.shadowRoot.getElementById("container");
 
+    this.div.onfocus = ()=>{
+      
+        let inputs = this.shadowRoot.querySelectorAll("paper-input");
+        setTimeout(() => {
+          if (inputs.length > 0) {
+            //inputs[0].input.setSelectionRange(0, inputs[0].input.value.length);
+            inputs[0].focus()
+          }
+    
+        }, 50)
+      
+    }
+
     this.description.style.display = "none";
     this.setAttribute("title", "")
     if (description.length > 0) {
@@ -1228,11 +1241,11 @@ export class StringListSetting extends Setting {
 
     this.appendValueBtn = this.shadowRoot.querySelector("#new_item_btn")
 
-    this.appendValueBtn.onclick = ()=>{
+    this.appendValueBtn.onclick = () => {
       let inputs = this.shadowRoot.querySelectorAll("paper-input");
       let input = this.appendValue(inputs.length, "")
-      setTimeout(()=>{input.focus()}, 50)
-      
+      setTimeout(() => { input.focus() }, 50)
+
     }
   }
 
@@ -1240,16 +1253,16 @@ export class StringListSetting extends Setting {
     return this.div;
   }
 
-  appendValue(index, value){
+  appendValue(index, value) {
     let item = document.createRange().createContextualFragment(`
     <div id="item_div_${index}" style="display: flex; align-items: flex-end;">
       <paper-input style="flex-grow: 1;" id="item_${index}"></paper-input>
       <paper-icon-button id="item_delete_${index}"  icon="delete"></paper-icon-button>
     </div>`)
     this.div.appendChild(item)
-    let input = this.div.querySelector("#item_" + index )
-    let deleteBtn = this.div.querySelector("#item_delete_" + index )
-    deleteBtn.onclick = ()=>{
+    let input = this.div.querySelector("#item_" + index)
+    let deleteBtn = this.div.querySelector("#item_delete_" + index)
+    deleteBtn.onclick = () => {
       let div = input.parentNode
       div.parentNode.removeChild(div);
     }
@@ -1259,18 +1272,21 @@ export class StringListSetting extends Setting {
   }
 
   setValues(valueArray) {
-    if(valueArray== null){
+    if (valueArray == null) {
       return
     }
-    for(var i=0; i < valueArray.length; i++){
+    for (var i = 0; i < valueArray.length; i++) {
       this.appendValue(i, valueArray[i])
     }
+
   }
 
-  getValues(){
+
+
+  getValues() {
     let inputs = this.shadowRoot.querySelectorAll("paper-input");
     let values = []
-    for(var i=0; i < inputs.length; i++){
+    for (var i = 0; i < inputs.length; i++) {
       values.push(inputs[i].value)
     }
 
@@ -1338,7 +1354,7 @@ customElements.define("globular-yes-no-setting", YesNoSetting);
 /**
  * Button to attach action in the setting panel.
  */
- export class ActionSetting extends Setting {
+export class ActionSetting extends Setting {
   constructor(name, description, onclick) {
     super(name, description)
 
