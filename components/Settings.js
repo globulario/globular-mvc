@@ -9,6 +9,7 @@ import '@polymer/paper-input/paper-textarea.js';
 import '@polymer/paper-dropdown-menu/paper-dropdown-menu.js'
 import '@polymer/iron-collapse/iron-collapse.js';
 import "@polymer/iron-icons/image-icons";
+import { v4 as uuidv4 } from "uuid";
 import { ImageCropper } from "./Image";
 import { Camera } from "./Camera";
 import { FileExplorer } from "./File"
@@ -70,6 +71,7 @@ export class SettingsMenu extends HTMLElement {
   }
 
   appendSettingsMenuItem(icon, title) {
+
     const html = `<globular-settings-side-menu-item id="${title}_settings_menu_item" icon="${icon}" title="${title}"> </globular-settings-side-menu-item>`;
     const range = document.createRange()
     this.container.appendChild(range.createContextualFragment(html))
@@ -110,7 +112,7 @@ export class SettingsSideMenuItem extends HTMLElement {
        ${theme}
        #container {
            display: flex;
-           align-items: flex-end;
+           align-items: center;
            padding-top: 10px;
            padding-bottom: 10px;
            font-weight: 500;
@@ -280,12 +282,12 @@ export class SettingsPage extends HTMLElement {
   }
 
   appendSettings(title, subtitle) {
-    const id = title.split(" ").join("");
+    const id =  "_" + uuidv4()// title.split(" ").join("");
 
-    const html = `<globular-settings id="${id}_settings" title="${title}" subtitle="${subtitle}"></globular-settings>`;
+    const html = `<globular-settings id="${id}" title="${title}" subtitle="${subtitle}"></globular-settings>`;
     const range = document.createRange()
     this.appendChild(range.createContextualFragment(html))
-    const settings = this.querySelector("#" + id + "_settings")
+    const settings = this.querySelector("#" + id)
     return settings
   }
 }
@@ -389,7 +391,7 @@ export class Settings extends HTMLElement {
 
     </style>
     <div id="container">
-       <paper-card id="${this.title}_settings">
+       <paper-card id="${this.id}">
             <h2 class="card-title">${this.title}</h2>
             <div style="display: flex;">
               <paper-icon-button id="back-btn"  icon="arrow-back"></paper-icon-button>
@@ -441,6 +443,8 @@ export class Setting extends HTMLElement {
   constructor(name, description, icon) {
     super();
 
+
+
     this.container = null;
 
     // Set the shadow dom.
@@ -448,6 +452,11 @@ export class Setting extends HTMLElement {
 
     if (this.hasAttribute("name")) {
       name = this.getAttribute("name")
+    }
+
+    if (!this.hasAttribute("id")) {
+        // generate a unique id.
+        this.setAttribute("id", "_" + uuidv4())
     }
 
     // set icon to empty icon by default.
@@ -493,10 +502,12 @@ export class Setting extends HTMLElement {
 
     <iron-icon id="icon-left" icon="${icon}"></iron-icon>
     <div  id="name-div" class="setting-name">${name}</div>
-    <div id = "description-div" class="setting-description">${description}</div>
+    <div id="description-div" class="setting-description">${description}</div>
     <iron-icon id="icon-right" icon=""></iron-icon>
 
     `;
+
+
 
     // Set style property of the component itself.
     this.style.position = "relative"
@@ -510,7 +521,7 @@ export class Setting extends HTMLElement {
       for (let entry of entries) {
         let w = entry.contentRect.width
         this.style.flexDirection = "row";
-        this.style.alignItems = "flex-start"
+        this.style.alignItems = "center"
         this.shadowRoot.getElementById("name-div").style.flexBasis = "156px";
         this.shadowRoot.getElementById("description-div").style.flexBasis = "328px";
         let textArea = this.shadowRoot.querySelector("paper-textarea")
@@ -524,7 +535,6 @@ export class Setting extends HTMLElement {
 
         let nextPageBtn = this.shadowRoot.querySelector("#icon-right")
         nextPageBtn.style.position = "block";
-        nextPageBtn.style.top = "40%";
         nextPageBtn.style.right = "0px";
 
         if (w < 780) {
@@ -545,6 +555,7 @@ export class Setting extends HTMLElement {
             }
           }
         }
+
       }
     });
     resizeObserver.observe(document.body);
@@ -566,7 +577,11 @@ export class Setting extends HTMLElement {
 
   getName() { return this.name.innerText; }
 
+  getNameDiv() { return this.name; }
+
   getDescription() { return this.description.innerText; }
+
+  getDescriptionDiv() { return this.description; }
 
   setDescription(value) {
     this.description.innerText = value
@@ -610,6 +625,7 @@ export class ComplexSetting extends Setting {
 
       // display the settings.
       this._panel.style.display = "block"
+      
       if (this._panel.childNodes.length > 0) {
         let e = this._panel.childNodes[0].getElement()
         if (e != undefined) {
@@ -627,7 +643,7 @@ export class ComplexSetting extends Setting {
 
   // add settings...
   addSetting(setting) {
-    this._settings[setting.getName()] = setting;
+    this._settings[setting.id] = setting;
   }
 
   // Get the parent page of the complex settings.
@@ -646,7 +662,7 @@ export class ComplexSetting extends Setting {
     if (this._parentPage == null) {
       this._parentPage = this.getParentPage(this);
 
-      this._panel = this._parentPage.appendSettings(this.name.innerText, this.description.innerText)
+      this._panel = this._parentPage.appendSettings(this.getName(), this.getDescription())
       this._panel.style.display = "none"
       this._panel.backBtn.style.display = "block"
       this._panel.classList.add("complex_setting_panel")
@@ -665,14 +681,14 @@ export class ComplexSetting extends Setting {
       }
 
       // add the settings.
-      for (var name in this._settings) {
-        this._panel.addSetting(this._settings[name])
+      for (var id in this._settings) {
+        this._panel.addSetting(this._settings[id])
       }
 
     }
   }
 
-  getSetting(name) { return this._settings[name] }
+  getSetting(id) { return this._settings[id] }
 }
 
 customElements.define("globular-complex-setting", ComplexSetting);
@@ -881,6 +897,54 @@ export class TextAreaSetting extends Setting {
 customElements.define("globular-textarea-setting", TextAreaSetting);
 
 /**
+ * true false on of...
+ */
+ export class OnOffSetting extends Setting {
+  constructor(name, description) {
+    super(name, description);
+
+    let html = `
+      <style>
+      ${theme}
+      #setting-input{
+         flex-grow: 1;
+        }
+      </style>
+      <paper-toggle-button id="setting-input">${description}</paper-toggle-button>
+    `
+    let range = document.createRange();
+    this.title = description;
+
+    this.shadowRoot.insertBefore(range.createContextualFragment(html), this.description)
+    this.input = this.shadowRoot.getElementById("setting-input");
+
+    this.description.style.display = "none";
+    this.setAttribute("title", "")
+    if (description.length > 0) {
+      this.input.label = description;
+    }
+    this.input.setAttribute("title", description);
+
+    this.getDescriptionDiv().style.display = "none";
+  }
+
+  getElement() {
+    return this.input;
+  }
+
+  getValue() {
+    return this.input.checked
+  }
+
+  setValue(value) {
+    this.input.checked = value;
+  }
+
+}
+
+customElements.define("globular-on-off-setting", OnOffSetting);
+
+/**
  * Add email validation to the string setting.
  */
 export class NumberSetting extends StringSetting {
@@ -920,7 +984,7 @@ export class ImageSetting extends Setting {
 
         #custom-file-upload div{
           display: flex;
-          align-items: flex-end;
+          align-items: center;
           border-bottom: 1px solid var(--palette-text-primary);
           font-size: 1rem;
           flex-basis: 100%;
@@ -1255,7 +1319,7 @@ export class StringListSetting extends Setting {
 
   appendValue(index, value) {
     let item = document.createRange().createContextualFragment(`
-    <div id="item_div_${index}" style="display: flex; align-items: flex-end;">
+    <div id="item_div_${index}" style="display: flex; align-items: center;">
       <paper-input style="flex-grow: 1;" id="item_${index}"></paper-input>
       <paper-icon-button id="item_delete_${index}"  icon="delete"></paper-icon-button>
     </div>`)
@@ -1382,7 +1446,11 @@ export class ActionSetting extends Setting {
     let range = document.createRange();
     this.shadowRoot.appendChild(range.createContextualFragment(html))
     this.onclick = onclick
-    this.shadowRoot.getElementById("btn").onclick = this.onclick;
+    this.shadowRoot.getElementById("btn").onclick = ()=>{
+      if(this.onclick != nil){
+        this.onclick()
+      }
+    }
   }
 }
 

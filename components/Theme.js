@@ -122,8 +122,19 @@ export let theme = `
     --paper-tabs-selection-bar-color: var(--palette-primary-main);
   }
 
-  paper-tab {
-    --paper-tab-ink: var(--palette-text-accent);
+  paper-tabs {
+    /* custom CSS property */
+    --paper-tabs-selection-bar-color: var(--palette-primary-main);
+  }
+
+  paper-toggle-button {
+    --paper-toggle-button-checked-button-color: var(--palette-primary-main);
+    --paper-toggle-button-checked-bar-color:  var(--palette-primary-main);
+    --paper-toggle-button-checked-ink-color: var(--palette-primary-main);
+    --paper-toggle-button-unchecked-button-color: var(--palette-action-disabled);
+    --paper-toggle-button-unchecked-bar-color:  var(--palette-action-disabled);
+    --paper-toggle-button-unchecked-ink-color: var(--palette-action-disabled);
+    --paper-toggle-button-label-color: var(--palette-action-disabled);
   }
 
   paper-radio-button {
