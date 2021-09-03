@@ -488,8 +488,6 @@ export class Application extends Model {
       }
     }
 
-    
-    console.log("-----> get application infos")
     const rqst = new resource.GetApplicationsRqst();
 
     const stream = Model.globular.resourceService.getApplications(rqst, {
