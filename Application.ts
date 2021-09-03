@@ -477,10 +477,11 @@ export class Application extends Model {
    */
   static getAllApplicationInfo(
     callback: (infos: Array<any>) => void,
-    errorCallback: (err: any) => void
+    errorCallback: (err: any) => void,
+    force:boolean = false
   ) {
 
-    if (Application.infos != undefined) {
+    if (Application.infos != undefined && !force) {
       if (Application.infos.size != 0) {
         callback(Array.from(Application.infos.values()));
         return
