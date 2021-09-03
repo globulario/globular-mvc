@@ -480,6 +480,15 @@ export class Application extends Model {
     errorCallback: (err: any) => void
   ) {
 
+    if (Application.infos != undefined) {
+      if (Application.infos.size != 0) {
+        callback(Array.from(Application.infos.values()));
+        return
+      }
+    }
+
+    
+    console.log("-----> get application infos")
     const rqst = new resource.GetApplicationsRqst();
 
     const stream = Model.globular.resourceService.getApplications(rqst, {
@@ -495,7 +504,7 @@ export class Application extends Model {
 
     stream.on("status", (status) => {
       if (status.code === 0) {
-
+        console.log("applications info received!")
         Application.infos = new Map<string, resource.Application>();
         for (var i = 0; i < applications.length; i++) {
           // Keep application info up to date.
@@ -515,6 +524,7 @@ export class Application extends Model {
 
         callback(applications);
       } else {
+        console.log("applications info error!")
         errorCallback({ message: status.details });
       }
     });
@@ -678,19 +688,19 @@ export class Application extends Model {
 
         // Callback on login.
         this.account = new Account(name, email, name);
-      
-          this.account.initData(
-            (account: Account) => {
-              this.view.resume();
-              onRegister(this.account);
-            },
-            (err: any) => {
-              onRegister(this.account);
-              this.view.resume();
-              onError(err);
-            }
-          );
-        
+
+        this.account.initData(
+          (account: Account) => {
+            this.view.resume();
+            onRegister(this.account);
+          },
+          (err: any) => {
+            onRegister(this.account);
+            this.view.resume();
+            onError(err);
+          }
+        );
+
 
         this.startRefreshToken();
       })

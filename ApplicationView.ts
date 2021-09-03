@@ -648,12 +648,6 @@ export class ApplicationView extends View {
     // The application settings...
     let applicationSettings = new ApplicationSettings(this.application, this.settingsMenu, this.settingsPanel);
 
-    // Manage roles
-    let roleSettings = new RoleSettings(this.settingsMenu, this.settingsPanel)
-
-    // Manage groups
-    let groupSettings = new GroupSettings(this.settingsMenu, this.settingsPanel)
-
     // The file settings
     let fileSettings = new FileSettings(this.settingsMenu, this.settingsPanel);
 
