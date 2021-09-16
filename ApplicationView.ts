@@ -37,6 +37,10 @@ const nameGenrator = new DockerNames();
 import "./style.css"
 import { rgbToHsl } from "./components/utility";
 import { readDir, uploadFiles } from "globular-web-client/api";
+import { ServerGeneralSettings } from "./serverGeneralSettings";
+import { PermissionsSettings } from "./permissionSettings";
+import { SaveConfigRequest } from "globular-web-client/admin/admin_pb";
+import { ServicesSettings } from "./servicesSettings";
 
 /**
  * Application view made use of Web-component and Materialyse to create a basic application
@@ -91,6 +95,10 @@ export class ApplicationView extends View {
 
   /** The settings Panel */
   protected settingsPanel: SettingsPanel;
+
+  protected serverSettings: ServerGeneralSettings;
+
+  protected servicesSettings: ServicesSettings;
 
   /** The camera */
   private _camera: Camera;
@@ -234,7 +242,7 @@ export class ApplicationView extends View {
       (account: Account) => {
 
         this.onLogin(account);
-        
+
         // Here I will set contact menu actions.
 
         // On invite contact action.
@@ -653,6 +661,33 @@ export class ApplicationView extends View {
 
     // The logs
     let logs = new LogSettings(this.settingsMenu, this.settingsPanel);
+    
+    //ApplicationView.displayMessage("The server will now restart...", 3000)
+    // make sure the configuration is not the actual server configuration
+    let config = JSON.parse(JSON.stringify(Model.globular.config))
+    delete config["Services"] // do not display services configuration here...
+
+    let saveMenuItem = this.settingsMenu.appendSettingsMenuItem("save", "Save");
+    saveMenuItem.onclick = () => {
+      saveMenuItem.style.display = "none"
+
+      let saveRqst = new SaveConfigRequest
+      saveRqst.setConfig(JSON.stringify(config))
+      Model.globular.adminService.saveConfig(saveRqst, {
+        token: localStorage.getItem("user_token"),
+        application: Model.application,
+        domain: Model.domain
+      }).then(() => { })
+        .catch(err => {
+          ApplicationView.displayMessage(err, 3000)
+        })
+    }
+
+    saveMenuItem.style.display = "none"
+
+    let serverGeneralSettings = new ServerGeneralSettings(config, this.settingsMenu, this.settingsPanel, saveMenuItem);
+    let servicesSettings = new ServicesSettings(this.settingsMenu, this.settingsPanel, saveMenuItem);
+
 
     // Set the file explorer...
     this.fileExplorer.setRoot("/users/" + account.name)
@@ -745,7 +780,7 @@ export class ApplicationView extends View {
   }
 
 
-  showCamera(onclose: () => void, onsaveimage: (picture: any) => void, onsavevideo:(video:any)=>void) {
+  showCamera(onclose: () => void, onsaveimage: (picture: any) => void, onsavevideo: (video: any) => void) {
 
     // Here I will create a non-selectable div and put camera in center of it...
     document.body.style.position = "relative"
@@ -775,7 +810,7 @@ export class ApplicationView extends View {
     this.camera.open();
   }
 
-  showFilebrowser(path:string, onclose:()=>void){
+  showFilebrowser(path: string, onclose: () => void) {
 
     document.body.style.position = "relative"
     let modal = document.createElement("div")
@@ -799,7 +834,7 @@ export class ApplicationView extends View {
     fileExplorer.init()
     fileExplorer.open(modal)
 
-    fileExplorer.onclose = ()=>{
+    fileExplorer.onclose = () => {
       fileExplorer.parentNode.removeChild(fileExplorer)
       modal.parentNode.removeChild(modal)
       fileExplorer.delete() // remove all listeners.
