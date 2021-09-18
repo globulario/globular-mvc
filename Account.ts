@@ -4,6 +4,8 @@ import * as ResourceService from "globular-web-client/resource/resource_pb";
 import { mergeTypedArrays, uint8arrayToStringMethod } from "./Utility";
 import { Group } from "./Group";
 import { Session } from "./Session"
+import { ApplicationView } from "./ApplicationView";
+import { Application } from "./Application";
 /**
  * Basic account class that contain the user id and email.
  */
@@ -287,7 +289,11 @@ export class Account extends Model {
             .catch((err: any) => {
                 if (err.code == 13) {
                     // empty user data...
-                    successCallback({});
+                    // successCallback({});
+                    ApplicationView.displayMessage("no connection found on the server you need to login", 3000)
+                    setTimeout(()=>{
+                        Application.logout();
+                    }, 4000)
                 } else {
                     errorCallback(err);
                 }

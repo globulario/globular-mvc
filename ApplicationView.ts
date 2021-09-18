@@ -100,6 +100,8 @@ export class ApplicationView extends View {
 
   protected servicesSettings: ServicesSettings;
 
+  protected permissionsSettings: PermissionsSettings;
+
   /** The camera */
   private _camera: Camera;
   public get camera(): Camera {
@@ -687,7 +689,7 @@ export class ApplicationView extends View {
 
     let serverGeneralSettings = new ServerGeneralSettings(config, this.settingsMenu, this.settingsPanel, saveMenuItem);
     let servicesSettings = new ServicesSettings(this.settingsMenu, this.settingsPanel, saveMenuItem);
-
+    let permissionsSettings = new PermissionsSettings(this.settingsMenu, this.settingsPanel, saveMenuItem);
 
     // Set the file explorer...
     this.fileExplorer.setRoot("/users/" + account.name)
@@ -984,7 +986,7 @@ export class ApplicationView extends View {
         accounts = accounts.filter((obj: Account) => {
           // remove participant already in the conversation and the current account.
           let index = conversation.getParticipantsList().indexOf(obj.id);
-          return obj.id !== this.application.account.id && index == -1;
+          return obj.id !== Application.account.id && index == -1;
         });
 
         inviteContactInput.setValues(accounts)
@@ -1003,9 +1005,9 @@ export class ApplicationView extends View {
     }
 
     inviteContactInput.displayValue = (contact: Account) => {
-      let card = new ContactCard(this.application.account, contact);
+      let card = new ContactCard(Application.account, contact);
       card.setInviteButton((a: Account) => {
-        ConversationManager.sendConversationInvitation(conversation.getUuid(), conversation.getName(), this.application.account.id, a.id,
+        ConversationManager.sendConversationInvitation(conversation.getUuid(), conversation.getName(), Application.account.id, a.id,
           () => {
             Model.eventHub.publish("send_conversation_invitation_event_", { participant: a.name, conversation: conversation.getName() }, true)
           },
@@ -1072,11 +1074,11 @@ export class ApplicationView extends View {
     // On yes
     yesBtn.onclick = () => {
 
-      ConversationManager.deleteConversation(conversation.getUuid(), this.application.account.id, () => {
+      ConversationManager.deleteConversation(conversation.getUuid(), Application.account.id, () => {
         toast.dismiss();
         // Publish the list of participant with the account removed from it.
         let participants = conversation.getParticipantsList()
-        participants.splice(participants.indexOf(this.application.account.id), 1)
+        participants.splice(participants.indexOf(Application.account.id), 1)
         Model.eventHub.publish(`leave_conversation_${conversation.getUuid()}_evt`, JSON.stringify(participants), false)
         ApplicationView.displayMessage(
           "<iron-icon icon='communication:message' style='margin-right: 10px;'></iron-icon><div>Conversation named " +

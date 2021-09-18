@@ -96,7 +96,7 @@ export class Application extends Model {
     this._path = value;
   }
 
-  public account: Account;
+  public static account: Account;
 
   // Event listener's
   private login_event_listener: string;
@@ -176,9 +176,9 @@ export class Application extends Model {
         info.setApplication(Application.application)
         info.setUserid("")
         info.setUsername("")
-        if (this.account != undefined) {
-          info.setUserid(this.account.id)
-          info.setUsername(this.account.name)
+        if (Application.account != undefined) {
+          info.setUserid(Application.account.id)
+          info.setUsername(Application.account.name)
         }
 
         info.setMethod(error.name + " " + error.message)
@@ -232,7 +232,7 @@ export class Application extends Model {
           this.logout_event_listener = uuid;
         },
         (evt: any) => {
-          this.logout();
+          Application.logout();
         },
         true
       );
@@ -282,7 +282,7 @@ export class Application extends Model {
         },
         (version: string) => {
 
-          if (this.account == undefined) {
+          if (Application.account == undefined) {
             // reload the page...
             location.reload();
           } else {
@@ -478,7 +478,7 @@ export class Application extends Model {
   static getAllApplicationInfo(
     callback: (infos: Array<any>) => void,
     errorCallback: (err: any) => void,
-    force:boolean = false
+    force: boolean = false
   ) {
 
     if (Application.infos != undefined && !force) {
@@ -553,7 +553,7 @@ export class Application extends Model {
    * Display true if a session is open.
    */
   public get isLogged(): boolean {
-    return this.account != null;
+    return Application.account != null;
   }
 
   /**
@@ -597,8 +597,8 @@ export class Application extends Model {
 
         // Set the account
         Account.getAccount(userName, (account: Account) => {
-          this.account = account;
-          initCallback(this.account);
+          Application.account = account;
+          initCallback(Application.account);
         }, onError);
 
       })
@@ -630,7 +630,7 @@ export class Application extends Model {
         console.log("need to refresh token")
         this.refreshToken(
           (account: Account) => {
-            this.account = account;
+            Application.account = account;
           },
           (err: any) => {
             // simply display the error on the view.
@@ -686,15 +686,15 @@ export class Application extends Model {
         localStorage.setItem("user_email", (<any>decoded).email);
 
         // Callback on login.
-        this.account = new Account(name, email, name);
+        Application.account = new Account(name, email, name);
 
-        this.account.initData(
+        Application.account.initData(
           (account: Account) => {
             this.view.resume();
-            onRegister(this.account);
+            onRegister(Application.account);
           },
           (err: any) => {
-            onRegister(this.account);
+            onRegister(Application.account);
             this.view.resume();
             onError(err);
           }
@@ -811,12 +811,12 @@ export class Application extends Model {
         }).then(() => {
 
           Account.getAccount(id, (account: Account) => {
-            this.account = account;
+            Application.account = account;
 
             // so here I will get the session for the account...
-            this.account.session.state = SessionState.Online;
-            this.account.session.lastStateTime = new Date()
-            this.account.session.save(() => { }, (err: any) => {
+            Application.account.session.state = SessionState.Online;
+            Application.account.session.lastStateTime = new Date()
+            Application.account.session.save(() => { }, (err: any) => {
               ApplicationView.displayMessage(err, 3000)
             })
 
@@ -840,10 +840,10 @@ export class Application extends Model {
               false)
 
 
-            Model.eventHub.publish(`__session_state_${this.account.id}_change_event__`, this.account.session, true)
+            Model.eventHub.publish(`__session_state_${Application.account.id}_change_event__`, Application.account.session, true)
 
             // retreive the contacts
-            Account.getContacts(this.account, `{"status":"accepted"}`, (contacts: Array<Account>) => {
+            Account.getContacts(Application.account, `{"status":"accepted"}`, (contacts: Array<Account>) => {
               contacts.forEach(contact => {
                 this.addContactListener(contact)
               })
@@ -853,7 +853,7 @@ export class Application extends Model {
               })
 
             // Retreive conversations...
-            ConversationManager.loadConversation(this.account,
+            ConversationManager.loadConversation(Application.account,
               (conversations: Conversations) => {
                 Model.eventHub.publish("__load_conversations_event__", conversations.getConversationsList(), true)
               },
@@ -901,17 +901,19 @@ export class Application extends Model {
   /**
    * Close the current session explicitelty.
    */
-  logout() {
+  static logout() {
     // Send local event.
-    Model.eventHub.publish("logout_event", this.account, true);
+    if (Application.account != undefined) {
+      Model.eventHub.publish("logout_event", Application.account, true);
 
-    // So here I will set the account session state to onlise.
-    this.account.session.state = SessionState.Offline;
+      // So here I will set the account session state to onlise.
+      Application.account.session.state = SessionState.Offline;
 
-    Model.eventHub.publish(`__session_state_${this.account.id}_change_event__`, this.account.session, true)
+      Model.eventHub.publish(`__session_state_${Application.account.id}_change_event__`, Application.account.session, true)
 
-    // Set room to undefined.
-    this.account = null;
+      // Set room to undefined.
+      Application.account = null;
+    }
 
     // remove token informations
     localStorage.removeItem("remember_me");
@@ -922,10 +924,7 @@ export class Application extends Model {
     localStorage.removeItem("token_expired");
 
     // refresh the page to be sure all variable are clear...
-    this.view.wait("Wait until the application reload...")
-    setTimeout(() => {
-      window.location.reload();
-    }, 1000)
+    window.location.reload();
 
   }
 
@@ -1074,7 +1073,7 @@ export class Application extends Model {
       notification_.setNotificationType(resource.NotificationType.APPLICATION_NOTIFICATION)
     } else {
       notification_.setNotificationType(resource.NotificationType.USER_NOTIFICATION)
-      notification_.setSender(this.account.id)
+      notification_.setSender(Application.account.id)
     }
 
     rqst.setNotification(notification_)
@@ -1118,7 +1117,7 @@ export class Application extends Model {
     if (type == NotificationType.Application) {
       rqst.setRecipient(Model.application)
     } else {
-      rqst.setRecipient(this.account.id)
+      rqst.setRecipient(Application.account.id)
     }
 
     let stream = Model.globular.resourceService.getNotifications(rqst, {
@@ -1194,13 +1193,13 @@ export class Application extends Model {
   onInviteParticipant(evt: any) {
     // Create a user notification.
     let notification = new Notification(
-      this.account.id,
+      Application.account.id,
       NotificationType.User,
       evt["participant"],
       `
       <div style="display: flex; flex-direction: column;">
         <p>
-          ${this.account.name} invited you to join the conversation named ${evt["conversation"]}.
+          ${Application.account.name} invited you to join the conversation named ${evt["conversation"]}.
         </p>
       </div>`
     );
@@ -1226,13 +1225,13 @@ export class Application extends Model {
   onInviteContact(contact: Account) {
     // Create a user notification.
     let notification = new Notification(
-      this.account.id,
+      Application.account.id,
       NotificationType.User,
       contact.name,
       `
       <div style="display: flex; flex-direction: column;">
         <p>
-          ${this.account.name} want to add you as contact.<br>Click the <iron-icon id="Contacts_icon" icon="social:people" style="--iron-icon-fill-color: var(--palette-primary-main);"></iron-icon> button to accept or decline the invitation.
+          ${Application.account.name} want to add you as contact.<br>Click the <iron-icon id="Contacts_icon" icon="social:people" style="--iron-icon-fill-color: var(--palette-primary-main);"></iron-icon> button to accept or decline the invitation.
         </p>
       </div>`
     );
@@ -1241,7 +1240,7 @@ export class Application extends Model {
     this.sendNotifications(
       notification,
       () => {
-        Account.setContact(this.account, "sent", contact, "received",
+        Account.setContact(Application.account, "sent", contact, "received",
           () => {
             // this.displayMessage(, 3000)
           }, (err: any) => {
@@ -1258,13 +1257,13 @@ export class Application extends Model {
   onAcceptContactInvitation(contact: Account) {
     // Create a user notification.
     let notification = new Notification(
-      this.account.id,
+      Application.account.id,
       NotificationType.User,
       contact.name,
       `
       <div style="display: flex; flex-direction: column;">
         <p>
-          ${this.account.name} accept you as contact.
+          ${Application.account.name} accept you as contact.
           <br>Click the <iron-icon id="Contacts_icon" icon="social:people" style="--iron-icon-fill-color: var(--palette-primary-main);"></iron-icon> button to get more infos.
         </p>
       </div>`
@@ -1274,7 +1273,7 @@ export class Application extends Model {
     this.sendNotifications(
       notification,
       () => {
-        Account.setContact(this.account, "accepted", contact, "accepted",
+        Account.setContact(Application.account, "accepted", contact, "accepted",
           () => {
             // this.displayMessage(, 3000)
           }, (err: any) => {
@@ -1290,13 +1289,13 @@ export class Application extends Model {
   // Decline contact invitation.
   onDeclineContactInvitation(contact: Account) {
     let notification = new Notification(
-      this.account.id,
+      Application.account.id,
       NotificationType.User,
       contact.name,
       `
       <div style="display: flex; flex-direction: column;">
         <p>
-          Unfortunately ${this.account.name} declined your invitation.
+          Unfortunately ${Application.account.name} declined your invitation.
           <br>Click the <iron-icon id="Contacts_icon" icon="social:people" style="--iron-icon-fill-color: var(--palette-primary-main);"></iron-icon> button to get more infos.
         </p>
       </div>`
@@ -1306,7 +1305,7 @@ export class Application extends Model {
     this.sendNotifications(
       notification,
       () => {
-        Account.setContact(this.account, "declined", contact, "declined",
+        Account.setContact(Application.account, "declined", contact, "declined",
           () => {
             // this.displayMessage(, 3000)
           }, (err: any) => {
@@ -1322,13 +1321,13 @@ export class Application extends Model {
   // Revoke contact invitation.
   onRevokeContactInvitation(contact: Account) {
     let notification = new Notification(
-      this.account.id,
+      Application.account.id,
       NotificationType.User,
       contact.name,
       `
       <div style="display: flex; flex-direction: column;">
         <p>
-          Unfortunately ${this.account.name} revoke the invitation.
+          Unfortunately ${Application.account.name} revoke the invitation.
           <br>Click the <iron-icon id="Contacts_icon" icon="social:people" style="--iron-icon-fill-color: var(--palette-primary-main);"></iron-icon> button to get more infos.
         </p>
       </div>`
@@ -1338,7 +1337,7 @@ export class Application extends Model {
     this.sendNotifications(
       notification,
       () => {
-        Account.setContact(this.account, "revoked", contact, "revoked",
+        Account.setContact(Application.account, "revoked", contact, "revoked",
           () => {
             // this.displayMessage(, 3000)
           }, (err: any) => {
@@ -1354,13 +1353,13 @@ export class Application extends Model {
   // Delete contact invitation.
   onDeleteContact(contact: Account) {
     let notification = new Notification(
-      this.account.id,
+      Application.account.id,
       NotificationType.User,
       contact.name,
       `
       <div style="display: flex; flex-direction: column;">
         <p>
-          You and ${this.account.name} are no more in contact.
+          You and ${Application.account.name} are no more in contact.
           <br>Click the <iron-icon id="Contacts_icon" icon="social:people" style="--iron-icon-fill-color: var(--palette-primary-main);"></iron-icon> button to get more infos.
         </p>
       </div>`
@@ -1370,7 +1369,7 @@ export class Application extends Model {
     this.sendNotifications(
       notification,
       () => {
-        Account.setContact(this.account, "deleted", contact, "deleted",
+        Account.setContact(Application.account, "deleted", contact, "deleted",
           () => {
             // this.displayMessage(, 3000)
           }, (err: any) => {
