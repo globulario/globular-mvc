@@ -685,7 +685,7 @@ export function getRulesByName(selector) {
 
 var framesRules = {};
 /**
- * Find a rule whit a given name.
+ * Find a rule with a given name.
  * @param {string} The name of the rule to retreive.
  * @returns The rule if one exist, or null otherwise.
  */
@@ -742,7 +742,7 @@ export function getStyleRuleValue(style, selector, sheetPath) {
   return null;
 }
 /** 
- * Append a new style rule whit a given id.
+ * Append a new style rule with a given id.
  * @param {string} id The id of the rule to insert.
  * @param {string} rule The rule text itself.
  */

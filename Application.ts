@@ -429,6 +429,54 @@ export class Application extends Model {
             // send a refresh token event.
             // Model.eventHub.publish("refresh_token_event", account, true);
             Model.eventHub.publish("login_event", account, true);
+
+             // When new contact is accepted.
+             Model.eventHub.subscribe("accepted_" + account.id + "_evt",
+             (uuid) => { },
+             (evt) => {
+               let invitation = JSON.parse(evt);
+               this.addContactListener(invitation)
+             },
+             false)
+
+           Model.eventHub.publish(`__session_state_${account.id}_change_event__`, account.session, true)
+
+           Model.eventHub.subscribe("deleted_" + account.id + "_evt",
+             (uuid) => { },
+             (evt) => {
+               let invitation = JSON.parse(evt);
+               Model.eventHub.unSubscribe(`session_state_${invitation._id}_change_event`, this.contactsListener[invitation._id])
+             },
+             false)
+
+           // retreive the contacts
+           Account.getContacts(account, `{"status":"accepted"}`, (contacts: Array<Account>) => {
+             contacts.forEach(contact => {
+               this.addContactListener(contact)
+             })
+           },
+             (err: any) => {
+               ApplicationView.displayMessage(err, 3000)
+             })
+
+           // Retreive conversations...
+           ConversationManager.loadConversation(account,
+             (conversations: Conversations) => {
+               Model.eventHub.publish("__load_conversations_event__", conversations.getConversationsList(), true)
+             },
+             (err: any) => {
+               /* this.displayMessage(err, 3000)*/
+               /** no conversation found... */
+             })
+
+           // Connect to to the conversation manager.
+           ConversationManager.connect(
+             () => {
+               /* Nothing to do here **/
+             }, (err: any) => {
+               ApplicationView.displayMessage(err, 3000)
+             })
+
             this.view.resume();
 
             this.startRefreshToken();

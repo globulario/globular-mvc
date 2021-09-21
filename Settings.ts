@@ -716,7 +716,7 @@ export class LogSettings extends Settings {
     }
 
     /**
-     * Delete log a whit a specific key.
+     * Delete log a with a specific key.
      * @param key 
      * @param successCallback 
      * @param errorCallback 

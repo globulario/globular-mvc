@@ -1013,7 +1013,7 @@ class DateExpression extends Expression {
     return str;
   }
 
-} // Filter is a recursive structure that can contain other filter or expressions whit one operator (AND/OR).
+} // Filter is a recursive structure that can contain other filter or expressions with one operator (AND/OR).
 
 
 export class Filter {

@@ -3665,7 +3665,7 @@ export class FilesUploader extends HTMLElement {
     uploadFiles(path, files) {
 
         // So here I will try to get the most information from the backend to be able to keep the user inform about what append 
-        // whit uploading files process.
+        // with uploading files process.
         if (files.length > 0) {
             this.btn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-active)")
             this.shadowRoot.querySelector("iron-collapse").style.display = "block";
