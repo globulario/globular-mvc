@@ -62,9 +62,8 @@ export class PeerRTC extends HTMLElement {
         this.peerConnection.onicecandidate = (event) => {
             console.log("-------> ace candidate ",event.candidate)
             if (!event || !event.candidate) return;
-            
-                this.send({ 'new-ice-candidate': event.candidate });
-            
+    
+            this.send({ 'new-ice-candidate': event.candidate });
         };
 
         // Get the video element...
