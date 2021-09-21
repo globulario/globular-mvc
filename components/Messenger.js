@@ -830,6 +830,7 @@ export class Messenger extends HTMLElement {
                 display: none;
                 flex-direction: column;
                 position:fixed;
+                min-width: 477.58px;
                 bottom: 0px;
                 right: 0px;
                 background-color: var(--palette-background-paper);
@@ -944,7 +945,10 @@ export class Messenger extends HTMLElement {
                     button.icon = "unfold-less"
                 }
                 content.toggle();
-                this.shadowRoot.querySelector("globular-messages-list").setScroll();
+                let messagesList = this.shadowRoot.querySelector("globular-messages-list")
+                if(messagesList.setScroll !=undefined){
+                    messagesList.setScroll();
+                }
             }
         }
 

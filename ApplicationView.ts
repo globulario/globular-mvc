@@ -38,7 +38,6 @@ import "./style.css"
 import { rgbToHsl } from "./components/utility";
 import { readDir, uploadFiles } from "globular-web-client/api";
 import { ServerGeneralSettings } from "./serverGeneralSettings";
-import { PermissionsSettings } from "./permissionSettings";
 import { SaveConfigRequest } from "globular-web-client/admin/admin_pb";
 import { ServicesSettings } from "./servicesSettings";
 
@@ -100,8 +99,7 @@ export class ApplicationView extends View {
 
   protected servicesSettings: ServicesSettings;
 
-  protected permissionsSettings: PermissionsSettings;
-
+ 
   /** The camera */
   private _camera: Camera;
   public get camera(): Camera {
@@ -663,7 +661,15 @@ export class ApplicationView extends View {
 
     // The logs
     let logs = new LogSettings(this.settingsMenu, this.settingsPanel);
-    
+
+
+    // Manage roles
+    let roleSettings = new RoleSettings(this.settingsMenu, this.settingsPanel)
+
+    // Manage groups
+    let groupSettings = new GroupSettings(this.settingsMenu, this.settingsPanel)
+
+
     //ApplicationView.displayMessage("The server will now restart...", 3000)
     // make sure the configuration is not the actual server configuration
     let config = JSON.parse(JSON.stringify(Model.globular.config))
@@ -689,7 +695,6 @@ export class ApplicationView extends View {
 
     let serverGeneralSettings = new ServerGeneralSettings(config, this.settingsMenu, this.settingsPanel, saveMenuItem);
     let servicesSettings = new ServicesSettings(this.settingsMenu, this.settingsPanel, saveMenuItem);
-    let permissionsSettings = new PermissionsSettings(this.settingsMenu, this.settingsPanel, saveMenuItem);
 
     // Set the file explorer...
     this.fileExplorer.setRoot("/users/" + account.name)

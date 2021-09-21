@@ -107,7 +107,7 @@ export class Notification  extends Model{
         notification._recipient = obj._recipient
         notification._sender = obj._sender
         
-        if(obj._type == 1){
+        if(obj._type == 0){
             notification._type = NotificationType.Application
         }else{
             notification._type = NotificationType.User

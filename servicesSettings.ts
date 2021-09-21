@@ -15,7 +15,6 @@ export class ServicesSettings extends Settings {
         // Init the service configuration...
         this.getServicesConfiguration(
             (services: any) => {
-                console.log(services)
                 this.init(services, settingsMenu, settingsPanel, saveMenuItem)
                 // refresh service states...
                 setInterval(() => {
@@ -243,10 +242,7 @@ export class ServiceSetting {
     private service: any;
 
     constructor(service: any, serviceSetting: any, saveMenuItem: any) {
-        console.log(service)
-
-        // The restart all services button...
-
+    
 
         // Here I will display the non editable informations...
         let descriptionSetting = new ReadOnlyStringSetting("Description", "")
