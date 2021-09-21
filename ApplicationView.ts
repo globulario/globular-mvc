@@ -671,8 +671,13 @@ export class ApplicationView extends View {
     let groupSettings = new GroupSettings(this.settingsMenu, this.settingsPanel)
 
     // Test webRtc.
-    let peerRTC = new PeerRTC()
-    this.getWorkspace().appendChild(peerRTC)
+    let p0 = new PeerRTC()
+    this.getWorkspace().appendChild(p0)
+
+    let p1 = new PeerRTC()
+    this.getWorkspace().appendChild(p1)
+
+    p0.makeCall()
 
     //ApplicationView.displayMessage("The server will now restart...", 3000)
     // make sure the configuration is not the actual server configuration

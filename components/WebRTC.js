@@ -1,3 +1,4 @@
+import { Model } from "../Model";
 import { theme } from "./Theme";
 
 // Set WebRTC configuration values
@@ -7,6 +8,12 @@ window.RTCIceCandidate = window.mozRTCIceCandidate || window.RTCIceCandidate;
 
 navigator.getUserMedia = navigator.mozGetUserMedia || navigator.webkitGetUserMedia;
 window.URL = window.webkitURL || window.URL;
+window.iceServers = {
+    iceServers: [{
+            url: 'stun:23.21.150.121'
+        }
+    ]
+};
 
 /**
  *    
@@ -17,6 +24,9 @@ export class PeerRTC extends HTMLElement {
     // Create the applicaiton view.
     constructor() {
         super()
+
+        this.isOffer = false
+
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
 
@@ -36,27 +46,30 @@ export class PeerRTC extends HTMLElement {
         this.configuration = { 'iceServers': [{ 'urls': 'stun:stun.l.google.com:19302' }] }
 
         // The peer connection.
-        this.peerConnection = new RTCPeerConnection(this.configuration);
+        this.peerConnection = new RTCPeerConnection(window.iceServers);
+
 
         // Listen for connectionstatechange on the local RTCPeerConnection
-        this.peerConnection.addEventListener('connectionstatechange', event => {
-            if (peerConnection.connectionState === 'connected') {
+        this.peerConnection.onconnectionstatechange = (event) => {
+            console.log("-------> connection state change ", event)
+            if (this.peerConnection.connectionState === 'connected') {
                 // Peers connected!
                 console.log("connection state change!")
             }
-        });
+        };
 
         // Listen for local ICE candidates on the local RTCPeerConnection
-        this.peerConnection.addEventListener('icecandidate', event => {
-            if (event.candidate) {
+        this.peerConnection.onicecandidate = (event) => {
+            console.log("-------> ace candidate ",event.candidate)
+            if (!event || !event.candidate) return;
+            
                 this.send({ 'new-ice-candidate': event.candidate });
-            }
-        });
+            
+        };
 
         // Get the video element...
         this.localVideo = this.shadowRoot.getElementById('local-video');
         this.remoteVideo = this.shadowRoot.getElementById('remote-video');
-
 
         // Display the local video
         this.getUserMedia((localStream) => {
@@ -69,7 +82,17 @@ export class PeerRTC extends HTMLElement {
             this.localVideo.srcObject = localStream
         })
 
+        // Here I will use the event service for signaling web-rtc
+        Model.eventHub.subscribe("signaling_message_evt", (uuid)=>{
+            /** On subscribe event */
+        },(message)=>{
+            // Send message.
+            this.onMessage(message)
+        }, false)
+
     }
+
+    // Display the local 
 
     // Return the user media stream.
     getUserMedia(callback) {
@@ -84,31 +107,42 @@ export class PeerRTC extends HTMLElement {
     }
 
     /**
-     * Create offer
+     * Create offer message.
      */
     async makeCall() {
-        const offer = await peerConnection.createOffer();
+        this.isOffer = true
+        const offer = await this.peerConnection.createOffer();
         await this.peerConnection.setLocalDescription(offer);
         this.send({ 'offer': offer });
     }
 
+    /**
+     * Send a signaling message.
+     * @param {*} message 
+     */
     send(message) {
-        // Implement it.
+       Model.eventHub.publish("signaling_message_evt", JSON.stringify(message), false);
     }
 
     // The signaling message handler...
     async onMessage(message) {
-        if (message.answer) {
-            const remoteDesc = new RTCSessionDescription(message.answer);
+        
+        let msg = JSON.parse(message)
+
+        if (msg.answer && this.isOffer) {
+            const remoteDesc = new RTCSessionDescription(msg.answer);
             await this.peerConnection.setRemoteDescription(remoteDesc);
-        } else if (message.offer) {
-            peerConnection.setRemoteDescription(new RTCSessionDescription(message.offer));
-            const answer = await peerConnection.createAnswer();
+
+        } else if (msg.offer && !this.isOffer) {
+
+            this.peerConnection.setRemoteDescription(new RTCSessionDescription(msg.offer));
+            const answer = await this.peerConnection.createAnswer();
             await this.peerConnection.setLocalDescription(answer);
-            signalingChannel.send({ 'answer': answer });
-        } else if (message.iceCandidate) {
+            this.send({ 'answer': answer });
+
+        } else if (msg.iceCandidate) {
             try {
-                await this.peerConnection.addIceCandidate(message.iceCandidate);
+                await this.peerConnection.addIceCandidate(msg.iceCandidate);
             } catch (e) {
                 console.error('Error adding received ice candidate', e);
             }
