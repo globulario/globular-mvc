@@ -26,6 +26,7 @@ import { decode } from 'uint8-to-base64';
 import { v4 as uuidv4 } from "uuid";
 import { ApplicationView } from '../ApplicationView';
 import { getCoords } from "./utility.js"
+import {VideoConversation} from "./WebRTC.js"
 
 /**
  * Communication with your contact's
@@ -1061,6 +1062,9 @@ export class Messenger extends HTMLElement {
     // Here I will open the converstion.
     openConversation(conversation, messages) {
 
+        console.log("-------------> open conversation: ", conversation.getUuid())
+        new VideoConversation(conversation.getUuid())
+        
         // Display the messenger panel.
         this.shadowRoot.querySelector(".container").style.display = "flex";
         let conversationUuid = conversation.getUuid()
@@ -1087,7 +1091,6 @@ export class Messenger extends HTMLElement {
             },
             (msg) => {
                 // keep the message in the list of messages.
-                console.log("1065 ---->", msg)
                 this.conversations[conversationUuid].messages.push(msg)
 
             }, true)
@@ -1420,7 +1423,7 @@ export class ParticipantsList extends HTMLElement {
                 })
 
                 // Now I will append paticipant who wrote messages in that conversation and are not necessary in the room at that time...
-                let __participants__ = JSON.parse(JSON.stringify(conversation.getParticipantsList()));
+                let __participants__ = JSON.parse(JSON.stringify(conversation.getParticipantsList())) //.participants;
                 let __unavailable__ = []
                 messages.forEach(message => {
                     let index = __participants__.indexOf(message.getAuthor())

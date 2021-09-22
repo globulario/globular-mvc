@@ -16,7 +16,7 @@ import {
 } from "globular-web-client/persistence/persistence_pb";
 import { v4 as uuidv4 } from "uuid";
 import { mergeTypedArrays, uint8arrayToStringMethod } from "./Utility";
-import { ConversationManager } from "./Conversation";
+import { ConversationManager} from "./Conversation";
 import { Conversations } from "globular-web-client/conversation/conversation_pb";
 import { LogInfo, LogLevel, LogRqst, LogRsp } from "globular-web-client/log/log_pb";
 import { Session, SessionState } from "./Session";

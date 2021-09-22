@@ -15,7 +15,6 @@ import { OverflowMenu } from "./components/Menu";
 import { ApplicationsMenu } from "./components/Applications";
 import { Camera } from "./components/Camera";
 import { FileExplorer, FilesMenu } from "./components/File";
-import {PeerRTC} from "./components/WebRTC"
 import { SearchBar } from "./components/Search";
 import { ContactCard, ContactsMenu } from "./components/Contact";
 import { MessengerMenu, Messenger } from "./components/Messenger";
@@ -670,14 +669,6 @@ export class ApplicationView extends View {
     // Manage groups
     let groupSettings = new GroupSettings(this.settingsMenu, this.settingsPanel)
 
-    // Test webRtc.
-    let p0 = new PeerRTC()
-    this.getWorkspace().appendChild(p0)
-
-    let p1 = new PeerRTC()
-    this.getWorkspace().appendChild(p1)
-
-    p0.makeCall()
 
     //ApplicationView.displayMessage("The server will now restart...", 3000)
     // make sure the configuration is not the actual server configuration

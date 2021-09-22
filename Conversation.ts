@@ -7,6 +7,7 @@ import { Model } from "./Model";
 import { v4 as uuidv4 } from "uuid";
 import { GetResourcePermissionsRsp } from "globular-web-client/rbac/rbac_pb";
 import { encode, decode } from 'uint8-to-base64';
+import { Application } from "./Application";
 
 export class ConversationManager {
   public static uuid: string;
@@ -140,6 +141,12 @@ export class ConversationManager {
     })
   }
 
+  /**
+   * Join a conversation
+   * @param conversationUuid The conversation with given uuid
+   * @param succesCallback On success callback
+   * @param errorCallback On error callback
+   */
   static joinConversation(conversationUuid: string, succesCallback: (conversation: Conversation, messages: Message[]) => void, errorCallback: (err: any) => void) {
     let rqst = new JoinConversationRequest
     rqst.setConnectionUuid(ConversationManager.uuid)
@@ -172,7 +179,8 @@ export class ConversationManager {
         let participants = conversation.getParticipantsList()
 
         // network event.
-        Model.eventHub.publish(`leave_conversation_${conversationUuid}_evt`, JSON.stringify(participants), false)
+        Model.eventHub.publish(`ready_conversation_${conversationUuid}_evt`, JSON.stringify({"participants":participants, "participant":Application.account.id}), false)
+        
       } else {
         // No message found...
         if (status.details == "EOF") {
@@ -188,6 +196,7 @@ export class ConversationManager {
     });
 
   }
+
 
   // leave the conversation.
   static leaveConversation(conversationUuid: string, successCallback: () => void, errorCallback: (err: any) => void) {
@@ -419,4 +428,15 @@ export class ConversationManager {
     }).catch(errorCallback)
 
   }
+}
+
+/**
+ * Here I will create the signaling server use in conjunction with each other.
+ */
+export class SignalingServer{
+
+  constructor(){
+
+  }
+
 }

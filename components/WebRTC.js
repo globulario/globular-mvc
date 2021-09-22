@@ -1,34 +1,33 @@
-import { Model } from "../Model";
+import { Application } from '../Application';
+import { Model } from '../Model';
 import { theme } from "./Theme";
 
-// Set WebRTC configuration values
-window.RTCPeerConnection = window.mozRTCPeerConnection || window.webkitRTCPeerConnection;
-window.RTCSessionDescription = window.mozRTCSessionDescription || window.RTCSessionDescription;
-window.RTCIceCandidate = window.mozRTCIceCandidate || window.RTCIceCandidate;
-
-navigator.getUserMedia = navigator.mozGetUserMedia || navigator.webkitGetUserMedia;
-window.URL = window.webkitURL || window.URL;
-window.iceServers = {
-    iceServers: [{
-            url: 'stun:23.21.150.121'
-        }
-    ]
+// Contains the stun server URL we will be using.
+let iceServers = {
+    iceServers: [
+        { urls: "stun:stun.services.mozilla.com" },
+        { urls: "stun:stun.l.google.com:19302" },
+    ],
 };
 
 /**
- *    
+ * Video conversation.
  */
-export class PeerRTC extends HTMLElement {
+export class VideoConversation extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor() {
+    constructor(conversationUuid) {
         super()
 
-        this.isOffer = false
+        this.conversationUuid = conversationUuid
+        this.userStream = null;
 
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
+
+        // The connections with other participants.
+        this.connections = {};
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -36,118 +35,120 @@ export class PeerRTC extends HTMLElement {
             ${theme}
         </style>
 
-        <div>
-            <video id="local-video" autoplay controls style="width:40%;"></video>
-            <video id="remote-video" autoplay controls style="width:40%;"></video>
-        <div>
+        <div id="video-chat-room">
+            <video id="user-video"></video>
+            <video id="peer-video"></video>
+        </div>
+
         `
 
-        // The connection
-        this.configuration = { 'iceServers': [{ 'urls': 'stun:stun.l.google.com:19302' }] }
-
-        // The peer connection.
-        this.peerConnection = new RTCPeerConnection(window.iceServers);
-
-
-        // Listen for connectionstatechange on the local RTCPeerConnection
-        this.peerConnection.onconnectionstatechange = (event) => {
-            console.log("-------> connection state change ", event)
-            if (this.peerConnection.connectionState === 'connected') {
-                // Peers connected!
-                console.log("connection state change!")
-            }
-        };
-
-        // Listen for local ICE candidates on the local RTCPeerConnection
-        this.peerConnection.onicecandidate = (event) => {
-            console.log("-------> ace candidate ",event.candidate)
-            if (!event || !event.candidate) return;
-    
-            this.send({ 'new-ice-candidate': event.candidate });
-        };
-
-        // Get the video element...
-        this.localVideo = this.shadowRoot.getElementById('local-video');
-        this.remoteVideo = this.shadowRoot.getElementById('remote-video');
-
-        // Display the local video
-        this.getUserMedia((localStream) => {
-            // Here is an example how to create an offer.
-            localStream.getTracks().forEach(track => {
-                this.peerConnection.addTrack(track, localStream);
-            });
-
-            // display the stream into the local video.
-            this.localVideo.srcObject = localStream
-        })
-
-        // Here I will use the event service for signaling web-rtc
-        Model.eventHub.subscribe("signaling_message_evt", (uuid)=>{
-            /** On subscribe event */
-        },(message)=>{
-            // Send message.
-            this.onMessage(message)
+        // When a new participant join the room...
+        Model.eventHub.subscribe(`ready_conversation_${conversationUuid}_evt`, (uuid) => { }, (event) => {
+            this.onReady(JSON.parse(event))
         }, false)
 
+        // When we receive peer connection offer...
+        Model.eventHub.subscribe(`on_webrtc_offer_${conversationUuid + "_" + Application.account.id}_evt`, (uuid) => { }, (event) => {
+            this.onOffer(JSON.parse(event))
+        }, false)
+
+        // When we receive peer connection answer...
+        Model.eventHub.subscribe(`on_webrtc_answer_${conversationUuid + "_" + Application.account.id}_evt`, (uuid) => { }, (event) => {
+            this.onOffer(JSON.parse(event))
+        }, false)
+
+        // Get the video objects...
+        this.userVideo = this.shadowRoot.getElementById("user-video");
+        this.peerVideo = this.shadowRoot.getElementById("peer-video");
+
+        // Connect the user video
+        navigator.mediaDevices
+            .getUserMedia({
+                audio: true,
+                video: { width: 1280, height: 720 },
+            })
+            .then((stream) => {
+                /* use the stream */
+                this.userStream = stream;
+                this.userVideo.srcObject = stream;
+                this.userVideo.onloadedmetadata = (e) => {
+                    this.userVideo.play();
+                };
+            })
+            .catch(function (err) {
+                /* handle the error */
+                alert("Couldn't Access User Media");
+            });
     }
 
-    // Display the local 
-
-    // Return the user media stream.
-    getUserMedia(callback) {
-        navigator.getUserMedia({
-            audio: true,
-            video: true
-        }, callback, onerror);
-
-        function onerror(e) {
-            console.error(e);
+    // Event received when a user join a conversation.
+    onReady(event) {
+        console.log("on ready", event)
+        if (event.participant == Application.account.id) {
+            // Create offer to each participants
+            event.participants.forEach(participant => {
+                if (participant != Application.account.id) {
+                    let rtcPeerConnection = new RTCPeerConnection(iceServers);
+                    rtcPeerConnection.onicecandidate = OnIceCandidateFunction;
+                    rtcPeerConnection.ontrack = OnTrackFunction;
+                    rtcPeerConnection.addTrack(userStream.getTracks()[0], userStream);
+                    rtcPeerConnection.addTrack(userStream.getTracks()[1], userStream);
+                    rtcPeerConnection
+                        .createOffer()
+                        .then((offer) => {
+                            rtcPeerConnection.setLocalDescription(offer);
+                            this.connections[this.conversationUuid + "_" + participant] = rtcPeerConnection;
+                            Model.eventHub.publish(`on_webrtc_offer_${this.conversationUuid + "_" + participant}_evt`, JSON.stringify({ "offer": offer, "id": this.conversationUuid + "_" + participant }), false);
+                        })
+                        .catch((error) => {
+                            console.log(error);
+                        });
+                }
+            });
         }
     }
 
-    /**
-     * Create offer message.
-     */
-    async makeCall() {
-        this.isOffer = true
-        const offer = await this.peerConnection.createOffer();
-        await this.peerConnection.setLocalDescription(offer);
-        this.send({ 'offer': offer });
-    }
-
-    /**
-     * Send a signaling message.
-     * @param {*} message 
-     */
-    send(message) {
-       Model.eventHub.publish("signaling_message_evt", JSON.stringify(message), false);
-    }
-
-    // The signaling message handler...
-    async onMessage(message) {
-        
-        let msg = JSON.parse(message)
-
-        if (msg.answer && this.isOffer) {
-            const remoteDesc = new RTCSessionDescription(msg.answer);
-            await this.peerConnection.setRemoteDescription(remoteDesc);
-
-        } else if (msg.offer && !this.isOffer) {
-
-            this.peerConnection.setRemoteDescription(new RTCSessionDescription(msg.offer));
-            const answer = await this.peerConnection.createAnswer();
-            await this.peerConnection.setLocalDescription(answer);
-            this.send({ 'answer': answer });
-
-        } else if (msg.iceCandidate) {
-            try {
-                await this.peerConnection.addIceCandidate(msg.iceCandidate);
-            } catch (e) {
-                console.error('Error adding received ice candidate', e);
-            }
+    onOffer(event) {
+        console.log("on offer", event)
+        if (event.participant != Application.account.id) {
+            let rtcPeerConnection = new RTCPeerConnection(iceServers);
+            rtcPeerConnection.onicecandidate = OnIceCandidateFunction;
+            rtcPeerConnection.ontrack = OnTrackFunction;
+            rtcPeerConnection.addTrack(userStream.getTracks()[0], userStream);
+            rtcPeerConnection.addTrack(userStream.getTracks()[1], userStream);
+            rtcPeerConnection.setRemoteDescription(offer);
+            rtcPeerConnection
+                .createAnswer()
+                .then((answer) => {
+                    rtcPeerConnection.setLocalDescription(answer);
+                    this.connections[this.conversationUuid + "_" + event.participant] = rtcPeerConnection;
+                    Model.eventHub.publish(`on_webrtc_answer_${this.conversationUuid + "_" + participant}_evt`, JSON.stringify({ "answer": answer, "id": this.conversationUuid + "_" + Application.account.id }), false);
+                })
+                .catch((error) => {
+                    console.log(error);
+                });
         }
     }
 
+    onAnwser(event) {
+        console.log("on answer", event)
+        let rtcPeerConnection = this.connections[this.conversationUuid + "_" + event.participant]
+        rtcPeerConnection.setRemoteDescription(event.answer);
+    }
+
+    OnIceCandidateFunction(event) {
+        console.log("Candidate");
+        if (event.candidate) {
+            Model.eventHub.publish(`on_webrtc_candidate_${this.conversationUuid}_evt`, JSON.stringify(candidate), false);
+        }
+    }
+
+    OnTrackFunction(event) {
+        this.peerVideo.srcObject = event.streams[0];
+        this.peerVideo.onloadedmetadata = (e) => {
+            this.peerVideo.play();
+        };
+    }
 }
 
-customElements.define('globular-peer-rtc', PeerRTC)
+customElements.define('globular-video-conversation', VideoConversation)
