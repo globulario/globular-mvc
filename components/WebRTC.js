@@ -64,8 +64,8 @@ export class VideoConversation extends HTMLElement {
         // Connect the user video
         navigator.mediaDevices
             .getUserMedia({
-                audio: true,
-                video: { width: 1280, height: 720 },
+                audio: {'echoCancellation': true},
+                video: { /*width: 1280, height: 720*/ },
             })
             .then((stream) => {
                 /* use the stream */

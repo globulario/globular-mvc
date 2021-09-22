@@ -1063,7 +1063,8 @@ export class Messenger extends HTMLElement {
     openConversation(conversation, messages) {
 
         console.log("-------------> open conversation: ", conversation.getUuid())
-        new VideoConversation(conversation.getUuid())
+        let videoConversation = new VideoConversation(conversation.getUuid())
+        this.shadowRoot.querySelector(".container").appendChild(videoConversation)
         
         // Display the messenger panel.
         this.shadowRoot.querySelector(".container").style.display = "flex";
