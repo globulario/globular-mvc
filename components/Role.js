@@ -128,7 +128,12 @@ export class RolePanel extends HTMLElement {
                     <paper-ripple class="circle" recenters=""></paper-ripple>
                 </div>
             </div>
-            <iron-collapse id="collapase-panel"></iron-collapse>
+            <iron-collapse id="collapase-panel">
+                <div style="display: flex; flex-direction: row;">
+                    <div id="actions-div"></div>
+                    <div id="accounts-div"></div>
+                </div>
+            </iron-collapse>
         </div>
         `
 
@@ -146,6 +151,17 @@ export class RolePanel extends HTMLElement {
                 content.toggle();
             }
         }
+
+        let actionsDiv = this.shadowRoot.querySelector("#actions-div")
+        // Here I will create the action list...
+        role.getActionsList().forEach((action)=>{
+            console.log("---------------> role ", action)
+            let html = `
+            <div style="display: flex; flex-grow: 1;">
+                <span>${action}</span>
+                <paper-icon-button icon="delete"></paper-icon-button>
+            </div>`
+        })
     }
 
 }

@@ -66,8 +66,7 @@ export class PermissionManager {
             },
             (err: any) => {
                 if(err.message.indexOf("leveldb: not found") != -1) {
-                    console.log("=========> 158")
-                    
+ 
                 }else{
                     errorCallback(err)
                 }
