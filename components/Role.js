@@ -128,10 +128,20 @@ export class RolePanel extends HTMLElement {
                     <paper-ripple class="circle" recenters=""></paper-ripple>
                 </div>
             </div>
-            <iron-collapse id="collapase-panel">
-                <div style="display: flex; flex-direction: row;">
-                    <div id="actions-div"></div>
-                    <div id="accounts-div"></div>
+            <iron-collapse id="collapase-panel" >
+                <div>
+                    <div class="header">
+                        <span class="title">Actions(${role.getActionsList().length})</span>
+                            <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
+                                <iron-icon  id="action-hide-btn"  icon="unfold-less" style="flex-grow: 1; --iron-icon-fill-color:var(--palette-text-primary);" icon="add"></iron-icon>
+                                <paper-ripple class="circle" recenters=""></paper-ripple>
+                            </div>
+                        </div>
+                        <iron-collapse id="actions-collapase-panel" >
+                        <div id="actions-div" style="width: 100%;"></div>
+                        </iron-collapse>
+                </div>
+                <div id="accounts-div" style="width: 100%;">
                 </div>
             </iron-collapse>
         </div>
@@ -153,14 +163,16 @@ export class RolePanel extends HTMLElement {
         }
 
         let actionsDiv = this.shadowRoot.querySelector("#actions-div")
+
         // Here I will create the action list...
-        role.getActionsList().forEach((action)=>{
-            console.log("---------------> role ", action)
+        role.getActionsList().forEach((action) => {
             let html = `
-            <div style="display: flex; flex-grow: 1;">
-                <span>${action}</span>
+            <div style="display: flex; padding: 2px; align-items: center;">
+                <span style="flex-grow: 1;">${action}</span>
                 <paper-icon-button icon="delete"></paper-icon-button>
             </div>`
+            let div = document.createRange().createContextualFragment(html)
+            actionsDiv.appendChild(div)
         })
     }
 
