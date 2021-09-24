@@ -7,6 +7,7 @@ import { getAllRoles } from 'globular-web-client/api';
 import { Application } from '../Application';
 import { ApplicationView } from '../ApplicationView';
 import { SearchableList} from './List.js'
+import { GetAllActionsRequest } from 'globular-web-client/services_manager/services_manager_pb';
 
 export class RoleManager extends HTMLElement {
     // attributes.
@@ -141,6 +142,15 @@ export class RolePanel extends HTMLElement {
         // Here I will create the searchable actions list.
         let actionsList = new SearchableList("Actions", this.role.getActionsList())
         content.appendChild(actionsList)
+
+        // Now I will get the list of all actions install on the server.
+        let getAllActionsRqst = new GetAllActionsRequest
+        Model.globular.servicesManagerService.getAllActions(getAllActionsRqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+            .then( rsp =>{
+                console.log(rsp.getActionsList())
+            }).catch(err=>{
+                console.log(err)
+            })
 
         // Here I will append the account.
 
