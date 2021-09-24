@@ -6,6 +6,7 @@ import { GetRolesRqst } from 'globular-web-client/resource/resource_pb';
 import { getAllRoles } from 'globular-web-client/api';
 import { Application } from '../Application';
 import { ApplicationView } from '../ApplicationView';
+import { SearchableList} from './List.js'
 
 export class RoleManager extends HTMLElement {
     // attributes.
@@ -129,26 +130,20 @@ export class RolePanel extends HTMLElement {
                 </div>
             </div>
             <iron-collapse id="collapase-panel" >
-                <div>
-                    <div class="header">
-                        <span class="title">Actions(${role.getActionsList().length})</span>
-                            <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
-                                <iron-icon  id="action-hide-btn"  icon="unfold-less" style="flex-grow: 1; --iron-icon-fill-color:var(--palette-text-primary);" icon="add"></iron-icon>
-                                <paper-ripple class="circle" recenters=""></paper-ripple>
-                            </div>
-                        </div>
-                        <iron-collapse id="actions-collapase-panel" >
-                        <div id="actions-div" style="width: 100%;"></div>
-                        </iron-collapse>
-                </div>
-                <div id="accounts-div" style="width: 100%;">
-                </div>
+
             </iron-collapse>
         </div>
         `
 
         let content = this.shadowRoot.querySelector("#collapase-panel")
         this.hideBtn = this.shadowRoot.querySelector("#hide-btn")
+
+        // Here I will create the searchable actions list.
+        let actionsList = new SearchableList("Actions", this.role.getActionsList())
+        content.appendChild(actionsList)
+
+        // Here I will append the account.
+
         // give the focus to the input.
         this.hideBtn.onclick = () => {
             let button = this.shadowRoot.querySelector("#hide-btn")
@@ -162,18 +157,7 @@ export class RolePanel extends HTMLElement {
             }
         }
 
-        let actionsDiv = this.shadowRoot.querySelector("#actions-div")
 
-        // Here I will create the action list...
-        role.getActionsList().forEach((action) => {
-            let html = `
-            <div style="display: flex; padding: 2px; align-items: center;">
-                <span style="flex-grow: 1;">${action}</span>
-                <paper-icon-button icon="delete"></paper-icon-button>
-            </div>`
-            let div = document.createRange().createContextualFragment(html)
-            actionsDiv.appendChild(div)
-        })
     }
 
 }
