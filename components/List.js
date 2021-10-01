@@ -2,8 +2,9 @@ import { theme } from "./Theme";
 import { v4 as uuidv4 } from "uuid";
 import { ContactCard } from "./Contact";
 import { Account } from "../Account";
+
 /**
- * Search Box
+ * String seach listbox.
  */
 export class SearchableList extends HTMLElement {
     // attributes.
@@ -94,6 +95,11 @@ export class SearchableList extends HTMLElement {
 
         // Here I will create the action list...
         this.displayItems()
+    }
+
+    // Return the header div.
+    getHeader(){
+        return this.shadowRoot.querySelector("#header-div")
     }
 
     // That function can be overide, assume a string by default
