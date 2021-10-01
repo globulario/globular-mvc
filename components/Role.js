@@ -2,12 +2,13 @@ import { theme } from './Theme';
 import '@polymer/iron-icons/iron-icons.js';
 
 import { Model } from '../Model';
-import { GetRolesRqst } from 'globular-web-client/resource/resource_pb';
+import { AddAccountRoleRqst, GetRolesRqst } from 'globular-web-client/resource/resource_pb';
 import { getAllRoles } from 'globular-web-client/api';
 import { Application } from '../Application';
 import { ApplicationView } from '../ApplicationView';
-import { SearchableList} from './List.js'
+import { SearchableAccountList, SearchableList } from './List.js'
 import { GetAllActionsRequest } from 'globular-web-client/services_manager/services_manager_pb';
+import { Account } from '../Account';
 
 export class RoleManager extends HTMLElement {
     // attributes.
@@ -65,8 +66,10 @@ export class RoleManager extends HTMLElement {
         getAllRoles(Application.globular,
             (roles) => {
                 roles.forEach(r => {
-                    let panel = new RolePanel(r)
-                    content.appendChild(panel)
+                    if (r.getId() != "admin" && r.getId() != "guest") {
+                        let panel = new RolePanel(r)
+                        content.appendChild(panel)
+                    }
                 })
             }, err => { ApplicationView.displayMessage(err, 3000) })
     }
@@ -139,16 +142,62 @@ export class RolePanel extends HTMLElement {
         let content = this.shadowRoot.querySelector("#collapase-panel")
         this.hideBtn = this.shadowRoot.querySelector("#hide-btn")
 
+
         // Here I will create the searchable actions list.
-        let actionsList = new SearchableList("Actions", this.role.getActionsList())
+        let actionsList = new SearchableList("Actions", this.role.getActionsList(), (item) => {
+            // remove action...
+            console.log("remove action: ", item)
+        })
+
         content.appendChild(actionsList)
+
+        // Now the account list.
+        Account.getAccounts("{}", 
+        accounts =>{
+
+            // I will get the account object whit the given id.
+            let list = []
+            this.role.getMembersList().forEach(accountId=>{
+                let a_ = accounts.find(a => a._id === accountId);
+                if(a_!=undefined){
+                    list.push(a_)
+                }
+            })
+
+            let accountsList = new SearchableAccountList("Accounts", list , a=>{
+                console.log("remove account ", a._id, "from role ", role.getId())
+                accountsList.removeItem(a)
+            },
+            a=>{
+                console.log("append account ", a._id, "to role", role.getId())
+                let rqst = new AddAccountRoleRqst
+                rqst.setRoleid(role.getId())
+                rqst.setAccountid(a._id)
+                Model.globular.resourceService.addAccountRole(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+                .then(rsp => {
+                    accountsList.appendItem(a)
+                    ApplicationView.displayMessage("Account " + a._id + " has now role " + role.getId(), 3000)
+                }).catch(err => {
+                    accountsList.removeItem(a)
+                    ApplicationView.displayMessage(err, 3000)
+                })
+               
+            })
+    
+            content.appendChild(accountsList)
+        }, err=>{
+
+        })
+
+  
+
 
         // Now I will get the list of all actions install on the server.
         let getAllActionsRqst = new GetAllActionsRequest
         Model.globular.servicesManagerService.getAllActions(getAllActionsRqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
-            .then( rsp =>{
+            .then(rsp => {
                 console.log(rsp.getActionsList())
-            }).catch(err=>{
+            }).catch(err => {
                 console.log(err)
             })
 

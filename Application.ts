@@ -216,6 +216,7 @@ export class Application extends Model {
               // Here I will send a login success.
               console.log("login_event")
               // TODO the login will be publish later when the user data will be init
+             
               Model.eventHub.publish("login_event", account, true);
             },
             (err: any) => {
@@ -846,18 +847,19 @@ export class Application extends Model {
         connection.setUser(id)
         connection.setPassword(password)
         connection.setStore(StoreType.MONGO)
-        connection.setName(id + "_db")
+        connection.setName(id)
         connection.setPort(27017)
         connection.setTimeout(60)
         connection.setHost(Application.domain)
-
         rqst.setConnection(connection)
+
         Model.globular.persistenceService.createConnection(rqst, {
           token: localStorage.getItem("user_token"),
           application: Model.application,
           domain: Model.domain
         }).then(() => {
-
+          console.log("connection was created! ", id)
+          Application.account = new Account(id, email, userName);
           Account.getAccount(id, (account: Account) => {
             Application.account = account;
 

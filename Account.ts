@@ -119,7 +119,7 @@ export class Account extends Model {
      * @param errorCallback Error Callback.
      */
     public static getAccount(id: string, successCallback: (account: Account) => void, errorCallback: (err: any) => void) {
-        if(id.length == 0){
+        if (id.length == 0) {
             errorCallback("No account id given to getAccount function!")
             return
         }
@@ -148,7 +148,7 @@ export class Account extends Model {
             if (status.code == 0) {
                 let data = accounts_[0]
                 let account = new Account(data.getId(), data.getEmail(), data.getName())
-                
+
                 // so here I will get the session for the account...
                 account.session = new Session(account)
 
@@ -288,12 +288,19 @@ export class Account extends Model {
             })
             .catch((err: any) => {
                 if (err.code == 13) {
-                    // empty user data...
-                    // successCallback({});
-                    ApplicationView.displayMessage("no connection found on the server you need to login", 3000)
-                    setTimeout(()=>{
-                        Application.logout();
-                    }, 4000)
+
+                    if (Application.account.id == id) {
+                        if (err.message.indexOf("no documents in result") != -1) {
+                            successCallback({});
+                        } else {
+                            ApplicationView.displayMessage("no connection found on the server you need to login", 3000)
+                            setTimeout(() => {
+                                Application.logout();
+                            }, 4000)
+                        }
+                    } else {
+                        successCallback({});
+                    }
                 } else {
                     errorCallback(err);
                 }
@@ -354,21 +361,28 @@ export class Account extends Model {
                 Account.getContacts(this, `{}`,
                     (contacts: []) => {
                         // Set the list of contacts (received invitation, sent invitation and actual contact id's)
-                        this.session.initData(() => {
+                        if (this.session != undefined) {
+                            this.session.initData(() => {
+                                callback(this);
+                            }, onError)
+                        } else {
                             callback(this);
-                        }, onError)
+                        }
                     },
                     (err: any) => {
-                        this.session.initData(() => {
+                        if (this.session != undefined) {
+                            this.session.initData(() => {
+                                callback(this);
+                            }, onError)
+                        } else {
                             callback(this);
-                        }, onError)
+                        }
                     })
 
 
             },
             (err: any) => {
                 this.hasData = false;
-                // onError(err);
                 // Call success callback ...
                 if (callback != undefined && this.session != null) {
                     this.session.initData(() => {
@@ -480,7 +494,7 @@ export class Account extends Model {
     }
 
     public static setContact(from: Account, status_from: string, to: Account, status_to: string, successCallback: () => void, errorCallback: (err: any) => void) {
-        
+
         // So here I will save the contact invitation into pending contact invitation collection...
         let rqst = new ResourceService.SetAccountContactRqst
         rqst.setAccountid(from.id)
@@ -497,7 +511,7 @@ export class Account extends Model {
             domain: Model.domain
         })
             .then((rsp: ResourceService.SetAccountContactRsp) => {
-                let sentInvitation = `{"_id":"${to.id}", "invitationTime":${Math.floor(Date.now()/1000)}, "status":"${status_from}"}`
+                let sentInvitation = `{"_id":"${to.id}", "invitationTime":${Math.floor(Date.now() / 1000)}, "status":"${status_from}"}`
                 Model.eventHub.publish(status_from + "_" + from.id + "_evt", sentInvitation, false)
 
                 // Here I will return the value with it
@@ -509,7 +523,7 @@ export class Account extends Model {
                 contact.setStatus(status_to)
                 contact.setInvitationtime(Math.round(Date.now() / 1000))
                 rqst.setContact(contact)
-               
+
                 // call persist data
                 Model.globular.resourceService
                     .setAccountContact(rqst, {
@@ -519,7 +533,7 @@ export class Account extends Model {
                     })
                     .then((rsp: ReplaceOneRsp) => {
                         // Here I will return the value with it
-                        let receivedInvitation = `{"_id":"${from.id}", "invitationTime":${Math.floor(Date.now()/1000)}, "status":"${status_to}"}`
+                        let receivedInvitation = `{"_id":"${from.id}", "invitationTime":${Math.floor(Date.now() / 1000)}, "status":"${status_to}"}`
                         Model.eventHub.publish(status_to + "_" + to.id + "_evt", receivedInvitation, false)
                         successCallback();
                     })
