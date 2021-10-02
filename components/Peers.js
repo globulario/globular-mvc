@@ -2,15 +2,13 @@ import { theme } from './Theme';
 import '@polymer/iron-icons/iron-icons.js';
 
 import { Model } from '../Model';
-import { AddAccountRoleRqst, AddRoleActionsRqst, CreateRoleRqst, DeleteRoleRqst, RemoveRoleActionRqst, RemoveAccountRole, Role, RemoveAccountRoleRqst } from 'globular-web-client/resource/resource_pb';
-import { getAllRoles } from 'globular-web-client/api';
-import { Application } from '../Application';
+import { AddPeerActionsRqst, Peer, RemovePeerActionRqst } from 'globular-web-client/resource/resource_pb';
+import { getAllPeersInfo } from 'globular-web-client/api';
 import { ApplicationView } from '../ApplicationView';
-import { SearchableAccountList, SearchableList } from './List.js'
+import { SearchableList } from './List.js'
 import { GetAllActionsRequest } from 'globular-web-client/services_manager/services_manager_pb';
-import { Account } from '../Account';
 
-export class RoleManager extends HTMLElement {
+export class PeersManager extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
@@ -25,7 +23,7 @@ export class RoleManager extends HTMLElement {
              <style>
                  ${theme}
 
-                #create-role-btn{
+                #create-peer-btn{
                     top: -42px;
                     right: 0px;
                     position: absolute;
@@ -61,7 +59,7 @@ export class RoleManager extends HTMLElement {
                     <div class="card-content">
                     </div>
                 </paper-card>
-                <paper-icon-button icon="add" id="create-role-btn"></paper-icon-button>
+                <paper-icon-button icon="add" id="create-peer-btn"></paper-icon-button>
              </div>
              `
 
@@ -71,115 +69,29 @@ export class RoleManager extends HTMLElement {
         // give the focus to the input.
         let container = this.shadowRoot.querySelector("#container")
 
-        let displayRoles = ()=>{
+        let displayPeers = () => {
             content.innerHTML = ""
-        // Here I will get the list of all roles.
-        getAllRoles(Application.globular,
-            (roles) => {
-                roles.forEach(r => {
-                    if (r.getId() != "admin" && r.getId() != "guest") {
-                        let panel = new RolePanel(r)
+            // Here I will get the list of all peers.
+            getAllPeersInfo(Model.globular,
+                (peers) => {
+                    peers.forEach(p => {
+                        let panel = new PeerPanel(p)
                         content.appendChild(panel)
-                    }
-                })
-            }, err => { ApplicationView.displayMessage(err, 3000) })
-        }
-         
-        // call once
-        displayRoles()
 
-        Model.globular.eventHub.subscribe("refresh_role_evt", uuid=>{}, evt=>{
-            displayRoles()
-        }, true)
-
-        let createRoleBtn = this.shadowRoot.querySelector("#create-role-btn")
-        createRoleBtn.onclick = () => {
-            let html = `
-            <style>
-                ${theme}
-                #create-role-panel{
-                    position: absolute;
-                    right: 0px;
-                    top: 0px;
-                    z-index: 1;
-                }
-                #create-role-panel .card-content{
-                    min-width: 200px;
-                    padding: 0px 10px 0px 10px;
-                    display: flex;
-                    flex-direction: column;
-                }
-
-            </style>
-            <paper-card id="create-role-panel">
-                <div style="display: flex; align-items: center;">
-                    <div style="flex-grow: 1; padding: 5px;">
-                        Create Role
-                    </div>
-                    <paper-icon-button id="cancel-btn" icon="close"></paper-icon-button>
-                </div>
-                <div class="card-content">
-                    <paper-input></paper-input>
-                    
-                    <paper-button style="align-self: end;">Create</paper-button>
-                </div>
-            </paper-card>
-            `
-
-            let panel = container.querySelector("#create-role-panel")
-            let input = null
-            if (panel == undefined) {
-                container.appendChild(document.createRange().createContextualFragment(html))
-                panel = container.querySelector("#create-role-panel")
-                let closeBtn = panel.querySelector("#cancel-btn")
-                closeBtn.onclick = () => {
-                    panel.parentNode.removeChild(panel)
-                }
-
-                input = panel.querySelector("paper-input")
-                let createRoleButton =  panel.querySelector("paper-button")
-
-                // Create a new role.
-                createRoleButton.onclick = ()=>{
-                    let roleId = input.value;
-                    if(roleId.length == 0){
-                        ApplicationView.displayMessage("No role name was given!", 3000)
-                        setTimeout(() => {
-                            input.focus()
-                          }, 100)
-                        return
-                    }
-
-                    let createRoleRqst = new CreateRoleRqst
-                    let role = new Role
-                    role.setId(roleId)
-                    role.setName(roleId)
-
-                    createRoleRqst.setRole(role)
-                    Model.globular.resourceService.createRole(createRoleRqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
-                    .then(rsp => {
-                        ApplicationView.displayMessage("Role " + roleId + " was created!", 3000)
-                        panel.parentNode.removeChild(panel)
-                        displayRoles()
-                    }).catch(err => {
-                        console.log(err)
-                        ApplicationView.displayMessage(err, 3000)
-                        setTimeout(() => {
-                            input.focus()
-                          }, 100)
                     })
-                   
-                }
-            }else{
-                input = panel.querySelector("paper-input")
-            }
-            
-            setTimeout(() => {
-                input.focus()
-              }, 100)
+                }, err => { 
 
+                    console.log("no peers found")
+                    ApplicationView.displayMessage(err, 3000) 
+                })
         }
 
+        // call once
+        displayPeers()
+
+        Model.globular.eventHub.subscribe("refresh_peer_evt", uuid => { }, evt => {
+            displayPeers()
+        }, true)
 
     }
 
@@ -189,20 +101,20 @@ export class RoleManager extends HTMLElement {
     }
 }
 
-customElements.define('globular-role-manager', RoleManager)
+customElements.define('globular-peer-manager', PeersManager)
 
 
 
-export class RolePanel extends HTMLElement {
+export class PeerPanel extends HTMLElement {
     // attributes.
     // Create the applicaiton view.
-    constructor(role) {
+    constructor(peer) {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
 
         // Keep group informations.
-        this.role = role;
+        this.peer = peer;
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -234,8 +146,8 @@ export class RolePanel extends HTMLElement {
         </style>
         <div id="container">
             <div class="header">
-                <paper-icon-button id="delete-role-btn" icon="delete"></paper-icon-button>
-                <span class="title">${this.role.getName()}</span>
+                <paper-icon-button id="delete-peer-btn" icon="delete"></paper-icon-button>
+                <span class="title">${this.peer.getName()}</span>
                 <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
                     <iron-icon  id="hide-btn"  icon="unfold-less" style="flex-grow: 1; --iron-icon-fill-color:var(--palette-text-primary);" icon="add"></iron-icon>
                     <paper-ripple class="circle" recenters=""></paper-ripple>
@@ -250,23 +162,23 @@ export class RolePanel extends HTMLElement {
         let content = this.shadowRoot.querySelector("#collapase-panel")
         this.hideBtn = this.shadowRoot.querySelector("#hide-btn")
 
-        let deleteBtn = this.shadowRoot.querySelector("#delete-role-btn")
-        deleteBtn.onclick = ()=>{
-            this.onDeleteRole(role)
+        let deleteBtn = this.shadowRoot.querySelector("#delete-peer-btn")
+        deleteBtn.onclick = () => {
+            this.onDeleteRole(peer)
         }
 
 
         // Here I will create the searchable actions list.
-        let actionsList = new SearchableList("Actions", this.role.getActionsList(),
+        let actionsList = new SearchableList("Actions", this.peer.getActionsList(),
             (action) => {
                 // remove action...
-                let removeActionRqst = new RemoveRoleActionRqst
+                let removeActionRqst = new RemovePeerActionRqst
                 removeActionRqst.setAction(action)
-                removeActionRqst.setRoleid(role.getId())
-                Model.globular.resourceService.removeRoleAction(removeActionRqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+                removeActionRqst.setRoleid(peer.getId())
+                Model.globular.resourceService.removePeerAction(removeActionRqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
                     .then(rsp => {
                         actionsList.removeItem(action)
-                        ApplicationView.displayMessage("Action " + action + " was removed from role " + role.getId(), 3000)
+                        ApplicationView.displayMessage("Action " + action + " was removed from peer " + peer.getId(), 3000)
                     }).catch(err => {
                         console.log(err)
                         ApplicationView.displayMessage(err, 3000)
@@ -274,7 +186,7 @@ export class RolePanel extends HTMLElement {
 
             },
             (action) => {
-                ApplicationView.displayMessage("Action " + action + " was added to role " + role.getId(), 3000)
+                ApplicationView.displayMessage("Action " + action + " was added to peer " + peer.getId(), 3000)
             },
             (actions) => {
 
@@ -294,7 +206,7 @@ export class RolePanel extends HTMLElement {
                         let html = `
                         <style>
                             ${theme}
-                            #add-role-action-panel{
+                            #add-peer-action-panel{
                                 position: absolute;
                                 right: 0px;
                                 z-index: 1;
@@ -307,7 +219,7 @@ export class RolePanel extends HTMLElement {
                             }
         
                         </style>
-                        <paper-card id="add-role-action-panel">
+                        <paper-card id="add-peer-action-panel">
                             <div style="display: flex; align-items: center;">
                                 <div style="flex-grow: 1; padding: 5px;">
                                     Add Action
@@ -321,11 +233,11 @@ export class RolePanel extends HTMLElement {
                         `
 
                         let headerDiv = actionsList.getHeader()
-                        let panel = headerDiv.querySelector("#add-role-action-panel")
+                        let panel = headerDiv.querySelector("#add-peer-action-panel")
 
                         if (panel == undefined) {
                             headerDiv.appendChild(document.createRange().createContextualFragment(html))
-                            panel = headerDiv.querySelector("#add-role-action-panel")
+                            panel = headerDiv.querySelector("#add-peer-action-panel")
                             panel.style.top = (headerDiv.offsetHeight / 2) + 14 + "px";
                             let closeBtn = panel.querySelector("#cancel-btn")
                             closeBtn.onclick = () => {
@@ -337,7 +249,7 @@ export class RolePanel extends HTMLElement {
                                 let html = `
                                 <div class="item-div" style="">
                                     <span style="flex-grow: 1;">${a}</span>
-                                    <paper-icon-button id="add-action-btn" icon="add" role="button" tabindex="0" aria-disabled="false"></paper-icon-button>
+                                    <paper-icon-button id="add-action-btn" icon="add" peer="button" tabindex="0" aria-disabled="false"></paper-icon-button>
                                 </div>
                                 `
                                 let content = panel.querySelector(".card-content")
@@ -346,10 +258,10 @@ export class RolePanel extends HTMLElement {
                                 let actionAddBtn = actionDiv.children[1]
                                 actionAddBtn.onclick = () => {
 
-                                    let rqst = new AddRoleActionsRqst
-                                    rqst.setRoleid(role.getId())
+                                    let rqst = new AddPeerActionsRqst
+                                    rqst.setPeerid(peer.getId())
                                     rqst.setActionsList([a])
-                                    Model.globular.resourceService.addRoleActions(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+                                    Model.globular.resourceService.addPeerAction(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
                                         .then(rsp => {
 
                                             actionDiv.parentNode.removeChild(actionDiv)
@@ -373,56 +285,6 @@ export class RolePanel extends HTMLElement {
                     })
             })
 
-        content.appendChild(actionsList)
-
-        // Now the account list.
-        Account.getAccounts("{}",
-            accounts => {
-
-                // I will get the account object whit the given id.
-                let list = []
-                this.role.getMembersList().forEach(accountId => {
-                    let a_ = accounts.find(a => a._id === accountId);
-                    if (a_ != undefined) {
-                        list.push(a_)
-                    }
-                })
-
-                let accountsList = new SearchableAccountList("Accounts", list, a => {
-                    accountsList.removeItem(a)
-                    let rqst = new RemoveAccountRoleRqst
-                    rqst.setRoleid(role.getId())
-                    rqst.setAccountid(a._id)
-                    Model.globular.resourceService.removeAccountRole(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
-                        .then(rsp => {
-                            accountsList.removeItem(a)
-                            ApplicationView.displayMessage("Account " + a._id + " was removed from role " + role.getId(), 3000)
-                        }).catch(err => {
-                            accountsList.appendItem(a) // set it back
-                            ApplicationView.displayMessage(err, 3000)
-                        })
-                },
-                    a => {
-                        let rqst = new AddAccountRoleRqst
-                        rqst.setRoleid(role.getId())
-                        rqst.setAccountid(a._id)
-                        Model.globular.resourceService.addAccountRole(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
-                            .then(rsp => {
-                                accountsList.appendItem(a)
-                                ApplicationView.displayMessage("Account " + a._id + " has now role " + role.getId(), 3000)
-                            }).catch(err => {
-                                accountsList.removeItem(a)
-                                ApplicationView.displayMessage(err, 3000)
-                            })
-
-                    })
-
-                content.appendChild(accountsList)
-            }, err => {
-                ApplicationView.displayMessage(err, 3000)
-            })
-
-
         // give the focus to the input.
         this.hideBtn.onclick = () => {
             let button = this.shadowRoot.querySelector("#hide-btn")
@@ -439,9 +301,9 @@ export class RolePanel extends HTMLElement {
 
     }
 
-    onDeleteRole(role) {
+    onDeleteRole(peer) {
         let toast = ApplicationView.displayMessage(
-          `
+            `
           <style>
             #yes-no-contact-delete-box{
               display: flex;
@@ -465,7 +327,7 @@ export class RolePanel extends HTMLElement {
     
           </style>
           <div id="yes-no-contact-delete-box">
-            <div>Your about to delete the role ${role.getName()}</div>
+            <div>Your about to delete the peer ${peer.getName()}</div>
             <div>Is it what you want to do? </div>
             <div style="justify-content: flex-end;">
               <paper-button id="yes-delete-contact">Yes</paper-button>
@@ -473,37 +335,37 @@ export class RolePanel extends HTMLElement {
             </div>
           </div>
           `,
-          15000 // 15 sec...
+            15000 // 15 sec...
         );
-    
+
         let yesBtn = document.querySelector("#yes-delete-contact")
         let noBtn = document.querySelector("#no-delete-contact")
-    
+
         // On yes
         yesBtn.onclick = () => {
 
-          let rqst = new DeleteRoleRqst
-          rqst.setRoleid(role.getId())
-          Model.globular.resourceService.deleteRole(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") } ).then((rsp)=>{
-            ApplicationView.displayMessage(
-                "<iron-icon icon='communication:message' style='margin-right: 10px;'></iron-icon><div>Role named " +
-                role.getName() +
-                " was deleted!</div>",
-                3000
-              );
-              Model.globular.eventHub.publish("refresh_role_evt", {}, true)
-              toast.dismiss();
-          }).catch(e=>{
-            ApplicationView.displayMessage(e, 3000)
-            toast.dismiss();
-          })
-    
+            let rqst = new DeleteRoleRqst
+            rqst.setRoleid(peer.getId())
+            Model.globular.resourceService.deleteRole(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") }).then((rsp) => {
+                ApplicationView.displayMessage(
+                    "<iron-icon icon='communication:message' style='margin-right: 10px;'></iron-icon><div>Role named " +
+                    peer.getName() +
+                    " was deleted!</div>",
+                    3000
+                );
+                Model.globular.eventHub.publish("refresh_peer_evt", {}, true)
+                toast.dismiss();
+            }).catch(e => {
+                ApplicationView.displayMessage(e, 3000)
+                toast.dismiss();
+            })
+
         }
-    
+
         noBtn.onclick = () => {
-          toast.dismiss();
+            toast.dismiss();
         }
-      }
+    }
 }
 
-customElements.define('globular-role-panel', RolePanel)
+customElements.define('globular-peer-panel', PeerPanel)

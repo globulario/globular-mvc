@@ -10,6 +10,8 @@ import { ImageCropperSetting, ImageSetting, SettingsMenu, SettingsPanel, Complex
 import { Model } from "./Model";
 import "@polymer/iron-icons/social-icons";
 import "@polymer/iron-icons/notification-icons";
+import { ApplicationManager } from "./components/Applications";
+import { PeersManager } from "./components/Peers";
 
 export class Settings {
 
@@ -312,8 +314,102 @@ export class GroupSettings extends Settings {
         groupSettingPage.appendChild(this.groupManager)
 
     }
+}
 
+export class ApplicationsSettings extends Settings {
+    applicationManager: ApplicationManager;
 
+    // The application.
+    constructor(settingsMenu: SettingsMenu, settingsPanel: SettingsPanel) {
+        super(settingsMenu, settingsPanel);
+
+        settingsMenu.appendSettingsMenuItem("icons:settings-applications", "Applications");
+
+        let applicationsSettingPage = <any>settingsPanel.appendSettingsPage("Applications");
+
+        // Append a title.
+        let html = `
+            <style>
+            .title {
+                font-size: 1.25rem;
+                text-transform: uppercase;
+                color: var(--cr-primary-text-color);
+                font-weight: 400;
+                letter-spacing: .25px;
+                margin-bottom: 12px;
+                margin-top: var(--cr-section-vertical-margin);
+                outline: none;
+                padding-bottom: 4px;
+                padding-top: 16px;
+            }
+
+            .subtitle{
+                font-size: 1rem;
+                text-align: left;
+                padding-bottom: 15px;
+            }
+
+            </style>
+            <div class="title">
+                Applications 
+            </div>
+            <span class="subtitle" style="font-size: 1rem;">Manage applications permissions</span>
+        `
+
+        // Display the file explorer...
+        applicationsSettingPage.appendChild(document.createRange().createContextualFragment(html));
+        this.applicationManager = new ApplicationManager()
+        applicationsSettingPage.appendChild(this.applicationManager)
+
+    }
+}
+
+export class PeersSettings extends Settings {
+   peersManager: PeersManager;
+
+    // The application.
+    constructor(settingsMenu: SettingsMenu, settingsPanel: SettingsPanel) {
+        super(settingsMenu, settingsPanel);
+
+        settingsMenu.appendSettingsMenuItem("icons:settings-applications", "Peers");
+
+        let peersSettingPage = <any>settingsPanel.appendSettingsPage("Peers");
+
+        // Append a title.
+        let html = `
+            <style>
+            .title {
+                font-size: 1.25rem;
+                text-transform: uppercase;
+                color: var(--cr-primary-text-color);
+                font-weight: 400;
+                letter-spacing: .25px;
+                margin-bottom: 12px;
+                margin-top: var(--cr-section-vertical-margin);
+                outline: none;
+                padding-bottom: 4px;
+                padding-top: 16px;
+            }
+
+            .subtitle{
+                font-size: 1rem;
+                text-align: left;
+                padding-bottom: 15px;
+            }
+
+            </style>
+            <div class="title">
+                Peers 
+            </div>
+            <span class="subtitle" style="font-size: 1rem;">Manage peers permissions</span>
+        `
+
+        // Display the file explorer...
+        peersSettingPage.appendChild(document.createRange().createContextualFragment(html));
+        this.peersManager = new PeersManager()
+        peersSettingPage.appendChild(this.peersManager)
+
+    }
 }
 
 /**
