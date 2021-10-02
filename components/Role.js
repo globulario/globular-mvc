@@ -2,7 +2,7 @@ import { theme } from './Theme';
 import '@polymer/iron-icons/iron-icons.js';
 
 import { Model } from '../Model';
-import { AddAccountRoleRqst, AddRoleActionsRqst, CreateRoleRqst, GetRolesRqst, RemoveRoleActionRqst, Role } from 'globular-web-client/resource/resource_pb';
+import { AddAccountRoleRqst, AddRoleActionsRqst, CreateRoleRqst, DeleteRoleRqst, GetRolesRqst, RemoveRoleActionRqst, Role } from 'globular-web-client/resource/resource_pb';
 import { getAllRoles } from 'globular-web-client/api';
 import { Application } from '../Application';
 import { ApplicationView } from '../ApplicationView';
@@ -87,6 +87,10 @@ export class RoleManager extends HTMLElement {
          
         // call once
         displayRoles()
+
+        Model.globular.eventHub.subscribe("refresh_role_evt", uuid=>{}, evt=>{
+            displayRoles()
+        }, true)
 
         let createRoleBtn = this.shadowRoot.querySelector("#create-role-btn")
         createRoleBtn.onclick = () => {
@@ -230,7 +234,7 @@ export class RolePanel extends HTMLElement {
         </style>
         <div id="container">
             <div class="header">
-                <paper-icon-button icon="delete"></paper-icon-button>
+                <paper-icon-button id="delete-role-btn" icon="delete"></paper-icon-button>
                 <span class="title">${this.role.getName()}</span>
                 <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
                     <iron-icon  id="hide-btn"  icon="unfold-less" style="flex-grow: 1; --iron-icon-fill-color:var(--palette-text-primary);" icon="add"></iron-icon>
@@ -245,6 +249,11 @@ export class RolePanel extends HTMLElement {
 
         let content = this.shadowRoot.querySelector("#collapase-panel")
         this.hideBtn = this.shadowRoot.querySelector("#hide-btn")
+
+        let deleteBtn = this.shadowRoot.querySelector("#delete-role-btn")
+        deleteBtn.onclick = ()=>{
+            this.onDeleteRole(role)
+        }
 
 
         // Here I will create the searchable actions list.
@@ -344,8 +353,7 @@ export class RolePanel extends HTMLElement {
                                         .then(rsp => {
 
                                             actionDiv.parentNode.removeChild(actionDiv)
-                                            actionsList.list.push(a)
-                                            actionsList.displayItems();
+                                            actionsList.appendItem(a)
 
                                             // call the onadditem.
                                             actionsList.onadditem(a)
@@ -420,6 +428,71 @@ export class RolePanel extends HTMLElement {
 
     }
 
+    onDeleteRole(role) {
+        let toast = ApplicationView.displayMessage(
+          `
+          <style>
+            #yes-no-contact-delete-box{
+              display: flex;
+              flex-direction: column;
+            }
+    
+            #yes-no-contact-delete-box globular-contact-card{
+              padding-bottom: 10px;
+            }
+    
+            #yes-no-contact-delete-box div{
+              display: flex;
+              font-size: 1rem;
+              padding-bottom: 10px;
+            }
+    
+            paper-button{
+              font-size: .85rem;
+              height: 32px;
+            }
+    
+          </style>
+          <div id="yes-no-contact-delete-box">
+            <div>Your about to delete the role ${role.getName()}</div>
+            <div>Is it what you want to do? </div>
+            <div style="justify-content: flex-end;">
+              <paper-button id="yes-delete-contact">Yes</paper-button>
+              <paper-button id="no-delete-contact">No</paper-button>
+            </div>
+          </div>
+          `,
+          15000 // 15 sec...
+        );
+    
+        let yesBtn = document.querySelector("#yes-delete-contact")
+        let noBtn = document.querySelector("#no-delete-contact")
+    
+        // On yes
+        yesBtn.onclick = () => {
+
+          let rqst = new DeleteRoleRqst
+          rqst.setRoleid(role.getId())
+          Model.globular.resourceService.deleteRole(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") } ).then((rsp)=>{
+            ApplicationView.displayMessage(
+                "<iron-icon icon='communication:message' style='margin-right: 10px;'></iron-icon><div>Role named " +
+                role.getName() +
+                " was deleted!</div>",
+                3000
+              );
+              Model.globular.eventHub.publish("refresh_role_evt", {}, true)
+              toast.dismiss();
+          }).catch(e=>{
+            ApplicationView.displayMessage(e, 3000)
+            toast.dismiss();
+          })
+    
+        }
+    
+        noBtn.onclick = () => {
+          toast.dismiss();
+        }
+      }
 }
 
 customElements.define('globular-role-panel', RolePanel)

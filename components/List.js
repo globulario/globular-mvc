@@ -20,6 +20,7 @@ export class SearchableList extends HTMLElement {
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
         this.list = list
+        this.title = title
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -156,11 +157,15 @@ export class SearchableList extends HTMLElement {
 
     removeItem(str) {
         this.list = this.list.filter(el => el !== str)
+        let titleDiv = this.shadowRoot.querySelector(".title")
+        titleDiv.innerHTML = `${this.title} (${this.list.length})`
         this.displayItems()
     }
 
     appendItem(item) {
         this.list.push(item)
+        let titleDiv = this.shadowRoot.querySelector(".title")
+        titleDiv.innerHTML = `${this.title} (${this.list.length})`
         this.displayItems()
     }
 
