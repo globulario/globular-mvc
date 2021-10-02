@@ -195,6 +195,7 @@ export class SearchableAccountList extends SearchableList {
                     #add-role-user-panel{
                         position: absolute;
                         right: 0px;
+                        z-index: 1;
                     }
 
                     .card-content{

@@ -287,7 +287,14 @@ export class Account extends Model {
                 successCallback(data);
             })
             .catch((err: any) => {
-                if (err.code == 13) {
+                if (err.code == 13 ) {
+
+                    if(Application.account == null){
+                        ApplicationView.displayMessage("no connection found on the server you need to login", 3000)
+                        setTimeout(() => {
+                            Application.logout();
+                        }, 4000)
+                    }
 
                     if (Application.account.id == id) {
                         if (err.message.indexOf("no documents in result") != -1) {

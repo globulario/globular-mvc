@@ -2,7 +2,7 @@ import { theme } from './Theme';
 import '@polymer/iron-icons/iron-icons.js';
 
 import { Model } from '../Model';
-import { AddAccountRoleRqst, AddRoleActionsRqst, GetRolesRqst } from 'globular-web-client/resource/resource_pb';
+import { AddAccountRoleRqst, AddRoleActionsRqst, CreateRoleRqst, GetRolesRqst, RemoveRoleActionRqst, Role } from 'globular-web-client/resource/resource_pb';
 import { getAllRoles } from 'globular-web-client/api';
 import { Application } from '../Application';
 import { ApplicationView } from '../ApplicationView';
@@ -24,9 +24,17 @@ export class RoleManager extends HTMLElement {
         this.shadowRoot.innerHTML = `
              <style>
                  ${theme}
+
+                #create-role-btn{
+                    top: -42px;
+                    right: 0px;
+                    position: absolute;
+                 }
+
                  #container{
                     display: flex;
                     flex-direction: column;
+                    position: relative;
                  }
 
                  .card-content {
@@ -49,10 +57,11 @@ export class RoleManager extends HTMLElement {
           
              </style>
              <div id="container">
-             <paper-card>
-                <div class="card-content">
-                </div>
-             </paper-card>
+                <paper-card>
+                    <div class="card-content">
+                    </div>
+                </paper-card>
+                <paper-icon-button icon="add" id="create-role-btn"></paper-icon-button>
              </div>
              `
 
@@ -62,6 +71,8 @@ export class RoleManager extends HTMLElement {
         // give the focus to the input.
         let container = this.shadowRoot.querySelector("#container")
 
+        let displayRoles = ()=>{
+            content.innerHTML = ""
         // Here I will get the list of all roles.
         getAllRoles(Application.globular,
             (roles) => {
@@ -72,6 +83,100 @@ export class RoleManager extends HTMLElement {
                     }
                 })
             }, err => { ApplicationView.displayMessage(err, 3000) })
+        }
+         
+        // call once
+        displayRoles()
+
+        let createRoleBtn = this.shadowRoot.querySelector("#create-role-btn")
+        createRoleBtn.onclick = () => {
+            let html = `
+            <style>
+                ${theme}
+                #create-role-panel{
+                    position: absolute;
+                    right: 0px;
+                    top: 0px;
+                    z-index: 1;
+                }
+                #create-role-panel .card-content{
+                    min-width: 200px;
+                    padding: 0px 10px 0px 10px;
+                    display: flex;
+                    flex-direction: column;
+                }
+
+            </style>
+            <paper-card id="create-role-panel">
+                <div style="display: flex; align-items: center;">
+                    <div style="flex-grow: 1; padding: 5px;">
+                        Create Role
+                    </div>
+                    <paper-icon-button id="cancel-btn" icon="close"></paper-icon-button>
+                </div>
+                <div class="card-content">
+                    <paper-input></paper-input>
+                    
+                    <paper-button style="align-self: end;">Create</paper-button>
+                </div>
+            </paper-card>
+            `
+
+            let panel = container.querySelector("#create-role-panel")
+            let input = null
+            if (panel == undefined) {
+                container.appendChild(document.createRange().createContextualFragment(html))
+                panel = container.querySelector("#create-role-panel")
+                let closeBtn = panel.querySelector("#cancel-btn")
+                closeBtn.onclick = () => {
+                    panel.parentNode.removeChild(panel)
+                }
+
+                input = panel.querySelector("paper-input")
+                let createRoleButton =  panel.querySelector("paper-button")
+
+                // Create a new role.
+                createRoleButton.onclick = ()=>{
+                    let roleId = input.value;
+                    if(roleId.length == 0){
+                        ApplicationView.displayMessage("No role name was given!", 3000)
+                        setTimeout(() => {
+                            input.focus()
+                          }, 100)
+                        return
+                    }
+
+                    let createRoleRqst = new CreateRoleRqst
+                    let role = new Role
+                    role.setId(roleId)
+                    role.setName(roleId)
+
+                    createRoleRqst.setRole(role)
+                    Model.globular.resourceService.createRole(createRoleRqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+                    .then(rsp => {
+                        ApplicationView.displayMessage("Role " + roleId + " was created!", 3000)
+                        panel.parentNode.removeChild(panel)
+                        displayRoles()
+                    }).catch(err => {
+                        console.log(err)
+                        ApplicationView.displayMessage(err, 3000)
+                        setTimeout(() => {
+                            input.focus()
+                          }, 100)
+                    })
+                   
+                }
+            }else{
+                input = panel.querySelector("paper-input")
+            }
+            
+            setTimeout(() => {
+                input.focus()
+              }, 100)
+
+        }
+
+
     }
 
     // The connection callback.
@@ -86,7 +191,6 @@ customElements.define('globular-role-manager', RoleManager)
 
 export class RolePanel extends HTMLElement {
     // attributes.
-
     // Create the applicaiton view.
     constructor(role) {
         super()
@@ -147,14 +251,23 @@ export class RolePanel extends HTMLElement {
         let actionsList = new SearchableList("Actions", this.role.getActionsList(),
             (action) => {
                 // remove action...
-                console.log("remove action: ", action)
+                let removeActionRqst = new RemoveRoleActionRqst
+                removeActionRqst.setAction(action)
+                removeActionRqst.setRoleid(role.getId())
+                Model.globular.resourceService.removeRoleAction(removeActionRqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+                    .then(rsp => {
+                        actionsList.removeItem(action)
+                        ApplicationView.displayMessage("Action " + action + " was removed from role " + role.getId(), 3000)
+                    }).catch(err => {
+                        console.log(err)
+                        ApplicationView.displayMessage(err, 3000)
+                    })
+
             },
             (action) => {
-                console.log("add action: ", action)
-                ApplicationView.displayMessage("Action " + action + " was set to " + role.getId(), 3000)
+                ApplicationView.displayMessage("Action " + action + " was added to role " + role.getId(), 3000)
             },
             (actions) => {
-                console.log("display the actions list panel...", actions)
 
                 // Now I will get the list of all actions install on the server.
                 let getAllActionsRqst = new GetAllActionsRequest
@@ -223,13 +336,13 @@ export class RolePanel extends HTMLElement {
                                 let actionDiv = content.children[content.children.length - 1]
                                 let actionAddBtn = actionDiv.children[1]
                                 actionAddBtn.onclick = () => {
-                                   
+
                                     let rqst = new AddRoleActionsRqst
                                     rqst.setRoleid(role.getId())
                                     rqst.setActionsList([a])
                                     Model.globular.resourceService.addRoleActions(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
                                         .then(rsp => {
-    
+
                                             actionDiv.parentNode.removeChild(actionDiv)
                                             actionsList.list.push(a)
                                             actionsList.displayItems();
@@ -248,6 +361,7 @@ export class RolePanel extends HTMLElement {
 
                     }).catch(err => {
                         console.log(err)
+                        ApplicationView.displayMessage(err, 3000)
                     })
             })
 
@@ -267,11 +381,9 @@ export class RolePanel extends HTMLElement {
                 })
 
                 let accountsList = new SearchableAccountList("Accounts", list, a => {
-                    console.log("remove account ", a._id, "from role ", role.getId())
                     accountsList.removeItem(a)
                 },
                     a => {
-                        console.log("append account ", a._id, "to role", role.getId())
                         let rqst = new AddAccountRoleRqst
                         rqst.setRoleid(role.getId())
                         rqst.setAccountid(a._id)
