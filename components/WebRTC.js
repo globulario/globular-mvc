@@ -61,7 +61,7 @@ export class VideoConversation extends HTMLElement {
                 // Create offer to each participants
                 event.participants.forEach(participant => {
                     if (participant != Application.account.id) {
-                        this.initLocalVideoStream( stream => {
+                        this.initLocalVideoStream(stream => {
                             let rtcPeerConnection = new RTCPeerConnection(iceServers);
                             rtcPeerConnection.onicecandidate = (candidate) => {
                                 console.log("Candidate ", candidate);
@@ -69,15 +69,15 @@ export class VideoConversation extends HTMLElement {
                                     Model.eventHub.publish(`on_webrtc_candidate_${this.conversationUuid + "_" + participant}_evt`, JSON.stringify(candidate), false);
                                 }
                             }
-    
+
                             rtcPeerConnection.ontrack = evt => {
                                 this.initRemoteVideoStream(participant, evt.streams[0])
                             }
-    
+
                             // Add audio track and video track.
                             rtcPeerConnection.addTrack(stream.getTracks()[0], stream);
                             rtcPeerConnection.addTrack(stream.getTracks()[1], stream);
-    
+
                             // Set the connection.
                             rtcPeerConnection
                                 .createOffer()
@@ -92,11 +92,65 @@ export class VideoConversation extends HTMLElement {
                         }, err => {
                             ApplicationView.displayMessage(err, 3000)
                         })
-    
+
+                        // connection state change handler.
+                        rtcPeerConnection.onconnectionstatechange = (event) => {
+                            switch (rtcPeerConnection.connectionState) {
+                                case "connected":
+                                    // The connection has become fully connected
+                                    console.log("connection whit " + participant + " is now open")
+                                    break;
+                                case "disconnected":
+                                case "failed":
+                                    // One or more transports has terminated unexpectedly or in an error
+                                    console.log("disconnected whit " + participant)
+                                    break;
+                                case "closed":
+                                    // The connection has been closed
+                                    console.log("connection whit " + participant + " is closed")
+                                    delete this.connections[this.conversationUuid + "_" + participant]
+                                    let peerVideo = this.querySelector("#" + participant + "_video")
+                                    if (peerVideo != undefined) {
+                                        peerVideo.parentNode.removeChild(peerVideo)
+                                    }
+                                    break;
+                            }
+                        }
+
                     }
                 });
             }
         }, false)
+
+        Model.eventHub.subscribe(`leave_conversation_${conversationUuid}_evt`,
+            (uuid) => {
+                this.listeners[conversationUuid].push({ evt: `leave_conversation_${conversationUuid}_evt`, listener: uuid })
+            },
+            (evt) => {
+                // Remove the participant.
+                evt = JSON.parse(evt)
+
+                // Close the connection with the client
+                if (evt.participant == Application.account.Id) {
+                    // Here I will close all conversation connections.
+                    for (let connectionId in this.connections) {
+                        if (connectionId.startsWith(conversationUuid)) {
+                            this.connections[connectionId].close()
+                        }
+                    }
+                } else {
+                    let connectionId = this.conversationUuid + "_" + evt.participant;
+                    if (this.connections[connectionId]) {
+                        this.connections[connectionId].close()
+                        // I will also remove the video element.
+                        let peerVideo = this.querySelector("#" + evt.participant + "_video")
+                        if (peerVideo != undefined) {
+                            peerVideo.parentNode.removeChild(peerVideo)
+                        }
+                    }
+                }
+            },
+            false);
 
         // When we receive peer connection offer...
         Model.eventHub.subscribe(`on_webrtc_offer_${conversationUuid + "_" + Application.account.id}_evt`, (uuid) => { }, (event) => {
@@ -110,17 +164,17 @@ export class VideoConversation extends HTMLElement {
                         Model.eventHub.publish(`on_webrtc_candidate_${this.conversationUuid + "_" + event.participant}_evt`, JSON.stringify(candidate), false);
                     }
                 }
-    
+
                 let offer = new RTCSessionDescription(event.offer)
                 rtcPeerConnection.ontrack = evt => {
                     this.initRemoteVideoStream(event.participant, evt.streams[0])
                 }
-    
+
                 // Add the track to the webrtc connection.
                 rtcPeerConnection.addTrack(stream.getTracks()[0], stream);
                 rtcPeerConnection.addTrack(stream.getTracks()[1], stream);
                 rtcPeerConnection.setRemoteDescription(offer);
-    
+
                 // create the answer.
                 rtcPeerConnection
                     .createAnswer()
@@ -132,12 +186,36 @@ export class VideoConversation extends HTMLElement {
                     .catch((err) => {
                         ApplicationView.displayMessage(err, 3000)
                     });
+
+                // connection state change handler.
+                rtcPeerConnection.onconnectionstatechange = (event) => {
+                    switch (rtcPeerConnection.connectionState) {
+                        case "connected":
+                            // The connection has become fully connected
+                            console.log("connection whit " + event.participant + " is now open")
+                            break;
+                        case "disconnected":
+                        case "failed":
+                            // One or more transports has terminated unexpectedly or in an error
+                            console.log("disconnected whit " + event.participant)
+                            break;
+                        case "closed":
+                            // The connection has been closed
+                            console.log("connection whit " + event.participant + " is closed")
+                            delete this.connections[this.conversationUuid + "_" + event.participant]
+                            let peerVideo = this.querySelector("#" + event.participant + "_video")
+                            if (peerVideo != undefined) {
+                                peerVideo.parentNode.removeChild(peerVideo)
+                            }
+                            break;
+                    }
+                }
             }, err => {
                 ApplicationView.displayMessage(err, 3000)
             })
         }, false)
 
-        // When we receive peer connection answer...
+        // When we receive peers connection answer...
         Model.eventHub.subscribe(`on_webrtc_answer_${conversationUuid + "_" + Application.account.id}_evt`, (uuid) => { }, (event) => {
             event = this.onAnwser(JSON.parse(event))
             let rtcPeerConnection = this.connections[event.connectionId]
@@ -161,7 +239,7 @@ export class VideoConversation extends HTMLElement {
         if (videoElement != undefined) {
 
             // Remove the echo...
-            videoElement.muted= true;
+            videoElement.muted = true;
             videoElement.volume = 0;
 
             if (videoElement.srcObject != undefined) {
@@ -195,10 +273,10 @@ export class VideoConversation extends HTMLElement {
      * @param {*} id Must be the id of the remote user.
      * @param {*} stream The stream given by the web-rtc.
      */
-    initRemoteVideoStream(id, stream){
+    initRemoteVideoStream(id, stream) {
         let peersVideo = this.shadowRoot.querySelector(".peersVideo")
-        let peerVideo = peerVideo.querySelector(id + "_video")
-        if(peerVideo == undefined){
+        let peerVideo = peersVideo.querySelector("#" + id + "_video")
+        if (peerVideo == undefined) {
             peerVideo = document.createElement("video")
             peerVideo.id = id + "_video"
             peersVideo.appendChild(peerVideo)
@@ -206,7 +284,7 @@ export class VideoConversation extends HTMLElement {
 
         peerVideo.srcObject = stream;
         peerVideo.onloadedmetadata = function (e) {
-          peerVideo.play();
+            peerVideo.play();
         };
     }
 

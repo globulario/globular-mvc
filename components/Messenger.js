@@ -1155,7 +1155,7 @@ export class Messenger extends HTMLElement {
             },
             (evt) => {
                 // Remove the participant.
-                let participants = JSON.parse(evt)
+                evt = JSON.parse(evt)
 
                 this.conversations[conversationUuid].conversation.setParticipantsList(evt.participants)
 
