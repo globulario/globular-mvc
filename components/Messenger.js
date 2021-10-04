@@ -1157,7 +1157,7 @@ export class Messenger extends HTMLElement {
                 // Remove the participant.
                 let participants = JSON.parse(evt)
 
-                this.conversations[conversationUuid].conversation.setParticipantsList(participants)
+                this.conversations[conversationUuid].conversation.setParticipantsList(evt.participants)
 
                 // Here I will unsubscribe to each event from it...
                 this.participantsList.setConversation(this.conversations[conversationUuid].conversation, this.conversations[conversationUuid].messages)

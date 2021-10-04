@@ -187,7 +187,7 @@ export class ConversationManager {
           succesCallback(conversation, messages)
           let participants = conversation.getParticipantsList()
           // network event.
-          Model.eventHub.publish(`leave_conversation_${conversationUuid}_evt`, JSON.stringify(participants), false)
+          Model.eventHub.publish(`leave_conversation_${conversationUuid}_evt`, JSON.stringify({"participants":participants, "participant":Application.account.id}), false)
           return
         }
         // An error happen
@@ -213,7 +213,7 @@ export class ConversationManager {
       let participants = rsp.getConversation().getParticipantsList()
 
       // network event.
-      Model.eventHub.publish(`leave_conversation_${conversationUuid}_evt`, JSON.stringify(participants), false)
+      Model.eventHub.publish(`leave_conversation_${conversationUuid}_evt`, JSON.stringify({"participants":participants, "participant":Application.account.id}), false)
 
     }).catch(errorCallback)
   }
