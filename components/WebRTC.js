@@ -83,6 +83,11 @@ export class VideoConversation extends HTMLElement {
         // First i will retreived the video object.
         let videoElement = this.shadowRoot.getElementById("local-video");
         if (videoElement != undefined) {
+
+            // Remove the echo...
+            videoElement.muted= true;
+            videoElement.volume = 0;
+
             if (videoElement.srcObject != undefined) {
                 callback(videoElement.srcObject)
                 return;
@@ -92,7 +97,7 @@ export class VideoConversation extends HTMLElement {
         // Connect the user video
         navigator.mediaDevices
             .getUserMedia({
-                audio: { 'echoCancellation': true },
+                audio: {},
                 video: {},
             })
             .then((stream) => {
@@ -174,7 +179,7 @@ export class VideoConversation extends HTMLElement {
 
     onOffer(event) {
         console.log("on offer", event)
-        
+
         initLocalVideoStream(stream => {
             // Init the new connection
             let rtcPeerConnection = new RTCPeerConnection(iceServers);
