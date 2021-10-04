@@ -75,6 +75,7 @@ export class VideoConversation extends HTMLElement {
                                 }
                             }
 
+                            // when video is received from the remote side.
                             rtcPeerConnection.ontrack = evt => {
                                 this.initRemoteVideoStream(participant, evt.streams[0])
                             }
