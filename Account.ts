@@ -292,9 +292,15 @@ export class Account extends Model {
                     if(Application.account == null){
                         ApplicationView.displayMessage("no connection found on the server you need to login", 3000)
                         setTimeout(() => {
-                            Application.logout();
+                            localStorage.removeItem("remember_me");
+                            localStorage.removeItem("user_token");
+                            localStorage.removeItem("user_id");
+                            localStorage.removeItem("user_name");
+                            localStorage.removeItem("user_email");
+                            localStorage.removeItem("token_expired");
+                            location.reload();
                             return;
-                        }, 4000)
+                        }, 3000)
                     }
 
                     if (Application.account.id == id) {
@@ -303,8 +309,15 @@ export class Account extends Model {
                         } else {
                             ApplicationView.displayMessage("no connection found on the server you need to login", 3000)
                             setTimeout(() => {
-                                Application.logout();
-                            }, 4000)
+                                localStorage.removeItem("remember_me");
+                                localStorage.removeItem("user_token");
+                                localStorage.removeItem("user_id");
+                                localStorage.removeItem("user_name");
+                                localStorage.removeItem("user_email");
+                                localStorage.removeItem("token_expired");
+                                location.reload();
+                                return;
+                            }, 3000)
                         }
                     } else {
                         successCallback({});
