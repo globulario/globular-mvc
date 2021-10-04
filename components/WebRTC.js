@@ -78,10 +78,10 @@ export class VideoConversation extends HTMLElement {
     }
 
     // Initialyse the local video stream object.
-    initLocalVideoStream(id, callback, errorCallback) {
+    initLocalVideoStream(callback, errorCallback) {
 
         // First i will retreived the video object.
-        let videoElement = this.shadowRoot.getElementById(id);
+        let videoElement = this.shadowRoot.getElementById("local-video");
         if (videoElement != undefined) {
             if (videoElement.srcObject != undefined) {
                 callback(videoElement.srcObject)
@@ -135,7 +135,7 @@ export class VideoConversation extends HTMLElement {
             // Create offer to each participants
             event.participants.forEach(participant => {
                 if (participant != Application.account.id) {
-                    this.initLocalVideoStream("local-video", stream => {
+                    this.initLocalVideoStream( stream => {
                         let rtcPeerConnection = new RTCPeerConnection(iceServers);
                         rtcPeerConnection.onicecandidate = (candidate) => {
                             console.log("Candidate ", candidate);
@@ -174,8 +174,8 @@ export class VideoConversation extends HTMLElement {
 
     onOffer(event) {
         console.log("on offer", event)
-        initLocalVideoStream(id, stream => {
-
+        
+        initLocalVideoStream(stream => {
             // Init the new connection
             let rtcPeerConnection = new RTCPeerConnection(iceServers);
             rtcPeerConnection.onicecandidate = (candidate) => {
