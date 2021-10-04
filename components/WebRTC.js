@@ -44,6 +44,11 @@ export class VideoConversation extends HTMLElement {
                 display: flex;
             }
 
+            peers-video video{
+                width: 400px; 
+                height: 400px;
+            }
+
         </style>
 
         <div id="video-chat-room">
