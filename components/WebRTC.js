@@ -121,7 +121,7 @@ export class VideoConversation extends HTMLElement {
 
         Model.eventHub.subscribe(`leave_conversation_${conversationUuid}_evt`,
             (uuid) => {
-                this.listeners[conversationUuid].push({ evt: `leave_conversation_${conversationUuid}_evt`, listener: uuid })
+               // todo remove listeners...
             },
             (evt) => {
                 // Remove the participant.
