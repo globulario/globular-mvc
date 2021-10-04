@@ -390,6 +390,49 @@ export class ApplicationPanel extends HTMLElement {
                 flex-grow: 1;
             }
 
+            .row{
+                display: flex;
+                color: var(--cr-primary-text-color);
+                font-family: Roboto, Arial, sans-serif;
+                align-items: center;
+                padding: 15px 16px 16px;
+                flex-direction: row;
+            }
+
+            .row span{
+                flex-basis: 156px;
+                line-height: 1rem;
+                font-size: .6875rem;
+                font-weight: 500;
+                flex-basis: 156px;
+                letter-spacing: .07272727em;
+                text-transform: uppercase;
+                hyphens: auto;
+                word-break: break-word;
+                word-wrap: break-word;
+            }
+
+            .row img {
+                max-width: 64px;
+                max-height: 64px;
+            }
+
+            .row div{
+                flex-grow: 1;
+                letter-spacing: .00625em;
+                font-size: 1rem;
+                font-weight: 400;
+                line-height: 1.5rem;
+                hyphens: auto;
+                word-break: break-word;
+                word-wrap: break-word;
+            }
+
+            #collapase-panel{
+                display: flex;
+                flex-direction: column;
+            }
+
         </style>
         <div id="container">
             <div class="header">
@@ -401,7 +444,26 @@ export class ApplicationPanel extends HTMLElement {
                 </div>
             </div>
             <iron-collapse id="collapase-panel" >
-
+                <div class="row">
+                    <span>Icon</span>
+                    <img src="${this.application.getIcon()}"></img>
+                </div>
+                <div class="row">
+                    <span>Id</span>
+                    <div>${this.application.getId()}</div>
+                </div>
+                <div class="row">
+                    <span>Publisher</span>
+                    <div>${this.application.getPublisherid()}</div>
+                </div>
+                <div class="row">
+                    <span>Alias</span>
+                    <paper-input value="${this.application.getAlias()}"></paper-input>
+                </div>
+                <div class="row">
+                    <span>Description</span>
+                    <paper-textarea value="${this.application.getDescription()}"></paper-input>
+                </div>
             </iron-collapse>
         </div>
         `
@@ -531,6 +593,7 @@ export class ApplicationPanel extends HTMLElement {
                     })
             })
 
+        actionsList.style.padding = "15px 16px 16px"
         content.appendChild(actionsList)
 
         // give the focus to the input.
@@ -549,7 +612,7 @@ export class ApplicationPanel extends HTMLElement {
 
     }
 
-    onDeleteApplication(role) {
+    onDeleteApplication(application) {
         let toast = ApplicationView.displayMessage(
             `
           <style>

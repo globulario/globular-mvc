@@ -108,9 +108,9 @@ export class Notification  extends Model{
         notification._sender = obj._sender
         
         if(obj._type == 0){
-            notification._type = NotificationType.Application
-        }else{
             notification._type = NotificationType.User
+        }else{
+            notification._type = NotificationType.Application
         }
 
         notification._date = new Date(obj._date * 1000)

@@ -2,12 +2,24 @@ import { Settings } from "./Settings"
 import { SettingsMenu, SettingsPanel, ComplexSetting, LinkSetting, EmailSetting, ActionSetting, ReadOnlyStringSetting, StringListSetting, StringSetting, DropdownSetting, TextAreaSetting, NumberSetting } from "./components/Settings"
 import * as resource from "globular-web-client/resource/resource_pb"
 import { Application } from "./Application";
+import { SaveConfigRequest } from "globular-web-client/admin/admin_pb";
+import { Model } from "./Model";
+import { ApplicationView } from "./ApplicationView";
 
 export class ServerGeneralSettings extends Settings {
     private config: any;
+    private needSave: boolean;
 
-    constructor(config: any, settingsMenu: SettingsMenu, settingsPanel: SettingsPanel, saveMenuItem: any) {
+    constructor(settingsMenu: SettingsMenu, settingsPanel: SettingsPanel) {
         super(settingsMenu, settingsPanel);
+        //ApplicationView.displayMessage("The server will now restart...", 3000)
+        // make sure the configuration is not the actual server configuration
+        this.config = JSON.parse(JSON.stringify(Model.globular.config))
+        delete this.config["Services"] // do not display services configuration here...
+
+        Model.globular.eventHub.subscribe("save_settings_evt", uuid => { }, evt => {
+            this.save()
+        }, true)
 
         // Create the settings menu and panel here
         let generalSettingsMenuItem = settingsMenu.appendSettingsMenuItem("settings", "General");
@@ -20,68 +32,68 @@ export class ServerGeneralSettings extends Settings {
 
         // Set the name of the server.
         let nameSetting = new StringSetting("Name", "The Globular server name")
-        nameSetting.setValue(config.Name)
+        nameSetting.setValue(this.config.Name)
         generalSettings.addSetting(nameSetting)
 
         //
         nameSetting.onchange = () => {
-            saveMenuItem.style.display = ""
-            config.Name = nameSetting.getValue()
+            this.config.Name = nameSetting.getValue()
+            this.needSave = true
         }
 
         let macSetting = new ReadOnlyStringSetting("MAC Address", "The Globular server MAC addresse")
-        macSetting.setValue(config.Mac)
+        macSetting.setValue(this.config.Mac)
         generalSettings.addSetting(macSetting)
 
         let versionSetting = new ReadOnlyStringSetting("Version", "The Globular server version number")
-        versionSetting.setValue(config.Version)
+        versionSetting.setValue(this.config.Version)
         generalSettings.addSetting(versionSetting)
 
         let buildSetting = new ReadOnlyStringSetting("Build", "The Globular server build number")
-        buildSetting.setValue(config.Build)
+        buildSetting.setValue(this.config.Build)
         generalSettings.addSetting(buildSetting)
 
         let platformSetting = new ReadOnlyStringSetting("Platfrom", "The server operating system and architecture")
-        platformSetting.setValue(config.Platform)
+        platformSetting.setValue(this.config.Platform)
         generalSettings.addSetting(platformSetting)
 
         // Now the port range.
         // The user name.
-        let portRangeSetting = new ComplexSetting("Grpc Port Range", "[" + config.PortsRange + "]")
+        let portRangeSetting = new ComplexSetting("Grpc Port Range", "[" + this.config.PortsRange + "]")
 
         // Set the user setting complex content.
         let startPortSetting = new NumberSetting("from port number", "Enter the starting port number (inclusive)")
-        startPortSetting.setValue(config.PortsRange.split("-")[0])
+        startPortSetting.setValue(this.config.PortsRange.split("-")[0])
         portRangeSetting.addSetting(startPortSetting)
 
         let endPortSetting = new NumberSetting("to port number", "Enter ending port number (inclusive)")
-        endPortSetting.setValue(config.PortsRange.split("-")[1])
+        endPortSetting.setValue(this.config.PortsRange.split("-")[1])
         portRangeSetting.addSetting(endPortSetting)
 
         startPortSetting.onchange = endPortSetting.onchange = () => {
-            config.PortsRange = startPortSetting.getValue() + "-" + endPortSetting.getValue()
-            portRangeSetting.setDescription("[" + config.PortsRange + "]")
-            saveMenuItem.style.display = ""
+            this.config.PortsRange = startPortSetting.getValue() + "-" + endPortSetting.getValue()
+            portRangeSetting.setDescription("[" + this.config.PortsRange + "]")
+            this.needSave = true
         }
 
         generalSettings.addSetting(portRangeSetting)
 
         let watchForUpdateSetting = new NumberSetting("Update Delay", "Delay before watch for update in seconds")
-        watchForUpdateSetting.setValue(config.WatchUpdateDelay)
+        watchForUpdateSetting.setValue(this.config.WatchUpdateDelay)
         generalSettings.addSetting(watchForUpdateSetting)
 
         watchForUpdateSetting.onchange = () => {
-            config.WatchUpdateDelay = watchForUpdateSetting.getValue()
-            saveMenuItem.style.display = ""
+            this.config.WatchUpdateDelay = parseInt(watchForUpdateSetting.getValue())
+            this.needSave = true
         }
 
-        let sessionTimeoutSetting = new NumberSetting("Session timeout", "The time tokens will be valid in milliseconds")
-        sessionTimeoutSetting.setValue(config.SessionTimeout)
+        let sessionTimeoutSetting = new NumberSetting("Session timeout", "The time tokens will be valid in seconds")
+        sessionTimeoutSetting.setValue(this.config.SessionTimeout)
         generalSettings.addSetting(sessionTimeoutSetting)
 
         sessionTimeoutSetting.onchange = () => {
-            config.SessionTimeout = sessionTimeoutSetting.getValue()
-            saveMenuItem.style.display = ""
+            this.config.SessionTimeout = parseInt(sessionTimeoutSetting.getValue())
+            this.needSave = true
         }
 
         let webSeverSettings = serverSettingsPage.appendSettings("Web Server", "Web server http settings");
@@ -89,12 +101,12 @@ export class ServerGeneralSettings extends Settings {
         // Set the protocol...
         let protocolSetting = new DropdownSetting("http/https", "Select the http server protocol")
         protocolSetting.setDropdownList(["http", "https"])
-        protocolSetting.setValue(config.Protocol)
+        protocolSetting.setValue(this.config.Protocol)
         webSeverSettings.addSetting(protocolSetting)
 
         protocolSetting.onchange = () => {
-            config.Protocol = protocolSetting.getValue()
-            saveMenuItem.style.display = ""
+            this.config.Protocol = protocolSetting.getValue()
+            this.needSave = true
         }
 
         let indexApplicationSetting = new DropdownSetting("Index Application", "The default application to display on the server")
@@ -107,57 +119,57 @@ export class ServerGeneralSettings extends Settings {
             }
             indexApplicationSetting.setDropdownList(applications)
         }, (err: any) => { })
-        indexApplicationSetting.setValue(config.IndexApplication)
+        indexApplicationSetting.setValue(this.config.IndexApplication)
         indexApplicationSetting.onchange = () => {
-            config.IndexApplication = indexApplicationSetting.getValue()
-            saveMenuItem.style.display = ""
+            this.config.IndexApplication = indexApplicationSetting.getValue()
+            this.needSave = true
         }
 
         // Now the http port...
         let httpPortSetting = new NumberSetting("http port number", "Enter the http port number")
-        httpPortSetting.setValue(config.PortHttp)
+        httpPortSetting.setValue(this.config.PortHttp)
         httpPortSetting.onchange = () => {
-            config.PortHttp = httpPortSetting.getValue()
-            saveMenuItem.style.display = ""
+            this.config.PortHttp = parseInt(httpPortSetting.getValue())
+            this.needSave = true
         }
         webSeverSettings.addSetting(httpPortSetting)
 
 
         let httpsPortSetting = new NumberSetting("https port number", "Enter the https port number")
-        httpsPortSetting.setValue(config.PortHttps)
+        httpsPortSetting.setValue(this.config.PortHttps)
         httpsPortSetting.onchange = () => {
-            config.PortHttps = httpsPortSetting.getValue()
-            saveMenuItem.style.display = ""
+            this.config.PortHttps = parseInt(httpsPortSetting.getValue())
+            this.needSave = true
         }
         webSeverSettings.addSetting(httpsPortSetting)
 
         let corsOriginsSettings_ = new ComplexSetting("Allowed Origins", "List of allowed Cross-origin")
 
         let corsOriginsSettings = new StringListSetting("Allowed Origins", "List of allowed Cross-origin")
-        corsOriginsSettings.setValues(config.AllowedOrigins)
+        corsOriginsSettings.setValues(this.config.AllowedOrigins)
         corsOriginsSettings.onchange = () => {
-            config.AllowedOrigins = corsOriginsSettings.getValues()
-            saveMenuItem.style.display = ""
+            this.config.AllowedOrigins = corsOriginsSettings.getValues()
+            this.needSave = true
         }
         corsOriginsSettings_.addSetting(corsOriginsSettings)
         webSeverSettings.addSetting(corsOriginsSettings_)
 
         let corsMethodsSettings_ = new ComplexSetting("Allowed Methods", "List of allowed Cross-method")
         let corsMethodsSettings = new StringListSetting("Allowed Methods", "List of allowed Cross-method")
-        corsMethodsSettings.setValues(config.AllowedMethods)
+        corsMethodsSettings.setValues(this.config.AllowedMethods)
         corsMethodsSettings.onchange = () => {
-            config.AllowedMethods = corsMethodsSettings.getValues()
-            saveMenuItem.style.display = ""
+            this.config.AllowedMethods = corsMethodsSettings.getValues()
+            this.needSave = true
         }
         corsMethodsSettings_.addSetting(corsMethodsSettings)
         webSeverSettings.addSetting(corsMethodsSettings_)
 
         let corsHeadersSettings_ = new ComplexSetting("Allowed Headers", "List of allowed Cross-header")
         let corsHeadersSettings = new StringListSetting("Allowed Headers", "List of allowed Cross-header")
-        corsHeadersSettings.setValues(config.AllowedHeaders)
+        corsHeadersSettings.setValues(this.config.AllowedHeaders)
         corsHeadersSettings.onchange = () => {
-            config.AllowedHeaders = corsHeadersSettings.getValues()
-            saveMenuItem.style.display = ""
+            this.config.AllowedHeaders = corsHeadersSettings.getValues()
+            this.needSave = true
         }
         corsHeadersSettings_.addSetting(corsHeadersSettings)
         webSeverSettings.addSetting(corsHeadersSettings_)
@@ -167,27 +179,27 @@ export class ServerGeneralSettings extends Settings {
 
         // Set the name of the server.
         let domainSetting = new StringSetting("Domain", "The server domain name. If a Name is set the domain will be Name.Domaim")
-        domainSetting.setValue(config.Domain)
+        domainSetting.setValue(this.config.Domain)
         domainSetting.onchange = () => {
-            config.Domain = domainSetting.getValue()
-            saveMenuItem.style.display = ""
+            this.config.Domain = domainSetting.getValue()
+            this.needSave = true
         }
         dnsSeverSettings.addSetting(domainSetting)
 
         let alternateDomainSettings = new StringListSetting("Alternate Domains", "List of alternate domain for the server")
-        alternateDomainSettings.setValues(config.AlternateDomains)
+        alternateDomainSettings.setValues(this.config.AlternateDomains)
         alternateDomainSettings.onchange = () => {
-            config.AlternateDomains = alternateDomainSettings.getValues()
-            saveMenuItem.style.display = ""
+            this.config.AlternateDomains = alternateDomainSettings.getValues()
+            this.needSave = true
         }
         dnsSeverSettings.addSetting(domainSetting)
         dnsSeverSettings.addSetting(alternateDomainSettings)
 
         let dnsSettings = new StringListSetting("DNS servers", "List of dns server at least tow...")
-        dnsSettings.setValues(config.Dns)
+        dnsSettings.setValues(this.config.Dns)
         dnsSettings.onchange = () => {
-            config.Dns = dnsSettings.getValues()
-            saveMenuItem.style.display = ""
+            this.config.Dns = dnsSettings.getValues()
+            this.needSave = true
         }
         dnsSeverSettings.addSetting(dnsSettings)
 
@@ -196,87 +208,105 @@ export class ServerGeneralSettings extends Settings {
 
         let certUrlSetting = new LinkSetting("Certificate", "Certificate URL")
         certUrlSetting.setValue("click to download")
-        certUrlSetting.setUrl(config.CertURL)
+        certUrlSetting.setUrl(this.config.CertURL)
         certificateSettings.addSetting(certUrlSetting)
 
         // Set the name of the server.
         let crtSetting = new StringSetting("Cerificate", "the certificate .crt file in the creds directory.")
-        crtSetting.setValue(config.Certificate)
+        crtSetting.setValue(this.config.Certificate)
         certificateSettings.addSetting(crtSetting)
 
         // Empty it will force certificate regeneation...
         crtSetting.onchange = () => {
-            saveMenuItem.style.display = ""
-            config.Certificate = crtSetting.getValue()
+            this.config.Certificate = crtSetting.getValue()
+            this.needSave = true
         }
 
         let crtBundleSetting = new StringSetting("Cerificate bundle", "the certificate ca bundle")
-        crtBundleSetting.setValue(config.CertificateAuthorityBundle)
+        crtBundleSetting.setValue(this.config.CertificateAuthorityBundle)
         certificateSettings.addSetting(crtBundleSetting)
 
         // Empty it will force certificate regeneation...
         crtBundleSetting.onchange = () => {
-            saveMenuItem.style.display = ""
-            config.CertificateAuthorityBundle = crtBundleSetting.getValue()
+            this.config.CertificateAuthorityBundle = crtBundleSetting.getValue()
+            this.needSave = true
         }
 
         let certExpirationDelaySetting = new NumberSetting("Expiration", "The number of day the certificate must be valid")
-        certExpirationDelaySetting.setValue(config.CertExpirationDelay)
+        certExpirationDelaySetting.setValue(this.config.CertExpirationDelay)
         certExpirationDelaySetting.onchange = () => {
-            saveMenuItem.style.display = ""
-            config.CertExpirationDelay = certExpirationDelaySetting.getValue()
+            this.config.CertExpirationDelay = certExpirationDelaySetting.getValue()
+            this.needSave = true
         }
         certificateSettings.addSetting(certExpirationDelaySetting)
 
         let certPasswordSetting = new StringSetting("Password", "Certificate password")
-        certPasswordSetting.setValue(config.CertPassword)
+        certPasswordSetting.setValue(this.config.CertPassword)
         certPasswordSetting.onchange = () => {
-            saveMenuItem.style.display = ""
-            config.CertPassword = certPasswordSetting.getValue()
+            this.config.CertPassword = certPasswordSetting.getValue()
+            this.needSave = true
         }
         certificateSettings.addSetting(certPasswordSetting)
 
         let certCountrySetting = new StringSetting("Country", "Country Codes are required when creating a Certificate Signing Request")
-        certCountrySetting.setValue(config.Country)
+        certCountrySetting.setValue(this.config.Country)
         certCountrySetting.onchange = () => {
-            saveMenuItem.style.display = ""
-            config.Country = certCountrySetting.getValue()
+            this.config.Country = certCountrySetting.getValue()
+            this.needSave = true
         }
         certificateSettings.addSetting(certCountrySetting)
 
         let certStateSetting = new StringSetting("State", "State Codes are required when creating a Certificate Signing Request")
-        certStateSetting.setValue(config.State)
+        certStateSetting.setValue(this.config.State)
         certStateSetting.onchange = () => {
-            saveMenuItem.style.display = ""
-            config.State = certStateSetting.getValue()
+            this.config.State = certStateSetting.getValue()
+            this.needSave = true
         }
         certificateSettings.addSetting(certStateSetting)
 
         let citySetting = new StringSetting("City", "City Codes are required when creating a Certificate Signing Request")
-        citySetting.setValue(config.City)
+        citySetting.setValue(this.config.City)
         citySetting.onchange = () => {
-            saveMenuItem.style.display = ""
-            config.City = citySetting.getValue()
+            this.config.City = citySetting.getValue()
+            this.needSave = true
         }
         certificateSettings.addSetting(citySetting)
 
         let certOrganizationSetting = new StringSetting("Organization", "Organization Codes are required when creating a Certificate Signing Request")
-        certOrganizationSetting.setValue(config.Organization)
+        certOrganizationSetting.setValue(this.config.Organization)
         certOrganizationSetting.onchange = () => {
-            saveMenuItem.style.display = ""
-            config.Organization = certOrganizationSetting.getValue()
+            this.config.Organization = certOrganizationSetting.getValue()
+            this.needSave = true
         }
         certificateSettings.addSetting(certOrganizationSetting)
 
         // Now the action.
         let renewCertificateAction = new ActionSetting("Renew", "Renew the certificate", () => {
-            config.Certificate = ""
-            config.CertificateAuthorityBundle = ""
-            saveMenuItem.click()
+            this.config.Certificate = ""
+            this.config.CertificateAuthorityBundle = ""
+            this.needSave = true
+            this.save()
         })
 
         certificateSettings.addSetting(renewCertificateAction)
 
         generalSettingsMenuItem.click()
+    }
+
+    save() {
+        if(!this.needSave){
+            return
+        }
+        
+        let saveRqst = new SaveConfigRequest
+        saveRqst.setConfig(JSON.stringify(this.config))
+        Model.globular.adminService.saveConfig(saveRqst, {
+            token: localStorage.getItem("user_token"),
+            application: Model.application,
+            domain: Model.domain
+        }).then(() => { })
+            .catch(err => {
+                ApplicationView.displayMessage(err, 3000)
+            })
     }
 }

@@ -2,7 +2,7 @@ import { theme } from './Theme';
 import '@polymer/iron-icons/iron-icons.js';
 
 import { Model } from '../Model';
-import { AddAccountRoleRqst, AddRoleActionsRqst, CreateRoleRqst, DeleteRoleRqst, RemoveRoleActionRqst, RemoveAccountRole, Role, RemoveAccountRoleRqst } from 'globular-web-client/resource/resource_pb';
+import { AddAccountRoleRqst, AddRoleActionsRqst, CreateRoleRqst, DeleteRoleRqst, RemoveRoleActionRqst, Role, RemoveAccountRoleRqst } from 'globular-web-client/resource/resource_pb';
 import { getAllRoles } from 'globular-web-client/api';
 import { Application } from '../Application';
 import { ApplicationView } from '../ApplicationView';

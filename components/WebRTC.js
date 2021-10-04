@@ -89,10 +89,15 @@ export class VideoConversation extends HTMLElement {
             event.participants.forEach(participant => {
                 if (participant != Application.account.id) {
                     let rtcPeerConnection = new RTCPeerConnection(iceServers);
-                    rtcPeerConnection.onicecandidate = OnIceCandidateFunction;
-                    rtcPeerConnection.ontrack = OnTrackFunction;
-                    rtcPeerConnection.addTrack(userStream.getTracks()[0], userStream);
-                    rtcPeerConnection.addTrack(userStream.getTracks()[1], userStream);
+                    console.log("----> 92")
+                    rtcPeerConnection.onicecandidate = this.onIceCandidateFunction;
+                    console.log("----> 93")
+                    rtcPeerConnection.ontrack = this.onTrackFunction;
+                    console.log("----> 94")
+                    rtcPeerConnection.addTrack(this.userStream.getTracks()[0], this.userStream);
+                    console.log("----> 95")
+                    rtcPeerConnection.addTrack(this.userStream.getTracks()[1], this.userStream);
+                    console.log("----> 96")
                     rtcPeerConnection
                         .createOffer()
                         .then((offer) => {
@@ -112,10 +117,10 @@ export class VideoConversation extends HTMLElement {
         console.log("on offer", event)
         if (event.participant != Application.account.id) {
             let rtcPeerConnection = new RTCPeerConnection(iceServers);
-            rtcPeerConnection.onicecandidate = OnIceCandidateFunction;
-            rtcPeerConnection.ontrack = OnTrackFunction;
-            rtcPeerConnection.addTrack(userStream.getTracks()[0], userStream);
-            rtcPeerConnection.addTrack(userStream.getTracks()[1], userStream);
+            rtcPeerConnection.onicecandidate = this.onIceCandidateFunction;
+            rtcPeerConnection.ontrack = this.onTrackFunction;
+            rtcPeerConnection.addTrack(this.userStream.getTracks()[0], this.userStream);
+            rtcPeerConnection.addTrack(this.userStream.getTracks()[1], this.userStream);
             rtcPeerConnection.setRemoteDescription(offer);
             rtcPeerConnection
                 .createAnswer()
@@ -136,14 +141,14 @@ export class VideoConversation extends HTMLElement {
         rtcPeerConnection.setRemoteDescription(event.answer);
     }
 
-    OnIceCandidateFunction(event) {
-        console.log("Candidate");
-        if (event.candidate) {
+    onIceCandidateFunction(candidate) {
+        console.log("Candidate ", candidate);
+        if (candidate) {
             Model.eventHub.publish(`on_webrtc_candidate_${this.conversationUuid}_evt`, JSON.stringify(candidate), false);
         }
     }
 
-    OnTrackFunction(event) {
+    onTrackFunction(event) {
         this.peerVideo.srcObject = event.streams[0];
         this.peerVideo.onloadedmetadata = (e) => {
             this.peerVideo.play();

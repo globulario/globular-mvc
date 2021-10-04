@@ -1062,8 +1062,10 @@ export class Messenger extends HTMLElement {
     // Here I will open the converstion.
     openConversation(conversation, messages) {
 
-        console.log("-------------> open conversation: ", conversation.getUuid())
         let videoConversation = new VideoConversation(conversation.getUuid())
+        videoConversation.style.position = "fixed"
+        videoConversation.style.left = "0px"
+
         this.shadowRoot.querySelector(".container").appendChild(videoConversation)
         
         // Display the messenger panel.

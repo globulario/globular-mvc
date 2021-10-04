@@ -8,14 +8,19 @@ import { Model } from "./Model";
 
 export class ServicesSettings extends Settings {
     private services: any
+    private servicesSettings: Array<ServiceSetting>
 
-    constructor(settingsMenu: SettingsMenu, settingsPanel: SettingsPanel, saveMenuItem: any) {
+    constructor(settingsMenu: SettingsMenu, settingsPanel: SettingsPanel) {
         super(settingsMenu, settingsPanel);
+
+        Model.globular.eventHub.subscribe("save_settings_evt", uuid => { }, evt => {
+            this.save()
+        }, true)
 
         // Init the service configuration...
         this.getServicesConfiguration(
             (services: any) => {
-                this.init(services, settingsMenu, settingsPanel, saveMenuItem)
+                this.init(services, settingsMenu, settingsPanel)
                 // refresh service states...
                 setInterval(() => {
                     this.getServicesConfiguration(
@@ -26,7 +31,6 @@ export class ServicesSettings extends Settings {
 
                                     // So here I will update the service state...
                                     this.setServiceState(service)
-
 
                                 }
                             })
@@ -40,9 +44,16 @@ export class ServicesSettings extends Settings {
             })
     }
 
+    save() {
+        this.servicesSettings.forEach(s => {
+            s.save()
+        })
+    }
+
     // Init the configuration interface...
-    init(services: any, settingsMenu: SettingsMenu, settingsPanel: SettingsPanel, saveMenuItem: any) {
+    init(services: any, settingsMenu: SettingsMenu, settingsPanel: SettingsPanel) {
         this.services = {}
+        this.servicesSettings = new Array<ServiceSetting>()
 
         // Create the settings menu and panel here
         settingsMenu.appendSettingsMenuItem("settings", "Services");
@@ -101,8 +112,7 @@ export class ServicesSettings extends Settings {
 
                 let div = <any>serviceSetting.getDescriptionDiv()
                 div.appendChild(range.createContextualFragment(serviceToolBar))
-
-                new ServiceSetting(service, serviceSetting, saveMenuItem)
+                this.servicesSettings.push(new ServiceSetting(service, serviceSetting))
 
                 // Now I will set the actions 
                 let startServiceBtn = div.querySelector("#start-service-btn-" + service.Id)
@@ -240,9 +250,12 @@ export class ServicesSettings extends Settings {
 
 export class ServiceSetting {
     private service: any;
-
-    constructor(service: any, serviceSetting: any, saveMenuItem: any) {
+    private needSave:boolean;
     
+
+    constructor(service: any, serviceSetting: any) {
+        this.service = service;
+        this.needSave = false;
 
         // Here I will display the non editable informations...
         let descriptionSetting = new ReadOnlyStringSetting("Description", "")
@@ -276,22 +289,42 @@ export class ServiceSetting {
         let portSetting = new NumberSetting("Port", "The gRpc service port number")
         portSetting.setValue(service.Port)
         serviceSetting.addSetting(portSetting)
+        portSetting.onchange = () => {
+            this.service.Port = parseInt(portSetting.getValue())
+            this.needSave = true
+        }
 
         let proxySetting = new NumberSetting("Proxy", "The gRpc proxy port number")
         proxySetting.setValue(service.Proxy)
         serviceSetting.addSetting(proxySetting)
+        proxySetting.onchange = () => {
+            this.service.Proxy = parseInt(proxySetting.getValue())
+            this.needSave = true
+        }
 
         let keepAlive = new OnOffSetting("Keep Alive", "Restart service automaticaly if it fail")
         keepAlive.setValue(service.KeepAlive)
         serviceSetting.addSetting(keepAlive)
+        keepAlive.onchange = () => {
+            this.service.KeepAlive = keepAlive.getValue()
+            this.needSave = true
+        }
 
         let keepUpToDate = new OnOffSetting("Keep Up to Date", "Automaticaly update to last service version")
         keepUpToDate.setValue(service.KeepUpToDate)
         serviceSetting.addSetting(keepAlive)
+        keepUpToDate.onchange = () => {
+            this.service.KeepUpToDate = keepUpToDate.getValue()
+            this.needSave = true
+        }
 
         let allowedAllOrigins = new OnOffSetting("Allow All Origins", "all origins are allowed")
         allowedAllOrigins.setValue(service.AllowAllOrigins)
         serviceSetting.addSetting(allowedAllOrigins)
+        allowedAllOrigins.onchange = () => {
+            this.service.AllowAllOrigins = allowedAllOrigins.getValue()
+            this.needSave = true
+        }
 
         let corsOriginsSettings_ = new ComplexSetting("Allowed Origins", "List of allowed Cross-origin")
 
@@ -307,7 +340,7 @@ export class ServiceSetting {
                     service.AllowedOrigins += " ,"
                 }
             }
-            saveMenuItem.style.display = ""
+            this.needSave = true
         }
 
         if (!service.AllowAllOrigins) {
@@ -325,7 +358,6 @@ export class ServiceSetting {
                 toggle.setAttribute("title", "all origins are allowed")
                 corsOriginsSettings_.style.display = "none"
             }
-            saveMenuItem.style.display = ""
         }
 
         corsOriginsSettings_.addSetting(corsOriginsSettings)
@@ -333,15 +365,35 @@ export class ServiceSetting {
 
         // Now The actions...
         let updateServiceAction = new ActionSetting("Update", "Update service to the last version", () => {
-            saveMenuItem.click()
+            console.log("update service call")
         })
         serviceSetting.addSetting(updateServiceAction)
 
         let uninstallServiceAction = new ActionSetting("Uninstall", "Uninstall the service", () => {
-            saveMenuItem.click()
+            console.log("uninstall services")
         })
 
         serviceSetting.addSetting(uninstallServiceAction)
     }
 
+    save() {
+        if(!this.needSave){
+            return
+        }
+        
+        console.log("save service ", this.service)
+        let rqst = new servicesManager.SaveServiceConfigRequest()
+        rqst.setConfig(JSON.stringify(this.service))
+
+        Model.globular.servicesManagerService.saveServiceConfig(rqst, {
+            token: localStorage.getItem("user_token"),
+            application: Model.application,
+            domain: Model.domain
+        }).then(rsp=>{
+           // ApplicationView.displayMessage(err, 3000)
+            console.log("service was saved! ", this.service)
+        }).catch(err=>{
+            ApplicationView.displayMessage(err, 3000)
+        })
+    }
 }

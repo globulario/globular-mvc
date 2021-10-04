@@ -1,6 +1,6 @@
 {
   "name": "globular-mvc",
-  "version": "1.0.78",
+  "version": "1.0.80",
   "description": "Generic template to create web-application that made use of globular as backend and materialize as css (wrap in web-component's)",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -62,7 +62,7 @@
     "@types/uuid": "^8.0.0",
     "@types/uuidv4": "^5.0.0",
     "docker-names": "^1.1.1",
-    "globular-web-client": "^1.1.176",
+    "globular-web-client": "^1.1.180",
     "materialize-css": "^1.0.0",
     "namesgenerator": "0.0.1",
     "random-sentence": "^1.0.4",

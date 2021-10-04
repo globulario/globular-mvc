@@ -440,7 +440,7 @@ export class NotificationMenu extends Menu {
             }
         }
 
-        if (notification._type == 0) {
+        if (notification._type == 1) {
             this.applicationNotificationsDiv.style.display = ""
             let application = JSON.parse(notification._sender)
             let img = this.shadowRoot.getElementById(`div_${notification._id}_img`)
@@ -450,7 +450,7 @@ export class NotificationMenu extends Menu {
             img.style.width = "24px"
             img.style.height = "24px"
             ico.style.display = "none" // hide the user icon
-        } else if (notification._type == 1) {
+        } else if (notification._type == 0) {
             this.userNotificationsDiv.style.display = ""
             let img = this.shadowRoot.getElementById(`div_${notification._id}_img`)
             let ico = this.shadowRoot.getElementById(`div_${notification._id}_ico`)

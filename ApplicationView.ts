@@ -2,7 +2,7 @@ import { View } from "./View";
 import * as M from "materialize-css";
 import "materialize-css/sass/materialize.scss";
 import { Account } from "./Account";
-import { ApplicationSettings, ApplicationsSettings, FileSettings, GroupSettings, LogSettings, PeersSettings, RoleSettings, UserSettings } from "./Settings"
+import { ApplicationsSettings, FileSettings, GroupSettings, LogSettings, PeersSettings, RoleSettings, UserSettings } from "./Settings"
 import { Model } from "./Model";
 import { DockerNames } from "./components/RandomName"
 
@@ -653,9 +653,6 @@ export class ApplicationView extends View {
     // Create the settings menu and panel here
     let userSettings = new UserSettings(account, this.settingsMenu, this.settingsPanel);
 
-    // The application settings...
-    let applicationSettings = new ApplicationSettings(this.application, this.settingsMenu, this.settingsPanel);
-
     // The file settings
     let fileSettings = new FileSettings(this.settingsMenu, this.settingsPanel);
 
@@ -675,31 +672,9 @@ export class ApplicationView extends View {
     let groupSettings = new GroupSettings(this.settingsMenu, this.settingsPanel)
 
 
-    //ApplicationView.displayMessage("The server will now restart...", 3000)
-    // make sure the configuration is not the actual server configuration
-    let config = JSON.parse(JSON.stringify(Model.globular.config))
-    delete config["Services"] // do not display services configuration here...
 
-    let saveMenuItem = this.settingsMenu.appendSettingsMenuItem("save", "Save");
-    saveMenuItem.onclick = () => {
-      saveMenuItem.style.display = "none"
-
-      let saveRqst = new SaveConfigRequest
-      saveRqst.setConfig(JSON.stringify(config))
-      Model.globular.adminService.saveConfig(saveRqst, {
-        token: localStorage.getItem("user_token"),
-        application: Model.application,
-        domain: Model.domain
-      }).then(() => { })
-        .catch(err => {
-          ApplicationView.displayMessage(err, 3000)
-        })
-    }
-
-    saveMenuItem.style.display = "none"
-
-    let serverGeneralSettings = new ServerGeneralSettings(config, this.settingsMenu, this.settingsPanel, saveMenuItem);
-    let servicesSettings = new ServicesSettings(this.settingsMenu, this.settingsPanel, saveMenuItem);
+    let serverGeneralSettings = new ServerGeneralSettings(this.settingsMenu, this.settingsPanel);
+    let servicesSettings = new ServicesSettings(this.settingsMenu, this.settingsPanel);
 
     // Set the file explorer...
     this.fileExplorer.setRoot("/users/" + account.name)
