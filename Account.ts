@@ -293,6 +293,7 @@ export class Account extends Model {
                         ApplicationView.displayMessage("no connection found on the server you need to login", 3000)
                         setTimeout(() => {
                             Application.logout();
+                            return;
                         }, 4000)
                     }
 

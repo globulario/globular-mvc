@@ -421,9 +421,14 @@ export class Application extends Model {
       if (rememberMe) {
         // Here I will renew the last token...
         let userId = localStorage.getItem("user_id");
+        let userEmail = localStorage.getItem("user_email");
+        let userName = localStorage.getItem("user_name");
+
         this.view.wait(
-          "<div>log in</div><div>" + userId + "</div><div>...</div>"
+          "<div>log in</div><div>" + userName + "</div><div>...</div>"
         );
+
+        Application.account = new Account(userId, userEmail, userName)
 
         this.refreshToken(
           (account: Account) => {
