@@ -56,17 +56,93 @@ export class VideoConversation extends HTMLElement {
 
         // When a new participant join the room...
         Model.eventHub.subscribe(`ready_conversation_${conversationUuid}_evt`, (uuid) => { }, (event) => {
-            this.onReady(JSON.parse(event))
+            event = this.onReady(JSON.parse(event))
+            if (event.participant == Application.account.id) {
+                // Create offer to each participants
+                event.participants.forEach(participant => {
+                    if (participant != Application.account.id) {
+                        this.initLocalVideoStream( stream => {
+                            let rtcPeerConnection = new RTCPeerConnection(iceServers);
+                            rtcPeerConnection.onicecandidate = (candidate) => {
+                                console.log("Candidate ", candidate);
+                                if (candidate) {
+                                    Model.eventHub.publish(`on_webrtc_candidate_${this.conversationUuid + "_" + participant}_evt`, JSON.stringify(candidate), false);
+                                }
+                            }
+    
+                            rtcPeerConnection.ontrack = evt => {
+                                this.initRemoteVideoStream(participant, evt.streams[0])
+                            }
+    
+                            // Add audio track and video track.
+                            rtcPeerConnection.addTrack(stream.getTracks()[0], stream);
+                            rtcPeerConnection.addTrack(stream.getTracks()[1], stream);
+    
+                            // Set the connection.
+                            rtcPeerConnection
+                                .createOffer()
+                                .then((offer) => {
+                                    rtcPeerConnection.setLocalDescription(offer);
+                                    this.connections[this.conversationUuid + "_" + participant] = rtcPeerConnection;
+                                    Model.eventHub.publish(`on_webrtc_offer_${this.conversationUuid + "_" + participant}_evt`, JSON.stringify({ "offer": offer, "id": this.conversationUuid + "_" + participant }), false);
+                                })
+                                .catch((err) => {
+                                    ApplicationView.displayMessage(err, 3000)
+                                });
+                        }, err => {
+                            ApplicationView.displayMessage(err, 3000)
+                        })
+    
+                    }
+                });
+            }
         }, false)
 
         // When we receive peer connection offer...
         Model.eventHub.subscribe(`on_webrtc_offer_${conversationUuid + "_" + Application.account.id}_evt`, (uuid) => { }, (event) => {
-            this.onOffer(JSON.parse(event))
+            event = this.onOffer(JSON.parse(event))
+            initLocalVideoStream(stream => {
+                // Init the new connection
+                let rtcPeerConnection = new RTCPeerConnection(iceServers);
+                rtcPeerConnection.onicecandidate = (candidate) => {
+                    console.log("Candidate ", candidate);
+                    if (candidate) {
+                        Model.eventHub.publish(`on_webrtc_candidate_${this.conversationUuid + "_" + event.participant}_evt`, JSON.stringify(candidate), false);
+                    }
+                }
+    
+                let offer = new RTCSessionDescription(event.offer)
+                rtcPeerConnection.ontrack = evt => {
+                    this.initRemoteVideoStream(event.participant, evt.streams[0])
+                }
+    
+                // Add the track to the webrtc connection.
+                rtcPeerConnection.addTrack(stream.getTracks()[0], stream);
+                rtcPeerConnection.addTrack(stream.getTracks()[1], stream);
+                rtcPeerConnection.setRemoteDescription(offer);
+    
+                // create the answer.
+                rtcPeerConnection
+                    .createAnswer()
+                    .then(answer => {
+                        rtcPeerConnection.setLocalDescription(answer);
+                        this.connections[this.conversationUuid + "_" + event.participant] = rtcPeerConnection;
+                        Model.eventHub.publish(`on_webrtc_answer_${this.conversationUuid + "_" + event.participant}_evt`, JSON.stringify({ "answer": answer, "connectionId": this.conversationUuid + "_" + Application.account.id }), false);
+                    })
+                    .catch((err) => {
+                        ApplicationView.displayMessage(err, 3000)
+                    });
+            }, err => {
+                ApplicationView.displayMessage(err, 3000)
+            })
         }, false)
 
         // When we receive peer connection answer...
         Model.eventHub.subscribe(`on_webrtc_answer_${conversationUuid + "_" + Application.account.id}_evt`, (uuid) => { }, (event) => {
-            this.onAnwser(JSON.parse(event))
+            event = this.onAnwser(JSON.parse(event))
+            let rtcPeerConnection = this.connections[event.connectionId]
+            let answer = new RTCSessionDescription(event.answer)
+            rtcPeerConnection.setRemoteDescription(answer);
         }, false)
 
         // When we receive a ace candidate answer
@@ -133,98 +209,6 @@ export class VideoConversation extends HTMLElement {
           peerVideo.play();
         };
     }
-
-    // Event received when a user join a conversation.
-    onReady(event) {
-        if (event.participant == Application.account.id) {
-            // Create offer to each participants
-            event.participants.forEach(participant => {
-                if (participant != Application.account.id) {
-                    this.initLocalVideoStream( stream => {
-                        let rtcPeerConnection = new RTCPeerConnection(iceServers);
-                        rtcPeerConnection.onicecandidate = (candidate) => {
-                            console.log("Candidate ", candidate);
-                            if (candidate) {
-                                Model.eventHub.publish(`on_webrtc_candidate_${this.conversationUuid + "_" + participant}_evt`, JSON.stringify(candidate), false);
-                            }
-                        }
-
-                        rtcPeerConnection.ontrack = evt => {
-                            this.initRemoteVideoStream(participant, evt.streams[0])
-                        }
-
-                        // Add audio track and video track.
-                        rtcPeerConnection.addTrack(stream.getTracks()[0], stream);
-                        rtcPeerConnection.addTrack(stream.getTracks()[1], stream);
-
-                        // Set the connection.
-                        rtcPeerConnection
-                            .createOffer()
-                            .then((offer) => {
-                                rtcPeerConnection.setLocalDescription(offer);
-                                this.connections[this.conversationUuid + "_" + participant] = rtcPeerConnection;
-                                Model.eventHub.publish(`on_webrtc_offer_${this.conversationUuid + "_" + participant}_evt`, JSON.stringify({ "offer": offer, "id": this.conversationUuid + "_" + participant }), false);
-                            })
-                            .catch((err) => {
-                                ApplicationView.displayMessage(err, 3000)
-                            });
-                    }, err => {
-                        ApplicationView.displayMessage(err, 3000)
-                    })
-
-                }
-            });
-        }
-    }
-
-    onOffer(event) {
-        console.log("on offer", event)
-
-        initLocalVideoStream(stream => {
-            // Init the new connection
-            let rtcPeerConnection = new RTCPeerConnection(iceServers);
-            rtcPeerConnection.onicecandidate = (candidate) => {
-                console.log("Candidate ", candidate);
-                if (candidate) {
-                    Model.eventHub.publish(`on_webrtc_candidate_${this.conversationUuid + "_" + event.participant}_evt`, JSON.stringify(candidate), false);
-                }
-            }
-
-            let offer = new RTCSessionDescription(event.offer)
-            rtcPeerConnection.ontrack = evt => {
-                this.initRemoteVideoStream(event.participant, evt.streams[0])
-            }
-
-            // Add the track to the webrtc connection.
-            rtcPeerConnection.addTrack(stream.getTracks()[0], stream);
-            rtcPeerConnection.addTrack(stream.getTracks()[1], stream);
-            rtcPeerConnection.setRemoteDescription(offer);
-
-            // create the answer.
-            rtcPeerConnection
-                .createAnswer()
-                .then(answer => {
-                    rtcPeerConnection.setLocalDescription(answer);
-                    this.connections[this.conversationUuid + "_" + event.participant] = rtcPeerConnection;
-                    Model.eventHub.publish(`on_webrtc_answer_${this.conversationUuid + "_" + event.participant}_evt`, JSON.stringify({ "answer": answer, "connectionId": this.conversationUuid + "_" + Application.account.id }), false);
-                })
-                .catch((err) => {
-                    ApplicationView.displayMessage(err, 3000)
-                });
-        }, err => {
-            ApplicationView.displayMessage(err, 3000)
-        })
-
-    }
-
-    // Set the remote descriptor
-    onAnwser(event) {
-        console.log("on answer", event)
-        let rtcPeerConnection = this.connections[event.connectionId]
-        let answer = new RTCSessionDescription(event.answer)
-        rtcPeerConnection.setRemoteDescription(answer);
-    }
-
 
 }
 
