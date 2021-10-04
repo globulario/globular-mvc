@@ -102,9 +102,6 @@ export class VideoConversation extends HTMLElement {
                                     break;
                                 case "disconnected":
                                 case "failed":
-                                    // One or more transports has terminated unexpectedly or in an error
-                                    console.log("disconnected whit " + participant)
-                                    break;
                                 case "closed":
                                     // The connection has been closed
                                     console.log("connection whit " + participant + " is closed")
@@ -195,10 +192,7 @@ export class VideoConversation extends HTMLElement {
                             console.log("connection whit " + event.participant + " is now open")
                             break;
                         case "disconnected":
-                        case "failed":
-                            // One or more transports has terminated unexpectedly or in an error
-                            console.log("disconnected whit " + event.participant)
-                            break;
+                        case "failed": 
                         case "closed":
                             // The connection has been closed
                             console.log("connection whit " + event.participant + " is closed")
