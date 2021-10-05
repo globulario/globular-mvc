@@ -60,84 +60,72 @@ export class VideoConversation extends HTMLElement {
         `
 
         // When a new participant join the room...
-        Model.eventHub.subscribe(`ready_conversation_${conversationUuid}_evt`, (uuid) => { }, (evt) => {
-            let event = JSON.parse(evt)
-            if (event.participant == Application.account.id) {
+        Model.eventHub.subscribe(`start_video_conversation_${conversationUuid}_evt`,
+            (uuid) => {
+
+            },
+            (participant) => {
+
                 // Create offer to each participants
-                event.participants.forEach(participant => {
-                    Account.getAccount(paticipant,
-                        p => {
-                            // if the session is offline or the user is in the list of unavailble user then I will set it session as unavailable.
-                            if (p.session.state != 1) {
-                                if (participant != Application.account.id) {
-                                    this.initLocalVideoStream(stream => {
-                                        let rtcPeerConnection = new RTCPeerConnection(iceServers);
-                                        let connectionId = this.conversationUuid + "_" + participant
+                if (participant != Application.account.id) {
+                    this.initLocalVideoStream(stream => {
+                        let rtcPeerConnection = new RTCPeerConnection(iceServers);
+                        let connectionId = this.conversationUuid + "_" + participant
 
-                                        rtcPeerConnection.onicecandidate = (candidate) => {
-                                            console.log("Candidate ", candidate);
-                                            if (candidate) {
-                                                Model.eventHub.publish(`on_webrtc_candidate_${connectionId}_evt`, JSON.stringify(candidate), false);
-                                            }
-                                        }
-
-                                        // when video is received from the remote side.
-                                        rtcPeerConnection.ontrack = evt => {
-                                            this.initRemoteVideoStream(connectionId, evt.streams[0])
-                                        }
-
-                                        // Add audio track and video track.
-                                        rtcPeerConnection.addTrack(stream.getTracks()[0], stream);
-                                        rtcPeerConnection.addTrack(stream.getTracks()[1], stream);
-
-                                        // Set the connection.
-                                        rtcPeerConnection
-                                            .createOffer()
-                                            .then((offer) => {
-                                                rtcPeerConnection.setLocalDescription(offer);
-                                                this.connections[connectionId] = rtcPeerConnection;
-
-                                                // connection state change handler.
-                                                rtcPeerConnection.onconnectionstatechange = (event) => {
-                                                    switch (rtcPeerConnection.connectionState) {
-                                                        case "connected":
-                                                            // The connection has become fully connected
-                                                            console.log("connection " + connectionId + " is now open")
-                                                            break;
-                                                        case "disconnected":
-                                                        case "failed":
-                                                        case "closed":
-                                                            // The connection has been closed
-                                                            console.log("connection " + connectionId + " is closed")
-                                                            delete this.connections[connectionId]
-                                                            let peerVideo = this.querySelector("#" + connectionId + "_video")
-                                                            if (peerVideo != undefined) {
-                                                                peerVideo.parentNode.removeChild(peerVideo)
-                                                            }
-                                                            break;
-                                                    }
-                                                }
-
-                                                Model.eventHub.publish(`on_webrtc_offer_${connectionId}_evt`, JSON.stringify({ "offer": offer, "connectionId": connectionId }), false);
-
-                                            })
-                                            .catch((err) => {
-                                                ApplicationView.displayMessage(err, 3000)
-                                            });
-                                    }, err => {
-                                        ApplicationView.displayMessage(err, 3000)
-                                    })
-
-                                }
+                        rtcPeerConnection.onicecandidate = (candidate) => {
+                            console.log("Candidate ", candidate);
+                            if (candidate) {
+                                Model.eventHub.publish(`on_webrtc_candidate_${connectionId}_evt`, JSON.stringify(candidate), false);
                             }
-                        }, err => {
-                            ApplicationView.displayMessage(err, 3000)
-                        })
+                        }
 
+                        // when video is received from the remote side.
+                        rtcPeerConnection.ontrack = evt => {
+                            this.initRemoteVideoStream(connectionId, evt.streams[0])
+                        }
 
-                });
-            }
-        }, false)
+                        // Add audio track and video track.
+                        rtcPeerConnection.addTrack(stream.getTracks()[0], stream);
+                        rtcPeerConnection.addTrack(stream.getTracks()[1], stream);
+
+                        // Set the connection.
+                        rtcPeerConnection
+                            .createOffer()
+                            .then((offer) => {
+                                rtcPeerConnection.setLocalDescription(offer);
+                                this.connections[connectionId] = rtcPeerConnection;
+
+                                // connection state change handler.
+                                rtcPeerConnection.onconnectionstatechange = (event) => {
+                                    switch (rtcPeerConnection.connectionState) {
+                                        case "connected":
+                                            // The connection has become fully connected
+                                            console.log("connection " + connectionId + " is now open")
+                                            break;
+                                        case "disconnected":
+                                        case "failed":
+                                        case "closed":
+                                            // The connection has been closed
+                                            console.log("connection " + connectionId + " is closed")
+                                            delete this.connections[connectionId]
+                                            let peerVideo = this.querySelector("#" + connectionId + "_video")
+                                            if (peerVideo != undefined) {
+                                                peerVideo.parentNode.removeChild(peerVideo)
+                                            }
+                                            break;
+                                    }
+                                }
+                                Model.eventHub.publish(`on_webrtc_offer_${connectionId}_evt`, JSON.stringify({ "offer": offer, "connectionId": connectionId }), false);
+                            })
+                            .catch((err) => {
+                                ApplicationView.displayMessage(err, 3000)
+                            });
+                    }, err => {
+                        ApplicationView.displayMessage(err, 3000)
+                    })
+                }
+
+            }, true)
 
         Model.eventHub.subscribe(`leave_conversation_${conversationUuid}_evt`,
             (uuid) => {

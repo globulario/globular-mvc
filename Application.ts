@@ -16,7 +16,7 @@ import {
 } from "globular-web-client/persistence/persistence_pb";
 import { v4 as uuidv4 } from "uuid";
 import { mergeTypedArrays, uint8arrayToStringMethod } from "./Utility";
-import { ConversationManager} from "./Conversation";
+import { ConversationManager } from "./Conversation";
 import { Conversations } from "globular-web-client/conversation/conversation_pb";
 import { LogInfo, LogLevel, LogRqst, LogRsp } from "globular-web-client/log/log_pb";
 import { Session, SessionState } from "./Session";
@@ -216,7 +216,7 @@ export class Application extends Model {
               // Here I will send a login success.
               console.log("login_event")
               // TODO the login will be publish later when the user data will be init
-             
+
               Model.eventHub.publish("login_event", account, true);
             },
             (err: any) => {
@@ -436,52 +436,54 @@ export class Application extends Model {
             // Model.eventHub.publish("refresh_token_event", account, true);
             Model.eventHub.publish("login_event", account, true);
 
-             // When new contact is accepted.
-             Model.eventHub.subscribe("accepted_" + account.id + "_evt",
-             (uuid) => { },
-             (evt) => {
-               let invitation = JSON.parse(evt);
-               this.addContactListener(invitation)
-             },
-             false)
+            // When new contact is accepted.
+            Model.eventHub.subscribe("accepted_" + account.id + "_evt",
+              (uuid) => { },
+              (evt) => {
+                let invitation = JSON.parse(evt);
+                this.addContactListener(invitation)
+              },
+              false)
 
-           Model.eventHub.publish(`__session_state_${account.id}_change_event__`, account.session, true)
+            account.session.state = SessionState.Online
 
-           Model.eventHub.subscribe("deleted_" + account.id + "_evt",
-             (uuid) => { },
-             (evt) => {
-               let invitation = JSON.parse(evt);
-               Model.eventHub.unSubscribe(`session_state_${invitation._id}_change_event`, this.contactsListener[invitation._id])
-             },
-             false)
+            Model.eventHub.publish(`__session_state_${account.id}_change_event__`, account.session, true)
 
-           // retreive the contacts
-           Account.getContacts(account, `{"status":"accepted"}`, (contacts: Array<Account>) => {
-             contacts.forEach(contact => {
-               this.addContactListener(contact)
-             })
-           },
-             (err: any) => {
-               ApplicationView.displayMessage(err, 3000)
-             })
+            Model.eventHub.subscribe("deleted_" + account.id + "_evt",
+              (uuid) => { },
+              (evt) => {
+                let invitation = JSON.parse(evt);
+                Model.eventHub.unSubscribe(`session_state_${invitation._id}_change_event`, this.contactsListener[invitation._id])
+              },
+              false)
 
-           // Retreive conversations...
-           ConversationManager.loadConversation(account,
-             (conversations: Conversations) => {
-               Model.eventHub.publish("__load_conversations_event__", conversations.getConversationsList(), true)
-             },
-             (err: any) => {
-               /* this.displayMessage(err, 3000)*/
-               /** no conversation found... */
-             })
+            // retreive the contacts
+            Account.getContacts(account, `{"status":"accepted"}`, (contacts: Array<Account>) => {
+              contacts.forEach(contact => {
+                this.addContactListener(contact)
+              })
+            },
+              (err: any) => {
+                ApplicationView.displayMessage(err, 3000)
+              })
 
-           // Connect to to the conversation manager.
-           ConversationManager.connect(
-             () => {
-               /* Nothing to do here **/
-             }, (err: any) => {
-               ApplicationView.displayMessage(err, 3000)
-             })
+            // Retreive conversations...
+            ConversationManager.loadConversation(account,
+              (conversations: Conversations) => {
+                Model.eventHub.publish("__load_conversations_event__", conversations.getConversationsList(), true)
+              },
+              (err: any) => {
+                /* this.displayMessage(err, 3000)*/
+                /** no conversation found... */
+              })
+
+            // Connect to to the conversation manager.
+            ConversationManager.connect(
+              () => {
+                /* Nothing to do here **/
+              }, (err: any) => {
+                ApplicationView.displayMessage(err, 3000)
+              })
 
             this.view.resume();
 

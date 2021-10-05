@@ -27,6 +27,7 @@ import { v4 as uuidv4 } from "uuid";
 import { ApplicationView } from '../ApplicationView';
 import { getCoords } from "./utility.js"
 import {VideoConversation} from "./WebRTC.js"
+import { Application } from '../Application';
 
 /**
  * Communication with your contact's
@@ -1442,9 +1443,9 @@ export class ParticipantsList extends HTMLElement {
                         p => {
                             // if the session is offline or the user is in the list of unavailble user then I will set it session as unavailable.
                             if (p.session.state == 1 || __unavailable__.indexOf(p._id) != -1) {
-                                this.setUnavailableParticipantRow(p)
+                                this.setUnavailableParticipantRow(p, conversation)
                             } else {
-                                this.setAvailableParticipantRow(p)
+                                this.setAvailableParticipantRow(p, conversation)
                             }
 
                             this.kickoutFromConversation(conversation, p, this.shadowRoot.querySelector(`#paticipant-${p._id}-row`))
@@ -1470,7 +1471,7 @@ export class ParticipantsList extends HTMLElement {
             })
     }
 
-    setAvailableParticipantRow(p) {
+    setAvailableParticipantRow(p, conversation) {
         if (this.shadowRoot.querySelector(`paticipant-${p._id}-row`) == undefined) {
             let html = `
                 <div  id="paticipant-${p._id}-row" class="participant-table-row">
@@ -1482,14 +1483,30 @@ export class ParticipantsList extends HTMLElement {
                         <span><span style="font-style: italic;">${p.name_}</span> ${p.firstName_} ${p.lastName_}</span>
                         <globular-session-state account=${p._id}></globular-session-state>
                     </div>
+                    <paper-icon-button icon="av:videocam"> </paper-icon-button>
                 </div>
                 `
             this.shadowRoot.querySelector("#paticipants-lst").insertBefore(document.createRange().createContextualFragment(html), this.shadowRoot.querySelector("#paticipants-lst").firstChild)
 
+            // From the paritcipant row
+            let participantRow = this.shadowRoot.querySelector("#paticipants-lst").querySelector(`#paticipant-${p._id}-row`)
+
+            let startVideoBtn = participantRow.querySelector("paper-icon-button")
+            if(p._id == Application.account.id){
+                startVideoBtn.style.display = "none"
+            }
+
+            startVideoBtn.onclick = ()=>{
+                Model.eventHub.publish("start_video_conversation_" + conversation.getUuid() + "_evt", p._id, true )
+                // hide the video button...
+                startVideoBtn.style.display = "none"
+            }
+
+            // TODO add stop video button.
         }
     }
 
-    setUnavailableParticipantRow(p) {
+    setUnavailableParticipantRow(p, conversation) {
         if (this.shadowRoot.querySelector(`paticipant-${p._id}-row`) == undefined) {
             let html = `
             <div id="paticipant-${p._id}-row" class="participant-table-row">
