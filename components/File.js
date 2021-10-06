@@ -13,6 +13,7 @@ import "@polymer/paper-progress/paper-progress.js"
 import { Model } from '../Model';
 import { File } from "../File";
 import { Menu } from './Menu';
+import { PermissionsManager } from './Permissions';
 import { VideoPlayer } from './Video'
 import { AudioPlayer } from './Audio'
 import { } from './Reader'
@@ -26,6 +27,7 @@ import { createArchive, deleteDir, deleteFile, downloadFileHttp, renameFile, upl
 import { ApplicationView } from '../ApplicationView';
 import { Application } from '../Application';
 import { RunCmdRequest } from 'globular-web-client/admin/admin_pb';
+import { UninstallApplicationRequest } from 'globular-web-client/applications_manager/applications_manager_pb';
 
 function getElementIndex(element) {
     return Array.from(element.parentNode.children).indexOf(element);
@@ -382,7 +384,10 @@ export class FilesView extends HTMLElement {
         }
 
         this.mananageAccessMenuItem.action = () => {
-            console.log("manage access menu click", this.path)
+            console.log("manage access menu click", this.menu.file.path)
+            // So here I will create a new permission manager object and display it for the given file.
+            Model.eventHub.publish("display_permission_manager_event", this.menu.file.path, true)
+
             this.menu.parentNode.removeChild(this.menu)
         }
 
@@ -2175,6 +2180,9 @@ export class FileExplorer extends HTMLElement {
         this.filesListView = undefined
         this.filesIconView = undefined
 
+        // The permissions manager
+        this.permissionManager = undefined
+
         // The path navigator
         this.pathNavigator = undefined
 
@@ -2269,6 +2277,17 @@ export class FileExplorer extends HTMLElement {
                 display: none;
             }
 
+            /** How the permission manager is display in the explorer **/
+            globular-permissions-manager{
+                background-color: var(--palette-background-default);
+                position: absolute;
+                top: 0px;
+                left: 0px;
+                right: 0px;
+                bottom: 0px;
+                z-index: 100;
+            }
+
         </style>
         <div style="padding: 7px">
         <paper-card id="file-explorer-box" class="file-explorer" style="flex-direction: column; display: none;">
@@ -2321,6 +2340,9 @@ export class FileExplorer extends HTMLElement {
         // The file view.
         this.filesListView = this.shadowRoot.querySelector("#globular-files-list-view")
         this.filesIconView = this.shadowRoot.querySelector("#globular-files-icon-view")
+
+        // The permission manager
+        this.permissionManager = new PermissionsManager()
 
         // The video player
         this.videoPlayer = this.shadowRoot.querySelector("#globular-video-player")
@@ -2621,6 +2643,21 @@ export class FileExplorer extends HTMLElement {
                         _publishSetDirEvent(this.path)
                     }
                 }, false)
+        }
+
+        // Permissions 
+        if (this.listeners["display_permission_manager_event"] == undefined){
+            Model.eventHub.subscribe("display_permission_manager_event",
+            (uuid) => {
+                this.listeners["display_permission_manager_event"] = uuid;
+            }, (path) => {
+                if (path.startsWith(this.getRoot())) {
+                    this.permissionManager.setPath(path)
+
+                    // I will display the permission manager.
+                    this.fileSelectionPanel.appendChild(this.permissionManager)
+                }
+            }, false)
         }
 
         // Reload the content of a dir with the actual dir content description on the server.
