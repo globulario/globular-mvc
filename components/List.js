@@ -1,6 +1,5 @@
 import { theme } from "./Theme";
 import { v4 as uuidv4 } from "uuid";
-import { ContactCard } from "./Contact";
 import { Account } from "../Account";
 
 /**
@@ -28,11 +27,8 @@ export class SearchableList extends HTMLElement {
             ${theme}
             .header{
                 position: relative;
-                display: flex;
-                align-items: center;
                 width: 100%;
                 transition: background 0.2s ease,padding 0.8s linear;
-                background-color: var(--palette-background-paper);
             }
 
             .item-div:hover{
@@ -53,13 +49,15 @@ export class SearchableList extends HTMLElement {
         </style>
         
         <div id="header-div" class="header">
-            <div style="flex-grow: 1;  padding: 5px;">
-                <span class="title">${title} (${list.length})</span>
-                <paper-input type="text" label="Filter ${title}" width="100"></paper-input>
-            </div>
-            <div class="icon-button" style="display: flex; width: 24px; height: 24px; justify-content: center; align-items: center;position: relative;">
-                <iron-icon  id="action-add-btn"  icon="add" style="flex-grow: 1; --iron-icon-fill-color:var(--palette-text-primary);"></iron-icon>
-                <paper-ripple class="circle" recenters=""></paper-ripple>
+            <span class="title">${title} (${list.length})</span>
+            <div style="display:flex; flex-direction: row; align-items: center;">
+                <div class="icon-button" style="display: flex; width: 24px; height: 24px; justify-content: center; align-items: center;position: relative;">
+                    <iron-icon  id="action-add-btn"  icon="add" style="flex-grow: 1; --iron-icon-fill-color:var(--palette-text-primary);"></iron-icon>
+                    <paper-ripple class="circle" recenters=""></paper-ripple>
+                </div>
+                <div style="flex-grow: 1;">
+                    <paper-input style="padding-left: 15px; max-width: 300px;" type="text" label="Filter ${title}"></paper-input>
+                </div>
             </div>
         </div>
         <div id="shadow-div" style="width: 100%; height: 5px;"></div>
@@ -111,6 +109,11 @@ export class SearchableList extends HTMLElement {
     // The sort items function
     sortItems() {
         return this.list.sort()
+    }
+
+    
+    hideTitle(){
+        this.shadowRoot.querySelector(".title").style.display = "none";
     }
 
     // The function that display one item.
@@ -173,6 +176,8 @@ export class SearchableList extends HTMLElement {
 
 customElements.define('globular-searchable-list', SearchableList)
 
+// TODO create searchable list for group, application, organisation and peers
+
 /**
  * Searchable Account list
  */
@@ -197,9 +202,9 @@ export class SearchableAccountList extends SearchableList {
                 let html = `
                 <style>
                     ${theme}
-                    #add-role-user-panel{
+                    #add-list-user-panel{
                         position: absolute;
-                        right: 0px;
+                        left: 0px;
                         z-index: 1;
                     }
 
@@ -209,7 +214,7 @@ export class SearchableAccountList extends SearchableList {
                     }
 
                 </style>
-                <paper-card id="add-role-user-panel">
+                <paper-card id="add-list-user-panel">
                     <div style="display: flex; align-items: center;">
                         <div style="flex-grow: 1; padding: 5px;">
                             Add Account
@@ -222,11 +227,11 @@ export class SearchableAccountList extends SearchableList {
                 </paper-card>
                 `
                 let headerDiv = this.shadowRoot.querySelector("#header-div")
-                let panel = headerDiv.querySelector("#add-role-user-panel")
+                let panel = headerDiv.querySelector("#add-list-user-panel")
 
                 if (panel == undefined) {
                     headerDiv.appendChild(document.createRange().createContextualFragment(html))
-                    panel = headerDiv.querySelector("#add-role-user-panel")
+                    panel = headerDiv.querySelector("#add-list-user-panel")
                     panel.style.top = (headerDiv.offsetHeight / 2) + 14 + "px";
                     let closeBtn = panel.querySelector("#cancel-btn")
                     closeBtn.onclick = () => {
@@ -293,6 +298,7 @@ export class SearchableAccountList extends SearchableList {
         super(title, list, ondeleteaccount, onaddaccount, onadd)
 
     }
+
 
     createAccountDiv(account) {
         let uuid = "_" + uuidv4();
