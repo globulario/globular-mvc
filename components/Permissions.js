@@ -3,7 +3,6 @@ import { Account } from "../Account";
 import { theme } from "../../globular-mvc/components/Theme.js";
 import { ApplicationView } from "../ApplicationView";
 import { Model } from "../Model";
-import { v4 as uuidv4 } from "uuid";
 import { SearchableAccountList } from "./List.js";
 
 /**
@@ -17,6 +16,9 @@ export class PermissionsManager extends HTMLElement {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
+
+        // the active permissions.
+        this.permissions = null
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -76,7 +78,7 @@ export class PermissionsManager extends HTMLElement {
         </div>
         `
         // give the focus to the input.
-        let container = this.shadowRoot.querySelector("#container")
+        this.container = this.shadowRoot.querySelector("#container")
         this.pathDiv = this.shadowRoot.querySelector("#path")
 
         // The tree sections.
@@ -92,14 +94,27 @@ export class PermissionsManager extends HTMLElement {
             // remove it from it parent.
             this.parentNode.removeChild(this)
         }
+
+
+
     }
 
     // The connection callback.
     connectedCallback() {
-        // When the permission manager is displayed
+        // Save owner permission.
+        Model.eventHub.subscribe("save_permission_event",
+            permission => {
+                console.log(this.permissions)
+                console.log(permission)
+            }, true)
     }
 
     setPath(path) {
+
+        // clear the panel values.
+        this.owners.innerHTML = "";
+        this.alloweds.innerHTML = "";
+        this.denieds.innerHTML = "";
 
         this.pathDiv.innerHTML = path;
 
@@ -112,9 +127,9 @@ export class PermissionsManager extends HTMLElement {
             application: Model.application,
             domain: Model.domain,
         }).then(rsp => {
-            console.log(rsp.getPermissions())
             // Here I will display the owner's
             let ownersPermissionPanel = new PermissionPanel()
+            this.permissions = rsp.getPermissions()
             ownersPermissionPanel.setPermission(rsp.getPermissions().getOwners(), true)
             this.owners.appendChild(ownersPermissionPanel)
         }).catch(err => {
@@ -178,6 +193,8 @@ export class PermissionPanel extends HTMLElement {
 
     setPermission(permission, hideTitle) {
         console.log(permission)
+        this.permission = permission;
+
         if (hideTitle == undefined) {
             this.shadowRoot.querySelector(".title").innerHTML = permission.getName()
         } else {
@@ -239,11 +256,7 @@ export class PermissionPanel extends HTMLElement {
 
     // Each permission can be set for applications, peers, accounts, groups or organisations
     setAccountPermissions(accounts_) {
-        let content = this.createCollapsible(`Account(${accounts_.length})`, () => {
-            console.log("add new account to permission...")
-            // Here I will display the account auto complete...
-
-        })
+        let content = this.createCollapsible(`Account(${accounts_.length})`)
 
         // Here I will set the content of the collapse panel.
         // Now the account list.
@@ -259,34 +272,22 @@ export class PermissionPanel extends HTMLElement {
                     }
                 })
 
-                let accountsList = new SearchableAccountList("Accounts", list, a => {
-                    accountsList.removeItem(a)
-                    let rqst = new RemoveGroupMemberAccountRqst
-                    rqst.setGroupid(group.getId())
-                    rqst.setAccountid(a._id)
-                    
-                    Model.globular.resourceService.removeGroupMemberAccount(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
-                        .then(rsp => {
-                            accountsList.removeItem(a)
-                            ApplicationView.displayMessage("Account " + a._id + " was removed from group " + group.getId(), 3000)
-                        }).catch(err => {
-                            accountsList.appendItem(a) // set it back
-                            ApplicationView.displayMessage(err, 3000)
-                        })
-                },
+                let accountsList = new SearchableAccountList("Accounts", list,
                     a => {
-                        let rqst = new AddGroupMemberAccountRqst
-                        rqst.setGroupid(group.getId())
-                        rqst.setAccountid(a._id)
-                        Model.globular.resourceService.addGroupMemberAccount(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
-                            .then(rsp => {
-                                accountsList.appendItem(a)
-                                ApplicationView.displayMessage("Account " + a._id + " has now group " + group.getId(), 3000)
-                            }).catch(err => {
-                                accountsList.removeItem(a)
-                                ApplicationView.displayMessage(err, 3000)
-                            })
-
+                        let index = this.permission.getAccountsList().indexOf(a._id)
+                        if (index != -1) {
+                            this.permission.getAccountsList().splice(index, 1)
+                            Model.eventHub.publish("save_permission_event", this.permission)
+                            accountsList.removeItem(a)
+                        }
+                    },
+                    a => {
+                        let index = this.permission.getAccountsList().index(a._id)
+                        if (index == -1) {
+                            this.permission.getAccountsList().push(a._id)
+                            Model.eventHub.publish("save_permission_event", this.permission)
+                            accountsList.appendItem(a)
+                        }
                     })
 
                 // Do not display the title again...
@@ -295,9 +296,6 @@ export class PermissionPanel extends HTMLElement {
             }, err => {
                 ApplicationView.displayMessage(err, 3000)
             })
-
-
-
 
     }
 
