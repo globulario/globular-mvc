@@ -6,12 +6,13 @@ import { ApplicationView } from "./ApplicationView";
 import { FileExplorer } from "./components/File";
 import { RoleManager} from "./components/Role"
 import { GroupManager} from "./components/Group"
-import { ImageCropperSetting, ImageSetting, SettingsMenu, SettingsPanel, ComplexSetting, EmailSetting, StringSetting, TextAreaSetting } from "./components/Settings";
+import { ImageCropperSetting, SettingsMenu, SettingsPanel, ComplexSetting, EmailSetting, StringSetting } from "./components/Settings";
 import { Model } from "./Model";
 import "@polymer/iron-icons/social-icons";
 import "@polymer/iron-icons/notification-icons";
 import { ApplicationManager } from "./components/Applications";
 import { PeersManager } from "./components/Peers";
+import { OrganizationManager } from "./components/Organization";
 
 export class Settings {
 
@@ -223,6 +224,54 @@ export class GroupSettings extends Settings {
     }
 }
 
+export class OrganizationSettings extends Settings {
+    organizationManager: OrganizationManager;
+
+    // The application.
+    constructor(settingsMenu: SettingsMenu, settingsPanel: SettingsPanel) {
+        super(settingsMenu, settingsPanel);
+
+        settingsMenu.appendSettingsMenuItem("social:domain", "Organizations");
+
+        let organizationSettingPage = <any>settingsPanel.appendSettingsPage("Organizations");
+
+        // Append a title.
+        let html = `
+            <style>
+            .title {
+                font-size: 1.25rem;
+                text-transform: uppercase;
+                color: var(--cr-primary-text-color);
+                font-weight: 400;
+                letter-spacing: .25px;
+                margin-bottom: 12px;
+                margin-top: var(--cr-section-vertical-margin);
+                outline: none;
+                padding-bottom: 4px;
+                padding-top: 16px;
+            }
+
+            .subtitle{
+                font-size: 1rem;
+                text-align: left;
+                padding-bottom: 15px;
+            }
+
+            </style>
+            <div class="title">
+                Organizations 
+            </div>
+            <span class="subtitle" style="font-size: 1rem;">Aggregation of accouts, groups, roles and applications used to manage permissions</span>
+        `
+
+        // Display the file explorer...
+        organizationSettingPage.appendChild(document.createRange().createContextualFragment(html));
+        this.organizationManager = new OrganizationManager()
+        organizationSettingPage.appendChild(this.organizationManager)
+
+    }
+}
+
 export class ApplicationsSettings extends Settings {
     applicationManager: ApplicationManager;
 
@@ -278,7 +327,7 @@ export class PeersSettings extends Settings {
     constructor(settingsMenu: SettingsMenu, settingsPanel: SettingsPanel) {
         super(settingsMenu, settingsPanel);
 
-        settingsMenu.appendSettingsMenuItem("icons:settings-applications", "Peers");
+        settingsMenu.appendSettingsMenuItem("social:share", "Peers");
 
         let peersSettingPage = <any>settingsPanel.appendSettingsPage("Peers");
 

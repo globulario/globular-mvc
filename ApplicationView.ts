@@ -2,7 +2,7 @@ import { View } from "./View";
 import * as M from "materialize-css";
 import "materialize-css/sass/materialize.scss";
 import { Account } from "./Account";
-import { ApplicationsSettings, FileSettings, GroupSettings, LogSettings, PeersSettings, RoleSettings, UserSettings } from "./Settings"
+import { ApplicationsSettings, FileSettings, GroupSettings, LogSettings, OrganizationSettings, PeersSettings, RoleSettings, UserSettings } from "./Settings"
 import { Model } from "./Model";
 import { DockerNames } from "./components/RandomName"
 
@@ -40,6 +40,7 @@ import { readDir, uploadFiles } from "globular-web-client/api";
 import { ServerGeneralSettings } from "./serverGeneralSettings";
 import { SaveConfigRequest } from "globular-web-client/admin/admin_pb";
 import { ServicesSettings } from "./servicesSettings";
+import { OrganizationManager } from "./components/Organization.js";
 
 /**
  * Application view made use of Web-component and Materialyse to create a basic application
@@ -94,10 +95,6 @@ export class ApplicationView extends View {
 
   /** The settings Panel */
   protected settingsPanel: SettingsPanel;
-
-  protected serverSettings: ServerGeneralSettings;
-
-  protected servicesSettings: ServicesSettings;
 
  
   /** The camera */
@@ -665,15 +662,19 @@ export class ApplicationView extends View {
     // Manage peers
     let peersSettings = new PeersSettings(this.settingsMenu, this.settingsPanel)
 
+    // Manage organizations
+    let organizationsSettings = new OrganizationSettings(this.settingsMenu, this.settingsPanel)
+
     // Manage roles
     let roleSettings = new RoleSettings(this.settingsMenu, this.settingsPanel)
 
     // Manage groups
     let groupSettings = new GroupSettings(this.settingsMenu, this.settingsPanel)
 
-
-
+    // Manage server settings
     let serverGeneralSettings = new ServerGeneralSettings(this.settingsMenu, this.settingsPanel);
+
+    // Manage services settings.
     let servicesSettings = new ServicesSettings(this.settingsMenu, this.settingsPanel);
 
     // Set the file explorer...

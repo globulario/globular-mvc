@@ -1,6 +1,7 @@
 import { theme } from "./Theme";
 import { v4 as uuidv4 } from "uuid";
 import { Account } from "../Account";
+import { Application } from "globular-web-client/resource/resource_pb";
 
 /**
  * String seach listbox.
@@ -360,3 +361,186 @@ export class SearchableAccountList extends SearchableList {
 }
 
 customElements.define('globular-searchable-account-list', SearchableAccountList)
+
+
+
+/**
+ * Searchable Application list
+ */
+ export class SearchableApplicationList extends SearchableList {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor(title, list, ondeleteapplication, onaddapplication) {
+
+        // the onadd handler
+        let onadd = (applications) => {
+            // Now the user list...
+            Application.getAllApplicationInfo( (allApplications) => {
+
+                applications.forEach(a => {
+                    // remove all existing items.
+                    allApplications = allApplications.filter(el => el._id !== a._id)
+                })
+
+                // Now I will display the list of available account to add to the role...
+                let html = `
+                <style>
+                    ${theme}
+                    #add-list-application-panel{
+                        position: absolute;
+                        left: 0px;
+                        z-index: 1;
+                    }
+
+                    .card-content{
+                        overflow-y: auto;
+                        min-width: 400px;
+                    }
+
+                </style>
+                <paper-card id="add-application-panel">
+                    <div style="display: flex; align-items: center;">
+                        <div style="flex-grow: 1; padding: 5px;">
+                            Add Application
+                        </div>
+                        <paper-icon-button id="cancel-btn" icon="close"></paper-icon-button>
+                    </div>
+                    <div class="card-content">
+                        <globular-autocomplete type="text" label="Search Application" id="add_application_input" width="${this.width - 10}" style="flex-grow: 1;"></globular-autocomplete>
+                    </div>
+                </paper-card>
+                `
+                let headerDiv = this.shadowRoot.querySelector("#header-div")
+                let panel = headerDiv.querySelector("#add-list-application-panel")
+
+                if (panel == undefined) {
+                    headerDiv.appendChild(document.createRange().createContextualFragment(html))
+                    panel = headerDiv.querySelector("#add-list-application-panel")
+                    panel.style.top = (headerDiv.offsetHeight / 2) + 14 + "px";
+                    let closeBtn = panel.querySelector("#cancel-btn")
+                    closeBtn.onclick = () => {
+                        panel.parentNode.removeChild(panel)
+                    }
+
+                    // The invite contact action.
+                    let addApplicationInput = this.shadowRoot.getElementById("add_application_input")
+                    addApplicationInput.focus()
+                    addApplicationInput.onkeyup = () => {
+                        let val = addApplicationInput.getValue();
+                        if (val.length >= 2) {
+                            let values = []
+                            allApplications.forEach(a => {
+                                if (a.name.toUpperCase().indexOf(val.toUpperCase()) != -1) {
+                                    values.push(a)
+                                }
+                            })
+                            addApplicationInput.setValues(values)
+                        } else {
+                            addApplicationInput.clear()
+                        }
+                    }
+
+
+                    // That function must return the div that display the value that we want.
+                    addApplicationInput.displayValue = (a) => {
+                        // display the account...
+                        let div = this.createApplicationDiv(a)
+                        let addBtn = div.querySelector("paper-icon-button")
+                        addBtn.icon = "add"
+                        addBtn.onclick = () => {
+
+                            // remove the account form the list off available choice.
+                            allApplications = allApplications.filter(a_ => a_ !== a)
+
+                            addApplicationInput.clear()
+
+                            // set values without the account
+                            let values = []
+                            let val = addApplicationInput.getValue();
+                            allApplications.forEach(a => {
+                                if (a.name.toUpperCase().indexOf(val.toUpperCase()) != -1) {
+                                    values.push(a)
+                                }
+                            })
+
+                            addApplicationInput.setValues(values)
+
+                            // Here I will set the account role...
+                            if (this.onadditem != null) {
+                                this.onadditem(a)
+                            }
+
+                        }
+                        return div
+                    }
+                }
+
+
+            })
+        }
+
+        super(title, list, ondeleteapplication, onaddapplication, onadd)
+
+    }
+
+    createApplicationDiv(application) {
+        let uuid = "_" + uuidv4();
+        let html = `
+        <style>
+        </style>
+        <div id="${uuid}" class="item-div" style="">
+            <div style="display: flex; align-items: center; padding: 5px;  width: 100%;"> 
+                <img style="width: 40px; height: 40px; display: ${application.icon == undefined ? "none" : "block"};" src="${application.icon}"></img>
+                <iron-icon icon="account-circle" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${application.icon != undefined ? "none" : "block"};"></iron-icon>
+                <div style="display: flex; flex-direction: column; width:300px; font-size: .85em; padding-left: 8px; flex-grow: 1;">
+                    <span>${application.name}</span>
+                    <span>${application.version}</span>
+                </div>
+                <paper-icon-button icon="delete" id="${application._id}_btn"></paper-icon-button>
+            </div>
+            
+        </div>`
+
+        this.shadowRoot.appendChild(document.createRange().createContextualFragment(html))
+        let div = this.shadowRoot.getElementById(uuid)
+        div.parentNode.removeChild(div)
+        return div
+    }
+
+    // Remove an accout from the list.
+    removeItem(a){
+        this.list = this.list.filter(el => el._id !== a._id)
+    }
+
+    displayItem(a) {
+        let div = this.createAccountDiv(a)
+        let deleteBtn =  div.querySelector("paper-icon-button")
+        deleteBtn.icon = "delete"
+
+        if (this.ondeleteitem != undefined) {
+            deleteBtn.onclick = () => {
+                // remove the div...
+                div.parentNode.removeChild(div)
+                this.ondeleteitem(a)
+            }
+        } else {
+            deleteBtn.style.display = "none"
+        }
+
+        return div
+    }
+
+    // That function can be overide, assume a string by default
+    filter(a) {
+        return a.name.toUpperCase().indexOf(this.filter_.toUpperCase()) != -1
+    }
+
+    // The sort items function
+    sortItems() {
+        // Sort account...
+        return this.list.sort((a, b) => (a.name > b.name) ? 1 : -1)
+    }
+}
+
+customElements.define('globular-searchable-application-list', SearchableApplicationList)

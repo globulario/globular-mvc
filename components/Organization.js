@@ -2,14 +2,33 @@ import { theme } from './Theme';
 import '@polymer/iron-icons/iron-icons.js';
 
 import { Model } from '../Model';
-import { AddGroupMemberAccountRqst, RemoveGroupMemberAccountRqst, CreateGroupRqst, DeleteGroupRqst, Group } from 'globular-web-client/resource/resource_pb';
-import { getAllGroups } from 'globular-web-client/api';
-import { Application } from '../Application';
+import { AddOrganizationAccountRqst, CreateOrganizationRqst, DeleteOrganizationRqst, GetOrganizationsRqst, Organization, RemoveOrganizationAccountRqst } from 'globular-web-client/resource/resource_pb';
 import { ApplicationView } from '../ApplicationView';
 import { SearchableAccountList } from './List.js'
 import { Account } from '../Account';
 
-export class GroupManager extends HTMLElement {
+function getAllOrganizations(callback, errorCallback) {
+    let rqst = new GetOrganizationsRqst
+    rqst.setQuery("{}")
+    let organizations = [];
+
+    let stream = Model.globular.resourceService.getOrganizations(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") });
+
+    // Get the stream and set event on it...
+    stream.on("data", (rsp) => {
+        organizations = organizations.concat(rsp.getOrganizationsList());
+    });
+
+    stream.on("status", (status) => {
+        if (status.code == 0) {
+            callback(organizations);
+        } else {
+            errorCallback({ message: status.details });
+        }
+    });
+}
+
+export class OrganizationManager extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
@@ -24,7 +43,7 @@ export class GroupManager extends HTMLElement {
              <style>
                  ${theme}
 
-                #create-group-btn{
+                #create-organization-btn{
                     top: -42px;
                     right: 0px;
                     position: absolute;
@@ -60,7 +79,7 @@ export class GroupManager extends HTMLElement {
                     <div class="card-content">
                     </div>
                 </paper-card>
-                <paper-icon-button icon="add" id="create-group-btn"></paper-icon-button>
+                <paper-icon-button icon="add" id="create-organization-btn"></paper-icon-button>
              </div>
              `
 
@@ -70,39 +89,39 @@ export class GroupManager extends HTMLElement {
         // give the focus to the input.
         let container = this.shadowRoot.querySelector("#container")
 
-        let displayGroups = ()=>{
+        let displayOrganizations = () => {
             content.innerHTML = ""
-        // Here I will get the list of all groups.
-        getAllGroups(Application.globular,
-            (groups) => {
-                groups.forEach(g => {
-                    if (g.getId() != "admin" && g.getId() != "guest") {
-                        let panel = new GroupPanel(g)
-                        content.appendChild(panel)
-                    }
-                })
-            }, err => { ApplicationView.displayMessage(err, 3000) })
+            // Here I will get the list of all Organizations.
+            getAllOrganizations(
+                (Organizations) => {
+                    Organizations.forEach(g => {
+                        if (g.getId() != "admin" && g.getId() != "guest") {
+                            let panel = new OrganizationPanel(g)
+                            content.appendChild(panel)
+                        }
+                    })
+                }, err => { ApplicationView.displayMessage(err, 3000) })
         }
-         
-        // call once
-        displayGroups()
 
-        Model.globular.eventHub.subscribe("refresh_group_evt", uuid=>{}, evt=>{
-            displayGroups()
+        // call once
+        displayOrganizations()
+
+        Model.globular.eventHub.subscribe("refresh_organization_evt", uuid => { }, evt => {
+            displayOrganizations()
         }, true)
 
-        let createGroupBtn = this.shadowRoot.querySelector("#create-group-btn")
-        createGroupBtn.onclick = () => {
+        let createOrganizationBtn = this.shadowRoot.querySelector("#create-organization-btn")
+        createOrganizationBtn.onclick = () => {
             let html = `
             <style>
                 ${theme}
-                #create-group-panel{
+                #create-organization-panel{
                     position: absolute;
                     right: 0px;
                     top: 0px;
                     z-index: 1;
                 }
-                #create-group-panel .card-content{
+                #create-organization-panel .card-content{
                     min-width: 200px;
                     padding: 0px 10px 0px 10px;
                     display: flex;
@@ -110,10 +129,10 @@ export class GroupManager extends HTMLElement {
                 }
 
             </style>
-            <paper-card id="create-group-panel">
+            <paper-card id="create-organization-panel">
                 <div style="display: flex; align-items: center;">
                     <div style="flex-grow: 1; padding: 5px;">
-                        Create Group
+                        Create Organization
                     </div>
                     <paper-icon-button id="cancel-btn" icon="close"></paper-icon-button>
                 </div>
@@ -125,57 +144,57 @@ export class GroupManager extends HTMLElement {
             </paper-card>
             `
 
-            let panel = container.querySelector("#create-group-panel")
+            let panel = container.querySelector("#create-organization-panel")
             let input = null
             if (panel == undefined) {
                 container.appendChild(document.createRange().createContextualFragment(html))
-                panel = container.querySelector("#create-group-panel")
+                panel = container.querySelector("#create-organization-panel")
                 let closeBtn = panel.querySelector("#cancel-btn")
                 closeBtn.onclick = () => {
                     panel.parentNode.removeChild(panel)
                 }
 
                 input = panel.querySelector("paper-input")
-                let createGroupButton =  panel.querySelector("paper-button")
+                let createOrganizationButton = panel.querySelector("paper-button")
 
-                // Create a new group.
-                createGroupButton.onclick = ()=>{
-                    let groupId = input.value;
-                    if(groupId.length == 0){
-                        ApplicationView.displayMessage("No group name was given!", 3000)
+                // Create a new Organization.
+                createOrganizationButton.onclick = () => {
+                    let OrganizationId = input.value;
+                    if (OrganizationId.length == 0) {
+                        ApplicationView.displayMessage("No Organization name was given!", 3000)
                         setTimeout(() => {
                             input.focus()
-                          }, 100)
+                        }, 100)
                         return
                     }
 
-                    let rqst = new CreateGroupRqst
-                    let group = new Group
-                    group.setId(groupId)
-                    group.setName(groupId)
+                    let rqst = new CreateOrganizationRqst()
+                    let organization = new Organization()
+                    organization.setId(OrganizationId)
+                    organization.setName(OrganizationId)
 
-                    rqst.setGroup(group)
-                    Model.globular.resourceService.createGroup(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
-                    .then(rsp => {
-                        ApplicationView.displayMessage("Group " + groupId + " was created!", 3000)
-                        panel.parentNode.removeChild(panel)
-                        displayGroups()
-                    }).catch(err => {
-                        console.log(err)
-                        ApplicationView.displayMessage(err, 3000)
-                        setTimeout(() => {
-                            input.focus()
-                          }, 100)
-                    })
-                   
+                    rqst.setOrganization(organization)
+                    Model.globular.resourceService.createOrganization(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+                        .then(rsp => {
+                            ApplicationView.displayMessage("Organization " + OrganizationId + " was created!", 3000)
+                            panel.parentNode.removeChild(panel)
+                            displayOrganizations()
+                        }).catch(err => {
+                            console.log(err)
+                            ApplicationView.displayMessage(err, 3000)
+                            setTimeout(() => {
+                                input.focus()
+                            }, 100)
+                        })
+
                 }
-            }else{
+            } else {
                 input = panel.querySelector("paper-input")
             }
-            
+
             setTimeout(() => {
                 input.focus()
-              }, 100)
+            }, 100)
 
         }
 
@@ -188,20 +207,19 @@ export class GroupManager extends HTMLElement {
     }
 }
 
-customElements.define('globular-group-manager', GroupManager)
+customElements.define('globular-organization-manager', OrganizationManager)
 
 
-
-export class GroupPanel extends HTMLElement {
+export class OrganizationPanel extends HTMLElement {
     // attributes.
     // Create the applicaiton view.
-    constructor(group) {
+    constructor(o) {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
 
-        // Keep group informations.
-        this.group = group;
+        // Keep Organization informations.
+        this.organization = o;
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -233,8 +251,8 @@ export class GroupPanel extends HTMLElement {
         </style>
         <div id="container">
             <div class="header">
-                <paper-icon-button id="delete-group-btn" icon="delete"></paper-icon-button>
-                <span class="title">${this.group.getName()}</span>
+                <paper-icon-button id="delete-organization-btn" icon="delete"></paper-icon-button>
+                <span class="title">${this.organization.getName()}</span>
                 <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
                     <iron-icon  id="hide-btn"  icon="unfold-less" style="flex-grow: 1; --iron-icon-fill-color:var(--palette-text-primary);" icon="add"></iron-icon>
                     <paper-ripple class="circle" recenters=""></paper-ripple>
@@ -249,9 +267,9 @@ export class GroupPanel extends HTMLElement {
         let content = this.shadowRoot.querySelector("#collapase-panel")
         this.hideBtn = this.shadowRoot.querySelector("#hide-btn")
 
-        let deleteBtn = this.shadowRoot.querySelector("#delete-group-btn")
-        deleteBtn.onclick = ()=>{
-            this.onDeleteGroup(group)
+        let deleteBtn = this.shadowRoot.querySelector("#delete-organization-btn")
+        deleteBtn.onclick = () => {
+            this.onDeleteOrganization(o)
         }
 
         // Now the account list.
@@ -260,7 +278,7 @@ export class GroupPanel extends HTMLElement {
 
                 // I will get the account object whit the given id.
                 let list = []
-                this.group.getMembersList().forEach(accountId => {
+                this.organization.getAccountsList().forEach(accountId => {
                     let a_ = accounts.find(a => a._id === accountId);
                     if (a_ != undefined) {
                         list.push(a_)
@@ -269,26 +287,26 @@ export class GroupPanel extends HTMLElement {
 
                 let accountsList = new SearchableAccountList("Accounts", list, a => {
                     accountsList.removeItem(a)
-                    let rqst = new RemoveGroupMemberAccountRqst
-                    rqst.setGroupid(group.getId())
+                    let rqst = new RemoveOrganizationAccountRqst
+                    rqst.setOrganizationid(o.getId())
                     rqst.setAccountid(a._id)
-                    Model.globular.resourceService.removeGroupMemberAccount(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+                    Model.globular.resourceService.removeOrganizationAccount(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
                         .then(rsp => {
                             accountsList.removeItem(a)
-                            ApplicationView.displayMessage("Account " + a._id + " was removed from group " + group.getId(), 3000)
+                            ApplicationView.displayMessage("Account " + a._id + " was removed from Organization " + o.getName(), 3000)
                         }).catch(err => {
                             accountsList.appendItem(a) // set it back
                             ApplicationView.displayMessage(err, 3000)
                         })
                 },
                     a => {
-                        let rqst = new AddGroupMemberAccountRqst
-                        rqst.setGroupid(group.getId())
+                        let rqst = new AddOrganizationAccountRqst
+                        rqst.setOrganizationid(o.getId())
                         rqst.setAccountid(a._id)
-                        Model.globular.resourceService.addGroupMemberAccount(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+                        Model.globular.resourceService.addOrganizationAccount(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
                             .then(rsp => {
                                 accountsList.appendItem(a)
-                                ApplicationView.displayMessage("Account " + a._id + " has now group " + group.getId(), 3000)
+                                ApplicationView.displayMessage("Account " + a._id + " has now Organization " + o.getName(), 3000)
                             }).catch(err => {
                                 accountsList.removeItem(a)
                                 ApplicationView.displayMessage(err, 3000)
@@ -318,9 +336,9 @@ export class GroupPanel extends HTMLElement {
 
     }
 
-    onDeleteGroup(group) {
+    onDeleteOrganization(o) {
         let toast = ApplicationView.displayMessage(
-          `
+            `
           <style>
             #yes-no-contact-delete-box{
               display: flex;
@@ -344,7 +362,7 @@ export class GroupPanel extends HTMLElement {
     
           </style>
           <div id="yes-no-contact-delete-box">
-            <div>Your about to delete the group ${group.getName()}</div>
+            <div>Your about to delete the Organization ${o.getName()}</div>
             <div>Is it what you want to do? </div>
             <div style="justify-content: flex-end;">
               <paper-button id="yes-delete-contact">Yes</paper-button>
@@ -352,37 +370,37 @@ export class GroupPanel extends HTMLElement {
             </div>
           </div>
           `,
-          15000 // 15 sec...
+            15000 // 15 sec...
         );
-    
+
         let yesBtn = document.querySelector("#yes-delete-contact")
         let noBtn = document.querySelector("#no-delete-contact")
-    
+
         // On yes
         yesBtn.onclick = () => {
 
-          let rqst = new DeleteGroupRqst
-          rqst.setGroupid(group.getId())
-          Model.globular.resourceService.deleteGroup(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") } ).then((rsp)=>{
-            ApplicationView.displayMessage(
-                "<iron-icon icon='communication:message' style='margin-right: 10px;'></iron-icon><div>Group named " +
-                group.getName() +
-                " was deleted!</div>",
-                3000
-              );
-              Model.globular.eventHub.publish("refresh_group_evt", {}, true)
-              toast.dismiss();
-          }).catch(e=>{
-            ApplicationView.displayMessage(e, 3000)
-            toast.dismiss();
-          })
-    
+            let rqst = new DeleteOrganizationRqst
+            rqst.setOrganization(o.getId())
+            Model.globular.resourceService.deleteOrganization(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") }).then((rsp) => {
+                ApplicationView.displayMessage(
+                    "<iron-icon icon='communication:message' style='margin-right: 10px;'></iron-icon><div>Organization named " +
+                    o.getName() +
+                    " was deleted!</div>",
+                    3000
+                );
+                Model.globular.eventHub.publish("refresh_organization_evt", {}, true)
+                toast.dismiss();
+            }).catch(e => {
+                ApplicationView.displayMessage(e, 3000)
+                toast.dismiss();
+            })
+
         }
-    
+
         noBtn.onclick = () => {
-          toast.dismiss();
+            toast.dismiss();
         }
-      }
+    }
 }
 
-customElements.define('globular-group-panel', GroupPanel)
+customElements.define('globular-organization-panel', OrganizationPanel)
