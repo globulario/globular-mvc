@@ -2,10 +2,11 @@ import { theme } from './Theme';
 import '@polymer/iron-icons/iron-icons.js';
 
 import { Model } from '../Model';
-import { AddOrganizationAccountRqst, CreateOrganizationRqst, DeleteOrganizationRqst, GetOrganizationsRqst, Organization, RemoveOrganizationAccountRqst } from 'globular-web-client/resource/resource_pb';
+import { AddOrganizationAccountRqst, AddOrganizationApplicationRqst, Application, CreateOrganizationRqst, DeleteOrganizationRqst, GetOrganizationsRqst, Organization, RemoveOrganizationAccountRqst, RemoveOrganizationApplicationRqst } from 'globular-web-client/resource/resource_pb';
 import { ApplicationView } from '../ApplicationView';
-import { SearchableAccountList } from './List.js'
+import { SearchableAccountList, SearchableApplicationList } from './List.js'
 import { Account } from '../Account';
+import * as ApplicationTs from '../Application';
 
 function getAllOrganizations(callback, errorCallback) {
     let rqst = new GetOrganizationsRqst
@@ -272,7 +273,7 @@ export class OrganizationPanel extends HTMLElement {
             this.onDeleteOrganization(o)
         }
 
-        // Now the account list.
+        // Account list.
         Account.getAccounts("{}",
             accounts => {
 
@@ -319,6 +320,52 @@ export class OrganizationPanel extends HTMLElement {
                 ApplicationView.displayMessage(err, 3000)
             })
 
+        // The applications list.
+        ApplicationTs.Application.getAllApplicationInfo(
+            applications => {
+
+                // I will get the account object whit the given id.
+                let list = []
+                this.organization.getApplicationsList().forEach(applicationId => {
+                    let a_ = applications.find(a => a.getId() === applicationId);
+                    if (a_ != undefined) {
+                        list.push(a_)
+                    }
+                })
+
+                let applicationsList = new SearchableApplicationList("Applications", list, a => {
+                    applicationsList.removeItem(a)
+                    let rqst = new RemoveOrganizationApplicationRqst
+                    rqst.setOrganizationid(o.getId())
+                    rqst.setApplicationid(a.getId())
+                    Model.globular.resourceService.removeOrganizationApplication(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+                        .then(rsp => {
+                            applicationsList.removeItem(a)
+                            ApplicationView.displayMessage("Application " + a.getAlias() + " was removed from Organization " + o.getName(), 3000)
+                        }).catch(err => {
+                            applicationsList.appendItem(a) // set it back
+                            ApplicationView.displayMessage(err, 3000)
+                        })
+                },
+                    a => {
+                        let rqst = new AddOrganizationApplicationRqst
+                        rqst.setOrganizationid(o.getId())
+                        rqst.setApplicationid(a.getId())
+                        Model.globular.resourceService.addOrganizationApplication(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+                            .then(rsp => {
+                                applicationsList.appendItem(a)
+                                ApplicationView.displayMessage("Application " + a.getAlias() + " has now Organization " + o.getName(), 3000)
+                            }).catch(err => {
+                                applicationsList.removeItem(a)
+                                ApplicationView.displayMessage(err, 3000)
+                            })
+
+                    })
+
+                content.appendChild(applicationsList)
+            }, err => {
+                ApplicationView.displayMessage(err, 3000)
+            })
 
         // give the focus to the input.
         this.hideBtn.onclick = () => {

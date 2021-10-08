@@ -1,7 +1,7 @@
 import { theme } from "./Theme";
 import { v4 as uuidv4 } from "uuid";
 import { Account } from "../Account";
-import { Application } from "globular-web-client/resource/resource_pb";
+import { Application } from "../Application";
 
 /**
  * String seach listbox.
@@ -307,7 +307,7 @@ export class SearchableAccountList extends SearchableList {
         <style>
         </style>
         <div id="${uuid}" class="item-div" style="">
-            <div style="display: flex; align-items: center; padding: 5px;  width: 100%;"> 
+            <div style="display: flex; align-items: center; padding: 5px;"> 
                 <img style="width: 40px; height: 40px; display: ${account.profilPicture_ == undefined ? "none" : "block"};" src="${account.profilPicture_}"></img>
                 <iron-icon icon="account-circle" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${account.profilPicture_ != undefined ? "none" : "block"};"></iron-icon>
                 <div style="display: flex; flex-direction: column; width:300px; font-size: .85em; padding-left: 8px; flex-grow: 1;">
@@ -399,7 +399,7 @@ customElements.define('globular-searchable-account-list', SearchableAccountList)
                     }
 
                 </style>
-                <paper-card id="add-application-panel">
+                <paper-card id="add-list-application-panel">
                     <div style="display: flex; align-items: center;">
                         <div style="flex-grow: 1; padding: 5px;">
                             Add Application
@@ -431,7 +431,7 @@ customElements.define('globular-searchable-account-list', SearchableAccountList)
                         if (val.length >= 2) {
                             let values = []
                             allApplications.forEach(a => {
-                                if (a.name.toUpperCase().indexOf(val.toUpperCase()) != -1) {
+                                if (a.getName().toUpperCase().indexOf(val.toUpperCase()) != -1 || a.getAlias().toUpperCase().indexOf(val.toUpperCase()) != -1) {
                                     values.push(a)
                                 }
                             })
@@ -490,12 +490,12 @@ customElements.define('globular-searchable-account-list', SearchableAccountList)
         <style>
         </style>
         <div id="${uuid}" class="item-div" style="">
-            <div style="display: flex; align-items: center; padding: 5px;  width: 100%;"> 
-                <img style="width: 40px; height: 40px; display: ${application.icon == undefined ? "none" : "block"};" src="${application.icon}"></img>
-                <iron-icon icon="account-circle" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${application.icon != undefined ? "none" : "block"};"></iron-icon>
+            <div style="display: flex; align-items: center; padding: 5px;"> 
+                <img style="width: 40px; height: 40px; display: ${application.getIcon() == undefined ? "none" : "block"};" src="${application.getIcon()}"></img>
+                <iron-icon icon="account-circle" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${application.getIcon() != undefined ? "none" : "block"};"></iron-icon>
                 <div style="display: flex; flex-direction: column; width:300px; font-size: .85em; padding-left: 8px; flex-grow: 1;">
-                    <span>${application.name}</span>
-                    <span>${application.version}</span>
+                    <span>${application.getAlias()}</span>
+                    <span>${application.getVersion()}</span>
                 </div>
                 <paper-icon-button icon="delete" id="${application._id}_btn"></paper-icon-button>
             </div>
@@ -514,7 +514,7 @@ customElements.define('globular-searchable-account-list', SearchableAccountList)
     }
 
     displayItem(a) {
-        let div = this.createAccountDiv(a)
+        let div = this.createApplicationDiv(a)
         let deleteBtn =  div.querySelector("paper-icon-button")
         deleteBtn.icon = "delete"
 
@@ -533,13 +533,13 @@ customElements.define('globular-searchable-account-list', SearchableAccountList)
 
     // That function can be overide, assume a string by default
     filter(a) {
-        return a.name.toUpperCase().indexOf(this.filter_.toUpperCase()) != -1
+        return a.getName().toUpperCase().indexOf(this.filter_.toUpperCase()) != -1 || a.getAlias().toUpperCase().indexOf(this.filter_.toUpperCase()) != -1
     }
 
     // The sort items function
     sortItems() {
         // Sort account...
-        return this.list.sort((a, b) => (a.name > b.name) ? 1 : -1)
+        return this.list.sort((a, b) => (a.getName() > b.getName()) ? 1 : -1)
     }
 }
 
