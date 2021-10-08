@@ -262,6 +262,7 @@ export class SearchableAccountList extends SearchableList {
                     addAccountInput.displayValue = (a) => {
                         // display the account...
                         let div = this.createAccountDiv(a)
+                        div.children[0].style.width = "auto"
                         let addBtn = div.querySelector("paper-icon-button")
                         addBtn.icon = "add"
                         addBtn.onclick = () => {
@@ -307,7 +308,7 @@ export class SearchableAccountList extends SearchableList {
         <style>
         </style>
         <div id="${uuid}" class="item-div" style="">
-            <div style="display: flex; align-items: center; padding: 5px;"> 
+            <div style="display: flex; align-items: center; padding: 5px; width: 100%;"> 
                 <img style="width: 40px; height: 40px; display: ${account.profilPicture_ == undefined ? "none" : "block"};" src="${account.profilPicture_}"></img>
                 <iron-icon icon="account-circle" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${account.profilPicture_ != undefined ? "none" : "block"};"></iron-icon>
                 <div style="display: flex; flex-direction: column; width:300px; font-size: .85em; padding-left: 8px; flex-grow: 1;">
@@ -446,6 +447,7 @@ customElements.define('globular-searchable-account-list', SearchableAccountList)
                     addApplicationInput.displayValue = (a) => {
                         // display the account...
                         let div = this.createApplicationDiv(a)
+                        div.children[0].style.width = "auto"
                         let addBtn = div.querySelector("paper-icon-button")
                         addBtn.icon = "add"
                         addBtn.onclick = () => {
@@ -490,7 +492,7 @@ customElements.define('globular-searchable-account-list', SearchableAccountList)
         <style>
         </style>
         <div id="${uuid}" class="item-div" style="">
-            <div style="display: flex; align-items: center; padding: 5px;"> 
+            <div style="display: flex; align-items: center; padding: 5px; width: 100%;"> 
                 <img style="width: 40px; height: 40px; display: ${application.getIcon() == undefined ? "none" : "block"};" src="${application.getIcon()}"></img>
                 <iron-icon icon="account-circle" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${application.getIcon() != undefined ? "none" : "block"};"></iron-icon>
                 <div style="display: flex; flex-direction: column; width:300px; font-size: .85em; padding-left: 8px; flex-grow: 1;">
