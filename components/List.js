@@ -2,6 +2,8 @@ import { theme } from "./Theme";
 import { v4 as uuidv4 } from "uuid";
 import { Account } from "../Account";
 import { Application } from "../Application";
+import { getAllGroups, getAllRoles } from "globular-web-client/api";
+import { Model } from "../Model";
 
 /**
  * String seach listbox.
@@ -98,7 +100,7 @@ export class SearchableList extends HTMLElement {
     }
 
     // Return the header div.
-    getHeader(){
+    getHeader() {
         return this.shadowRoot.querySelector("#header-div")
     }
 
@@ -112,8 +114,8 @@ export class SearchableList extends HTMLElement {
         return this.list.sort()
     }
 
-    
-    hideTitle(){
+
+    hideTitle() {
         this.shadowRoot.querySelector(".title").style.display = "none";
     }
 
@@ -327,13 +329,13 @@ export class SearchableAccountList extends SearchableList {
     }
 
     // Remove an accout from the list.
-    removeItem(a){
+    removeItem(a) {
         this.list = this.list.filter(el => el._id !== a._id)
     }
 
     displayItem(a) {
         let div = this.createAccountDiv(a)
-        let deleteBtn =  div.querySelector("paper-icon-button")
+        let deleteBtn = div.querySelector("paper-icon-button")
         deleteBtn.icon = "delete"
 
         if (this.ondeleteitem != undefined) {
@@ -368,7 +370,7 @@ customElements.define('globular-searchable-account-list', SearchableAccountList)
 /**
  * Searchable Application list
  */
- export class SearchableApplicationList extends SearchableList {
+export class SearchableApplicationList extends SearchableList {
     // attributes.
 
     // Create the applicaiton view.
@@ -377,7 +379,7 @@ customElements.define('globular-searchable-account-list', SearchableAccountList)
         // the onadd handler
         let onadd = (applications) => {
             // Now the user list...
-            Application.getAllApplicationInfo( (allApplications) => {
+            Application.getAllApplicationInfo((allApplications) => {
 
                 applications.forEach(a => {
                     // remove all existing items.
@@ -511,13 +513,13 @@ customElements.define('globular-searchable-account-list', SearchableAccountList)
     }
 
     // Remove an accout from the list.
-    removeItem(a){
+    removeItem(a) {
         this.list = this.list.filter(el => el._id !== a._id)
     }
 
     displayItem(a) {
         let div = this.createApplicationDiv(a)
-        let deleteBtn =  div.querySelector("paper-icon-button")
+        let deleteBtn = div.querySelector("paper-icon-button")
         deleteBtn.icon = "delete"
 
         if (this.ondeleteitem != undefined) {
@@ -546,3 +548,360 @@ customElements.define('globular-searchable-account-list', SearchableAccountList)
 }
 
 customElements.define('globular-searchable-application-list', SearchableApplicationList)
+
+/**
+ * Searchable Role list
+ */
+export class SearchableRoleList extends SearchableList {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor(title, list, ondeleterole, onaddrole) {
+
+        // the onadd handler
+        let onadd = (roles) => {
+            // Now the user list...
+            getAllRoles(Model.globular, (allRoles) => {
+                roles.forEach(r => {
+                    // remove all existing items.
+                    allRoles = allRoles.filter(el => el.getId() !== r.getId())
+                })
+
+                // Now I will display the list of available account to add to the role...
+                let html = `
+                <style>
+                    ${theme}
+                    #add-list-role-panel{
+                        position: absolute;
+                        left: 0px;
+                        z-index: 1;
+                    }
+
+                    .card-content{
+                        overflow-y: auto;
+                        min-width: 400px;
+                    }
+
+                </style>
+                <paper-card id="add-list-role-panel">
+                    <div style="display: flex; align-items: center;">
+                        <div style="flex-grow: 1; padding: 5px;">
+                            Add Role
+                        </div>
+                        <paper-icon-button id="cancel-btn" icon="close"></paper-icon-button>
+                    </div>
+                    <div class="card-content">
+                        <globular-autocomplete type="text" label="Search Role" id="add_role_input" width="${this.width - 10}" style="flex-grow: 1;"></globular-autocomplete>
+                    </div>
+                </paper-card>
+                `
+
+                let headerDiv = this.shadowRoot.querySelector("#header-div")
+                let panel = headerDiv.querySelector("#add-list-role-panel")
+
+                if (panel == undefined) {
+                    headerDiv.appendChild(document.createRange().createContextualFragment(html))
+                    panel = headerDiv.querySelector("#add-list-role-panel")
+                    panel.style.top = (headerDiv.offsetHeight / 2) + 14 + "px";
+                    let closeBtn = panel.querySelector("#cancel-btn")
+                    closeBtn.onclick = () => {
+                        panel.parentNode.removeChild(panel)
+                    }
+
+                    // The invite contact action.
+                    let addRoleInput = this.shadowRoot.getElementById("add_role_input")
+                    addRoleInput.focus()
+                    addRoleInput.onkeyup = () => {
+                        let val = addRoleInput.getValue();
+                        if (val.length >= 2) {
+                            let values = []
+                            allRoles.forEach(r => {
+                                if (r.getName().toUpperCase().indexOf(val.toUpperCase()) != -1 || r.getId().toUpperCase().indexOf(val.toUpperCase()) != -1) {
+                                    values.push(r)
+                                }
+                            })
+                            addRoleInput.setValues(values)
+                        } else {
+                            addRoleInput.clear()
+                        }
+                    }
+
+
+                    // That function must return the div that display the value that we want.
+                    addRoleInput.displayValue = (r) => {
+                        // display the account...
+                        let div = this.createRoleDiv(r)
+                        div.children[0].style.width = "auto"
+                        let addBtn = div.querySelector("paper-icon-button")
+                        addBtn.icon = "add"
+                        addBtn.onclick = () => {
+
+                            // remove the account form the list off available choice.
+                            allRoles = allRoles.filter(r_ => r_ !== r)
+
+                            addRoleInput.clear()
+
+                            // set values without the account
+                            let values = []
+                            let val = addRoleInput.getValue();
+                            allRoles.forEach(a => {
+                                if (r.getName().toUpperCase().indexOf(val.toUpperCase()) != -1) {
+                                    values.push(r)
+                                }
+                            })
+
+                            addRoleInput.setValues(values)
+
+                            // Here I will set the account role...
+                            if (this.onadditem != null) {
+                                this.onadditem(r)
+                            }
+
+                        }
+                        return div
+                    }
+                }
+            })
+        }
+
+        super(title, list, ondeleterole, onaddrole, onadd)
+
+    }
+
+    // The div that display the role.
+    createRoleDiv(role) {
+        let uuid = "_" + uuidv4();
+        let html = `
+        <style>
+        </style>
+        <div id="${uuid}" class="item-div" style="">
+            <div style="display: flex; align-items: center; padding: 5px; width: 100%;"> 
+                <iron-icon icon="notification:enhanced-encryption" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display:block"};"></iron-icon>
+                <div style="display: flex; flex-direction: column; width:300px; font-size: .85em; padding-left: 8px; flex-grow: 1;">
+                    <span>${role.getName()}</span>
+                </div>
+                <paper-icon-button icon="delete" id="${role.getId()}_btn"></paper-icon-button>
+            </div>
+            
+        </div>`
+
+        this.shadowRoot.appendChild(document.createRange().createContextualFragment(html))
+        let div = this.shadowRoot.getElementById(uuid)
+        div.parentNode.removeChild(div)
+        return div
+    }
+
+    // Remove an accout from the list.
+    removeItem(r) {
+        this.list = this.list.filter(el => el.getId() !== r.getId())
+    }
+
+    displayItem(a) {
+        let div = this.createRoleDiv(a)
+        let deleteBtn = div.querySelector("paper-icon-button")
+        deleteBtn.icon = "delete"
+
+        if (this.ondeleteitem != undefined) {
+            deleteBtn.onclick = () => {
+                // remove the div...
+                div.parentNode.removeChild(div)
+                this.ondeleteitem(a)
+            }
+        } else {
+            deleteBtn.style.display = "none"
+        }
+
+        return div
+    }
+
+    // That function can be overide, assume a string by default
+    filter(r) {
+        return r.getName().toUpperCase().indexOf(this.filter_.toUpperCase()) != -1 || r.getName().toUpperCase().indexOf(this.filter_.toUpperCase()) != -1
+    }
+
+    // The sort items function
+    sortItems() {
+        // Sort account...
+        return this.list.sort((a, b) => (a.getName() > b.getName()) ? 1 : -1)
+    }
+}
+
+customElements.define('globular-searchable-role-list', SearchableRoleList)
+
+/**
+ * Searchable Group list
+ */
+ export class SearchableGroupList extends SearchableList {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor(title, list, ondeletegroup, onaddgroup) {
+
+        // the onadd handler
+        let onadd = (groups) => {
+            // Now the user list...
+            getAllGroups(Model.globular, (allGroups) => {
+                groups.forEach(g => {
+                    // remove all existing items.
+                    allGroups = allGroups.filter(el => el.getId() !== g.getId())
+                })
+
+                let html = `
+                <style>
+                    ${theme}
+                    #add-list-group-panel{
+                        position: absolute;
+                        left: 0px;
+                        z-index: 1;
+                    }
+
+                    .card-content{
+                        overflow-y: auto;
+                        min-width: 400px;
+                    }
+
+                </style>
+                <paper-card id="add-list-group-panel">
+                    <div style="display: flex; align-items: center;">
+                        <div style="flex-grow: 1; padding: 5px;">
+                            Add Group
+                        </div>
+                        <paper-icon-button id="cancel-btn" icon="close"></paper-icon-button>
+                    </div>
+                    <div class="card-content">
+                        <globular-autocomplete type="text" label="Search Group" id="add_group_input" width="${this.width - 10}" style="flex-grow: 1;"></globular-autocomplete>
+                    </div>
+                </paper-card>
+                `
+
+                let headerDiv = this.shadowRoot.querySelector("#header-div")
+                let panel = headerDiv.querySelector("#add-list-group-panel")
+
+                if (panel == undefined) {
+                    headerDiv.appendChild(document.createRange().createContextualFragment(html))
+                    panel = headerDiv.querySelector("#add-list-group-panel")
+                    panel.style.top = (headerDiv.offsetHeight / 2) + 14 + "px";
+                    let closeBtn = panel.querySelector("#cancel-btn")
+                    closeBtn.onclick = () => {
+                        panel.parentNode.removeChild(panel)
+                    }
+
+                    // The invite contact action.
+                    let addGroupInput = this.shadowRoot.getElementById("add_group_input")
+                    addGroupInput.focus()
+                    addGroupInput.onkeyup = () => {
+                        let val = addGroupInput.getValue();
+                        if (val.length >= 2) {
+                            let values = []
+                            allGroups.forEach(g => {
+                                if (g.getName().toUpperCase().indexOf(val.toUpperCase()) != -1 || g.getId().toUpperCase().indexOf(val.toUpperCase()) != -1) {
+                                    values.push(g)
+                                }
+                            })
+                            addGroupInput.setValues(values)
+                        } else {
+                            addGroupInput.clear()
+                        }
+                    }
+
+
+                    // That function must return the div that display the value that we want.
+                    addGroupInput.displayValue = (g) => {
+                        // display the account...
+                        let div = this.createGroupDiv(g)
+                        div.children[0].style.width = "auto"
+                        let addBtn = div.querySelector("paper-icon-button")
+                        addBtn.icon = "add"
+                        addBtn.onclick = () => {
+
+                            // remove the account form the list off available choice.
+                            allGroups = allGroups.filter(g_ => g_ !== g)
+
+                            addGroupInput.clear()
+
+                            // set values without the account
+                            let values = []
+                            let val = addGroupInput.getValue();
+                            allGroups.forEach(a => {
+                                if (g.getName().toUpperCase().indexOf(val.toUpperCase()) != -1) {
+                                    values.push(g)
+                                }
+                            })
+
+                            addGroupInput.setValues(values)
+
+                            // Here I will set the account role...
+                            if (this.onadditem != null) {
+                                this.onadditem(g)
+                            }
+
+                        }
+                        return div
+                    }
+                }
+            })
+        }
+
+        super(title, list, ondeletegroup, onaddgroup, onadd)
+
+    }
+
+    // The div that display the role.
+    createGroupDiv(group) {
+        let uuid = "_" + uuidv4();
+        let html = `
+        <style>
+        </style>
+        <div id="${uuid}" class="item-div" style="">
+            <div style="display: flex; align-items: center; padding: 5px; width: 100%;"> 
+                <iron-icon icon="social:people" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display:block"};"></iron-icon>
+                <div style="display: flex; flex-direction: column; width:300px; font-size: .85em; padding-left: 8px; flex-grow: 1;">
+                    <span>${group.getName()}</span>
+                </div>
+                <paper-icon-button icon="delete" id="${group.getId()}_btn"></paper-icon-button>
+            </div>
+            
+        </div>`
+
+        this.shadowRoot.appendChild(document.createRange().createContextualFragment(html))
+        let div = this.shadowRoot.getElementById(uuid)
+        div.parentNode.removeChild(div)
+        return div
+    }
+
+    // Remove an accout from the list.
+    removeItem(g) {
+        this.list = this.list.filter(el => el.getId() !== g.getId())
+    }
+
+    displayItem(g) {
+        let div = this.createGroupDiv(g)
+        let deleteBtn = div.querySelector("paper-icon-button")
+        deleteBtn.icon = "delete"
+
+        if (this.ondeleteitem != undefined) {
+            deleteBtn.onclick = () => {
+                // remove the div...
+                div.parentNode.removeChild(div)
+                this.ondeleteitem(g)
+            }
+        } else {
+            deleteBtn.style.display = "none"
+        }
+
+        return div
+    }
+
+    // That function can be overide, assume a string by default
+    filter(g) {
+        return g.getName().toUpperCase().indexOf(this.filter_.toUpperCase()) != -1 || g.getId().toUpperCase().indexOf(this.filter_.toUpperCase()) != -1
+    }
+
+    // The sort items function
+    sortItems() {
+        // Sort account...
+        return this.list.sort((a, b) => (a.getName() > b.getName()) ? 1 : -1)
+    }
+}
+
+customElements.define('globular-searchable-group-list', SearchableGroupList)
