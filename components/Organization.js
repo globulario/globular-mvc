@@ -2,11 +2,12 @@ import { theme } from './Theme';
 import '@polymer/iron-icons/iron-icons.js';
 
 import { Model } from '../Model';
-import { AddOrganizationAccountRqst, AddOrganizationApplicationRqst, Application, CreateOrganizationRqst, DeleteOrganizationRqst, GetOrganizationsRqst, Organization, RemoveOrganizationAccountRqst, RemoveOrganizationApplicationRqst } from 'globular-web-client/resource/resource_pb';
+import { AddOrganizationAccountRqst, AddOrganizationApplicationRqst, AddOrganizationGroupRqst, AddOrganizationRoleRqst, Application, CreateOrganizationRqst, DeleteOrganizationRqst, GetOrganizationsRqst, Organization, RemoveOrganizationAccountRqst, RemoveOrganizationApplicationRqst, RemoveOrganizationGroupRqst, RemoveOrganizationRoleRqst } from 'globular-web-client/resource/resource_pb';
 import { ApplicationView } from '../ApplicationView';
-import { SearchableAccountList, SearchableApplicationList } from './List.js'
+import { SearchableAccountList, SearchableApplicationList, SearchableGroupList, SearchableRoleList } from './List.js'
 import { Account } from '../Account';
 import * as ApplicationTs from '../Application';
+import { getAllGroups, getAllRoles } from 'globular-web-client/api';
 
 function getAllOrganizations(callback, errorCallback) {
     let rqst = new GetOrganizationsRqst
@@ -232,6 +233,10 @@ export class OrganizationPanel extends HTMLElement {
                 align-items: center;
             }
 
+            #content{
+                padding-top: 15px;
+            }
+
             .header{
                 display: flex;
                 align-items: center;
@@ -260,13 +265,55 @@ export class OrganizationPanel extends HTMLElement {
                 </div>
             </div>
             <iron-collapse id="collapase-panel" >
-
+                <paper-tabs selected="0">
+                    <paper-tab id="organization-accounts-tab">Accounts</paper-tab>
+                    <paper-tab id="organization-applications-tab">Applications</paper-tab>
+                    <paper-tab id="organization-roles-tab">Roles</paper-tab>
+                    <paper-tab id="organization-groups-tab">Groups</paper-tab>
+                </paper-tabs>
+                <div id="content">
+                </div>
             </iron-collapse>
         </div>
         `
-
-        let content = this.shadowRoot.querySelector("#collapase-panel")
+        let togglePanel = this.shadowRoot.querySelector("#collapase-panel")
+        let content = this.shadowRoot.querySelector("#content")
         this.hideBtn = this.shadowRoot.querySelector("#hide-btn")
+
+
+        this.accountsList = null
+        this.rolesList = null
+        this.applicationsList = null
+        this.groupsList = null
+
+
+        this.shadowRoot.querySelector("#organization-applications-tab").onclick = () => {
+            this.accountsList.style.display = "none"
+            this.rolesList.style.display = "none"
+            this.applicationsList.style.display = ""
+            this.groupsList.style.display = "none"
+        }
+
+        this.shadowRoot.querySelector("#organization-accounts-tab").onclick = () => {
+            this.accountsList.style.display = ""
+            this.rolesList.style.display = "none"
+            this.applicationsList.style.display = "none"
+            this.groupsList.style.display = "none"
+        }
+
+        this.shadowRoot.querySelector("#organization-groups-tab").onclick = () => {
+            this.accountsList.style.display = "none"
+            this.rolesList.style.display = "none"
+            this.applicationsList.style.display = "none"
+            this.groupsList.style.display = ""
+        }
+
+        this.shadowRoot.querySelector("#organization-roles-tab").onclick = () => {
+            this.accountsList.style.display = "none"
+            this.rolesList.style.display = ""
+            this.applicationsList.style.display = "none"
+            this.groupsList.style.display = "none"
+        }
 
         let deleteBtn = this.shadowRoot.querySelector("#delete-organization-btn")
         deleteBtn.onclick = () => {
@@ -286,17 +333,17 @@ export class OrganizationPanel extends HTMLElement {
                     }
                 })
 
-                let accountsList = new SearchableAccountList("Accounts", list, a => {
-                    accountsList.removeItem(a)
+                this.accountsList = new SearchableAccountList("Accounts", list, a => {
+                    this.accountsList.removeItem(a)
                     let rqst = new RemoveOrganizationAccountRqst
                     rqst.setOrganizationid(o.getId())
                     rqst.setAccountid(a._id)
                     Model.globular.resourceService.removeOrganizationAccount(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
                         .then(rsp => {
-                            accountsList.removeItem(a)
+                            this.accountsList.removeItem(a)
                             ApplicationView.displayMessage("Account " + a._id + " was removed from Organization " + o.getName(), 3000)
                         }).catch(err => {
-                            accountsList.appendItem(a) // set it back
+                            this.accountsList.appendItem(a) // set it back
                             ApplicationView.displayMessage(err, 3000)
                         })
                 },
@@ -306,16 +353,17 @@ export class OrganizationPanel extends HTMLElement {
                         rqst.setAccountid(a._id)
                         Model.globular.resourceService.addOrganizationAccount(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
                             .then(rsp => {
-                                accountsList.appendItem(a)
+                                this.accountsList.appendItem(a)
                                 ApplicationView.displayMessage("Account " + a._id + " has now Organization " + o.getName(), 3000)
                             }).catch(err => {
-                                accountsList.removeItem(a)
+                                this.accountsList.removeItem(a)
                                 ApplicationView.displayMessage(err, 3000)
                             })
 
                     })
 
-                content.appendChild(accountsList)
+                content.appendChild(this.accountsList)
+                this.shadowRoot.querySelector("#organization-accounts-tab").click()
             }, err => {
                 ApplicationView.displayMessage(err, 3000)
             })
@@ -333,17 +381,17 @@ export class OrganizationPanel extends HTMLElement {
                     }
                 })
 
-                let applicationsList = new SearchableApplicationList("Applications", list, a => {
-                    applicationsList.removeItem(a)
+                this.applicationsList = new SearchableApplicationList("Applications", list, a => {
+                    this.applicationsList.removeItem(a)
                     let rqst = new RemoveOrganizationApplicationRqst
                     rqst.setOrganizationid(o.getId())
                     rqst.setApplicationid(a.getId())
                     Model.globular.resourceService.removeOrganizationApplication(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
                         .then(rsp => {
-                            applicationsList.removeItem(a)
+                            this.applicationsList.removeItem(a)
                             ApplicationView.displayMessage("Application " + a.getAlias() + " was removed from Organization " + o.getName(), 3000)
                         }).catch(err => {
-                            applicationsList.appendItem(a) // set it back
+                            this.applicationsList.appendItem(a) // set it back
                             ApplicationView.displayMessage(err, 3000)
                         })
                 },
@@ -353,16 +401,111 @@ export class OrganizationPanel extends HTMLElement {
                         rqst.setApplicationid(a.getId())
                         Model.globular.resourceService.addOrganizationApplication(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
                             .then(rsp => {
-                                applicationsList.appendItem(a)
+                                this.applicationsList.appendItem(a)
                                 ApplicationView.displayMessage("Application " + a.getAlias() + " has now Organization " + o.getName(), 3000)
                             }).catch(err => {
-                                applicationsList.removeItem(a)
+                                this.applicationsList.removeItem(a)
                                 ApplicationView.displayMessage(err, 3000)
                             })
 
                     })
 
-                content.appendChild(applicationsList)
+                content.appendChild(this.applicationsList)
+            }, err => {
+                ApplicationView.displayMessage(err, 3000)
+            })
+
+        // The role list.
+        getAllRoles(Model.globular,
+            roles => {
+
+                // I will get the account object whit the given id.
+                let list = []
+                this.organization.getRolesList().forEach(roleId => {
+                    let r_ = roles.find(r => r.getId() === roleId);
+                    if (r_ != undefined) {
+                        list.push(r_)
+                    }
+                })
+
+                this.rolesList = new SearchableRoleList("Roles", list,
+                    r => {
+                        this.rolesList.removeItem(r)
+                        let rqst = new RemoveOrganizationRoleRqst
+                        rqst.setOrganizationid(o.getId())
+                        rqst.setRoleid(r.getId())
+                        Model.globular.resourceService.removeOrganizationRole(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+                            .then(rsp => {
+                                this.rolesList.removeItem(r)
+                                ApplicationView.displayMessage("Role " + r.getName() + " was removed from Organization " + o.getName(), 3000)
+                            }).catch(err => {
+                                this.rolesList.appendItem(r) // set it back
+                                ApplicationView.displayMessage(err, 3000)
+                            })
+                    },
+                    r => {
+                        let rqst = new AddOrganizationRoleRqst
+                        rqst.setOrganizationid(o.getId())
+                        rqst.setRoleid(r.getId())
+                        Model.globular.resourceService.addOrganizationRole(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+                            .then(rsp => {
+                                this.rolesList.appendItem(r)
+                                ApplicationView.displayMessage("Role " + r.getName() + " has now Organization " + o.getName(), 3000)
+                            }).catch(err => {
+                                this.rolesList.removeItem(r)
+                                ApplicationView.displayMessage(err, 3000)
+                            })
+
+                    })
+                content.appendChild(this.rolesList)
+            }, err => {
+                ApplicationView.displayMessage(err, 3000)
+            })
+
+
+        // The applications list.
+        getAllGroups(Model.globular,
+            groups => {
+
+                // I will get the account object whit the given id.
+                let list = []
+                this.organization.getGroupsList().forEach(groupId => {
+                    let g_ = groups.find(g => g.getId() === groupId);
+                    if (g_ != undefined) {
+                        list.push(g_)
+                    }
+                })
+
+                this.groupsList = new SearchableGroupList("Groups", list,
+                    g => {
+                        this.groupsList.removeItem(g)
+                        let rqst = new RemoveOrganizationGroupRqst
+                        rqst.setOrganizationid(o.getId())
+                        rqst.setGroupid(g.getId())
+                        Model.globular.resourceService.removeOrganizationGroup(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+                            .then(rsp => {
+                                this.groupsList.removeItem(g)
+                                ApplicationView.displayMessage("Group " + g.getName() + " was removed from Organization " + o.getName(), 3000)
+                            }).catch(err => {
+                                this.groupsList.appendItem(g) // set it back
+                                ApplicationView.displayMessage(err, 3000)
+                            })
+                    },
+                    g => {
+                        let rqst = new AddOrganizationGroupRqst
+                        rqst.setOrganizationid(o.getId())
+                        rqst.setGroupid(g.getId())
+                        Model.globular.resourceService.addOrganizationGroup(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+                            .then(rsp => {
+                                this.groupsList.appendItem(g)
+                                ApplicationView.displayMessage("Group " + g.getName() + " has now Organization " + o.getName(), 3000)
+                            }).catch(err => {
+                                this.groupsList.removeItem(g)
+                                ApplicationView.displayMessage(err, 3000)
+                            })
+
+                    })
+                content.appendChild(this.groupsList)
             }, err => {
                 ApplicationView.displayMessage(err, 3000)
             })
@@ -370,17 +513,15 @@ export class OrganizationPanel extends HTMLElement {
         // give the focus to the input.
         this.hideBtn.onclick = () => {
             let button = this.shadowRoot.querySelector("#hide-btn")
-            if (button && content) {
-                if (!content.opened) {
+            if (button && togglePanel) {
+                if (!togglePanel.opened) {
                     button.icon = "unfold-more"
                 } else {
                     button.icon = "unfold-less"
                 }
-                content.toggle();
+                togglePanel.toggle();
             }
         }
-
-
     }
 
     onDeleteOrganization(o) {
