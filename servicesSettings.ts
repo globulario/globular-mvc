@@ -4,8 +4,6 @@ import { ApplicationView } from "./ApplicationView";
 import * as servicesManager from "globular-web-client/services_manager/services_manager_pb"
 import { Model } from "./Model";
 
-
-
 export class ServicesSettings extends Settings {
     private services: any
     private servicesSettings: Array<ServiceSetting>
@@ -28,17 +26,15 @@ export class ServicesSettings extends Settings {
                             // refresh service states...
                             services.forEach((service: any) => {
                                 if (this.services[service.Id] != undefined) {
-
                                     // So here I will update the service state...
                                     this.setServiceState(service)
-
                                 }
                             })
 
                         }, (err: any) => {
                             console.log(err)
                         })
-                }, 2000)
+                }, 10000)
             }, (err: any) => {
                 console.log(err)
             })
