@@ -728,7 +728,6 @@ export class LogSettings extends Settings {
         infos.forEach((info: LogInfo) => {
             let date = new Date(info.getDate() * 1000);
             let level = ""
-            console.log(info.getLevel())
             if (info.getLevel() == 0) {
                 level = "fatal"
             } else if (info.getLevel() == 1) {

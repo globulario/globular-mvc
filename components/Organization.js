@@ -288,31 +288,49 @@ export class OrganizationPanel extends HTMLElement {
 
 
         this.shadowRoot.querySelector("#organization-applications-tab").onclick = () => {
-            this.accountsList.style.display = "none"
-            this.rolesList.style.display = "none"
-            this.applicationsList.style.display = ""
-            this.groupsList.style.display = "none"
+            if (this.accountsList != undefined)
+                this.accountsList.style.display = "none"
+            if (this.rolesList != undefined)
+                this.rolesList.style.display = "none"
+            if (this.applicationsList != undefined)
+                this.applicationsList.style.display = ""
+            if (this.groupsList != undefined)
+                this.groupsList.style.display = "none"
         }
 
         this.shadowRoot.querySelector("#organization-accounts-tab").onclick = () => {
-            this.accountsList.style.display = ""
-            this.rolesList.style.display = "none"
-            this.applicationsList.style.display = "none"
-            this.groupsList.style.display = "none"
+
+            if (this.accountsList != undefined)
+                this.accountsList.style.display = ""
+            if (this.rolesList != undefined)
+                this.rolesList.style.display = "none"
+            if (this.applicationsList != undefined)
+                this.applicationsList.style.display = "none"
+            if (this.groupsList != undefined)
+                this.groupsList.style.display = "none"
         }
 
         this.shadowRoot.querySelector("#organization-groups-tab").onclick = () => {
-            this.accountsList.style.display = "none"
-            this.rolesList.style.display = "none"
-            this.applicationsList.style.display = "none"
-            this.groupsList.style.display = ""
+
+            if (this.accountsList != undefined)
+                this.accountsList.style.display = "none"
+            if (this.rolesList != undefined)
+                this.rolesList.style.display = "none"
+            if (this.applicationsList != undefined)
+                this.applicationsList.style.display = "none"
+            if (this.groupsList != undefined)
+                this.groupsList.style.display = ""
         }
 
         this.shadowRoot.querySelector("#organization-roles-tab").onclick = () => {
-            this.accountsList.style.display = "none"
-            this.rolesList.style.display = ""
-            this.applicationsList.style.display = "none"
-            this.groupsList.style.display = "none"
+            if (this.accountsList != undefined)
+                this.accountsList.style.display = "none"
+            if (this.rolesList != undefined)
+                this.rolesList.style.display = ""
+            if (this.applicationsList != undefined)
+                this.applicationsList.style.display = "none"
+            if (this.groupsList != undefined)
+                this.groupsList.style.display = "none"
         }
 
         let deleteBtn = this.shadowRoot.querySelector("#delete-organization-btn")
