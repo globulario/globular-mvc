@@ -638,13 +638,12 @@ export class SearchableRoleList extends SearchableList {
 
                             // remove the account form the list off available choice.
                             allRoles = allRoles.filter(r_ => r_ !== r)
-
                             addRoleInput.clear()
 
                             // set values without the account
                             let values = []
                             let val = addRoleInput.getValue();
-                            allRoles.forEach(a => {
+                            allRoles.forEach(r => {
                                 if (r.getName().toUpperCase().indexOf(val.toUpperCase()) != -1) {
                                     values.push(r)
                                 }
