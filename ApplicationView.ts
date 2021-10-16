@@ -983,7 +983,7 @@ export class ApplicationView extends View {
 
     inviteContactInput.onkeyup = () => {
       let val = inviteContactInput.getValue();
-      if (val.length > 3) {
+      if (val.length >= 2) {
         findAccountByEmail(val)
       } else {
         inviteContactInput.clear()

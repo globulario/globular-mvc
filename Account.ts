@@ -110,6 +110,9 @@ export class Account extends Model {
         this.firstName_ = "";
         this.lastName_ = "";
         this.middleName_ = "";
+
+        // Set empty session...
+        this.session = new Session(this)
     }
 
     /**
@@ -287,9 +290,9 @@ export class Account extends Model {
                 successCallback(data);
             })
             .catch((err: any) => {
-                if (err.code == 13 ) {
+                if (err.code == 13) {
 
-                    if(Application.account == null){
+                    if (Application.account == null) {
                         ApplicationView.displayMessage("no connection found on the server you need to login", 3000)
                         setTimeout(() => {
                             localStorage.removeItem("remember_me");
@@ -588,6 +591,8 @@ export class Account extends Model {
                     let a_ = accounts_.pop()
                     if (Account.accounts[a_.getId()] == undefined) {
                         let a = new Account(a_.getId(), a_.getEmail(), a_.getName())
+
+
                         if (accounts_.length > 0) {
                             a.initData(() => {
                                 accounts.push(a)

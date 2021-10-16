@@ -1442,6 +1442,7 @@ export class ParticipantsList extends HTMLElement {
                     let paticipant = __participants__.pop()
                     Account.getAccount(paticipant,
                         p => {
+                            console.log("------------> ", p, p.session)
                             // if the session is offline or the user is in the list of unavailble user then I will set it session as unavailable.
                             if (p.session.state == 1 || __unavailable__.indexOf(p._id) != -1) {
                                 this.setUnavailableParticipantRow(p, conversation)

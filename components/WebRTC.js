@@ -2,10 +2,10 @@
 import { AppLayoutBehavior } from '@polymer/app-layout/app-layout-behavior/app-layout-behavior';
 import { LogInfo, LogRqst } from 'globular-web-client/log/log_pb';
 import { Application } from '../Application';
-import { ApplicationView } from '../ApplicationView';
+import { applicationView, ApplicationView } from '../ApplicationView';
 import { Model } from '../Model';
 import { theme } from "./Theme";
-
+import '@polymer/iron-icons/communication-icons'
 
 // Contains the stun server URL we will be using.
 let connectionConfig = {
@@ -35,7 +35,7 @@ export class VideoConversation extends HTMLElement {
         super()
 
         this.conversationUuid = conversationUuid
-        this.userStream = null;
+        this.localStream = null;
         this.pendingCanditates = [];
 
         // Set the shadow dom.
@@ -48,6 +48,11 @@ export class VideoConversation extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
             ${theme}
+
+            #video-chat-room{
+                display: flex;
+                flex-direction: column;
+            }
 
             #local-video{
                 width: 200px; 
@@ -63,6 +68,18 @@ export class VideoConversation extends HTMLElement {
                 height: 400px;
             }
 
+            #tool-bar {
+                display: flex;
+            }
+
+            #start-share-screen{
+                display: none;
+            }
+
+            #stop-share-screen{
+                display: none;
+            }
+
         </style>
 
         <div id="video-chat-room">
@@ -70,10 +87,33 @@ export class VideoConversation extends HTMLElement {
             </div>
             <div class="peers-video">
             </div>
+
+            <div id="tool-bar">
+                <paper-icon-button id="start-share-screen" icon="communication:screen-share" ></paper-icon-button>
+                <paper-icon-button id="stop-share-screen" icon="communication:stop-screen-share" ></paper-icon-button>
+            </div>
         </div>
         `
 
         this.peersVideo = this.shadowRoot.querySelector(".peers-video")
+        this.startShareScreenBtn = this.shadowRoot.querySelector("#start-share-screen")
+        this.stopShareScreenBtn = this.shadowRoot.querySelector("#stop-share-screen")
+
+        // This will replace all sender video withe the screen capture.
+        this.startShareScreenBtn.onclick = () => {
+            this.initScreenCaptureStream(track => {
+                for(var id in this.connections){
+                    this.connections[id].getSenders().forEach(sender=>{
+                        if(sender.track.kind === 'video'){
+                            sender.replaceTrack(track)
+                        }
+                    })
+                }
+            }, err => {
+                ApplicationView.displayMessage(err, 3000)
+            })
+        }
+
 
         // Start a new video conversation with a remote participant
         Model.eventHub.subscribe(`start_video_conversation_${conversationUuid}_evt`,
@@ -124,9 +164,10 @@ export class VideoConversation extends HTMLElement {
                             this.closeConnection(connectionId)
                         }
                     }
-                }else{
-                    let connectionId =  this.conversationUuid + "_" + evt.participant
-                    if(this.connections[connectionId]!=null){
+
+                } else {
+                    let connectionId = this.conversationUuid + "_" + evt.participant
+                    if (this.connections[connectionId] != null) {
                         this.closeConnection(connectionId)
                     }
                 }
@@ -190,22 +231,20 @@ export class VideoConversation extends HTMLElement {
 
     }
 
-    closeConnection(connectionId){
-        
-        let peerVideo = this.peersVideo.querySelector("#_" + connectionId + "_video")
-        console.log("----------> close connection event! ", peerVideo)
+    closeConnection(connectionId) {
 
-        if(peerVideo == undefined){
+        let peerVideo = this.peersVideo.querySelector("#_" + connectionId + "_video")
+        if (peerVideo == undefined) {
             return
         }
 
         this.peersVideo.removeChild(peerVideo)
 
-        
+
         if (this.peersVideo.children.length == 0) {
             // Get the local video display...
             let localVideo = this.shadowRoot.querySelector("#local-video")
-            console.log(localVideo)
+
             if (localVideo != null) {
                 // now get the steam 
                 let stream = localVideo.srcObject;
@@ -224,6 +263,10 @@ export class VideoConversation extends HTMLElement {
 
         this.connections[connectionId].close()
         delete this.connections[connectionId]
+
+        if (Object.keys(this.connections).length == 0) {
+            this.startShareScreenBtn.style.display = "none"
+        }
     }
 
     // init a new peer connections.
@@ -241,6 +284,9 @@ export class VideoConversation extends HTMLElement {
         }
 
         this.initLocalVideoStream(stream => {
+            // keep a ref for further use...
+            this.localStream = stream;
+
             // when video is received from the remote side.
             rtcPeerConnection.ontrack = evt => {
                 this.initRemoteVideoStream(connectionId, evt)
@@ -289,6 +335,20 @@ export class VideoConversation extends HTMLElement {
         })
     }
 
+    // Init the local screen capture...
+    initScreenCaptureStream(callback, errorCallback) {
+        // Get the stream id from the user...
+        navigator.mediaDevices.getDisplayMedia({cursor: true}).then( stream=>{
+            const screenTrack = stream.getTracks()[0];
+            screenTrack.onended = ()=>{
+                callback(this.localStream.getTracks()[1])
+            }
+            callback(screenTrack)
+
+        }).catch(err=>{errorCallback(err)})
+
+    }
+
     // Initialyse the local video stream object.
     initLocalVideoStream(callback, errorCallback) {
 
@@ -307,6 +367,9 @@ export class VideoConversation extends HTMLElement {
         // Remove the echo...
         localVideo.muted = true;
         localVideo.volume = 0;
+
+        // Display the share connection button.
+        this.startShareScreenBtn.style.display = "block"
 
 
         // Connect the user video
@@ -335,8 +398,6 @@ export class VideoConversation extends HTMLElement {
      * @param {*} stream The stream given by the web-rtc.
      */
     initRemoteVideoStream(connectionId, e) {
-
-        
         let remoteVideo = this.peersVideo.querySelector("#_" + connectionId + "_video")
         if (remoteVideo == null) {
             remoteVideo = document.createElement("video")
