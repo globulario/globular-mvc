@@ -90,17 +90,16 @@ export class VideoConversation extends HTMLElement {
 
             <div id="tool-bar">
                 <paper-icon-button id="start-share-screen" icon="communication:screen-share" ></paper-icon-button>
-                <paper-icon-button id="stop-share-screen" icon="communication:stop-screen-share" ></paper-icon-button>
             </div>
         </div>
         `
 
         this.peersVideo = this.shadowRoot.querySelector(".peers-video")
         this.startShareScreenBtn = this.shadowRoot.querySelector("#start-share-screen")
-        this.stopShareScreenBtn = this.shadowRoot.querySelector("#stop-share-screen")
 
         // This will replace all sender video withe the screen capture.
         this.startShareScreenBtn.onclick = () => {
+            // Replace all video with the screen sharing button.
             this.initScreenCaptureStream(track => {
                 for(var id in this.connections){
                     this.connections[id].getSenders().forEach(sender=>{
@@ -340,8 +339,11 @@ export class VideoConversation extends HTMLElement {
         // Get the stream id from the user...
         navigator.mediaDevices.getDisplayMedia({cursor: true}).then( stream=>{
             const screenTrack = stream.getTracks()[0];
+            this.startShareScreenBtn.style.display = "none"
+
             screenTrack.onended = ()=>{
                 callback(this.localStream.getTracks()[1])
+                this.startShareScreenBtn.style.display = "block"
             }
             callback(screenTrack)
 
