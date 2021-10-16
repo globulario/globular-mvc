@@ -83,11 +83,10 @@ export class VideoConversation extends HTMLElement {
         </style>
 
         <div id="video-chat-room">
-            <div id="local-video-div">
-            </div>
             <div class="peers-video">
             </div>
-
+            <div id="local-video-div">
+            </div>
             <div id="tool-bar">
                 <paper-icon-button id="start-share-screen" icon="communication:screen-share" ></paper-icon-button>
             </div>
@@ -266,6 +265,9 @@ export class VideoConversation extends HTMLElement {
         if (Object.keys(this.connections).length == 0) {
             this.startShareScreenBtn.style.display = "none"
         }
+
+        Model.eventHub.publish(`video_conversation_close_${connectionId}_evt`, {}, false);
+        Model.eventHub.publish(`video_conversation_close_${this.conversationUuid + "_" + Application.account._id}_evt`, {}, false);
     }
 
     // init a new peer connections.
@@ -311,7 +313,10 @@ export class VideoConversation extends HTMLElement {
                         if (onconnected != undefined) {
                             onconnected(rtcPeerConnection)
                         }
-                        console.log("connected event!")
+
+                        Model.eventHub.publish(`video_conversation_open_${connectionId}_evt`, {}, false);
+                        Model.eventHub.publish(`video_conversation_open_${this.conversationUuid + "_" + Application.account._id}_evt`, {}, false);
+    
                         break;
                     case "disconnected":
                     case "failed":

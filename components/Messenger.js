@@ -1442,7 +1442,6 @@ export class ParticipantsList extends HTMLElement {
                     let paticipant = __participants__.pop()
                     Account.getAccount(paticipant,
                         p => {
-                            console.log("------------> ", p, p.session)
                             // if the session is offline or the user is in the list of unavailble user then I will set it session as unavailable.
                             if (p.session.state == 1 || __unavailable__.indexOf(p._id) != -1) {
                                 this.setUnavailableParticipantRow(p, conversation)
@@ -1503,6 +1502,16 @@ export class ParticipantsList extends HTMLElement {
                 // hide the video button...
                 startVideoBtn.style.display = "none"
             }
+
+            // Here the video conversation is ended I will redisplay the start button
+            Model.eventHub.subscribe(`video_conversation_close_${conversation.getUuid() + "_" + p._id }_evt`, uuid=>{}, evt=>{
+                startVideoBtn.style.display = "block"
+            }, false)
+
+            // Disable start.
+            Model.eventHub.subscribe(`video_conversation_open_${conversation.getUuid() + "_" + p._id }_evt`, uuid=>{}, evt=>{
+                startVideoBtn.style.display = "none"
+            }, false)
 
             // TODO add stop video button.
         }
