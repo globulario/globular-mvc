@@ -27,7 +27,6 @@ import { createArchive, deleteDir, deleteFile, downloadFileHttp, renameFile, upl
 import { ApplicationView } from '../ApplicationView';
 import { Application } from '../Application';
 import { RunCmdRequest } from 'globular-web-client/admin/admin_pb';
-import { UninstallApplicationRequest } from 'globular-web-client/applications_manager/applications_manager_pb';
 
 function getElementIndex(element) {
     return Array.from(element.parentNode.children).indexOf(element);
@@ -892,8 +891,6 @@ export class FilesView extends HTMLElement {
             cancelBtn.onclick = () => {
                 toast.dismiss();
             }
-
-
         }
     }
 }
@@ -3789,7 +3786,6 @@ export class FilesUploader extends HTMLElement {
                                 this.btn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
                                 this.shadowRoot.querySelector("iron-collapse").style.display = "none";
                             }
-                            Model.eventHub.publish("reload_dir_event", path, false)
                         }
                     },
                     event => {
@@ -3802,7 +3798,8 @@ export class FilesUploader extends HTMLElement {
         // Start file upload!
         uploadFile(0, () => {
             ApplicationView.displayMessage("All files are now uploaded!", 2000)
-            this.btn.click()
+            Model.eventHub.publish("reload_dir_event", path, false)
+            //this.btn.click()
         })
 
     }
