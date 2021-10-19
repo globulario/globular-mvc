@@ -292,6 +292,7 @@ export class PermissionPanel extends HTMLElement {
 
                 // Do not display the title again...
                 accountsList.hideTitle()
+                
                 content.appendChild(accountsList)
             }, err => {
                 ApplicationView.displayMessage(err, 3000)
