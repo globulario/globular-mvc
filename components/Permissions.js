@@ -1,9 +1,12 @@
-import { GetResourcePermissionsRqst } from "globular-web-client/rbac/rbac_pb";
+import { GetResourcePermissionsRqst, SetResourcePermissionsRqst } from "globular-web-client/rbac/rbac_pb";
 import { Account } from "../Account";
 import { theme } from "../../globular-mvc/components/Theme.js";
 import { ApplicationView } from "../ApplicationView";
 import { Model } from "../Model";
-import { SearchableAccountList } from "./List.js";
+import { SearchableAccountList, SearchableGroupList, SearchableOrganizationList } from "./List.js";
+import { getAllGroups } from "globular-web-client/api";
+import { randomUUID } from "./utility";
+import { getAllOrganizations } from "./Organization";
 
 /**
  * Sample empty component
@@ -19,6 +22,12 @@ export class PermissionsManager extends HTMLElement {
 
         // the active permissions.
         this.permissions = null
+
+        // the active path.
+        this.path = ""
+
+        // The listener
+        this.savePermissionListener = ""
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -103,14 +112,33 @@ export class PermissionsManager extends HTMLElement {
     connectedCallback() {
         // Save owner permission.
         Model.eventHub.subscribe("save_permission_event",
-            permission => {
-                console.log(this.permissions)
-                console.log(permission)
+            uuid => {
+                this.savePermissionListener = uuid
+            },
+            evt => {
+                let rqst = new SetResourcePermissionsRqst
+                rqst.setPermissions(this.permissions)
+                rqst.setPath(this.path)
+                Model.globular.rbacService.setResourcePermissions(rqst, {
+                    token: localStorage.getItem("user_token"),
+                    application: Model.application,
+                    domain: Model.domain,
+                }).then(rsp => {
+                    console.log("succed to save permissions for path ", this.path)
+                    ApplicationView.displayMessage("Permissions for path " + this.path + " was changed", 3000)
+                    this.setPath(this.path)
+                }).catch(err => ApplicationView.displayMessage(err, 3000))
             }, true)
     }
 
-    setPath(path) {
+    // When the event is diconnected.
+    disconnectCallback() {
+        Model.eventHub.unSubscribe("save_permission_event", this.savePermissionListener)
+    }
 
+    setPath(path) {
+        // Keep the path in memory
+        this.path = path;
         // clear the panel values.
         this.owners.innerHTML = "";
         this.alloweds.innerHTML = "";
@@ -171,6 +199,7 @@ export class PermissionPanel extends HTMLElement {
 
             .members{
                 display: flex;
+                flex-direction: column;
             }
 
             .header{
@@ -180,7 +209,6 @@ export class PermissionPanel extends HTMLElement {
         </style>
         <div>
             <div class="title">
-
             </div>
             <div class="members">
 
@@ -191,8 +219,9 @@ export class PermissionPanel extends HTMLElement {
         // test create offer...
     }
 
+    // Set Permission infos...
     setPermission(permission, hideTitle) {
-        console.log(permission)
+
         this.permission = permission;
 
         if (hideTitle == undefined) {
@@ -200,11 +229,24 @@ export class PermissionPanel extends HTMLElement {
         } else {
             this.shadowRoot.querySelector(".title").style.display = "none";
         }
-        this.setAccountPermissions(permission.getAccountsList())
+
+        // Set's account permissions.
+        this.setAccountsPermissions(permission.getAccountsList());
+
+        // Set's groups permissions
+        this.setGroupsPermissions(permission.getGroupsList());
+
+        // Set's Applications permissions
+        this.setApplicationsPermissions(permission.getApplicationsList());
+
+        // Set's Orgnanisation permissions
+        this.setOrgnanisationsPermissions(permission.getOrganizationsList());
+
     }
 
     // Create a collapseible panel.
     createCollapsible(title) {
+        let uuid = "_" + randomUUID()
         let html = `
         <style>
             .header {
@@ -222,25 +264,25 @@ export class PermissionPanel extends HTMLElement {
 
         </style>
         <div style="padding-left: 10px; width: 100%">
-            <div class="header" id="application-notifications-btn">
+            <div class="header">
                 <span class="title">${title}</span>
                 <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
-                    <iron-icon  id="hide-btn"  icon="unfold-less" --iron-icon-fill-color:var(--palette-text-primary);"></iron-icon>
+                    <iron-icon  id="${uuid}-btn"  icon="unfold-less" --iron-icon-fill-color:var(--palette-text-primary);"></iron-icon>
                     <paper-ripple class="circle" recenters=""></paper-ripple>
                 </div>
             </div>
-            <iron-collapse id="collapase-panel">
+            <iron-collapse id="${uuid}-collapase-panel">
                 
             </iron-collapse>
         </div>
         `
 
         this.shadowRoot.querySelector(".members").appendChild(document.createRange().createContextualFragment(html))
-        let content = this.shadowRoot.querySelector("#collapase-panel")
-        this.hideBtn = this.shadowRoot.querySelector("#hide-btn")
+        let content = this.shadowRoot.querySelector(`#${uuid}-collapase-panel`)
+        this.hideBtn = this.shadowRoot.querySelector(`#${uuid}-btn`)
 
         this.hideBtn.onclick = () => {
-            let button = this.shadowRoot.querySelector("#hide-btn")
+            let button = this.shadowRoot.querySelector(`#${uuid}-btn`)
             if (button && content) {
                 if (!content.opened) {
                     button.icon = "unfold-more"
@@ -251,11 +293,102 @@ export class PermissionPanel extends HTMLElement {
             }
         }
         // return the collapse panel.
-        return this.shadowRoot.querySelector("#collapase-panel")
+        return this.shadowRoot.querySelector(`#${uuid}-collapase-panel`)
+    }
+
+    // The organisation permissions
+    setOrgnanisationsPermissions(organisations_) {
+        let content = this.createCollapsible(`Organizations(${organisations_.length})`)
+        getAllOrganizations(
+            organisations=>{
+                let list = []
+
+                this.permission.getOrganizationsList().forEach(organisationId => {
+
+                    let o_ = organisations.find(o => o.getId() === organisationId);
+                    if (o_ != undefined) {
+                        list.push(o_)
+                    }
+
+                })
+
+                let organizationList = new SearchableOrganizationList("Organizations", list,
+                    o => {
+                        let index = this.permission.getOrganizationsList().indexOf(o.getId())
+                        if (index != -1) {
+                            this.permission.getOrganizationsList().splice(index, 1)
+                            Model.eventHub.publish("save_permission_event", this.permission, true)
+                            organizationList.removeItem(o)
+                        }
+                    },
+                    o => {
+                        let index = this.permission.getOrganizationsList().indexOf(o.getId())
+                        if (index == -1) {
+                            this.permission.getOrganizationsList().push(o.getId())
+                            Model.eventHub.publish("save_permission_event", this.permission, true)
+                            organizationList.appendItem(o)
+                        }
+                    })
+
+                // Do not display the title again...
+                organizationList.hideTitle()
+                content.appendChild(organizationList)
+        }, err=>ApplicationView.displayMessage(err, 3000))
+
+    }
+
+    // The group permissions
+    setApplicationsPermissions(applications_) {
+        let content = this.createCollapsible(`Applications(${applications_.length})`)
+
+    }
+
+    // The group permissions
+    setGroupsPermissions(groups_) {
+        let content = this.createCollapsible(`Groups(${groups_.length})`)
+
+        getAllGroups(Model.globular,
+            groups => {
+                // I will get the account object whit the given id.
+                let list = []
+
+                this.permission.getGroupsList().forEach(groupId => {
+
+                    let g_ = groups.find(g => g.getId() === groupId);
+                    if (g_ != undefined) {
+                        list.push(g_)
+                    }
+
+                })
+
+                let groupsList = new SearchableGroupList("Groups", list,
+                    g => {
+                        let index = this.permission.getGroupsList().indexOf(g.getId())
+                        if (index != -1) {
+                            this.permission.getGroupsList().splice(index, 1)
+                            Model.eventHub.publish("save_permission_event", this.permission, true)
+                            groupsList.removeItem(g)
+                        }
+                    },
+                    g => {
+                        let index = this.permission.getGroupsList().indexOf(g.getId())
+                        if (index == -1) {
+                            this.permission.getGroupsList().push(g.getId())
+                            Model.eventHub.publish("save_permission_event", this.permission, true)
+                            groupsList.appendItem(g)
+                        }
+                    })
+
+                // Do not display the title again...
+                groupsList.hideTitle()
+                content.appendChild(groupsList)
+
+            }), err => ApplicationView.displayMessage(err, 3000)
+
     }
 
     // Each permission can be set for applications, peers, accounts, groups or organisations
-    setAccountPermissions(accounts_) {
+    setAccountsPermissions(accounts_) {
         let content = this.createCollapsible(`Account(${accounts_.length})`)
 
         // Here I will set the content of the collapse panel.
@@ -277,22 +410,22 @@ export class PermissionPanel extends HTMLElement {
                         let index = this.permission.getAccountsList().indexOf(a._id)
                         if (index != -1) {
                             this.permission.getAccountsList().splice(index, 1)
-                            Model.eventHub.publish("save_permission_event", this.permission)
+                            Model.eventHub.publish("save_permission_event", this.permission, true)
                             accountsList.removeItem(a)
                         }
                     },
                     a => {
-                        let index = this.permission.getAccountsList().index(a._id)
+                        let index = this.permission.getAccountsList().indexOf(a._id)
                         if (index == -1) {
                             this.permission.getAccountsList().push(a._id)
-                            Model.eventHub.publish("save_permission_event", this.permission)
+                            Model.eventHub.publish("save_permission_event", this.permission, true)
                             accountsList.appendItem(a)
                         }
                     })
 
                 // Do not display the title again...
                 accountsList.hideTitle()
-                
+
                 content.appendChild(accountsList)
             }, err => {
                 ApplicationView.displayMessage(err, 3000)

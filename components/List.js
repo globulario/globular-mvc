@@ -4,6 +4,7 @@ import { Account } from "../Account";
 import { Application } from "../Application";
 import { getAllGroups, getAllRoles } from "globular-web-client/api";
 import { Model } from "../Model";
+import { getAllOrganizations } from "./Organization";
 
 /**
  * String seach listbox.
@@ -821,7 +822,7 @@ customElements.define('globular-searchable-role-list', SearchableRoleList)
                             // set values without the account
                             let values = []
                             let val = addGroupInput.getValue();
-                            allGroups.forEach(a => {
+                            allGroups.forEach(g => {
                                 if (g.getName().toUpperCase().indexOf(val.toUpperCase()) != -1) {
                                     values.push(g)
                                 }
@@ -904,3 +905,183 @@ customElements.define('globular-searchable-role-list', SearchableRoleList)
 }
 
 customElements.define('globular-searchable-group-list', SearchableGroupList)
+
+
+
+/**
+ * Searchable Organization list
+ */
+ export class SearchableOrganizationList extends SearchableList {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor(title, list, ondeleteorganization, onaddorganization) {
+
+        // the onadd handler
+        let onadd = (organizations) => {
+            // Now the user list...
+            getAllOrganizations(allOrganizations => {
+                organizations.forEach(o => {
+                    // remove all existing items.
+                    allOrganizations = allOrganizations.filter(el => el.getId() !== o.getId())
+                })
+
+                let html = `
+                <style>
+                    ${theme}
+                    #add-list-organization-panel{
+                        position: absolute;
+                        left: 0px;
+                        z-index: 1;
+                    }
+
+                    .card-content{
+                        overflow-y: auto;
+                        min-width: 400px;
+                    }
+
+                </style>
+                <paper-card id="add-list-organization-panel">
+                    <div style="display: flex; align-items: center;">
+                        <div style="flex-grow: 1; padding: 5px;">
+                            Add Organization
+                        </div>
+                        <paper-icon-button id="cancel-btn" icon="close"></paper-icon-button>
+                    </div>
+                    <div class="card-content">
+                        <globular-autocomplete type="text" label="Search Group" id="add_organization_input" width="${this.width - 10}" style="flex-grow: 1;"></globular-autocomplete>
+                    </div>
+                </paper-card>
+                `
+
+                let headerDiv = this.shadowRoot.querySelector("#header-div")
+                let panel = headerDiv.querySelector("#add-list-organization-panel")
+
+                if (panel == undefined) {
+                    headerDiv.appendChild(document.createRange().createContextualFragment(html))
+                    panel = headerDiv.querySelector("#add-list-organization-panel")
+                    panel.style.top = (headerDiv.offsetHeight / 2) + 14 + "px";
+                    let closeBtn = panel.querySelector("#cancel-btn")
+                    closeBtn.onclick = () => {
+                        panel.parentNode.removeChild(panel)
+                    }
+
+                    // The invite contact action.
+                    let addOrganizationInput = this.shadowRoot.getElementById("add_organization_input")
+                    addOrganizationInput.focus()
+                    addOrganizationInput.onkeyup = () => {
+                        let val = addOrganizationInput.getValue();
+                        if (val.length >= 2) {
+                            let values = []
+                            allOrganizations.forEach(o => {
+                                if (o.getName().toUpperCase().indexOf(val.toUpperCase()) != -1 || o.getId().toUpperCase().indexOf(val.toUpperCase()) != -1) {
+                                    values.push(o)
+                                }
+                            })
+                            addOrganizationInput.setValues(values)
+                        } else {
+                            addOrganizationInput.clear()
+                        }
+                    }
+
+
+                    // That function must return the div that display the value that we want.
+                    addOrganizationInput.displayValue = (o) => {
+                        // display the account...
+                        let div = this.createOrganizationDiv(o)
+                        div.children[0].style.width = "auto"
+                        let addBtn = div.querySelector("paper-icon-button")
+                        addBtn.icon = "add"
+                        addBtn.onclick = () => {
+
+                            // remove the account form the list off available choice.
+                            allOrganizations = allOrganizations.filter(o_ => o_ !== o)
+
+                            addOrganizationInput.clear()
+
+                            // set values without the account
+                            let values = []
+                            let val = addOrganizationInput.getValue();
+                            allOrganizations.forEach(o => {
+                                if (o.getName().toUpperCase().indexOf(val.toUpperCase()) != -1) {
+                                    values.push(o)
+                                }
+                            })
+
+                            addOrganizationInput.setValues(values)
+
+                            // Here I will set the account role...
+                            if (this.onadditem != null) {
+                                this.onadditem(o)
+                            }
+
+                        }
+                        return div
+                    }
+                }
+            })
+        }
+
+        super(title, list, ondeleteorganization, onaddorganization, onadd)
+
+    }
+
+    // The div that display the role.
+    createOrganizationDiv(organisation) {
+        let uuid = "_" + uuidv4();
+        let html = `
+        <style>
+        </style>
+        <div id="${uuid}" class="item-div" style="">
+            <div style="display: flex; align-items: center; padding: 5px; width: 100%;"> 
+                <iron-icon icon="social:people" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display:block"};"></iron-icon>
+                <div style="display: flex; flex-direction: column; width:300px; font-size: .85em; padding-left: 8px; flex-grow: 1;">
+                    <span>${organisation.getName()}</span>
+                </div>
+                <paper-icon-button icon="delete" id="${organisation.getId()}_btn"></paper-icon-button>
+            </div>
+            
+        </div>`
+
+        this.shadowRoot.appendChild(document.createRange().createContextualFragment(html))
+        let div = this.shadowRoot.getElementById(uuid)
+        div.parentNode.removeChild(div)
+        return div
+    }
+
+    // Remove an accout from the list.
+    removeItem(o) {
+        this.list = this.list.filter(el => el.getId() !== o.getId())
+    }
+
+    displayItem(o) {
+        let div = this.createOrganizationDiv(o)
+        let deleteBtn = div.querySelector("paper-icon-button")
+        deleteBtn.icon = "delete"
+
+        if (this.ondeleteitem != undefined) {
+            deleteBtn.onclick = () => {
+                // remove the div...
+                div.parentNode.removeChild(div)
+                this.ondeleteitem(o)
+            }
+        } else {
+            deleteBtn.style.display = "none"
+        }
+
+        return div
+    }
+
+    // That function can be overide, assume a string by default
+    filter(o) {
+        return o.getName().toUpperCase().indexOf(this.filter_.toUpperCase()) != -1 || o.getId().toUpperCase().indexOf(this.filter_.toUpperCase()) != -1
+    }
+
+    // The sort items function
+    sortItems() {
+        // Sort account...
+        return this.list.sort((a, b) => (a.getName() > b.getName()) ? 1 : -1)
+    }
+}
+
+customElements.define('globular-searchable-organization-list', SearchableOrganizationList)

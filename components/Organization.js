@@ -9,7 +9,7 @@ import { Account } from '../Account';
 import * as ApplicationTs from '../Application';
 import { getAllGroups, getAllRoles } from 'globular-web-client/api';
 
-function getAllOrganizations(callback, errorCallback) {
+export function getAllOrganizations(callback, errorCallback) {
     let rqst = new GetOrganizationsRqst
     rqst.setQuery("{}")
     let organizations = [];
