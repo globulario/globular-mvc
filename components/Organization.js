@@ -140,7 +140,6 @@ export class OrganizationManager extends HTMLElement {
                 </div>
                 <div class="card-content">
                     <paper-input></paper-input>
-                    
                     <paper-button style="align-self: end;">Create</paper-button>
                 </div>
             </paper-card>

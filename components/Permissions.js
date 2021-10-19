@@ -44,6 +44,8 @@ export class PermissionsManager extends HTMLElement {
             }
 
             .title{
+                align-items: center;
+                display: flex;
                 flex-grow: 1;
                 font-size: 1.2rem;
                 font-weight: 400;
@@ -65,30 +67,45 @@ export class PermissionsManager extends HTMLElement {
             </div>
             <div>
                 <div  class="title">
+                <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
+                    <iron-icon  id="owner-collapse-btn"  icon="unfold-less" --iron-icon-fill-color:var(--palette-text-primary);"></iron-icon>
+                    <paper-ripple class="circle" recenters=""></paper-ripple>
+                </div>
                     Owner(s)
                 </div>
-                <div class="permissions" id="owner">
-                </div>
+                <iron-collapse class="permissions" id="owner">
+                
+                </iron-collapse>
             </div>
             <div>
                 <div style="display: flex;">
                     <div class="title" style="flex-grow: 1;">
+                    <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
+                        <iron-icon  id="allowed-collapse-btn"  icon="unfold-less" --iron-icon-fill-color:var(--palette-text-primary);"></iron-icon>
+                        <paper-ripple class="circle" recenters=""></paper-ripple>
+                    </div>
                         Allowed(s)
                     </div>
-                    <paper-icon-button icon="icons:add"></paper-icon-button>
+                    <paper-icon-button  id="add-allowed-btn" icon="icons:add"></paper-icon-button>
                 </div>
-                <div class="permissions" id="allowed">
-                </div>
+                <iron-collapse class="permissions" id="allowed">
+                
+                </iron-collapse>
             </div>
             <div>
                 <div style="display: flex;">
                     <div class="title" style="flex-grow: 1;">
+                    <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
+                        <iron-icon  id="denied-collapse-btn"  icon="unfold-less" --iron-icon-fill-color:var(--palette-text-primary);"></iron-icon>
+                        <paper-ripple class="circle" recenters=""></paper-ripple>
+                    </div>
                         Denied(s)
                     </div>
-                    <paper-icon-button icon="icons:add"></paper-icon-button>
+                    <paper-icon-button id="add-denied-btn" icon="icons:add"></paper-icon-button>
                 </div>
-                <div class="permissions" id="denied">
-                </div>
+                <iron-collapse class="permissions" id="denied">
+                
+                </iron-collapse>
             </div>
         </div>
         `
@@ -101,7 +118,47 @@ export class PermissionsManager extends HTMLElement {
         this.alloweds = this.shadowRoot.querySelector("#allowed")
         this.denieds = this.shadowRoot.querySelector("#denied")
 
-        // Now the varions sections,
+        // Now the collapse panels...
+        this.owners_collapse_btn = this.shadowRoot.querySelector("#owner-collapse-btn")
+        this.owners_collapse_btn.onclick = () => {
+            if (!this.owners.opened) {
+                this.owners_collapse_btn.icon = "unfold-more"
+            } else {
+                this.owners_collapse_btn.icon = "unfold-less"
+            }
+            this.owners.toggle();
+        }
+
+        this.alloweds_collapse_btn = this.shadowRoot.querySelector("#allowed-collapse-btn")
+        this.alloweds_collapse_btn.onclick = () => {
+            if (!this.alloweds.opened) {
+                this.alloweds_collapse_btn.icon = "unfold-more"
+            } else {
+                this.alloweds_collapse_btn.icon = "unfold-less"
+            }
+            this.alloweds.toggle();
+        }
+
+        this.denieds_collapse_btn = this.shadowRoot.querySelector("#denied-collapse-btn")
+        this.denieds_collapse_btn.onclick = () => {
+            if (!this.denieds.opened) {
+                this.denieds_collapse_btn.icon = "unfold-more"
+            } else {
+                this.denieds_collapse_btn.icon = "unfold-less"
+            }
+            this.denieds.toggle();
+        }
+
+        this.addDeniedBtn = this.shadowRoot.querySelector("#add-denied-btn")
+        this.addDeniedBtn.onclick = () => {
+            console.log("Add Denied")
+        }
+
+        this.addAllowedBtn = this.shadowRoot.querySelector("#add-allowed-btn")
+        this.addDeniedBtn.onclick = () => {
+            console.log("Add Allowed")
+        }
+
 
         // The close button...
         let closeButton = this.shadowRoot.querySelector("paper-icon-button")
@@ -109,9 +166,10 @@ export class PermissionsManager extends HTMLElement {
             // remove it from it parent.
             this.parentNode.removeChild(this)
         }
+    }
 
-
-
+    addPermission(){
+        
     }
 
     // The connection callback.
@@ -273,11 +331,11 @@ export class PermissionPanel extends HTMLElement {
         </style>
         <div style="padding-left: 10px; width: 100%">
             <div class="header">
-                <span class="title">${title}</span>
                 <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
                     <iron-icon  id="${uuid}-btn"  icon="unfold-less" --iron-icon-fill-color:var(--palette-text-primary);"></iron-icon>
                     <paper-ripple class="circle" recenters=""></paper-ripple>
                 </div>
+                <span class="title">${title}</span>
             </div>
             <iron-collapse id="${uuid}-collapase-panel">
                 
@@ -308,7 +366,7 @@ export class PermissionPanel extends HTMLElement {
     setOrgnanisationsPermissions(organisations_) {
         let content = this.createCollapsible(`Organizations(${organisations_.length})`)
         getAllOrganizations(
-            organisations=>{
+            organisations => {
                 let list = []
                 this.permission.getOrganizationsList().forEach(organisationId => {
                     let o_ = organisations.find(o => o.getId() === organisationId);
@@ -338,7 +396,7 @@ export class PermissionPanel extends HTMLElement {
                 // Do not display the title again...
                 organizationList.hideTitle()
                 content.appendChild(organizationList)
-        }, err=>ApplicationView.displayMessage(err, 3000))
+            }, err => ApplicationView.displayMessage(err, 3000))
 
     }
 
