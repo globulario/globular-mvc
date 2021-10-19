@@ -3,8 +3,8 @@ import { Account } from "../Account";
 import { theme } from "../../globular-mvc/components/Theme.js";
 import { ApplicationView } from "../ApplicationView";
 import { Model } from "../Model";
-import { SearchableAccountList, SearchableGroupList, SearchableOrganizationList } from "./List.js";
-import { getAllGroups } from "globular-web-client/api";
+import { SearchableAccountList, SearchableApplicationList, SearchableGroupList, SearchableOrganizationList } from "./List.js";
+import { getAllApplicationsInfo, getAllGroups } from "globular-web-client/api";
 import { randomUUID } from "./utility";
 import { getAllOrganizations } from "./Organization";
 
@@ -71,15 +71,21 @@ export class PermissionsManager extends HTMLElement {
                 </div>
             </div>
             <div>
-                <div  class="title">
-                    Allowed(s)
+                <div style="display: flex;">
+                    <div class="title" style="flex-grow: 1;">
+                        Allowed(s)
+                    </div>
+                    <paper-icon-button icon="icons:add"></paper-icon-button>
                 </div>
                 <div class="permissions" id="allowed">
                 </div>
             </div>
             <div>
-                <div class="title">
-                    Denied(s)
+                <div style="display: flex;">
+                    <div class="title" style="flex-grow: 1;">
+                        Denied(s)
+                    </div>
+                    <paper-icon-button icon="icons:add"></paper-icon-button>
                 </div>
                 <div class="permissions" id="denied">
                 </div>
@@ -155,11 +161,13 @@ export class PermissionsManager extends HTMLElement {
             application: Model.application,
             domain: Model.domain,
         }).then(rsp => {
+
             // Here I will display the owner's
             let ownersPermissionPanel = new PermissionPanel()
             this.permissions = rsp.getPermissions()
             ownersPermissionPanel.setPermission(rsp.getPermissions().getOwners(), true)
             this.owners.appendChild(ownersPermissionPanel)
+
         }).catch(err => {
             ApplicationView.displayMessage(err, 3000)
         })
@@ -302,14 +310,11 @@ export class PermissionPanel extends HTMLElement {
         getAllOrganizations(
             organisations=>{
                 let list = []
-
                 this.permission.getOrganizationsList().forEach(organisationId => {
-
                     let o_ = organisations.find(o => o.getId() === organisationId);
                     if (o_ != undefined) {
                         list.push(o_)
                     }
-
                 })
 
                 let organizationList = new SearchableOrganizationList("Organizations", list,
@@ -340,6 +345,41 @@ export class PermissionPanel extends HTMLElement {
     // The group permissions
     setApplicationsPermissions(applications_) {
         let content = this.createCollapsible(`Applications(${applications_.length})`)
+        getAllApplicationsInfo(Model.globular,
+            applications => {
+                // I will get the account object whit the given id.
+                let list = []
+
+                this.permission.getApplicationsList().forEach(applicationId => {
+                    let a_ = applications.find(a => a.getId() === applicationId);
+                    if (a_ != undefined) {
+                        list.push(a_)
+                    }
+                })
+
+                let applicationList = new SearchableApplicationList("Applications", list,
+                    a => {
+                        let index = this.permission.getApplicationsList().indexOf(a.getId())
+                        if (index != -1) {
+                            this.permission.getApplicationsList().splice(index, 1)
+                            Model.eventHub.publish("save_permission_event", this.permission, true)
+                            applicationList.removeItem(a)
+                        }
+                    },
+                    a => {
+                        let index = this.permission.getApplicationsList().indexOf(a.getId())
+                        if (index == -1) {
+                            this.permission.getApplicationsList().push(a.getId())
+                            Model.eventHub.publish("save_permission_event", this.permission, true)
+                            applicationList.appendItem(a)
+                        }
+                    })
+
+                // Do not display the title again...
+                applicationList.hideTitle()
+                content.appendChild(applicationList)
+
+            }), err => ApplicationView.displayMessage(err, 3000)
 
     }
 

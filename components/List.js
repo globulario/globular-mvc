@@ -1034,7 +1034,7 @@ customElements.define('globular-searchable-group-list', SearchableGroupList)
         </style>
         <div id="${uuid}" class="item-div" style="">
             <div style="display: flex; align-items: center; padding: 5px; width: 100%;"> 
-                <iron-icon icon="social:people" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display:block"};"></iron-icon>
+                <iron-icon icon="social:domain" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display:block"};"></iron-icon>
                 <div style="display: flex; flex-direction: column; width:300px; font-size: .85em; padding-left: 8px; flex-grow: 1;">
                     <span>${organisation.getName()}</span>
                 </div>
