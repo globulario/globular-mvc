@@ -1,13 +1,15 @@
-import { GetActionResourceInfosRqst, GetActionResourceInfosRsp, GetResourcePermissionsRqst, SetResourcePermissionsRqst } from "globular-web-client/rbac/rbac_pb";
-import { Account } from "../Account";
-import { theme } from "../../globular-mvc/components/Theme.js";
-import { ApplicationView } from "../ApplicationView";
 import { Model } from "../Model";
+import { theme } from "./Theme";
+
+import { GetActionResourceInfosRqst, GetResourcePermissionsRqst, Permission, SetResourcePermissionsRqst } from "globular-web-client/rbac/rbac_pb";
+import { Account } from "../Account";
+import { ApplicationView } from "../ApplicationView";
 import { SearchableAccountList, SearchableApplicationList, SearchableGroupList, SearchableOrganizationList } from "./List.js";
 import { getAllApplicationsInfo, getAllGroups } from "globular-web-client/api";
 import { randomUUID } from "./utility";
 import { getAllOrganizations } from "./Organization";
 import { GetAllActionsRequest } from "globular-web-client/services_manager/services_manager_pb";
+
 
 /**
  * Sample empty component
@@ -82,7 +84,7 @@ export class PermissionsManager extends HTMLElement {
                 </iron-collapse>
             </div>
             <div>
-                <div style="display: flex;">
+                <div style="display: flex; position: relative;">
                     <div class="title" style="flex-grow: 1;">
                     <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
                         <iron-icon  id="allowed-collapse-btn"  icon="unfold-less" --iron-icon-fill-color:var(--palette-text-primary);"></iron-icon>
@@ -97,7 +99,7 @@ export class PermissionsManager extends HTMLElement {
                 </iron-collapse>
             </div>
             <div>
-                <div style="display: flex;">
+                <div style="display: flex; position: relative;">
                     <div class="title" style="flex-grow: 1;">
                     <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
                         <iron-icon  id="denied-collapse-btn"  icon="unfold-less" --iron-icon-fill-color:var(--palette-text-primary);"></iron-icon>
@@ -155,12 +157,12 @@ export class PermissionsManager extends HTMLElement {
 
         this.addDeniedBtn = this.shadowRoot.querySelector("#add-denied-btn")
         this.addDeniedBtn.onclick = () => {
-            console.log("Add Denied")
+            this.addPermission(this.addDeniedBtn, "denied")
         }
 
         this.addAllowedBtn = this.shadowRoot.querySelector("#add-allowed-btn")
-        this.addDeniedBtn.onclick = () => {
-            console.log("Add Allowed")
+        this.addAllowedBtn.onclick = () => {
+            this.addPermission(this.addAllowedBtn, "allowed")
         }
 
 
@@ -173,19 +175,73 @@ export class PermissionsManager extends HTMLElement {
 
     }
 
-    addPermission() {
+    // Add the list of available permissions.
+    addPermission(parent, type) {
 
-    }
+        let addPermissionPanel = parent.parentNode.querySelector("#add-permission-panel")
 
-    // The connection callback.
-    connectedCallback() {
+        if (addPermissionPanel == null && this.permissionsNames.length > 0) {
+            let html = `
+            <style>
+                ${theme}
+                #add-permission-panel{
+                    position: absolute;
+                    right: 20px;
+                    top: ${parent.offsetTop + 20}px;
+                    z-index: 100;
+                }
 
-        // Here I will get the list off all possible permission name...
-        if (this.permissionsNames.length == 0) {
+                .card-content{
+                    overflow-y: auto;
+                    min-width: 200px;
+                }
+
+            </style>
+            <paper-card id="add-permission-panel">
+                <div style="display: flex; align-items: center;">
+                    <div style="flex-grow: 1; padding: 5px;">
+                        Add Permission
+                    </div>
+                    <paper-icon-button id="cancel-btn" icon="close"></paper-icon-button>
+                </div>
+                <div class="card-content">
+                    <paper-radio-group>
+                    </paper-radio-group>
+                </div>
+            </paper-card>
+            `
+
+            // Add the fragment.
+            parent.parentNode.appendChild(document.createRange().createContextualFragment(html))
+
+            let buttonGroup = parent.parentNode.querySelector("paper-radio-group")
+            this.permissionsNames.sort()
+            this.permissionsNames.forEach(p => {
+                console.log(p)
+                let radioBtn = document.createElement("paper-radio-button")
+                radioBtn.name = p
+                radioBtn.innerHTML = p
+                buttonGroup.appendChild(radioBtn)
+                radioBtn.onclick = () => {
+                    this.createPermission(p, type)
+                    let popup = parent.parentNode.querySelector("paper-card")
+                    popup.parentNode.removeChild(popup)
+                }
+            })
+
+            // Remove the popup...
+            parent.parentNode.querySelector("#cancel-btn").onclick = () => {
+                let popup = parent.parentNode.querySelector("paper-card")
+                popup.parentNode.removeChild(popup)
+            }
+        } else if (this.permissionsNames.length == 0) {
+
+            ApplicationView.wait("Get the list of permissions")
             let getAllActionsRqst = new GetAllActionsRequest
             Model.globular.servicesManagerService.getAllActions(getAllActionsRqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
                 .then(rsp => {
                     let actions = rsp.getActionsList()
+                    let index = 0;
                     actions.forEach(a => {
                         let rqst_ = new GetActionResourceInfosRqst
                         rqst_.setAction(a)
@@ -199,12 +255,72 @@ export class PermissionsManager extends HTMLElement {
                                     }
                                 })
 
+                                index++
+                                if (index == actions.length) {
+                                    ApplicationView.resume()
+                                    this.addPermission(parent, type)
+                                }
+
+                            }).catch(e => {
+                                ApplicationView.displayMessage(e, 3000)
+                                ApplicationView.resume()
                             })
 
                     })
                 })
         }
+    }
 
+    // Create the permission.
+    createPermission(name, type) {
+        console.log("Create permission " + name + " " + type)
+        // So here I will try to find if the permission already exist in the interface.
+        let id = "permission_" + name + "_" + type + "_panel"
+        let panel = null
+        if (type == "allowed") {
+            panel = this.alloweds.querySelector("#" + id)
+        } else if (type == "denied") {
+            panel = this.denieds.querySelector("#" + id)
+        }
+
+        if (panel == null) {
+
+            // create the panel.
+            panel = new PermissionPanel()
+            panel.setAttribute("id", id)
+            let permission = new Permission
+            permission.setName(name)
+            panel.setPermission(permission)
+
+            // set the permission in the permissions object.
+            if (type == "allowed") {
+                this.permissions.getAllowedList().push(permission)
+                this.alloweds.appendChild(panel)
+            } else if (type == "denied") {
+                this.permissions.getDeniedList().push(permission)
+                this.denieds.appendChild(panel)
+            }
+
+        } else {
+            ApplicationView.displayMessage("Permission " + name +" already exist", 3000)
+        }
+
+        if (type == "allowed") {
+            // display the panel
+            if (!this.alloweds.opened) {
+                this.alloweds.toggle()
+            }
+        } else if (type == "denied") {
+            if (!this.denieds.opened) {
+                this.denieds.toggle()
+            }
+        }
+    }
+
+    // The connection callback.
+    connectedCallback() {
+
+        // Here I will get the list off all possible permission name...
         // Save owner permission.
         if (this.savePermissionListener.length == 0) {
             Model.eventHub.subscribe("save_permission_event",
@@ -255,9 +371,25 @@ export class PermissionsManager extends HTMLElement {
 
             // Here I will display the owner's
             let ownersPermissionPanel = new PermissionPanel()
+            ownersPermissionPanel.id =  "permission_owners_panel"
             this.permissions = rsp.getPermissions()
             ownersPermissionPanel.setPermission(rsp.getPermissions().getOwners(), true)
             this.owners.appendChild(ownersPermissionPanel)
+
+            // The list of denied and allowed permissions.
+            this.permissions.getAllowedList().forEach(p => {
+                let panel = new PermissionPanel()
+                panel.id = "permission_" + p.getName() + "_allowed_panel"
+                panel.setPermission(p)
+                this.alloweds.appendChild(panel)
+            })
+
+            this.permissions.getDeniedList().forEach(p => {
+                let panel = new PermissionPanel()
+                panel.id = "permission_" + p.getName() + "_denied_panel"
+                panel.setPermission(p)
+                this.denieds.appendChild(panel)
+            })
 
         }).catch(err => {
             ApplicationView.displayMessage(err, 3000)
@@ -563,14 +695,6 @@ export class PermissionPanel extends HTMLElement {
             })
 
     }
-
-    /*
-    repeated string applications = 2;
-    repeated string peers = 3;
-    repeated string accounts = 4;
-    repeated string groups = 5;
-    repeated string organizations = 6;
-    */
 
 }
 

@@ -8,8 +8,6 @@ import '@polymer/paper-menu-button/paper-menu-button.js'
 import '@polymer/neon-animation/neon-animation-runner-behavior.js'
 import 'web-animations-js/web-animations-next.min.js'
 import '@polymer/paper-input/paper-textarea.js';
-import { IronResizableBehavior } from '@polymer/iron-resizable-behavior/iron-resizable-behavior.js';
-// import 'web-animations-js/src/we'
 
 /**
  * 

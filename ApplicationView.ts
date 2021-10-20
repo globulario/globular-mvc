@@ -61,7 +61,7 @@ export class ApplicationView extends View {
   }
 
   /** The application view component. */
-  private layout: Layout;
+  private static layout: Layout;
 
   /** The login panel */
   private login_: Login;
@@ -140,12 +140,12 @@ export class ApplicationView extends View {
 
     // The web-component use as layout is named globular-application
     if (document.getElementsByTagName("globular-application") != undefined) {
-      this.layout = <Layout>(
+      ApplicationView.layout = <Layout>(
         document.getElementsByTagName("globular-application")[0]
       );
     } else {
-      this.layout = new Layout();
-      document.body.appendChild(this.layout);
+      ApplicationView.layout = new Layout();
+      document.body.appendChild(ApplicationView.layout);
     }
 
     // set it to false.
@@ -153,7 +153,7 @@ export class ApplicationView extends View {
 
     // Set the login box...
     this.login_ = new Login();
-    this.layout.toolbar().appendChild(this.login_);
+    ApplicationView.layout.toolbar().appendChild(this.login_);
 
     // This contain account informations.
     this.accountMenu = new AccountMenu();
@@ -211,7 +211,7 @@ export class ApplicationView extends View {
     this.settingsPanel.id = "globular-setting-panel"
 
     // init listener's in the layout.
-    this.layout.init();
+    ApplicationView.layout.init();
     this.login_.init();
     this.accountMenu.init();
     this.applicationsMenu.init();
@@ -426,7 +426,7 @@ export class ApplicationView extends View {
      * The resize listener.
      */
     window.addEventListener("resize", (evt: any) => {
-      let w = this.layout.width();
+      let w = ApplicationView.layout.width();
 
       if (w <= 500) {
         this.overFlowMenu
@@ -462,11 +462,11 @@ export class ApplicationView extends View {
           this.accountMenu.getMenuDiv().classList.add("left");
         }
       } else {
-        this.layout
+        ApplicationView.layout
           .toolbar()
           .insertBefore(
             this.applicationsMenu,
-            this.layout.toolbar().firstChild
+            ApplicationView.layout.toolbar().firstChild
           );
 
         this.applicationsMenu.getMenuDiv().classList.remove("left");
@@ -475,23 +475,23 @@ export class ApplicationView extends View {
         if (this.isLogin) {
           this.overFlowMenu.hide();
 
-          this.layout.toolbar().appendChild(this.filesMenu);
+          ApplicationView.layout.toolbar().appendChild(this.filesMenu);
           this.filesMenu.getMenuDiv().classList.remove("left");
           this.filesMenu.getMenuDiv().classList.add("bottom");
 
-          this.layout.toolbar().appendChild(this.contactsMenu);
+          ApplicationView.layout.toolbar().appendChild(this.contactsMenu);
           this.contactsMenu.getMenuDiv().classList.remove("left");
           this.contactsMenu.getMenuDiv().classList.add("bottom");
 
-          this.layout.toolbar().appendChild(this.messengerMenu);
+          ApplicationView.layout.toolbar().appendChild(this.messengerMenu);
           this.messengerMenu.getMenuDiv().classList.remove("left");
           this.messengerMenu.getMenuDiv().classList.add("bottom");
 
-          this.layout.toolbar().appendChild(this.notificationMenu);
+          ApplicationView.layout.toolbar().appendChild(this.notificationMenu);
           this.notificationMenu.getMenuDiv().classList.remove("left");
           this.notificationMenu.getMenuDiv().classList.add("bottom");
 
-          this.layout.toolbar().appendChild(this.accountMenu);
+          ApplicationView.layout.toolbar().appendChild(this.accountMenu);
           this.accountMenu.getMenuDiv().classList.remove("left");
           this.accountMenu.getMenuDiv().classList.add("bottom");
         }
@@ -535,15 +535,15 @@ export class ApplicationView extends View {
    * @param title The title.
    */
   setTitle(title: string) {
-    this.layout.title().innerHTML = "<span>" + title + "</span>";
+    ApplicationView.layout.title().innerHTML = "<span>" + title + "</span>";
   }
 
   hideHeader() {
-    this.layout.hideHeader();
+    ApplicationView.layout.hideHeader();
   }
 
   showHeader() {
-    this.layout.showHeader();
+    ApplicationView.layout.showHeader();
   }
 
   setIcon(imgUrl: string) {
@@ -556,7 +556,7 @@ export class ApplicationView extends View {
     icon.style.marginRight = "10px";
     icon.style.marginLeft = "10px";
 
-    let title = this.layout.title();
+    let title = ApplicationView.layout.title();
     title.style.display = "flex";
 
     title.insertBefore(icon, title.firstChild);
@@ -608,13 +608,13 @@ export class ApplicationView extends View {
   }
 
   // Block user input
-  wait(msg: string = "wait ...") {
-    this.layout.wait(msg);
+  static wait(msg: string = "wait ...") {
+    ApplicationView.layout.wait(msg);
   }
 
   // Resume user input.
-  resume() {
-    this.layout.resume();
+  static resume() {
+    ApplicationView.layout.resume();
   }
 
   //////////////////////////////////////////////////////////////////////////////////////////
@@ -633,11 +633,11 @@ export class ApplicationView extends View {
       this.login_.parentNode.removeChild(this.login_);
     }
 
-    this.layout.toolbar().appendChild(this.notificationMenu);
-    this.layout.toolbar().appendChild(this.accountMenu);
+    ApplicationView.layout.toolbar().appendChild(this.notificationMenu);
+    ApplicationView.layout.toolbar().appendChild(this.accountMenu);
 
     // Append the over flow menu.
-    this.layout.toolbar().appendChild(this.overFlowMenu);
+    ApplicationView.layout.toolbar().appendChild(this.overFlowMenu);
 
     this.overFlowMenu.hide(); // not show it at first.
     this.accountMenu.setAccount(account);
@@ -699,7 +699,7 @@ export class ApplicationView extends View {
     this.overFlowMenu.hide(); // not show it at first.
 
     /** implement it as needed */
-    this.layout.toolbar().appendChild(this.login_);
+    ApplicationView.layout.toolbar().appendChild(this.login_);
 
     // Remove notification menu and account.
     this.accountMenu.parentNode.removeChild(this.notificationMenu);
@@ -1092,21 +1092,21 @@ export class ApplicationView extends View {
    * The workspace div where the application draw it content.
    */
   getWorkspace(): any {
-    return this.layout.workspace();
+    return ApplicationView.layout.workspace();
   }
 
   /**
    * Clear the workspace.
    */
   clearWorkspace(): void {
-    this.layout.clearWorkspace();
+    ApplicationView.layout.clearWorkspace();
   }
 
   /**
    * The side menu that contain application actions.
    */
   getSideMenu(): any {
-    let sideMenu = this.layout.sideMenu();
+    let sideMenu = ApplicationView.layout.sideMenu();
     return sideMenu;
   }
 
@@ -1114,7 +1114,7 @@ export class ApplicationView extends View {
    * Clear the side menu
    */
   clearSideMenu(): void {
-    this.layout.clearSideMenu();
+    ApplicationView.layout.clearSideMenu();
   }
 
   // In case of application view
@@ -1123,7 +1123,7 @@ export class ApplicationView extends View {
   }
 
   hideSideMenu() {
-    (<any>this.layout.appDrawer).toggle();
+    (<any>ApplicationView.layout.appDrawer).toggle();
   }
 
   /**

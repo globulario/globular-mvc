@@ -424,7 +424,7 @@ export class Application extends Model {
         let userEmail = localStorage.getItem("user_email");
         let userName = localStorage.getItem("user_name");
 
-        this.view.wait(
+        ApplicationView.wait(
           "<div>log in</div><div>" + userName + "</div><div>...</div>"
         );
 
@@ -485,13 +485,13 @@ export class Application extends Model {
                 ApplicationView.displayMessage(err, 3000)
               })
 
-            this.view.resume();
+            ApplicationView.resume();
 
             this.startRefreshToken();
           },
           (err: any) => {
             ApplicationView.displayMessage(err, 4000);
-            this.view.resume();
+            ApplicationView.resume();
           }
         );
       } else {
@@ -723,7 +723,7 @@ export class Application extends Model {
     account.setName(name);
     rqst.setAccount(account);
 
-    this.view.wait(
+    ApplicationView.wait(
       "<div>register account </div><div>" + name + "</div><div>...</div>"
     );
     // Register a new account.
@@ -746,12 +746,12 @@ export class Application extends Model {
 
         Application.account.initData(
           (account: Account) => {
-            this.view.resume();
+            ApplicationView.resume();
             onRegister(Application.account);
           },
           (err: any) => {
             onRegister(Application.account);
-            this.view.resume();
+            ApplicationView.resume();
             onError(err);
           }
         );
@@ -760,7 +760,7 @@ export class Application extends Model {
         this.startRefreshToken();
       })
       .catch((err: any) => {
-        this.view.resume();
+        ApplicationView.resume();
         onError(err);
       });
 
@@ -825,7 +825,7 @@ export class Application extends Model {
     let rqst = new authentication.AuthenticateRqst();
     rqst.setName(email);
     rqst.setPassword(password);
-    this.view.wait("<div>log in</div><div>" + email + "</div><div>...</div>");
+    ApplicationView.wait("<div>log in</div><div>" + email + "</div><div>...</div>");
 
     Model.globular.authenticationService
       .authenticate(rqst)
@@ -927,7 +927,7 @@ export class Application extends Model {
                 ApplicationView.displayMessage(err, 3000)
               })
 
-            this.view.resume();
+            ApplicationView.resume();
 
             // Start refresh as needed.
             this.startRefreshToken();
@@ -935,7 +935,7 @@ export class Application extends Model {
 
 
           }, (err: any) => {
-            this.view.resume();
+            ApplicationView.resume();
             onError(err);
           })
         }).catch((err: any) => {
@@ -946,7 +946,7 @@ export class Application extends Model {
 
       })
       .catch((err) => {
-        this.view.resume();
+        ApplicationView.resume();
         onError(err);
       });
   }
