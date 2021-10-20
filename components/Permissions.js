@@ -1,4 +1,4 @@
-import { GetResourcePermissionsRqst, SetResourcePermissionsRqst } from "globular-web-client/rbac/rbac_pb";
+import { GetActionResourceInfosRqst, GetActionResourceInfosRsp, GetResourcePermissionsRqst, SetResourcePermissionsRqst } from "globular-web-client/rbac/rbac_pb";
 import { Account } from "../Account";
 import { theme } from "../../globular-mvc/components/Theme.js";
 import { ApplicationView } from "../ApplicationView";
@@ -7,6 +7,7 @@ import { SearchableAccountList, SearchableApplicationList, SearchableGroupList, 
 import { getAllApplicationsInfo, getAllGroups } from "globular-web-client/api";
 import { randomUUID } from "./utility";
 import { getAllOrganizations } from "./Organization";
+import { GetAllActionsRequest } from "globular-web-client/services_manager/services_manager_pb";
 
 /**
  * Sample empty component
@@ -28,6 +29,9 @@ export class PermissionsManager extends HTMLElement {
 
         // The listener
         this.savePermissionListener = ""
+
+        // Keep the list of possible permissions.
+        this.permissionsNames = []
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -166,33 +170,62 @@ export class PermissionsManager extends HTMLElement {
             // remove it from it parent.
             this.parentNode.removeChild(this)
         }
+
     }
 
-    addPermission(){
-        
+    addPermission() {
+
     }
 
     // The connection callback.
     connectedCallback() {
+
+        // Here I will get the list off all possible permission name...
+        if (this.permissionsNames.length == 0) {
+            let getAllActionsRqst = new GetAllActionsRequest
+            Model.globular.servicesManagerService.getAllActions(getAllActionsRqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+                .then(rsp => {
+                    let actions = rsp.getActionsList()
+                    actions.forEach(a => {
+                        let rqst_ = new GetActionResourceInfosRqst
+                        rqst_.setAction(a)
+                        Model.globular.rbacService.getActionResourceInfos(rqst_, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+                            .then(rsp => {
+                                let infos = rsp.getInfosList()
+                                infos.forEach(info => {
+                                    let p = info.getPermission()
+                                    if (this.permissionsNames.indexOf(p) == -1) {
+                                        this.permissionsNames.push(p)
+                                    }
+                                })
+
+                            })
+
+                    })
+                })
+        }
+
         // Save owner permission.
-        Model.eventHub.subscribe("save_permission_event",
-            uuid => {
-                this.savePermissionListener = uuid
-            },
-            evt => {
-                let rqst = new SetResourcePermissionsRqst
-                rqst.setPermissions(this.permissions)
-                rqst.setPath(this.path)
-                Model.globular.rbacService.setResourcePermissions(rqst, {
-                    token: localStorage.getItem("user_token"),
-                    application: Model.application,
-                    domain: Model.domain,
-                }).then(rsp => {
-                    console.log("succed to save permissions for path ", this.path)
-                    ApplicationView.displayMessage("Permissions for path " + this.path + " was changed", 3000)
-                    this.setPath(this.path)
-                }).catch(err => ApplicationView.displayMessage(err, 3000))
-            }, true)
+        if (this.savePermissionListener.length == 0) {
+            Model.eventHub.subscribe("save_permission_event",
+                uuid => {
+                    this.savePermissionListener = uuid
+                },
+                evt => {
+                    let rqst = new SetResourcePermissionsRqst
+                    rqst.setPermissions(this.permissions)
+                    rqst.setPath(this.path)
+                    Model.globular.rbacService.setResourcePermissions(rqst, {
+                        token: localStorage.getItem("user_token"),
+                        application: Model.application,
+                        domain: Model.domain,
+                    }).then(rsp => {
+                        console.log("succed to save permissions for path ", this.path)
+                        ApplicationView.displayMessage("Permissions for path " + this.path + " was changed", 3000)
+                        this.setPath(this.path)
+                    }).catch(err => ApplicationView.displayMessage(err, 3000))
+                }, true)
+        }
     }
 
     // When the event is diconnected.
