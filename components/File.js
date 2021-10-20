@@ -2415,7 +2415,8 @@ export class FileExplorer extends HTMLElement {
             evt.stopPropagation();
             if (this.path.split("/").length > 2) {
                 this.path = this.path.substring(0, this.path.lastIndexOf("/"))
-                _publishSetDirEvent(this.navigations[this.path])
+
+                _publishSetDirEvent(this.path)
             }
         }
 
