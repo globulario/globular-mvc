@@ -958,18 +958,24 @@ export class PermissionsViewer extends HTMLElement {
                 if(value=="allowed"){
                     cell.appendChild(check)
                 }else if(value=="denied"){
-                    cell.cell.appendChild(denied)
+                    cell.appendChild(denied)
                 }else if(value=="owner"){
                     cell.appendChild(check)
-                }else{
-                    cell.appendChild(none)
                 }
-             }
+             }else{
+                cell.appendChild(none)
+            }
 
              row.appendChild(cell)
     }
 
+    // Set permission and display it.
     setPermissions(permissions) {
+
+        this.subjectsDiv.innerHTML = ""
+
+        this.permissionsDiv.innerHTML = ""
+
         // So here I will transform the values to be display in a table like view.
         let subjects = {}
 
