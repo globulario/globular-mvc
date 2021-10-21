@@ -109,7 +109,7 @@ export class PermissionsManager extends HTMLElement {
                 <paper-icon-button icon="close"></paper-icon-button>
                 
             </div>
-            <globular-permissions-viewer></globular-permissions-viewer>
+            <globular-permissions-viewer style="padding-bottom: 20px;"></globular-permissions-viewer>
             <div>
                 <div  class="title">
                 <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
@@ -158,6 +158,7 @@ export class PermissionsManager extends HTMLElement {
         this.container = this.shadowRoot.querySelector("#container")
         this.permissionsViewer = this.shadowRoot.querySelector("globular-permissions-viewer")
         this.pathDiv = this.shadowRoot.querySelector("#path")
+        this.style.overflowY = "auto"
 
         // The tree sections.
         this.owners = this.shadowRoot.querySelector("#owner")
@@ -733,7 +734,6 @@ export class PermissionsViewer extends HTMLElement {
             #permissions-div{
                 display: table;
                 width: 100%;
-                padding: 10px;
                 vertical-align: middle;
                 text-aling: center;
             }
@@ -772,13 +772,6 @@ export class PermissionsViewer extends HTMLElement {
             </div>
 
             <div id="permissions-div">
-                <div id="permissions-header">
-                    <div class="subject-div">subject</div>
-                    <div class="permission-div">read</div>
-                    <div class="permission-div">write</div>
-                    <div class="permission-div">delete</div>
-                    <div class="permission-div">owner</div>
-                </div>
             </div>
 
         </div>
@@ -974,12 +967,18 @@ export class PermissionsViewer extends HTMLElement {
 
         this.subjectsDiv.innerHTML = ""
 
-        this.permissionsDiv.innerHTML = ""
+        this.permissionsDiv.innerHTML = `
+        <div id="permissions-header">
+            <div class="subject-div">subject</div>
+            <div class="permission-div">read</div>
+            <div class="permission-div">write</div>
+            <div class="permission-div">delete</div>
+            <div class="permission-div">owner</div>
+        </div>
+        `
 
         // So here I will transform the values to be display in a table like view.
         let subjects = {}
-
-        console.log(permissions)
 
         // Set the owner permissions.
         this.setPermission(subjects, "owner", permissions.getOwners())
@@ -1003,20 +1002,24 @@ export class PermissionsViewer extends HTMLElement {
             if (subject.type == "account") {
                 Account.getAccount(id, (a) => {
                     let accountDiv = this.createAccountDiv(a)
+                    subjectCell.innerHTML = ""
                     subjectCell.appendChild(accountDiv)
                 }, e => ApplicationView.displayMessage(e, 3000))
             } else if (subject.type == "applications") {
                 // Set application div.
                 let applicationDiv = this.createApplicationDiv(Application.getApplicationInfo(id))
+                subjectCell.innerHTML = ""
                 subjectCell.appendChild(applicationDiv)
             } else if (subject.type == "group") {
                 Group.getGroup(id, g => {
                     let groupDiv = this.createGroupDiv(g)
+                    subjectCell.innerHTML = ""
                     subjectCell.appendChild(groupDiv)
                 }, e => ApplicationView.displayMessage(e, 3000))
             } else if (subject.type == "organization") {
                 getOrganizationById(id, o => {
                     let organizationDiv = this.createOrganizationDiv(o)
+                    subjectCell.innerHTML = ""
                     subjectCell.appendChild(organizationDiv)
                 }, e => ApplicationView.displayMessage(e, 3000))
             }
