@@ -788,13 +788,14 @@ export class PermissionsViewer extends HTMLElement {
 
         // Accounts
         permission.getAccountsList().forEach(a => {
-            let subject = subjects[a]
+            let id = a + "_account"
+            let subject = subjects[id]
             if (subject == null) {
                 subject = {}
                 subject.type = "account"
                 subject.id = a
                 subject.permissions = {}
-                subjects[a] = subject
+                subjects[id] = subject
             }
 
             subject.permissions[permission.getName()] = name
@@ -803,13 +804,15 @@ export class PermissionsViewer extends HTMLElement {
 
         // Groups
         permission.getGroupsList().forEach(g => {
-            let subject = subjects[g]
+            let id = g + "_group"
+            let subject = subjects[id]
+           
             if (subject == null) {
                 subject = {}
                 subject.type = "group"
                 subject.id = g
                 subject.permissions = {}
-                subjects[g] = subject
+                subjects[id] = subject
             }
 
             subject.permissions[permission.getName()] = name
@@ -817,13 +820,14 @@ export class PermissionsViewer extends HTMLElement {
 
         // Applications
         permission.getApplicationsList().forEach(a => {
-            let subject = subjects[a]
+            let id = a + "_application"
+            let subject = subjects[id]
             if (subject == null) {
                 subject = {}
-                subject.type = "applications"
+                subject.type = "application"
                 subject.id = a
                 subject.permissions = {}
-                subjects[a] = subject
+                subjects[id] = subject
             }
 
             subject.permissions[permission.getName()] = name
@@ -831,13 +835,14 @@ export class PermissionsViewer extends HTMLElement {
 
         // Organizations
         permission.getOrganizationsList().forEach(o => {
-            let subject = subjects[o]
+            let id =  o + "_organization"
+            let subject = subjects[id]
             if (subject == null) {
                 subject = {}
                 subject.type = "organization"
                 subject.id = o
                 subject.permissions = {}
-                subjects[o] = subject
+                subjects[id] = subject
             }
 
             subject.permissions[permission.getName()] = name
@@ -932,34 +937,34 @@ export class PermissionsViewer extends HTMLElement {
         return div
     }
 
-    setPermissionCell(row, value){
-             // The delete permission
-             let cell = document.createElement("div")
-             cell.style.display = "table-cell"
-             cell.className = "permission-div"
+    setPermissionCell(row, value) {
+        // The delete permission
+        let cell = document.createElement("div")
+        cell.style.display = "table-cell"
+        cell.className = "permission-div"
 
-             let check = document.createElement("iron-icon")
-             check.icon = "icons:check"
+        let check = document.createElement("iron-icon")
+        check.icon = "icons:check"
 
-             let none = document.createElement("iron-icon")
-             none.icon = "icons:remove"
+        let none = document.createElement("iron-icon")
+        none.icon = "icons:remove"
 
-             let denied = document.createElement("iron-icon")
-             denied.icon = "av:not-interested"
+        let denied = document.createElement("iron-icon")
+        denied.icon = "av:not-interested"
 
-             if(value != undefined){
-                if(value=="allowed"){
-                    cell.appendChild(check)
-                }else if(value=="denied"){
-                    cell.appendChild(denied)
-                }else if(value=="owner"){
-                    cell.appendChild(check)
-                }
-             }else{
-                cell.appendChild(none)
+        if (value != undefined) {
+            if (value == "allowed") {
+                cell.appendChild(check)
+            } else if (value == "denied") {
+                cell.appendChild(denied)
+            } else if (value == "owner") {
+                cell.appendChild(check)
             }
+        } else {
+            cell.appendChild(none)
+        }
 
-             row.appendChild(cell)
+        row.appendChild(cell)
     }
 
     // Set permission and display it.
@@ -1000,24 +1005,24 @@ export class PermissionsViewer extends HTMLElement {
 
             let subject = subjects[id]
             if (subject.type == "account") {
-                Account.getAccount(id, (a) => {
+                Account.getAccount(subject.id, (a) => {
                     let accountDiv = this.createAccountDiv(a)
                     subjectCell.innerHTML = ""
                     subjectCell.appendChild(accountDiv)
                 }, e => ApplicationView.displayMessage(e, 3000))
-            } else if (subject.type == "applications") {
+            } else if (subject.type == "application") {
                 // Set application div.
-                let applicationDiv = this.createApplicationDiv(Application.getApplicationInfo(id))
+                let applicationDiv = this.createApplicationDiv(Application.getApplicationInfo(subject.id))
                 subjectCell.innerHTML = ""
                 subjectCell.appendChild(applicationDiv)
             } else if (subject.type == "group") {
-                Group.getGroup(id, g => {
+                Group.getGroup(subject.id, g => {
                     let groupDiv = this.createGroupDiv(g)
                     subjectCell.innerHTML = ""
                     subjectCell.appendChild(groupDiv)
                 }, e => ApplicationView.displayMessage(e, 3000))
             } else if (subject.type == "organization") {
-                getOrganizationById(id, o => {
+                getOrganizationById(subject.id, o => {
                     let organizationDiv = this.createOrganizationDiv(o)
                     subjectCell.innerHTML = ""
                     subjectCell.appendChild(organizationDiv)
@@ -1026,7 +1031,7 @@ export class PermissionsViewer extends HTMLElement {
 
             // Now I will set the value for other cells..
             this.setPermissionCell(row, subject.permissions["read"])
-            this.setPermissionCell(row,  subject.permissions["write"])
+            this.setPermissionCell(row, subject.permissions["write"])
             this.setPermissionCell(row, subject.permissions["delete"])
             this.setPermissionCell(row, subject.permissions["owner"])
 
