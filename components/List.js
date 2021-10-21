@@ -180,8 +180,6 @@ export class SearchableList extends HTMLElement {
 
 customElements.define('globular-searchable-list', SearchableList)
 
-// TODO create searchable list for group, application, organisation and peers
-
 /**
  * Searchable Account list
  */
@@ -1085,3 +1083,182 @@ customElements.define('globular-searchable-group-list', SearchableGroupList)
 }
 
 customElements.define('globular-searchable-organization-list', SearchableOrganizationList)
+
+
+/**
+ * Searchable Group list
+ */
+ export class SearchablePeerList extends SearchableList {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor(title, list, ondeletepeer, onaddpeer) {
+
+        // the onadd handler
+        let onadd = (peers) => {
+            // Now the peer list...
+            getAllPeers(Model.globular, (allPeers) => {
+                peers.forEach(p => {
+                    // remove all existing items.
+                    allPeers = allGroups.filter(el => el.getId() !== p.getId())
+                })
+
+                let html = `
+                <style>
+                    ${theme}
+                    #add-list-peer-panel{
+                        position: absolute;
+                        left: 0px;
+                        z-index: 1;
+                    }
+
+                    .card-content{
+                        overflow-y: auto;
+                        min-width: 400px;
+                    }
+
+                </style>
+                <paper-card id="add-list-peer-panel">
+                    <div style="display: flex; align-items: center;">
+                        <div style="flex-grow: 1; padding: 5px;">
+                            Add Peer
+                        </div>
+                        <paper-icon-button id="cancel-btn" icon="close"></paper-icon-button>
+                    </div>
+                    <div class="card-content">
+                        <globular-autocomplete type="text" label="Search Peer" id="add_peer_input" width="${this.width - 10}" style="flex-grow: 1;"></globular-autocomplete>
+                    </div>
+                </paper-card>
+                `
+
+                let headerDiv = this.shadowRoot.querySelector("#header-div")
+                let panel = headerDiv.querySelector("#add-list-peer-panel")
+
+                if (panel == undefined) {
+                    headerDiv.appendChild(document.createRange().createContextualFragment(html))
+                    panel = headerDiv.querySelector("#add-list-peer-panel")
+                    panel.style.top = (headerDiv.offsetHeight / 2) + 14 + "px";
+                    let closeBtn = panel.querySelector("#cancel-btn")
+                    closeBtn.onclick = () => {
+                        panel.parentNode.removeChild(panel)
+                    }
+
+                    // The invite contact action.
+                    let addPeerInput = this.shadowRoot.getElementById("add_peer_input")
+                    addPeerInput.focus()
+                    addPeerInput.onkeyup = () => {
+                        let val = addPeerInput.getValue();
+                        if (val.length >= 2) {
+                            let values = []
+                            allGroups.forEach(g => {
+                                if (p.getName().toUpperCase().indexOf(val.toUpperCase()) != -1 || p.getId().toUpperCase().indexOf(val.toUpperCase()) != -1) {
+                                    values.push(p)
+                                }
+                            })
+                            addPeerInput.setValues(values)
+                        } else {
+                            addPeerInput.clear()
+                        }
+                    }
+
+
+                    // That function must return the div that display the value that we want.
+                    addPeerInput.displayValue = (p) => {
+                        // display the account...
+                        let div = this.createPeerDiv(p)
+                        div.children[0].style.width = "auto"
+                        let addBtn = div.querySelector("paper-icon-button")
+                        addBtn.icon = "add"
+                        addBtn.onclick = () => {
+
+                            // remove the account form the list off available choice.
+                            allPeers = allPeers.filter(p_ => p_ !== p)
+
+                            addPeerInput.clear()
+
+                            // set values without the account
+                            let values = []
+                            let val = addPeerInput.getValue();
+                            addPeerInput.forEach(p => {
+                                if (p.getName().toUpperCase().indexOf(val.toUpperCase()) != -1) {
+                                    values.push(p)
+                                }
+                            })
+
+                            addPeerInput.setValues(values)
+
+                            // Here I will set the account role...
+                            if (this.onadditem != null) {
+                                this.onadditem(p)
+                            }
+
+                        }
+                        return div
+                    }
+                }
+            })
+        }
+
+        super(title, list, ondeletepeer, onaddpeer, onadd)
+
+    }
+
+    // The div that display the role.
+    createPeerDiv(peer) {
+        let uuid = "_" + uuidv4();
+        let html = `
+        <style>
+        </style>
+        <div id="${uuid}" class="item-div" style="">
+            <div style="display: flex; align-items: center; padding: 5px; width: 100%;"> 
+                <iron-icon icon="social:people" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display:block"};"></iron-icon>
+                <div style="display: flex; flex-direction: column; width:300px; font-size: .85em; padding-left: 8px; flex-grow: 1;">
+                    <span>${peer.getMac()}</span>
+                </div>
+                <paper-icon-button icon="delete" id="${group.getMac()}_btn"></paper-icon-button>
+            </div>
+            
+        </div>`
+
+        this.shadowRoot.appendChild(document.createRange().createContextualFragment(html))
+        let div = this.shadowRoot.getElementById(uuid)
+        div.parentNode.removeChild(div)
+        return div
+    }
+
+    // Remove an accout from the list.
+    removeItem(p) {
+        this.list = this.list.filter(el => el.getId() !== p.getId())
+    }
+
+    displayItem(p) {
+        let div = this.createGroupDiv(p)
+        let deleteBtn = div.querySelector("paper-icon-button")
+        deleteBtn.icon = "delete"
+
+        if (this.ondeleteitem != undefined) {
+            deleteBtn.onclick = () => {
+                // remove the div...
+                div.parentNode.removeChild(div)
+                this.ondeleteitem(g)
+            }
+        } else {
+            deleteBtn.style.display = "none"
+        }
+
+        return div
+    }
+
+    // That function can be overide, assume a string by default
+    filter(g) {
+        return g.getName().toUpperCase().indexOf(this.filter_.toUpperCase()) != -1 || g.getId().toUpperCase().indexOf(this.filter_.toUpperCase()) != -1
+    }
+
+    // The sort items function
+    sortItems() {
+        // Sort account...
+        return this.list.sort((a, b) => (a.getName() > b.getName()) ? 1 : -1)
+    }
+}
+
+customElements.define('globular-searchable-peer-list', SearchablePeerList)
