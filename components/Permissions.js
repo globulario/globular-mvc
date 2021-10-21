@@ -10,6 +10,40 @@ import { randomUUID } from "./utility";
 import { getAllOrganizations } from "./Organization";
 import { GetAllActionsRequest } from "globular-web-client/services_manager/services_manager_pb";
 
+// This function return the list of all possible permission name from the server... it a little bit slow...
+// so for the moment I will simply use static values read, write and delete.
+function getPermissionNames(callbak, errorCallback) {
+    let permissionsNames = []
+    let getAllActionsRqst = new GetAllActionsRequest
+    Model.globular.servicesManagerService.getAllActions(getAllActionsRqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+        .then(rsp => {
+            let actions = rsp.getActionsList()
+            let index = 0;
+            actions.forEach(a => {
+                let rqst_ = new GetActionResourceInfosRqst
+                rqst_.setAction(a)
+                Model.globular.rbacService.getActionResourceInfos(rqst_, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+                    .then(rsp => {
+                        let infos = rsp.getInfosList()
+                        infos.forEach(info => {
+                            let p = info.getPermission()
+                            if (permissionsNames.indexOf(p) == -1) {
+                                permissionsNames.push(p)
+                            }
+                        })
+
+                        index++
+                        if (index == actions.length) {
+                            callbak(permissionsNames)
+                        }
+
+                    }).catch(e => {
+                        errorCallback(e)
+                    })
+
+            })
+        })
+}
 
 /**
  * Sample empty component
@@ -33,7 +67,7 @@ export class PermissionsManager extends HTMLElement {
         this.savePermissionListener = ""
 
         // Keep the list of possible permissions.
-        this.permissionsNames = []
+        this.permissionsNames = ["read", "write", "delete"]
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -70,7 +104,9 @@ export class PermissionsManager extends HTMLElement {
             <div id="header">
                 <div id="path" class="title"> </div>
                 <paper-icon-button icon="close"></paper-icon-button>
+                
             </div>
+            <globular-permissions-viewer></globular-permissions-viewer>
             <div>
                 <div  class="title">
                 <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
@@ -117,6 +153,7 @@ export class PermissionsManager extends HTMLElement {
         `
         // give the focus to the input.
         this.container = this.shadowRoot.querySelector("#container")
+        this.permissionsViewer = this.shadowRoot.querySelector("globular-permissions-viewer")
         this.pathDiv = this.shadowRoot.querySelector("#path")
 
         // The tree sections.
@@ -234,40 +271,6 @@ export class PermissionsManager extends HTMLElement {
                 let popup = parent.parentNode.querySelector("paper-card")
                 popup.parentNode.removeChild(popup)
             }
-        } else if (this.permissionsNames.length == 0) {
-
-            ApplicationView.wait("Get the list of permissions")
-            let getAllActionsRqst = new GetAllActionsRequest
-            Model.globular.servicesManagerService.getAllActions(getAllActionsRqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
-                .then(rsp => {
-                    let actions = rsp.getActionsList()
-                    let index = 0;
-                    actions.forEach(a => {
-                        let rqst_ = new GetActionResourceInfosRqst
-                        rqst_.setAction(a)
-                        Model.globular.rbacService.getActionResourceInfos(rqst_, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
-                            .then(rsp => {
-                                let infos = rsp.getInfosList()
-                                infos.forEach(info => {
-                                    let p = info.getPermission()
-                                    if (this.permissionsNames.indexOf(p) == -1) {
-                                        this.permissionsNames.push(p)
-                                    }
-                                })
-
-                                index++
-                                if (index == actions.length) {
-                                    ApplicationView.resume()
-                                    this.addPermission(parent, type)
-                                }
-
-                            }).catch(e => {
-                                ApplicationView.displayMessage(e, 3000)
-                                ApplicationView.resume()
-                            })
-
-                    })
-                })
         }
     }
 
@@ -302,7 +305,7 @@ export class PermissionsManager extends HTMLElement {
             }
 
         } else {
-            ApplicationView.displayMessage("Permission " + name +" already exist", 3000)
+            ApplicationView.displayMessage("Permission " + name + " already exist", 3000)
         }
 
         if (type == "allowed") {
@@ -371,8 +374,10 @@ export class PermissionsManager extends HTMLElement {
 
             // Here I will display the owner's
             let ownersPermissionPanel = new PermissionPanel()
-            ownersPermissionPanel.id =  "permission_owners_panel"
+            ownersPermissionPanel.id = "permission_owners_panel"
             this.permissions = rsp.getPermissions()
+            this.permissionsViewer.setPermissions(this.permissions)
+    
             ownersPermissionPanel.setPermission(rsp.getPermissions().getOwners(), true)
             this.owners.appendChild(ownersPermissionPanel)
 
@@ -699,3 +704,90 @@ export class PermissionPanel extends HTMLElement {
 }
 
 customElements.define('globular-permission-panel', PermissionPanel)
+
+
+/**
+ * Display all permissions at once.
+ */
+export class PermissionsViewer extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor() {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+            ${theme}
+            #subjects-div{
+
+            }
+
+            #permissions-div{
+                display: table;
+                width: 100%;
+                padding: 10px;
+            }
+
+            #permissions-header{
+                display: table-header;
+                font-size: 1.2rem;
+                font-weight: 400;
+                color: var(--palette-text-secondary);
+                border-bottom: 2 px solid;
+                border-color: var(--palette-divider);
+                width: 100%;
+            }
+
+            #permissions-header div {
+                display: table-cell;
+            }
+
+            .subject-div{
+                width: 50%;
+            }
+
+            .permission-div{
+                width: 100px;
+                text-align: center;
+            }
+
+        </style>
+
+        <div>
+            <div id="subjects-div">
+            </div>
+
+            <div id="permissions-div">
+                <div id="permissions-header">
+                    <div class="subject-div">subject</div>
+                    <div class="permission-div">read</div>
+                    <div class="permission-div">write</div>
+                    <div class="permission-div">delete</div>
+                    <div class="permission-div">owner</div>
+                </div>
+                <div>
+                </div>
+            </div>
+
+        </div>
+        `
+
+        this.subjectsDiv = this.shadowRoot.querySelector("#subjects-div")
+
+        this.permissionsDiv = this.shadowRoot.querySelector("#permissions-div")
+
+    }
+
+    setPermissions(permissions) {
+        // So here I will transform the values to be display in a table like view.
+        console.log("--------------------> ", permissions)
+        
+    }
+
+}
+
+customElements.define('globular-permissions-viewer', PermissionsViewer)
