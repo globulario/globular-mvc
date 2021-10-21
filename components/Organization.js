@@ -30,6 +30,23 @@ export function getAllOrganizations(callback, errorCallback) {
     });
 }
 
+export function getOrganizationById(id, callback, errorCallback){
+    let o_ = null
+    getAllOrganizations(organizations=>{
+        organizations.forEach(o=>{
+            if(o.getId() == id){
+                o_ = o
+            }
+        })
+
+        if(o_ != null){
+            callback(o_)
+            return
+        }
+        errorCallback("no organization found with id " + id)
+    }, errorCallback)
+}
+
 export class OrganizationManager extends HTMLElement {
     // attributes.
 

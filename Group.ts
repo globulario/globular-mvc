@@ -1,7 +1,7 @@
 import { FindOneRqst, ReplaceOneRqst, ReplaceOneRsp } from "globular-web-client/persistence/persistence_pb";
 import { Model } from "./Model";
-import {Account} from "./Account"
-import * as resource  from "globular-web-client/resource/resource_pb";
+import { Account } from "./Account"
+import * as resource from "globular-web-client/resource/resource_pb";
 
 /**
  * Group are use to aggregate accounts.
@@ -29,13 +29,13 @@ export class Group extends Model {
     private members: Array<any>;
 
     // The model...
-    constructor(id:string){
+    constructor(id: string) {
         super();
         this._id = id;
     }
 
-  
-    initData(initCallback:()=>void, errorCallback: (err: any)=>void) {
+
+    initData(initCallback: () => void, errorCallback: (err: any) => void) {
 
         let rqst = new resource.GetGroupsRqst
         rqst.setQuery(`{"_id":"${this._id}"}`)
@@ -56,25 +56,25 @@ export class Group extends Model {
 
                 // Here I will connect local event to react with interface element...
                 initCallback()
-            }else{
+            } else {
                 errorCallback(status.details)
             }
         })
     }
 
     // Retreive a given group.
-    static getGroup(id: string, successCallback:(g:Group)=>void, errorCallback:(err:any)=>void){
-        if(Group.groups == undefined){
+    static getGroup(id: string, successCallback: (g: Group) => void, errorCallback: (err: any) => void) {
+        if (Group.groups == undefined) {
             Group.groups = {};
         }
-        if(Group.groups[id]!= null){
+        if (Group.groups[id] != null) {
             successCallback(Group.groups[id])
         }
 
         // Here I will get the group.
         let g = new Group(id);
-        
-        g.initData(()=>{
+
+        g.initData(() => {
             Group.groups[id] = g;
             successCallback(g)
         }, errorCallback)
@@ -82,7 +82,7 @@ export class Group extends Model {
     }
 
     // Save the group.
-    save(successCallback:(g:Group)=>void, errorCallback:(err:any)=>void){
+    save(successCallback: (g: Group) => void, errorCallback: (err: any) => void) {
 
         let rqst = new resource.UpdateGroupRqst
         rqst.setGroupid(this._id)
@@ -94,47 +94,47 @@ export class Group extends Model {
             application: Model.application,
             domain: Model.domain
         })
-        .then((rsp: ReplaceOneRsp) => {
-            // Here I will return the value with it
-            Model.eventHub.publish(`update_group_${this._id}_data_evt`, data, false)
-            successCallback(this);
-        })
-        .catch((err: any) => {
-            errorCallback(err);
-        });
+            .then((rsp: ReplaceOneRsp) => {
+                // Here I will return the value with it
+                Model.eventHub.publish(`update_group_${this._id}_data_evt`, data, false)
+                successCallback(this);
+            })
+            .catch((err: any) => {
+                errorCallback(err);
+            });
 
     }
 
     // Return the list of members as Account objects.
-    getMembers(successCallback:(members:Array<Account>)=>void, errorCallback:()=>void){
+    getMembers(successCallback: (members: Array<Account>) => void, errorCallback: () => void) {
         let members = new Array<Account>();
-        if(this.members.length == 0){
+        if (this.members.length == 0) {
             successCallback([])
         }
 
         // Initi the group.
-        let setAccount_ = (index:number)=>{
-            if(index < this.members.length){
+        let setAccount_ = (index: number) => {
+            if (index < this.members.length) {
                 let memberId = this.members[index]["$id"]
-                Account.getAccount(memberId, (a:Account)=>{
+                Account.getAccount(memberId, (a: Account) => {
                     members.push(a)
                     index++
                     setAccount_(index);
-                    
+
                 }, errorCallback)
-            }else{
+            } else {
                 successCallback(members);
             }
         }
-        
+
         // start the recursion.
         setAccount_(0)
     }
 
     // Return true if an account if member of a given group.
-    hasMember(account: Account):boolean{
-        this.members.forEach((m:any)=>{
-            if(m["$id"]==account.id){
+    hasMember(account: Account): boolean {
+        this.members.forEach((m: any) => {
+            if (m["$id"] == account.id) {
                 return true;
             }
         })
@@ -149,9 +149,11 @@ export class Group extends Model {
 
     // Initialyse it from object.
     fromObject(obj: any) {
-        this._id = obj._id;
-        this.name = obj.name;
-        this.members = obj.members;
+        if (obj != undefined) {
+            this._id = obj.getId();
+            this.name = obj.getName();
+            this.members = obj.getMembersList();
+        }
     }
 
 }

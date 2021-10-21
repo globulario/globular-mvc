@@ -1,14 +1,17 @@
 import { Model } from "../Model";
 import { theme } from "./Theme";
-
+import { v4 as uuidv4 } from "uuid";
 import { GetActionResourceInfosRqst, GetResourcePermissionsRqst, Permission, SetResourcePermissionsRqst } from "globular-web-client/rbac/rbac_pb";
 import { Account } from "../Account";
 import { ApplicationView } from "../ApplicationView";
 import { SearchableAccountList, SearchableApplicationList, SearchableGroupList, SearchableOrganizationList } from "./List.js";
 import { getAllApplicationsInfo, getAllGroups } from "globular-web-client/api";
 import { randomUUID } from "./utility";
-import { getAllOrganizations } from "./Organization";
+import { getAllOrganizations, getOrganizationById } from "./Organization";
 import { GetAllActionsRequest } from "globular-web-client/services_manager/services_manager_pb";
+import { Application } from "../Application";
+import { Group } from "../Group";
+import '@polymer/iron-icons/av-icons'
 
 // This function return the list of all possible permission name from the server... it a little bit slow...
 // so for the moment I will simply use static values read, write and delete.
@@ -377,7 +380,7 @@ export class PermissionsManager extends HTMLElement {
             ownersPermissionPanel.id = "permission_owners_panel"
             this.permissions = rsp.getPermissions()
             this.permissionsViewer.setPermissions(this.permissions)
-    
+
             ownersPermissionPanel.setPermission(rsp.getPermissions().getOwners(), true)
             this.owners.appendChild(ownersPermissionPanel)
 
@@ -723,17 +726,20 @@ export class PermissionsViewer extends HTMLElement {
         <style>
             ${theme}
             #subjects-div{
-
+                vertical-align: middle;
+                text-aling: center;
             }
 
             #permissions-div{
                 display: table;
                 width: 100%;
                 padding: 10px;
+                vertical-align: middle;
+                text-aling: center;
             }
 
             #permissions-header{
-                display: table-header;
+                display: table-row;
                 font-size: 1.2rem;
                 font-weight: 400;
                 color: var(--palette-text-secondary);
@@ -748,11 +754,15 @@ export class PermissionsViewer extends HTMLElement {
 
             .subject-div{
                 width: 50%;
+                vertical-align: middle;
+                text-aling: center;
             }
 
             .permission-div{
                 width: 100px;
                 text-align: center;
+                vertical-align: middle;
+                text-aling: center;
             }
 
         </style>
@@ -769,8 +779,6 @@ export class PermissionsViewer extends HTMLElement {
                     <div class="permission-div">delete</div>
                     <div class="permission-div">owner</div>
                 </div>
-                <div>
-                </div>
             </div>
 
         </div>
@@ -782,10 +790,240 @@ export class PermissionsViewer extends HTMLElement {
 
     }
 
+    // Set the permission
+    setPermission(subjects, name, permission) {
+
+        // Accounts
+        permission.getAccountsList().forEach(a => {
+            let subject = subjects[a]
+            if (subject == null) {
+                subject = {}
+                subject.type = "account"
+                subject.id = a
+                subject.permissions = {}
+                subjects[a] = subject
+            }
+
+            subject.permissions[permission.getName()] = name
+
+        })
+
+        // Groups
+        permission.getGroupsList().forEach(g => {
+            let subject = subjects[g]
+            if (subject == null) {
+                subject = {}
+                subject.type = "group"
+                subject.id = g
+                subject.permissions = {}
+                subjects[g] = subject
+            }
+
+            subject.permissions[permission.getName()] = name
+        })
+
+        // Applications
+        permission.getApplicationsList().forEach(a => {
+            let subject = subjects[a]
+            if (subject == null) {
+                subject = {}
+                subject.type = "applications"
+                subject.id = a
+                subject.permissions = {}
+                subjects[a] = subject
+            }
+
+            subject.permissions[permission.getName()] = name
+        })
+
+        // Organizations
+        permission.getOrganizationsList().forEach(o => {
+            let subject = subjects[o]
+            if (subject == null) {
+                subject = {}
+                subject.type = "organization"
+                subject.id = o
+                subject.permissions = {}
+                subjects[o] = subject
+            }
+
+            subject.permissions[permission.getName()] = name
+        })
+    }
+
+    createAccountDiv(account) {
+        let uuid = "_" + uuidv4();
+        let html = `
+        <style>
+        </style>
+        <div id="${uuid}" class="item-div" style="">
+            <div style="display: flex; align-items: center; padding: 5px; width: 100%;"> 
+                <img style="width: 40px; height: 40px; display: ${account.profilPicture_ == undefined ? "none" : "block"};" src="${account.profilPicture_}"></img>
+                <iron-icon icon="account-circle" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${account.profilPicture_ != undefined ? "none" : "block"};"></iron-icon>
+                <div style="display: flex; flex-direction: column; width:300px; font-size: .85em; padding-left: 8px; flex-grow: 1;">
+                    <span>${account.name}</span>
+                    <span>${account.email_}</span>
+                </div>
+            </div>
+            
+        </div>`
+
+        this.shadowRoot.appendChild(document.createRange().createContextualFragment(html))
+        let div = this.shadowRoot.getElementById(uuid)
+        div.parentNode.removeChild(div)
+        return div
+    }
+
+    createApplicationDiv(application) {
+        let uuid = "_" + uuidv4();
+        let html = `
+        <style>
+        </style>
+        <div id="${uuid}" class="item-div" style="">
+            <div style="display: flex; align-items: center; padding: 5px; width: 100%;"> 
+                <img style="width: 40px; height: 40px; display: ${application.getIcon() == undefined ? "none" : "block"};" src="${application.getIcon()}"></img>
+                <iron-icon icon="account-circle" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${application.getIcon() != undefined ? "none" : "block"};"></iron-icon>
+                <div style="display: flex; flex-direction: column; width:300px; font-size: .85em; padding-left: 8px; flex-grow: 1;">
+                    <span>${application.getAlias()}</span>
+                    <span>${application.getVersion()}</span>
+                </div>
+            </div>
+            
+        </div>`
+
+        this.shadowRoot.appendChild(document.createRange().createContextualFragment(html))
+        let div = this.shadowRoot.getElementById(uuid)
+        div.parentNode.removeChild(div)
+        return div
+    }
+
+    createOrganizationDiv(organisation) {
+        let uuid = "_" + uuidv4();
+        let html = `
+            <style>
+            </style>
+            <div id="${uuid}" class="item-div" style="">
+                <div style="display: flex; align-items: center; padding: 5px; width: 100%;"> 
+                    <iron-icon icon="social:domain" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display:block"};"></iron-icon>
+                    <div style="display: flex; flex-direction: column; width:300px; font-size: .85em; padding-left: 8px; flex-grow: 1;">
+                        <span>${organisation.getName()}</span>
+                    </div>
+                </div>
+            </div>`
+
+        this.shadowRoot.appendChild(document.createRange().createContextualFragment(html))
+        let div = this.shadowRoot.getElementById(uuid)
+        div.parentNode.removeChild(div)
+        return div
+    }
+
+
+    createGroupDiv(group) {
+        let uuid = "_" + uuidv4();
+        let html = `
+        <style>
+        </style>
+        <div id="${uuid}" class="item-div" style="">
+            <div style="display: flex; align-items: center; padding: 5px; width: 100%;"> 
+                <iron-icon icon="social:people" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display:block"};"></iron-icon>
+                <div style="display: flex; flex-direction: column; width:300px; font-size: .85em; padding-left: 8px; flex-grow: 1;">
+                    <span>${group.name}</span>
+                </div>
+            </div>
+            
+        </div>`
+
+        this.shadowRoot.appendChild(document.createRange().createContextualFragment(html))
+        let div = this.shadowRoot.getElementById(uuid)
+        div.parentNode.removeChild(div)
+        return div
+    }
+
+    setPermissionCell(row, value){
+             // The delete permission
+             let cell = document.createElement("div")
+             cell.style.display = "table-cell"
+             cell.className = "permission-div"
+
+             let check = document.createElement("iron-icon")
+             check.icon = "icons:check"
+
+             let none = document.createElement("iron-icon")
+             none.icon = "icons:remove"
+
+             let denied = document.createElement("iron-icon")
+             denied.icon = "av:not-interested"
+
+             if(value != undefined){
+                if(value=="allowed"){
+                    cell.appendChild(check)
+                }else if(value=="denied"){
+                    cell.cell.appendChild(denied)
+                }else if(value=="owner"){
+                    cell.appendChild(check)
+                }else{
+                    cell.appendChild(none)
+                }
+             }
+
+             row.appendChild(cell)
+    }
+
     setPermissions(permissions) {
         // So here I will transform the values to be display in a table like view.
-        console.log("--------------------> ", permissions)
-        
+        let subjects = {}
+
+        console.log(permissions)
+
+        // Set the owner permissions.
+        this.setPermission(subjects, "owner", permissions.getOwners())
+
+        // Set the denied permissions
+        permissions.getDeniedList().forEach(p => this.setPermission(subjects, "denied", p))
+
+        // set the allowed permission.
+        permissions.getAllowedList().forEach(p => this.setPermission(subjects, "allowed", p))
+
+        // Now I will display the permission.
+        for (var id in subjects) {
+            let row = document.createElement("div")
+            row.style.display = "table-row"
+            let subjectCell = document.createElement("div")
+            subjectCell.style.display = "table-cell"
+            subjectCell.className = "subject-div"
+            row.appendChild(subjectCell)
+
+            let subject = subjects[id]
+            if (subject.type == "account") {
+                Account.getAccount(id, (a) => {
+                    let accountDiv = this.createAccountDiv(a)
+                    subjectCell.appendChild(accountDiv)
+                }, e => ApplicationView.displayMessage(e, 3000))
+            } else if (subject.type == "applications") {
+                // Set application div.
+                let applicationDiv = this.createApplicationDiv(Application.getApplicationInfo(id))
+                subjectCell.appendChild(applicationDiv)
+            } else if (subject.type == "group") {
+                Group.getGroup(id, g => {
+                    let groupDiv = this.createGroupDiv(g)
+                    subjectCell.appendChild(groupDiv)
+                }, e => ApplicationView.displayMessage(e, 3000))
+            } else if (subject.type == "organization") {
+                getOrganizationById(id, o => {
+                    let organizationDiv = this.createOrganizationDiv(o)
+                    subjectCell.appendChild(organizationDiv)
+                }, e => ApplicationView.displayMessage(e, 3000))
+            }
+
+            // Now I will set the value for other cells..
+            this.setPermissionCell(row, subject.permissions["read"])
+            this.setPermissionCell(row,  subject.permissions["write"])
+            this.setPermissionCell(row, subject.permissions["delete"])
+            this.setPermissionCell(row, subject.permissions["owner"])
+
+            this.permissionsDiv.appendChild(row)
+        }
+
     }
 
 }
