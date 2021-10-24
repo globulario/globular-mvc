@@ -104,7 +104,7 @@ export class ServicesSettings extends Settings {
                         <span style="padding-left: 10px; color: var(--palette-error-main);" id="service-last-error-${service.Id}">
                     </div>
                 </div>
-            `
+                `
 
                 let div = <any>serviceSetting.getDescriptionDiv()
                 div.appendChild(range.createContextualFragment(serviceToolBar))
