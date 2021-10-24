@@ -382,7 +382,7 @@ export class FileSettings extends Settings {
 
         let fileSettingPage = <any>settingsPanel.appendSettingsPage("Files");
 
-        this.fileExplorer = new FileExplorer;
+        /*this.fileExplorer = ApplicationView.fileExplorer;
         this.fileExplorer.setRoot("/applications/" + Model.application)
         this.fileExplorer.init()
 
@@ -409,7 +409,7 @@ export class FileSettings extends Settings {
         // Display the file explorer...
         fileSettingPage.appendChild(document.createRange().createContextualFragment(html));
         this.fileExplorer.open(fileSettingPage)
-        this.fileExplorer.hideActions()
+        this.fileExplorer.hideActions()*/
     }
 
 

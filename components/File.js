@@ -22,11 +22,12 @@ import { v4 as uuidv4 } from "uuid";
 
 // Menu to set action on files.
 import { DropdownMenu } from './dropdownMenu.js';
-import { CopyRequest, CreateDirRequest, MoveRequest } from 'globular-web-client/file/file_pb';
+import { CopyRequest, CreateDirRequest, GetFileInfoRequest, MoveRequest } from 'globular-web-client/file/file_pb';
 import { createArchive, deleteDir, deleteFile, downloadFileHttp, renameFile, uploadFiles } from 'globular-web-client/api';
 import { ApplicationView } from '../ApplicationView';
 import { Application } from '../Application';
 import { RunCmdRequest } from 'globular-web-client/admin/admin_pb';
+import { GetSharedResourceRqst, SubjectType } from 'globular-web-client/rbac/rbac_pb';
 
 function getElementIndex(element) {
     return Array.from(element.parentNode.children).indexOf(element);
@@ -122,8 +123,7 @@ export class FilesView extends HTMLElement {
         let id = "_" + uuidv4().split("-").join("_");
 
         let menuItemsHTML = `
-        <globular-dropdown-menu-item id="share-menu-item" icon="folder-shared" text="Share" action=""></globular-dropdown-menu-item>
-        <globular-dropdown-menu-item id="manage-acess-menu-item" icon="social:group" text="Manage access"action=""></globular-dropdown-menu-item>
+        <globular-dropdown-menu-item id="manage-acess-menu-item" icon="folder-shared" text="Manage access"action=""></globular-dropdown-menu-item>
         <globular-dropdown-menu-item separator="true"  id="cut-menu-item"  icon="icons:content-cut" text="Cut" action=""></globular-dropdown-menu-item>
         <globular-dropdown-menu-item id="copy-menu-item" icon="content-copy" text="Copy" action=""></globular-dropdown-menu-item>
         <globular-dropdown-menu-item id="paste-menu-item" icon="icons:content-paste" action="" text="Paste"></globular-dropdown-menu-item>
@@ -135,7 +135,6 @@ export class FilesView extends HTMLElement {
         this.menu = new DropdownMenu("icons:more-vert")
         this.menu.innerHTML = menuItemsHTML
 
-        this.shareAccessMenuItem = this.menu.querySelector("#share-menu-item")
         this.mananageAccessMenuItem = this.menu.querySelector("#manage-acess-menu-item")
         this.renameMenuItem = this.menu.querySelector("#rename-menu-item")
         this.deleteMenuItem = this.menu.querySelector("#delete-menu-item")
@@ -256,11 +255,6 @@ export class FilesView extends HTMLElement {
             }
 
             // Remove it from it parent...
-            this.menu.parentNode.removeChild(this.menu)
-        }
-
-        this.shareAccessMenuItem.action = () => {
-            console.log("share menu click")
             this.menu.parentNode.removeChild(this.menu)
         }
 
@@ -525,34 +519,6 @@ export class FilesView extends HTMLElement {
                 this.menu.parentNode.removeChild(this.menu)
             }
         }
-
-        // Now I will display the menu as popup menu instead of the default menu...
-        // so cut copy and paste will work on the current directory and it more natural
-        // to use by the end user.
-        /*
-        this.div.oncontextmenu = (e) => {
-            if (e.preventDefault != undefined)
-                e.preventDefault();
-            if (e.stopPropagation != undefined)
-                e.stopPropagation();
-
-            // Append the menu...
-            if (this.menu.parentNode != undefined) {
-                this.menu.parentNode.removeChild(this.menu)
-            }
-
-            this.menu.file = this.__dir__
-            this.menu.rename = () => {
-                this.rename(this.div, this.__dir__, 0);
-            }
-
-            this.menu.hideBtn()
-
-            document.body.appendChild(this.menu)
-            this.menu.open()
-        }
-        */
-
     }
 
     /**
@@ -773,14 +739,14 @@ export class FilesView extends HTMLElement {
         let lnk = evt.dataTransfer.getData('text/html');
         if (evt.dataTransfer.files.length > 0) {
             // So here I will simply upload the files...
-            Model.eventHub.publish("__upload_files_event__", { path: this.__dir__.path, files: evt.dataTransfer.files, lnk:lnk }, true)
+            Model.eventHub.publish("__upload_files_event__", { path: this.__dir__.path, files: evt.dataTransfer.files, lnk: lnk }, true)
         } else if (evt.dataTransfer.getData("Url") != undefined) {
             // Here we got an url...
             let url = evt.dataTransfer.getData("Url");
 
             // TODO get it from the configuration object globular.config["Data"]
             // Model.globular.config["DataPath"]
-            let root = "/var/globular/data" 
+            let root = "/var/globular/data"
             //"/home/dave/go/src/github.com/globulario/Globular/data"
 
             // Depending of your need... or the hour of the day.
@@ -803,12 +769,12 @@ export class FilesView extends HTMLElement {
                         pid = rsp.getPid()
                     }
                     // Publish local event.
-                    Model.eventHub.publish("__upload_torrent_event__", { pid: pid, path: this.__dir__.path, infos: rsp.getResult(), done: false, lnk:lnk }, true);
+                    Model.eventHub.publish("__upload_torrent_event__", { pid: pid, path: this.__dir__.path, infos: rsp.getResult(), done: false, lnk: lnk }, true);
                 });
 
                 stream.on("status", (status) => {
                     if (status.code === 0) {
-                        Model.eventHub.publish("__upload_torrent_event__", { pid: pid, path: this.__dir__.path, infos: rsp.getResult(), done: true, lnk:lnk }, true);
+                        Model.eventHub.publish("__upload_torrent_event__", { pid: pid, path: this.__dir__.path, infos: rsp.getResult(), done: true, lnk: lnk }, true);
                     } else {
                         // error here...
                         ApplicationView.displayMessage(status.details, 3000)
@@ -872,12 +838,12 @@ export class FilesView extends HTMLElement {
                         pid = rsp.getPid()
                     }
                     // Publish local event.
-                    Model.eventHub.publish("__upload_link_event__", { pid: pid, path: this.__dir__.path, infos: rsp.getResult(), done: false, lnk:lnk }, true);
+                    Model.eventHub.publish("__upload_link_event__", { pid: pid, path: this.__dir__.path, infos: rsp.getResult(), done: false, lnk: lnk }, true);
                 });
 
                 stream.on("status", (status) => {
                     if (status.code === 0) {
-                        Model.eventHub.publish("__upload_link_event__", { pid: pid, path: this.__dir__.path, infos: "", done: true, lnk:lnk }, true);
+                        Model.eventHub.publish("__upload_link_event__", { pid: pid, path: this.__dir__.path, infos: "", done: true, lnk: lnk }, true);
                     } else {
                         // error here...
                         ApplicationView.displayMessage(status.details, 3000)
@@ -1486,8 +1452,10 @@ export class FilesIconView extends FilesView {
                     folderIcon.draggable = false
 
                 } else if (fileType == "video" && hiddens[parentPath] != undefined) {
+
                     /** In that case I will display the vieo preview. */
                     let file_ = hiddens[parentPath];
+
                     for (var j = 0; j < file_.files.length; j++) {
                         let file__ = file_.files[j]
                         if (file__.name == "__preview__") {
@@ -1889,6 +1857,9 @@ export class FileNavigator extends HTMLElement {
         // The directory displayed in the navigator.
         this.dir = null
 
+        // The list of shared directory
+        this.shared = {}
+
         // The root div.
         this.div = null
 
@@ -1920,12 +1891,20 @@ export class FileNavigator extends HTMLElement {
         </style>
 
         <div id="file-navigator-div" style="">
-            
+            <div id="user-files-div"></div>
+            <div id="shared-files-div"></div>
         </div>
         `
 
         // The get the root div.
-        this.div = this.shadowRoot.querySelector("#file-navigator-div");
+        this.div = this.shadowRoot.querySelector("#user-files-div");
+        this.sharedDiv = this.shadowRoot.querySelector("#shared-files-div");
+    }
+
+    // The connection callback.
+    connectedCallback() {
+
+
     }
 
     hide() {
@@ -1952,6 +1931,7 @@ export class FileNavigator extends HTMLElement {
         }
     }
 
+
     // Init the tree view.
     initTreeView(dir, div, level) {
 
@@ -1960,14 +1940,20 @@ export class FileNavigator extends HTMLElement {
             return;
         }
 
-        let id = "_" + uuidv4().split("-").join("_");
+        let id = dir.path.split("/").join("_")
+
         // keep it in memory 
         this.dirs[dir.path] = { id: id, level: level }
 
-        if (this.div.querySelector(`#${id}`) == undefined) {
-            let name = dir.path.split("/").pop();
-            let offset = 10 * level
-            let html = `
+        // Remove existing values and renit the tree view...
+        let dir_ = this.div.parentNode.querySelector(`#${id}`)
+        if (dir_ != undefined) {
+            dir_.parentNode.removeChild(dir_)
+        }
+
+        let name = dir.path.split("/").pop();
+        let offset = 10 * level
+        let html = `
                 <style>
                     #${id}:hover{
                         cursor: pointer;
@@ -1996,9 +1982,9 @@ export class FileNavigator extends HTMLElement {
                     <div>
                 </div>
             `
-            let range = document.createRange()
-            div.appendChild(range.createContextualFragment(html));
-        }
+        let range = document.createRange()
+        div.appendChild(range.createContextualFragment(html));
+
 
         /** Now i will get the */
         let shrinkBtn = this.shadowRoot.getElementById(id + "_shrink_btn")
@@ -2117,12 +2103,106 @@ export class FileNavigator extends HTMLElement {
 
         this.dir = dir;
         this.initTreeView(dir, this.div, 0)
+
+        // Init shared...
+        this.initShared()
     }
 
-    // The connection callback.
-    connectedCallback() {
+    // Init shared folders
+    initShared() {
+        let initShared = (share) => {
+            let userId = share.getPath().split("/")[2];
+            if (this.shared[userId] == undefined) {
+                this.shared[userId] = new File(userId, "/shared/" + userId, true)
+                this.shared[userId].isDir = true;
+                this.shared[userId].files = [];
+                this.shared[userId].mime = "";
+                this.shared[userId].modTime = new Date()
+            }
 
+            _readDir(share.getPath(), dir => {
+                // From the path I will get the user id who share the file and 
+                // create a local directory if none exist...
+                if (this.shared[userId].files.find(f => f.path == dir.path) == undefined) {
+                    this.shared[userId].files.push(dir)
+                    this.initTreeView(this.shared[userId], this.sharedDiv, 0)
+                }
+            }, err => {
+                // The file is not a directory so the file will simply put in the share.
+                if (err.message.endsWith("is a directory")) {
+                    this.getFileInfo(share.getPath(),
+                        f => {
+                            if (f.path.indexOf(".hidden") != -1) {
+                                // In that case I need to append the file in a local dir named hidden.
+                                let hiddenDir = null;
+                                this.shared[userId].files.forEach(f => {
+                                    if (f.name == ".hidden") {
+                                        hiddenDir = f
+                                    }
+                                })
+                                if (hiddenDir == null) {
+                                    hiddenDir = new File(".hidden", "/shared/" + userId + "/.hidden", true)
+                                    hiddenDir.isDir = true
+                                    hiddenDir.modTime = new Date()
+                                    hiddenDir.mime = ""
+                                    hiddenDir.files = [f]
+                                    this.shared[userId].files.push(hiddenDir)
+                                } else {
+                                    // append only if it dosent exist....
+                                    if (this.shared[userId].files.find(f_ => f.path == f_.path) == undefined) {
+                                        hiddenDir.files.push(f)
+                                    }
+                                }
+
+                            } else {
+
+                                this.shared[userId].files.push(f)
+                            }
+
+                        }, e => console.log(e))
+                }
+            })
+        }
+
+        // The account...
+        let rqst = new GetSharedResourceRqst
+        rqst.setSubject(Application.account.id)
+        rqst.setType(SubjectType.ACCOUNT)
+
+        // Get file shared by account.
+        Model.globular.rbacService.getSharedResource(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+            .then(rsp => {
+                rsp.getSharedresourceList().forEach(s => initShared(s))
+            })
+            .catch(e => ApplicationView.displayMessage(e, 3000))
     }
+
+    // Get the file info and hidden file if the file has hidden 
+    getFileInfo(path, callback, errorCallback) {
+        let rqst = new GetFileInfoRequest()
+        rqst.setPath(path)
+        Model.globular.fileService.getFileInfo(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+            .then(rsp => {
+                let f = File.fromString(rsp.getData());
+                if (f.mime.startsWith("video")) {
+                    // So here I will get the hidden file for the video previews.
+                    let path = f.path.replace(f.name, "")
+                    let hiddenDirPath = path + ".hidden/" + f.name.substring(0, f.name.lastIndexOf("."))
+                    _readDir(hiddenDirPath, dir => {
+                        callback(dir);
+                    }, e => {
+                        callback(f);
+                    })
+
+                }
+
+                callback(f);
+
+            })
+            .catch(e => errorCallback(e))
+    }
+
+
 }
 
 customElements.define('globular-file-navigator', FileNavigator)
@@ -2644,18 +2724,18 @@ export class FileExplorer extends HTMLElement {
         }
 
         // Permissions 
-        if (this.listeners["display_permission_manager_event"] == undefined){
+        if (this.listeners["display_permission_manager_event"] == undefined) {
             Model.eventHub.subscribe("display_permission_manager_event",
-            (uuid) => {
-                this.listeners["display_permission_manager_event"] = uuid;
-            }, (path) => {
-                if (path.startsWith(this.getRoot())) {
+                (uuid) => {
+                    this.listeners["display_permission_manager_event"] = uuid;
+                }, (path) => {
+
                     this.permissionManager.setPath(path)
 
                     // I will display the permission manager.
                     this.fileSelectionPanel.appendChild(this.permissionManager)
-                }
-            }, false)
+
+                }, false)
         }
 
         // Reload the content of a dir with the actual dir content description on the server.
@@ -2778,9 +2858,6 @@ export class FileExplorer extends HTMLElement {
     }
 
     playVideo(path) {
-        if (!path.startsWith(this.getRoot())) {
-            return
-        }
 
         // hide the content.
         this.filesListView.style.display = "none"
@@ -2792,9 +2869,6 @@ export class FileExplorer extends HTMLElement {
     }
 
     playAudio(path) {
-        if (!path.startsWith(this.getRoot())) {
-            return
-        }
 
         // hide the content.
         this.filesListView.style.display = "none"
@@ -2807,9 +2881,6 @@ export class FileExplorer extends HTMLElement {
     }
 
     readFile(path) {
-        if (!path.startsWith(this.getRoot())) {
-            return
-        }
 
         // hide the content.
         this.filesListView.style.display = "none"
@@ -2821,10 +2892,6 @@ export class FileExplorer extends HTMLElement {
     }
 
     showImage(path) {
-        // Display image...
-        if (!path.startsWith(this.getRoot())) {
-            return
-        }
 
         // hide the content.
         this.filesListView.style.display = "none"
@@ -3686,7 +3753,7 @@ export class FilesUploader extends HTMLElement {
             if (infos.startsWith("Progress:") && infos.trim().endsWith("]")) {
                 span_infos.innerHTML = infos.trim();
             } else {
-               // span_infos.innerHTML += infos.trim();
+                // span_infos.innerHTML += infos.trim();
             }
         }
 

@@ -5,6 +5,8 @@ import { readDir } from "globular-web-client/api";
  * Server side file accessor. That 
  */
 export class File extends Model {
+    // If the file does not really exist on the server It can be keep in that map.
+    private static _local_files:any = {}
 
     /** A file image preview */
     private _thumbnail: string
@@ -88,7 +90,7 @@ export class File extends Model {
 
 
     /** The file  */
-    constructor(name: string, path: string) {
+    constructor(name: string, path: string, local: boolean = false) {
         super();
 
         this._name = name;
@@ -96,6 +98,10 @@ export class File extends Model {
 
         /** Here I will initialyse the resource. */
         this.files = new Array<File>();
+
+        if(local){
+            File._local_files[this.path] = this
+        }
 
     }
 
@@ -175,6 +181,11 @@ export class File extends Model {
      * Static function's
      */
     static readDir(path: string, recursive:boolean, callback: (dir: File) => void, errorCallback: (err: any) => void) {
+        if(File._local_files[path] != undefined){
+            callback(File._local_files[path])
+            return
+        }
+
         readDir(Model.globular, path, recursive, (data: any) => {
             callback(File.fromObject(data))
         }, errorCallback)

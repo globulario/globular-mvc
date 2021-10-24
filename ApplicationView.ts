@@ -104,9 +104,10 @@ export class ApplicationView extends View {
   }
 
   /** The file explorer */
-  private _fileExplorer: FileExplorer;
+  private static _fileExplorer: FileExplorer;
+
   public get fileExplorer(): FileExplorer {
-    return this._fileExplorer;
+    return ApplicationView._fileExplorer;
   }
 
   /** The seach bar */
@@ -193,10 +194,10 @@ export class ApplicationView extends View {
     };
 
     // The file explorer object.
-    this._fileExplorer = new FileExplorer();
+    ApplicationView._fileExplorer = new FileExplorer();
 
     // The file menu
-    this.filesMenu = new FilesMenu(this._fileExplorer);
+    this.filesMenu = new FilesMenu(ApplicationView._fileExplorer);
 
     // set the global varialbe...
     applicationView = this;
@@ -678,11 +679,11 @@ export class ApplicationView extends View {
     let servicesSettings = new ServicesSettings(this.settingsMenu, this.settingsPanel);
 
     // Set the file explorer...
-    this.fileExplorer.setRoot("/users/" + account.name)
-    this._fileExplorer.init();
+    ApplicationView._fileExplorer.setRoot("/users/" + account.name)
+    ApplicationView._fileExplorer.init();
 
     // Set the onerror callback for the component.
-    this._fileExplorer.onerror = (err: any) => {
+    ApplicationView._fileExplorer.onerror = (err: any) => {
       ApplicationView.displayMessage(err, 4000)
     };
 
@@ -798,7 +799,7 @@ export class ApplicationView extends View {
     this.camera.open();
   }
 
-  showFilebrowser(path: string, onclose: () => void) {
+  static showFilebrowser(path: string, onclose: () => void) {
 
     document.body.style.position = "relative"
     let modal = document.createElement("div")
@@ -811,25 +812,25 @@ export class ApplicationView extends View {
     modal.style.background = "rgba(0.0, 0.0, 0.0, .85)"
     document.body.appendChild(modal)
 
-    let fileExplorer = new FileExplorer
-    fileExplorer.style.position = "fixed"
-    fileExplorer.style.top = "20px"
-    fileExplorer.style.bottom = "20px"
-    fileExplorer.style.left = "5%"
-    fileExplorer.style.right = "5%"
+    ApplicationView._fileExplorer = new FileExplorer
+    ApplicationView._fileExplorer.style.position = "fixed"
+    ApplicationView._fileExplorer.style.top = "20px"
+    ApplicationView._fileExplorer.style.bottom = "20px"
+    ApplicationView._fileExplorer.style.left = "5%"
+    ApplicationView._fileExplorer.style.right = "5%"
 
-    fileExplorer.setRoot(path)
-    fileExplorer.init()
-    fileExplorer.open(modal)
+    ApplicationView._fileExplorer.setRoot(path)
+    ApplicationView._fileExplorer.init()
+    ApplicationView._fileExplorer.open(modal)
 
-    fileExplorer.onclose = () => {
-      fileExplorer.parentNode.removeChild(fileExplorer)
+    ApplicationView._fileExplorer.onclose = () => {
+      ApplicationView._fileExplorer.parentNode.removeChild( ApplicationView._fileExplorer)
       modal.parentNode.removeChild(modal)
-      fileExplorer.delete() // remove all listeners.
-      fileExplorer = null;
+      ApplicationView._fileExplorer.delete() // remove all listeners.
+      ApplicationView._fileExplorer = null;
     }
 
-    return fileExplorer
+    return  ApplicationView._fileExplorer
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////////
