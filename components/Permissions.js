@@ -346,6 +346,7 @@ export class PermissionsManager extends HTMLElement {
                         console.log("succed to save permissions for path ", this.path)
                         ApplicationView.displayMessage("Permissions for path " + this.path + " was changed", 3000)
                         this.setPath(this.path)
+                        Model.eventHub.publish(Application.account.id + "_change_permission_event", {},false)
                     }).catch(err => ApplicationView.displayMessage(err, 3000))
                 }, true)
         }

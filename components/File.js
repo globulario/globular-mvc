@@ -1874,7 +1874,7 @@ export class FileNavigator extends HTMLElement {
         <style>
             ${theme}
 
-            #file-navigator-div {
+            #file-navigator-div{
                 min-width: ${this.width}px; 
                 max-height: ${this.height}px; 
                 min-height: ${this.height}px; 
@@ -1897,7 +1897,8 @@ export class FileNavigator extends HTMLElement {
         `
 
         // The get the root div.
-        this.div = this.shadowRoot.querySelector("#user-files-div");
+        this.div = this.shadowRoot.querySelector("#file-navigator-div ");
+        this.userDiv = this.shadowRoot.querySelector("#user-files-div");
         this.sharedDiv = this.shadowRoot.querySelector("#shared-files-div");
     }
 
@@ -1920,14 +1921,16 @@ export class FileNavigator extends HTMLElement {
         console.log("reload dir ", dir)
         if (this.dirs[dir.path] != undefined) {
             let div = this.div.querySelector(`#${this.dirs[dir.path].id}`)
-            let parent = div.parentNode
-            let level = delete this.dirs[dir.path].level
             if (div != null) {
-                parent.removeChild(div)
-                delete this.dirs[dir.path]
+                let parent = div.parentNode
+                let level = this.dirs[dir.path].level
+                if (div != null) {
+                    parent.removeChild(div)
+                    delete this.dirs[dir.path]
+                }
+                // reload the div...
+                this.initTreeView(dir, parent, level)
             }
-            // reload the div...
-            this.initTreeView(dir, parent, level)
         }
     }
 
@@ -1946,14 +1949,11 @@ export class FileNavigator extends HTMLElement {
         this.dirs[dir.path] = { id: id, level: level }
 
         // Remove existing values and renit the tree view...
-        let dir_ = this.div.parentNode.querySelector(`#${id}`)
-        if (dir_ != undefined) {
-            dir_.parentNode.removeChild(dir_)
-        }
-
-        let name = dir.path.split("/").pop();
-        let offset = 10 * level
-        let html = `
+        let dir_ = this.div.querySelector(`#${id}`)
+        if (dir_ == undefined) {
+            let name = dir.path.split("/").pop();
+            let offset = 10 * level
+            let html = `
                 <style>
                     #${id}:hover{
                         cursor: pointer;
@@ -1982,9 +1982,10 @@ export class FileNavigator extends HTMLElement {
                     <div>
                 </div>
             `
-        let range = document.createRange()
-        div.appendChild(range.createContextualFragment(html));
+            let range = document.createRange()
+            div.appendChild(range.createContextualFragment(html));
 
+        }
 
         /** Now i will get the */
         let shrinkBtn = this.shadowRoot.getElementById(id + "_shrink_btn")
@@ -2102,7 +2103,7 @@ export class FileNavigator extends HTMLElement {
         }
 
         this.dir = dir;
-        this.initTreeView(dir, this.div, 0)
+        this.initTreeView(dir, this.userDiv, 0)
 
         // Init shared...
         this.initShared()
@@ -2110,14 +2111,30 @@ export class FileNavigator extends HTMLElement {
 
     // Init shared folders
     initShared() {
-        let initShared = (share) => {
+        this.sharedDiv.innerHTML = ""
+        this.shared = {}
+
+        // Init the share info
+        let initShared = (share, callback) => {
+
             let userId = share.getPath().split("/")[2];
+            if (userId == Application.account.id) {
+                callback()
+                return // I will not display it...
+            }
+
             if (this.shared[userId] == undefined) {
                 this.shared[userId] = new File(userId, "/shared/" + userId, true)
                 this.shared[userId].isDir = true;
                 this.shared[userId].files = [];
                 this.shared[userId].mime = "";
                 this.shared[userId].modTime = new Date()
+
+                Model.eventHub.subscribe(userId + "_change_permission_event", uuid => { },
+                    evt => {
+                        // refresh the shared...
+                        this.initShared()
+                    }, false)
             }
 
             _readDir(share.getPath(), dir => {
@@ -2125,7 +2142,7 @@ export class FileNavigator extends HTMLElement {
                 // create a local directory if none exist...
                 if (this.shared[userId].files.find(f => f.path == dir.path) == undefined) {
                     this.shared[userId].files.push(dir)
-                    this.initTreeView(this.shared[userId], this.sharedDiv, 0)
+                    callback()
                 }
             }, err => {
                 // The file is not a directory so the file will simply put in the share.
@@ -2147,6 +2164,7 @@ export class FileNavigator extends HTMLElement {
                                     hiddenDir.mime = ""
                                     hiddenDir.files = [f]
                                     this.shared[userId].files.push(hiddenDir)
+
                                 } else {
                                     // append only if it dosent exist....
                                     if (this.shared[userId].files.find(f_ => f.path == f_.path) == undefined) {
@@ -2155,10 +2173,11 @@ export class FileNavigator extends HTMLElement {
                                 }
 
                             } else {
-
-                                this.shared[userId].files.push(f)
+                                if (this.shared[userId].files.find(f_ => f.path == f_.path) == undefined) {
+                                    this.shared[userId].files.push(f)
+                                    callback()
+                                }
                             }
-
                         }, e => console.log(e))
                 }
             })
@@ -2172,7 +2191,24 @@ export class FileNavigator extends HTMLElement {
         // Get file shared by account.
         Model.globular.rbacService.getSharedResource(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
             .then(rsp => {
-                rsp.getSharedresourceList().forEach(s => initShared(s))
+                // rsp.getSharedresourceList().forEach(s => initShared(s))
+                // Here I need to sync the funtion and init the tree view once all is done...
+
+                let callback = (shared) => {
+                    let s = rsp.getSharedresourceList().pop()
+                    if (s != undefined) {
+                        initShared(s, callback)
+                    } else {
+                        console.log("------------> no more shared...")
+                        for (const id in this.shared) {
+                            let shared = this.shared[id]
+                            this.initTreeView(shared, this.sharedDiv, 0)
+                            Model.eventHub.publish("reload_dir_event", shared.path, false);
+                        }
+                    }
+                }
+
+                callback(); // call once
             })
             .catch(e => ApplicationView.displayMessage(e, 3000))
     }
@@ -2188,15 +2224,19 @@ export class FileNavigator extends HTMLElement {
                     // So here I will get the hidden file for the video previews.
                     let path = f.path.replace(f.name, "")
                     let hiddenDirPath = path + ".hidden/" + f.name.substring(0, f.name.lastIndexOf("."))
+                    // Get the hidden video directory...
                     _readDir(hiddenDirPath, dir => {
                         callback(dir);
+                        callback(f);
                     }, e => {
                         callback(f);
                     })
 
+                } else {
+                    callback(f);
                 }
 
-                callback(f);
+
 
             })
             .catch(e => errorCallback(e))
@@ -2647,6 +2687,7 @@ export class FileExplorer extends HTMLElement {
                 this.displayView()
             }, this.onerror)
         }
+
 
         if (this.hasAttribute("maximized")) {
             this.fileExplorerOpenBtn.click();
