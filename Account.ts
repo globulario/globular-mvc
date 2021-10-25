@@ -587,6 +587,15 @@ export class Account extends Model {
                     return;
                 }
 
+                // In that case I will return the list of account without init ther data
+                if(query == "{}"){
+                    accounts_.forEach(a_ =>{
+                        accounts.push(new Account(a_.getId(), a_.getEmail(), a_.getName()))
+                    })
+                    callback(accounts)
+                    return
+                }
+
                 let initAccountData = () => {
                     let a_ = accounts_.pop()
                     if (Account.accounts[a_.getId()] == undefined) {
