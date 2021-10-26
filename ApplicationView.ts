@@ -679,7 +679,7 @@ export class ApplicationView extends View {
     let servicesSettings = new ServicesSettings(this.settingsMenu, this.settingsPanel);
 
     // Set the file explorer...
-    ApplicationView._fileExplorer.setRoot("/users/" + account.name)
+    ApplicationView._fileExplorer.setRoot("/users/" + account.id)
     ApplicationView._fileExplorer.init();
 
     // Set the onerror callback for the component.

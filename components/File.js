@@ -120,7 +120,7 @@ export class FilesView extends HTMLElement {
         // The function will be call in case of error.
         this.onerror = undefined;
         // Innitialisation of the layout.
-        let id = "_" + uuidv4().split("-").join("_");
+        let id = "_" + uuidv4().split("-").join("_").split("@").join("_");
 
         let menuItemsHTML = `
         <globular-dropdown-menu-item id="manage-acess-menu-item" icon="folder-shared" text="Manage access"action=""></globular-dropdown-menu-item>
@@ -207,7 +207,7 @@ export class FilesView extends HTMLElement {
             }
             if (files.length > 0) {
                 // Create a tempory name...
-                let uuid = "_" + uuidv4().split("-").join("_");
+                let uuid = "_" + uuidv4().split("-").join("_").split("@").join("_");
                 createArchive(Application.globular, files, uuid,
                     path => {
                         // Download the file...
@@ -884,7 +884,7 @@ export class FilesListView extends FilesView {
         }
 
         this.div.innerHTML = "";
-        let id = "_" + uuidv4().split("-").join("_");
+        let id = "_" + uuidv4().split("-").join("_").split("@").join("_");
         let html = `
         <style>
             tbody{
@@ -1015,7 +1015,7 @@ export class FilesListView extends FilesView {
             let row = document.createElement("tr")
             row.innerHTML = html;
 
-            let rowId = "_" + uuidv4().split("-").join("_");
+            let rowId = "_" +uuidv4().split("-").join("_").split("@").join("_");
             row.id = rowId;
 
             let checkbox = row.querySelector("paper-checkbox")
@@ -1374,7 +1374,7 @@ export class FilesIconView extends FilesView {
 
             // Now I will create the icon file view.
             filesByType[fileType].forEach(file => {
-                let id = "_" + uuidv4().split("-").join("_");
+                let id = "_" + uuidv4().split("-").join("_").split("@").join("_");
 
                 let html = `
                 <div class="file-div" >
@@ -1943,7 +1943,7 @@ export class FileNavigator extends HTMLElement {
             return;
         }
 
-        let id = dir.path.split("/").join("_")
+        let id = dir.path.split("/").join("_").split("@").join("_")
 
         // keep it in memory 
         this.dirs[dir.path] = { id: id, level: level }
