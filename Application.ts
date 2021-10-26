@@ -851,7 +851,7 @@ export class Application extends Model {
         // So here i will open the use database connection.
         let connection = new Connection
         connection.setId(connectionId)
-        connection.setUser(id)
+        connection.setUser(connectionId)
         connection.setPassword(password)
         connection.setStore(StoreType.MONGO)
         connection.setName(id)
