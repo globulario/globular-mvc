@@ -2183,6 +2183,9 @@ export class FileNavigator extends HTMLElement {
             })
         }
 
+        if(Application.account ==undefined){
+            return // nothing to do here...
+        }
         // The account...
         let rqst = new GetSharedResourceRqst
         rqst.setSubject(Application.account.id)
