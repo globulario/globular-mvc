@@ -75,7 +75,7 @@ export class VideoPlayer extends HTMLElement {
         }
     
         // Set the path and play.
-        this.video.src = url + path
+        this.video.src = url + path + "?token=" + localStorage.getItem("user_token")
    
         this.video.style.maxWidth = this.parentNode.offsetWidth + "px"
     }

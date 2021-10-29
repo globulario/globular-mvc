@@ -507,7 +507,7 @@ class ImageViewer extends HTMLElement {
     this.style.display = 'block';
     this.innerHTML = '';
     for (var i = 0; i < el.length; i++) {
-      var src = el[i].getAttribute('src');
+      var src = el[i].getAttribute('src') + "?token=" + localStorage.getItem("user_token");
       var newPic = document.createElement('img');
       newPic.setAttribute('slot','images');
       newPic.setAttribute('src',src);
