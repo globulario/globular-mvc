@@ -52,8 +52,7 @@ function getImage(callback, images, files, index) {
     xhr.setRequestHeader("token", localStorage.getItem("user_token"));
     xhr.setRequestHeader("application", Model.application);
     xhr.setRequestHeader("domain", Model.domain);
-    xhr.setRequestHeader("path", f.path);
-
+    
     // Set responseType to 'arraybuffer', we want raw binary data buffer
     xhr.responseType = 'blob';
     xhr.onload = (rsp) => {
