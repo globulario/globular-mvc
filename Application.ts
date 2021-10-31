@@ -726,6 +726,8 @@ export class Application extends Model {
     account.setPassword(password);
     account.setEmail(email);
     account.setName(name);
+    account.setId(name)
+    account.setDomain(Application.domain)
     rqst.setAccount(account);
 
     ApplicationView.wait(
