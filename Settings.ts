@@ -1,5 +1,5 @@
 //import { SetEmailResponse } from "globular-web-client/admin/admin_pb";
-import { ClearAllLogRqst, DeleteLogRqst, DeleteLogRsp, GetLogRqst, GetLogRsp, LogInfo } from "globular-web-client/log/log_pb";
+import { ClearAllLogRqst, DeleteLogRqst, DeleteLogRsp, GetLogRqst, GetLogRsp, LogInfo, Occurence } from "globular-web-client/log/log_pb";
 import { Account } from "./Account";
 import { Application } from "./Application";
 import { ApplicationView } from "./ApplicationView";
@@ -648,45 +648,66 @@ export class LogSettings extends Settings {
             const headerCell = <any>(document.createElement("table-header-cell-element"))
             headerCell.innerHTML = `<table-sorter-element></table-sorter-element><div>${title}</div> <table-filter-element></table-filter-element>`
             // Now I will set the way I will display the values.
-            if (title == "Date") {
-                headerCell.width = 200;
-                headerCell.onrender = (div: any, value: Date, row: number, colum: number) => {
-                    if (value != undefined) {
+            if (title == "Occurences") {
+                headerCell.width = 320;
+                headerCell.onrender = (div: any, occurences: Array<Occurence>, row: number, column: number) => {
+                    if (occurences != undefined) {
                         div.style.justifySelf = "flex-start"
                         div.style.display = "flex"
                         div.style.alignItems = "center"
-
+                        console.log(occurences)
+                        div.parentNode.style.position = "relative"
+                        // Display the list of occurrences as needed..
                         div.innerHTML = `
-                            <iron-icon icon="delete" style="padding-left: 5px;"></iron-icon>
-                            <span>${value.toLocaleString()}</span>
+                            <div style="position: absolute; top: 0px; left: 0px; bottom: 0px; right: 0px;">
+                                <div style="display: flex;">
+                                    <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
+                                        <iron-icon  id="collapse-btn"  icon="unfold-less" --iron-icon-fill-color:var(--palette-text-primary);"></iron-icon>
+                                        <paper-ripple class="circle" recenters=""></paper-ripple>
+                                    </div>
+                                    <div style="flex-grow: 1;">
+                                        ${occurences.length}
+                                    </div>
+                                </div>
+                                <iron-collapse class="permissions" id="collapse-panel" style="display: flex; flex-direction: column;">
+                
+                                </iron-collapse>
+                            </div>
+                            
                         `
 
-                        div.children[0].onclick = () => {
-                            this.deleteLog(this.infos[row],
-                                () => {
-                                    this.table.deleteRow(row)
-                                },
-                                (err: any) => {
-                                    ApplicationView.displayMessage(err, 3000)
-                                })
-
+                        let collapse_btn = div.querySelector("#collapse-btn")
+                        let collapse_panel = div.querySelector("#collapse-panel")
+                        collapse_btn.onclick = () => {
+                            if (!collapse_panel.opened) {
+                                collapse_btn.icon = "unfold-more"
+                            } else {
+                                collapse_btn.icon = "unfold-less"
+                            }
+                            collapse_panel.toggle();
                         }
 
-                        div.children[0].onmouseenter = () => {
-                            div.children[0].style.cursor = "pointer"
-                        }
+                        let range = document.createRange()
+                        occurences.sort((a:Occurence, b:Occurence) =>{return b.getDate() - a.getDate()})
 
-                        div.children[0].onmouseout = () => {
-                            div.children[0].style.cursor = "default"
-                        }
+                        // Now I will set the occurence infromations...
+                        occurences.forEach(o =>{
+                            let html = `
+                                <div style="display: flex; padding: 2px;">
+                                    <div>${new Date(o.getDate() * 1000).toLocaleString()} </div>
+                                    <div style="padding-left: 10px;">${ o.getUserid() + " " + o.getApplication() }</div>
+                                </div>
+                            `
+                            collapse_panel.appendChild(range.createContextualFragment(html))
+                            
+                        })
+
                     }
                 }
             } else if (title == "Level") {
                 headerCell.width = 100;
-            } else if (title == "Occurences") {
-                headerCell.width = 150;
             } else if (title == "Method") {
-                headerCell.width = 370;
+                headerCell.width = 360;
             } else if (title == "Detail") {
                 headerCell.width = 380;
 
@@ -728,7 +749,7 @@ export class LogSettings extends Settings {
             }
 
             this.infos.push(info) //keep in the array.
-            this.table.data.push([level, info.getOccurencesList().length, info.getMethod(), info.getMessage()])
+            this.table.data.push([level, info.getOccurencesList(), info.getMethod(), info.getMessage()])
         })
         this.table.refresh()
     }
