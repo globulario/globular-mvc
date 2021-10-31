@@ -175,6 +175,17 @@ export class ServerGeneralSettings extends Settings {
         webSeverSettings.addSetting(corsHeadersSettings_)
 
         // Now the dns informations.
+        let discoveriesSettings = serverSettingsPage.appendSettings("Dicoveries", "Directories where to find new application and service packages.");
+        let discoveriSettings_ = new StringListSetting("Discoveries", "")
+        
+        discoveriSettings_.setValues(this.config.Discoveries)
+        discoveriSettings_.onchange = () => {
+            this.config.Discoveries = discoveriSettings_.getValues()
+            this.needSave = true
+        }
+        discoveriesSettings.addSetting(discoveriSettings_)
+
+        // Now the dns informations.
         let dnsSeverSettings = serverSettingsPage.appendSettings("Domain", "Domain releated informations");
 
         // Set the name of the server.

@@ -51,15 +51,22 @@ export class ServicesSettings extends Settings {
         this.services = {}
         this.servicesSettings = new Array<ServiceSetting>()
 
+        // Range use to create fragment.
+        let range = document.createRange()
+
         // Create the settings menu and panel here
         settingsMenu.appendSettingsMenuItem("settings", "Services");
 
         // Create General informations setting's
         let serverSettingsPage = <any>settingsPanel.appendSettingsPage("Services");
 
-        // Create general server settings ...
-        let servicesSettings = serverSettingsPage.appendSettings("Runing Instances", "Installed gRPC service instances(" + Object.keys(services).length + ")");
-        let range = document.createRange()
+
+        // Create installed services ...
+        let servicesSettings = serverSettingsPage.appendSettings("Installed Services", `
+            <div>
+                <div>Installed gRPC service instances( ${Object.keys(services).length})</div>
+            </div>
+            `);
 
         // Now The actions...
         let resartAllServicesAction = new ActionSetting("Restart", "Restart all gRpc services", () => {
