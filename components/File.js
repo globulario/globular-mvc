@@ -2205,7 +2205,6 @@ export class FileNavigator extends HTMLElement {
                     if (s != undefined) {
                         initShared(s, callback)
                     } else {
-                        console.log("------------> no more shared...")
                         for (const id in this.shared) {
                             let shared = this.shared[id]
                             this.initTreeView(shared, this.sharedDiv, 0)
@@ -2226,7 +2225,7 @@ export class FileNavigator extends HTMLElement {
         Model.globular.fileService.getFileInfo(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
             .then(rsp => {
                 let f = File.fromString(rsp.getData());
-                if (f.mime.startsWith("video")) {
+                if (f.mime.startsWith("video") || f.mime.startsWith("audio") ||  f.mime.startsWith("image")) {
                     // So here I will get the hidden file for the video previews.
                     let path = f.path.replace(f.name, "")
                     let hiddenDirPath = path + ".hidden/" + f.name.substring(0, f.name.lastIndexOf("."))
