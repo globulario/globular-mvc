@@ -515,10 +515,10 @@ export class LogSettings extends Settings {
         this.infoCheckBox.onclick = this.warningCheckBox.onclick = this.errorCheckBox.onclick = ()=>{
             this.table.clear(); // remove all values...
             if(this.errorCheckBox.checked){
-                this.getLogs("/error/" + Model.application + "/*",
+                this.getLogs("/error/*",
                 (infos: Array<LogInfo>) => {
                     this.setInfos(infos)
-                    this.getLogs("/fatal/" + Model.application + "/*",
+                    this.getLogs("/fatal/*",
                     (infos: Array<LogInfo>) => {
                         this.setInfos(infos)
                     },
@@ -531,7 +531,7 @@ export class LogSettings extends Settings {
                 })
             }
             if(this.warningCheckBox.checked){
-                this.getLogs("/warning/" + Model.application + "/*",
+                this.getLogs("/warning/*",
                 (infos: Array<LogInfo>) => {
                     this.setInfos(infos)
                 },
@@ -541,13 +541,13 @@ export class LogSettings extends Settings {
             }
 
             if(this.infoCheckBox.checked){
-                this.getLogs("/info/" + Model.application + "/*",
+                this.getLogs("/info/*",
                 (infos: Array<LogInfo>) => {
                     this.setInfos(infos)
-                    this.getLogs("/debug/" + Model.application + "/*",
+                    this.getLogs("/debug/*",
                     (infos: Array<LogInfo>) => {
                         this.setInfos(infos)
-                        this.getLogs("/trace/" + Model.application + "/*",
+                        this.getLogs("/trace/*",
                         (infos: Array<LogInfo>) => {
                             this.setInfos(infos)
                         },
@@ -642,7 +642,7 @@ export class LogSettings extends Settings {
         this.table.style.width = "1150px"
         this.table.style.maxHeight = "820px";
 
-        let titles = ["Date", "Level", "Account", "Method", "Detail"]
+        let titles = ["Level", "Occurences", "Method", "Detail"]
 
         titles.forEach(title => {
             const headerCell = <any>(document.createElement("table-header-cell-element"))
@@ -683,28 +683,13 @@ export class LogSettings extends Settings {
                 }
             } else if (title == "Level") {
                 headerCell.width = 100;
-            } else if (title == "Account") {
+            } else if (title == "Occurences") {
                 headerCell.width = 150;
             } else if (title == "Method") {
-                headerCell.width = 350;
+                headerCell.width = 370;
             } else if (title == "Detail") {
-                headerCell.width = 350;
-                /*
-                headerCell.onrender = function (div: any, value: string) {
-                    // div.title = value;
-                    if (value != undefined) {
-                       div.style.overflow = "auto"
-                       div.style.display = "flex"
-                       let html= `
-                        <div style="padding: 5px; text-align: left;">
-                            ${value}
-                        </div>
-                       `
-                       div.appendChild(document.createRange().createContextualFragment(html))
-                    }
+                headerCell.width = 380;
 
-                }
-                */
             }
 
             this.header.appendChild(headerCell)
@@ -713,7 +698,7 @@ export class LogSettings extends Settings {
         logSettingPage.appendChild(this.table);
         this.table.data = [];
 
-        this.getLogs("/error/" + Model.application + "/*",
+        this.getLogs("/error/*",
             (infos: Array<LogInfo>) => {
                 this.setInfos(infos)
             },
@@ -726,7 +711,7 @@ export class LogSettings extends Settings {
     setInfos(infos: Array<LogInfo>){
         // Here I will transform the the info to fit into the table.
         infos.forEach((info: LogInfo) => {
-            let date = new Date(info.getDate() * 1000);
+   
             let level = ""
             if (info.getLevel() == 0) {
                 level = "fatal"
@@ -743,7 +728,7 @@ export class LogSettings extends Settings {
             }
 
             this.infos.push(info) //keep in the array.
-            this.table.data.push([date, level, info.getUsername(), info.getMethod(), info.getMessage()])
+            this.table.data.push([level, info.getOccurencesList().length, info.getMethod(), info.getMessage()])
         })
         this.table.refresh()
     }

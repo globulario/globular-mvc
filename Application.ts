@@ -18,7 +18,7 @@ import { v4 as uuidv4 } from "uuid";
 import { mergeTypedArrays, uint8arrayToStringMethod } from "./Utility";
 import { ConversationManager } from "./Conversation";
 import { Conversations } from "globular-web-client/conversation/conversation_pb";
-import { LogInfo, LogLevel, LogRqst, LogRsp } from "globular-web-client/log/log_pb";
+import { LogInfo, LogLevel, LogRqst, LogRsp, Occurence } from "globular-web-client/log/log_pb";
 import { Session, SessionState } from "./Session";
 
 // Get the configuration from url
@@ -176,14 +176,17 @@ export class Application extends Model {
       // This error will be available in the setting -> error(s)
       window.onerror = (message, source, lineno, colno, error) => {
         let info = new LogInfo
-        info.setDate(Math.trunc(Date.now() / 1000))
+        
         info.setLevel(LogLevel.ERROR_MESSAGE)
-        info.setApplication(Application.application)
-        info.setUserid("")
-        info.setUsername("")
+
+        let occurence = new Occurence
+        occurence.setDate(Math.trunc(Date.now() / 1000))
+        occurence.setApplication(Application.application)
+        occurence.setUserid("")
+        occurence.setUsername("")
         if (Application.account != undefined) {
-          info.setUserid(Application.account.id)
-          info.setUsername(Application.account.name)
+          occurence.setUserid(Application.account.id)
+          occurence.setUsername(Application.account.name)
         }
 
         info.setMethod(error.name + " " + error.message)
@@ -191,6 +194,7 @@ export class Application extends Model {
 
         let rqst = new LogRqst
         rqst.setInfo(info)
+        rqst.setOccurence(occurence)
 
         Model.globular.logService.log(rqst, {
           token: localStorage.getItem("user_token"),
