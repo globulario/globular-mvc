@@ -309,13 +309,25 @@ export class ApplicationsSettings extends Settings {
             <div class="title">
                 Applications 
             </div>
-            <span class="subtitle" style="font-size: 1rem;">Manage applications permissions</span>
+            <div style="display: flex; align-items: center;">
+                <span class="subtitle" style="font-size: 1rem; flex-grow: 1;">Manage applications</span>
+                <paper-icon-button id="install-application-btn" icon="add" title="install application"> </paper-icon-button>
+            </div>
         `
 
         // Display the file explorer...
         applicationsSettingPage.appendChild(document.createRange().createContextualFragment(html));
         this.applicationManager = new ApplicationManager()
         applicationsSettingPage.appendChild(this.applicationManager)
+
+        // Here is to code to get the list of available applications from the package manager.
+        let installApplicationBtn = applicationsSettingPage.querySelector("#install-application-btn")
+
+        // Install application
+        installApplicationBtn.onclick = ()=>{
+            // So here I will get the list of availble package from the pacakage manager.
+            console.log("----------> look for applications at ", Model.globular.config.Discoveries)
+        }
 
     }
 }

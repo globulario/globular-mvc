@@ -322,7 +322,6 @@ export class Settings extends HTMLElement {
        #container {
            display: flex;
            flex-direction: column;
-           margin-top: 45px;
            margin-bottom: 10px;
        }
 
@@ -410,6 +409,11 @@ export class Settings extends HTMLElement {
     this.shadowRoot.getElementById("hide-btn").onclick = this.hideSettings.bind(this);
     this.container = this.shadowRoot.getElementById("container")
     this.backBtn = this.shadowRoot.getElementById("back-btn")
+    if(this.title.length == 0){
+      this.container.style.marginTop = "0px";
+    }else{
+      this.container.style.marginTop = "45px";
+    }
   }
 
   hideSettings() {

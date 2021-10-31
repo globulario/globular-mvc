@@ -20,7 +20,7 @@ import { ContactCard, ContactsMenu } from "./components/Contact";
 import { MessengerMenu, Messenger } from "./components/Messenger";
 import { SettingsMenu, SettingsPanel } from "./components/Settings";
 import { Application } from "./Application";
-
+import { ServicesMetrics} from "./ServicesMetrics"
 // Not directly use here but must be include anyways
 import { Wizard } from "./components/Wizard";
 import { SlideShow } from "./components/SlideShow";
@@ -39,7 +39,7 @@ import { rgbToHsl } from "./components/utility";
 import { readDir, uploadFiles } from "globular-web-client/api";
 import { ServerGeneralSettings } from "./serverGeneralSettings";
 import { SaveConfigRequest } from "globular-web-client/admin/admin_pb";
-import { ServicesSettings } from "./servicesSettings";
+import { ServicesSettings } from "./ServicesSettings";
 import { OrganizationManager } from "./components/Organization.js";
 
 /**
@@ -686,6 +686,10 @@ export class ApplicationView extends View {
     ApplicationView._fileExplorer.onerror = (err: any) => {
       ApplicationView.displayMessage(err, 4000)
     };
+
+    // test Service dashboard metrics...
+    let servicesMetrics = new ServicesMetrics(this.getWorkspace())
+    servicesMetrics.init()
 
     window.dispatchEvent(new Event("resize"));
   }

@@ -60,13 +60,42 @@ export class ServicesSettings extends Settings {
         // Create General informations setting's
         let serverSettingsPage = <any>settingsPanel.appendSettingsPage("Services");
 
+        // Append a title.
+        let html = `
+            <style>
+            .title {
+                font-size: 1.25rem;
+                text-transform: uppercase;
+                color: var(--cr-primary-text-color);
+                font-weight: 400;
+                letter-spacing: .25px;
+                margin-bottom: 12px;
+                margin-top: var(--cr-section-vertical-margin);
+                outline: none;
+                padding-bottom: 4px;
+                padding-top: 16px;
+            }
+
+            .subtitle{
+                font-size: 1rem;
+                text-align: left;
+                padding-bottom: 15px;
+            }
+
+            </style>
+            <div class="title">
+                Services 
+            </div>
+            <div style="display: flex; align-items: center;">
+                <span class="subtitle" style="font-size: 1rem; flex-grow: 1">Manage services</span>
+                <paper-icon-button icon="add"> </paper-icon-button>
+            </div>
+        `
+
+        serverSettingsPage.appendChild(document.createRange().createContextualFragment(html));
 
         // Create installed services ...
-        let servicesSettings = serverSettingsPage.appendSettings("Installed Services", `
-            <div>
-                <div>Installed gRPC service instances( ${Object.keys(services).length})</div>
-            </div>
-            `);
+        let servicesSettings = serverSettingsPage.appendSettings("", `Installed gRPC service instances( ${Object.keys(services).length})`);
 
         // Now The actions...
         let resartAllServicesAction = new ActionSetting("Restart", "Restart all gRpc services", () => {

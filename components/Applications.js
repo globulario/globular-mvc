@@ -272,13 +272,6 @@ export class ApplicationManager extends HTMLElement {
         this.shadowRoot.innerHTML = `
              <style>
                  ${theme}
-
-                #create-application-btn{
-                    top: -42px;
-                    right: 0px;
-                    position: absolute;
-                 }
-
                  #container{
                     display: flex;
                     flex-direction: column;
@@ -309,7 +302,6 @@ export class ApplicationManager extends HTMLElement {
                     <div class="card-content">
                     </div>
                 </paper-card>
-                <paper-icon-button icon="add" id="create-application-btn"></paper-icon-button>
              </div>
              `
 
