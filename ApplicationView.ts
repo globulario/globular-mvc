@@ -14,13 +14,13 @@ import { NotificationMenu } from "./components/Notification";
 import { OverflowMenu } from "./components/Menu";
 import { ApplicationsMenu } from "./components/Applications";
 import { Camera } from "./components/Camera";
+import { MetricsDisplay} from "./components/Metrics"
 import { FileExplorer, FilesMenu } from "./components/File";
 import { SearchBar } from "./components/Search";
 import { ContactCard, ContactsMenu } from "./components/Contact";
 import { MessengerMenu, Messenger } from "./components/Messenger";
 import { SettingsMenu, SettingsPanel } from "./components/Settings";
 import { Application } from "./Application";
-import { ServicesMetrics} from "./ServicesMetrics"
 // Not directly use here but must be include anyways
 import { Wizard } from "./components/Wizard";
 import { SlideShow } from "./components/SlideShow";
@@ -688,8 +688,8 @@ export class ApplicationView extends View {
     };
 
     // test Service dashboard metrics...
-    let servicesMetrics = new ServicesMetrics(this.getWorkspace())
-    servicesMetrics.init()
+    let metrics = new MetricsDisplay()
+    metrics.init()
 
     window.dispatchEvent(new Event("resize"));
   }
