@@ -43,7 +43,7 @@ export class MetricsDisplay extends HTMLElement {
 
     init() {
 
-        // 
+        // Init the data here with the good offset...
         let getDataRange = (query, startTime, endTime, inc, callback) => {
             queryTsRange(
                 Model.globular,
