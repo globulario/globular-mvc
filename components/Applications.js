@@ -483,7 +483,7 @@ export class ApplicationPanel extends HTMLElement {
             </iron-collapse>
         </div>
         `
-
+        
         let content = this.shadowRoot.querySelector("#collapase-panel")
         this.hideBtn = this.shadowRoot.querySelector("#hide-btn")
 
