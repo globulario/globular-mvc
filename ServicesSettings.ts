@@ -62,31 +62,10 @@ export class ServicesSettings extends Settings {
 
         // Append a title.
         let html = `
-            <style>
-            .title {
-                font-size: 1.25rem;
-                text-transform: uppercase;
-                color: var(--cr-primary-text-color);
-                font-weight: 400;
-                letter-spacing: .25px;
-                margin-bottom: 12px;
-                margin-top: var(--cr-section-vertical-margin);
-                outline: none;
-                padding-bottom: 4px;
-                padding-top: 16px;
-            }
-
-            .subtitle{
-                font-size: 1rem;
-                text-align: left;
-                padding-bottom: 15px;
-            }
-
-            </style>
             <div class="title">
                 Services 
             </div>
-            <div style="display: flex; align-items: center;">
+            <div class="subtitle-div">
                 <span class="subtitle" style="font-size: 1rem; flex-grow: 1">Manage services</span>
                 <paper-icon-button icon="add"> </paper-icon-button>
             </div>

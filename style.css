@@ -181,6 +181,29 @@ dropdown-menu-element{
    --iron-icon-fill-color:var(--palette-text-primary);
 }
 
+.title {
+    font-size: 1.25rem;
+    text-transform: uppercase;
+    color: var(--cr-primary-text-color);
+    font-weight: 400;
+    letter-spacing: .25px;
+    margin-bottom: 12px;
+    margin-top: var(--cr-section-vertical-margin);
+    outline: none;
+    padding-bottom: 4px;
+    padding-top: 16px;
+}
+
+.subtitle-div {
+   display: flex; align-items: center; 
+}
+
+.subtitle{
+    font-size: 1rem;
+    text-align: left;
+    padding-bottom: 15px;
+}
+
 /*
 #workspace globular-settings-panel{
    display: flex;

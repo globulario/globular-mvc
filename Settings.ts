@@ -285,31 +285,10 @@ export class ApplicationsSettings extends Settings {
 
         // Append a title.
         let html = `
-            <style>
-            .title {
-                font-size: 1.25rem;
-                text-transform: uppercase;
-                color: var(--cr-primary-text-color);
-                font-weight: 400;
-                letter-spacing: .25px;
-                margin-bottom: 12px;
-                margin-top: var(--cr-section-vertical-margin);
-                outline: none;
-                padding-bottom: 4px;
-                padding-top: 16px;
-            }
-
-            .subtitle{
-                font-size: 1rem;
-                text-align: left;
-                padding-bottom: 15px;
-            }
-
-            </style>
             <div class="title">
                 Applications 
             </div>
-            <div style="display: flex; align-items: center;">
+            <div class="subtitle-div">
                 <span class="subtitle" style="font-size: 1rem; flex-grow: 1;">Manage applications</span>
                 <paper-icon-button id="install-application-btn" icon="add" title="install application"> </paper-icon-button>
             </div>
@@ -327,6 +306,7 @@ export class ApplicationsSettings extends Settings {
         installApplicationBtn.onclick = ()=>{
             // So here I will get the list of availble package from the pacakage manager.
             console.log("----------> look for applications at ", Model.globular.config.Discoveries)
+            // Get all package infos from that localisation.
         }
 
     }

@@ -23,6 +23,7 @@ import { Model } from '../Model';
 import { SearchableList } from './List';
 import { GetAllActionsRequest } from 'globular-web-client/services_manager/services_manager_pb';
 import { ApplicationView } from '../ApplicationView';
+import { UninstallApplicationRequest } from 'globular-web-client/applications_manager/applications_manager_pb';
 
 /**
  * Login/Register functionality.
@@ -368,6 +369,7 @@ export class ApplicationPanel extends HTMLElement {
             .header{
                 display: flex;
                 align-items: center;
+                height: 48px;
                 width: 100%;
                 transition: background 0.2s ease,padding 0.8s linear;
                 background-color: var(--palette-background-paper);
@@ -425,11 +427,30 @@ export class ApplicationPanel extends HTMLElement {
                 flex-direction: column;
             }
 
+            #delete-application-btn{
+                margin-bottom: 10px;
+                width: 100px;
+                align-self: flex-end;
+                font-size: .85rem;
+                height: fit-content;
+                border: none;
+                color: var(--palette-text-accent);
+                background: var(--palette-warning-dark);
+                max-height: 32px;
+            }
+
+
+            #uninstall-application-btn{
+                font-size: .85rem;
+                max-height: 32px;
+            }
+
         </style>
         <div id="container">
             <div class="header">
-                <paper-icon-button id="delete-application-btn" icon="delete"></paper-icon-button>
+                <img style="width: 24px; height: 24px; padding-left: 10px; padding-right: 20px;" src="${this.application.getIcon()}"></img>
                 <span class="title">${this.application.getName()}</span>
+                <paper-button id="uninstall-application-btn"  >Uninstall</paper-button>
                 <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
                     <iron-icon  id="hide-btn"  icon="unfold-less" style="flex-grow: 1; --iron-icon-fill-color:var(--palette-text-primary);" icon="add"></iron-icon>
                     <paper-ripple class="circle" recenters=""></paper-ripple>
@@ -456,6 +477,9 @@ export class ApplicationPanel extends HTMLElement {
                     <span>Description</span>
                     <paper-textarea value="${this.application.getDescription()}"></paper-input>
                 </div>
+                <div id="application-action">
+                </div>
+                <paper-button class="" id="delete-application-btn" raised="" role="button" tabindex="0" animated="" elevation="1" aria-disabled="false">Delete</paper-button>
             </iron-collapse>
         </div>
         `
@@ -468,6 +492,11 @@ export class ApplicationPanel extends HTMLElement {
             this.onDeleteApplication(application)
         }
 
+        // Get the uninstall button...
+        let uninstallBtn = this.shadowRoot.querySelector("#uninstall-application-btn")
+        uninstallBtn.onclick = () => {
+            this.onUninstallApplication(this.application)
+        }
 
         // Here I will create the searchable actions list.
         let actionsList = new SearchableList("Actions", this.application.getActionsList(),
@@ -586,7 +615,7 @@ export class ApplicationPanel extends HTMLElement {
             })
 
         actionsList.style.padding = "15px 16px 16px"
-        content.appendChild(actionsList)
+        content.querySelector("#application-action").appendChild(actionsList)
 
         // give the focus to the input.
         this.hideBtn.onclick = () => {
@@ -654,6 +683,72 @@ export class ApplicationPanel extends HTMLElement {
                     "<iron-icon icon='communication:message' style='margin-right: 10px;'></iron-icon><div>Application named " +
                     application.getName() +
                     " was deleted!</div>",
+                    3000
+                );
+                Model.globular.eventHub.publish("refresh_application_evt", {}, true)
+                toast.dismiss();
+            }).catch(e => {
+                ApplicationView.displayMessage(e, 3000)
+                toast.dismiss();
+            })
+
+        }
+
+        noBtn.onclick = () => {
+            toast.dismiss();
+        }
+    }
+
+    onUninstallApplication(application) {
+        let toast = ApplicationView.displayMessage(
+            `
+          <style>
+            #yes-no-contact-delete-box{
+              display: flex;
+              flex-direction: column;
+            }
+    
+            #yes-no-contact-delete-box globular-contact-card{
+              padding-bottom: 10px;
+            }
+    
+            #yes-no-contact-delete-box div{
+              display: flex;
+              font-size: 1rem;
+              padding-bottom: 10px;
+            }
+    
+            paper-button{
+              font-size: .85rem;
+              height: 32px;
+            }
+    
+          </style>
+          <div id="yes-no-contact-delete-box">
+            <div>Your about to uninstall application named ${application.getName()}</div>
+            <div>Is it what you want to do? </div>
+            <div style="justify-content: flex-end;">
+              <paper-button id="yes-uninstall-btn">Yes</paper-button>
+              <paper-button id="no-uninstall-btn">No</paper-button>
+            </div>
+          </div>
+          `,
+            15000 // 15 sec...
+        );
+
+        let yesBtn = document.querySelector("#yes-uninstall-btn")
+        let noBtn = document.querySelector("#no-uninstall-btn")
+
+        // On yes
+        yesBtn.onclick = () => {
+
+            let rqst = new UninstallApplicationRequest
+            rqst.setApplicationid(application.getId())
+            Model.globular.applicationsManagerService.uninstallApplication(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") }).then((rsp) => {
+                ApplicationView.displayMessage(
+                    "<iron-icon icon='communication:message' style='margin-right: 10px;'></iron-icon><div>Application named " +
+                    application.getName() +
+                    " was uninstall!</div>",
                     3000
                 );
                 Model.globular.eventHub.publish("refresh_application_evt", {}, true)

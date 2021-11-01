@@ -622,16 +622,16 @@ export class ComplexSetting extends Setting {
     this._settings = {};
 
     this.actionBtn.onclick = () => {
-      for (var i = 0; i < this._parentPage.childNodes.length; i++) {
-        let node = this._parentPage.childNodes[i];
+      for (var i = 0; i < this._parentPage.children.length; i++) {
+        let node = this._parentPage.children[i];
         node.style.display = "none"
       }
 
       // display the settings.
       this._panel.style.display = "block"
       
-      if (this._panel.childNodes.length > 0) {
-        let e = this._panel.childNodes[0].getElement()
+      if (this._panel.children.length > 0) {
+        let e = this._panel.children[0].getElement()
         if (e != undefined) {
           e.focus()
         }
@@ -673,10 +673,10 @@ export class ComplexSetting extends Setting {
 
       // hide the panel and display back the content of the page.
       this._panel.backBtn.onclick = () => {
-        for (var i = 0; i < this._parentPage.childNodes.length; i++) {
-          let node = this._parentPage.childNodes[i];
+        for (var i = 0; i < this._parentPage.children.length; i++) {
+          let node = this._parentPage.children[i];
           if (!node.classList.contains("complex_setting_panel")) {
-            node.style.display = "block"
+            node.style.display = ""
           }
         }
 
