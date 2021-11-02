@@ -14,7 +14,6 @@ import { NotificationMenu } from "./components/Notification";
 import { OverflowMenu } from "./components/Menu";
 import { ApplicationsMenu } from "./components/Applications";
 import { Camera } from "./components/Camera";
-import { MetricsDisplay} from "./components/Metrics"
 import { FileExplorer, FilesMenu } from "./components/File";
 import { SearchBar } from "./components/Search";
 import { ContactCard, ContactsMenu } from "./components/Contact";
@@ -28,6 +27,7 @@ import { ImageCropper } from "./components/Image";
 import "./components/table/table.js"
 import { Conversation, Invitation } from "globular-web-client/conversation/conversation_pb";
 import { ConversationManager } from "./Conversation";
+import {BlogPost} from "./components/BlogPost"
 
 // This variable is there to give acces to wait and resume...
 export let applicationView: ApplicationView;
@@ -687,9 +687,8 @@ export class ApplicationView extends View {
       ApplicationView.displayMessage(err, 4000)
     };
 
-    // test Service dashboard metrics...
-    let metrics = new MetricsDisplay()
-    metrics.init()
+    // Test the blog-post
+    let toto =  new BlogPost()
 
     window.dispatchEvent(new Event("resize"));
   }

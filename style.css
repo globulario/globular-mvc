@@ -214,3 +214,12 @@ dropdown-menu-element{
  globular-application-manager{
     margin-bottom: 10px;
  }
+
+
+ /**
+  * EditorJs style
+  */
+  .ce-block--selected .ce-block__content {
+   -webkit-filter: invert(15%);
+   filter: invert(15%);
+}
