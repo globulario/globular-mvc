@@ -13,6 +13,8 @@ import CodeTool from '@editorjs/code'
 import Underline from '@editorjs/underline';
 import LinkTool from '@editorjs/link'
 import { theme } from "./Theme";
+import { BodyType } from 'globular-web-client/mail/mail_pb';
+import { ConversationServicePromiseClient } from 'globular-web-client/conversation/conversation_grpc_web_pb';
 
 /**
  * Search Box
@@ -31,17 +33,46 @@ export class BlogPost extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
             ${theme}
+            #container{
+                display: flex;
+                flex-direction: column;
+                max-width: 650px;
+                margin: 0 auto;
+            }
+            .blog-actions{
+                display: flex;
+                justify-content: flex-end;
+                border-top: 1px solid var(--palette-background-paper);
+            }
         </style>
-        <div id="editor-div">
-
+        <div id="container">
+           
+            <slot></slot>
+            
+            <div class="blog-actions">
+                <paper-button>Plublish</paper-button>
+                <paper-button>Delete</paper-button>
+            <div>
         </div>
         `
+    }
 
-        // test create offer...
+    // Connection callback
+    connectedCallback() {
+        // Create the post editor.
+        this.createBlogPostEditor()
+    }
 
+    createBlogPostEditor() {
+        let div = document.createElement("div")
+        div.id = "editorjs"
+        this.appendChild(div)
+
+        // Here I will create the editor...
         // Here I will create a new editor...
         this.editor = new EditorJS({
-            holder: 'workspace',
+            holder: div.id,
+            autofocus: true,
             /** 
              * Available Tools list. 
              * Pass Tool's class or Settings object for each Tool you want to use 
@@ -96,8 +127,18 @@ export class BlogPost extends HTMLElement {
         }
         );
 
+        // Move the editor inside the 
+        this.editor.isReady
+            .then(() => {
+                console.log('Editor.js is ready to work!')
+                /** Do anything you need after editor initialization */
+                // this.shadowRoot.querySelector("#editor-div").appendChild(div)
+                //this.appendChild(div)
+            })
+            .catch((reason) => {
+                console.log(`Editor.js initialization failed because of ${reason}`)
+            });
     }
-
 }
 
 customElements.define('globular-blog-post', BlogPost)

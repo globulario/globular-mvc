@@ -688,7 +688,8 @@ export class ApplicationView extends View {
     };
 
     // Test the blog-post
-    let toto =  new BlogPost()
+    let blogger =  new BlogPost()
+    this.getWorkspace().append(blogger)
 
     window.dispatchEvent(new Event("resize"));
   }
