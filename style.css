@@ -220,6 +220,5 @@ dropdown-menu-element{
   * EditorJs style
   */
   .ce-block--selected .ce-block__content {
-   -webkit-filter: invert(15%);
-   filter: invert(15%);
+   background: rgba(0, 0, 0, 0.15);
 }
