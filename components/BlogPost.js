@@ -16,6 +16,9 @@ import { theme } from "./Theme";
 import { BodyType } from 'globular-web-client/mail/mail_pb';
 import { ConversationServicePromiseClient } from 'globular-web-client/conversation/conversation_grpc_web_pb';
 import { ApplicationView } from '../ApplicationView';
+import { CreateBlogPostRequest } from 'globular-web-client/blog/blog_pb';
+import { Application } from '../Application';
+import { Model } from '../Model';
 
 /**
  * Search Box
@@ -51,17 +54,25 @@ export class BlogPost extends HTMLElement {
             <slot></slot>
             
             <div class="blog-actions">
-                <paper-button>Plublish</paper-button>
+                <paper-button id="publish-blog">Plublish</paper-button>
                 <paper-button>Delete</paper-button>
             <div>
         </div>
         `
+
+        // publish the blog...
+        this.shadowRoot.querySelector("#publish-blog").onclick = ()=>{
+            this.publish()
+        }
+
     }
 
     // Connection callback
     connectedCallback() {
         // Create the post editor.
-        this.createBlogPostEditor()
+        if(this.editor == null){
+            this.createBlogPostEditor()
+        }
     }
 
     createBlogPostEditor() {
@@ -140,6 +151,32 @@ export class BlogPost extends HTMLElement {
             .catch((reason) => {
                 ApplicationView.displayMessage(`Editor.js initialization failed because of ${reason}`, 3000)
             });
+
+        
+    }
+
+    /**
+     * Save the blog and publish it...
+     */
+    publish(){
+        this.editor.save().then((outputData) => {
+            console.log('Article data: ', outputData)
+            let rqst = new CreateBlogPostRequest
+            rqst.setAccountId(Application.account.id)
+            rqst.setText(JSON.stringify(outputData));
+            rqst.setLanguage(navigator.language)
+
+            Model.globular.blogService.createBlogPost(rqst,  { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+            .then(rsp =>{
+                console.log("----------------> blog was created: ", rsp.getBlogPost())
+            }).catch(e=>{
+                ApplicationView.displayMessage(e, 3000)
+            })
+
+          }).catch((error) => {
+            console.log('Saving failed: ', error)
+            ApplicationView.displayMessage(`Saving failed: ${error}`, 3000)
+          });
     }
 }
 
