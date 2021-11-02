@@ -165,6 +165,8 @@ export class BlogPost extends HTMLElement {
             rqst.setAccountId(Application.account.id)
             rqst.setText(JSON.stringify(outputData));
             rqst.setLanguage(navigator.language)
+            rqst.setTitle("")
+            rqst.setKeywordsList(["test", "toto", "titi"])
 
             Model.globular.blogService.createBlogPost(rqst,  { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
             .then(rsp =>{
