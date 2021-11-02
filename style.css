@@ -300,5 +300,6 @@ dropdown-menu-element{
    .ce-toolbar {
       background-color: var(--palette-background-paper);
       color: var(--palette-text-primary);
+      border: 1px solid rgba(0, 0, 0, .15);
    }
 }
