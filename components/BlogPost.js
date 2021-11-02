@@ -15,6 +15,7 @@ import LinkTool from '@editorjs/link'
 import { theme } from "./Theme";
 import { BodyType } from 'globular-web-client/mail/mail_pb';
 import { ConversationServicePromiseClient } from 'globular-web-client/conversation/conversation_grpc_web_pb';
+import { ApplicationView } from '../ApplicationView';
 
 /**
  * Search Box
@@ -66,6 +67,8 @@ export class BlogPost extends HTMLElement {
     createBlogPostEditor() {
         let div = document.createElement("div")
         div.id = "editorjs"
+        div.style = "margin-top: 10px; min-height: 340px;"
+
         this.appendChild(div)
 
         // Here I will create the editor...
@@ -132,11 +135,10 @@ export class BlogPost extends HTMLElement {
             .then(() => {
                 console.log('Editor.js is ready to work!')
                 /** Do anything you need after editor initialization */
-                // this.shadowRoot.querySelector("#editor-div").appendChild(div)
-                //this.appendChild(div)
+                div.querySelector(".codex-editor__redactor").style.paddingBottom = "0px";
             })
             .catch((reason) => {
-                console.log(`Editor.js initialization failed because of ${reason}`)
+                ApplicationView.displayMessage(`Editor.js initialization failed because of ${reason}`, 3000)
             });
     }
 }
