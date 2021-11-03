@@ -13,14 +13,12 @@ import CodeTool from '@editorjs/code'
 import Underline from '@editorjs/underline';
 import LinkTool from '@editorjs/link'
 import { theme } from "./Theme";
-import { BodyType } from 'globular-web-client/mail/mail_pb';
-import { ConversationServicePromiseClient } from 'globular-web-client/conversation/conversation_grpc_web_pb';
 import { ApplicationView } from '../ApplicationView';
-import { CreateBlogPostRequest, SaveBlogPostRequest } from 'globular-web-client/blog/blog_pb';
+import { CreateBlogPostRequest, GetBlogPostsByAuthorRequest, SaveBlogPostRequest } from 'globular-web-client/blog/blog_pb';
 import { Application } from '../Application';
 import { Model } from '../Model';
-import { Account } from 'globular-web-client/resource/resource_pb';
-import { StringListSetting } from './Settings'
+import * as html2canvas from 'html2canvas'
+import * as edjsHTML from 'editorjs-html'
 
 /**
  * Search Box
@@ -81,8 +79,8 @@ export class BlogPost extends HTMLElement {
 
             .blog-actions{
                 display: flex;
-                justify-content: flex-end;
                 border-top: 1px solid var(--palette-background-paper);
+                align-items: center;
             }
 
             globular-string-list-setting {
@@ -115,7 +113,12 @@ export class BlogPost extends HTMLElement {
             <slot></slot>
             
             <div class="blog-actions">
-                <paper-button id="publish-blog">Plublish</paper-button>
+                <paper-radio-group selected="draft" style="flex-grow: 1;  text-align: left;">
+                    <paper-radio-button name="draft">draft</paper-radio-button>
+                    <paper-radio-button name="published">published</paper-radio-button>
+                    <paper-radio-button name="archived">archived</paper-radio-button>
+                </paper-radio-group>
+                <paper-button id="publish-blog">Save</paper-button>
             <div>
         </div>
         `
@@ -126,10 +129,10 @@ export class BlogPost extends HTMLElement {
         }
 
         // Display the option panel.
-        this.shadowRoot.querySelector("#menu-btn").onclick = ()=>{
-            if(this.shadowRoot.querySelector("#blog-options-panel").style.display == ""){
+        this.shadowRoot.querySelector("#menu-btn").onclick = () => {
+            if (this.shadowRoot.querySelector("#blog-options-panel").style.display == "") {
                 this.shadowRoot.querySelector("#blog-options-panel").style.display = "none";
-            }else{
+            } else {
                 this.shadowRoot.querySelector("#blog-options-panel").style.display = "";
             }
         }
@@ -138,14 +141,14 @@ export class BlogPost extends HTMLElement {
         this.titleInput = this.shadowRoot.querySelector("#blog-title-input")
         this.keywordsEditList = this.shadowRoot.querySelector("#keywords-list")
 
-        this.shadowRoot.querySelector("#cancel-btn").onclick = ()=>{
+        this.shadowRoot.querySelector("#cancel-btn").onclick = () => {
             this.shadowRoot.querySelector("#blog-options-panel").style.display = "none";
-            if(this.titleInput.value.length > 0){
+            if (this.titleInput.value.length > 0) {
                 this.titleSpan.innerHTML = this.titleInput.value;
             }
         }
 
-        this.shadowRoot.querySelector("#blog-delete-btn").onclick = ()=>{
+        this.shadowRoot.querySelector("#blog-delete-btn").onclick = () => {
             this.shadowRoot.querySelector("#blog-options-panel").style.display = "none";
             this.titleSpan.innerHTML = ` ${Application.account.name}, express yourself`
         }
@@ -157,7 +160,26 @@ export class BlogPost extends HTMLElement {
         // Create the post editor.
         if (this.editor == null) {
             this.createBlogPostEditor()
+            
+            // Here i will get the list of post.
+            this.getBlogPostsByAuthor(posts => {
+                console.log(posts)
+            })
         }
+    }
+
+    // display list of posts...
+    getBlogPostsByAuthor(callback) {
+        let rqst = new GetBlogPostsByAuthorRequest
+        rsp.setAuthor(Application.account.id)
+        Model.globular.blogService.getBlogPostsByAuthor(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+            .then(rps => {
+                callback(rsp.getPostsList())
+            })
+            .catch(e => {
+                ApplicationView.displayMessage(e, 3000)
+            })
+
     }
 
     createBlogPostEditor() {
@@ -241,17 +263,54 @@ export class BlogPost extends HTMLElement {
     }
 
     /**
+     * Print a div to a data url...
+     * @param {*} div 
+     * @param {*} callback 
+     */
+    divToDataURL(callback) {
+        let div = this.querySelector("#editorjs")
+        html2canvas(div, {
+            onrendered: function (canvas) {
+                var myImage = canvas.toDataURL("image/png");
+                callback(myImage)
+            }
+        });
+    }
+
+    /**
+     * Take the editor content and create an html block form it...
+     * @param {*} callbak 
+     */
+    toHtml() {
+        this.editor.save().then((outputData) => {
+            const edjsParser = edjsHTML();
+            // So here I will get the plain html from the output json data.
+            let elements = edjsParser.parse(outputData);
+            let html = ""
+            elements.forEach(e => {
+                html += e
+            });
+
+            var div = document.createElement('div');
+            div.innerHTML = html.trim();
+            callback(div)
+        })
+    }
+
+    /**
      * Save the blog and publish it...
      */
     publish() {
         this.editor.save().then((outputData) => {
+
             if (this.blogPost == null) {
                 let rqst = new CreateBlogPostRequest
                 rqst.setAccountId(Application.account.id)
                 rqst.setText(JSON.stringify(outputData));
                 rqst.setLanguage(navigator.language.split("-")[0])
                 rqst.setTitle(this.titleInput.value)
-                rqst.setKeywordsList(this.keywordsEditList.getValues() )
+                rqst.setKeywordsList(this.keywordsEditList.getValues())
+                rqst.setThumbnail("")
 
                 Model.globular.blogService.createBlogPost(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
                     .then(rsp => {
@@ -263,13 +322,14 @@ export class BlogPost extends HTMLElement {
             } else {
                 let rqst = new SaveBlogPostRequest
                 this.blogPost.setText(JSON.stringify(outputData))
+                this.blogPost.setThumbnail(image)
                 rqst.setBlogPost(this.blogPost)
                 Model.globular.blogService.saveBlogPost(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
-                .then(rsp=>{
-                    ApplicationView.displayMessage("Your post was updated!", 3000)
-                }).catch(e => {
-                    ApplicationView.displayMessage(e, 3000)
-                })
+                    .then(rsp => {
+                        ApplicationView.displayMessage("Your post was updated!", 3000)
+                    }).catch(e => {
+                        ApplicationView.displayMessage(e, 3000)
+                    })
             }
 
         }).catch((error) => {
