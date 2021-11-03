@@ -113,7 +113,7 @@ export class BlogPost extends HTMLElement {
             <slot></slot>
             
             <div class="blog-actions">
-                <paper-radio-group selected="draft" style="flex-grow: 1;  text-align: left;">
+                <paper-radio-group selected="draft" style="flex-grow: 1;  text-align: left; font-size: 1rem;">
                     <paper-radio-button name="draft">draft</paper-radio-button>
                     <paper-radio-button name="published">published</paper-radio-button>
                     <paper-radio-button name="archived">archived</paper-radio-button>
