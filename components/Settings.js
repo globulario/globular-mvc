@@ -1256,6 +1256,7 @@ customElements.define("globular-dropdown-setting", DropdownSetting);
 
 export class StringListSetting extends Setting {
   constructor(name, description) {
+    // 
     super(name, description);
 
     let html = `
@@ -1281,6 +1282,11 @@ export class StringListSetting extends Setting {
         <paper-icon-button id="new_item_btn"  icon="add"></paper-icon-button>
       </div>
     `
+    if(this.getAttribute("description")!=undefined){
+      description = this.getAttribute("description")
+    }
+
+ 
     let range = document.createRange();
     this.title = description;
 
@@ -1299,7 +1305,11 @@ export class StringListSetting extends Setting {
         }, 50)
       
     }
-
+    
+    if(this.getAttribute("name")!=undefined){
+      this.name.innerHTML = this.getAttribute("name")
+    }
+    
     this.description.style.display = "none";
     this.setAttribute("title", "")
     if (description.length > 0) {
@@ -1317,13 +1327,18 @@ export class StringListSetting extends Setting {
     }
   }
 
+  connectedCallback(){
+
+
+  }
+
   getElement() {
     return this.div;
   }
 
   appendValue(index, value) {
     let item = document.createRange().createContextualFragment(`
-    <div id="item_div_${index}" style="display: flex; align-items: center;">
+    <div id="item_div_${index}" style="display: flex; align-items: end;">
       <paper-input style="flex-grow: 1;" id="item_${index}"></paper-input>
       <paper-icon-button id="item_delete_${index}"  icon="delete"></paper-icon-button>
     </div>`)
