@@ -392,6 +392,7 @@ export class BlogPosts extends HTMLElement {
         </style>
         <div id="container">
             <div id="blog-lst-div">
+                <slot></slot>
             </div>
         </div>
         `
@@ -416,7 +417,7 @@ export class BlogPosts extends HTMLElement {
 
             // Generate the blog display and set in the list.
             blog.read(() => {
-                this.shadowRoot.querySelector("#blog-lst-div").appendChild(blog)
+                this.appendChild(blog)
             })
             
         })

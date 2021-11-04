@@ -313,3 +313,26 @@ dropdown-menu-element{
       border: 1px solid rgba(0, 0, 0, .15);
    }
 }
+
+/** Blog read mode css */
+.blog-read-div{
+   display: flex;
+   flex-direction: column;
+   max-width: 735px;
+   margin: 0px auto 20px;
+   justify-content: center;
+   align-items: center;
+   background-color: transparent;
+}
+
+.blog-read-div iframe{
+ margin: 10px;
+}
+
+.blog-read-div img{
+ margin: 10px;
+}
+
+.blog-read-div p{
+ margin: 10px;
+}
