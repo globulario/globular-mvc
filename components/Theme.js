@@ -314,7 +314,7 @@ export let theme = `
       cursor: pointer;
   }
 
-.blog-preview-div{
+.blog-read-div{
 
     display: flex;
     flex-direction: column;
@@ -323,17 +323,18 @@ export let theme = `
 
     justify-content: center;
     align-items: center;
+    background-color: transparent;
 }
 
-.blog-preview-div iframe{
+.blog-read-div iframe{
   margin: 10px;
 }
 
-.blog-preview-div img{
+.blog-read-div img{
   margin: 10px;
 }
 
-.blog-preview-div p{
+.blog-read-div p{
   margin: 10px;
 }
 

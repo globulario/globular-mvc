@@ -17,9 +17,7 @@ import { ApplicationView } from '../ApplicationView';
 import { CreateBlogPostRequest, GetBlogPostsByAuthorRequest, SaveBlogPostRequest } from 'globular-web-client/blog/blog_pb';
 import { Application } from '../Application';
 import { Model } from '../Model';
-import * as html2canvas from 'html2canvas'
 import * as edjsHTML from 'editorjs-html'
-import { BodyType } from 'globular-web-client/mail/mail_pb';
 
 /**
  * Search Box
@@ -81,7 +79,6 @@ export class BlogPost extends HTMLElement {
                 flex-direction: column;
             }
             
-
             #menu-btn{
             }
 
@@ -97,7 +94,9 @@ export class BlogPost extends HTMLElement {
             }
 
         </style>
+
         <div id="container">
+            
             <paper-card id="blog-post-editor-div">
                 <div id="title">
                     <span id="blog-title-span">
@@ -120,7 +119,8 @@ export class BlogPost extends HTMLElement {
                         <paper-button style="align-self: end;" id="blog-delete-btn">Delete</paper-button>
                     </div>
                 </paper-card>
-                <slot></slot>
+
+                <slot  id="edit-blog-content" name="edit-blog-content"></slot>
                 
                 <div class="blog-actions" style="background-color: transparent;">
                     <paper-radio-group selected="draft" style="flex-grow: 1;  text-align: left; font-size: 1rem;">
@@ -131,11 +131,10 @@ export class BlogPost extends HTMLElement {
                     <paper-button id="publish-blog">Save</paper-button>
                 </div>
             </paper-card>
-
-            <globular-blog-post-lst id="blog-post-lst"></globular-blog-post-lst>
-
+            <paper-card id="blog-post-reader-div">
+                <slot id="read-only-blog-content" name="read-only-blog-content"></slot>
+            </paper-card>
         </div>
-        
         `
 
         // publish the blog...
@@ -152,6 +151,7 @@ export class BlogPost extends HTMLElement {
             }
         }
 
+        // The editor values.
         this.titleSpan = this.shadowRoot.querySelector("#blog-title-span")
         this.titleInput = this.shadowRoot.querySelector("#blog-title-input")
         this.keywordsEditList = this.shadowRoot.querySelector("#keywords-list")
@@ -177,42 +177,46 @@ export class BlogPost extends HTMLElement {
 
     // Connection callback
     connectedCallback() {
-        // Create the post editor.
-        if (this.editor == null) {
-            this.createBlogPostEditor()
-
-            // Here i will get the list of post.
-            this.getBlogPostsByAuthor(posts => {
-                this.shadowRoot.querySelector("#blog-post-lst").setBlogPosts(posts)
-            })
+        // If the blog editor is set to true...
+        if(this.getAttribute("editable")!= undefined){
+            if(this.getAttribute("editable")=="true"){
+                this.edit(()=>{
+                    console.log("editor is ready!")
+                })
+            }
         }
     }
 
-    // display list of posts...
-    getBlogPostsByAuthor(callback) {
-        let rqst = new GetBlogPostsByAuthorRequest
-        rqst.setAuthor(Application.account.id)
-        Model.globular.blogService.getBlogPostsByAuthor(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
-            .then(rsp => {
-                callback(rsp.getPostsList())
-            })
-            .catch(e => {
-                ApplicationView.displayMessage(e, 3000)
-            })
-
+    // Set the blog...
+    setBlog(blog) {
+        this.blog = blog;
     }
 
-    createBlogPostEditor() {
-        let div = document.createElement("div")
-        div.id = "editorjs"
-        div.style = "margin: 10px;"
+    /**
+     * Display the blog in edit mode.
+     * @param {*} callback 
+     */
+    edit(callback) {
 
-        this.appendChild(div)
+        // Show the paper-card where the blog will be display
+        this.shadowRoot.querySelector("#blog-post-editor-div").style.display = ""
+        this.shadowRoot.querySelector("#blog-post-reader-div").style.display = "none"
+
+        if (this.editorDiv != null) {
+            callback(this.editorDiv)
+            return
+        }
+
+        this.editorDiv = document.createElement("div")
+        this.editorDiv.id = "editorjs"
+        this.editorDiv.slot = "edit-blog-content"
+        this.editorDiv.style = "margin: 10px;"
+        this.appendChild(this.editorDiv)
 
         // Here I will create the editor...
         // Here I will create a new editor...
         this.editor = new EditorJS({
-            holder: div.id,
+            holder: this.editorDiv.id,
             autofocus: true,
             /** 
              * Available Tools list. 
@@ -265,28 +269,66 @@ export class BlogPost extends HTMLElement {
                 },
                 image: SimpleImage,
             }
-        }
-        );
+        });
 
         // Move the editor inside the 
         this.editor.isReady
             .then(() => {
-                console.log('Editor.js is ready to work!')
                 /** Do anything you need after editor initialization */
-                div.querySelector(".codex-editor__redactor").style.paddingBottom = "0px";
+                this.editorDiv.querySelector(".codex-editor__redactor").style.paddingBottom = "0px";
+                console.log("editor is ready")
+                /** done with the editor initialisation */
+                callback()
+
             })
             .catch((reason) => {
                 ApplicationView.displayMessage(`Editor.js initialization failed because of ${reason}`, 3000)
             });
 
-
     }
+
+    // generate html from json data
+    jsonToHtml(data) {
+        // So here I will get the plain html from the output json data.
+        const edjsParser = edjsHTML();
+        let elements = edjsParser.parse(data);
+        let html = ""
+        elements.forEach(e => {
+            html += e
+        });
+
+        var div = document.createElement('div');
+        div.className = "blog-read-div"
+        div.slot = "read-only-blog-content"
+        div.innerHTML = html.trim();
+        return div
+    }
+
+    /**
+     * Display the blog in read mode.
+     * @param {*} callbak 
+     */
+    read(callback) {
+        this.shadowRoot.querySelector("#blog-post-editor-div").style.display = "none"
+        this.shadowRoot.querySelector("#blog-post-reader-div").style.display = ""
+        if (this.editor != null) {
+            this.editor.save().then((outputData) => {
+                let div = this.jsonToHtml(outputData)
+                this.appendChild(div)
+                callback()
+            })
+        } else {
+            let div = this.jsonToHtml(JSON.parse(this.blog.getText()))
+            this.appendChild(div)
+            callback()
+        }
+    }
+
     /**
      * Save the blog and publish it...
      */
     publish() {
         this.editor.save().then((outputData) => {
-            
             if (this.blogPost == null) {
                 let rqst = new CreateBlogPostRequest
                 rqst.setAccountId(Application.account.id)
@@ -330,10 +372,11 @@ export class BlogPost extends HTMLElement {
 
 customElements.define('globular-blog-post', BlogPost)
 
+
 /**
  * Display globular blog list.
  */
-export class BlogPostList extends HTMLElement {
+export class BlogPosts extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
@@ -352,37 +395,46 @@ export class BlogPostList extends HTMLElement {
             </div>
         </div>
         `
-
     }
 
+    connectedCallback() {
+        // If the blog editor is set to true...
+        if(this.getAttribute("author")!= undefined){
+           this.getBlogPostsByAuthor(this.getAttribute("author"), blogs=>{
+               this.setBlogPosts(blogs)
+           })
+        }
+    }
+
+    // The list of blogs
     setBlogPosts(blogs) {
-        blogs.sort((a, b)=>{return b.getCreationtime() - a.getCreationtime()})
-        blogs.forEach(blog => {
+        blogs.sort((a, b) => { return b.getCreationtime() - a.getCreationtime() })
+        blogs.forEach(b => {
             // This contain the 
-            let div = this.toHtml(blog)
-            this.shadowRoot.querySelector("#blog-lst-div").appendChild(div)
+            let blog = new BlogPost()
+            blog.setBlog(b)
+
+            // Generate the blog display and set in the list.
+            blog.read(() => {
+                this.shadowRoot.querySelector("#blog-lst-div").appendChild(blog)
+            })
+            
         })
     }
 
-    /**
-     * Take the editor content and create an html block form it...
-     * @param {*} callbak 
-     */
-    toHtml(blog) {
-        const edjsParser = edjsHTML();
-        // So here I will get the plain html from the output json data.
-        let elements = edjsParser.parse(JSON.parse(blog.getText()));
-        let html = ""
-        elements.forEach(e => {
-            html += e
-        });
-
-        var div = document.createElement('paper-card');
-        div.className = "blog-preview-div"
-        div.innerHTML = html.trim();
-
-        return div
+    // display list of posts from a given author...
+    getBlogPostsByAuthor(author, callback) {
+        let rqst = new GetBlogPostsByAuthorRequest
+        rqst.setAuthor(author)
+        Model.globular.blogService.getBlogPostsByAuthor(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+            .then(rsp => {
+                callback(rsp.getPostsList())
+            })
+            .catch(e => {
+                ApplicationView.displayMessage(e, 3000)
+            })
     }
+
 }
 
-customElements.define('globular-blog-post-lst', BlogPostList)
+customElements.define('globular-blog-posts', BlogPosts)

@@ -27,7 +27,7 @@ import { ImageCropper } from "./components/Image";
 import "./components/table/table.js"
 import { Conversation, Invitation } from "globular-web-client/conversation/conversation_pb";
 import { ConversationManager } from "./Conversation";
-import {BlogPost} from "./components/BlogPost"
+import {BlogPost, BlogPosts} from "./components/BlogPost"
 
 // This variable is there to give acces to wait and resume...
 export let applicationView: ApplicationView;
@@ -689,7 +689,13 @@ export class ApplicationView extends View {
 
     // Test the blog-post
     let blogger =  new BlogPost()
+    blogger.setAttribute("editable", "true")
     this.getWorkspace().append(blogger)
+
+    // The blog list...
+    let blogs = new BlogPosts
+    blogs.setAttribute("author", "mm006819")
+    this.getWorkspace().append(blogs)
 
     window.dispatchEvent(new Event("resize"));
   }
