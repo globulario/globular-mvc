@@ -19,6 +19,7 @@ import { Application } from '../Application';
 import { Model } from '../Model';
 import * as html2canvas from 'html2canvas'
 import * as edjsHTML from 'editorjs-html'
+import { BodyType } from 'globular-web-client/mail/mail_pb';
 
 /**
  * Search Box
@@ -37,12 +38,18 @@ export class BlogPost extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
             ${theme}
-            #container{
+
+            #container {
+                padding-top: 10px;
+                padding-bottom: 10px;
+            }
+
+            #blog-post-editor-div{
                 display: flex;
                 flex-direction: column;
-                max-width: 650px;
-                margin: 0 auto;
+                max-width: 735px;
                 position: relative;
+                margin: 0px auto 20px;
             }
 
             #title {
@@ -50,13 +57,14 @@ export class BlogPost extends HTMLElement {
                 border-bottom: 1px solid var(--palette-background-paper);
                 padding: 4px;
                 align-items: center;
+                background-color: transparent;
             }
 
             #title span {
                 flex-grow: 1;
-                color: #707684;
+                color: var(--palette-action-disabled);
                 text-align: left;
-
+                padding: 8px;
             }
 
             #blog-options-panel{
@@ -90,37 +98,44 @@ export class BlogPost extends HTMLElement {
 
         </style>
         <div id="container">
-            <div id="title">
-                <span id="blog-title-span">
-                    ${Application.account.name}, express yourself
-                </span>
-                <paper-icon-button icon="icons:more-horiz" id="menu-btn"></paper-icon-button>
-            </div>
-            <paper-card id="blog-options-panel" style="display: none;">
-                <div style="display: flex; align-items: center;">
-                    <div style="flex-grow: 1; padding: 5px;">
-                        Options
-                    </div>
-                   
-                    <paper-icon-button id="cancel-btn" icon="close"></paper-icon-button>
+            <paper-card id="blog-post-editor-div">
+                <div id="title">
+                    <span id="blog-title-span">
+                        ${Application.account.name}, express yourself
+                    </span>
+                    <paper-icon-button icon="icons:more-horiz" id="menu-btn"></paper-icon-button>
                 </div>
-                <div class="card-content">
-                    <paper-input id="blog-title-input" label="title"></paper-input>
-                    <globular-string-list-setting id="keywords-list" name="keywords" description="keywords will be use by the search engine to retreive your blog."></globular-string-list-setting>
-                    <paper-button style="align-self: end;" id="blog-delete-btn">Delete</paper-button>
+                <paper-card id="blog-options-panel" style="display: none;">
+                    <div style="display: flex; align-items: center;">
+                        <div style="flex-grow: 1; padding: 5px;">
+                            Options
+                        </div>
+                        <paper-icon-button id="cancel-btn" icon="close"></paper-icon-button>
+                    </div>
+                    <div class="card-content">
+                        <paper-input id="blog-title-input" label="title"></paper-input>
+                        <globular-string-list-setting id="keywords-list" name="keywords" description="keywords will be use by the search engine to retreive your blog."></globular-string-list-setting>
+                    </div>
+                    <div class="blog-actions" style="justify-content: end; border-color: #737373;">
+                        <paper-button style="align-self: end;" id="blog-delete-btn">Delete</paper-button>
+                    </div>
+                </paper-card>
+                <slot></slot>
+                
+                <div class="blog-actions" style="background-color: transparent;">
+                    <paper-radio-group selected="draft" style="flex-grow: 1;  text-align: left; font-size: 1rem;">
+                        <paper-radio-button name="draft">draft</paper-radio-button>
+                        <paper-radio-button name="published">published</paper-radio-button>
+                        <paper-radio-button name="archived">archived</paper-radio-button>
+                    </paper-radio-group>
+                    <paper-button id="publish-blog">Save</paper-button>
                 </div>
             </paper-card>
-            <slot></slot>
-            
-            <div class="blog-actions">
-                <paper-radio-group selected="draft" style="flex-grow: 1;  text-align: left; font-size: 1rem;">
-                    <paper-radio-button name="draft">draft</paper-radio-button>
-                    <paper-radio-button name="published">published</paper-radio-button>
-                    <paper-radio-button name="archived">archived</paper-radio-button>
-                </paper-radio-group>
-                <paper-button id="publish-blog">Save</paper-button>
-            <div>
+
+            <globular-blog-post-lst id="blog-post-lst"></globular-blog-post-lst>
+
         </div>
+        
         `
 
         // publish the blog...
@@ -145,12 +160,17 @@ export class BlogPost extends HTMLElement {
             this.shadowRoot.querySelector("#blog-options-panel").style.display = "none";
             if (this.titleInput.value.length > 0) {
                 this.titleSpan.innerHTML = this.titleInput.value;
+                this.titleSpan.style.color = "var(--palette-text-primary)"
+            } else {
+                this.titleSpan.innerHTML = ` ${Application.account.name}, express yourself`
+                this.titleSpan.style.color = "var(--palette-action-disabled)"
             }
         }
 
         this.shadowRoot.querySelector("#blog-delete-btn").onclick = () => {
             this.shadowRoot.querySelector("#blog-options-panel").style.display = "none";
             this.titleSpan.innerHTML = ` ${Application.account.name}, express yourself`
+            this.titleSpan.style.color = "var(--palette-action-disabled)"
         }
 
     }
@@ -160,10 +180,10 @@ export class BlogPost extends HTMLElement {
         // Create the post editor.
         if (this.editor == null) {
             this.createBlogPostEditor()
-            
+
             // Here i will get the list of post.
             this.getBlogPostsByAuthor(posts => {
-                console.log(posts)
+                this.shadowRoot.querySelector("#blog-post-lst").setBlogPosts(posts)
             })
         }
     }
@@ -171,9 +191,9 @@ export class BlogPost extends HTMLElement {
     // display list of posts...
     getBlogPostsByAuthor(callback) {
         let rqst = new GetBlogPostsByAuthorRequest
-        rsp.setAuthor(Application.account.id)
+        rqst.setAuthor(Application.account.id)
         Model.globular.blogService.getBlogPostsByAuthor(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
-            .then(rps => {
+            .then(rsp => {
                 callback(rsp.getPostsList())
             })
             .catch(e => {
@@ -185,7 +205,7 @@ export class BlogPost extends HTMLElement {
     createBlogPostEditor() {
         let div = document.createElement("div")
         div.id = "editorjs"
-        div.style = "margin-top: 10px; min-height: 340px;"
+        div.style = "margin: 10px;"
 
         this.appendChild(div)
 
@@ -261,48 +281,12 @@ export class BlogPost extends HTMLElement {
 
 
     }
-
-    /**
-     * Print a div to a data url...
-     * @param {*} div 
-     * @param {*} callback 
-     */
-    divToDataURL(callback) {
-        let div = this.querySelector("#editorjs")
-        html2canvas(div, {
-            onrendered: function (canvas) {
-                var myImage = canvas.toDataURL("image/png");
-                callback(myImage)
-            }
-        });
-    }
-
-    /**
-     * Take the editor content and create an html block form it...
-     * @param {*} callbak 
-     */
-    toHtml() {
-        this.editor.save().then((outputData) => {
-            const edjsParser = edjsHTML();
-            // So here I will get the plain html from the output json data.
-            let elements = edjsParser.parse(outputData);
-            let html = ""
-            elements.forEach(e => {
-                html += e
-            });
-
-            var div = document.createElement('div');
-            div.innerHTML = html.trim();
-            callback(div)
-        })
-    }
-
     /**
      * Save the blog and publish it...
      */
     publish() {
         this.editor.save().then((outputData) => {
-
+            
             if (this.blogPost == null) {
                 let rqst = new CreateBlogPostRequest
                 rqst.setAccountId(Application.account.id)
@@ -320,9 +304,14 @@ export class BlogPost extends HTMLElement {
                         ApplicationView.displayMessage(e, 3000)
                     })
             } else {
+
                 let rqst = new SaveBlogPostRequest
                 this.blogPost.setText(JSON.stringify(outputData))
                 this.blogPost.setThumbnail(image)
+                this.blogPost.setLanguage(navigator.language.split("-")[0])
+                this.blogPost.setTitle(this.titleInput.value)
+                this.blogPost.setKeywordsList(this.keywordsEditList.getValues())
+
                 rqst.setBlogPost(this.blogPost)
                 Model.globular.blogService.saveBlogPost(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
                     .then(rsp => {
@@ -340,3 +329,60 @@ export class BlogPost extends HTMLElement {
 }
 
 customElements.define('globular-blog-post', BlogPost)
+
+/**
+ * Display globular blog list.
+ */
+export class BlogPostList extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor() {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+            ${theme}
+        </style>
+        <div id="container">
+            <div id="blog-lst-div">
+            </div>
+        </div>
+        `
+
+    }
+
+    setBlogPosts(blogs) {
+        blogs.sort((a, b)=>{return b.getCreationtime() - a.getCreationtime()})
+        blogs.forEach(blog => {
+            // This contain the 
+            let div = this.toHtml(blog)
+            this.shadowRoot.querySelector("#blog-lst-div").appendChild(div)
+        })
+    }
+
+    /**
+     * Take the editor content and create an html block form it...
+     * @param {*} callbak 
+     */
+    toHtml(blog) {
+        const edjsParser = edjsHTML();
+        // So here I will get the plain html from the output json data.
+        let elements = edjsParser.parse(JSON.parse(blog.getText()));
+        let html = ""
+        elements.forEach(e => {
+            html += e
+        });
+
+        var div = document.createElement('paper-card');
+        div.className = "blog-preview-div"
+        div.innerHTML = html.trim();
+
+        return div
+    }
+}
+
+customElements.define('globular-blog-post-lst', BlogPostList)

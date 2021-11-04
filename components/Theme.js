@@ -314,4 +314,27 @@ export let theme = `
       cursor: pointer;
   }
 
+.blog-preview-div{
+
+    display: flex;
+    flex-direction: column;
+    max-width: 735px;
+    margin: 0px auto 20px;
+
+    justify-content: center;
+    align-items: center;
+}
+
+.blog-preview-div iframe{
+  margin: 10px;
+}
+
+.blog-preview-div img{
+  margin: 10px;
+}
+
+.blog-preview-div p{
+  margin: 10px;
+}
+
 `

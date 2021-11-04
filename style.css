@@ -292,10 +292,20 @@ dropdown-menu-element{
    border: 1px solid rgba(0, 0, 0, .15);
 }
 
+.cdx-input{
+   font-size: 1.1rem;
+   border: 1px solid  var(--palette-background-paper);
+}
+
 ::selection {
    background-color: var(--palette-background-paper);
 }
-
+/*
+.ce-block__content {
+   position: relative;
+   margin: 0px;
+}
+*/
 @media (max-width: 650px){
    .ce-toolbar {
       background-color: var(--palette-background-paper);
