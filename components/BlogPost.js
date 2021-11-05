@@ -146,7 +146,7 @@ export class BlogPost extends HTMLElement {
             </paper-card>
             <paper-card id="blog-post-reader-div">
                 <div id="title">
-                    <div style="display: flex; flex-direction: column;">
+                    <div style="display: flex; flex-direction: column; padding-left: 5px;">
                         <div>
                             <img id="blog-reader-author-picture" style="width: 32px; height: 32px; border-radius: 16px; display:none;"></img>
                             <iron-icon id="blog-reader-author-icon"  icon="account-circle" style="width: 34px; height: 34px; --iron-icon-fill-color:var(--palette-action-disabled); display: block;"></iron-icon>
@@ -162,7 +162,6 @@ export class BlogPost extends HTMLElement {
                     </div>
                     <div class="blog-actions" style="justify-content: end; border-color: var(--palette-background-paper);">
                         <paper-button style="align-self: end;" id="blog-reader-edit-btn">Edit</paper-button>
-                        <paper-button style="align-self: end;" id="blog-reader-delete-btn">Delete</paper-button>
                     </div>
                 </paper-card>
                 <slot id="read-only-blog-content" name="read-only-blog-content"></slot>
@@ -222,7 +221,7 @@ export class BlogPost extends HTMLElement {
         this.titleInput = this.shadowRoot.querySelector("#blog-title-input")
         this.keywordsEditList = this.shadowRoot.querySelector("#keywords-list")
 
-        this.shadowRoot.querySelector("#blog-editor-delete-btn").onclick = this.shadowRoot.querySelector("#blog-reader-delete-btn").onclick = () => {
+        this.shadowRoot.querySelector("#blog-editor-delete-btn").onclick = () => {
             this.shadowRoot.querySelector("#blog-options-panel").style.display = "none";
             this.titleSpan.innerHTML = ` ${Application.account.name}, express yourself`
             this.titleSpan.style.color = "var(--palette-action-disabled)"
@@ -230,7 +229,6 @@ export class BlogPost extends HTMLElement {
 
         // switch to edit mode...
         this.shadowRoot.querySelector("#blog-reader-edit-btn").onclick = () => {
-
             this.edit(() => {
                 console.log("==-----------> ceci est un test...")
             })
@@ -428,7 +426,7 @@ export class BlogPost extends HTMLElement {
      */
     publish() {
         this.editor.save().then((outputData) => {
-            if (this.blogPost == null) {
+            if (this.blog == null) {
                 let rqst = new CreateBlogPostRequest
                 rqst.setAccountId(Application.account.id)
                 rqst.setText(JSON.stringify(outputData));
@@ -439,7 +437,7 @@ export class BlogPost extends HTMLElement {
 
                 Model.globular.blogService.createBlogPost(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
                     .then(rsp => {
-                        this.blogPost = rsp.getBlogPost();
+                        this.blog = rsp.getBlogPost();
                         ApplicationView.displayMessage("Your post is published!", 3000)
                     }).catch(e => {
                         ApplicationView.displayMessage(e, 3000)
@@ -447,13 +445,13 @@ export class BlogPost extends HTMLElement {
             } else {
 
                 let rqst = new SaveBlogPostRequest
-                this.blogPost.setText(JSON.stringify(outputData))
-                this.blogPost.setThumbnail(image)
-                this.blogPost.setLanguage(navigator.language.split("-")[0])
-                this.blogPost.setTitle(this.titleInput.value)
-                this.blogPost.setKeywordsList(this.keywordsEditList.getValues())
+                this.blog.setText(JSON.stringify(outputData))
+                this.blog.setThumbnail(image)
+                this.blog.setLanguage(navigator.language.split("-")[0])
+                this.blog.setTitle(this.titleInput.value)
+                this.blog.setKeywordsList(this.keywordsEditList.getValues())
 
-                rqst.setBlogPost(this.blogPost)
+                rqst.setBlogPost(this.blog)
                 Model.globular.blogService.saveBlogPost(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
                     .then(rsp => {
                         ApplicationView.displayMessage("Your post was updated!", 3000)

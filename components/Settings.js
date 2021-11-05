@@ -1342,13 +1342,18 @@ export class StringListSetting extends Setting {
   }
 
   appendValue(index, value) {
+    let input = this.div.querySelector("#item_" + index)
+    if(input !=undefined){
+      return
+    }
+
     let item = document.createRange().createContextualFragment(`
     <div id="item_div_${index}" style="display: flex; align-items: end;">
       <paper-input style="flex-grow: 1;" id="item_${index}"></paper-input>
       <paper-icon-button id="item_delete_${index}"  icon="delete"></paper-icon-button>
     </div>`)
     this.div.appendChild(item)
-    let input = this.div.querySelector("#item_" + index)
+    input = this.div.querySelector("#item_" + index)
     let deleteBtn = this.div.querySelector("#item_delete_" + index)
     deleteBtn.onclick = () => {
       let div = input.parentNode

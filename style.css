@@ -325,8 +325,9 @@ dropdown-menu-element{
    flex-direction: column;
    max-width: 735px;
    margin: 0px auto 20px;
+   padding: 5px;
    justify-content: center;
-   align-items: center;
+   align-items: left;
    background-color: transparent;
 }
 
