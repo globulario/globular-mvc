@@ -694,7 +694,7 @@ export class ApplicationView extends View {
 
     // The blog list...
     let blogs = new BlogPosts
-    blogs.setAttribute("author", "mm006819")
+    blogs.setAttribute("author",account.id)
     this.getWorkspace().append(blogs)
 
     window.dispatchEvent(new Event("resize"));

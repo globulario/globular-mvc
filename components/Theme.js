@@ -163,7 +163,7 @@ export let theme = `
     --iron-icon-fill-color: var(--palette-text-primary);
   }
 
-  paper-card div {
+  paper-card .card-content{
     background-color: var(--palette-background-paper);
     color: var(--palette-text-primary);
   }

@@ -39,7 +39,7 @@ function getFileConfig(url: string, callback: (obj: any) => void, errorcallback:
   xmlhttp.setRequestHeader("token", localStorage.getItem("user_token"));
   xmlhttp.setRequestHeader("application", Model.application);
   xmlhttp.setRequestHeader("domain", Model.domain);
-  
+
   xmlhttp.send();
 }
 
@@ -176,7 +176,7 @@ export class Application extends Model {
       // This error will be available in the setting -> error(s)
       window.onerror = (message, source, lineno, colno, error) => {
         let info = new LogInfo
-        
+
         info.setLevel(LogLevel.ERROR_MESSAGE)
 
         let occurence = new Occurence
@@ -495,7 +495,7 @@ export class Application extends Model {
               })
 
             ApplicationView.resume();
-
+            this.initNotifications();
             this.startRefreshToken();
           },
           (err: any) => {
@@ -684,28 +684,30 @@ export class Application extends Model {
    * Refresh the token to keep it usable.
    */
   private startRefreshToken() {
-    this.initNotifications();
+   
+    let expireAt = parseInt(localStorage.getItem("token_expired"), 10) 
+    let now = Math.floor(Date.now() / 1000)
+    let delay = (expireAt - now - 10) // in second (10 second to give time to token to refresh before error)
 
-    let __setInterval = setInterval(() => {
+    let __setTimeout = setTimeout(() => {
+      this.refreshToken(
+        (account: Account) => {
+          Application.account = account;
+          // remove resource...
+          clearTimeout(__setTimeout);
+          // go for next loop...
+          this.startRefreshToken()
+        },
+        (err: any) => {
+          // simply display the error on the view.
+          ApplicationView.displayMessage(err, 4000);
 
-      let isExpired =
-        parseInt(localStorage.getItem("token_expired"), 10) - 5 <
-        Math.floor(Date.now() / 1000);
-      if (isExpired) {
-        console.log("need to refresh token")
-        this.refreshToken(
-          (account: Account) => {
-            Application.account = account;
-          },
-          (err: any) => {
-            // simply display the error on the view.
-            ApplicationView.displayMessage(err, 4000);
-            // Stop runing...
-            clearInterval(__setInterval);
-          }
-        );
-      }
-    }, 1000);
+          // Stop runing...
+          clearTimeout(__setTimeout);
+        }
+      );
+
+    }, delay * 1000); // * 1000 to convert in milliseconds...
   }
 
   /**
@@ -767,7 +769,7 @@ export class Application extends Model {
           }
         );
 
-
+        this.initNotifications();
         this.startRefreshToken();
       })
       .catch((err: any) => {
@@ -939,7 +941,7 @@ export class Application extends Model {
               })
 
             ApplicationView.resume();
-
+            this.initNotifications();
             // Start refresh as needed.
             this.startRefreshToken();
 

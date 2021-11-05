@@ -79,6 +79,7 @@ export class Menu extends HTMLElement {
                 flex-direction: column;
                 color: var(--palette-text-accent);
                 position: absolute;
+                background-color: var(--palette-background-paper);
             }
 
             #${this.id}_img{

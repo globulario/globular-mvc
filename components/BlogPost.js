@@ -70,6 +70,7 @@ export class BlogPost extends HTMLElement {
                 right: 0px;
                 top: 50px;
                 z-index: 100;
+                background-color: var(--palette-background-default);
             }
 
             #blog-options-panel .card-content{
@@ -77,6 +78,7 @@ export class BlogPost extends HTMLElement {
                 padding: 0px 10px 0px 10px;
                 display: flex;
                 flex-direction: column;
+
             }
             
             #menu-btn{
@@ -91,6 +93,10 @@ export class BlogPost extends HTMLElement {
             globular-string-list-setting {
                 padding-left: 0px;
                 padding-rigth: 0px;
+            }
+
+            .blog-post-reader-div{
+                position: relative;
             }
 
         </style>
@@ -111,11 +117,11 @@ export class BlogPost extends HTMLElement {
                         </div>
                         <paper-icon-button id="cancel-btn" icon="close"></paper-icon-button>
                     </div>
-                    <div class="card-content">
+                    <div class="card-content" style="background-color: transparent;">
                         <paper-input id="blog-title-input" label="title"></paper-input>
                         <globular-string-list-setting id="keywords-list" name="keywords" description="keywords will be use by the search engine to retreive your blog."></globular-string-list-setting>
                     </div>
-                    <div class="blog-actions" style="justify-content: end; border-color: #737373;">
+                    <div class="blog-actions" style="justify-content: end; border-color: var(--palette-background-paper);">
                         <paper-button style="align-self: end;" id="blog-delete-btn">Delete</paper-button>
                     </div>
                 </paper-card>
@@ -132,6 +138,25 @@ export class BlogPost extends HTMLElement {
                 </div>
             </paper-card>
             <paper-card id="blog-post-reader-div">
+                <div id="title">
+                    <span id="blog-title-span"></span>
+                    <paper-icon-button icon="icons:more-horiz" id="menu-btn"></paper-icon-button>
+                </div>
+                <paper-card id="blog-options-panel" style="display: none;">
+                    <div style="display: flex; align-items: center;">
+                        <div style="flex-grow: 1; padding: 5px;">
+                            Detail
+                        </div>
+                        <paper-icon-button id="cancel-btn" icon="close"></paper-icon-button>
+                    </div>
+                    <div class="card-content" style="background-color: transparent;">
+
+                    </div>
+                    <div class="blog-actions" style="justify-content: end; border-color: var(--palette-background-paper);">
+                        <paper-button style="align-self: end;" id="blog-edit-btn">Edit</paper-button>
+                        <paper-button style="align-self: end;" id="blog-delete-btn">Delete</paper-button>
+                    </div>
+                </paper-card>
                 <slot id="read-only-blog-content" name="read-only-blog-content"></slot>
             </paper-card>
         </div>
@@ -210,7 +235,7 @@ export class BlogPost extends HTMLElement {
         this.editorDiv = document.createElement("div")
         this.editorDiv.id = "editorjs"
         this.editorDiv.slot = "edit-blog-content"
-        this.editorDiv.style = "margin: 10px;"
+        this.editorDiv.style = "margin: 10px; min-height: 230px;"
         this.appendChild(this.editorDiv)
 
         // Here I will create the editor...

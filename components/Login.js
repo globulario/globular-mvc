@@ -130,6 +130,8 @@ export class LoginBox extends HTMLElement {
                 top: 50%;
                 left: 50%;
                 transform: translate(-50%, -50%);
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
             }
 
             #login_box .card-actions {
@@ -256,6 +258,8 @@ export class RegisterBox extends HTMLElement {
                     top: 50%;
                     left: 50%;
                     transform: translate(-50%, -50%);
+                    background-color: var(--palette-background-paper);
+                    color: var(--palette-text-primary);
                 }
 
                 #register_box{

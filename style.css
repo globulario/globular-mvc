@@ -300,6 +300,11 @@ dropdown-menu-element{
 ::selection {
    background-color: var(--palette-background-paper);
 }
+
+.editor__redactor{
+   padding-bottom: 0px;
+}
+
 /*
 .ce-block__content {
    position: relative;
@@ -326,13 +331,17 @@ dropdown-menu-element{
 }
 
 .blog-read-div iframe{
- margin: 10px;
+   margin: 10px;
+   max-height: 100%;
+   max-width: 100%;
 }
 
 .blog-read-div img{
- margin: 10px;
+   max-height: 100%;
+   max-width: 100%;
+   margin: 10px;
 }
 
 .blog-read-div p{
- margin: 10px;
+   margin: 10px;
 }

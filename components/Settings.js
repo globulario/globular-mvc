@@ -363,6 +363,11 @@ export class Settings extends HTMLElement {
           flex-direction: column;
         }
 
+        paper-card{
+          background-color: var(--palette-background-paper);
+          color: var(--palette-text-primary);
+        }
+
         paper-button{
           display: flex;
           font-size: .85rem;
