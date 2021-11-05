@@ -2351,7 +2351,7 @@ export class FileExplorer extends HTMLElement {
             #file-explorer-content{
                 display: flex;
                 flex-direction: column;
-                min-width: 800px;
+                min-width: 735px;
                 position: relative;
             }
 
@@ -2361,6 +2361,7 @@ export class FileExplorer extends HTMLElement {
 
             .card-actions{
                 display: flex;
+                background-color: var(--palette-background-paper);
             }
 
             #file-explorer-layout{

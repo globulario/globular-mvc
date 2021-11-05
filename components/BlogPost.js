@@ -18,6 +18,8 @@ import { CreateBlogPostRequest, GetBlogPostsByAuthorRequest, SaveBlogPostRequest
 import { Application } from '../Application';
 import { Model } from '../Model';
 import * as edjsHTML from 'editorjs-html'
+import { Account } from '../Account';
+import { v4 as uuidv4 } from "uuid";
 
 /**
  * Search Box
@@ -58,30 +60,33 @@ export class BlogPost extends HTMLElement {
                 background-color: transparent;
             }
 
-            #title span {
+            #blog-editor-title {
                 flex-grow: 1;
                 color: var(--palette-action-disabled);
                 text-align: left;
                 padding: 8px;
             }
 
-            #blog-options-panel{
+            #blog-reader-title{
+                flex-grow: 1;
+                text-align: left;
+                padding: 8px;
+                text-align: center;
+            }
+
+            .blog-options-panel{
                 position: absolute;
                 right: 0px;
-                top: 50px;
                 z-index: 100;
                 background-color: var(--palette-background-default);
             }
 
-            #blog-options-panel .card-content{
+            .blog-options-panel .card-content{
                 min-width: 400px;
                 padding: 0px 10px 0px 10px;
                 display: flex;
                 flex-direction: column;
 
-            }
-            
-            #menu-btn{
             }
 
             .blog-actions{
@@ -105,56 +110,59 @@ export class BlogPost extends HTMLElement {
             
             <paper-card id="blog-post-editor-div">
                 <div id="title">
-                    <span id="blog-title-span">
+                    <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
+                        <iron-icon  id="collapse-btn"  icon="unfold-less" --iron-icon-fill-color:var(--palette-text-primary);"></iron-icon>
+                        <paper-ripple class="circle" recenters=""></paper-ripple>
+                    </div>
+                    <span id="blog-editor-title">
                         ${Application.account.name}, express yourself
                     </span>
-                    <paper-icon-button icon="icons:more-horiz" id="menu-btn"></paper-icon-button>
+                    <paper-icon-button icon="icons:more-horiz" id="blog-editor-menu-btn"></paper-icon-button>
                 </div>
-                <paper-card id="blog-options-panel" style="display: none;">
-                    <div style="display: flex; align-items: center;">
-                        <div style="flex-grow: 1; padding: 5px;">
-                            Options
+                <iron-collapse opened = "[[opened]]" id="collapse-panel" style="display: flex; flex-direction: column;">
+                    
+                    <paper-card id="blog-editor-options-panel" class="blog-options-panel" style="display: none;">
+                        <div class="card-content" style="background-color: transparent;">
+                            <paper-input id="blog-title-input" label="title"></paper-input>
+                            <globular-string-list-setting id="keywords-list" name="keywords" description="keywords will be use by the search engine to retreive your blog."></globular-string-list-setting>
                         </div>
-                        <paper-icon-button id="cancel-btn" icon="close"></paper-icon-button>
-                    </div>
-                    <div class="card-content" style="background-color: transparent;">
-                        <paper-input id="blog-title-input" label="title"></paper-input>
-                        <globular-string-list-setting id="keywords-list" name="keywords" description="keywords will be use by the search engine to retreive your blog."></globular-string-list-setting>
-                    </div>
-                    <div class="blog-actions" style="justify-content: end; border-color: var(--palette-background-paper);">
-                        <paper-button style="align-self: end;" id="blog-delete-btn">Delete</paper-button>
-                    </div>
-                </paper-card>
+                        <div class="blog-actions" style="justify-content: end; border-color: var(--palette-background-paper);">
+                            <paper-button style="align-self: end;" id="blog-editor-delete-btn">Delete</paper-button>
+                        </div>
+                    </paper-card>
 
-                <slot  id="edit-blog-content" name="edit-blog-content"></slot>
-                
-                <div class="blog-actions" style="background-color: transparent;">
-                    <paper-radio-group selected="draft" style="flex-grow: 1;  text-align: left; font-size: 1rem;">
-                        <paper-radio-button name="draft">draft</paper-radio-button>
-                        <paper-radio-button name="published">published</paper-radio-button>
-                        <paper-radio-button name="archived">archived</paper-radio-button>
-                    </paper-radio-group>
-                    <paper-button id="publish-blog">Save</paper-button>
-                </div>
+                    <slot  id="edit-blog-content" name="edit-blog-content"></slot>
+                    
+                    <div class="blog-actions" style="background-color: transparent;">
+                        <paper-radio-group selected="draft" style="flex-grow: 1;  text-align: left; font-size: 1rem;">
+                            <paper-radio-button name="draft">draft</paper-radio-button>
+                            <paper-radio-button name="published">published</paper-radio-button>
+                            <paper-radio-button name="archived">archived</paper-radio-button>
+                        </paper-radio-group>
+                        <paper-button id="publish-blog">Save</paper-button>
+                    </div>
+                </iron-collapse>
+
             </paper-card>
             <paper-card id="blog-post-reader-div">
                 <div id="title">
-                    <span id="blog-title-span"></span>
-                    <paper-icon-button icon="icons:more-horiz" id="menu-btn"></paper-icon-button>
-                </div>
-                <paper-card id="blog-options-panel" style="display: none;">
-                    <div style="display: flex; align-items: center;">
-                        <div style="flex-grow: 1; padding: 5px;">
-                            Detail
+                    <div style="display: flex; flex-direction: column;">
+                        <div>
+                            <img id="blog-reader-author-picture" style="width: 32px; height: 32px; border-radius: 16px; display:none;"></img>
+                            <iron-icon id="blog-reader-author-icon"  icon="account-circle" style="width: 34px; height: 34px; --iron-icon-fill-color:var(--palette-action-disabled); display: block;"></iron-icon>
                         </div>
-                        <paper-icon-button id="cancel-btn" icon="close"></paper-icon-button>
+                        <span  id="blog-reader-author-id"></span>
                     </div>
+                    <h1 id="blog-reader-title"></h1>
+                    <paper-icon-button icon="icons:more-horiz" id="blog-reader-menu-btn"></paper-icon-button>
+                </div>
+                <paper-card id="blog-reader-options-panel"  class="blog-options-panel"  style="display: none;">
                     <div class="card-content" style="background-color: transparent;">
-
+                        
                     </div>
                     <div class="blog-actions" style="justify-content: end; border-color: var(--palette-background-paper);">
-                        <paper-button style="align-self: end;" id="blog-edit-btn">Edit</paper-button>
-                        <paper-button style="align-self: end;" id="blog-delete-btn">Delete</paper-button>
+                        <paper-button style="align-self: end;" id="blog-reader-edit-btn">Edit</paper-button>
+                        <paper-button style="align-self: end;" id="blog-reader-delete-btn">Delete</paper-button>
                     </div>
                 </paper-card>
                 <slot id="read-only-blog-content" name="read-only-blog-content"></slot>
@@ -162,27 +170,32 @@ export class BlogPost extends HTMLElement {
         </div>
         `
 
+        this.collapse_btn = this.shadowRoot.querySelector("#collapse-btn")
+        this.collapse_panel = this.shadowRoot.querySelector("#collapse-panel")
+        this.collapse_btn.onclick = () => {
+            if (!this.collapse_panel.opened) {
+                this.collapse_btn.icon = "unfold-more"
+            } else {
+                this.collapse_btn.icon = "unfold-less"
+            }
+            this.collapse_panel.toggle();
+        }
+
         // publish the blog...
         this.shadowRoot.querySelector("#publish-blog").onclick = () => {
             this.publish()
         }
 
         // Display the option panel.
-        this.shadowRoot.querySelector("#menu-btn").onclick = () => {
-            if (this.shadowRoot.querySelector("#blog-options-panel").style.display == "") {
-                this.shadowRoot.querySelector("#blog-options-panel").style.display = "none";
+        this.shadowRoot.querySelector("#blog-editor-menu-btn").onclick = () => {
+            let optionPanel = this.shadowRoot.querySelector("#blog-editor-options-panel")
+            if (optionPanel.style.display == "") {
+                optionPanel.style.display = "none";
             } else {
-                this.shadowRoot.querySelector("#blog-options-panel").style.display = "";
+                optionPanel.style.display = "";
+                optionPanel.style.top = optionPanel.parentNode.offsetHeigt / 2 + "px"
             }
-        }
 
-        // The editor values.
-        this.titleSpan = this.shadowRoot.querySelector("#blog-title-span")
-        this.titleInput = this.shadowRoot.querySelector("#blog-title-input")
-        this.keywordsEditList = this.shadowRoot.querySelector("#keywords-list")
-
-        this.shadowRoot.querySelector("#cancel-btn").onclick = () => {
-            this.shadowRoot.querySelector("#blog-options-panel").style.display = "none";
             if (this.titleInput.value.length > 0) {
                 this.titleSpan.innerHTML = this.titleInput.value;
                 this.titleSpan.style.color = "var(--palette-text-primary)"
@@ -192,20 +205,44 @@ export class BlogPost extends HTMLElement {
             }
         }
 
-        this.shadowRoot.querySelector("#blog-delete-btn").onclick = () => {
+        this.shadowRoot.querySelector("#blog-reader-menu-btn").onclick = () => {
+            let optionPanel = this.shadowRoot.querySelector("#blog-reader-options-panel")
+
+            if (optionPanel.style.display == "") {
+                optionPanel.style.display = "none";
+            } else {
+                optionPanel.style.display = "";
+                optionPanel.style.top = optionPanel.parentNode.offsetHeigt / 2 + "px"
+            }
+
+        }
+
+        // The editor values.
+        this.titleSpan = this.shadowRoot.querySelector("#blog-editor-title")
+        this.titleInput = this.shadowRoot.querySelector("#blog-title-input")
+        this.keywordsEditList = this.shadowRoot.querySelector("#keywords-list")
+
+        this.shadowRoot.querySelector("#blog-editor-delete-btn").onclick = this.shadowRoot.querySelector("#blog-reader-delete-btn").onclick = () => {
             this.shadowRoot.querySelector("#blog-options-panel").style.display = "none";
             this.titleSpan.innerHTML = ` ${Application.account.name}, express yourself`
             this.titleSpan.style.color = "var(--palette-action-disabled)"
         }
 
+        // switch to edit mode...
+        this.shadowRoot.querySelector("#blog-reader-edit-btn").onclick = () => {
+
+            this.edit(() => {
+                console.log("==-----------> ceci est un test...")
+            })
+        }
     }
 
     // Connection callback
     connectedCallback() {
         // If the blog editor is set to true...
-        if(this.getAttribute("editable")!= undefined){
-            if(this.getAttribute("editable")=="true"){
-                this.edit(()=>{
+        if (this.getAttribute("editable") != undefined) {
+            if (this.getAttribute("editable") == "true") {
+                this.edit(() => {
                     console.log("editor is ready!")
                 })
             }
@@ -215,6 +252,27 @@ export class BlogPost extends HTMLElement {
     // Set the blog...
     setBlog(blog) {
         this.blog = blog;
+
+        // Here I will set the blog various information...
+        let authorIdSpan = this.shadowRoot.querySelector("#blog-reader-author-id")
+        authorIdSpan.innerHTML = blog.getAuthor()
+
+        Account.getAccount(blog.getAuthor(), a => {
+            let img = this.shadowRoot.querySelector("#blog-reader-author-picture")
+            let ico = this.shadowRoot.querySelector("#blog-reader-author-icon")
+            if (a.profilPicture_ != undefined) {
+                img.src = a.profilPicture_
+                img.style.display = "block"
+                ico.style.display = "none"
+            }
+
+        }, e => { })
+
+        this.shadowRoot.querySelector("#blog-reader-title").innerHTML = blog.getTitle()
+
+        this.titleSpan.value = blog.getTitle()
+        this.titleInput.value = blog.getTitle()
+        this.keywordsEditList.setValues(blog.getKeywordsList())
     }
 
     /**
@@ -229,14 +287,29 @@ export class BlogPost extends HTMLElement {
 
         if (this.editorDiv != null) {
             callback(this.editorDiv)
+
             return
         }
 
         this.editorDiv = document.createElement("div")
-        this.editorDiv.id = "editorjs"
+        this.editorDiv.id = "_" + uuidv4() + "editorjs"
         this.editorDiv.slot = "edit-blog-content"
         this.editorDiv.style = "margin: 10px; min-height: 230px;"
         this.appendChild(this.editorDiv)
+
+        let data = {}
+        if (this.blog != undefined) {
+            data = JSON.parse(this.blog.getText())
+            if (this.blog.getTitle().length > 0) {
+                this.titleSpan.innerHTML = this.blog.getTitle()
+                this.titleInput.value = this.blog.getTitle()
+                this.titleSpan.style.color = "var(--palette-text-primary)"
+            }else{
+                this.titleSpan.style.color = "var(--palette-action-disabled)"
+            }
+           
+            this.keywordsEditList.setValues(this.blog.getKeywordsList())
+        }
 
         // Here I will create the editor...
         // Here I will create a new editor...
@@ -293,7 +366,8 @@ export class BlogPost extends HTMLElement {
                     },
                 },
                 image: SimpleImage,
-            }
+            },
+            data: data
         });
 
         // Move the editor inside the 
@@ -425,10 +499,10 @@ export class BlogPosts extends HTMLElement {
 
     connectedCallback() {
         // If the blog editor is set to true...
-        if(this.getAttribute("author")!= undefined){
-           this.getBlogPostsByAuthor(this.getAttribute("author"), blogs=>{
-               this.setBlogPosts(blogs)
-           })
+        if (this.getAttribute("author") != undefined) {
+            this.getBlogPostsByAuthor(this.getAttribute("author"), blogs => {
+                this.setBlogPosts(blogs)
+            })
         }
     }
 
@@ -444,7 +518,7 @@ export class BlogPosts extends HTMLElement {
             blog.read(() => {
                 this.appendChild(blog)
             })
-            
+
         })
     }
 
