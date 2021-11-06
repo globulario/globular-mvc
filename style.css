@@ -348,3 +348,9 @@ dropdown-menu-element{
 
 .blog-read-div p{
 }
+
+globular-file-explorer{
+   position: fixed;
+   top: 65px;
+   left: 0px;
+}

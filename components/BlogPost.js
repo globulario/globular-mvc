@@ -71,7 +71,7 @@ export class BlogPostElement extends HTMLElement {
                 flex-grow: 1;
                 text-align: left;
                 padding: 8px;
-                text-align: center;
+                text-align: left;
             }
 
             .blog-options-panel{
@@ -151,7 +151,7 @@ export class BlogPostElement extends HTMLElement {
                         </div>
                         <span  id="blog-reader-author-id"></span>
                     </div>
-                    <h1 id="blog-reader-title"></h1>
+                    <h2 id="blog-reader-title"></h2>
                     <paper-icon-button icon="icons:more-horiz" id="blog-reader-menu-btn"></paper-icon-button>
                 </div>
                 <paper-card id="blog-reader-options-panel"  class="blog-options-panel"  style="display: none;">
@@ -234,7 +234,7 @@ export class BlogPostElement extends HTMLElement {
         // switch to edit mode...
         this.shadowRoot.querySelector("#blog-reader-edit-btn").onclick = () => {
             this.edit(() => {
-                console.log("==-----------> ceci est un test...")
+                ApplicationView.displayMessage("you'r in edit mode, click save to exit...")
             })
         }
     }
@@ -576,24 +576,77 @@ export class BlogPosts extends HTMLElement {
             </div>
         </div>
         `
-
     }
 
     connectedCallback() {
         // If the blog editor is set to true...
-        if (this.getAttribute("author") != undefined) {
-            this.getBlogPostsByAuthor(this.getAttribute("author"), blogs => {
-                this.setBlogPosts(blogs)
+        let authors = []
+        if (this.getAttribute("account") != undefined) {
+            Account.getAccount(this.getAttribute("account"), 
+            account=>{
+                // Subcribe to my own blog create event...
+                Model.eventHub.subscribe(account.id + "_publish_blog_event", uuid => this[account.id + "_publish_blog_listener"] = uuid,
+                    evt => {
+                        // Get the date from the event and create the newly
+                        this.setBlog(BlogPost.deserializeBinary(Uint8Array.from(evt.split(","))), true)
+                    }, false)
+
+                authors.push(account.id)
+
+                Account.getContacts(account, "{}", contacts=>{
+                    if (contacts.length == 0) {
+                        this.getBlogs(authors, blogs=>{
+                            this.setBlogPosts(blogs)
+                        })
+                        return
+                    }
+                    let index = 0;
+                    contacts.forEach(contact=>{
+                        Model.eventHub.subscribe(contact._id + "_publish_blog_event", uuid => this[contact._id + "_publish_blog_listener"] = uuid,
+                        evt => {
+                            // Get the date from the event and create the newly
+                            this.setBlog(BlogPost.deserializeBinary(Uint8Array.from(evt.split(","))), true)
+                        }, false)
+
+                        authors.push(contact._id)
+                        if (index == contacts.length - 1) {
+                            this.getBlogs(authors, blogs=>{
+                                this.setBlogPosts(blogs)
+                            })
+                        }
+
+                        index++
+                    })
+                }, err=>ApplicationView.displayMessage(err, 3000))
             })
 
-            // Subcribe to my own blog create event...
-            Model.eventHub.subscribe(this.getAttribute("author") + "_publish_blog_event", uuid => this[this.getAttribute("author") + "_publish_blog_listener"] = uuid,
-                evt => {
-                    // Get the date from the event and create the newly
-                    this.setBlog(BlogPost.deserializeBinary(Uint8Array.from(evt.split(","))), true)
-                }, false)
+            /*
+            this.getBlogPostsByAuthor(this.getAttribute("account"), blogs => {
+                
+                this.setBlogPosts(blogs)
+            })*/
+
+
+
+            
 
         }
+    }
+
+    // Get the list of blogs.
+    getBlogs(authors, callback){
+        console.log("get blogs for authors ", authors)
+        let blogs = []
+        let index = 0;
+        authors.forEach(author =>{
+            this.getBlogPostsByAuthor(author, blogs_ => {
+                blogs = blogs.concat(blogs_)
+                if(index == authors.length - 1){
+                    callback(blogs)
+                }
+                index++
+            })
+        })
     }
 
     setBlog(b, prepend = false) {

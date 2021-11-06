@@ -90,7 +90,6 @@ export class PermissionsManager extends HTMLElement {
                 align-items: center;
                 display: flex;
                 flex-grow: 1;
-                font-size: 1.2rem;
                 font-weight: 400;
                 color: var(--palette-text-secondary);
                 border-bottom: 2px solid;
@@ -741,7 +740,7 @@ export class PermissionsViewer extends HTMLElement {
 
             #permissions-header{
                 display: table-row;
-                font-size: 1.2rem;
+                font-size: 1.0rem;
                 font-weight: 400;
                 color: var(--palette-text-secondary);
                 border-bottom: 2 px solid;
@@ -754,13 +753,12 @@ export class PermissionsViewer extends HTMLElement {
             }
 
             .subject-div{
-                width: 50%;
                 vertical-align: middle;
                 text-aling: center;
+                max-width: 300px;
             }
 
             .permission-div{
-                width: 100px;
                 text-align: center;
                 vertical-align: middle;
                 text-aling: center;
