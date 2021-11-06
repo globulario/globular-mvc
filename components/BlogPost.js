@@ -14,7 +14,7 @@ import Underline from '@editorjs/underline';
 import LinkTool from '@editorjs/link'
 import { theme } from "./Theme";
 import { ApplicationView } from '../ApplicationView';
-import { CreateBlogPostRequest, GetBlogPostsByAuthorRequest, SaveBlogPostRequest } from 'globular-web-client/blog/blog_pb';
+import { CreateBlogPostRequest, GetBlogPostsByAuthorRequest, SaveBlogPostRequest, BlogPost, DeleteBlogPostRequest } from 'globular-web-client/blog/blog_pb';
 import { Application } from '../Application';
 import { Model } from '../Model';
 import * as edjsHTML from 'editorjs-html'
@@ -24,7 +24,7 @@ import { v4 as uuidv4 } from "uuid";
 /**
  * Search Box
  */
-export class BlogPost extends HTMLElement {
+export class BlogPostElement extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
@@ -126,9 +126,6 @@ export class BlogPost extends HTMLElement {
                             <paper-input id="blog-title-input" label="title"></paper-input>
                             <globular-string-list-setting id="keywords-list" name="keywords" description="keywords will be use by the search engine to retreive your blog."></globular-string-list-setting>
                         </div>
-                        <div class="blog-actions" style="justify-content: end; border-color: var(--palette-background-paper);">
-                            <paper-button style="align-self: end;" id="blog-editor-delete-btn">Delete</paper-button>
-                        </div>
                     </paper-card>
 
                     <slot  id="edit-blog-content" name="edit-blog-content"></slot>
@@ -139,6 +136,7 @@ export class BlogPost extends HTMLElement {
                             <paper-radio-button name="published">published</paper-radio-button>
                             <paper-radio-button name="archived">archived</paper-radio-button>
                         </paper-radio-group>
+                        <paper-button style="align-self: end;" id="blog-editor-delete-btn">Delete</paper-button>
                         <paper-button id="publish-blog">Save</paper-button>
                     </div>
                 </iron-collapse>
@@ -222,9 +220,15 @@ export class BlogPost extends HTMLElement {
         this.keywordsEditList = this.shadowRoot.querySelector("#keywords-list")
 
         this.shadowRoot.querySelector("#blog-editor-delete-btn").onclick = () => {
-            this.shadowRoot.querySelector("#blog-options-panel").style.display = "none";
-            this.titleSpan.innerHTML = ` ${Application.account.name}, express yourself`
-            this.titleSpan.style.color = "var(--palette-action-disabled)"
+            let rqst = new DeleteBlogPostRequest
+            rqst.setUuid(this.blog.getUuid())
+
+            // Delete the blog...
+            Model.globular.blogService.deleteBlogPost(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+                .then(rsp=>{
+                    Model.eventHub.publish(this.blog.getUuid()+"_blog_delete_event", {}, false)
+                })
+                .catch(e=>ApplicationView.displayMessage(e, 3000))
         }
 
         // switch to edit mode...
@@ -249,7 +253,28 @@ export class BlogPost extends HTMLElement {
 
     // Set the blog...
     setBlog(blog) {
+
         this.blog = blog;
+
+        if (this.updateListener == undefined) {
+            Model.eventHub.subscribe(this.blog.getUuid() + "_blog_updated_event", uuid => this.updateListener = uuid, evt => {
+
+                this.blog = BlogPost.deserializeBinary(Uint8Array.from(evt.split(",")))
+                this.read(() => {
+                    // set back values.
+                    this.titleSpan.value = this.blog.getTitle()
+                    this.titleInput.value = this.blog.getTitle()
+                    this.keywordsEditList.setValues(this.blog.getKeywordsList())
+                })
+            }, false)
+        }
+        if(this.deleteListener == undefined){
+            Model.eventHub.subscribe(this.blog.getUuid() + "_blog_delete_event", uuid => this.updateListener = uuid, 
+            evt => {
+                // simplity remove it from it parent...
+                this.parentNode.removeChild(this)
+            }, false)
+        }
 
         // Here I will set the blog various information...
         let authorIdSpan = this.shadowRoot.querySelector("#blog-reader-author-id")
@@ -302,10 +327,10 @@ export class BlogPost extends HTMLElement {
                 this.titleSpan.innerHTML = this.blog.getTitle()
                 this.titleInput.value = this.blog.getTitle()
                 this.titleSpan.style.color = "var(--palette-text-primary)"
-            }else{
+            } else {
                 this.titleSpan.style.color = "var(--palette-action-disabled)"
             }
-           
+
             this.keywordsEditList.setValues(this.blog.getKeywordsList())
         }
 
@@ -384,6 +409,15 @@ export class BlogPost extends HTMLElement {
 
     }
 
+    // Get the image default size...
+    getMeta(url, callback) {
+        const img = new Image();
+        img.addEventListener("load", () => {
+            callback({ width: img.naturalWidth, height: img.naturalHeight });
+        });
+        img.src = url;
+    }
+
     // generate html from json data
     jsonToHtml(data) {
         // So here I will get the plain html from the output json data.
@@ -398,6 +432,20 @@ export class BlogPost extends HTMLElement {
         div.className = "blog-read-div"
         div.slot = "read-only-blog-content"
         div.innerHTML = html.trim();
+
+        // Now I will set image height.
+        let images = div.querySelectorAll("img")
+        images.forEach(img => {
+
+            this.getMeta(img.src, meta => {
+                if (meta.width < div.offsetWidth && meta.height < div.offsetHeight) {
+                    img.style.width = meta.width + "px"
+                    img.style.height = meta.height + "px"
+                }
+            })
+
+        })
+
         return div
     }
 
@@ -408,6 +456,13 @@ export class BlogPost extends HTMLElement {
     read(callback) {
         this.shadowRoot.querySelector("#blog-post-editor-div").style.display = "none"
         this.shadowRoot.querySelector("#blog-post-reader-div").style.display = ""
+
+        // Here I will replace existing elements with new one...
+        let elements = this.querySelectorAll(`[slot="read-only-blog-content"]`)
+        for (var i = 0; i < elements.length; i++) {
+            this.removeChild(elements[i])
+        }
+
         if (this.editor != null) {
             this.editor.save().then((outputData) => {
                 let div = this.jsonToHtml(outputData)
@@ -419,6 +474,26 @@ export class BlogPost extends HTMLElement {
             this.appendChild(div)
             callback()
         }
+    }
+
+    /**
+     * Clear the content of blog read and writh editor
+     */
+    clear() {
+        this.blog = null
+
+        this.removeChild(this.editorDiv);
+        this.editorDiv = null;
+        this.editor = null;
+        this.titleInput.value = ""
+        this.titleSpan.innerHTML = ` ${Application.account.name}, express yourself`
+        this.keywordsEditList.setValues([])
+
+        // reset the editor.
+        this.edit(() => {
+
+        })
+
     }
 
     /**
@@ -439,6 +514,10 @@ export class BlogPost extends HTMLElement {
                     .then(rsp => {
                         this.blog = rsp.getBlogPost();
                         ApplicationView.displayMessage("Your post is published!", 3000)
+                        // Publish the event
+                        Model.eventHub.publish(Application.account.id + "_publish_blog_event", this.blog.serializeBinary(), false)
+                        this.clear()
+
                     }).catch(e => {
                         ApplicationView.displayMessage(e, 3000)
                     })
@@ -455,6 +534,10 @@ export class BlogPost extends HTMLElement {
                 Model.globular.blogService.saveBlogPost(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
                     .then(rsp => {
                         ApplicationView.displayMessage("Your post was updated!", 3000)
+
+                        // That function will update the blog...
+                        Model.eventHub.publish(this.blog.getUuid() + "_blog_updated_event", this.blog.serializeBinary(), false)
+
                     }).catch(e => {
                         ApplicationView.displayMessage(e, 3000)
                     })
@@ -467,7 +550,7 @@ export class BlogPost extends HTMLElement {
     }
 }
 
-customElements.define('globular-blog-post', BlogPost)
+customElements.define('globular-blog-post', BlogPostElement)
 
 
 /**
@@ -493,6 +576,7 @@ export class BlogPosts extends HTMLElement {
             </div>
         </div>
         `
+
     }
 
     connectedCallback() {
@@ -501,7 +585,30 @@ export class BlogPosts extends HTMLElement {
             this.getBlogPostsByAuthor(this.getAttribute("author"), blogs => {
                 this.setBlogPosts(blogs)
             })
+
+            // Subcribe to my own blog create event...
+            Model.eventHub.subscribe(this.getAttribute("author") + "_publish_blog_event", uuid => this[this.getAttribute("author") + "_publish_blog_listener"] = uuid,
+                evt => {
+                    // Get the date from the event and create the newly
+                    this.setBlog(BlogPost.deserializeBinary(Uint8Array.from(evt.split(","))), true)
+                }, false)
+
         }
+    }
+
+    setBlog(b, prepend = false) {
+        let blog = new BlogPostElement()
+        blog.setBlog(b)
+
+        // Generate the blog display and set in the list.
+        blog.read(() => {
+            if (prepend) {
+                this.prepend(blog)
+            } else {
+                this.appendChild(blog)
+            }
+
+        })
     }
 
     // The list of blogs
@@ -509,14 +616,7 @@ export class BlogPosts extends HTMLElement {
         blogs.sort((a, b) => { return b.getCreationtime() - a.getCreationtime() })
         blogs.forEach(b => {
             // This contain the 
-            let blog = new BlogPost()
-            blog.setBlog(b)
-
-            // Generate the blog display and set in the list.
-            blog.read(() => {
-                this.appendChild(blog)
-            })
-
+            this.setBlog(b)
         })
     }
 

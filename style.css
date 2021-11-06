@@ -324,8 +324,9 @@ dropdown-menu-element{
    display: flex;
    flex-direction: column;
    max-width: 735px;
+   min-width: 580px;
    margin: 0px auto 20px;
-   padding: 5px;
+   padding: 15px;
    justify-content: center;
    align-items: left;
    background-color: transparent;
@@ -335,14 +336,15 @@ dropdown-menu-element{
    margin: 10px;
    max-height: 100%;
    max-width: 100%;
+   align-items: center;
 }
 
 .blog-read-div img{
+   width: auto;
+   height : auto;
    max-height: 100%;
    max-width: 100%;
-   margin: 10px;
 }
 
 .blog-read-div p{
-   margin: 10px;
 }
