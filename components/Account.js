@@ -90,8 +90,8 @@ export class AccountMenu extends Menu {
                 }
 
                 #profile-picture{
-                    width: 40px;
-                    height: 40px;
+                    width: 64px;
+                    height: 64px;
                     padding-right: 10px;
                     border-radius: 20px;
                     border: 1px solid transparent;

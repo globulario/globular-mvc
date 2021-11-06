@@ -234,7 +234,7 @@ export class BlogPostElement extends HTMLElement {
         // switch to edit mode...
         this.shadowRoot.querySelector("#blog-reader-edit-btn").onclick = () => {
             this.edit(() => {
-                ApplicationView.displayMessage("you'r in edit mode, click save to exit...")
+                ApplicationView.displayMessage("you'r in edit mode, click save to exit...", 3000)
             })
         }
     }
@@ -256,6 +256,11 @@ export class BlogPostElement extends HTMLElement {
 
         this.blog = blog;
 
+        if(this.blog.getAuthor() != Application.account.id){
+            let editBtn = this.shadowRoot.querySelector("#blog-reader-edit-btn")
+            editBtn.parentNode.removeChild(editBtn)
+        }
+
         if (this.updateListener == undefined) {
             Model.eventHub.subscribe(this.blog.getUuid() + "_blog_updated_event", uuid => this.updateListener = uuid, evt => {
 
@@ -268,6 +273,7 @@ export class BlogPostElement extends HTMLElement {
                 })
             }, false)
         }
+
         if(this.deleteListener == undefined){
             Model.eventHub.subscribe(this.blog.getUuid() + "_blog_delete_event", uuid => this.updateListener = uuid, 
             evt => {
@@ -304,6 +310,7 @@ export class BlogPostElement extends HTMLElement {
      */
     edit(callback) {
 
+
         // Show the paper-card where the blog will be display
         this.shadowRoot.querySelector("#blog-post-editor-div").style.display = ""
         this.shadowRoot.querySelector("#blog-post-reader-div").style.display = "none"
@@ -331,6 +338,12 @@ export class BlogPostElement extends HTMLElement {
                 this.titleSpan.style.color = "var(--palette-action-disabled)"
             }
 
+            
+            if(this.blog.getAuthor() != Application.account.id){
+                ApplicationView.displayMessage("your not allowed to edit ", this.blog.getAuthor(), " post!", 3000)
+                return 
+            }
+    
             this.keywordsEditList.setValues(this.blog.getKeywordsList())
         }
 
@@ -619,17 +632,6 @@ export class BlogPosts extends HTMLElement {
                     })
                 }, err=>ApplicationView.displayMessage(err, 3000))
             })
-
-            /*
-            this.getBlogPostsByAuthor(this.getAttribute("account"), blogs => {
-                
-                this.setBlogPosts(blogs)
-            })*/
-
-
-
-            
-
         }
     }
 
@@ -650,7 +652,13 @@ export class BlogPosts extends HTMLElement {
     }
 
     setBlog(b, prepend = false) {
+        if(this.querySelector("_" + b.getUuid())!=undefined){
+            // not append the blog twice...
+            return 
+        }
+
         let blog = new BlogPostElement()
+        blog.id = "_" + b.getUuid()
         blog.setBlog(b)
 
         // Generate the blog display and set in the list.

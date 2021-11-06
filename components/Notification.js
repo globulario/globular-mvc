@@ -290,7 +290,6 @@ export class NotificationMenu extends Menu {
             (evt) => {
                 this.setNotificationCount()
                 let notification = Notification.fromString(evt)
-                console.log(notification)
                 this.appendNofication(this.applicationNotificationsPanel, notification)
                 if (!this.applicationNotificationsCollapse.opened) {
                     this.applicationNotificationsCollapse.toggle()
@@ -399,6 +398,7 @@ export class NotificationMenu extends Menu {
             </div>
         </div>
         `
+
         // Set icon.
         this.getIcon().icon = "social:notifications"
 
@@ -440,6 +440,11 @@ export class NotificationMenu extends Menu {
             }
         }
 
+        // set element style.
+        notificationDiv.style.display = "flex"
+        notificationDiv.style.position  = "relative"
+        notificationDiv.style.padding = ".75rem"
+
         if (notification._type == 1) {
             this.applicationNotificationsDiv.style.display = ""
             let application = JSON.parse(notification._sender)
@@ -449,7 +454,20 @@ export class NotificationMenu extends Menu {
             img.style.borderRadius = "0px"
             img.style.width = "24px"
             img.style.height = "24px"
-            ico.style.display = "none" // hide the user icon
+            ico.style.display = "none"
+
+            // Here I will display notification to the Application toast...
+            let toast = ApplicationView.displayMessage(notificationDiv.outerHTML, 15000)
+            let closeBtn = toast.el.querySelector(`#div_${notification._id}_close_btn`)
+            closeBtn.parentNode.parentNode.style.rigth = "-10px"
+            closeBtn.style.display = "block"
+            closeBtn.onclick = () => {
+                if (this.onclose != undefined) {
+                    this.onclose(notification);
+                }
+                toast.dismiss()
+            }
+
         } else if (notification._type == 0) {
             this.userNotificationsDiv.style.display = ""
             let img = this.shadowRoot.getElementById(`div_${notification._id}_img`)
@@ -460,12 +478,29 @@ export class NotificationMenu extends Menu {
                     img.style.display = "block"
                     ico.style.display = "none"
                     img.src = account.profilPicture_
+                    img.style.maxWidth = "64px"
+                    img.style.maxHeight = "64px"
                 } else {
                     img.style.display = "none"
                     ico.style.display = "block"
                 }
                 span.innerHTML = account.name
                 let deleteNotificationListener
+
+
+                // Here I will display notification to the Application toast...
+                let toast = ApplicationView.displayMessage(notificationDiv.outerHTML, 10000)
+                let closeBtn = toast.el.querySelector(`#div_${notification._id}_close_btn`)
+                closeBtn.style.display = "block"
+                closeBtn.parentNode.parentNode.style.rigth = "-10px"
+                closeBtn.onclick = () => {
+                    Model.eventHub.publish("delete_notification_event_", notification, true)
+                    if (this.onclose != undefined) {
+                        this.onclose(notification);
+                    }
+                    toast.dismiss()
+                }
+
                 Model.eventHub.subscribe(
                     notification._id + "_delete_notification_event",
                     (uuid) => {
@@ -527,8 +562,9 @@ export class NotificationMenu extends Menu {
             count++
             this.notificationCount.innerHTML = count.toString()
         }
-
     }
+
+
 
 }
 

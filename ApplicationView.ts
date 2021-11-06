@@ -41,6 +41,8 @@ import { ServerGeneralSettings } from "./serverGeneralSettings";
 import { SaveConfigRequest } from "globular-web-client/admin/admin_pb";
 import { ServicesSettings } from "./ServicesSettings";
 import { OrganizationManager } from "./components/Organization.js";
+import * as getUuid from 'uuid-by-string'
+import { ConversationServicePromiseClient } from "globular-web-client/conversation/conversation_grpc_web_pb";
 
 /**
  * Application view made use of Web-component and Materialyse to create a basic application
@@ -602,10 +604,22 @@ export class ApplicationView extends View {
    * @param msg The message to display in toast!
    */
   public static displayMessage(msg: any, duration: number) {
-    return M.toast({
+
+    let uuid = "_" + getUuid(JSON.stringify(msg))
+
+    // Not print the same message more than once at time...
+    if(document.querySelector("#" + uuid)!=undefined){
+      return;
+    }
+
+    let t = M.toast({
       html: this.getErrorMessage(msg),
       displayLength: duration,
     });
+
+    t.el.id = uuid
+    
+    return t
   }
 
   // Block user input
