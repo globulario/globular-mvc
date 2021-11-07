@@ -37,7 +37,7 @@ export class MessengerMenu extends Menu {
 
     // Create the contact view.
     constructor() {
-        super("Messenger", "communication:message", "Messenger")
+        super("Messenger", "communication:forum", "Messenger")
 
         this.account = null;
 

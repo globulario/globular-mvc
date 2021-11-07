@@ -20,6 +20,7 @@ import { Model } from '../Model';
 import * as edjsHTML from 'editorjs-html'
 import { Account } from '../Account';
 import { v4 as uuidv4 } from "uuid";
+import '@polymer/iron-icons/communication-icons'
 
 /**
  * Search Box
@@ -47,7 +48,7 @@ export class BlogPostElement extends HTMLElement {
             #blog-post-editor-div{
                 display: flex;
                 flex-direction: column;
-                max-width: 735px;
+                max-width: 755px;
                 position: relative;
                 margin: 0px auto 20px;
             }
@@ -163,9 +164,15 @@ export class BlogPostElement extends HTMLElement {
                     </div>
                 </paper-card>
                 <slot id="read-only-blog-content" name="read-only-blog-content"></slot>
+                <slot name="blog-comments"></slot>
             </paper-card>
         </div>
         `
+
+        // The comments container...
+        let blogComments = new BlogComments()
+        blogComments.slot = "blog-comments"
+        this.appendChild(blogComments)
 
         this.collapse_btn = this.shadowRoot.querySelector("#collapse-btn")
         this.collapse_panel = this.shadowRoot.querySelector("#collapse-panel")
@@ -697,3 +704,204 @@ export class BlogPosts extends HTMLElement {
 }
 
 customElements.define('globular-blog-posts', BlogPosts)
+
+
+/**
+ * Comments
+ */
+ export class BlogComments extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor() {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+            ${theme}
+        </style>
+        <div>
+            <slot name="blog-comment-editor">
+            </slot>
+        </div>
+        `
+
+        let editor = new BlogCommentEditor()
+        editor.slot = "blog-comment-editor"
+        this.appendChild(editor)
+
+    }
+
+}
+
+customElements.define('globular-blog-comments', BlogComments)
+
+/**
+ * Comments
+ */
+ export class BlogComment extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor() {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+            ${theme}
+        </style>
+        <div>
+        </div>
+        `
+    }
+
+}
+
+customElements.define('globular-blog-comment', BlogComment)
+
+/**
+ * Comments
+ */
+ export class BlogCommentEditor extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor() {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+            ${theme}
+
+            .add-comment-btn{
+                transition: all 1s ease,padding 0.8s linear;
+                display: flex;
+                align-items: center;
+                margin-left: 16px;
+                width: 35%;
+                color: var(--palette-action-disabled);
+                border-bottom: 1px solid var(--palette-action-disabled);
+                position: relative;
+            }
+
+            .add-comment-btn:hover{
+                cursor: pointer;
+            }
+
+        </style>
+        <div style="display: flex; position: relative; padding: 10px;">
+            <div>
+                <img id="blog-comment-editor-author-picture" style="width: 32px; height: 32px; border-radius: 16px; display:none;"></img>
+                <iron-icon id="blog-comment-editor-author-icon"  icon="account-circle" style="width: 34px; height: 34px; --iron-icon-fill-color:var(--palette-action-disabled); display: block;"></iron-icon>
+            </div>
+            <div class="add-comment-btn" style="">
+                <iron-icon  style="width: 16px; height: 16px; --iron-icon-fill-color:var(--palette-action-disabled);" icon="add"></iron-icon>
+                <span>add comment</span> 
+                <paper-ripple recenters></paper-ripple>
+            </div>
+            
+            <slot name="edit-comment-content"></slot>
+
+        </div>
+
+        `
+        let addCommentBtn = this.shadowRoot.querySelector(".add-comment-btn")
+        this.shadowRoot.querySelector("paper-ripple").ontransitionend = ()=>{
+            addCommentBtn.style.display = "none"
+
+            this.editorDiv = document.createElement("div")
+            this.editorDiv.id = "_" + uuidv4() + "editorjs"
+            this.editorDiv.slot = "edit-comment-content"
+            this.editorDiv.style = "width: 100%;"
+            this.appendChild(this.editorDiv)
+    
+            let data = {}
+    
+            // Here I will create the editor...
+            // Here I will create a new editor...
+            this.editor = new EditorJS({
+                holder: this.editorDiv.id,
+                autofocus: true,
+                tools: {
+                    header: Header,
+                    delimiter: Delimiter,
+                    quote: Quote,
+                    list: NestedList,
+                    checklist: {
+                        class: Checklist,
+                        inlineToolbar: true,
+                    },
+                    table: Table,
+                    paragraph: {
+                        class: Paragraph,
+                        inlineToolbar: true,
+                    },
+                    underline: Underline,
+                    code: CodeTool,
+                    raw: RawTool,
+                    embed: {
+                        class: Embed,
+                        inlineToolbar: false,
+                        config: {
+                            services: {
+                                youtube: true,
+                                coub: true,
+                                codepen: true,
+                                imgur: true,
+                                gfycat: true,
+                                twitchvideo: true,
+                                vimeo: true,
+                                vine: true,
+                                twitter: true,
+                                instagram: true,
+                                aparat: true,
+                                facebook: true,
+                                pinterest: true,
+                            }
+                        },
+                    },
+                    image: SimpleImage,
+                },
+                data: data
+            });
+    
+            // Move the editor inside the 
+            this.editor.isReady
+                .then(() => {
+                    /** Do anything you need after editor initialization */
+                    this.editorDiv.querySelector(".codex-editor__redactor").style.paddingBottom = "0px";
+                    console.log("editor is ready")
+    
+                })
+                .catch((reason) => {
+                    ApplicationView.displayMessage(`Editor.js initialization failed because of ${reason}`, 3000)
+                });
+        }
+
+    }
+
+    connectedCallback(){
+        Account.getAccount(Application.account.id, a => {
+            let img = this.shadowRoot.querySelector("#blog-comment-editor-author-picture")
+            let ico = this.shadowRoot.querySelector("#blog-comment-editor-author-icon")
+            if (a.profilPicture_ != undefined) {
+                img.src = a.profilPicture_
+                img.style.display = "block"
+                ico.style.display = "none"
+            }
+
+        }, e => { })
+    }
+
+}
+
+customElements.define('globular-blog-comment-editor', BlogCommentEditor)

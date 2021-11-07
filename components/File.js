@@ -22,7 +22,7 @@ import { v4 as uuidv4 } from "uuid";
 
 // Menu to set action on files.
 import { DropdownMenu } from './dropdownMenu.js';
-import { CopyRequest, CreateDirRequest, GetFileInfoRequest, MoveRequest } from 'globular-web-client/file/file_pb';
+import { CopyRequest, CreateDirRequest, GetFileInfoRequest, GetThumbnailsResponse, MoveRequest } from 'globular-web-client/file/file_pb';
 import { createArchive, deleteDir, deleteFile, downloadFileHttp, renameFile, uploadFiles } from 'globular-web-client/api';
 import { ApplicationView } from '../ApplicationView';
 import { Application } from '../Application';
@@ -52,7 +52,7 @@ function getImage(callback, images, files, index) {
     xhr.setRequestHeader("token", localStorage.getItem("user_token"));
     xhr.setRequestHeader("application", Model.application);
     xhr.setRequestHeader("domain", Model.domain);
-    
+
     // Set responseType to 'arraybuffer', we want raw binary data buffer
     xhr.responseType = 'blob';
     xhr.onload = (rsp) => {
@@ -1018,7 +1018,7 @@ export class FilesListView extends FilesView {
             let row = document.createElement("tr")
             row.innerHTML = html;
 
-            let rowId = "_" +uuidv4().split("-").join("_").split("@").join("_");
+            let rowId = "_" + uuidv4().split("-").join("_").split("@").join("_");
             row.id = rowId;
 
             let checkbox = row.querySelector("paper-checkbox")
@@ -2186,7 +2186,7 @@ export class FileNavigator extends HTMLElement {
             })
         }
 
-        if(Application.account ==undefined){
+        if (Application.account == undefined) {
             return // nothing to do here...
         }
         // The account...
@@ -2225,7 +2225,7 @@ export class FileNavigator extends HTMLElement {
         Model.globular.fileService.getFileInfo(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
             .then(rsp => {
                 let f = File.fromString(rsp.getData());
-                if (f.mime.startsWith("video") || f.mime.startsWith("audio") ||  f.mime.startsWith("image")) {
+                if (f.mime.startsWith("video") || f.mime.startsWith("audio") || f.mime.startsWith("image")) {
                     // So here I will get the hidden file for the video previews.
                     let path = f.path.replace(f.name, "")
                     let hiddenDirPath = path + ".hidden/" + f.name.substring(0, f.name.lastIndexOf("."))
@@ -2285,6 +2285,7 @@ export class FileExplorer extends HTMLElement {
 
         // The function is call when the explorer is call
         this.onclose = undefined;
+        this.isOpen = false;
 
         // This function is call when the explorer is open.
         this.onopen = undefined;
@@ -3159,6 +3160,7 @@ export class FileExplorer extends HTMLElement {
             this.onopen();
         }
         this.parent.appendChild(this)
+        this.isOpen = true;
     }
 
     close() {
@@ -3171,6 +3173,7 @@ export class FileExplorer extends HTMLElement {
         if (this.parentNode != null) {
             this.parentNode.removeChild(this)
         }
+        this.isOpen = false
 
     }
 
@@ -3203,7 +3206,20 @@ export class FilesMenu extends Menu {
         this.fileExplorer = fileExplorer
 
         this.onclick = () => {
-            this.fileExplorer.open();
+            let icon = this.getIconDiv().querySelector("iron-icon")
+            icon.style.removeProperty("--iron-icon-fill-color")
+            if (this.fileExplorer.parentNode == undefined) {
+                this.fileExplorer.open();
+                this.fileExplorer.style.display = "block"
+                return
+            }
+
+            if (this.fileExplorer.style.display == "none") {
+                this.fileExplorer.style.display = "block"
+            }else if(this.fileExplorer.style.display == "block"){
+                this.fileExplorer.style.display = "none"
+            }
+
         }
     }
 

@@ -317,18 +317,23 @@ dropdown-menu-element{
       color: var(--palette-text-primary);
       border: 1px solid rgba(0, 0, 0, .15);
    }
+
+   .blog-read-div{
+      max-width: 650px;
+      min-width: 425px;
+   }
 }
 
 /** Blog read mode css */
 .blog-read-div{
    display: flex;
    flex-direction: column;
-   max-width: 735px;
-   min-width: 580px;
+   max-width: 725px;
+   min-width: 725px;
    margin: 0px auto 20px;
    padding: 15px;
+   align-items: center;
    justify-content: center;
-   align-items: left;
    background-color: transparent;
 }
 
@@ -336,7 +341,7 @@ dropdown-menu-element{
    margin: 10px;
    max-height: 100%;
    max-width: 100%;
-   align-items: center;
+  
 }
 
 .blog-read-div img{
@@ -344,6 +349,7 @@ dropdown-menu-element{
    height : auto;
    max-height: 100%;
    max-width: 100%;
+
 }
 
 .blog-read-div p{
@@ -351,6 +357,6 @@ dropdown-menu-element{
 
 globular-file-explorer{
    position: fixed;
-   top: 65px;
-   left: 0px;
+   top: 60px;
+   right: 0px;
 }

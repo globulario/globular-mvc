@@ -67,7 +67,7 @@ export class Menu extends HTMLElement {
 
             .bottom{
                 right: -16px;
-                top: 40px;
+                top: 54px;
             }
 
             #overflow_menu_div{
@@ -92,6 +92,10 @@ export class Menu extends HTMLElement {
 
             #${this.id}_img:hover{
                 cursor: pointer;
+            }
+
+            #${this.id}_icon{
+                display: none;
             }
 
         </style>
@@ -124,6 +128,11 @@ export class Menu extends HTMLElement {
 
     // The connection callback.
     connectedCallback() {
+        let img = this.shadowRoot.getElementById(this.id + "_img")
+        let ico = this.shadowRoot.getElementById(this.id + "_icon")
+        if (img.src.length == 0) {
+            ico.style.display = "block";
+        }
 
         let menuPictureDiv = this.shadowRoot.getElementById(this.id + "_picture_div")
 
@@ -140,6 +149,10 @@ export class Menu extends HTMLElement {
 
                 if (!overBtn && !overMenu && !this.keepOpen) {
                     document.removeEventListener("click", handler)
+                    let icon = this.getIconDiv().querySelector("iron-icon")
+                    if (img.src.length == 0){
+                        icon.style.removeProperty("--iron-icon-fill-color")
+                    }
                     menu.parentNode.removeChild(menu)
                 }
             }
@@ -147,10 +160,20 @@ export class Menu extends HTMLElement {
 
         // Here I will display the user notification panel.
         menuPictureDiv.onclick = (evt) => {
+           
+            // hide the icon div if image is not undefined.
+            let img = this.shadowRoot.getElementById(this.id + "_img")
+            let ico = this.shadowRoot.getElementById(this.id + "_icon")
+            let icon = this.getIconDiv().querySelector("iron-icon")
+
+            if (img.src.length == 0) {
+                ico.style.display = "block";
+                icon.style.setProperty("--iron-icon-fill-color", "var(--palette-primary-main)")
+            }
 
             // test if the menu is set.
             let menu = this.shadowRoot.getElementById(this.id + "_menu_div");
-
+    
             // simply remove it if it already exist.
             if (menu != undefined) {
                 var rectMenu = menu.getBoundingClientRect();
@@ -158,6 +181,9 @@ export class Menu extends HTMLElement {
                 if (!overMenu) {
                     document.removeEventListener("click", handler)
                     menu.parentNode.removeChild(menu)
+                    if (img.src.length == 0){
+                        icon.style.removeProperty("--iron-icon-fill-color")
+                    }
                 }
                 return;
             }
@@ -167,8 +193,11 @@ export class Menu extends HTMLElement {
 
             // set the handler.
             document.addEventListener("click", handler);
-            if(this.onclick !=undefined){
-                this.onclick()
+
+            
+            let fileExplorer = document.querySelector("globular-file-explorer")
+            if(fileExplorer!=null){
+                fileExplorer.style.display = "none"
             }
         }
     }
@@ -227,6 +256,7 @@ export class Menu extends HTMLElement {
 
     // Set account information.
     init() {
+
         /** Nothing to do here... */
         // On logout I must reset the icon and the image.
         Model.eventHub.subscribe("logout_event_",
