@@ -14,13 +14,17 @@ import Underline from '@editorjs/underline';
 import LinkTool from '@editorjs/link'
 import { theme } from "./Theme";
 import { ApplicationView } from '../ApplicationView';
-import { CreateBlogPostRequest, GetBlogPostsByAuthorRequest, SaveBlogPostRequest, BlogPost, DeleteBlogPostRequest } from 'globular-web-client/blog/blog_pb';
+import { CreateBlogPostRequest, GetBlogPostsByAuthorRequest, SaveBlogPostRequest, BlogPost, DeleteBlogPostRequest, AddEmojiRequest, Emoji } from 'globular-web-client/blog/blog_pb';
 import { Application } from '../Application';
 import { Model } from '../Model';
 import * as edjsHTML from 'editorjs-html'
 import { Account } from '../Account';
 import { v4 as uuidv4 } from "uuid";
 import '@polymer/iron-icons/communication-icons'
+import { Database, Picker } from 'emoji-picker-element'
+import { GetThumbnailsResponse } from 'globular-web-client/file/file_pb';
+import * as getUuidByString from 'uuid-by-string';
+import { localToGlobal } from './utility';
 
 /**
  * Search Box
@@ -57,6 +61,7 @@ export class BlogPostElement extends HTMLElement {
                 display: flex;
                 border-bottom: 1px solid var(--palette-background-paper);
                 padding: 4px;
+                padding-left: 16px;
                 align-items: center;
                 background-color: transparent;
             }
@@ -71,8 +76,8 @@ export class BlogPostElement extends HTMLElement {
             #blog-reader-title{
                 flex-grow: 1;
                 text-align: left;
+                margin-left: 16px;
                 padding: 8px;
-                text-align: left;
             }
 
             .blog-options-panel{
@@ -170,9 +175,9 @@ export class BlogPostElement extends HTMLElement {
         `
 
         // The comments container...
-        let blogComments = new BlogComments()
-        blogComments.slot = "blog-comments"
-        this.appendChild(blogComments)
+        this.blogComments = new BlogComments()
+        this.blogComments.slot = "blog-comments"
+        this.appendChild(this.blogComments)
 
         this.collapse_btn = this.shadowRoot.querySelector("#collapse-btn")
         this.collapse_panel = this.shadowRoot.querySelector("#collapse-panel")
@@ -232,10 +237,10 @@ export class BlogPostElement extends HTMLElement {
 
             // Delete the blog...
             Model.globular.blogService.deleteBlogPost(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
-                .then(rsp=>{
-                    Model.eventHub.publish(this.blog.getUuid()+"_blog_delete_event", {}, false)
+                .then(rsp => {
+                    Model.eventHub.publish(this.blog.getUuid() + "_blog_delete_event", {}, false)
                 })
-                .catch(e=>ApplicationView.displayMessage(e, 3000))
+                .catch(e => ApplicationView.displayMessage(e, 3000))
         }
 
         // switch to edit mode...
@@ -263,7 +268,9 @@ export class BlogPostElement extends HTMLElement {
 
         this.blog = blog;
 
-        if(this.blog.getAuthor() != Application.account.id){
+        this.blogComments.setBlog(blog)
+
+        if (this.blog.getAuthor() != Application.account.id) {
             let editBtn = this.shadowRoot.querySelector("#blog-reader-edit-btn")
             editBtn.parentNode.removeChild(editBtn)
         }
@@ -281,12 +288,12 @@ export class BlogPostElement extends HTMLElement {
             }, false)
         }
 
-        if(this.deleteListener == undefined){
-            Model.eventHub.subscribe(this.blog.getUuid() + "_blog_delete_event", uuid => this.updateListener = uuid, 
-            evt => {
-                // simplity remove it from it parent...
-                this.parentNode.removeChild(this)
-            }, false)
+        if (this.deleteListener == undefined) {
+            Model.eventHub.subscribe(this.blog.getUuid() + "_blog_delete_event", uuid => this.updateListener = uuid,
+                evt => {
+                    // simplity remove it from it parent...
+                    this.parentNode.removeChild(this)
+                }, false)
         }
 
         // Here I will set the blog various information...
@@ -345,12 +352,12 @@ export class BlogPostElement extends HTMLElement {
                 this.titleSpan.style.color = "var(--palette-action-disabled)"
             }
 
-            
-            if(this.blog.getAuthor() != Application.account.id){
+
+            if (this.blog.getAuthor() != Application.account.id) {
                 ApplicationView.displayMessage("your not allowed to edit ", this.blog.getAuthor(), " post!", 3000)
-                return 
+                return
             }
-    
+
             this.keywordsEditList.setValues(this.blog.getKeywordsList())
         }
 
@@ -602,55 +609,55 @@ export class BlogPosts extends HTMLElement {
         // If the blog editor is set to true...
         let authors = []
         if (this.getAttribute("account") != undefined) {
-            Account.getAccount(this.getAttribute("account"), 
-            account=>{
-                // Subcribe to my own blog create event...
-                Model.eventHub.subscribe(account.id + "_publish_blog_event", uuid => this[account.id + "_publish_blog_listener"] = uuid,
-                    evt => {
-                        // Get the date from the event and create the newly
-                        this.setBlog(BlogPost.deserializeBinary(Uint8Array.from(evt.split(","))), true)
-                    }, false)
-
-                authors.push(account.id)
-
-                Account.getContacts(account, "{}", contacts=>{
-                    if (contacts.length == 0) {
-                        this.getBlogs(authors, blogs=>{
-                            this.setBlogPosts(blogs)
-                        })
-                        return
-                    }
-                    let index = 0;
-                    contacts.forEach(contact=>{
-                        Model.eventHub.subscribe(contact._id + "_publish_blog_event", uuid => this[contact._id + "_publish_blog_listener"] = uuid,
+            Account.getAccount(this.getAttribute("account"),
+                account => {
+                    // Subcribe to my own blog create event...
+                    Model.eventHub.subscribe(account.id + "_publish_blog_event", uuid => this[account.id + "_publish_blog_listener"] = uuid,
                         evt => {
                             // Get the date from the event and create the newly
                             this.setBlog(BlogPost.deserializeBinary(Uint8Array.from(evt.split(","))), true)
                         }, false)
 
-                        authors.push(contact._id)
-                        if (index == contacts.length - 1) {
-                            this.getBlogs(authors, blogs=>{
+                    authors.push(account.id)
+
+                    Account.getContacts(account, "{}", contacts => {
+                        if (contacts.length == 0) {
+                            this.getBlogs(authors, blogs => {
                                 this.setBlogPosts(blogs)
                             })
+                            return
                         }
+                        let index = 0;
+                        contacts.forEach(contact => {
+                            Model.eventHub.subscribe(contact._id + "_publish_blog_event", uuid => this[contact._id + "_publish_blog_listener"] = uuid,
+                                evt => {
+                                    // Get the date from the event and create the newly
+                                    this.setBlog(BlogPost.deserializeBinary(Uint8Array.from(evt.split(","))), true)
+                                }, false)
 
-                        index++
-                    })
-                }, err=>ApplicationView.displayMessage(err, 3000))
-            })
+                            authors.push(contact._id)
+                            if (index == contacts.length - 1) {
+                                this.getBlogs(authors, blogs => {
+                                    this.setBlogPosts(blogs)
+                                })
+                            }
+
+                            index++
+                        })
+                    }, err => ApplicationView.displayMessage(err, 3000))
+                })
         }
     }
 
     // Get the list of blogs.
-    getBlogs(authors, callback){
+    getBlogs(authors, callback) {
         console.log("get blogs for authors ", authors)
         let blogs = []
         let index = 0;
-        authors.forEach(author =>{
+        authors.forEach(author => {
             this.getBlogPostsByAuthor(author, blogs_ => {
                 blogs = blogs.concat(blogs_)
-                if(index == authors.length - 1){
+                if (index == authors.length - 1) {
                     callback(blogs)
                 }
                 index++
@@ -659,9 +666,9 @@ export class BlogPosts extends HTMLElement {
     }
 
     setBlog(b, prepend = false) {
-        if(this.querySelector("_" + b.getUuid())!=undefined){
+        if (this.querySelector("_" + b.getUuid()) != undefined) {
             // not append the blog twice...
-            return 
+            return
         }
 
         let blog = new BlogPostElement()
@@ -709,11 +716,11 @@ customElements.define('globular-blog-posts', BlogPosts)
 /**
  * Comments
  */
- export class BlogComments extends HTMLElement {
+export class BlogComments extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor() {
+    constructor(blog) {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
@@ -724,15 +731,28 @@ customElements.define('globular-blog-posts', BlogPosts)
             ${theme}
         </style>
         <div>
-            <slot name="blog-comment-editor">
-            </slot>
+            <slot name="blog-emotions"> </slot>
+            <slot name="blog-comment-editor"></slot>
+            <slot name="blog-comments"></slot>
         </div>
         `
 
-        let editor = new BlogCommentEditor()
-        editor.slot = "blog-comment-editor"
-        this.appendChild(editor)
+        // The emotions 
+        this.emotions = new BlogEmotions() 
+        this.emotions.slot = "blog-emotions"
+        this.appendChild(this.emotions)
 
+        // The comment editior
+        this.editor = new BlogCommentEditor(blog)
+        this.editor.slot = "blog-comment-editor"
+        this.appendChild(this.editor)
+
+    }
+
+    setBlog(blog){
+        this.blog = blog
+        this.editor.setBlog(blog)
+        this.emotions.setBlog(blog)
     }
 
 }
@@ -742,7 +762,7 @@ customElements.define('globular-blog-comments', BlogComments)
 /**
  * Comments
  */
- export class BlogComment extends HTMLElement {
+export class BlogComment extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
@@ -768,12 +788,15 @@ customElements.define('globular-blog-comment', BlogComment)
 /**
  * Comments
  */
- export class BlogCommentEditor extends HTMLElement {
+export class BlogCommentEditor extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor() {
+    constructor(blog) {
         super()
+
+        this.blog = blog
+
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
 
@@ -785,11 +808,8 @@ customElements.define('globular-blog-comment', BlogComment)
             .add-comment-btn{
                 transition: all 1s ease,padding 0.8s linear;
                 display: flex;
-                align-items: center;
-                margin-left: 16px;
-                width: 35%;
+                align-items: baseline;
                 color: var(--palette-action-disabled);
-                border-bottom: 1px solid var(--palette-action-disabled);
                 position: relative;
             }
 
@@ -798,34 +818,84 @@ customElements.define('globular-blog-comment', BlogComment)
             }
 
         </style>
-        <div style="display: flex; position: relative; padding: 10px;">
-            <div>
+        <div style="display: flex; flex-direction: column; position: relative; padding: 10px; padding-left:50px;">
+            <div style="position: absolute; left:8px; top:16px;">
                 <img id="blog-comment-editor-author-picture" style="width: 32px; height: 32px; border-radius: 16px; display:none;"></img>
                 <iron-icon id="blog-comment-editor-author-icon"  icon="account-circle" style="width: 34px; height: 34px; --iron-icon-fill-color:var(--palette-action-disabled); display: block;"></iron-icon>
             </div>
-            <div class="add-comment-btn" style="">
-                <iron-icon  style="width: 16px; height: 16px; --iron-icon-fill-color:var(--palette-action-disabled);" icon="add"></iron-icon>
-                <span>add comment</span> 
-                <paper-ripple recenters></paper-ripple>
+            <div class="add-comment-btn" style="display: flex;">
+                <div style="border-bottom: 1px solid var(--palette-action-disabled); min-width: 200px; margin-right: 5px;">
+                    <iron-icon  style="width: 16px; height: 16px; --iron-icon-fill-color:var(--palette-action-disabled);" icon="add"></iron-icon>
+                    <span>add comment</span> 
+                    <paper-ripple recenters></paper-ripple>
+                </div>
+                <div>
+                    <paper-icon-button id="collapse-btn" icon="editor:insert-emoticon" style="--iron-icon-fill-color:var(--palette-action-disabled);"></paper-icon-button>
+                </div>
             </div>
-            
-            <slot name="edit-comment-content"></slot>
-
+            <div  style="display: flex; flex-direction: column; width: 100%;">
+                <slot name="edit-comment-content"></slot>
+                <iron-collapse id="collapse-panel" style="display: flex; flex-direction: column;">
+                    <emoji-picker></emoji-picker>
+                </iron-collapse>
+                <div id="edit-comment-content" style="display: none; width: 100%; justify-content: end;">
+                    <paper-button id="publish-blog">Cancel</paper-button>
+                    <paper-button id="publish-blog">Send</paper-button>
+                </div>
+            </div>
         </div>
 
         `
-        let addCommentBtn = this.shadowRoot.querySelector(".add-comment-btn")
-        this.shadowRoot.querySelector("paper-ripple").ontransitionend = ()=>{
-            addCommentBtn.style.display = "none"
 
+        this.collapse_btn = this.shadowRoot.querySelector("#collapse-btn")
+        this.collapse_panel = this.shadowRoot.querySelector("#collapse-panel")
+        this.collapse_btn.onclick = () => {
+            if (!this.collapse_panel.opened) {
+                this.collapse_btn.icon = "icons:close"
+            } else {
+                this.collapse_btn.icon = "editor:insert-emoticon"
+            }
+            this.collapse_panel.toggle();
+        }
+
+        let emojiPicker = this.shadowRoot.querySelector("emoji-picker")
+        emojiPicker.addEventListener('emoji-click', event => {
+            console.log(event.detail); // will log something like the above
+            this.collapse_btn.icon = "editor:insert-emoticon"
+            this.collapse_panel.toggle();
+            let rqst = new AddEmojiRequest
+            let emoji = new Emoji
+            emoji.setAccountId(Application.account.id)
+            emoji.setEmoji(JSON.stringify(event.detail))
+            emoji.setParent(this.blog.getUuid())
+            rqst.setUuid(this.blog.getUuid())
+            rqst.setEmoji(emoji)
+
+            Model.globular.blogService.addEmoji(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+            .then(rsp => {
+                // The emoji back from the add request.
+                console.log(rsp.getEmoji())
+                // TODO send event and also create a notification...
+
+            })
+            .catch(e => {
+                ApplicationView.displayMessage(e, 3000)
+            })
+
+        });
+
+        let addCommentBtn = this.shadowRoot.querySelector(".add-comment-btn")
+        this.shadowRoot.querySelector("paper-ripple").ontransitionend = () => {
+            addCommentBtn.style.display = "none"
+            this.collapse_panel.style.display = "none"
             this.editorDiv = document.createElement("div")
             this.editorDiv.id = "_" + uuidv4() + "editorjs"
             this.editorDiv.slot = "edit-comment-content"
             this.editorDiv.style = "width: 100%;"
             this.appendChild(this.editorDiv)
-    
+
             let data = {}
-    
+
             // Here I will create the editor...
             // Here I will create a new editor...
             this.editor = new EditorJS({
@@ -873,14 +943,13 @@ customElements.define('globular-blog-comment', BlogComment)
                 },
                 data: data
             });
-    
+
             // Move the editor inside the 
             this.editor.isReady
                 .then(() => {
                     /** Do anything you need after editor initialization */
                     this.editorDiv.querySelector(".codex-editor__redactor").style.paddingBottom = "0px";
-                    console.log("editor is ready")
-    
+                    this.shadowRoot.querySelector("#edit-comment-content").style.display = "flex"
                 })
                 .catch((reason) => {
                     ApplicationView.displayMessage(`Editor.js initialization failed because of ${reason}`, 3000)
@@ -889,7 +958,7 @@ customElements.define('globular-blog-comment', BlogComment)
 
     }
 
-    connectedCallback(){
+    connectedCallback() {
         Account.getAccount(Application.account.id, a => {
             let img = this.shadowRoot.querySelector("#blog-comment-editor-author-picture")
             let ico = this.shadowRoot.querySelector("#blog-comment-editor-author-icon")
@@ -902,6 +971,83 @@ customElements.define('globular-blog-comment', BlogComment)
         }, e => { })
     }
 
+    setBlog(blog) {
+        this.blog = blog
+    }
 }
 
 customElements.define('globular-blog-comment-editor', BlogCommentEditor)
+
+
+
+/**
+ * Emotion it's all what the life is about after all...
+ */
+ export class BlogEmotions extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor() {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+            ${theme}
+            #container{
+                display: flex;
+                padding: 10px
+            }
+        </style>
+        <div id="container">
+            <slot></slot>
+        </div>
+        `
+
+        // test create offer...
+    }
+
+    addEmotion(emotion){
+        // Here I will add the emotion into the the panel...
+        let emoji = JSON.parse(emotion.getEmoji())
+        let uuid = "_" + getUuidByString(emotion.getEmoji())
+        let emojiDiv = this.querySelector(uuid)
+
+        if(emojiDiv == null){
+            // Here I will create the emoji panel...
+            let html = `
+            <div class="blog-emitions" title="${emoji.emoji.annotation}">
+                ${emoji.unicode}
+            </div>
+            `
+            emojiDiv = this.appendChild(document.createRange().createContextualFragment(html))
+            // The list of pepoel who give that emotion
+            emojiDiv.accounts = [] 
+        }
+
+        // Now I will append the account id in the emotion...
+        if(emojiDiv.accounts.index(emotion.authorId) == -1){
+            // TODO append the account to the display...
+        }
+    }
+
+    // Set the blog...
+    setBlog(blog){
+        this.blog = blog
+        blog.getEmotionsList().forEach(emotion=>{
+            this.addEmotion(emotion)
+        })
+    }
+
+    // Set the comment...
+    setComment(comment){
+        this.comment = comment
+        this.comment.getEmotionsList().forEach(emotion=>{
+            this.addEmotion(emotion)
+        })
+    }
+}
+
+customElements.define('globular-blog-emotions', BlogEmotions)
