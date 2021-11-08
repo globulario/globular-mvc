@@ -738,7 +738,7 @@ export class BlogComments extends HTMLElement {
         `
 
         // The emotions 
-        this.emotions = new BlogEmotions() 
+        this.emotions = new BlogEmotions()
         this.emotions.slot = "blog-emotions"
         this.appendChild(this.emotions)
 
@@ -749,7 +749,7 @@ export class BlogComments extends HTMLElement {
 
     }
 
-    setBlog(blog){
+    setBlog(blog) {
         this.blog = blog
         this.editor.setBlog(blog)
         this.emotions.setBlog(blog)
@@ -872,15 +872,15 @@ export class BlogCommentEditor extends HTMLElement {
             rqst.setEmoji(emoji)
 
             Model.globular.blogService.addEmoji(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
-            .then(rsp => {
-                // The emoji back from the add request.
-                console.log(rsp.getEmoji())
-                // TODO send event and also create a notification...
+                .then(rsp => {
+                    // The emoji back from the add request.
+                    console.log(rsp.getEmoji())
+                    // TODO send event and also create a notification...
 
-            })
-            .catch(e => {
-                ApplicationView.displayMessage(e, 3000)
-            })
+                })
+                .catch(e => {
+                    ApplicationView.displayMessage(e, 3000)
+                })
 
         });
 
@@ -983,7 +983,7 @@ customElements.define('globular-blog-comment-editor', BlogCommentEditor)
 /**
  * Emotion it's all what the life is about after all...
  */
- export class BlogEmotions extends HTMLElement {
+export class BlogEmotions extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
@@ -1009,13 +1009,13 @@ customElements.define('globular-blog-comment-editor', BlogCommentEditor)
         // test create offer...
     }
 
-    addEmotion(emotion){
+    addEmotion(emotion) {
         // Here I will add the emotion into the the panel...
         let emoji = JSON.parse(emotion.getEmoji())
         let uuid = "_" + getUuidByString(emotion.getEmoji())
         let emojiDiv = this.querySelector(uuid)
 
-        if(emojiDiv == null){
+        if (emojiDiv == null) {
             // Here I will create the emoji panel...
             let html = `
             <div class="blog-emitions" title="${emoji.emoji.annotation}">
@@ -1024,27 +1024,29 @@ customElements.define('globular-blog-comment-editor', BlogCommentEditor)
             `
             emojiDiv = this.appendChild(document.createRange().createContextualFragment(html))
             // The list of pepoel who give that emotion
-            emojiDiv.accounts = [] 
+            emojiDiv.accounts = []
         }
 
         // Now I will append the account id in the emotion...
-        if(emojiDiv.accounts.index(emotion.authorId) == -1){
-            // TODO append the account to the display...
+        if (emojiDiv.accounts != null) {
+            if (emojiDiv.accounts.indexOf(emotion.authorId) == -1) {
+                // TODO append the account to the display...
+            }
         }
     }
 
     // Set the blog...
-    setBlog(blog){
+    setBlog(blog) {
         this.blog = blog
-        blog.getEmotionsList().forEach(emotion=>{
+        blog.getEmotionsList().forEach(emotion => {
             this.addEmotion(emotion)
         })
     }
 
     // Set the comment...
-    setComment(comment){
+    setComment(comment) {
         this.comment = comment
-        this.comment.getEmotionsList().forEach(emotion=>{
+        this.comment.getEmotionsList().forEach(emotion => {
             this.addEmotion(emotion)
         })
     }
