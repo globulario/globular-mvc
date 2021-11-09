@@ -654,12 +654,13 @@ export class BlogPosts extends HTMLElement {
 
         let rqst = new GetBlogPostsByAuthorsRequest
         rqst.setAuthorsList(authors)
+        rqst.setMax(100)
 
         let stream = Model.globular.blogService.getBlogPostsByAuthors(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") });
         let blogs = []
 
         stream.on("data", (rsp) => {
-            blogs = blogs.push(rsp.getBlogPost())
+           blogs.push(rsp.getBlogPost())
         });
 
         stream.on("status", (status) => {
