@@ -14,7 +14,7 @@ import Underline from '@editorjs/underline';
 import LinkTool from '@editorjs/link'
 import { theme } from "./Theme";
 import { ApplicationView } from '../ApplicationView';
-import { CreateBlogPostRequest, GetBlogPostsByAuthorRequest, SaveBlogPostRequest, BlogPost, DeleteBlogPostRequest, AddEmojiRequest, Emoji } from 'globular-web-client/blog/blog_pb';
+import { CreateBlogPostRequest, GetBlogPostsByAuthorsRequest, SaveBlogPostRequest, BlogPost, DeleteBlogPostRequest, AddEmojiRequest, Emoji } from 'globular-web-client/blog/blog_pb';
 import { Application } from '../Application';
 import { Model } from '../Model';
 import * as edjsHTML from 'editorjs-html'
@@ -651,17 +651,23 @@ export class BlogPosts extends HTMLElement {
 
     // Get the list of blogs.
     getBlogs(authors, callback) {
-        console.log("get blogs for authors ", authors)
+
+        let rqst = new GetBlogPostsByAuthorsRequest
+        rqst.setAuthorsList(authors)
+
+        let stream = Model.globular.blogService.getBlogPostsByAuthors(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") });
         let blogs = []
-        let index = 0;
-        authors.forEach(author => {
-            this.getBlogPostsByAuthor(author, blogs_ => {
-                blogs = blogs.concat(blogs_)
-                if (index == authors.length - 1) {
-                    callback(blogs)
-                }
-                index++
-            })
+
+        stream.on("data", (rsp) => {
+            blogs = blogs.push(rsp.getBlogPost())
+        });
+
+        stream.on("status", (status) => {
+            if (status.code == 0) {
+                callback(blogs)
+            }else{
+                callback([])
+            }
         })
     }
 
@@ -693,19 +699,6 @@ export class BlogPosts extends HTMLElement {
             // This contain the 
             this.setBlog(b)
         })
-    }
-
-    // display list of posts from a given author...
-    getBlogPostsByAuthor(author, callback) {
-        let rqst = new GetBlogPostsByAuthorRequest
-        rqst.setAuthor(author)
-        Model.globular.blogService.getBlogPostsByAuthor(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
-            .then(rsp => {
-                callback(rsp.getPostsList())
-            })
-            .catch(e => {
-                ApplicationView.displayMessage(e, 3000)
-            })
     }
 
 }
