@@ -1046,9 +1046,16 @@ export class BlogEmotions extends HTMLElement {
                     let pepoleDiv = emojiDiv.querySelector(".emotion-peoples")
                     let span = document.createElement("span")
                     let userName = a.name
+                    uuid = "_" + getUuidByString(emoji.emoji.annotation + a.name)
+                    if(pepoleDiv.querySelector("#" + uuid)!=undefined){
+                        return
+                    }
+                    
                     if(a.firstName.length > 0){
                         userName = a.firstName + " " +a.lastName
                     }
+                    
+                    span.id = uuid
                     span.innerHTML = userName
                     pepoleDiv.appendChild(span)
 
