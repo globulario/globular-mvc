@@ -342,6 +342,6 @@ export let theme = `
     --input-border-radius: 2xp;
     --category-font-color:var(--palette-text-primary);
   }
- 
+
 
 `

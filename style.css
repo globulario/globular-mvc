@@ -365,3 +365,23 @@ globular-file-explorer{
    font-size: 14pt;
    margin-left: 5px;
 }
+
+.emotion-title{
+   color:var(--palette-text-primary);
+   font-size: 1rem;
+   min-width: 150px;
+   text-align: center;
+   padding: 2px;
+   border-bottom: 1px solid var(--palette-background-default);
+}
+
+.emotion-peoples{
+   display: flex;
+   flex-direction: column;
+   font-size: 1rem;
+}
+
+.emotion-peoples span{
+   padding: 3px;
+   text-align: center;
+}

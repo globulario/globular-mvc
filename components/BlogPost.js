@@ -1018,21 +1018,50 @@ export class BlogEmotions extends HTMLElement {
         if (emojiDiv == null) {
             // Here I will create the emoji panel...
             let html = `
-            <div class="blog-emitions" title="${emoji.emoji.annotation}">
+            <div id="${uuid}" class="blog-emitions" style="position: relative;">
                 ${emoji.unicode}
+                <paper-card style="z-index: 100; display: none; flex-direction: column; position: absolute; top: 30px; left: 15px;">
+                    <div class="emotion-title">${emoji.emoji.annotation}</div>
+                    <div class="emotion-peoples"> </div>
+                </paper-card>
             </div>
             `
-            emojiDiv = this.appendChild(document.createRange().createContextualFragment(html))
+            this.appendChild(document.createRange().createContextualFragment(html))
+            emojiDiv = this.querySelector("#" + uuid)
+
             // The list of pepoel who give that emotion
             emojiDiv.accounts = []
+
+            emojiDiv.onmouseenter = ()=>{
+                emojiDiv.querySelector("paper-card").style.display = "flex"
+            }
+
+            emojiDiv.onmouseleave = ()=>{
+                emojiDiv.querySelector("paper-card").style.display = "none"
+            }
         }
 
         // Now I will append the account id in the emotion...
         if (emojiDiv.accounts != null) {
             if (emojiDiv.accounts.indexOf(emotion.authorId) == -1) {
                 // TODO append the account to the display...
+                Account.getAccount(emotion.getAccountId(), a=>{
+                    let pepoleDiv = emojiDiv.querySelector(".emotion-peoples")
+                    let span = document.createElement("span")
+                    let userName = a.name
+                    if(a.firstName.length > 0){
+                        userName = a.firstName + " " +a.lastName
+                    }
+                    span.innerHTML = userName
+                    pepoleDiv.appendChild(span)
+
+                }, e=>{})
             }
         }
+    }
+
+    connectedCallback(){
+
     }
 
     // Set the blog...
