@@ -873,10 +873,7 @@ export class BlogCommentEditor extends HTMLElement {
 
             Model.globular.blogService.addEmoji(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
                 .then(rsp => {
-                    // The emoji back from the add request.
-                    console.log(rsp.getEmoji())
-                    // TODO send event and also create a notification...
-
+                    Model.eventHub.publish( this.blog.getUuid() + "_new_emotion_event", rsp.getEmoji().serializeBinary(), false)
                 })
                 .catch(e => {
                     ApplicationView.displayMessage(e, 3000)
@@ -1012,8 +1009,8 @@ export class BlogEmotions extends HTMLElement {
     addEmotion(emotion) {
         // Here I will add the emotion into the the panel...
         let emoji = JSON.parse(emotion.getEmoji())
-        let uuid = "_" + getUuidByString(emotion.getEmoji())
-        let emojiDiv = this.querySelector(uuid)
+        let uuid = "_" + getUuidByString(emoji.emoji.annotation)
+        let emojiDiv = this.querySelector("#" + uuid)
 
         if (emojiDiv == null) {
             // Here I will create the emoji panel...
@@ -1070,6 +1067,23 @@ export class BlogEmotions extends HTMLElement {
         blog.getEmotionsList().forEach(emotion => {
             this.addEmotion(emotion)
         })
+
+        // Now I will connect emotion event...
+        Model.eventHub.subscribe(blog.getUuid() + "_new_emotion_event", uuid=>{}, evt=>{
+            let emotion = Emoji.deserializeBinary(Uint8Array.from(evt.split(",")))
+
+            Account.getAccount( emotion.getAccountId(), a=>{
+                let userName = a.name
+                if(a.firstName.length > 0){
+                    userName = a.firstName + " " +a.lastName
+                }
+                let emoji = JSON.parse(emotion.getEmoji())
+                ApplicationView.displayMessage(`${userName} put emoji '${emoji.emoji.annotation}' ${emoji.unicode} to your <div style="padding-left: 5px;" onclick="document.getElementById('${blog.getUuid()}').scrollIntoView();">blog</div>`, 3000)
+            }, e=>{})
+           
+            
+            this.addEmotion(emotion)
+        }, false)
     }
 
     // Set the comment...
