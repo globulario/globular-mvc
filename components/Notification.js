@@ -458,6 +458,10 @@ export class NotificationMenu extends Menu {
 
             // Here I will display notification to the Application toast...
             let toast = ApplicationView.displayMessage(notificationDiv.outerHTML, 15000)
+            if (toast == undefined){
+                return 
+            }
+            
             let closeBtn = toast.el.querySelector(`#div_${notification._id}_close_btn`)
             closeBtn.parentNode.parentNode.style.rigth = "-10px"
             closeBtn.style.display = "block"
