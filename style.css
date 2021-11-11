@@ -81,7 +81,7 @@ html[theme="dark"]{
 }
 
 body{
-   background-color: var(--palette-background-paper);
+   background-color: var(--palette-background-default);
    color: var(--palette-text-primary);
 }
 

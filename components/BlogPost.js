@@ -14,7 +14,7 @@ import Underline from '@editorjs/underline';
 import LinkTool from '@editorjs/link'
 import { theme } from "./Theme";
 import { ApplicationView } from '../ApplicationView';
-import { CreateBlogPostRequest, GetBlogPostsByAuthorsRequest, SaveBlogPostRequest, BlogPost, DeleteBlogPostRequest, AddEmojiRequest, Emoji } from 'globular-web-client/blog/blog_pb';
+import { CreateBlogPostRequest, GetBlogPostsByAuthorsRequest, SaveBlogPostRequest, BlogPost, DeleteBlogPostRequest, AddEmojiRequest, Emoji, AddCommentRequest, Comment } from 'globular-web-client/blog/blog_pb';
 import { Application } from '../Application';
 import { Model } from '../Model';
 import * as edjsHTML from 'editorjs-html'
@@ -660,13 +660,13 @@ export class BlogPosts extends HTMLElement {
         let blogs = []
 
         stream.on("data", (rsp) => {
-           blogs.push(rsp.getBlogPost())
+            blogs.push(rsp.getBlogPost())
         });
 
         stream.on("status", (status) => {
             if (status.code == 0) {
                 callback(blogs)
-            }else{
+            } else {
                 callback([])
             }
         })
@@ -741,14 +741,32 @@ export class BlogComments extends HTMLElement {
         this.editor.slot = "blog-comment-editor"
         this.appendChild(this.editor)
 
+
     }
 
     setBlog(blog) {
         this.blog = blog
         this.editor.setBlog(blog)
         this.emotions.setBlog(blog)
+        // Here I will connect the event channel for comment.
+        Model.eventHub.subscribe("new_blog_" + this.blog.getUuid() + "_comment_evt",
+            uuid => this["new_blog_" + this.blog.getUuid() + "_comment_listener"] = uuid,
+            evt => {
+                let comment = Comment.deserializeBinary(Uint8Array.from(evt.split(",")))
+               
+                this.setComment(comment)
+            })
+
+        // Display the comment...
+        this.blog.getCommentsList().forEach(c=>{
+            this.setComment(c)
+        })
     }
 
+    // Append a new comment into the list of comment.
+    setComment(comment) {
+        console.log("--------------> comment ", comment)
+    }
 }
 
 customElements.define('globular-blog-comments', BlogComments)
@@ -833,8 +851,8 @@ export class BlogCommentEditor extends HTMLElement {
                     <emoji-picker></emoji-picker>
                 </iron-collapse>
                 <div id="edit-comment-content" style="display: none; width: 100%; justify-content: end;">
-                    <paper-button id="publish-blog">Cancel</paper-button>
-                    <paper-button id="publish-blog">Send</paper-button>
+                    <paper-button id="cancel-blog-comment">Cancel</paper-button>
+                    <paper-button id="publish-blog-comment">Publish</paper-button>
                 </div>
             </div>
         </div>
@@ -867,7 +885,7 @@ export class BlogCommentEditor extends HTMLElement {
 
             Model.globular.blogService.addEmoji(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
                 .then(rsp => {
-                    Model.eventHub.publish( this.blog.getUuid() + "_new_emotion_event", rsp.getEmoji().serializeBinary(), false)
+                    Model.eventHub.publish(this.blog.getUuid() + "_new_emotion_event", rsp.getEmoji().serializeBinary(), false)
                 })
                 .catch(e => {
                     ApplicationView.displayMessage(e, 3000)
@@ -875,6 +893,7 @@ export class BlogCommentEditor extends HTMLElement {
 
         });
 
+        // Set the comment editior
         let addCommentBtn = this.shadowRoot.querySelector(".add-comment-btn")
         this.shadowRoot.querySelector("paper-ripple").ontransitionend = () => {
             addCommentBtn.style.display = "none"
@@ -947,7 +966,29 @@ export class BlogCommentEditor extends HTMLElement {
                 });
         }
 
+        // Publish the comment
+        let publishCommentButton = this.shadowRoot.querySelector("#publish-blog-comment")
+        publishCommentButton.onclick = () => {
+            this.editor.save().then((outputData) => {
+                let rqst = new AddCommentRequest
+                let comment = new Comment
+                rqst.setUuid(this.blog.getUuid())
+                comment.setAccountId(Application.account.id)
+                comment.setLanguage(navigator.language.split("-")[0])
+                comment.setText(JSON.stringify(outputData))
+                rqst.setComment(comment)
+
+                Model.globular.blogService.addComment(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+                    .then(rsp => {
+                        Model.eventHub.publish("new_blog_" + this.blog.getUuid() + "_comment_evt", rsp.getComment().serializeBinary(), false)
+                    })
+
+            })
+        }
+
     }
+
+
 
     connectedCallback() {
         Account.getAccount(Application.account.id, a => {
@@ -1023,11 +1064,11 @@ export class BlogEmotions extends HTMLElement {
             // The list of pepoel who give that emotion
             emojiDiv.accounts = []
 
-            emojiDiv.onmouseenter = ()=>{
+            emojiDiv.onmouseenter = () => {
                 emojiDiv.querySelector("paper-card").style.display = "flex"
             }
 
-            emojiDiv.onmouseleave = ()=>{
+            emojiDiv.onmouseleave = () => {
                 emojiDiv.querySelector("paper-card").style.display = "none"
             }
         }
@@ -1036,29 +1077,29 @@ export class BlogEmotions extends HTMLElement {
         if (emojiDiv.accounts != null) {
             if (emojiDiv.accounts.indexOf(emotion.authorId) == -1) {
                 // TODO append the account to the display...
-                Account.getAccount(emotion.getAccountId(), a=>{
+                Account.getAccount(emotion.getAccountId(), a => {
                     let pepoleDiv = emojiDiv.querySelector(".emotion-peoples")
                     let span = document.createElement("span")
                     let userName = a.name
                     uuid = "_" + getUuidByString(emoji.emoji.annotation + a.name)
-                    if(pepoleDiv.querySelector("#" + uuid)!=undefined){
+                    if (pepoleDiv.querySelector("#" + uuid) != undefined) {
                         return
                     }
-                    
-                    if(a.firstName.length > 0){
-                        userName = a.firstName + " " +a.lastName
+
+                    if (a.firstName.length > 0) {
+                        userName = a.firstName + " " + a.lastName
                     }
-                    
+
                     span.id = uuid
                     span.innerHTML = userName
                     pepoleDiv.appendChild(span)
 
-                }, e=>{})
+                }, e => { })
             }
         }
     }
 
-    connectedCallback(){
+    connectedCallback() {
 
     }
 
@@ -1070,19 +1111,19 @@ export class BlogEmotions extends HTMLElement {
         })
 
         // Now I will connect emotion event...
-        Model.eventHub.subscribe(blog.getUuid() + "_new_emotion_event", uuid=>{}, evt=>{
+        Model.eventHub.subscribe(blog.getUuid() + "_new_emotion_event", uuid => { }, evt => {
             let emotion = Emoji.deserializeBinary(Uint8Array.from(evt.split(",")))
 
-            Account.getAccount( emotion.getAccountId(), a=>{
+            Account.getAccount(emotion.getAccountId(), a => {
                 let userName = a.name
-                if(a.firstName.length > 0){
-                    userName = a.firstName + " " +a.lastName
+                if (a.firstName.length > 0) {
+                    userName = a.firstName + " " + a.lastName
                 }
                 let emoji = JSON.parse(emotion.getEmoji())
                 ApplicationView.displayMessage(`${userName} put emoji '${emoji.emoji.annotation}' ${emoji.unicode} to your <div style="padding-left: 5px;" onclick="document.getElementById('${blog.getUuid()}').scrollIntoView();">blog</div>`, 3000)
-            }, e=>{})
-           
-            
+            }, e => { })
+
+
             this.addEmotion(emotion)
         }, false)
     }
