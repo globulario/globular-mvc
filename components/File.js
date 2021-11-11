@@ -29,6 +29,17 @@ import { Application } from '../Application';
 import { RunCmdRequest } from 'globular-web-client/admin/admin_pb';
 import { GetSharedResourceRqst, SubjectType } from 'globular-web-client/rbac/rbac_pb';
 
+function escapePathSpace(path){
+    let values = path.split("/")
+    values.forEach(v=>{
+        if(v.indexOf(" ") > 0){
+            v = `"${v}"`
+        }
+    })
+
+    return values.join("/")
+}
+
 function getElementIndex(element) {
     return Array.from(element.parentNode.children).indexOf(element);
 }
@@ -746,21 +757,17 @@ export class FilesView extends HTMLElement {
         } else if (evt.dataTransfer.getData("Url") != undefined) {
             // Here we got an url...
             let url = evt.dataTransfer.getData("Url");
-
-            // TODO get it from the configuration object globular.config["Data"]
-            // Model.globular.config["DataPath"]
-            let root = "/var/globular/data"
-            //"/home/dave/go/src/github.com/globulario/Globular/data"
-
+            let root = Model.globular.config.DataPath
+   
             // Depending of your need... or the hour of the day.
             if (url.endsWith(".torrent") || url.startsWith("magnet:")) {
                 // there is the way to install the torrent client on the server side.
                 // https://www.maketecheasier.com/how-to-download-torrents-from-the-command-line-in-ubuntu/
                 // there is an exemple of the command called on the sever side.
-                let dest = root + "/files" + this.__dir__.path
+                let dest = "/files" + this.__dir__.path
                 let rqst = new RunCmdRequest
                 rqst.setCmd("transmission-cli")
-                rqst.setArgsList(["-f", "killall transmission-cli", url, "-w", dest])
+                rqst.setArgsList(["-f", "killall transmission-cli", url, "-w", escapePathSpace(dest)])
                 rqst.setBlocking(true)
 
                 let stream = Application.globular.adminService.runCmd(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
@@ -825,10 +832,12 @@ export class FilesView extends HTMLElement {
                 let rqst = new RunCmdRequest
                 rqst.setCmd("youtube-dl")
                 let dest = root + "/files" + this.__dir__.path + "/%(title)s.%(ext)s"
+                
+                
                 if (mp3Radio.checked) {
-                    rqst.setArgsList(["-f", "bestaudio", "--extract-audio", "--audio-format", "mp3", "--audio-quality", "0", "-o", dest, url]);
+                    rqst.setArgsList(["-f", "bestaudio", "--extract-audio", "--audio-format", "mp3", "--audio-quality", "0", "-o", escapePathSpace(dest), url]);
                 } else {
-                    rqst.setArgsList(["-f", "mp4", "-o", dest, url])
+                    rqst.setArgsList(["-f", "mp4", "-o", escapePathSpace(dest), url])
                 }
 
                 rqst.setBlocking(true)
