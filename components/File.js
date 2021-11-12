@@ -30,14 +30,16 @@ import { RunCmdRequest } from 'globular-web-client/admin/admin_pb';
 import { GetSharedResourceRqst, SubjectType } from 'globular-web-client/rbac/rbac_pb';
 
 function escapePathSpace(path){
-    let values = path.split("/")
+    /*let values = path.split("/")
     values.forEach(v=>{
         if(v.indexOf(" ") > 0){
-            v = `"${v}"`
+            //v = `"${v}"`
         }
     })
 
     return values.join("/")
+    */
+   return path
 }
 
 function getElementIndex(element) {
@@ -831,7 +833,7 @@ export class FilesView extends HTMLElement {
             okBtn.onclick = () => {
                 let rqst = new RunCmdRequest
                 rqst.setCmd("youtube-dl")
-                let dest = root + "/files" + this.__dir__.path + "/%(title)s.%(ext)s"
+                let dest = root +  `/files${this.__dir__.path}/%(title)s.%(ext)s`
                 
                 
                 if (mp3Radio.checked) {
