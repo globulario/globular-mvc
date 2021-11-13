@@ -35,9 +35,6 @@ function getFileConfig(url: string, callback: (obj: any) => void, errorcallback:
   };
 
   xmlhttp.open("GET", url, true);
-
-  xmlhttp.setRequestHeader("token", localStorage.getItem("user_token"));
-  xmlhttp.setRequestHeader("application", Model.application);
   xmlhttp.setRequestHeader("domain", Model.domain);
 
   xmlhttp.send();
