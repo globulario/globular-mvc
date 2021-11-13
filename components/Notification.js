@@ -244,7 +244,7 @@ export class NotificationMenu extends Menu {
             (account) => {
                 this.clearUserNotifications()
                 Model.eventHub.unSubscribe(account.name + "_notification_event", this.account_notification_listener)
-            }, true)
+            }, true, this)
 
         // The logout event.
         Model.eventHub.subscribe("login_event",
@@ -264,7 +264,7 @@ export class NotificationMenu extends Menu {
                             this.userNotificationsCollapse.toggle()
                         }
                     }, false)
-            }, true)
+            }, true, this)
 
         Model.eventHub.subscribe("set_application_notifications_event",
             (uuid) => {
@@ -272,7 +272,7 @@ export class NotificationMenu extends Menu {
             },
             (notifications) => {
                 this.setApplicationNofications(notifications)
-            }, true)
+            }, true, this)
 
         Model.eventHub.subscribe("set_user_notifications_event",
             (uuid) => {
@@ -280,7 +280,7 @@ export class NotificationMenu extends Menu {
             },
             (notifications) => {
                 this.setUserNofications(notifications)
-            }, true)
+            }, true, this)
 
         // Network event.
         Model.eventHub.subscribe(Model.application + "_notification_event",
@@ -294,7 +294,7 @@ export class NotificationMenu extends Menu {
                 if (!this.applicationNotificationsCollapse.opened) {
                     this.applicationNotificationsCollapse.toggle()
                 }
-            }, false)
+            }, false, this)
 
     }
 
@@ -522,7 +522,7 @@ export class NotificationMenu extends Menu {
                             this.userNotificationsDiv.style.display = "none"
                         }
                     },
-                    false
+                    false, this
                 );
             }, err => {
                 ApplicationView.displayMessage(err, 3000)

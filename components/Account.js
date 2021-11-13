@@ -41,7 +41,7 @@ export class AccountMenu extends Menu {
         this.account = null;
         this.resetProfilePicture()
       },
-      true)
+      true, this)
 
     // Refresh account event.
 
@@ -59,7 +59,7 @@ export class AccountMenu extends Menu {
       (data) => {
         this.setProfilePicture(data.profilPicture_)
       },
-      true)
+      true, this)
 
     let html = `
             <style>

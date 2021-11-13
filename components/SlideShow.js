@@ -33,7 +33,7 @@ export class SlideShow extends HTMLElement {
             () => {
                 this.stop();
             },
-            true
+            true, this
         );
 
         // Settings event
@@ -45,7 +45,7 @@ export class SlideShow extends HTMLElement {
             (saveSetting) => {
                 this.start()
             },
-            true
+            true, this
         );
 
         // default is fiteen seconds.

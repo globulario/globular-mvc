@@ -66,7 +66,7 @@ export class Session extends Model {
                 this.state_ = obj.state;
                 this.lastStateTime = new Date(obj.lastStateTime * 1000); // a number to date
 
-            }, false)
+            }, false, this)
 
         Model.eventHub.subscribe(`__session_state_${this.account.id}_change_event__`,
             (uuid: string) => {
@@ -83,7 +83,7 @@ export class Session extends Model {
                 }, (err: any) => {
                     ApplicationView.displayMessage(err, 3000)
                 })
-            }, true)
+            }, true, this)
     }
 
     initData(initCallback: () => void, errorCallback: (err: any) => void) {

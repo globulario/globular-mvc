@@ -610,7 +610,7 @@ export class FilesView extends HTMLElement {
             (dir) => {
                 this.__dir__ = dir
                 this.setDir(dir)
-            }, true
+            }, true, this
         )
 
         // The drop file event.
@@ -644,7 +644,7 @@ export class FilesView extends HTMLElement {
             } else if (this.edit == "copy") {
                 this.copy(infos.dir)
             }
-        }, true)
+        }, true, this)
     }
 
     clearSelection() {
@@ -1048,7 +1048,7 @@ export class FilesListView extends FilesView {
                     checkbox.style.visibility = "hidden"
                     delete this.selected[f.path]
                 }
-            }, true)
+            }, true, this)
 
 
             let span = row.querySelector("span")
@@ -1421,7 +1421,7 @@ export class FilesIconView extends FilesView {
                         checkbox.style.display = "none"
                         delete this.selected[file.path]
                     }
-                }, true)
+                }, true, this)
 
                 // Here I will append the interation.
                 fileIconDiv.onmouseover = (evt) => {
@@ -1684,7 +1684,7 @@ export class PathNavigator extends HTMLElement {
             },
             (dir) => {
                 this.setDir(dir)
-            }, true
+            }, true, this
         )
     }
 
@@ -2148,7 +2148,7 @@ export class FileNavigator extends HTMLElement {
                     evt => {
                         // refresh the shared...
                         this.initShared()
-                    }, false)
+                    }, false, this)
             }
 
             _readDir(share.getPath(), dir => {
@@ -2766,7 +2766,7 @@ export class FileExplorer extends HTMLElement {
                 (dir) => {
                     // keep the active path.
                     this.setDir(dir)
-                }, true
+                }, true, this
             )
         }
 
@@ -2779,7 +2779,7 @@ export class FileExplorer extends HTMLElement {
                     if (path.startsWith(this.getRoot())) {
                         _publishSetDirEvent(this.path)
                     }
-                }, false)
+                }, false, this)
         }
 
         // Permissions 
@@ -2794,7 +2794,7 @@ export class FileExplorer extends HTMLElement {
                     // I will display the permission manager.
                     this.fileSelectionPanel.appendChild(this.permissionManager)
 
-                }, false)
+                }, false, this)
         }
 
         // Reload the content of a dir with the actual dir content description on the server.
@@ -2810,7 +2810,7 @@ export class FileExplorer extends HTMLElement {
                         }
                         this.fileNavigator.reload(dir)
                     }, () => { }, true)
-                }, false)
+                }, false, this)
         }
 
         // Refresh the interface.
@@ -2823,7 +2823,7 @@ export class FileExplorer extends HTMLElement {
                         // refresh the interface.
                         this.refreshBtn.click();
                     }
-                }, false)
+                }, false, this)
         }
 
 
@@ -2834,7 +2834,7 @@ export class FileExplorer extends HTMLElement {
             }, (path) => {
                 this.playVideo(path)
 
-            }, true)
+            }, true, this)
         }
 
         // Play audio
@@ -2844,7 +2844,7 @@ export class FileExplorer extends HTMLElement {
             }, (path) => {
                 this.playAudio(path)
 
-            }, true)
+            }, true, this)
         }
 
         // Read file
@@ -2853,7 +2853,7 @@ export class FileExplorer extends HTMLElement {
                 this.listeners["__read_file__"] = uuid
             }, (path) => {
                 this.readFile(path)
-            }, true)
+            }, true, this)
         }
 
         // Show image...
@@ -2865,7 +2865,7 @@ export class FileExplorer extends HTMLElement {
                 this.showImage(path)
 
 
-            }, true)
+            }, true, this)
         }
 
         _readDir(this.root, (dir) => {
@@ -3629,7 +3629,7 @@ export class FilesUploader extends HTMLElement {
                 this.uploadFiles(evt.path, evt.files)
 
             }
-            , true
+            , true, this
         )
 
         // Upload link (youtube, pornhub...)
@@ -3638,7 +3638,7 @@ export class FilesUploader extends HTMLElement {
             (evt) => {
                 this.uploadLink(evt.pid, evt.path, evt.infos, evt.lnk, evt.done)
             }
-            , true
+            , true, this
         )
 
         // Upload torrent files.
@@ -3647,7 +3647,7 @@ export class FilesUploader extends HTMLElement {
             (evt) => {
                 this.uploadTorrent(evt.pid, evt.path, evt.infos, evt.lnk, evt.done)
             }
-            , true
+            , true, this
         )
     }
 

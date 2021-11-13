@@ -157,7 +157,7 @@ export class SessionState extends HTMLElement {
                 this.account.session.lastStateTime_ = new Date(obj.lastStateTime * 1000)
                 this.account.session.state_ = obj.state
 
-            }, false)
+            }, false, this)
 
 
 

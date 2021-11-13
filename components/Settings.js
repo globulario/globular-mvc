@@ -278,7 +278,7 @@ export class SettingsPage extends HTMLElement {
       } else {
         this.container.style.display = "none"
       }
-    })
+    }, true, this)
   }
 
   appendSettings(title, subtitle) {

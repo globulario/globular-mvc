@@ -272,7 +272,7 @@ export class Menu extends HTMLElement {
                 }
 
             },
-            true)
+            true, this)
     }
 }
 

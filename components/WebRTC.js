@@ -144,7 +144,7 @@ export class VideoConversation extends HTMLElement {
 
                 }
 
-            }, true)
+            }, true, this)
 
         Model.eventHub.subscribe(`leave_conversation_${conversationUuid}_evt`,
             (uuid) => {
@@ -170,7 +170,7 @@ export class VideoConversation extends HTMLElement {
                     }
                 }
             },
-            false);
+            false, this);
 
         // When we receive peer connection offer...
         Model.eventHub.subscribe(`on_webrtc_offer_${conversationUuid + "_" + Application.account._id}_evt`, (uuid) => { }, (evt) => {
@@ -203,7 +203,7 @@ export class VideoConversation extends HTMLElement {
                 })
             })
 
-        }, false)
+        }, false, this)
 
         // When we receive peers connection answer...
         Model.eventHub.subscribe(`on_webrtc_answer_${conversationUuid + "_" + Application.account._id}_evt`, (uuid) => { }, (evt) => {
@@ -212,7 +212,7 @@ export class VideoConversation extends HTMLElement {
             let answer = new RTCSessionDescription(event.answer)
             rtcPeerConnection.setRemoteDescription(answer);
 
-        }, false)
+        }, false, this)
 
         // When we receive a ace candidate answer
         Model.eventHub.subscribe(`on_webrtc_candidate_${conversationUuid + "_" + Application.account._id}_evt`, (uuid) => { }, (event) => {
@@ -225,7 +225,7 @@ export class VideoConversation extends HTMLElement {
                     this.pendingCanditates.push(icecandidate)
                 }
             })
-        }, false)
+        }, false, this)
 
     }
 

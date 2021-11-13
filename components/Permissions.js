@@ -347,7 +347,7 @@ export class PermissionsManager extends HTMLElement {
                         this.setPath(this.path)
                         Model.eventHub.publish(Application.account.id + "_change_permission_event", {},false)
                     }).catch(err => ApplicationView.displayMessage(err, 3000))
-                }, true)
+                }, true, this)
         }
     }
 

@@ -233,7 +233,7 @@ export class Layout extends HTMLElement {
         // Here the user is log in...
         this.showSideBar();
       },
-      true
+      true, this
     );
     Model.eventHub.subscribe(
       "logout_event",
@@ -244,7 +244,7 @@ export class Layout extends HTMLElement {
         // Here the user is log out...
         this.hideSideBar();
       },
-      true
+      true, this
     );
   }
   width() {

@@ -308,7 +308,7 @@ export class SentContactInvitations extends HTMLElement {
                         ApplicationView.displayMessage(err, 3000)
                     })
             },
-            false)
+            false, this)
 
         this.shadowRoot.innerHTML = `
         <style>
@@ -356,7 +356,7 @@ export class SentContactInvitations extends HTMLElement {
                         ApplicationView.displayMessage(err, 3000)
                     })
             },
-            false)
+            false, this)
 
         Model.eventHub.subscribe("declined_" + account.id + "_evt",
             (uuid) => { },
@@ -370,7 +370,7 @@ export class SentContactInvitations extends HTMLElement {
                         ApplicationView.displayMessage(err, 3000)
                     })
             },
-            false)
+            false, this)
 
         Model.eventHub.subscribe("accepted_" + account.id + "_evt",
             (uuid) => { },
@@ -384,7 +384,7 @@ export class SentContactInvitations extends HTMLElement {
                         ApplicationView.displayMessage(err, 3000)
                     })
             },
-            false)
+            false, this)
     }
 
     // The connection callback.
@@ -454,7 +454,7 @@ export class ReceivedContactInvitations extends HTMLElement {
                         ApplicationView.displayMessage(err, 3000)
                     })
             },
-            false)
+            false, this)
 
         Model.eventHub.subscribe("revoked_" + account.id + "_evt",
             (uuid) => { },
@@ -468,7 +468,7 @@ export class ReceivedContactInvitations extends HTMLElement {
                         ApplicationView.displayMessage(err, 3000)
                     })
             },
-            false)
+            false, this)
 
         Model.eventHub.subscribe("declined_" + account.id + "_evt",
             (uuid) => { },
@@ -482,7 +482,7 @@ export class ReceivedContactInvitations extends HTMLElement {
                         ApplicationView.displayMessage(err, 3000)
                     })
             },
-            false)
+            false, this)
 
         Model.eventHub.subscribe("accepted_" + account.id + "_evt",
             (uuid) => { },
@@ -496,7 +496,7 @@ export class ReceivedContactInvitations extends HTMLElement {
                         ApplicationView.displayMessage(err, 3000)
                     })
             },
-            false)
+            false, this)
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -599,7 +599,7 @@ export class ContactList extends HTMLElement {
                         ApplicationView.displayMessage(err, 3000)
                     })
             },
-            false)
+            false, this)
 
         Model.eventHub.subscribe("deleted_" + account.id + "_evt",
             (uuid) => { },
@@ -613,7 +613,7 @@ export class ContactList extends HTMLElement {
                         ApplicationView.displayMessage(err, 3000)
                     })
             },
-            false)
+            false, this)
 
 
         // Innitialisation of the layout.

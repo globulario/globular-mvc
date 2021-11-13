@@ -100,18 +100,7 @@ export class Application extends Model {
 
   public static account: Account;
 
-  // Event listener's
-  private login_event_listener: string;
-  private register_event_listener: string;
-  private logout_event_listener: string;
-  private delete_notification_event_listener: string;
-  private invite_contact_listener: string;
-  private settings_event_listener: string;
-  private revoke_contact_invitation_listener: string;
-  private accept_contact_invitation_listener: string;
-  private decline_contact_invitation_listener: string; 
-  private delete_contact_event_listener: string; 
-  
+
   /**
    * Create a new application with a given name. The view
    * can be any ApplicationView or derived ApplicationView class.
@@ -213,103 +202,91 @@ export class Application extends Model {
 
       // Here I will connect the listener's
       // The login event.
-      if (this.login_event_listener == undefined) {
-        Model.eventHub.subscribe(
-          "login_event_",
-          (uuid: string) => {
-            this.login_event_listener = uuid;
-          },
-          (evt: any) => {
-            // Here I will try to login the user.
-            this.login(
-              evt.userId,
-              evt.pwd,
-              (account: Account) => {
-                // Here I will send a login success.
-                console.log("login_event")
-                // TODO the login will be publish later when the user data will be init
+      Model.eventHub.subscribe(
+        "login_event_",
+        (uuid: string) => {
+        },
+        (evt: any) => {
+          // Here I will try to login the user.
+          this.login(
+            evt.userId,
+            evt.pwd,
+            (account: Account) => {
+              // Here I will send a login success.
+              console.log("login_event")
+              // TODO the login will be publish later when the user data will be init
 
-                Model.eventHub.publish("login_event", account, true);
-              },
-              (err: any) => {
-                ApplicationView.displayMessage(err, 4000);
-              }
-            );
-          },
-          true
-        );
-      }
+              Model.eventHub.publish("login_event", account, true);
+            },
+            (err: any) => {
+              ApplicationView.displayMessage(err, 4000);
+            }
+          );
+        },
+        true, 
+        this
+      );
 
-      if (this.login_event_listener == undefined) {
-        Model.eventHub.subscribe(
-          "logout_event_",
-          (uuid: string) => {
-            this.logout_event_listener = uuid;
-          },
-          (evt: any) => {
-            Application.logout();
-          },
-          true
-        );
-      }
+      Model.eventHub.subscribe(
+        "logout_event_",
+        (uuid: string) => {
+        },
+        (evt: any) => {
+          Application.logout();
+        },
+        true, this
+      );
+      // The register event.
+      Model.eventHub.subscribe(
+        "settings_event_",
+        (uuid: string) => {
+        },
+        (evt: any) => {
+          this.settings();
+        },
+        true, this
+      );
 
-      if (this.settings_event_listener == undefined) {
-        // The register event.
-        Model.eventHub.subscribe(
-          "settings_event_",
-          (uuid: string) => {
-            this.settings_event_listener = uuid;
-          },
-          (evt: any) => {
-            this.settings();
-          },
-          true
-        );
-      }
 
       // The register event.
-      if (this.register_event_listener == undefined) {
-        Model.eventHub.subscribe(
-          "register_event_",
-          (uuid: string) => {
-            this.register_event_listener = uuid;
-          },
-          (evt: any) => {
-            // Here I will try to login the user.
-            this.register(
-              evt.userId,
-              evt.email,
-              evt.pwd,
-              evt.repwd,
-              (data: any) => {
-                console.log("--> register succeed!", data);
-              },
-              (err: any) => {
-                ApplicationView.displayMessage(err, 4000);
-              }
-            );
-          },
-          true
-        );
-      }
+      Model.eventHub.subscribe(
+        "register_event_",
+        (uuid: string) => {
+        },
+        (evt: any) => {
+          // Here I will try to login the user.
+          this.register(
+            evt.userId,
+            evt.email,
+            evt.pwd,
+            evt.repwd,
+            (data: any) => {
+              console.log("--> register succeed!", data);
+            },
+            (err: any) => {
+              ApplicationView.displayMessage(err, 4000);
+            }
+          );
+        },
+        true, this
+      );
 
       // That listener is use to keep the client up to date with the server.
       // if an accout is connect it will not restart it session automaticaly...
-      if (this.register_event_listener == undefined) {
-        Model.eventHub.subscribe(
-          `update_${Application.domain}_${Application.application}_evt`,
-          (uuid: string) => {
-            this.register_event_listener = uuid;
-          },
-          (version: string) => {
 
-            if (Application.account == undefined) {
-              // reload the page...
-              location.reload();
-            } else {
+      Model.eventHub.subscribe(
+        `update_${Application.domain}_${Application.application}_evt`,
+        (uuid: string) => {
+        },
+        (version: string) => {
 
-              // 
-              ApplicationView.displayMessage(`
+          if (Application.account == undefined) {
+            // reload the page...
+            location.reload();
+          } else {
+
+            // 
+            ApplicationView.displayMessage(`
             <div style="display: flex; flex-direction: column">
               <div>A new version of <span style="font-weight: 500;">
                 ${Application.application}</span> (v.${version}) is available.
@@ -319,115 +296,102 @@ export class Application extends Model {
               </div>
             </div>
             `, 10 * 1000);
-            }
-          },
-          false
-        );
-      }
+          }
+        },
+        false, this
+      );
+
 
       // Invite contact event.
-      if (this.invite_contact_listener == undefined) {
-        Model.eventHub.subscribe(
-          "send_conversation_invitation_event_",
-          (uuid: string) => {
-            this.invite_contact_listener = uuid;
-          },
-          (evt: any) => {
-            // Here I will try to login the user.
-            this.onInviteParticipant(evt);
-          },
-          true
-        );
-      }
+      Model.eventHub.subscribe(
+        "send_conversation_invitation_event_",
+        (uuid: string) => {
+        },
+        (evt: any) => {
+          // Here I will try to login the user.
+          this.onInviteParticipant(evt);
+        },
+        true, this
+      );
+
 
       // Invite contact event.
-      if (this.invite_contact_listener == undefined) {
-        Model.eventHub.subscribe(
-          "invite_contact_event_",
-          (uuid: string) => {
-            this.invite_contact_listener = uuid;
-          },
-          (contact: Account) => {
-            // Here I will try to login the user.
-            this.onInviteContact(contact);
-          },
-          true
-        );
-      }
+      Model.eventHub.subscribe(
+        "invite_contact_event_",
+        (uuid: string) => {
+        },
+        (contact: Account) => {
+          // Here I will try to login the user.
+          this.onInviteContact(contact);
+        },
+        true, this
+      );
+
 
       // Revoke contact invitation.
-      if (this.revoke_contact_invitation_listener == undefined) {
-        Model.eventHub.subscribe(
-          "revoke_contact_invitation_event_",
-          (uuid: string) => {
-            this.revoke_contact_invitation_listener = uuid;
-          },
-          (contact: Account) => {
-            // Here I will try to login the user.
-            this.onRevokeContactInvitation(contact);
-          },
-          true
-        );
-      }
+      Model.eventHub.subscribe(
+        "revoke_contact_invitation_event_",
+        (uuid: string) => {
+        },
+        (contact: Account) => {
+          // Here I will try to login the user.
+          this.onRevokeContactInvitation(contact);
+        },
+        true, this
+      );
+
 
       // Accept contact invitation
-      if (this.accept_contact_invitation_listener == undefined) {
-        Model.eventHub.subscribe(
-          "accept_contact_invitation_event_",
-          (uuid: string) => {
-            this.accept_contact_invitation_listener = uuid;
-          },
-          (contact: Account) => {
-            // Here I will try to login the user.
-            this.onAcceptContactInvitation(contact);
-          },
-          true
-        );
-      }
+      Model.eventHub.subscribe(
+        "accept_contact_invitation_event_",
+        (uuid: string) => {
+        },
+        (contact: Account) => {
+          // Here I will try to login the user.
+          this.onAcceptContactInvitation(contact);
+        },
+        true, this
+      );
+
 
       // Decline contact invitation
-      if (this.decline_contact_invitation_listener == undefined) {
-        Model.eventHub.subscribe(
-          "decline_contact_invitation_event_",
-          (uuid: string) => {
-          },
-          (contact: Account) => {
-            // Here I will try to login the user.
-            this.onDeclineContactInvitation(contact);
-          },
-          true
-        );
-      }
+      Model.eventHub.subscribe(
+        "decline_contact_invitation_event_",
+        (uuid: string) => {
+        },
+        (contact: Account) => {
+          // Here I will try to login the user.
+          this.onDeclineContactInvitation(contact);
+        },
+        true, this
+      );
+
 
       // Decline contact invitation
-      if (this.delete_contact_event_listener) {
-        Model.eventHub.subscribe(
-          "delete_contact_event_",
-          (uuid: string) => {
-            this.delete_contact_event_listener = uuid
-          },
-          (contact: Account) => {
-            // Here I will try to login the user.
-            this.onDeleteContact(contact);
-          },
-          true
-        );
-      }
+      Model.eventHub.subscribe(
+        "delete_contact_event_",
+        (uuid: string) => {
+        },
+        (contact: Account) => {
+          // Here I will try to login the user.
+          this.onDeleteContact(contact);
+        },
+        true, this
+      );
+
 
       // Delete user notification.
-      if (this.delete_notification_event_listener == undefined) {
-        Model.eventHub.subscribe(
-          "delete_notification_event_",
-          (uuid: string) => {
-            this.delete_notification_event_listener = uuid;
-          },
-          (notification: any) => {
-            notification = Notification.fromObject(notification);
-            this.removeNotification(notification);
-          },
-          true
-        );
-      }
+      Model.eventHub.subscribe(
+        "delete_notification_event_",
+        (uuid: string) => {
+        },
+        (notification: any) => {
+          notification = Notification.fromObject(notification);
+          this.removeNotification(notification);
+        },
+        true, this
+      );
+
 
       // Get backend application infos.
       Application.getAllApplicationInfo(
@@ -481,7 +445,7 @@ export class Application extends Model {
                 let invitation = JSON.parse(evt);
                 this.addContactListener(invitation)
               },
-              false)
+              false, this)
 
             account.session.state = SessionState.Online
 
@@ -493,7 +457,7 @@ export class Application extends Model {
                 let invitation = JSON.parse(evt);
                 Model.eventHub.unSubscribe(`session_state_${invitation._id}_change_event`, this.contactsListener[invitation._id])
               },
-              false)
+              false, this)
 
             // retreive the contacts
             Account.getContacts(account, `{"status":"accepted"}`, (contacts: Array<Account>) => {
@@ -851,7 +815,7 @@ export class Application extends Model {
         }, (err: any) => { })
 
 
-      }, false)
+      }, false, this)
   }
   /**
    * Login into the application
@@ -928,7 +892,7 @@ export class Application extends Model {
                 let invitation = JSON.parse(evt);
                 this.addContactListener(invitation)
               },
-              false)
+              false, this)
 
             Model.eventHub.subscribe("deleted_" + account.id + "_evt",
               (uuid) => { },
@@ -936,7 +900,7 @@ export class Application extends Model {
                 let invitation = JSON.parse(evt);
                 Model.eventHub.unSubscribe(`session_state_${invitation._id}_change_event`, this.contactsListener[invitation._id])
               },
-              false)
+              false, this)
 
 
             Model.eventHub.publish(`__session_state_${Application.account.id}_change_event__`, Application.account.session, true)
@@ -1036,24 +1000,6 @@ export class Application extends Model {
       this.view.close();
     }
 
-    // Close the listener's
-    Model.eventHub.unSubscribe("login_event_", this.login_event_listener);
-    Model.eventHub.unSubscribe("logout_event_", this.logout_event_listener);
-    Model.eventHub.unSubscribe("register_event_", this.register_event_listener);
-    Model.eventHub.unSubscribe("revoke_contact_invitation_listener", this.revoke_contact_invitation_listener);
-    Model.eventHub.unSubscribe("accept_contact_invitation_listener", this.accept_contact_invitation_listener);
-    Model.eventHub.unSubscribe("decline_contact_invitation_listener", this.decline_contact_invitation_listener);
-    Model.eventHub.unSubscribe("delete_contact_event_listener", this.delete_contact_event_listener);
-    
-    Model.eventHub.unSubscribe(
-      "invite_contact_event_",
-      this.invite_contact_listener
-    );
-
-    Model.eventHub.unSubscribe(
-      "delete_notification_event_",
-      this.delete_notification_event_listener
-    );
 
     // remove token informations
     localStorage.removeItem("remember_me");

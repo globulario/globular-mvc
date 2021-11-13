@@ -377,7 +377,7 @@ export class Account extends Model {
                             this.setData(data); // refresh data.
                             // Here I will rethrow the event locally...
                             Model.eventHub.publish(`__update_account_${this.id}_data_evt__`, data, true);
-                        }, false)
+                        }, false, this)
                 }
 
                 // Keep in the local map...

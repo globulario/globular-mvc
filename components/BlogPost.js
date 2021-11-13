@@ -285,7 +285,7 @@ export class BlogPostElement extends HTMLElement {
                     this.titleInput.value = this.blog.getTitle()
                     this.keywordsEditList.setValues(this.blog.getKeywordsList())
                 })
-            }, false)
+            }, false, this)
         }
 
         if (this.deleteListener == undefined) {
@@ -293,7 +293,7 @@ export class BlogPostElement extends HTMLElement {
                 evt => {
                     // simplity remove it from it parent...
                     this.parentNode.removeChild(this)
-                }, false)
+                }, false, this)
         }
 
         // Here I will set the blog various information...
@@ -616,7 +616,7 @@ export class BlogPosts extends HTMLElement {
                         evt => {
                             // Get the date from the event and create the newly
                             this.setBlog(BlogPost.deserializeBinary(Uint8Array.from(evt.split(","))), true)
-                        }, false)
+                        }, false, this)
 
                     authors.push(account.id)
 
@@ -633,7 +633,7 @@ export class BlogPosts extends HTMLElement {
                                 evt => {
                                     // Get the date from the event and create the newly
                                     this.setBlog(BlogPost.deserializeBinary(Uint8Array.from(evt.split(","))), true)
-                                }, false)
+                                }, false, this)
 
                             authors.push(contact._id)
                             if (index == contacts.length - 1) {
@@ -755,7 +755,7 @@ export class BlogComments extends HTMLElement {
                 let comment = Comment.deserializeBinary(Uint8Array.from(evt.split(",")))
                
                 this.setComment(comment)
-            })
+            }, false, this)
 
         // Display the comment...
         this.blog.getCommentsList().forEach(c=>{
@@ -1125,7 +1125,7 @@ export class BlogEmotions extends HTMLElement {
 
 
             this.addEmotion(emotion)
-        }, false)
+        }, false, this)
     }
 
     // Set the comment...

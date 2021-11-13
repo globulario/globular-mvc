@@ -230,7 +230,7 @@ export class ApplicationView extends View {
       () => {
         this.onLogout();
       },
-      true
+      true, this
     );
 
     // Login event.
@@ -382,21 +382,21 @@ export class ApplicationView extends View {
           (evt) => {
             this.onCreateNewConversation();
           },
-          true)
+          true, this)
 
         Model.eventHub.subscribe("__invite_conversation_evt__",
           (uuid: string) => { },
           (evt: any) => {
             this.onInviteToConversaiton(evt);
-          }, true)
+          }, true, this)
 
         Model.eventHub.subscribe("__delete_conversation_evt__",
           (uuid: string) => { },
           (evt: any) => {
             this.onDeleteConversaiton(evt);
-          }, true)
+          }, true, this)
       },
-      true
+      true, this
     );
 
     // Settings event
@@ -409,7 +409,7 @@ export class ApplicationView extends View {
       () => {
         this.onSettings();
       },
-      true
+      true, this
     );
 
     // Settings event
@@ -422,7 +422,7 @@ export class ApplicationView extends View {
         this.onSaveSettings(saveSetting)
 
       },
-      true
+      true, this
     );
 
     /**

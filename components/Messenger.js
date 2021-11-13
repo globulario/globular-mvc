@@ -83,7 +83,7 @@ export class MessengerMenu extends Menu {
                 let invitation = Invitation.deserializeBinary(decoded)
                 this.appendSentInvitation(invitation)
             },
-            false)
+            false, this)
 
         Model.eventHub.subscribe(`receive_conversation_invitation_${this.account.id}_evt`,
             (uuid) => { },
@@ -92,7 +92,7 @@ export class MessengerMenu extends Menu {
                 let invitation = Invitation.deserializeBinary(decoded)
                 this.appendReceivedInvitation(invitation)
             },
-            false)
+            false, this)
 
         Model.eventHub.subscribe("delete_conversation_evt",
             () => { },
@@ -101,7 +101,7 @@ export class MessengerMenu extends Menu {
                 if (this.conversationsLst.children.length > 0) {
                     this.conversationsTab.innerHTML += `<paper-badge for="conversations_label" label="${this.conversationsLst.children.length}"></paper-badge>`
                 }
-            }, true)
+            }, true, this)
 
 
 
@@ -292,7 +292,7 @@ export class MessengerMenu extends Menu {
             (conversation) => {
                 this.appendConversation(conversation)
             },
-            true)
+            true, this)
 
 
         /** Load conversations */
@@ -304,7 +304,7 @@ export class MessengerMenu extends Menu {
                     this.appendConversation(conversations[i])
                 }
             },
-            true)
+            true, this)
 
 
         Model.eventHub.subscribe("__refresh_invitations__",
@@ -370,7 +370,7 @@ export class MessengerMenu extends Menu {
                     // publish local event from network one.
                     Model.eventHub.publish("delete_conversation_evt", null, true)
                 }
-            }, true)
+            }, true, this)
 
         Model.eventHub.subscribe(`kickout_conversation_${conversationUuid}_evt`,
             (uuid) => {
@@ -387,7 +387,7 @@ export class MessengerMenu extends Menu {
                         ApplicationView.displayMessage(`You got kicked out of the conversation <span style="font-style:italic;">${conversationName}</span>`, 3000)
                     }
                 }
-            }, false)
+            }, false, this)
     }
 
     appendReceivedInvitation(invitation) {
@@ -406,7 +406,7 @@ export class MessengerMenu extends Menu {
                         ApplicationView.displayMessage(err, 3000)
                     })
 
-            }, false)
+            }, false, this)
 
         let invitationCard = new InvitationCard(invitation, this.account.id, invitation.getFrom(), invitation.getConversation());
 
@@ -683,7 +683,7 @@ export class ConversationInfos extends HTMLElement {
                     this.querySelector(`#join_${conversationUuid}_btn`).style.display = "none"
                     this.querySelector(`#leave_${conversationUuid}_btn`).style.display = "flex"
                 }
-            }, true)
+            }, true, this)
 
         Model.eventHub.subscribe(`__leave_conversation_evt__`,
             (uuid) => {
@@ -694,7 +694,7 @@ export class ConversationInfos extends HTMLElement {
                     this.querySelector(`#join_${conversationUuid}_btn`).style.display = "flex"
                     this.querySelector(`#leave_${conversationUuid}_btn`).style.display = "none"
                 }
-            }, true)
+            }, true, this)
     }
     setInviteButton() {
         if (this.querySelector(`#invite_${this.conversation.getUuid()}_btn`) != undefined) {
@@ -991,7 +991,7 @@ export class Messenger extends HTMLElement {
                 }
 
 
-            }, true)
+            }, true, this)
 
         // Join a conversation local event...
         Model.eventHub.subscribe(`__join_conversation_evt__`,
@@ -1019,7 +1019,7 @@ export class Messenger extends HTMLElement {
             (uuid) => { },
             (evt) => {
                 this.setScroll()
-            }, true)
+            }, true, this, this)
     }
 
     hide() {
@@ -1098,7 +1098,7 @@ export class Messenger extends HTMLElement {
                 // keep the message in the list of messages.
                 this.conversations[conversationUuid].messages.push(msg)
 
-            }, true)
+            }, true, this)
 
         // Delete a conversation.
         Model.eventHub.subscribe(`delete_conversation_${conversationUuid}_evt`,
@@ -1109,7 +1109,7 @@ export class Messenger extends HTMLElement {
                 // Here I will unsubscribe to each event from it...
                 this.closeConversation(conversationUuid)
             },
-            false);
+            false, this);
 
         Model.eventHub.subscribe(`join_conversation_${conversationUuid}_evt`,
             (uuid) => {
@@ -1124,7 +1124,7 @@ export class Messenger extends HTMLElement {
                 // Here I will unsubscribe to each event from it...
                 this.participantsList.setConversation(this.conversations[conversationUuid].conversation, this.conversations[conversationUuid].messages)
             },
-            false);
+            false, this);
 
         // Leave a conversation.
 
@@ -1135,7 +1135,7 @@ export class Messenger extends HTMLElement {
             },
             () => {
                 this.closeConversation(conversationUuid)
-            }, true)
+            }, true, this)
 
         Model.eventHub.subscribe(`kickout_conversation_${conversationUuid}_evt`,
             (uuid) => {
@@ -1148,7 +1148,7 @@ export class Messenger extends HTMLElement {
                     this.closeConversation(conversationUuid)
 
                 }
-            }, false)
+            }, false, this)
 
         // Network event                    
         Model.eventHub.subscribe(`leave_conversation_${conversationUuid}_evt`,
@@ -1164,7 +1164,7 @@ export class Messenger extends HTMLElement {
                 // Here I will unsubscribe to each event from it...
                 this.participantsList.setConversation(this.conversations[conversationUuid].conversation, this.conversations[conversationUuid].messages)
             },
-            false);
+            false, this);
 
         // Open the conversation.
         this.conversationsList.openConversation(conversation)
@@ -1511,7 +1511,7 @@ export class ParticipantsList extends HTMLElement {
             // Disable start.
             Model.eventHub.subscribe(`video_conversation_open_${conversation.getUuid() + "_" + p._id }_evt`, uuid=>{}, evt=>{
                 startVideoBtn.style.display = "none"
-            }, false)
+            }, false, this)
 
             // TODO add stop video button.
         }
@@ -1681,7 +1681,7 @@ export class MessagesList extends HTMLElement {
             (msg) => {
                 console.log(msg)
                 this.appendMessage(msg)
-            }, true)
+            }, true, this)
 
         // Sort message by their date...
         messages.sort((a, b) => {
@@ -1913,7 +1913,7 @@ export class MessageEditor extends HTMLElement {
                     this.textWriterBox.textarea.focus();
                 }, 100)
 
-            }, true)
+            }, true, this)
 
 
         /** Close the answer panel... */
@@ -2058,7 +2058,7 @@ export class InvitationCard extends HTMLElement {
                 // remove the invitation from the list.
                 this.deleteMe()
 
-            }, false)
+            }, false, this)
 
         Model.eventHub.subscribe(`decline_conversation_invitation_${this.conversation}_${this.contact}_evt`,
             (uuid) => {
@@ -2068,7 +2068,7 @@ export class InvitationCard extends HTMLElement {
             (evt) => {
                 // remove the invitation from the list.
                 this.deleteMe()
-            }, false)
+            }, false, this)
 
         Model.eventHub.subscribe(`revoke_conversation_invitation_${this.conversation}_${this.contact}_evt`,
             (uuid) => {
@@ -2079,7 +2079,7 @@ export class InvitationCard extends HTMLElement {
                 // remove the invitation from the list.
                 this.deleteMe()
 
-            }, false)
+            }, false, this)
 
         /** Listener event... */
         Model.eventHub.subscribe(`accept_conversation_invitation_${this.conversation}_${this.account}_evt`,
@@ -2091,7 +2091,7 @@ export class InvitationCard extends HTMLElement {
                 // remove the invitation from the list.
                 this.deleteMe()
 
-            }, false)
+            }, false, this)
 
         Model.eventHub.subscribe(`decline_conversation_invitation_${this.conversation}_${this.account}_evt`,
             (uuid) => {
@@ -2101,7 +2101,7 @@ export class InvitationCard extends HTMLElement {
             (evt) => {
                 // remove the invitation from the list.
                 this.deleteMe()
-            }, false)
+            }, false, this)
 
         Model.eventHub.subscribe(`revoke_conversation_invitation_${this.conversation}_${this.account}_evt`,
             (uuid) => {
@@ -2112,7 +2112,7 @@ export class InvitationCard extends HTMLElement {
                 // remove the invitation from the list.
                 this.deleteMe()
 
-            }, false)
+            }, false, this)
 
         Model.eventHub.subscribe(`delete_conversation_${this.conversation}_evt`,
             (uuid) => {
@@ -2121,7 +2121,7 @@ export class InvitationCard extends HTMLElement {
             (evt) => {
                 // simply remove it from it parent.
                 this.deleteMe()
-            }, false)
+            }, false, this)
 
         // initialyse account informations.
         Account.getAccount(account, () => { }, err => { })
@@ -2417,7 +2417,7 @@ export class GlobularMessagePanel extends HTMLElement {
                     let parent = this.parentNode
                     parent.removeChild(this)
                     parent.refresh()
-                }, false)
+                }, false, this)
         }
 
 
