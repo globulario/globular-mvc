@@ -18,7 +18,7 @@ import { FileExplorer, FilesMenu } from "./components/File";
 import { SearchBar } from "./components/Search";
 import { ContactCard, ContactsMenu } from "./components/Contact";
 import { MessengerMenu, Messenger } from "./components/Messenger";
-import { SettingsMenu, SettingsPanel } from "./components/Settings";
+import { SettingsMenu, SettingsPanel, StringListSetting } from "./components/Settings";
 import { Application } from "./Application";
 // Not directly use here but must be include anyways
 import { Wizard } from "./components/Wizard";
@@ -28,6 +28,7 @@ import "./components/table/table.js"
 import { Conversation, Invitation } from "globular-web-client/conversation/conversation_pb";
 import { ConversationManager } from "./Conversation";
 import {BlogPostElement, BlogPosts} from "./components/BlogPost"
+import {Workspace} from './components/Workspace'
 
 // This variable is there to give acces to wait and resume...
 export let applicationView: ApplicationView;
@@ -52,7 +53,8 @@ export class ApplicationView extends View {
 
   private _workspace_childnodes: Array<any>;
   private _sidemenu_childnodes: Array<any>;
-
+  private settings_event_listener: String;
+  private save_settings_event_listener: String;
   private _application: Application;
 
   public get application(): Application {
@@ -64,6 +66,9 @@ export class ApplicationView extends View {
 
   /** The application view component. */
   private static layout: Layout;
+
+  /** The application internal layout */
+  private workspace_: Workspace;
 
   /** The login panel */
   private login_: Login;
@@ -121,8 +126,6 @@ export class ApplicationView extends View {
   /** various listener's */
   private login_event_listener: string;
   private logout_event_listener: string;
-  private settings_event_listener: string;
-  private save_settings_event_listener: string;
 
 
   private _isLogin: boolean;
@@ -183,6 +186,8 @@ export class ApplicationView extends View {
     // The search bar to give end user the power to search almost anything...
     this._searchBar = new SearchBar();
 
+    // The application layout 
+    this.workspace_ = new Workspace()
 
     // Now the save funciton..
     this._camera.onsaveimage = (picture: any) => {
@@ -701,6 +706,10 @@ export class ApplicationView extends View {
       ApplicationView.displayMessage(err, 4000)
     };
 
+
+    ////////////////////////////////////////////////////////////////////
+    // TODO 
+    ////////////////////////////////////////////////////////////////////
     // Test the blog-post
     let blogger =  new BlogPostElement()
     blogger.setAttribute("editable", "true")
@@ -781,7 +790,6 @@ export class ApplicationView extends View {
     for (var i = 0; i < this._workspace_childnodes.length; i++) {
       let node = this._workspace_childnodes[i]
       this.getWorkspace().appendChild(node)
-      console.log(node)
     }
 
 
@@ -1117,7 +1125,10 @@ export class ApplicationView extends View {
    * The workspace div where the application draw it content.
    */
   getWorkspace(): any {
-    return ApplicationView.layout.workspace();
+    if(this.workspace_.parentElement == null){
+      ApplicationView.layout.workspace().appendChild(this.workspace_)
+    }
+    return this.workspace_; //ApplicationView.layout.workspace();
   }
 
   /**

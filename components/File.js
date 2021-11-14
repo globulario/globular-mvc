@@ -2766,7 +2766,7 @@ export class FileExplorer extends HTMLElement {
                 (dir) => {
                     // keep the active path.
                     this.setDir(dir)
-                }, true, this
+                }, true
             )
         }
 
@@ -2794,7 +2794,7 @@ export class FileExplorer extends HTMLElement {
                     // I will display the permission manager.
                     this.fileSelectionPanel.appendChild(this.permissionManager)
 
-                }, false, this)
+                }, false)
         }
 
         // Reload the content of a dir with the actual dir content description on the server.
@@ -2810,7 +2810,7 @@ export class FileExplorer extends HTMLElement {
                         }
                         this.fileNavigator.reload(dir)
                     }, () => { }, true)
-                }, false, this)
+                }, false)
         }
 
         // Refresh the interface.
@@ -2823,7 +2823,7 @@ export class FileExplorer extends HTMLElement {
                         // refresh the interface.
                         this.refreshBtn.click();
                     }
-                }, false, this)
+                }, false)
         }
 
 
@@ -2834,7 +2834,7 @@ export class FileExplorer extends HTMLElement {
             }, (path) => {
                 this.playVideo(path)
 
-            }, true, this)
+            }, true)
         }
 
         // Play audio
@@ -2844,7 +2844,7 @@ export class FileExplorer extends HTMLElement {
             }, (path) => {
                 this.playAudio(path)
 
-            }, true, this)
+            }, true)
         }
 
         // Read file
@@ -2865,7 +2865,7 @@ export class FileExplorer extends HTMLElement {
                 this.showImage(path)
 
 
-            }, true, this)
+            }, true)
         }
 
         _readDir(this.root, (dir) => {
@@ -3156,7 +3156,7 @@ export class FileExplorer extends HTMLElement {
     }
 
     getWorkspace() {
-        return document.getElementById("workspace")
+        return document.querySelector("globular-workspace")
     }
 
     open(parent) {

@@ -313,6 +313,7 @@ export let theme = `
   .inner-triangle:hover{
       cursor: pointer;
   }
+
   emoji-picker {
     width: 400px;
     height: 300px;
@@ -326,6 +327,5 @@ export let theme = `
     --input-border-radius: 2xp;
     --category-font-color:var(--palette-text-primary);
   }
-
 
 `

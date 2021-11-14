@@ -49,15 +49,12 @@ export class BlogPostElement extends HTMLElement {
                 padding-bottom: 10px;
             }
 
-            #blog-post-editor-div{
+            .blog-post-editor-div{
                 display: flex;
                 flex-direction: column;
-                max-width: 755px;
-                position: relative;
-                margin: 0px auto 20px;
             }
 
-            #title {
+            .blog-post-title-div {
                 display: flex;
                 border-bottom: 1px solid var(--palette-background-paper);
                 padding: 4px;
@@ -66,14 +63,14 @@ export class BlogPostElement extends HTMLElement {
                 background-color: transparent;
             }
 
-            #blog-editor-title {
+            .blog-editor-title {
                 flex-grow: 1;
                 color: var(--palette-action-disabled);
                 text-align: left;
                 padding: 8px;
             }
 
-            #blog-reader-title{
+            .blog-reader-title{
                 flex-grow: 1;
                 text-align: left;
                 margin-left: 16px;
@@ -108,19 +105,21 @@ export class BlogPostElement extends HTMLElement {
 
             .blog-post-reader-div{
                 position: relative;
+                width: 100%;
+                text-align: center;
             }
 
         </style>
 
         <div id="container">
             
-            <paper-card id="blog-post-editor-div">
-                <div id="title">
+            <paper-card class="blog-post-editor-div">
+                <div class="blog-post-title-div">
                     <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
                         <iron-icon  id="collapse-btn"  icon="unfold-less" --iron-icon-fill-color:var(--palette-text-primary);"></iron-icon>
                         <paper-ripple class="circle" recenters=""></paper-ripple>
                     </div>
-                    <span id="blog-editor-title">
+                    <span id="blog-editor-title" class="blog-editor-title">
                         ${Application.account.name}, express yourself
                     </span>
                     <paper-icon-button icon="icons:more-horiz" id="blog-editor-menu-btn"></paper-icon-button>
@@ -148,8 +147,8 @@ export class BlogPostElement extends HTMLElement {
                 </iron-collapse>
 
             </paper-card>
-            <paper-card id="blog-post-reader-div">
-                <div id="title">
+            <paper-card class="blog-post-reader-div">
+                <div id="title" class="blog-post-title-div">
                     <div style="display: flex; flex-direction: column; padding-left: 5px;">
                         <div>
                             <img id="blog-reader-author-picture" style="width: 32px; height: 32px; border-radius: 16px; display:none;"></img>
@@ -157,7 +156,7 @@ export class BlogPostElement extends HTMLElement {
                         </div>
                         <span  id="blog-reader-author-id"></span>
                     </div>
-                    <h2 id="blog-reader-title"></h2>
+                    <h2 class="blog-reader-title"></h2>
                     <paper-icon-button icon="icons:more-horiz" id="blog-reader-menu-btn"></paper-icon-button>
                 </div>
                 <paper-card id="blog-reader-options-panel"  class="blog-options-panel"  style="display: none;">
@@ -311,7 +310,7 @@ export class BlogPostElement extends HTMLElement {
 
         }, e => { })
 
-        this.shadowRoot.querySelector("#blog-reader-title").innerHTML = blog.getTitle()
+        this.shadowRoot.querySelector(".blog-reader-title").innerHTML = blog.getTitle()
 
         this.titleSpan.value = blog.getTitle()
         this.titleInput.value = blog.getTitle()
@@ -326,8 +325,8 @@ export class BlogPostElement extends HTMLElement {
 
 
         // Show the paper-card where the blog will be display
-        this.shadowRoot.querySelector("#blog-post-editor-div").style.display = ""
-        this.shadowRoot.querySelector("#blog-post-reader-div").style.display = "none"
+        this.shadowRoot.querySelector(".blog-post-editor-div").style.display = ""
+        this.shadowRoot.querySelector(".blog-post-reader-div").style.display = "none"
 
         if (this.editorDiv != null) {
             callback(this.editorDiv)
@@ -481,8 +480,8 @@ export class BlogPostElement extends HTMLElement {
      * @param {*} callbak 
      */
     read(callback) {
-        this.shadowRoot.querySelector("#blog-post-editor-div").style.display = "none"
-        this.shadowRoot.querySelector("#blog-post-reader-div").style.display = ""
+        this.shadowRoot.querySelector(".blog-post-editor-div").style.display = "none"
+        this.shadowRoot.querySelector(".blog-post-reader-div").style.display = ""
 
         // Here I will replace existing elements with new one...
         let elements = this.querySelectorAll(`[slot="read-only-blog-content"]`)

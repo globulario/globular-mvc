@@ -209,17 +209,9 @@ dropdown-menu-element{
     padding-bottom: 15px;
 }
 
-/*
-#workspace globular-settings-panel{
-   display: flex;
-   justify-content: center;
- }
- */
-
  globular-application-manager{
     margin-bottom: 10px;
  }
-
 
  /**
   * EditorJs style
@@ -333,10 +325,6 @@ dropdown-menu-element{
 .blog-read-div{
    display: flex;
    flex-direction: column;
-   max-width: 725px;
-   min-width: 725px;
-   margin: 0px auto 20px;
-   padding: 15px;
    align-items: center;
    justify-content: center;
    background-color: transparent;
@@ -358,12 +346,6 @@ dropdown-menu-element{
 }
 
 .blog-read-div p{
-}
-
-globular-file-explorer{
-   position: fixed;
-   top: 60px;
-   right: 0px;
 }
 
 .blog-emitions{
@@ -389,4 +371,67 @@ globular-file-explorer{
 .emotion-peoples span{
    padding: 3px;
    text-align: center;
+}
+
+/**************************** Layout **************************/
+
+/** Small **/
+@media only screen and (max-width: 600px) {
+   globular-blog-post{
+      grid-row-start: 1;
+      grid-column-start: 1;
+      grid-column-end: 17;
+   }
+   
+   globular-settings-panel, globular-blog-posts{
+      grid-row-start: 2;
+      grid-column-start: 1;
+      grid-column-end: 17;
+   }
+}
+
+/** Medium */
+@media only screen and (max-width: 1024px) and (min-width: 600px)  {
+   globular-blog-post{
+      grid-row-start: 1;
+      grid-column-start: 3;
+      grid-column-end: 15;
+   }
+   
+   globular-settings-panel, globular-blog-posts{
+      grid-row-start: 2;
+      grid-column-start: 3;
+      grid-column-end: 15;
+   }
+}
+
+/** Large */
+@media only screen and (max-width: 1800px) and (min-width: 1024px) {
+   globular-blog-post{
+      grid-row-start: 1;
+      grid-column-start: 5;
+      grid-column-end: 13;
+   }
+   
+   globular-settings-panel, globular-blog-posts{
+      grid-row-start: 2;
+      grid-column-start: 5;
+      grid-column-end: 13;
+   }
+}
+
+/** x-large **/
+@media only screen and (min-width: 1800px) {
+   globular-blog-post{
+      grid-row-start: 1;
+      grid-column-start: 6;
+      grid-column-end: 12;
+   }
+
+   globular-settings-panel, globular-blog-posts{
+      grid-row-start: 2;
+      grid-column-start: 6;
+      grid-column-end: 12;
+   }
+
 }

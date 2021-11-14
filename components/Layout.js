@@ -101,21 +101,7 @@ export class Layout extends HTMLElement {
             }
 
             ::slotted(#workspace) {
-              width: 65%;
-              margin: 0 auto;
-              text-align: center;
-            }
-
-            @media only screen and (max-width: 1500px) {
-              ::slotted(#workspace) {
-                width: 85%;
-              }
-            }
-
-            @media only screen and (max-width: 1024px) {
-              ::slotted(#workspace) {
-                width: 100%;
-              }
+              width: 100%;
             }
     
             ::slotted(paper-card){
