@@ -388,7 +388,9 @@ dropdown-menu-element{
       grid-column-start: 1;
       grid-column-end: 17;
    }
-
+   globular-settings-panel{
+      grid-row-start: 1;
+   }
    globular-file-explorer{
       grid-column-start: 1;
       grid-column-end: 17;
@@ -453,6 +455,10 @@ dropdown-menu-element{
       grid-column-end: 13;
    }
 
+   globular-settings-panel{
+      grid-row-start: 1;
+   }
+
    globular-file-explorer{
       grid-row-start: 1;
       grid-row-end: 3;
@@ -487,6 +493,10 @@ dropdown-menu-element{
       grid-row-start: 2;
       grid-column-start: 6;
       grid-column-end: 12;
+   }
+
+   globular-settings-panel{
+      grid-row-start: 1;
    }
 
    globular-file-explorer{
