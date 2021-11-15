@@ -193,12 +193,6 @@ export class Menu extends HTMLElement {
 
             // set the handler.
             document.addEventListener("click", handler);
-
-            
-            let fileExplorer = document.querySelector("globular-file-explorer")
-            if(fileExplorer!=null){
-                fileExplorer.style.display = "none"
-            }
         }
     }
 

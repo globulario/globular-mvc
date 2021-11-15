@@ -312,7 +312,7 @@ export class SearchableAccountList extends SearchableList {
             <div style="display: flex; align-items: center; padding: 5px; width: 100%;"> 
                 <img style="width: 40px; height: 40px; display: ${account.profilPicture_ == undefined ? "none" : "block"};" src="${account.profilPicture_}"></img>
                 <iron-icon icon="account-circle" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${account.profilPicture_ != undefined ? "none" : "block"};"></iron-icon>
-                <div style="display: flex; flex-direction: column; width:300px; font-size: .85em; padding-left: 8px; flex-grow: 1;">
+                <div style="display: flex; flex-direction: column; width:200px; font-size: .85em; padding-left: 8px; flex-grow: 1;">
                     <span>${account.name}</span>
                     <span>${account.email_}</span>
                 </div>
@@ -496,7 +496,7 @@ export class SearchableApplicationList extends SearchableList {
             <div style="display: flex; align-items: center; padding: 5px; width: 100%;"> 
                 <img style="width: 40px; height: 40px; display: ${application.getIcon() == undefined ? "none" : "block"};" src="${application.getIcon()}"></img>
                 <iron-icon icon="account-circle" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${application.getIcon() != undefined ? "none" : "block"};"></iron-icon>
-                <div style="display: flex; flex-direction: column; width:300px; font-size: .85em; padding-left: 8px; flex-grow: 1;">
+                <div style="display: flex; flex-direction: column; width:200px; font-size: .85em; padding-left: 8px; flex-grow: 1;">
                     <span>${application.getAlias()}</span>
                     <span>${application.getVersion()}</span>
                 </div>
@@ -675,7 +675,7 @@ export class SearchableRoleList extends SearchableList {
         <div id="${uuid}" class="item-div" style="">
             <div style="display: flex; align-items: center; padding: 5px; width: 100%;"> 
                 <iron-icon icon="notification:enhanced-encryption" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display:block"};"></iron-icon>
-                <div style="display: flex; flex-direction: column; width:300px; font-size: .85em; padding-left: 8px; flex-grow: 1;">
+                <div style="display: flex; flex-direction: column; width:200px; font-size: .85em; padding-left: 8px; flex-grow: 1;">
                     <span>${role.getName()}</span>
                 </div>
                 <paper-icon-button icon="delete" id="${role.getId()}_btn"></paper-icon-button>
@@ -853,7 +853,7 @@ customElements.define('globular-searchable-role-list', SearchableRoleList)
         <div id="${uuid}" class="item-div" style="">
             <div style="display: flex; align-items: center; padding: 5px; width: 100%;"> 
                 <iron-icon icon="social:people" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display:block"};"></iron-icon>
-                <div style="display: flex; flex-direction: column; width:300px; font-size: .85em; padding-left: 8px; flex-grow: 1;">
+                <div style="display: flex; flex-direction: column; width:200px; font-size: .85em; padding-left: 8px; flex-grow: 1;">
                     <span>${group.getName()}</span>
                 </div>
                 <paper-icon-button icon="delete" id="${group.getId()}_btn"></paper-icon-button>
@@ -1033,7 +1033,7 @@ customElements.define('globular-searchable-group-list', SearchableGroupList)
         <div id="${uuid}" class="item-div" style="">
             <div style="display: flex; align-items: center; padding: 5px; width: 100%;"> 
                 <iron-icon icon="social:domain" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display:block"};"></iron-icon>
-                <div style="display: flex; flex-direction: column; width:300px; font-size: .85em; padding-left: 8px; flex-grow: 1;">
+                <div style="display: flex; flex-direction: column; width:200px; font-size: .85em; padding-left: 8px; flex-grow: 1;">
                     <span>${organisation.getName()}</span>
                 </div>
                 <paper-icon-button icon="delete" id="${organisation.getId()}_btn"></paper-icon-button>
@@ -1212,7 +1212,7 @@ customElements.define('globular-searchable-organization-list', SearchableOrganiz
         <div id="${uuid}" class="item-div" style="">
             <div style="display: flex; align-items: center; padding: 5px; width: 100%;"> 
                 <iron-icon icon="social:people" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display:block"};"></iron-icon>
-                <div style="display: flex; flex-direction: column; width:300px; font-size: .85em; padding-left: 8px; flex-grow: 1;">
+                <div style="display: flex; flex-direction: column; width:200px; font-size: .85em; padding-left: 8px; flex-grow: 1;">
                     <span>${peer.getMac()}</span>
                 </div>
                 <paper-icon-button icon="delete" id="${group.getMac()}_btn"></paper-icon-button>

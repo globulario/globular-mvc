@@ -827,15 +827,11 @@ export class Messenger extends HTMLElement {
                 flex-grow: 1;
             }
 
-
             .container{
                 display: none;
                 flex-direction: column;
-                position:fixed;
                 min-width: 477.58px;
                 max-height: calc( 100vh - 64px );
-                bottom: 0px;
-                right: 0px;
                 background-color: var(--palette-background-paper);
                 color: var(--palette-text-primary);
             }

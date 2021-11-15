@@ -388,10 +388,27 @@ dropdown-menu-element{
       grid-column-start: 1;
       grid-column-end: 17;
    }
+
+   globular-file-explorer{
+      grid-column-start: 1;
+      grid-column-end: 17;
+      position: fixed;
+      width: 100%;
+      right: 0px;
+   }
+
+   globular-messenger{
+      position: fixed;
+      right: 0px;
+      bottom: 0px;
+   }
+
 }
 
 /** Medium */
 @media only screen and (max-width: 1024px) and (min-width: 600px)  {
+
+   /** Blog post **/
    globular-blog-post{
       grid-row-start: 1;
       grid-column-start: 3;
@@ -399,9 +416,26 @@ dropdown-menu-element{
    }
    
    globular-settings-panel, globular-blog-posts{
-      grid-row-start: 2;
+      grid-row-start: 1;
+      grid-row-end: 3;
       grid-column-start: 3;
       grid-column-end: 15;
+   }
+
+   globular-file-explorer{
+      grid-row-start: 1;
+      grid-row-end: 3;
+      grid-column-start: 1;
+      grid-column-end: 3;
+
+      position: fixed;
+      left: 0px;
+   }
+
+   globular-messenger{
+      position: fixed;
+      right: 0px;
+      bottom: 0px;
    }
 }
 
@@ -418,6 +452,27 @@ dropdown-menu-element{
       grid-column-start: 5;
       grid-column-end: 13;
    }
+
+   globular-file-explorer{
+      grid-row-start: 1;
+      grid-row-end: 3;
+      grid-column-start: 1;
+      grid-column-end: 5;
+      
+      position: fixed;
+      left: 0px;
+   }
+
+   globular-messenger{
+      grid-row-start: 1;
+      grid-row-end: 3;
+      grid-column-start: 13;
+      grid-column-end: 16;
+
+      position: fixed;
+      right: 0px;
+      bottom: 0px;
+   }
 }
 
 /** x-large **/
@@ -432,6 +487,27 @@ dropdown-menu-element{
       grid-row-start: 2;
       grid-column-start: 6;
       grid-column-end: 12;
+   }
+
+   globular-file-explorer{
+      grid-row-start: 1;
+      grid-row-end: 3;
+      grid-column-start: 1;
+      grid-column-end: 6;
+
+      position: fixed;
+      left: 0px;
+   }
+
+   globular-messenger{
+      grid-row-start: 1;
+      grid-row-end: 3;
+      grid-column-start: 12;
+      grid-column-end: 16;
+
+      position: fixed;
+      right: 0px;
+      bottom: 0px;
    }
 
 }

@@ -2280,8 +2280,6 @@ export class FileExplorer extends HTMLElement {
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
 
-        this.parent = this.getWorkspace()
-
         // The active explorer path.
         this.path = undefined
 
@@ -2527,7 +2525,7 @@ export class FileExplorer extends HTMLElement {
         // I will use the resize event to set the size of the file explorer.
         window.addEventListener("resize", () => {
             // Here I will use the workspace to define the with of the content...
-            this.fileExplorerContent.style.minHeight = window.innerHeight - 164 + "px"
+            this.fileExplorerContent.style.minHeight = window.innerHeight - 170 + "px"
         })
 
         // Here I will connect the windows resize event...
@@ -2903,7 +2901,7 @@ export class FileExplorer extends HTMLElement {
 
     // The connection callback.
     connectedCallback() {
-
+   
     }
 
     setRoot(root) {
@@ -3159,19 +3157,19 @@ export class FileExplorer extends HTMLElement {
         return document.querySelector("globular-workspace")
     }
 
-    open(parent) {
-
-        if (parent != undefined) {
-            this.parent = parent;
-        }
-
+    open() {
+ 
         this.fileExplorerBox.style.display = "flex"
 
         if (this.onopen != undefined) {
             this.onopen();
         }
-        this.parent.appendChild(this)
-        this.isOpen = true;
+
+        let workspace = this.getWorkspace()
+        if(workspace != undefined){
+            workspace.appendChild(this)
+            this.isOpen = true;
+        }
     }
 
     close() {

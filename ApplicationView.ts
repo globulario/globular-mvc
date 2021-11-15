@@ -379,7 +379,7 @@ export class ApplicationView extends View {
         this.messenger = new Messenger(account);
 
         // Also display it inside the workspace.
-        document.body.appendChild(this.messenger)
+        this.workspace_.appendChild(this.messenger)
 
 
         Model.eventHub.subscribe("__create_new_conversation_event__",
@@ -833,31 +833,13 @@ export class ApplicationView extends View {
 
   static showFilebrowser(path: string, onclose: () => void) {
 
-    document.body.style.position = "relative"
-    let modal = document.createElement("div")
-    modal.style.position = "fixed"
-    modal.style.top = "0px"
-    modal.style.bottom = "0px"
-    modal.style.left = "0px"
-    modal.style.right = "0px"
-    modal.style.zIndex = "10000";
-    modal.style.background = "rgba(0.0, 0.0, 0.0, .85)"
-    document.body.appendChild(modal)
-
     ApplicationView._fileExplorer = new FileExplorer
-    ApplicationView._fileExplorer.style.position = "fixed"
-    ApplicationView._fileExplorer.style.top = "20px"
-    ApplicationView._fileExplorer.style.bottom = "20px"
-    ApplicationView._fileExplorer.style.left = "5%"
-    ApplicationView._fileExplorer.style.right = "5%"
-
     ApplicationView._fileExplorer.setRoot(path)
     ApplicationView._fileExplorer.init()
-    ApplicationView._fileExplorer.open(modal)
+    ApplicationView._fileExplorer.open()
 
     ApplicationView._fileExplorer.onclose = () => {
       ApplicationView._fileExplorer.parentNode.removeChild( ApplicationView._fileExplorer)
-      modal.parentNode.removeChild(modal)
       ApplicationView._fileExplorer.delete() // remove all listeners.
       ApplicationView._fileExplorer = null;
     }
