@@ -323,6 +323,7 @@ export class Settings extends HTMLElement {
            display: flex;
            flex-direction: column;
            margin-bottom: 10px;
+           margin-left: 28px;
        }
 
        .card-content{
