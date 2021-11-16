@@ -509,7 +509,7 @@ dropdown-menu-element{
       left: 0px;
    }
 
-   globular-messenger{
+   globular-video-conversation, globular-messenger{
       grid-row-start: 1;
       grid-row-end: 3;
       grid-column-start: 12;
@@ -520,4 +520,7 @@ dropdown-menu-element{
       bottom: 0px;
    }
 
+   globular-video-conversation{
+      top: 0px;
+   }
 }

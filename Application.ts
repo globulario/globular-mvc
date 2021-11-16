@@ -223,7 +223,7 @@ export class Application extends Model {
             }
           );
         },
-        true, 
+        true,
         this
       );
 
@@ -747,23 +747,60 @@ export class Application extends Model {
         localStorage.setItem("token_expired", (<any>decoded).exp);
         localStorage.setItem("user_email", (<any>decoded).email);
 
-        // Callback on login.
-        Application.account = new Account(name, email, name);
+        let rqst = new CreateConnectionRqst
+        let connectionId = name.split("@").join("_").split(".").join("_");
 
-        Application.account.initData(
-          (account: Account) => {
-            ApplicationView.resume();
-            onRegister(Application.account);
-          },
-          (err: any) => {
-            onRegister(Application.account);
-            ApplicationView.resume();
-            onError(err);
-          }
-        );
+        // So here i will open the use database connection.
+        let connection = new Connection
+        connection.setId(connectionId)
+        connection.setUser(connectionId)
+        connection.setPassword(password)
+        connection.setStore(StoreType.MONGO)
+        connection.setName(name)
+        connection.setPort(27017)
+        connection.setTimeout(60)
+        connection.setHost(Application.domain)
+        rqst.setConnection(connection)
 
-        this.initNotifications();
-        this.startRefreshToken();
+        Model.globular.persistenceService.createConnection(rqst, {
+          token: localStorage.getItem("user_token"),
+          application: Model.application,
+          domain: Model.domain
+        }).then(() => {
+          // Callback on login.
+          Application.account = new Account(name, email, name);
+
+          Application.account.initData(
+            (account: Account) => {
+              ApplicationView.resume();
+              onRegister(Application.account);
+              this.initNotifications();
+              this.startRefreshToken();
+              // Here I will send a login success.
+              console.log("login_event")
+              // TODO the login will be publish later when the user data will be init
+
+              Model.eventHub.publish("login_event", account, true);
+            },
+            (err: any) => {
+              onRegister(Application.account);
+              ApplicationView.resume();
+              // Here I will send a login success.
+              console.log("login_event")
+              // TODO the login will be publish later when the user data will be init
+
+              Model.eventHub.publish("login_event", account, true);
+              this.initNotifications();
+              this.startRefreshToken();
+              onError(err);
+            }
+          );
+
+        }).catch(err => {
+          ApplicationView.resume();
+          onError(err);
+        })
+
       })
       .catch((err: any) => {
         ApplicationView.resume();
