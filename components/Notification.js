@@ -381,9 +381,9 @@ export class NotificationMenu extends Menu {
 
         let html = `
         <div id="div_${notification._id}" class="notification_panel">
-            <div style="position: absolute; top: 5px; right: 5px;">
+            <div id="div_${notification._id}_close_btn" style="position: absolute; top: 5px; right: 5px; display: none;">
                 <div style="position: relative;">
-                    <iron-icon id="div_${notification._id}_close_btn"  icon="close" style="display: none; --iron-icon-fill-color:var(--palette-text-primary);"></iron-icon>
+                    <iron-icon   icon="close" style="--iron-icon-fill-color:var(--palette-text-primary);"></iron-icon>
                     <paper-ripple class="circle" recenters></paper-ripple>
                 </div>
             </div>
@@ -442,8 +442,47 @@ export class NotificationMenu extends Menu {
 
         // set element style.
         notificationDiv.style.display = "flex"
-        notificationDiv.style.position  = "relative"
+        notificationDiv.style.position = "relative"
         notificationDiv.style.padding = ".75rem"
+
+
+        let date = new Date(notification._date)
+        let now = new Date()
+        let delay = Math.floor((now.getTime() - date.getTime()) / 1000);
+        let date_div = this.shadowRoot.getElementById(`div_${notification._id}_date`)
+        date_div.date = date
+
+        if (delay < 60) {
+            date_div.innerHTML = delay + " seconds ago"
+        } else if (delay < 60 * 60) {
+            date_div.innerHTML = Math.floor(delay / (60)) + " minutes ago"
+        } else if (delay < 60 * 60 * 24) {
+            date_div.innerHTML = Math.floor(delay / (60 * 60)) + " hours ago"
+        } else {
+            date_div.innerHTML = Math.floor(delay / (60 * 60 * 24)) + " days ago"
+        }
+
+        // Now the new notification count badge.
+        let count = 0;
+        let notifications_read_date = 0;
+        if (localStorage.getItem("notifications_read_date") != undefined) {
+            notifications_read_date = parseInt(localStorage.getItem("notifications_read_date"))
+        }
+
+        // if it set to true a toast will be display for that notification.
+        let displayNotification = true;
+
+        if (notification._date.getTime() > notifications_read_date) {
+            if (this.notificationCount != undefined) {
+                count = parseInt(this.notificationCount.innerHTML)
+            } else {
+                this.setNotificationCount()
+            }
+            count++
+            this.notificationCount.innerHTML = count.toString()
+        } else {
+            displayNotification = false
+        }
 
         if (notification._type == 1) {
             this.applicationNotificationsDiv.style.display = ""
@@ -457,20 +496,23 @@ export class NotificationMenu extends Menu {
             ico.style.display = "none"
 
             // Here I will display notification to the Application toast...
-            let toast = ApplicationView.displayMessage(notificationDiv.outerHTML, 15000)
-            if (toast == undefined){
-                return 
-            }
-            
-            let closeBtn = toast.el.querySelector(`#div_${notification._id}_close_btn`)
-            closeBtn.parentNode.parentNode.style.rigth = "-10px"
-            closeBtn.style.display = "block"
-            closeBtn.onclick = () => {
-                if (this.onclose != undefined) {
-                    this.onclose(notification);
+            if (displayNotification) {
+                let toast = ApplicationView.displayMessage(notificationDiv.outerHTML, 15000)
+                if (toast == undefined) {
+                    return
                 }
-                toast.dismiss()
+                let closeBtn = toast.el.querySelector(`#div_${notification._id}_close_btn`)
+                closeBtn.style.right = "-10px"
+                closeBtn.style.display = "block"
+                closeBtn.onclick = () => {
+                    if (this.onclose != undefined) {
+                        this.onclose(notification);
+                    }
+                    toast.dismiss()
+                }
+    
             }
+
 
         } else if (notification._type == 0) {
             this.userNotificationsDiv.style.display = ""
@@ -488,21 +530,23 @@ export class NotificationMenu extends Menu {
                     img.style.display = "none"
                     ico.style.display = "block"
                 }
+
                 span.innerHTML = account.name
                 let deleteNotificationListener
 
-
                 // Here I will display notification to the Application toast...
-                let toast = ApplicationView.displayMessage(notificationDiv.outerHTML, 10000)
-                let closeBtn = toast.el.querySelector(`#div_${notification._id}_close_btn`)
-                closeBtn.style.display = "block"
-                closeBtn.parentNode.parentNode.style.rigth = "-10px"
-                closeBtn.onclick = () => {
-                    Model.eventHub.publish("delete_notification_event_", notification, true)
-                    if (this.onclose != undefined) {
-                        this.onclose(notification);
+                if (displayNotification) {
+                    let toast = ApplicationView.displayMessage(notificationDiv.outerHTML, 10000)
+                    let closeBtn = toast.el.querySelector(`#div_${notification._id}_close_btn`)
+                    closeBtn.style.display = "block"
+                    closeBtn.right = "-10px"
+                    closeBtn.onclick = () => {
+                        Model.eventHub.publish("delete_notification_event_", notification, true)
+                        if (this.onclose != undefined) {
+                            this.onclose(notification);
+                        }
+                        toast.dismiss()
                     }
-                    toast.dismiss()
                 }
 
                 Model.eventHub.subscribe(
@@ -529,43 +573,12 @@ export class NotificationMenu extends Menu {
             })
         }
 
-        let date = new Date(notification._date)
-        let now = new Date()
-        let delay = Math.floor((now.getTime() - date.getTime()) / 1000);
-        let date_div = this.shadowRoot.getElementById(`div_${notification._id}_date`)
-        date_div.date = date
-        if (delay < 60) {
-            date_div.innerHTML = delay + " seconds ago"
-        } else if (delay < 60 * 60) {
-            date_div.innerHTML = Math.floor(delay / (60)) + " minutes ago"
-        } else if (delay < 60 * 60 * 24) {
-            date_div.innerHTML = Math.floor(delay / (60 * 60)) + " hours ago"
-        } else {
-            date_div.innerHTML = Math.floor(delay / (60 * 60 * 24)) + " days ago"
-        }
-
+        // remove it from display.
         if (isHidden) {
             this.shadowRoot.removeChild(this.getMenuDiv())
         }
 
-        // Now the new notification count badge.
-        let count = 0;
-        let notifications_read_date = 0;
-        if (localStorage.getItem("notifications_read_date") != undefined) {
-            notifications_read_date = parseInt(localStorage.getItem("notifications_read_date"))
-        }
 
-        if (notification._date.getTime() > notifications_read_date) {
-
-            if (this.notificationCount != undefined) {
-                count = parseInt(this.notificationCount.innerHTML)
-            } else {
-                this.setNotificationCount()
-            }
-
-            count++
-            this.notificationCount.innerHTML = count.toString()
-        }
     }
 
 

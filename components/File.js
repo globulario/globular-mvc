@@ -29,7 +29,7 @@ import { Application } from '../Application';
 import { RunCmdRequest } from 'globular-web-client/admin/admin_pb';
 import { GetSharedResourceRqst, SubjectType } from 'globular-web-client/rbac/rbac_pb';
 
-function escapePathSpace(path){
+function escapePathSpace(path) {
     /*let values = path.split("/")
     values.forEach(v=>{
         if(v.indexOf(" ") > 0){
@@ -39,7 +39,7 @@ function escapePathSpace(path){
 
     return values.join("/")
     */
-   return path
+    return path
 }
 
 function getElementIndex(element) {
@@ -760,7 +760,7 @@ export class FilesView extends HTMLElement {
             // Here we got an url...
             let url = evt.dataTransfer.getData("Url");
             let root = Model.globular.config.DataPath
-   
+
             // Depending of your need... or the hour of the day.
             if (url.endsWith(".torrent") || url.startsWith("magnet:")) {
                 // there is the way to install the torrent client on the server side.
@@ -833,9 +833,9 @@ export class FilesView extends HTMLElement {
             okBtn.onclick = () => {
                 let rqst = new RunCmdRequest
                 rqst.setCmd("youtube-dl")
-                let dest = root +  `/files${this.__dir__.path}/%(title)s.%(ext)s`
-                
-                
+                let dest = root + `/files${this.__dir__.path}/%(title)s.%(ext)s`
+
+
                 if (mp3Radio.checked) {
                     rqst.setArgsList(["-f", "bestaudio", "--extract-audio", "--audio-format", "mp3", "--audio-quality", "0", "-o", escapePathSpace(dest), url]);
                 } else {
@@ -2691,6 +2691,9 @@ export class FileExplorer extends HTMLElement {
         // Refresh the root directory and send event to
         // refresh all the interface.
         this.refreshBtn.onclick = () => {
+            // set the root...
+            this.setRoot(this.root)
+
             _readDir(this.root, (dir) => {
 
                 _publishSetDirEvent(this.path)
@@ -2901,7 +2904,8 @@ export class FileExplorer extends HTMLElement {
 
     // The connection callback.
     connectedCallback() {
-   
+        // set the root...
+        this.setRoot(this.root)
     }
 
     setRoot(root) {
@@ -3158,7 +3162,7 @@ export class FileExplorer extends HTMLElement {
     }
 
     open() {
- 
+
         this.fileExplorerBox.style.display = "flex"
 
         if (this.onopen != undefined) {
@@ -3166,7 +3170,7 @@ export class FileExplorer extends HTMLElement {
         }
 
         let workspace = this.getWorkspace()
-        if(workspace != undefined){
+        if (workspace != undefined) {
             workspace.appendChild(this)
             this.isOpen = true;
         }
@@ -3225,7 +3229,7 @@ export class FilesMenu extends Menu {
 
             if (this.fileExplorer.style.display == "none") {
                 this.fileExplorer.style.display = "block"
-            }else if(this.fileExplorer.style.display == "block"){
+            } else if (this.fileExplorer.style.display == "block") {
                 this.fileExplorer.style.display = "none"
             }
 
