@@ -373,6 +373,9 @@ dropdown-menu-element{
    text-align: center;
 }
 
+globular-file-explorer{
+   z-index: 100;
+}
 /**************************** Layout **************************/
 
 /** Small **/
@@ -510,7 +513,7 @@ dropdown-menu-element{
       z-index: 100;
    }
 
-   globular-video-conversation, globular-messenger{
+   globular-messenger{
       grid-row-start: 1;
       grid-row-end: 3;
       grid-column-start: 12;
@@ -522,6 +525,8 @@ dropdown-menu-element{
    }
 
    globular-video-conversation{
-      top: 0px;
+      grid-row-start: 1;
+      grid-column-start: 1;
+      grid-column-end: 6;
    }
 }

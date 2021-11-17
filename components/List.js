@@ -65,7 +65,7 @@ export class SearchableList extends HTMLElement {
             </div>
         </div>
         <div id="shadow-div" style="width: 100%; height: 5px;"></div>
-        <div id="items-div" style="width: 100%;max-height: 200px; min-width: 550px; overflow-y: auto; maring-top: 5px; margin-bottom: 5px;"></div>
+        <div id="items-div" style="width: 100%;max-height: 200px; overflow-y: auto; maring-top: 5px; margin-bottom: 5px;"></div>
         `
 
         this.listDiv = this.shadowRoot.querySelector("#items-div")
