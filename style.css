@@ -507,9 +507,10 @@ globular-file-explorer{
       grid-row-end: 3;
       grid-column-start: 1;
       grid-column-end: 6;
-
+      /** The z-index */
       position: fixed;
       left: 0px;
+      z-index: 100;
    }
 
    globular-messenger{

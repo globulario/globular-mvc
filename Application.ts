@@ -769,29 +769,22 @@ export class Application extends Model {
         }).then(() => {
           // Callback on login.
           Application.account = new Account(name, email, name);
-
           Application.account.initData(
             (account: Account) => {
-              ApplicationView.resume();
+              // Here I will send a login success.
+              Model.eventHub.publish("login_event", account, true);
               onRegister(Application.account);
               this.initNotifications();
               this.startRefreshToken();
-              // Here I will send a login success.
-              console.log("login_event")
-              // TODO the login will be publish later when the user data will be init
-
-              Model.eventHub.publish("login_event", account, true);
+              ApplicationView.resume();
+              
             },
             (err: any) => {
-              onRegister(Application.account);
-              ApplicationView.resume();
-              // Here I will send a login success.
-              console.log("login_event")
-              // TODO the login will be publish later when the user data will be init
-
               Model.eventHub.publish("login_event", account, true);
+              onRegister(Application.account);
               this.initNotifications();
               this.startRefreshToken();
+              ApplicationView.resume();
               onError(err);
             }
           );
