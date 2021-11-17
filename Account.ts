@@ -333,6 +333,7 @@ export class Account extends Model {
     }
 
     private setData(data: any) {
+
         this.hasData = true;
         this.firstName = data["firstName_"];
         if (this.firstName == undefined) {
@@ -347,6 +348,9 @@ export class Account extends Model {
             this.middleName = "";
         }
         this.profilPicture = data["profilPicture_"];
+
+        // keep the user data into the localstore.
+        localStorage.setItem(this.id, JSON.stringify(data))
 
     }
 
@@ -407,6 +411,14 @@ export class Account extends Model {
 
             },
             (err: any) => {
+                let data = localStorage.getItem(this.id)
+                if(data != undefined){
+                    this.setData(data)
+                    this.hasData = true;
+                    callback(this);
+                    return
+                }
+
                 this.hasData = false;
                 // Call success callback ...
                 if (callback != undefined && this.session != null) {
@@ -605,8 +617,7 @@ export class Account extends Model {
                     let a_ = accounts_.pop()
                     if (Account.accounts[a_.getId()] == undefined) {
                         let a = new Account(a_.getId(), a_.getEmail(), a_.getName())
-
-
+                        
                         if (accounts_.length > 0) {
                             a.initData(() => {
                                 accounts.push(a)
