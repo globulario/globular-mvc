@@ -873,8 +873,8 @@ export class Messenger extends HTMLElement {
             #messages-list-container{
                 background-color: var(--palette-background-default);
                 overflow-y: auto;
-                min-height: 85vh; 
-                max-height: 85vh;
+                min-height: 75vh; 
+                max-height: 75vh;
                 display: grid;
             }
 

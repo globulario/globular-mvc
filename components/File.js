@@ -2518,7 +2518,7 @@ export class FileExplorer extends HTMLElement {
         this.actionsCard = this.shadowRoot.querySelector("#card-actions")
 
         // I will use the resize event to set the size of the file explorer.
-        this.fileExplorerContent.style.maxHeight = "85vh - 60px"
+        this.fileExplorerContent.style.maxHeight = "70vh "
 
 
         // Here I will connect the windows resize event...
@@ -3480,7 +3480,7 @@ export class FilesUploader extends HTMLElement {
             }
 
             .card-content{
-                max-height: 85vh;
+                max-height: 70vh;
                 overflow-y: auto;
             }
 
