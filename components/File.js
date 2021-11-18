@@ -1877,9 +1877,6 @@ export class FileNavigator extends HTMLElement {
         // The root div.
         this.div = null
 
-        // That control the heigth of the file navigator.
-        this.height = 640
-
         // The control width
         this.width = 200
 
@@ -1890,8 +1887,6 @@ export class FileNavigator extends HTMLElement {
 
             #file-navigator-div{
                 min-width: ${this.width}px; 
-                max-height: ${this.height}px; 
-                min-height: ${this.height}px; 
                 overflow: auto;
             }
 
@@ -2385,6 +2380,7 @@ export class FileExplorer extends HTMLElement {
                 }
                 #file-explorer-content{
                     min-width: 0px;
+                    position: relative;
                 }
 
                 #file-selection-panel{
@@ -2437,7 +2433,7 @@ export class FileExplorer extends HTMLElement {
                     <paper-icon-button id="navigation-create-dir-btn" icon="icons:create-new-folder"></paper-icon-button>
                     <paper-icon-button id="navigation-refresh-btn" icon="icons:refresh"></paper-icon-button>
                 </div>
-                <div id="file-explorer-layout">
+                <div id="file-explorer-layout" style="height: 640px;">
                     <div id="file-navigation-panel">
                         <globular-file-navigator id="globular-file-navigator"></globular-file-navigator>
                     </div>
@@ -2448,15 +2444,13 @@ export class FileExplorer extends HTMLElement {
                         <globular-audio-player id="globular-audio-player"></globular-audio-player>
                         <globular-file-reader id="globular-file-reader"></globular-file-reader>
                         <globular-image-viewer id="globular-image-viewer"></globular-image-viewer>
-                       
-                        <div style="position: absolute; bottom: 8px; right: 8px; display: flex; background-color:var(--palette-background-default);" >
-                            <globular-files-uploader></globular-files-uploader>
-                            <paper-icon-button id="files-icon-btn" class="active" icon="icons:view-module" style="--iron-icon-fill-color: var(--palette-action-active);"></paper-icon-button>
-                            <paper-icon-button id="files-list-btn" icon="icons:view-list" style="--iron-icon-fill-color: var(--palette-action-disabled);"></paper-icon-button>
-                        </div>
                     </div>
                 </div>
-
+                <div style="position: absolute; bottom: 16px; right: 24px; display: flex; background-color:var(--palette-background-default);" >
+                    <globular-files-uploader></globular-files-uploader>
+                    <paper-icon-button id="files-icon-btn" class="active" icon="icons:view-module" style="--iron-icon-fill-color: var(--palette-action-active);"></paper-icon-button>
+                    <paper-icon-button id="files-list-btn" icon="icons:view-list" style="--iron-icon-fill-color: var(--palette-action-disabled);"></paper-icon-button>
+                </div>
             </div>
             <div class="card-actions">
                 <span style="flex-grow: 1;"></span>
@@ -2525,7 +2519,7 @@ export class FileExplorer extends HTMLElement {
         // I will use the resize event to set the size of the file explorer.
         window.addEventListener("resize", () => {
             // Here I will use the workspace to define the with of the content...
-            this.fileExplorerContent.style.minHeight = window.innerHeight - 170 + "px"
+            this.fileExplorerContent.style.maxHeight = window.innerHeight - 170 + "px"
         })
 
         // Here I will connect the windows resize event...
