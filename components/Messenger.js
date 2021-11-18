@@ -177,6 +177,7 @@ export class MessengerMenu extends Menu {
         this.getMenuDiv().appendChild(range.createContextualFragment(html));
 
         this.getMenuDiv().style.height = this.height + "px";
+        this.getMenuDiv().style.maxHeight = "70vh"
         this.getMenuDiv().style.overflowY = "auto";
         this.shadowRoot.appendChild(this.getMenuDiv())
 
@@ -872,8 +873,8 @@ export class Messenger extends HTMLElement {
             #messages-list-container{
                 background-color: var(--palette-background-default);
                 overflow-y: auto;
-                min-height: 525px; 
-                max-height: 525px;
+                min-height: 85vh; 
+                max-height: 85vh;
                 display: grid;
             }
 

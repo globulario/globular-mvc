@@ -43,7 +43,7 @@ export class Layout extends HTMLElement {
               background-color: var(--palette-background-default);
               color: var(--palette-text-primary);
               heigth: 100%;
-              min-height: calc(100vh - var(--toolbar-height));
+              min-height: calc(100% - var(--toolbar-height));
             }
             
             app-drawer app-toolbar{ 

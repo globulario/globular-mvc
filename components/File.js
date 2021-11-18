@@ -2372,6 +2372,7 @@ export class FileExplorer extends HTMLElement {
             #file-explorer-layout{
                 display: flex; 
                 flex-grow: 1;
+                overflow: hidden;
             }
 
             @media only screen and (max-width: 800px) {
@@ -2433,7 +2434,7 @@ export class FileExplorer extends HTMLElement {
                     <paper-icon-button id="navigation-create-dir-btn" icon="icons:create-new-folder"></paper-icon-button>
                     <paper-icon-button id="navigation-refresh-btn" icon="icons:refresh"></paper-icon-button>
                 </div>
-                <div id="file-explorer-layout" style="height: 640px;">
+                <div id="file-explorer-layout" style="height: 70vh;">
                     <div id="file-navigation-panel">
                         <globular-file-navigator id="globular-file-navigator"></globular-file-navigator>
                     </div>
@@ -2446,7 +2447,7 @@ export class FileExplorer extends HTMLElement {
                         <globular-image-viewer id="globular-image-viewer"></globular-image-viewer>
                     </div>
                 </div>
-                <div style="position: absolute; bottom: 16px; right: 24px; display: flex; background-color:var(--palette-background-default);" >
+                <div style="position: absolute; bottom: 24px; right: 24px; display: flex; background-color:var(--palette-background-default);" >
                     <globular-files-uploader></globular-files-uploader>
                     <paper-icon-button id="files-icon-btn" class="active" icon="icons:view-module" style="--iron-icon-fill-color: var(--palette-action-active);"></paper-icon-button>
                     <paper-icon-button id="files-list-btn" icon="icons:view-list" style="--iron-icon-fill-color: var(--palette-action-disabled);"></paper-icon-button>
@@ -2517,10 +2518,8 @@ export class FileExplorer extends HTMLElement {
         this.actionsCard = this.shadowRoot.querySelector("#card-actions")
 
         // I will use the resize event to set the size of the file explorer.
-        window.addEventListener("resize", () => {
-            // Here I will use the workspace to define the with of the content...
-            this.fileExplorerContent.style.maxHeight = window.innerHeight - 170 + "px"
-        })
+        this.fileExplorerContent.style.maxHeight = "85vh - 60px"
+
 
         // Here I will connect the windows resize event...
         this.backNavigationBtn.onclick = (evt) => {
@@ -3481,7 +3480,7 @@ export class FilesUploader extends HTMLElement {
             }
 
             .card-content{
-                max-height: 500px;
+                max-height: 85vh;
                 overflow-y: auto;
             }
 

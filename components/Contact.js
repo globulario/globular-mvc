@@ -128,6 +128,7 @@ export class ContactsMenu extends Menu {
         this.getMenuDiv().appendChild(range.createContextualFragment(html));
 
         this.getMenuDiv().style.height = this.height + "px";
+        this.getMenuDiv().style.maxHeight = "70vh"
         this.getMenuDiv().style.overflowY = "auto";
         this.shadowRoot.appendChild(this.getMenuDiv())
 
