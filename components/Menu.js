@@ -168,7 +168,7 @@ export class Menu extends HTMLElement {
 
             if (img.src.length == 0) {
                 ico.style.display = "block";
-                icon.style.setProperty("--iron-icon-fill-color", "var(--palette-primary-main)")
+                //icon.style.setProperty("--iron-icon-fill-color", "var(--palette-primary-main)")
             }
 
             // test if the menu is set.

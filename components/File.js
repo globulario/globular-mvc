@@ -2495,9 +2495,9 @@ export class FileExplorer extends HTMLElement {
                 </div>
             </div>
             <div class="card-actions">
+                <span style="flex-grow: 1;"></span>
                 <iron-icon icon="icons:fullscreen" id="enter-full-screen-btn"></iron-icon>
                 <iron-icon icon="icons:fullscreen-exit" id="exit-full-screen-btn" style="display: none;"></iron-icon>
-                <span style="flex-grow: 1;"></span>
                 <paper-button id="file-explorer-box-close-btn">Close</paper-button>
             </div>
         </paper-card>
@@ -2579,7 +2579,7 @@ export class FileExplorer extends HTMLElement {
             this.style.top = "60px"
             this.style.bottom = "0px"
             this.style.right = "0px"
-            this.shadowRoot.querySelector("#file-explorer-layout").style.height = "79vh "
+            this.shadowRoot.querySelector("#file-explorer-layout").style.height = "calc(79vh - 60px)"
 
             this.enterFullScreenBtn.style.display = "none"
             this.exitFullScreenBtn.style.display = "block"

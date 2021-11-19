@@ -119,12 +119,9 @@ export let theme = `
 
   paper-tabs {
     /* custom CSS property */
-    --paper-tabs-selection-bar-color: var(--palette-primary-main);
-  }
-
-  paper-tabs {
-    /* custom CSS property */
-    --paper-tabs-selection-bar-color: var(--palette-primary-main);
+    --paper-tabs-selection-bar-color: var(--palette-primary-main); 
+    color: var(--palette-text-primary);
+    --paper-tab-ink: var(--palette-action-disabled);
   }
 
   paper-toggle-button {
@@ -312,10 +309,6 @@ export let theme = `
   
   .inner-triangle:hover{
       cursor: pointer;
-  }
-
-  app-drawer-layout{
-    --background:var(--palette-background-default);
   }
 
   emoji-picker {

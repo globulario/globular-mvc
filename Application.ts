@@ -1311,7 +1311,7 @@ export class Application extends Model {
       `
       <div style="display: flex; flex-direction: column;">
         <p>
-          ${Application.account.name} want to add you as contact.<br>Click the <iron-icon id="Contacts_icon" icon="social:people" style="--iron-icon-fill-color: var(--palette-primary-main);"></iron-icon> button to accept or decline the invitation.
+          ${Application.account.name} want to add you as contact.<br>Click the <iron-icon id="Contacts_icon" icon="social:people"></iron-icon> button to accept or decline the invitation.
         </p>
       </div>`
     );
@@ -1344,7 +1344,7 @@ export class Application extends Model {
       <div style="display: flex; flex-direction: column;">
         <p>
           ${Application.account.name} accept you as contact.
-          <br>Click the <iron-icon id="Contacts_icon" icon="social:people" style="--iron-icon-fill-color: var(--palette-primary-main);"></iron-icon> button to get more infos.
+          <br>Click the <iron-icon id="Contacts_icon" icon="social:people"></iron-icon> button to get more infos.
         </p>
       </div>`
     );
@@ -1376,7 +1376,7 @@ export class Application extends Model {
       <div style="display: flex; flex-direction: column;">
         <p>
           Unfortunately ${Application.account.name} declined your invitation.
-          <br>Click the <iron-icon id="Contacts_icon" icon="social:people" style="--iron-icon-fill-color: var(--palette-primary-main);"></iron-icon> button to get more infos.
+          <br>Click the <iron-icon id="Contacts_icon" icon="social:people"></iron-icon> button to get more infos.
         </p>
       </div>`
     );
@@ -1408,7 +1408,7 @@ export class Application extends Model {
       <div style="display: flex; flex-direction: column;">
         <p>
           Unfortunately ${Application.account.name} revoke the invitation.
-          <br>Click the <iron-icon id="Contacts_icon" icon="social:people" style="--iron-icon-fill-color: var(--palette-primary-main);"></iron-icon> button to get more infos.
+          <br>Click the <iron-icon id="Contacts_icon" icon="social:people"></iron-icon> button to get more infos.
         </p>
       </div>`
     );
@@ -1440,7 +1440,7 @@ export class Application extends Model {
       <div style="display: flex; flex-direction: column;">
         <p>
           You and ${Application.account.name} are no more in contact.
-          <br>Click the <iron-icon id="Contacts_icon" icon="social:people" style="--iron-icon-fill-color: var(--palette-primary-main);"></iron-icon> button to get more infos.
+          <br>Click the <iron-icon id="Contacts_icon" icon="social:people"></iron-icon> button to get more infos.
         </p>
       </div>`
     );
