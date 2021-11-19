@@ -314,6 +314,10 @@ export let theme = `
       cursor: pointer;
   }
 
+  app-drawer-layout{
+    --background:var(--palette-background-default);
+  }
+
   emoji-picker {
     width: 400px;
     height: 300px;
