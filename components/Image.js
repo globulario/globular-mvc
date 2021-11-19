@@ -473,7 +473,7 @@ class ImageViewer extends HTMLElement {
 
         ch[i].style.margin = 'auto';
         ch[i].style.maxWidth = '100%';
-        ch[i].style.maxHeight = '79vh';
+        ch[i].style.maxHeight = '77vh';
       }
       //counter
       this.shadowRoot.querySelector('#counter').innerHTML = '1/'+cant;
