@@ -607,6 +607,7 @@ export class ConversationInfos extends HTMLElement {
                 </div>
             </iron-collapse>
             <slot class="action"></slot>
+            <paper-progress indeterminate style="width: 100%; display: none;"></paper-progress>
         </div>
         `
 
@@ -683,6 +684,7 @@ export class ConversationInfos extends HTMLElement {
                 if (evt.conversation.getUuid() == conversationUuid) {
                     this.querySelector(`#join_${conversationUuid}_btn`).style.display = "none"
                     this.querySelector(`#leave_${conversationUuid}_btn`).style.display = "flex"
+                    this.shadowRoot.querySelector("paper-progress").style.display = "none"
                 }
             }, true)
 
@@ -694,6 +696,7 @@ export class ConversationInfos extends HTMLElement {
                 if (evt == conversationUuid) {
                     this.querySelector(`#join_${conversationUuid}_btn`).style.display = "flex"
                     this.querySelector(`#leave_${conversationUuid}_btn`).style.display = "none"
+                    this.shadowRoot.querySelector("paper-progress").style.display = "none"
                 }
             }, true)
     }
@@ -745,9 +748,18 @@ export class ConversationInfos extends HTMLElement {
         }
         this.innerHtml = ""
         let range = document.createRange()
-        this.appendChild(range.createContextualFragment(`</div><paper-button style="font-size:.85em; width: 20px;" id="join_${this.conversation.getUuid()}_btn">Join</paper-button>`))
-
+        this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.85em; width: 20px;" id="join_${this.conversation.getUuid()}_btn">Join</paper-button>`))
+       
         this.querySelector(`#join_${this.conversation.getUuid()}_btn`).onclick = () => {
+
+            if(this.shadowRoot.querySelector("paper-progress").style == "block"){
+                // Block power clicker
+                return
+            }
+
+            this.shadowRoot.querySelector("paper-progress").style.display = "block"
+            
+
             ConversationManager.joinConversation(this.conversation.getUuid(),
                 (conversation, messages) => {
                     if (onJoinConversation != null) {
@@ -758,10 +770,12 @@ export class ConversationInfos extends HTMLElement {
 
                     // local event
                     Model.eventHub.publish("__join_conversation_evt__", { conversation: this.conversation, messages: messages }, true)
+                    
 
                     // network event.
                     this.querySelector(`#join_${this.conversation.getUuid()}_btn`).style.display = "none"
                     this.querySelector(`#leave_${this.conversation.getUuid()}_btn`).style.display = "flex"
+                    this.shadowRoot.querySelector("paper-progress").style.display = "none"
                 },
                 (err) => {
                     ApplicationView.displayMessage(err, 3000)
@@ -1003,6 +1017,10 @@ export class Messenger extends HTMLElement {
                     return
                 }
 
+                 // Close the menu
+                document.querySelector("globular-messenger-menu").click()
+
+
                 // Here the conversation dosent exist so I will keep it in the map.
                 this.conversations[conversation.getUuid()] = { conversation: conversation, messages: evt.messages }
 
@@ -1032,9 +1050,11 @@ export class Messenger extends HTMLElement {
     setConversation(conversationUuid) {
         let conversation = this.conversations[conversationUuid].conversation
         let messages = this.conversations[conversationUuid].messages
+        this.shadowRoot.querySelector("#leave_conversation_btn").style.display = ""
 
         // Set the leave converstion button.
         this.shadowRoot.querySelector("#leave_conversation_btn").onclick = () => {
+            this.shadowRoot.querySelector("#leave_conversation_btn").style.display = "none"
             ConversationManager.leaveConversation(conversationUuid,
                 () => {
                     Model.eventHub.publish("__leave_conversation_evt__", conversationUuid, true)
@@ -1076,8 +1096,12 @@ export class Messenger extends HTMLElement {
         this.listeners[conversationUuid] = []
 
         // Connect the conversation event's
+        this.shadowRoot.querySelector("#leave_conversation_btn").style.display = ""
+
         // Set the leave converstion button.
         this.shadowRoot.querySelector("#leave_conversation_btn").onclick = () => {
+            // block multiple click.
+            this.shadowRoot.querySelector("#leave_conversation_btn").style.display = "none"
             ConversationManager.leaveConversation(conversationUuid,
                 () => {
                     Model.eventHub.publish("__leave_conversation_evt__", conversationUuid, true)

@@ -793,84 +793,119 @@ export class FilesView extends HTMLElement {
                     }
                 });
 
-                return;
-            }
 
-            // Just beat it!
-            // youtube-dl -f mp4 -o "/tmp/%(title)s.%(ext)s" https://www.youtube.com/watch?v=oRdxUFDoQe0&list=PLCD0445C57F2B7F41&index=12&ab_channel=michaeljacksonVEVO
-            // In that case I will made use of the fabulous youtube-dl command line.
-            let toast = ApplicationView.displayMessage(`
-                    <style>
-                        ${theme}
-                    </style>
-                    <div id="select-media-dialog">
-                        <span>What kind of file to you want to create?</span>
-                        <div style="display: flex; justify-content: center;">
-                            <paper-radio-group>
-                                <paper-radio-button id="media-type-mp4" name="media-type" checked>Video (mp4)</paper-radio-button>
-                                <paper-radio-button id="media-type-mp3"  name="media-type">Audio (mp3)</paper-radio-button>
-                            </paper-radio-group>
-                        </div>
-                        <div style="display: flex; justify-content: flex-end;">
-                            <paper-button id="upload-lnk-ok-button">Ok</paper-button>
-                            <paper-button id="upload-lnk-cancel-button">Cancel</paper-button>
-                        </div>
-                    </div>
-                `, 60 * 1000)
+                // Just beat it!
+                // youtube-dl -f mp4 -o "/tmp/%(title)s.%(ext)s" https://www.youtube.com/watch?v=oRdxUFDoQe0&list=PLCD0445C57F2B7F41&index=12&ab_channel=michaeljacksonVEVO
+                // In that case I will made use of the fabulous youtube-dl command line.
+                let toast = ApplicationView.displayMessage(`
+            <style>
+                ${theme}
+            </style>
+            <div id="select-media-dialog">
+                <span>What kind of file to you want to create?</span>
+                <div style="display: flex; justify-content: center;">
+                    <paper-radio-group>
+                        <paper-radio-button id="media-type-mp4" name="media-type" checked>Video (mp4)</paper-radio-button>
+                        <paper-radio-button id="media-type-mp3"  name="media-type">Audio (mp3)</paper-radio-button>
+                    </paper-radio-group>
+                </div>
+                <div style="display: flex; justify-content: flex-end;">
+                    <paper-button id="upload-lnk-ok-button">Ok</paper-button>
+                    <paper-button id="upload-lnk-cancel-button">Cancel</paper-button>
+                </div>
+            </div>
+        `, 60 * 1000)
 
-            let mp4Radio = toast.el.querySelector("#media-type-mp4")
-            let mp3Radio = toast.el.querySelector("#media-type-mp3")
+                let mp4Radio = toast.el.querySelector("#media-type-mp4")
+                let mp3Radio = toast.el.querySelector("#media-type-mp3")
 
-            mp4Radio.onclick = () => {
-                mp3Radio.checked = !mp3Radio.checked
-            }
-
-            mp3Radio.onclick = () => {
-                mp4Radio.checked = !mp3Radio.checked
-            }
-
-            let okBtn = toast.el.querySelector("#upload-lnk-ok-button")
-            okBtn.onclick = () => {
-                let rqst = new RunCmdRequest
-                rqst.setCmd("youtube-dl")
-                let dest = root + `/files${this.__dir__.path}/%(title)s.%(ext)s`
-
-
-                if (mp3Radio.checked) {
-                    rqst.setArgsList(["-f", "bestaudio", "--extract-audio", "--audio-format", "mp3", "--audio-quality", "0", "-o", escapePathSpace(dest), url]);
-                } else {
-                    rqst.setArgsList(["-f", "mp4", "-o", escapePathSpace(dest), url])
+                mp4Radio.onclick = () => {
+                    mp3Radio.checked = !mp3Radio.checked
                 }
 
-                rqst.setBlocking(true)
-                let stream = Application.globular.adminService.runCmd(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
-                let pid = -1;
+                mp3Radio.onclick = () => {
+                    mp4Radio.checked = !mp3Radio.checked
+                }
 
-                // Here I will create a local event to be catch by the file uploader...
-                stream.on("data", (rsp) => {
-                    if (rsp.getPid() != null) {
-                        pid = rsp.getPid()
-                    }
-                    // Publish local event.
-                    Model.eventHub.publish("__upload_link_event__", { pid: pid, path: this.__dir__.path, infos: rsp.getResult(), done: false, lnk: lnk }, true);
-                });
+                let okBtn = toast.el.querySelector("#upload-lnk-ok-button")
+                okBtn.onclick = () => {
+                    let rqst = new RunCmdRequest
+                    rqst.setCmd("youtube-dl")
+                    let dest = root + `/files${this.__dir__.path}/%(title)s.%(ext)s`
 
-                stream.on("status", (status) => {
-                    if (status.code === 0) {
-                        Model.eventHub.publish("__upload_link_event__", { pid: pid, path: this.__dir__.path, infos: "", done: true, lnk: lnk }, true);
+
+                    if (mp3Radio.checked) {
+                        rqst.setArgsList(["-f", "bestaudio", "--extract-audio", "--audio-format", "mp3", "--audio-quality", "0", "-o", escapePathSpace(dest), url]);
                     } else {
-                        // error here...
-                        ApplicationView.displayMessage(status.details, 3000)
+                        rqst.setArgsList(["-f", "mp4", "-o", escapePathSpace(dest), url])
                     }
+
+                    rqst.setBlocking(true)
+                    let stream = Application.globular.adminService.runCmd(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+                    let pid = -1;
+
+                    // Here I will create a local event to be catch by the file uploader...
+                    stream.on("data", (rsp) => {
+                        if (rsp.getPid() != null) {
+                            pid = rsp.getPid()
+                        }
+                        // Publish local event.
+                        Model.eventHub.publish("__upload_link_event__", { pid: pid, path: this.__dir__.path, infos: rsp.getResult(), done: false, lnk: lnk }, true);
+                    });
+
+                    stream.on("status", (status) => {
+                        if (status.code === 0) {
+                            Model.eventHub.publish("__upload_link_event__", { pid: pid, path: this.__dir__.path, infos: "", done: true, lnk: lnk }, true);
+                        } else {
+                            // error here...
+                            ApplicationView.displayMessage(status.details, 3000)
+                        }
+                    });
+
+                    toast.dismiss();
+                }
+
+                let cancelBtn = toast.el.querySelector("#upload-lnk-cancel-button")
+                cancelBtn.onclick = () => {
+                    toast.dismiss();
+                }
+
+                return;
+            } else if (url.endsWith(".jpeg") || url.endsWith(".jpg") || url.startsWith(".bpm") || url.startsWith(".gif") || url.startsWith(".png")) {
+                // I will get the file from the url and save it on the server in the current directory.
+                var getFileBlob = (url, cb) => {
+                    var xhr = new XMLHttpRequest();
+                    xhr.open("GET", url);
+                    xhr.responseType = "blob";
+                    xhr.addEventListener('load', ()=> {
+                        cb(xhr.response);
+                    });
+                    xhr.send();
+                };
+
+                var blobToFile = (blob, name) => {
+                    blob.lastModifiedDate = new Date();
+                    blob.name = name;
+                    return blob;
+                };
+
+                var getFileObject = (filePathOrUrl, cb) =>{
+                    getFileBlob(filePathOrUrl, (blob)=> {
+                        let name = filePathOrUrl.substring(filePathOrUrl.lastIndexOf("/") + 1)
+                        cb(blobToFile(blob, name));
+                    });
+                };
+
+                getFileObject(url, (fileObject) => {
+                    uploadFiles(this.__dir__.path, [fileObject], ()=>{
+                       Model.eventHub.publish("__upload_files_event__", { path: this.__dir__.path, files: [fileObject], lnk: lnk }, true)
+                    }, err=>ApplicationView.displayMessage(err, 3000))
+                    
                 });
-
-                toast.dismiss();
+            } else {
+                return
             }
 
-            let cancelBtn = toast.el.querySelector("#upload-lnk-cancel-button")
-            cancelBtn.onclick = () => {
-                toast.dismiss();
-            }
         }
     }
 }
@@ -2418,6 +2453,14 @@ export class FileExplorer extends HTMLElement {
                 z-index: 100;
             }
 
+            #enter-full-screen-btn:hover{
+                cursor: pointer;
+            }
+
+            #exit-full-screen-btn:hover{
+                cursor: pointer;
+            }
+
         </style>
         <div style="padding: 7px">
         <paper-card id="file-explorer-box" class="file-explorer" style="flex-direction: column; display: none;">
@@ -2434,7 +2477,7 @@ export class FileExplorer extends HTMLElement {
                     <paper-icon-button id="navigation-create-dir-btn" icon="icons:create-new-folder"></paper-icon-button>
                     <paper-icon-button id="navigation-refresh-btn" icon="icons:refresh"></paper-icon-button>
                 </div>
-                <div id="file-explorer-layout" style="height: 70vh;">
+                <div id="file-explorer-layout" style="height: 70vh">
                     <div id="file-navigation-panel">
                         <globular-file-navigator id="globular-file-navigator"></globular-file-navigator>
                     </div>
@@ -2454,12 +2497,18 @@ export class FileExplorer extends HTMLElement {
                 </div>
             </div>
             <div class="card-actions">
+                <iron-icon icon="icons:fullscreen" id="enter-full-screen-btn"></iron-icon>
+                <iron-icon icon="icons:fullscreen-exit" id="exit-full-screen-btn" style="display: none;"></iron-icon>
                 <span style="flex-grow: 1;"></span>
                 <paper-button id="file-explorer-box-close-btn">Close</paper-button>
             </div>
         </paper-card>
         </div>
         `
+
+        // enter full screen and exit full screen btn
+        this.enterFullScreenBtn = this.shadowRoot.querySelector("#enter-full-screen-btn")
+        this.exitFullScreenBtn = this.shadowRoot.querySelector("#exit-full-screen-btn")
 
         // The main explorer button
         this.fileExplorerBox = this.shadowRoot.querySelector("#file-explorer-box")
@@ -2518,7 +2567,25 @@ export class FileExplorer extends HTMLElement {
         this.actionsCard = this.shadowRoot.querySelector("#card-actions")
 
         // I will use the resize event to set the size of the file explorer.
-        this.fileExplorerContent.style.maxHeight = "70vh "
+        this.exitFullScreenBtn.onclick = ()=>{
+            this.enterFullScreenBtn.style.display = "block"
+            this.exitFullScreenBtn.style.display = "none"
+            this.style.top = ""
+            this.style.bottom = ""
+            this.style.right = ""
+            this.shadowRoot.querySelector("#file-explorer-layout").style.height = "70vh "
+
+        }
+
+        this.enterFullScreenBtn.onclick = ()=>{
+            this.style.top = "60px"
+            this.style.bottom = "0px"
+            this.style.right = "0px"
+            this.shadowRoot.querySelector("#file-explorer-layout").style.height = "79vh "
+
+            this.enterFullScreenBtn.style.display = "none"
+            this.exitFullScreenBtn.style.display = "block"
+        }
 
 
         // Here I will connect the windows resize event...
@@ -3480,7 +3547,6 @@ export class FilesUploader extends HTMLElement {
             }
 
             .card-content{
-                max-height: 70vh;
                 overflow-y: auto;
             }
 
