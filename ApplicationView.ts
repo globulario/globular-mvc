@@ -706,20 +706,6 @@ export class ApplicationView extends View {
       ApplicationView.displayMessage(err, 4000)
     };
 
-
-    ////////////////////////////////////////////////////////////////////
-    // TODO 
-    ////////////////////////////////////////////////////////////////////
-    // Test the blog-post
-    let blogger =  new BlogPostElement()
-    blogger.setAttribute("editable", "true")
-    this.getWorkspace().append(blogger)
-
-    // The blog list...
-    let blogs = new BlogPosts
-    blogs.setAttribute("account",account.id)
-    this.getWorkspace().append(blogs)
-
     window.dispatchEvent(new Event("resize"));
   }
 
