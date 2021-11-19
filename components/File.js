@@ -793,28 +793,60 @@ export class FilesView extends HTMLElement {
                     }
                 });
 
+            } else if (url.endsWith(".jpeg") || url.endsWith(".jpg") || url.startsWith(".bpm") || url.startsWith(".gif") || url.startsWith(".png")) {
+                // I will get the file from the url and save it on the server in the current directory.
+                var getFileBlob = (url, cb) => {
+                    var xhr = new XMLHttpRequest();
+                    xhr.open("GET", url);
+                    xhr.responseType = "blob";
+                    xhr.addEventListener('load', () => {
+                        cb(xhr.response);
+                    });
+                    xhr.send();
+                };
+
+                var blobToFile = (blob, name) => {
+                    blob.lastModifiedDate = new Date();
+                    blob.name = name;
+                    return blob;
+                };
+
+                var getFileObject = (filePathOrUrl, cb) => {
+                    getFileBlob(filePathOrUrl, (blob) => {
+                        let name = filePathOrUrl.substring(filePathOrUrl.lastIndexOf("/") + 1)
+                        cb(blobToFile(blob, name));
+                    });
+                };
+
+                getFileObject(url, (fileObject) => {
+                    uploadFiles(this.__dir__.path, [fileObject], () => {
+                        Model.eventHub.publish("__upload_files_event__", { path: this.__dir__.path, files: [fileObject], lnk: lnk }, true)
+                    }, err => ApplicationView.displayMessage(err, 3000))
+
+                });
+            } else {
 
                 // Just beat it!
                 // youtube-dl -f mp4 -o "/tmp/%(title)s.%(ext)s" https://www.youtube.com/watch?v=oRdxUFDoQe0&list=PLCD0445C57F2B7F41&index=12&ab_channel=michaeljacksonVEVO
                 // In that case I will made use of the fabulous youtube-dl command line.
                 let toast = ApplicationView.displayMessage(`
-            <style>
-                ${theme}
-            </style>
-            <div id="select-media-dialog">
-                <span>What kind of file to you want to create?</span>
-                <div style="display: flex; justify-content: center;">
-                    <paper-radio-group>
-                        <paper-radio-button id="media-type-mp4" name="media-type" checked>Video (mp4)</paper-radio-button>
-                        <paper-radio-button id="media-type-mp3"  name="media-type">Audio (mp3)</paper-radio-button>
-                    </paper-radio-group>
+                <style>
+                    ${theme}
+                </style>
+                <div id="select-media-dialog">
+                    <span>What kind of file to you want to create?</span>
+                    <div style="display: flex; justify-content: center;">
+                        <paper-radio-group>
+                            <paper-radio-button id="media-type-mp4" name="media-type" checked>Video (mp4)</paper-radio-button>
+                            <paper-radio-button id="media-type-mp3"  name="media-type">Audio (mp3)</paper-radio-button>
+                        </paper-radio-group>
+                    </div>
+                    <div style="display: flex; justify-content: flex-end;">
+                        <paper-button id="upload-lnk-ok-button">Ok</paper-button>
+                        <paper-button id="upload-lnk-cancel-button">Cancel</paper-button>
+                    </div>
                 </div>
-                <div style="display: flex; justify-content: flex-end;">
-                    <paper-button id="upload-lnk-ok-button">Ok</paper-button>
-                    <paper-button id="upload-lnk-cancel-button">Cancel</paper-button>
-                </div>
-            </div>
-        `, 60 * 1000)
+                `, 60 * 1000)
 
                 let mp4Radio = toast.el.querySelector("#media-type-mp4")
                 let mp3Radio = toast.el.querySelector("#media-type-mp3")
@@ -870,40 +902,6 @@ export class FilesView extends HTMLElement {
                     toast.dismiss();
                 }
 
-                return;
-            } else if (url.endsWith(".jpeg") || url.endsWith(".jpg") || url.startsWith(".bpm") || url.startsWith(".gif") || url.startsWith(".png")) {
-                // I will get the file from the url and save it on the server in the current directory.
-                var getFileBlob = (url, cb) => {
-                    var xhr = new XMLHttpRequest();
-                    xhr.open("GET", url);
-                    xhr.responseType = "blob";
-                    xhr.addEventListener('load', ()=> {
-                        cb(xhr.response);
-                    });
-                    xhr.send();
-                };
-
-                var blobToFile = (blob, name) => {
-                    blob.lastModifiedDate = new Date();
-                    blob.name = name;
-                    return blob;
-                };
-
-                var getFileObject = (filePathOrUrl, cb) =>{
-                    getFileBlob(filePathOrUrl, (blob)=> {
-                        let name = filePathOrUrl.substring(filePathOrUrl.lastIndexOf("/") + 1)
-                        cb(blobToFile(blob, name));
-                    });
-                };
-
-                getFileObject(url, (fileObject) => {
-                    uploadFiles(this.__dir__.path, [fileObject], ()=>{
-                       Model.eventHub.publish("__upload_files_event__", { path: this.__dir__.path, files: [fileObject], lnk: lnk }, true)
-                    }, err=>ApplicationView.displayMessage(err, 3000))
-                    
-                });
-            } else {
-                return
             }
 
         }
@@ -2567,7 +2565,7 @@ export class FileExplorer extends HTMLElement {
         this.actionsCard = this.shadowRoot.querySelector("#card-actions")
 
         // I will use the resize event to set the size of the file explorer.
-        this.exitFullScreenBtn.onclick = ()=>{
+        this.exitFullScreenBtn.onclick = () => {
             this.enterFullScreenBtn.style.display = "block"
             this.exitFullScreenBtn.style.display = "none"
             this.style.top = ""
@@ -2577,7 +2575,7 @@ export class FileExplorer extends HTMLElement {
 
         }
 
-        this.enterFullScreenBtn.onclick = ()=>{
+        this.enterFullScreenBtn.onclick = () => {
             this.style.top = "60px"
             this.style.bottom = "0px"
             this.style.right = "0px"
