@@ -669,6 +669,8 @@ export class FilesView extends HTMLElement {
                             align-items: center;
                             justify-content: flex-end;
                             display: flex;
+                            background-color: var(--palette-background-paper);
+                            color: var(--palette-text-primary);
                         }
 
                         .card-content{
@@ -2475,7 +2477,7 @@ export class FileExplorer extends HTMLElement {
                     <paper-icon-button id="navigation-create-dir-btn" icon="icons:create-new-folder"></paper-icon-button>
                     <paper-icon-button id="navigation-refresh-btn" icon="icons:refresh"></paper-icon-button>
                 </div>
-                <div id="file-explorer-layout" style="height: 70vh">
+                <div id="file-explorer-layout" style="height: 55vh">
                     <div id="file-navigation-panel">
                         <globular-file-navigator id="globular-file-navigator"></globular-file-navigator>
                     </div>
@@ -2488,17 +2490,15 @@ export class FileExplorer extends HTMLElement {
                         <globular-image-viewer id="globular-image-viewer"></globular-image-viewer>
                     </div>
                 </div>
-                <div style="position: absolute; bottom: 24px; right: 24px; display: flex; background-color:var(--palette-background-default);" >
-                    <globular-files-uploader></globular-files-uploader>
-                    <paper-icon-button id="files-icon-btn" class="active" icon="icons:view-module" style="--iron-icon-fill-color: var(--palette-action-active);"></paper-icon-button>
-                    <paper-icon-button id="files-list-btn" icon="icons:view-list" style="--iron-icon-fill-color: var(--palette-action-disabled);"></paper-icon-button>
-                </div>
             </div>
             <div class="card-actions">
                 <span style="flex-grow: 1;"></span>
-                <iron-icon icon="icons:fullscreen" id="enter-full-screen-btn"></iron-icon>
-                <iron-icon icon="icons:fullscreen-exit" id="exit-full-screen-btn" style="display: none;"></iron-icon>
-                <paper-button id="file-explorer-box-close-btn">Close</paper-button>
+                <paper-icon-button id="files-icon-btn" class="active" icon="icons:view-module" style="--iron-icon-fill-color: var(--palette-action-active);"></paper-icon-button>
+                <paper-icon-button id="files-list-btn" icon="icons:view-list" style="--iron-icon-fill-color: var(--palette-action-disabled);"></paper-icon-button>
+                <globular-files-uploader></globular-files-uploader>
+                <paper-icon-button icon="icons:fullscreen" id="enter-full-screen-btn"></paper-icon-button>
+                <paper-icon-button icon="icons:fullscreen-exit" id="exit-full-screen-btn" style="display: none;"></paper-icon-button>
+                <paper-icon-button icon="icons:close" id="file-explorer-box-close-btn"></paper-icon-button>
             </div>
         </paper-card>
         </div>
@@ -2571,7 +2571,7 @@ export class FileExplorer extends HTMLElement {
             this.style.top = ""
             this.style.bottom = ""
             this.style.right = ""
-            this.shadowRoot.querySelector("#file-explorer-layout").style.height = "70vh "
+            this.shadowRoot.querySelector("#file-explorer-layout").style.height = "55vh "
 
         }
 
@@ -2579,7 +2579,7 @@ export class FileExplorer extends HTMLElement {
             this.style.top = "60px"
             this.style.bottom = "0px"
             this.style.right = "0px"
-            this.shadowRoot.querySelector("#file-explorer-layout").style.height = "calc(79vh - 60px)"
+            this.shadowRoot.querySelector("#file-explorer-layout").style.height = "calc(79vh - 70px)"
 
             this.enterFullScreenBtn.style.display = "none"
             this.exitFullScreenBtn.style.display = "block"
@@ -2672,6 +2672,8 @@ export class FileExplorer extends HTMLElement {
                         align-items: center;
                         justify-content: flex-end;
                         display: flex;
+                        background-color: var(--palette-background-paper);
+                        color: var(--palette-text-primary);
                     }
 
                 </style>
