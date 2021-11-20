@@ -208,6 +208,7 @@ export class SearchableAccountList extends SearchableList {
                         position: absolute;
                         left: 0px;
                         z-index: 1;
+                        background-color: var(--palette-background-paper);
                     }
 
                     .card-content{
@@ -393,6 +394,7 @@ export class SearchableApplicationList extends SearchableList {
                         position: absolute;
                         left: 0px;
                         z-index: 1;
+                        background-color: var(--palette-background-paper);
                     }
 
                     .card-content{
@@ -574,6 +576,7 @@ export class SearchableRoleList extends SearchableList {
                         position: absolute;
                         left: 0px;
                         z-index: 1;
+                        background-color: var(--palette-background-paper);
                     }
 
                     .card-content{
@@ -751,6 +754,7 @@ customElements.define('globular-searchable-role-list', SearchableRoleList)
                         position: absolute;
                         left: 0px;
                         z-index: 1;
+                        background-color: var(--palette-background-paper);
                     }
 
                     .card-content{
@@ -931,6 +935,7 @@ customElements.define('globular-searchable-group-list', SearchableGroupList)
                         position: absolute;
                         left: 0px;
                         z-index: 1;
+                        background-color: var(--palette-background-paper);
                     }
 
                     .card-content{
@@ -1110,6 +1115,7 @@ customElements.define('globular-searchable-organization-list', SearchableOrganiz
                         position: absolute;
                         left: 0px;
                         z-index: 1;
+                        background-color: var(--palette-background-paper);
                     }
 
                     .card-content{

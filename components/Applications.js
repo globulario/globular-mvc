@@ -364,12 +364,16 @@ export class ApplicationPanel extends HTMLElement {
                 display: flex;
                 flex-direction: column;
                 align-items: center;
+                border-bottom: 1px solid var(--palette-background-default);
+            }
+
+            #content{
+                padding-top: 15px;
             }
 
             .header{
                 display: flex;
                 align-items: center;
-                height: 48px;
                 width: 100%;
                 transition: background 0.2s ease,padding 0.8s linear;
                 background-color: var(--palette-background-paper);
@@ -382,6 +386,17 @@ export class ApplicationPanel extends HTMLElement {
 
             .title{
                 flex-grow: 1;
+                margin-left: 16px;
+            }
+        
+            img, iron-icon{
+                margin: 8px;
+            }
+  
+            #collapse-panel{
+                display: flex;
+                flex-direction: column;
+                width: 90%;
             }
 
             .row{
@@ -422,11 +437,6 @@ export class ApplicationPanel extends HTMLElement {
                 word-wrap: break-word;
             }
 
-            #collapse-panel{
-                display: flex;
-                flex-direction: column;
-            }
-
             #delete-application-btn{
                 margin-bottom: 10px;
                 width: 100px;
@@ -448,7 +458,7 @@ export class ApplicationPanel extends HTMLElement {
         </style>
         <div id="container">
             <div class="header">
-                <img style="width: 24px; height: 24px; padding-left: 10px; padding-right: 20px;" src="${this.application.getIcon()}"></img>
+                <img style="width: 32px; height: 32px;" src="${this.application.getIcon()}"></img>
                 <span class="title">${this.application.getName()}</span>
                 <paper-button id="uninstall-application-btn"  >Uninstall</paper-button>
                 <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
@@ -456,7 +466,7 @@ export class ApplicationPanel extends HTMLElement {
                     <paper-ripple class="circle" recenters=""></paper-ripple>
                 </div>
             </div>
-            <iron-collapse id="collapse-panel" style="width: 90%;" >
+            <iron-collapse id="collapse-panel">
                 <div class="row">
                     <span>Icon</span>
                     <img src="${this.application.getIcon()}"></img>

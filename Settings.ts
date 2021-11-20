@@ -13,6 +13,7 @@ import "@polymer/iron-icons/notification-icons";
 import { ApplicationManager } from "./components/Applications";
 import { PeersManager } from "./components/Peers";
 import { OrganizationManager } from "./components/Organization";
+import { AccountManager } from "./components/Account";
 
 export class Settings {
 
@@ -365,13 +366,15 @@ export class PeersSettings extends Settings {
  */
 export class UsersSettings extends Settings {
   
+    accountManager: AccountManager;
+
     // The application.
     constructor(settingsMenu: SettingsMenu, settingsPanel: SettingsPanel) {
         super(settingsMenu, settingsPanel);
 
-        settingsMenu.appendSettingsMenuItem("social:people", "Users");
+        settingsMenu.appendSettingsMenuItem("social:people", "Accounts");
 
-        let usersSettingPage = <any>settingsPanel.appendSettingsPage("Users");
+        let accountSettingPage = <any>settingsPanel.appendSettingsPage("Accounts");
 
         // Append a title.
         let html = `
@@ -388,14 +391,25 @@ export class UsersSettings extends Settings {
                 padding-bottom: 4px;
                 padding-top: 16px;
             }
+
+            .subtitle{
+                font-size: 1rem;
+                text-align: left;
+                padding-bottom: 15px;
+            }
+
             </style>
             <div class="title">
-                User's settings
+                Accounts 
             </div>
+            <span class="subtitle" style="font-size: 1rem;">Account manager to set account setting's</span>
         `
-        // Display the users setting...
-        usersSettingPage.appendChild(document.createRange().createContextualFragment(html));
-        
+
+        // Display the file explorer...
+        accountSettingPage.appendChild(document.createRange().createContextualFragment(html));
+        this.accountManager = new AccountManager()
+        accountSettingPage.appendChild(this.accountManager)
+
     }
 
 
@@ -417,8 +431,8 @@ export class LogSettings extends Settings {
     constructor(settingsMenu: SettingsMenu, settingsPanel: SettingsPanel) {
         super(settingsMenu, settingsPanel);
         this.infos = new Array<LogInfo>();
-        settingsMenu.appendSettingsMenuItem("error", "Errors");
-        let logSettingPage = <any>settingsPanel.appendSettingsPage("Errors");
+        settingsMenu.appendSettingsMenuItem("error", "Logs");
+        let logSettingPage = <any>settingsPanel.appendSettingsPage("Logs");
 
         // Append a title.
         let html = `

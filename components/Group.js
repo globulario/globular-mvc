@@ -101,6 +101,7 @@ export class GroupManager extends HTMLElement {
                     right: 0px;
                     top: 0px;
                     z-index: 1;
+                    background-color: var(--palette-background-paper);
                 }
                 #create-group-panel .card-content{
                     min-width: 200px;
@@ -211,6 +212,11 @@ export class GroupPanel extends HTMLElement {
                 display: flex;
                 flex-direction: column;
                 align-items: center;
+                border-bottom: 1px solid var(--palette-background-default);
+            }
+
+            #content{
+                padding-top: 15px;
             }
 
             .header{
@@ -228,8 +234,18 @@ export class GroupPanel extends HTMLElement {
 
             .title{
                 flex-grow: 1;
+                margin: 8px;
             }
-
+            
+            img, iron-icon{
+                margin: 8px;
+            }
+  
+            #collapse-panel{
+                display: flex;
+                flex-direction: column;
+                width: 90%;
+            }
         </style>
         <div id="container">
             <div class="header">

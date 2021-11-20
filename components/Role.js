@@ -102,6 +102,7 @@ export class RoleManager extends HTMLElement {
                     right: 0px;
                     top: 0px;
                     z-index: 1;
+                    background-color: var(--palette-background-paper);
                 }
                 #create-role-panel .card-content{
                     min-width: 200px;
@@ -212,6 +213,11 @@ export class RolePanel extends HTMLElement {
                 display: flex;
                 flex-direction: column;
                 align-items: center;
+                border-bottom: 1px solid var(--palette-background-default);
+            }
+
+            #content{
+                padding-top: 15px;
             }
 
             .header{
@@ -229,17 +235,34 @@ export class RolePanel extends HTMLElement {
 
             .title{
                 flex-grow: 1;
+                margin: 8px;
+            }
+
+            img, iron-icon{
+              margin: 8px;
+            }
+
+            #collapse-panel{
+                display: flex;
+                flex-direction: column;
+                width: 90%;
+            }
+
+            #delete-role-btn{
+                font-size: .85rem;
+                max-height: 32px;
             }
 
         </style>
         <div id="container">
             <div class="header">
-                <paper-icon-button id="delete-role-btn" icon="delete"></paper-icon-button>
                 <span class="title">${this.role.getName()}</span>
+                <paper-button id="delete-role-btn">Delete</paper-button>
                 <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
                     <iron-icon  id="hide-btn"  icon="unfold-less" style="flex-grow: 1; --iron-icon-fill-color:var(--palette-text-primary);" icon="add"></iron-icon>
                     <paper-ripple class="circle" recenters=""></paper-ripple>
                 </div>
+
             </div>
             <iron-collapse id="collapse-panel"  style="width: 90%;">
 

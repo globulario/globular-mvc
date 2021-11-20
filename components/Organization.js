@@ -139,6 +139,7 @@ export class OrganizationManager extends HTMLElement {
                     right: 0px;
                     top: 0px;
                     z-index: 1;
+                    background-color: var(--palette-background-paper);
                 }
                 #create-organization-panel .card-content{
                     min-width: 200px;
@@ -247,6 +248,7 @@ export class OrganizationPanel extends HTMLElement {
                 display: flex;
                 flex-direction: column;
                 align-items: center;
+                border-bottom: 1px solid var(--palette-background-default);
             }
 
             #content{
@@ -268,7 +270,20 @@ export class OrganizationPanel extends HTMLElement {
 
             .title{
                 flex-grow: 1;
+                margin: 8px;
             }
+            
+                        
+            #collapse-panel{
+                display: flex;
+                flex-direction: column;
+                width: 90%;
+            }
+
+            img, iron-icon{
+              margin: 8px;
+            }
+
 
         </style>
         <div id="container">
@@ -397,7 +412,7 @@ export class OrganizationPanel extends HTMLElement {
                     })
 
                 content.appendChild(this.accountsList)
-                this.shadowRoot.querySelector("#organization-accounts-tab").click()
+                
             }, err => {
                 ApplicationView.displayMessage(err, 3000)
             })
@@ -622,6 +637,10 @@ export class OrganizationPanel extends HTMLElement {
         noBtn.onclick = () => {
             toast.dismiss();
         }
+    }
+
+    connectedCallback(){
+        this.shadowRoot.querySelector("#organization-accounts-tab").click()
     }
 }
 

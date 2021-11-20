@@ -27,8 +27,8 @@ import { ImageCropper } from "./components/Image";
 import "./components/table/table.js"
 import { Conversation, Invitation } from "globular-web-client/conversation/conversation_pb";
 import { ConversationManager } from "./Conversation";
-import {BlogPostElement, BlogPosts} from "./components/BlogPost"
-import {Workspace} from './components/Workspace'
+import { BlogPostElement, BlogPosts } from "./components/BlogPost"
+import { Workspace } from './components/Workspace'
 
 // This variable is there to give acces to wait and resume...
 export let applicationView: ApplicationView;
@@ -103,7 +103,7 @@ export class ApplicationView extends View {
   /** The settings Panel */
   protected settingsPanel: SettingsPanel;
 
- 
+
   /** The camera */
   private _camera: Camera;
   public get camera(): Camera {
@@ -613,7 +613,7 @@ export class ApplicationView extends View {
     let uuid = "_" + getUuid(JSON.stringify(msg))
 
     // Not print the same message more than once at time...
-    if(document.querySelector("#" + uuid)!=undefined){
+    if (document.querySelector("#" + uuid) != undefined) {
       return;
     }
 
@@ -623,7 +623,7 @@ export class ApplicationView extends View {
     });
 
     t.el.id = uuid
-    
+
     return t
   }
 
@@ -646,6 +646,11 @@ export class ApplicationView extends View {
    * @param accountId The id of the user
    */
   onLogin(account: Account) {
+    // Do nothing if it's already login...
+    if(this.isLogin == true){
+      return
+    }
+
     this.isLogin = true;
 
     /** implement it as needed */
@@ -670,14 +675,20 @@ export class ApplicationView extends View {
     // Create the settings menu and panel here
     let userSettings = new UserSettings(account, this.settingsMenu, this.settingsPanel);
 
-    // The file settings
-    let usersSettings = new UsersSettings(this.settingsMenu, this.settingsPanel);
+    // Manage server settings
+    let serverGeneralSettings = new ServerGeneralSettings(this.settingsMenu, this.settingsPanel);
+
+    // Manage applications
+    let applicationsSettings = new ApplicationsSettings(this.settingsMenu, this.settingsPanel)
+
+    // Manage services settings.
+    let servicesSettings = new ServicesSettings(this.settingsMenu, this.settingsPanel);
 
     // The logs
     let logs = new LogSettings(this.settingsMenu, this.settingsPanel);
 
-    // Manage applications
-    let applicationsSettings = new ApplicationsSettings(this.settingsMenu, this.settingsPanel)
+    // The accounts settings
+    let usersSettings = new UsersSettings(this.settingsMenu, this.settingsPanel);
 
     // Manage peers
     let peersSettings = new PeersSettings(this.settingsMenu, this.settingsPanel)
@@ -690,12 +701,6 @@ export class ApplicationView extends View {
 
     // Manage groups
     let groupSettings = new GroupSettings(this.settingsMenu, this.settingsPanel)
-
-    // Manage server settings
-    let serverGeneralSettings = new ServerGeneralSettings(this.settingsMenu, this.settingsPanel);
-
-    // Manage services settings.
-    let servicesSettings = new ServicesSettings(this.settingsMenu, this.settingsPanel);
 
     // Set the file explorer...
     ApplicationView._fileExplorer.setRoot("/users/" + account.id)
@@ -825,12 +830,12 @@ export class ApplicationView extends View {
     ApplicationView._fileExplorer.open()
 
     ApplicationView._fileExplorer.onclose = () => {
-      ApplicationView._fileExplorer.parentNode.removeChild( ApplicationView._fileExplorer)
+      ApplicationView._fileExplorer.parentNode.removeChild(ApplicationView._fileExplorer)
       ApplicationView._fileExplorer.delete() // remove all listeners.
       ApplicationView._fileExplorer = null;
     }
 
-    return  ApplicationView._fileExplorer
+    return ApplicationView._fileExplorer
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////////
@@ -1066,7 +1071,7 @@ export class ApplicationView extends View {
         // Publish the list of participant with the account removed from it.
         let participants = conversation.getParticipantsList()
         participants.splice(participants.indexOf(Application.account.id), 1)
-        Model.eventHub.publish(`leave_conversation_${conversation.getUuid()}_evt`, JSON.stringify({"participants":participants, "participant":Application.account.id}), false)
+        Model.eventHub.publish(`leave_conversation_${conversation.getUuid()}_evt`, JSON.stringify({ "participants": participants, "participant": Application.account.id }), false)
         ApplicationView.displayMessage(
           "<iron-icon icon='communication:message' style='margin-right: 10px;'></iron-icon><div>Conversation named " +
           conversation.getName() +
@@ -1093,7 +1098,7 @@ export class ApplicationView extends View {
    * The workspace div where the application draw it content.
    */
   getWorkspace(): any {
-    if(this.workspace_.parentElement == null){
+    if (this.workspace_.parentElement == null) {
       ApplicationView.layout.workspace().appendChild(this.workspace_)
     }
     return this.workspace_; //ApplicationView.layout.workspace();
