@@ -672,7 +672,7 @@ export class BlogPosts extends HTMLElement {
     }
 
     setBlog(b, prepend = false) {
-        if (this.querySelector("_" + b.getUuid()) != undefined) {
+        if (this.querySelector("#_" + b.getUuid()) != undefined) {
             // not append the blog twice...
             return
         }

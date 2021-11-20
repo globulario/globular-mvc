@@ -422,7 +422,7 @@ export class ApplicationPanel extends HTMLElement {
                 word-wrap: break-word;
             }
 
-            #collapase-panel{
+            #collapse-panel{
                 display: flex;
                 flex-direction: column;
             }
@@ -456,7 +456,7 @@ export class ApplicationPanel extends HTMLElement {
                     <paper-ripple class="circle" recenters=""></paper-ripple>
                 </div>
             </div>
-            <iron-collapse id="collapase-panel" >
+            <iron-collapse id="collapse-panel" style="width: 90%;" >
                 <div class="row">
                     <span>Icon</span>
                     <img src="${this.application.getIcon()}"></img>
@@ -484,7 +484,7 @@ export class ApplicationPanel extends HTMLElement {
         </div>
         `
         
-        let content = this.shadowRoot.querySelector("#collapase-panel")
+        let content = this.shadowRoot.querySelector("#collapse-panel")
         this.hideBtn = this.shadowRoot.querySelector("#hide-btn")
 
         let deleteBtn = this.shadowRoot.querySelector("#delete-application-btn")

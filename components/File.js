@@ -927,8 +927,8 @@ export class FilesListView extends FilesView {
      * @param {*} dir 
      */
     setDir(dir) {
-
-        if (dir.name.startsWith(".")) {
+        // if the dire is hidden or the dir is the user dir... 
+        if (dir.name.startsWith(".") || dir.path == "/users") {
             return;
         }
 
@@ -1203,7 +1203,7 @@ export class FilesIconView extends FilesView {
      */
     setDir(dir) {
 
-        if (dir.name.startsWith(".")) {
+        if (dir.name.startsWith(".") || dir.path == "/users") {
             return;
         }
 
@@ -1726,7 +1726,7 @@ export class PathNavigator extends HTMLElement {
     // Set the directory.
     setDir(dir) {
 
-        if (this.path == dir._path) {
+        if (this.path == dir._path || dir.path == "/users") {
             return;
         }
 
@@ -2142,7 +2142,7 @@ export class FileNavigator extends HTMLElement {
     // Set the directory.
     setDir(dir) {
         console.log("set file navigation to dir: ", dir)
-        if (this.dir == dir) {
+        if (this.dir == dir || dir.path =="/users") {
             return;
         }
 
@@ -3085,6 +3085,9 @@ export class FileExplorer extends HTMLElement {
     }
 
     setDir(dir) {
+        if(dir.path == "/users"){
+            return
+        }
 
         // Set back the list and icon view
         this.displayView(dir)
@@ -3572,7 +3575,7 @@ export class FilesUploader extends HTMLElement {
 
         </style>
         <div id="container">
-            <iron-collapse id="collapase-panel">
+            <iron-collapse id="collapse-panel">
                 <paper-card class="content">
                     <paper-tabs selected="0" style="background: var(--palette-background-default);">
                         <paper-tab id="file-upload-tab">Files</paper-tab>
@@ -3665,7 +3668,7 @@ export class FilesUploader extends HTMLElement {
         // The hide and show button.
         this.btn = this.shadowRoot.querySelector("paper-icon-button")
 
-        let content = this.shadowRoot.querySelector("#collapase-panel")
+        let content = this.shadowRoot.querySelector("#collapse-panel")
         // give the focus to the input.
         this.btn.onclick = () => {
             content.toggle();

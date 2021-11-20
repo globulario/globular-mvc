@@ -2,7 +2,7 @@ import { View } from "./View";
 import * as M from "materialize-css";
 import "materialize-css/sass/materialize.scss";
 import { Account } from "./Account";
-import { ApplicationsSettings, FileSettings, GroupSettings, LogSettings, OrganizationSettings, PeersSettings, RoleSettings, UserSettings } from "./Settings"
+import { ApplicationsSettings, GroupSettings, LogSettings, OrganizationSettings, PeersSettings, RoleSettings, UserSettings, UsersSettings } from "./Settings"
 import { Model } from "./Model";
 import { DockerNames } from "./components/RandomName"
 
@@ -671,7 +671,7 @@ export class ApplicationView extends View {
     let userSettings = new UserSettings(account, this.settingsMenu, this.settingsPanel);
 
     // The file settings
-    let fileSettings = new FileSettings(this.settingsMenu, this.settingsPanel);
+    let usersSettings = new UsersSettings(this.settingsMenu, this.settingsPanel);
 
     // The logs
     let logs = new LogSettings(this.settingsMenu, this.settingsPanel);

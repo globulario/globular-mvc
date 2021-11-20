@@ -280,7 +280,7 @@ export class OrganizationPanel extends HTMLElement {
                     <paper-ripple class="circle" recenters=""></paper-ripple>
                 </div>
             </div>
-            <iron-collapse id="collapase-panel" >
+            <iron-collapse id="collapse-panel"  style="width: 90%;" >
                 <paper-tabs selected="0">
                     <paper-tab id="organization-accounts-tab">Accounts</paper-tab>
                     <paper-tab id="organization-applications-tab">Applications</paper-tab>
@@ -292,7 +292,7 @@ export class OrganizationPanel extends HTMLElement {
             </iron-collapse>
         </div>
         `
-        let togglePanel = this.shadowRoot.querySelector("#collapase-panel")
+        let togglePanel = this.shadowRoot.querySelector("#collapse-panel")
         let content = this.shadowRoot.querySelector("#content")
         this.hideBtn = this.shadowRoot.querySelector("#hide-btn")
 

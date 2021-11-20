@@ -511,14 +511,14 @@ export class PermissionPanel extends HTMLElement {
                 </div>
                 <span class="title">${title}</span>
             </div>
-            <iron-collapse id="${uuid}-collapase-panel">
+            <iron-collapse id="${uuid}-collapse-panel"  style="width: 90%;">
                 
             </iron-collapse>
         </div>
         `
 
         this.shadowRoot.querySelector(".members").appendChild(document.createRange().createContextualFragment(html))
-        let content = this.shadowRoot.querySelector(`#${uuid}-collapase-panel`)
+        let content = this.shadowRoot.querySelector(`#${uuid}-collapse-panel`)
         this.hideBtn = this.shadowRoot.querySelector(`#${uuid}-btn`)
 
         this.hideBtn.onclick = () => {
@@ -533,7 +533,7 @@ export class PermissionPanel extends HTMLElement {
             }
         }
         // return the collapse panel.
-        return this.shadowRoot.querySelector(`#${uuid}-collapase-panel`)
+        return this.shadowRoot.querySelector(`#${uuid}-collapse-panel`)
     }
 
     // The organisation permissions

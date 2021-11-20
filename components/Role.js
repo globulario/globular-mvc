@@ -241,13 +241,13 @@ export class RolePanel extends HTMLElement {
                     <paper-ripple class="circle" recenters=""></paper-ripple>
                 </div>
             </div>
-            <iron-collapse id="collapase-panel" >
+            <iron-collapse id="collapse-panel"  style="width: 90%;">
 
             </iron-collapse>
         </div>
         `
 
-        let content = this.shadowRoot.querySelector("#collapase-panel")
+        let content = this.shadowRoot.querySelector("#collapse-panel")
         this.hideBtn = this.shadowRoot.querySelector("#hide-btn")
 
         let deleteBtn = this.shadowRoot.querySelector("#delete-role-btn")

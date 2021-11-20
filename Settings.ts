@@ -361,22 +361,17 @@ export class PeersSettings extends Settings {
 }
 
 /**
- * Model to save application settings.
+ * Model to manage users account settings.
  */
-export class FileSettings extends Settings {
-    fileExplorer: FileExplorer;
-
+export class UsersSettings extends Settings {
+  
     // The application.
     constructor(settingsMenu: SettingsMenu, settingsPanel: SettingsPanel) {
         super(settingsMenu, settingsPanel);
 
-        settingsMenu.appendSettingsMenuItem("folder-shared", "Files");
+        settingsMenu.appendSettingsMenuItem("social:people", "Users");
 
-        let fileSettingPage = <any>settingsPanel.appendSettingsPage("Files");
-
-        /*this.fileExplorer = ApplicationView.fileExplorer;
-        this.fileExplorer.setRoot("/applications/" + Model.application)
-        this.fileExplorer.init()
+        let usersSettingPage = <any>settingsPanel.appendSettingsPage("Users");
 
         // Append a title.
         let html = `
@@ -395,13 +390,12 @@ export class FileSettings extends Settings {
             }
             </style>
             <div class="title">
-                Files & Directories
+                User's settings
             </div>
         `
-        // Display the file explorer...
-        fileSettingPage.appendChild(document.createRange().createContextualFragment(html));
-        this.fileExplorer.open(fileSettingPage)
-        this.fileExplorer.hideActions()*/
+        // Display the users setting...
+        usersSettingPage.appendChild(document.createRange().createContextualFragment(html));
+        
     }
 
 
@@ -661,7 +655,7 @@ export class LogSettings extends Settings {
                                         ${occurences.length}
                                     </div>
                                 </div>
-                                <iron-collapse class="permissions" id="collapse-panel" style="display: flex; flex-direction: column;">
+                                <iron-collapse class="permissions" id="collapse-panel" style="display: flex; flex-direction: column; width: 90%;">
                 
                                 </iron-collapse>
                             </div>
