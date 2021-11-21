@@ -684,9 +684,6 @@ export class ApplicationView extends View {
     // Manage services settings.
     let servicesSettings = new ServicesSettings(this.settingsMenu, this.settingsPanel);
 
-    // The logs
-    let logs = new LogSettings(this.settingsMenu, this.settingsPanel);
-
     // The accounts settings
     let usersSettings = new UsersSettings(this.settingsMenu, this.settingsPanel);
 
@@ -701,6 +698,9 @@ export class ApplicationView extends View {
 
     // Manage groups
     let groupSettings = new GroupSettings(this.settingsMenu, this.settingsPanel)
+    
+    // The logs
+    let logs = new LogSettings(this.settingsMenu, this.settingsPanel);
 
     // Set the file explorer...
     ApplicationView._fileExplorer.setRoot("/users/" + account.id)

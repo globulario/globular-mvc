@@ -308,7 +308,9 @@ export class BlogPostElement extends HTMLElement {
                 ico.style.display = "none"
             }
 
-        }, e => { })
+        }, e => { 
+            console.log(e)
+        })
 
         this.shadowRoot.querySelector(".blog-reader-title").innerHTML = blog.getTitle()
 
@@ -999,7 +1001,9 @@ export class BlogCommentEditor extends HTMLElement {
                 ico.style.display = "none"
             }
 
-        }, e => { })
+        }, e => {
+            console.log(e)
+         })
     }
 
     setBlog(blog) {
@@ -1093,7 +1097,7 @@ export class BlogEmotions extends HTMLElement {
                     span.innerHTML = userName
                     pepoleDiv.appendChild(span)
 
-                }, e => { })
+                }, e => { console.log(e) })
             }
         }
     }
@@ -1120,7 +1124,9 @@ export class BlogEmotions extends HTMLElement {
                 }
                 let emoji = JSON.parse(emotion.getEmoji())
                 ApplicationView.displayMessage(`${userName} put emoji '${emoji.emoji.annotation}' ${emoji.unicode} to your <div style="padding-left: 5px;" onclick="document.getElementById('${blog.getUuid()}').scrollIntoView();">blog</div>`, 3000)
-            }, e => { })
+            }, e => {
+                console.log(e)
+             })
 
 
             this.addEmotion(emotion)

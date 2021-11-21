@@ -805,6 +805,7 @@ export class LinkSetting extends Setting {
 }
 
 customElements.define("globular-link-setting", LinkSetting);
+
 /**
  * Set string setting...
  */
@@ -859,6 +860,64 @@ export class StringSetting extends Setting {
 }
 
 customElements.define("globular-string-setting", StringSetting);
+
+/**
+ * Set exclusive select setting...
+ */
+ export class RadioGroupSetting extends Setting {
+  constructor(name, description) {
+    super(name, description);
+    this.onchange = null;
+
+    let html = `
+      <style>
+      ${theme}
+
+      </style>
+
+      <paper-radio-group selected="">
+        <paper-radio-button name="a">allosaurus</paper-radio-button>
+        <paper-radio-button name="b">brontosaurus</paper-radio-button>
+        <paper-radio-button name="d" disabled>diplodocus</paper-radio-button>
+      </paper-radio-group>
+    `
+    let range = document.createRange();
+    this.title = description;
+
+    this.shadowRoot.insertBefore(range.createContextualFragment(html), this.description)
+    this.radioBtnGrp = this.shadowRoot.getElementById("setting-input");
+
+    this.description.style.display = "none";
+    this.setAttribute("title", "")
+    if (description.length > 0) {
+      this.input.label = description;
+    }
+    this.input.setAttribute("title", description);
+    this.input.onblur = () => {
+      if (this.onblur != null) {
+        this.onblur()
+      }
+    }
+  }
+
+  getElement() {
+    return this.radioBtnGrp;
+  }
+
+  getValue() {
+    return this.input.value
+  }
+
+  setValue(value) {
+    console.log("----------------------> value: ", value)
+  }
+
+  setValues(values) {
+    console.log("--------------> append values: ", values)
+  }
+}
+
+customElements.define("globular-radio-group-setting", RadioGroupSetting);
 
 /**
  * Set string setting...

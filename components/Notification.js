@@ -570,6 +570,7 @@ export class NotificationMenu extends Menu {
                 );
             }, err => {
                 ApplicationView.displayMessage(err, 3000)
+                console.log(err)
             })
         }
 

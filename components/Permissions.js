@@ -1008,7 +1008,10 @@ export class PermissionsViewer extends HTMLElement {
                     let accountDiv = this.createAccountDiv(a)
                     subjectCell.innerHTML = ""
                     subjectCell.appendChild(accountDiv)
-                }, e => ApplicationView.displayMessage(e, 3000))
+                }, e =>{
+                    ApplicationView.displayMessage(e, 3000)
+                    console.log(err)
+                })
             } else if (subject.type == "application") {
                 // Set application div.
                 let applicationDiv = this.createApplicationDiv(Application.getApplicationInfo(subject.id))

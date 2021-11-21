@@ -6,7 +6,7 @@ import { ApplicationView } from "./ApplicationView";
 import { FileExplorer } from "./components/File";
 import { RoleManager} from "./components/Role"
 import { GroupManager} from "./components/Group"
-import { ImageCropperSetting, SettingsMenu, SettingsPanel, ComplexSetting, EmailSetting, StringSetting } from "./components/Settings";
+import { ImageCropperSetting, SettingsMenu, SettingsPanel, ComplexSetting, EmailSetting, StringSetting, RadioGroupSetting } from "./components/Settings";
 import { Model } from "./Model";
 import "@polymer/iron-icons/social-icons";
 import "@polymer/iron-icons/notification-icons";
@@ -90,6 +90,15 @@ export class UserSettings extends Settings {
         let userEmailSetting = new EmailSetting("Email", "Change the user email")
         userEmailSetting.setValue(account.email)
         generalSettings.addSetting(userEmailSetting)
+
+        // The default theme...
+        /*
+        let userThemeDefault = new RadioGroupSetting("Theme", "Ligth mode or dark mode")
+        if(localStorage.getItem(account.id)!=null){
+            userThemeDefault.setValue(JSON.parse(localStorage.getItem(account.id)))
+        }
+        generalSettings.addSetting(userEmailSetting)
+        */
 
         Application.eventHub.subscribe("save_settings_evt",
             (uuid: string) => {

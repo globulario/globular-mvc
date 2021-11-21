@@ -1483,6 +1483,7 @@ export class ParticipantsList extends HTMLElement {
                         err => {
                             this.blocked = false
                             ApplicationView.displayMessage(err, 3000)
+                            console.log(err)
                         })
                 }
                 // Process the list of 
@@ -1926,7 +1927,10 @@ export class MessageEditor extends HTMLElement {
                 this.shadowRoot.querySelector(".answer-bar").style.display = "flex";
                 Account.getAccount(msg.getAuthor(), account => {
                     this.shadowRoot.querySelector("#reply-to").innerHTML = `${account.firstName} ${account.lastName}`;
-                }, err => { ApplicationView.displayMessage(err, 3000) })
+                }, err => { 
+                    ApplicationView.displayMessage(err, 3000)
+                    console.log(err) 
+                })
 
                 this.shadowRoot.querySelector(".answer-to-text").innerHTML = msg.getText()
 
@@ -2146,8 +2150,13 @@ export class InvitationCard extends HTMLElement {
             }, false)
 
         // initialyse account informations.
-        Account.getAccount(account, () => { }, err => { })
-        Account.getAccount(contact, () => { }, err => { })
+        Account.getAccount(account, () => { }, err => { 
+            console.log(err)
+        })
+
+        Account.getAccount(contact, () => { }, err => { 
+            console.log(err)
+        })
 
 
     }
@@ -2324,7 +2333,10 @@ export class LikeDisLikeBtn extends HTMLElement {
                     div.className = "liker-unliker-lst"
                     div.innerHTML = `<span style="padding-right: 2px;">${account.firstName}</span><span>${account.lastName}</span>`
                     this.card.appendChild(div)
-                }, err => { ApplicationView.displayMessage(err, 3000) })
+                }, err => { 
+                    ApplicationView.displayMessage(err, 3000)
+                    console.log(err)
+                })
             })
         } else {
             this.badge.style.display = "none"
@@ -2491,7 +2503,7 @@ export class GlobularMessagePanel extends HTMLElement {
                 }
             },
             (err) => {
-
+                console.log(err)
             })
     }
 

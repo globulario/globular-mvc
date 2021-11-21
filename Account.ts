@@ -149,8 +149,12 @@ export class Account extends Model {
 
         stream.on("status", (status) => {
             if (status.code == 0) {
+                if(accounts_.length == 0){
+                    errorCallback("no account found with id " + id)
+                    return
+                }
+                
                 let data = accounts_[0]
-                console.log("--------------------> ")
                 let account = new Account(data.getId(), data.getEmail(), data.getName())
 
                 // so here I will get the session for the account...

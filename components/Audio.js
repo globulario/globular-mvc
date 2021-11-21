@@ -68,7 +68,7 @@ export class AudioPlayer extends HTMLElement {
         }
 
         // Set the path and play.
-        this.audio.src = path
+        this.audio.src = path + "?token=" + localStorage.getItem("user_token")
         this.currentTrackTitle.innerHTML = path
    
         this.audio.style.maxWidth = this.parentNode.offsetWidth + "px"

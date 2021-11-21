@@ -307,6 +307,7 @@ export class SentContactInvitations extends HTMLElement {
                     },
                     err => {
                         ApplicationView.displayMessage(err, 3000)
+                        console.log(err)
                     })
             },
             false, this)
@@ -339,6 +340,7 @@ export class SentContactInvitations extends HTMLElement {
                     },
                     err => {
                         ApplicationView.displayMessage(err, 3000)
+                        console.log(err)
                     })
             }
         }, err => {
@@ -355,6 +357,7 @@ export class SentContactInvitations extends HTMLElement {
                     },
                     err => {
                         ApplicationView.displayMessage(err, 3000)
+                        console.log(err)
                     })
             },
             false, this)
@@ -369,6 +372,7 @@ export class SentContactInvitations extends HTMLElement {
                     },
                     err => {
                         ApplicationView.displayMessage(err, 3000)
+                        console.log(err)
                     })
             },
             false, this)
@@ -383,6 +387,7 @@ export class SentContactInvitations extends HTMLElement {
                     },
                     err => {
                         ApplicationView.displayMessage(err, 3000)
+                        console.log(err)
                     })
             },
             false, this)
@@ -453,6 +458,7 @@ export class ReceivedContactInvitations extends HTMLElement {
                     },
                     err => {
                         ApplicationView.displayMessage(err, 3000)
+                        console.log(err)
                     })
             },
             false, this)
@@ -467,6 +473,7 @@ export class ReceivedContactInvitations extends HTMLElement {
                     },
                     err => {
                         ApplicationView.displayMessage(err, 3000)
+                        console.log(err)
                     })
             },
             false, this)
@@ -481,6 +488,7 @@ export class ReceivedContactInvitations extends HTMLElement {
                     },
                     err => {
                         ApplicationView.displayMessage(err, 3000)
+                        console.log(err)
                     })
             },
             false, this)
@@ -495,6 +503,7 @@ export class ReceivedContactInvitations extends HTMLElement {
                     },
                     err => {
                         ApplicationView.displayMessage(err, 3000)
+                        console.log(err)
                     })
             },
             false, this)
@@ -525,6 +534,7 @@ export class ReceivedContactInvitations extends HTMLElement {
                     },
                     err => {
                         ApplicationView.displayMessage(err, 3000)
+                        console.log(err)
                     })
             }
         }, err => {
@@ -598,6 +608,7 @@ export class ContactList extends HTMLElement {
                     },
                     err => {
                         ApplicationView.displayMessage(err, 3000)
+                        console.log(err)
                     })
             },
             false, this)
@@ -612,6 +623,7 @@ export class ContactList extends HTMLElement {
                     },
                     err => {
                         ApplicationView.displayMessage(err, 3000)
+                        console.log(err)
                     })
             },
             false, this)
@@ -644,6 +656,7 @@ export class ContactList extends HTMLElement {
                     },
                     err => {
                         ApplicationView.displayMessage(err, 3000)
+                        console.log(err)
                     })
             }
         }, err => {
@@ -767,6 +780,7 @@ export class ContactCard extends HTMLElement {
                 this.account = val;
             }, (err) => {
                 ApplicationView.displayMessage(err, 3000)
+                console.log(err)
             })
         }
     }

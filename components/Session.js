@@ -133,6 +133,7 @@ export class SessionState extends HTMLElement {
                 this.account = val;
             }, (err) => {
                 ApplicationView.displayMessage(err, 3000)
+                console.log(err)
             })
         }
     }
