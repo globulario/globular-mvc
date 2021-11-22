@@ -734,7 +734,9 @@ export class ApplicationView extends View {
     this.clearSideMenu();
 
     // Close the messenger
-    this.messenger.parentNode.removeChild(this.messenger)
+    if( this.messenger.parentNode!=null){
+      this.messenger.parentNode.removeChild(this.messenger)
+    }
 
     window.dispatchEvent(new Event("resize"));
   }

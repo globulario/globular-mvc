@@ -98,8 +98,9 @@ export class ConversationManager {
       succesCallback()
 
       // Here the conversation has been deleted...
-      Model.eventHub.publish(`delete_conversation_${conversationUuid}_evt`, conversationUuid, false)
-      
+      // Model.eventHub.publish(`delete_conversation_${conversationUuid}_evt`, conversationUuid, false)
+      Model.eventHub.publish(`__delete_conversation_${conversationUuid}_evt__`, conversationUuid, true)
+
     }).catch((err: any) => {
       succesCallback()
       Model.eventHub.publish(`__leave_conversation_evt__`, conversationUuid, true)

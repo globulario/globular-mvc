@@ -348,10 +348,9 @@ export class MessengerMenu extends Menu {
             (uuid) => {
                 //this.delete_conversation_listener = uuid;
             },
-            (conversationUuid) => {
+            (evt) => {
                 // simply remove it from it parent.
-                console.log("delete conversation event received!", conversationUuid)
-                let conversationInfos = this.shadowRoot.querySelector(`#conversation_${conversationUuid}_infos`)
+                let conversationInfos = this.conversationsLst.querySelector(`#conversation_${evt}_infos`)
                 if (conversationInfos != undefined) {
                     this.conversationsLst.removeChild(conversationInfos)
                     // publish local event from network one.
@@ -369,7 +368,7 @@ export class MessengerMenu extends Menu {
                 if (conversationInfos != undefined) {
                     this.conversationsLst.removeChild(conversationInfos)
                     // publish local event from network one.
-                    Model.eventHub.publish("delete_conversation_evt", null, true)
+                    Model.eventHub.publish("delete_conversation_evt", "", true)
                 }
             }, true)
 
@@ -380,11 +379,11 @@ export class MessengerMenu extends Menu {
             (participant) => {
                 // check for kickout...
                 if (participant == this.account.id) {
-                    let conversationInfos = this.shadowRoot.querySelector("#conversation_" + conversationUuid + "_infos")
+                    let conversationInfos = this.conversationsLst.querySelector("#conversation_" + conversationUuid + "_infos")
                     if (conversationInfos != undefined) {
                         // That's mean the user get kickout from the conversation...
                         this.conversationsLst.removeChild(conversationInfos)
-                        Model.eventHub.publish("delete_conversation_evt", null, true)
+                        Model.eventHub.publish("delete_conversation_evt", conversationUuid, true)
                         ApplicationView.displayMessage(`You got kicked out of the conversation <span style="font-style:italic;">${conversationName}</span>`, 3000)
                     }
                 }
@@ -1127,9 +1126,9 @@ export class Messenger extends HTMLElement {
             (uuid) => {
                 this.listeners[conversationUuid].push({ evt: `delete_conversation_${conversationUuid}_evt`, listener: uuid })
             },
-            () => {
+            (evt) => {
                 // Here I will unsubscribe to each event from it...
-                this.closeConversation(conversationUuid)
+                this.closeConversation(evt)
             },
             false);
 
@@ -1168,7 +1167,6 @@ export class Messenger extends HTMLElement {
                 if (participant == this.account.id) {
                     // That's mean the user get kickout from the conversation...
                     this.closeConversation(conversationUuid)
-
                 }
             }, false)
 
@@ -1491,7 +1489,9 @@ export class ParticipantsList extends HTMLElement {
             },
             (err) => {
                 this.blocked = false
-                ApplicationView.displayMessage(err, 3000)
+                if(err.message.indexOf("leveldb: not found")){
+                    ApplicationView.displayMessage(err, 3000)
+                }
             })
     }
 
@@ -2174,7 +2174,10 @@ export class InvitationCard extends HTMLElement {
     }
 
     deleteMe() {
-        this.parentNode.removeChild(this)
+        if(this.parentNode !=null){
+            this.parentNode.removeChild(this)
+        }
+
         this.deleteListeners()
         Model.eventHub.publish("__refresh_invitations__", null, true)
     }
