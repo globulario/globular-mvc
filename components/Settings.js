@@ -322,8 +322,8 @@ export class Settings extends HTMLElement {
        #container {
            display: flex;
            flex-direction: column;
+           min-width: 500px;
            margin-bottom: 10px;
-           margin-left: 28px;
        }
 
        .card-content{

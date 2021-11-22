@@ -196,6 +196,7 @@ dropdown-menu-element{
     margin-top: var(--cr-section-vertical-margin);
     outline: none;
     padding-bottom: 4px;
+    padding-left: 8px;
     padding-top: 16px;
 }
 
@@ -206,6 +207,7 @@ dropdown-menu-element{
 .subtitle{
     font-size: 1rem;
     text-align: left;
+    padding-left: 8px;
     padding-bottom: 15px;
 }
 
@@ -378,14 +380,20 @@ globular-file-explorer{
 }
 /**************************** Layout **************************/
 
+globular-terminal{
+   grid-row-end: 7;
+}
+
 /** Small **/
 @media only screen and (max-width: 600px) {
-   globular-blog-post{
+
+
+   globular-blog-post, globular-terminal{
       grid-row-start: 1;
       grid-column-start: 1;
       grid-column-end: 17;
    }
-   
+
    globular-settings-panel, globular-blog-posts{
       grid-row-start: 2;
       grid-column-start: 1;
@@ -414,7 +422,7 @@ globular-file-explorer{
 @media only screen and (max-width: 1024px) and (min-width: 600px)  {
 
    /** Blog post **/
-   globular-blog-post{
+   globular-blog-post, globular-terminal{
       grid-row-start: 1;
       grid-column-start: 3;
       grid-column-end: 15;
@@ -446,7 +454,7 @@ globular-file-explorer{
 
 /** Large */
 @media only screen and (max-width: 1800px) and (min-width: 1024px) {
-   globular-blog-post{
+   globular-blog-post, globular-terminal{
       grid-row-start: 1;
       grid-column-start: 5;
       grid-column-end: 13;
@@ -486,7 +494,7 @@ globular-file-explorer{
 
 /** x-large **/
 @media only screen and (min-width: 1800px) {
-   globular-blog-post{
+   globular-blog-post, globular-terminal{
       grid-row-start: 1;
       grid-column-start: 6;
       grid-column-end: 12;
@@ -530,3 +538,4 @@ globular-file-explorer{
       grid-column-end: 6;
    }
 }
+

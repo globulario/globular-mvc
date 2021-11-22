@@ -486,6 +486,7 @@ export class AccountPanel extends HTMLElement {
                 flex-direction: column;
                 align-items: center;
                 border-bottom: 1px solid var(--palette-background-default);
+                min-width: 500px;
             }
 
             #content{

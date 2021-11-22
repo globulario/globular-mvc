@@ -28,6 +28,7 @@ import "./components/table/table.js"
 import { Conversation, Invitation } from "globular-web-client/conversation/conversation_pb";
 import { ConversationManager } from "./Conversation";
 import { BlogPostElement, BlogPosts } from "./components/BlogPost"
+import { Terminal } from "./components/Terminal"
 import { Workspace } from './components/Workspace'
 
 // This variable is there to give acces to wait and resume...

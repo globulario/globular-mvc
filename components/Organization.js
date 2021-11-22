@@ -72,6 +72,7 @@ export class OrganizationManager extends HTMLElement {
                     display: flex;
                     flex-direction: column;
                     position: relative;
+                    min-width: 500px;
                  }
 
                  .card-content {

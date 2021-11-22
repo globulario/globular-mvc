@@ -755,10 +755,7 @@ export class FilesView extends HTMLElement {
     // The ondrop evt...
     ondrop(evt) {
         let lnk = evt.dataTransfer.getData('text/html');
-        if (evt.dataTransfer.files.length > 0) {
-            // So here I will simply upload the files...
-            Model.eventHub.publish("__upload_files_event__", { path: this.__dir__.path, files: evt.dataTransfer.files, lnk: lnk }, true)
-        } else if (evt.dataTransfer.getData("Url") != undefined) {
+        if (evt.dataTransfer.getData("Url").length > 0) {
             // Here we got an url...
             let url = evt.dataTransfer.getData("Url");
             let root = Model.globular.config.DataPath
@@ -904,9 +901,12 @@ export class FilesView extends HTMLElement {
                     toast.dismiss();
                 }
 
-            }
+            } 
 
-        }
+        } else if (evt.dataTransfer.files.length > 0) {
+            // So here I will simply upload the files...
+            Model.eventHub.publish("__upload_files_event__", { path: this.__dir__.path, files: evt.dataTransfer.files, lnk: lnk }, true)
+        } 
     }
 }
 
@@ -3743,7 +3743,7 @@ export class FilesUploader extends HTMLElement {
                 size = fileSize.toFixed(2) + " Kb";
             }
         } else {
-            size = f.size + " bytes";
+            size = f_size + " bytes";
         }
 
         return size

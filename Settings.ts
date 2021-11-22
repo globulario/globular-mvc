@@ -9,6 +9,7 @@ import { GroupManager} from "./components/Group"
 import { ImageCropperSetting, SettingsMenu, SettingsPanel, ComplexSetting, EmailSetting, StringSetting, RadioGroupSetting } from "./components/Settings";
 import { Model } from "./Model";
 import "@polymer/iron-icons/social-icons";
+import "@polymer/iron-icons/hardware-icons";
 import "@polymer/iron-icons/notification-icons";
 import { ApplicationManager } from "./components/Applications";
 import { PeersManager } from "./components/Peers";
@@ -159,6 +160,7 @@ export class RoleSettings extends Settings {
                 margin-top: var(--cr-section-vertical-margin);
                 outline: none;
                 padding-bottom: 4px;
+                padding-left: 8px;
                 padding-top: 16px;
             }
 
@@ -211,6 +213,7 @@ export class GroupSettings extends Settings {
                 margin-top: var(--cr-section-vertical-margin);
                 outline: none;
                 padding-bottom: 4px;
+                padding-left: 8px;
                 padding-top: 16px;
             }
 
@@ -258,6 +261,7 @@ export class OrganizationSettings extends Settings {
                 margin-top: var(--cr-section-vertical-margin);
                 outline: none;
                 padding-bottom: 4px;
+                padding-left: 8px;
                 padding-top: 16px;
             }
 
@@ -346,6 +350,7 @@ export class PeersSettings extends Settings {
                 margin-top: var(--cr-section-vertical-margin);
                 outline: none;
                 padding-bottom: 4px;
+                padding-left: 8px;
                 padding-top: 16px;
             }
 
@@ -398,6 +403,7 @@ export class UsersSettings extends Settings {
                 margin-top: var(--cr-section-vertical-margin);
                 outline: none;
                 padding-bottom: 4px;
+                padding-left: 8px;
                 padding-top: 16px;
             }
 
@@ -458,6 +464,7 @@ export class LogSettings extends Settings {
                 margin-top: var(--cr-section-vertical-margin);
                 outline: none;
                 padding-bottom: 4px;
+                padding-left: 8px;
                 padding-top: 16px;
             }
 
