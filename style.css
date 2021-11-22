@@ -380,9 +380,6 @@ globular-file-explorer{
 }
 /**************************** Layout **************************/
 
-globular-terminal{
-   grid-row-end: 7;
-}
 
 /** Small **/
 @media only screen and (max-width: 600px) {
