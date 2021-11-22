@@ -26,7 +26,7 @@ import { decode } from 'uint8-to-base64';
 import { v4 as uuidv4 } from "uuid";
 import { ApplicationView } from '../ApplicationView';
 import { getCoords } from "./utility.js"
-import {VideoConversation} from "./WebRTC.js"
+import { VideoConversation } from "./WebRTC.js"
 import { Application } from '../Application';
 
 /**
@@ -748,16 +748,16 @@ export class ConversationInfos extends HTMLElement {
         this.innerHtml = ""
         let range = document.createRange()
         this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.85em; width: 20px;" id="join_${this.conversation.getUuid()}_btn">Join</paper-button>`))
-       
+
         this.querySelector(`#join_${this.conversation.getUuid()}_btn`).onclick = () => {
 
-            if(this.shadowRoot.querySelector("paper-progress").style == "block"){
+            if (this.shadowRoot.querySelector("paper-progress").style == "block") {
                 // Block power clicker
                 return
             }
 
             this.shadowRoot.querySelector("paper-progress").style.display = "block"
-            
+
 
             ConversationManager.joinConversation(this.conversation.getUuid(),
                 (conversation, messages) => {
@@ -769,7 +769,7 @@ export class ConversationInfos extends HTMLElement {
 
                     // local event
                     Model.eventHub.publish("__join_conversation_evt__", { conversation: this.conversation, messages: messages }, true)
-                    
+
 
                     // network event.
                     this.querySelector(`#join_${this.conversation.getUuid()}_btn`).style.display = "none"
@@ -959,7 +959,7 @@ export class Messenger extends HTMLElement {
                 }
                 content.toggle();
                 let messagesList = this.shadowRoot.querySelector("globular-messages-list")
-                if(messagesList.setScroll !=undefined){
+                if (messagesList.setScroll != undefined) {
                     messagesList.setScroll();
                 }
             }
@@ -1016,7 +1016,7 @@ export class Messenger extends HTMLElement {
                     return
                 }
 
-                 // Close the menu
+                // Close the menu
                 document.querySelector("globular-messenger-menu").click()
 
 
@@ -1086,7 +1086,7 @@ export class Messenger extends HTMLElement {
 
         // append it to the workspace.
         document.querySelector("globular-workspace").appendChild(videoConversation)
-        
+
         // Display the messenger panel.
         this.shadowRoot.querySelector(".container").style.display = "flex";
         let conversationUuid = conversation.getUuid()
@@ -1426,6 +1426,7 @@ export class ParticipantsList extends HTMLElement {
         <div id="paticipants-lst">
         </div>
         `
+        this.participantList = this.shadowRoot.querySelector("#paticipants-lst")
     }
 
     /**
@@ -1460,6 +1461,7 @@ export class ParticipantsList extends HTMLElement {
 
                 let setParticipantsRow = () => {
                     let paticipant = __participants__.pop()
+
                     Account.getAccount(paticipant,
                         p => {
                             // if the session is offline or the user is in the list of unavailble user then I will set it session as unavailable.
@@ -1477,6 +1479,24 @@ export class ParticipantsList extends HTMLElement {
                             } else {
                                 this.blocked = false
                             }
+
+                            // Here if the session state change...
+                            Model.eventHub.subscribe(`session_state_${p._id}_change_event`,
+                                (uuid) => {
+                                },
+                                (evt) => {
+                                    // Set the value here...
+                                    let obj = JSON.parse(evt)
+                                    p.session.lastStateTime_ = new Date(obj.lastStateTime * 1000)
+                                    p.session.state_ = obj.state
+                                    if (p.session.state == 1 || __unavailable__.indexOf(p._id) != -1) {
+                                        this.setUnavailableParticipantRow(p, conversation)
+                                    } else {
+                                        this.setAvailableParticipantRow(p, conversation)
+                                    }
+                                }, false, this)
+
+
                         },
                         err => {
                             this.blocked = false
@@ -1489,19 +1509,25 @@ export class ParticipantsList extends HTMLElement {
             },
             (err) => {
                 this.blocked = false
-                if(err.message.indexOf("leveldb: not found")){
+                if (err.message.indexOf("leveldb: not found")) {
                     ApplicationView.displayMessage(err, 3000)
                 }
             })
     }
 
     setAvailableParticipantRow(p, conversation) {
-        if (this.shadowRoot.querySelector(`paticipant-${p._id}-row`) == undefined) {
-            let html = `
+        let row = this.participantList.querySelector(`#paticipant-${p._id}-row`)
+        if (row != undefined) {
+            if (row.parentNode != undefined) {
+                row.parentNode.removeChild(row)
+            }
+        }
+
+        let html = `
                 <div  id="paticipant-${p._id}-row" class="participant-table-row">
                     <div>
-                        <img src="${p.profilPicture_}"> </img>
-                    
+                        <img style="width: 48px; height: 48px; display: ${p.profilPicture_ == undefined ? "none" : "block"};" src="${p.profilPicture_}"></img>
+                        <iron-icon icon="account-circle" style="width: 48px; height: 48px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${p.profilPicture_ != undefined ? "none" : "block"};"></iron-icon>
                     </div>
                     <div style="flex-grow: 1;">
                         <span><span style="font-style: italic;">${p.name_}</span> ${p.firstName_} ${p.lastName_}</span>
@@ -1510,42 +1536,49 @@ export class ParticipantsList extends HTMLElement {
                     <paper-icon-button icon="av:videocam"> </paper-icon-button>
                 </div>
                 `
-            this.shadowRoot.querySelector("#paticipants-lst").insertBefore(document.createRange().createContextualFragment(html), this.shadowRoot.querySelector("#paticipants-lst").firstChild)
+        this.participantList.insertBefore(document.createRange().createContextualFragment(html), this.participantList.firstChild)
 
-            // From the paritcipant row
-            let participantRow = this.shadowRoot.querySelector("#paticipants-lst").querySelector(`#paticipant-${p._id}-row`)
+        // From the paritcipant row
+        let participantRow = this.participantList.querySelector(`#paticipant-${p._id}-row`)
 
-            let startVideoBtn = participantRow.querySelector("paper-icon-button")
-            if(p._id == Application.account.id){
-                startVideoBtn.style.display = "none"
-            }
-
-            startVideoBtn.onclick = ()=>{
-                Model.eventHub.publish("start_video_conversation_" + conversation.getUuid() + "_evt", p._id, true )
-                // hide the video button...
-                startVideoBtn.style.display = "none"
-            }
-
-            // Here the video conversation is ended I will redisplay the start button
-            Model.eventHub.subscribe(`video_conversation_close_${conversation.getUuid() + "_" + p._id }_evt`, uuid=>{}, evt=>{
-                startVideoBtn.style.display = "block"
-            }, false)
-
-            // Disable start.
-            Model.eventHub.subscribe(`video_conversation_open_${conversation.getUuid() + "_" + p._id }_evt`, uuid=>{}, evt=>{
-                startVideoBtn.style.display = "none"
-            }, false)
-
-            // TODO add stop video button.
+        let startVideoBtn = participantRow.querySelector("paper-icon-button")
+        if (p._id == Application.account.id) {
+            startVideoBtn.style.display = "none"
         }
+
+        startVideoBtn.onclick = () => {
+            Model.eventHub.publish("start_video_conversation_" + conversation.getUuid() + "_evt", p._id, true)
+            // hide the video button...
+            startVideoBtn.style.display = "none"
+        }
+
+        // Here the video conversation is ended I will redisplay the start button
+        Model.eventHub.subscribe(`video_conversation_close_${conversation.getUuid() + "_" + p._id}_evt`, uuid => { }, evt => {
+            startVideoBtn.style.display = "block"
+        }, false)
+
+        // Disable start.
+        Model.eventHub.subscribe(`video_conversation_open_${conversation.getUuid() + "_" + p._id}_evt`, uuid => { }, evt => {
+            startVideoBtn.style.display = "none"
+        }, false)
+
+        // TODO add stop video button.
+
     }
 
     setUnavailableParticipantRow(p, conversation) {
-        if (this.shadowRoot.querySelector(`paticipant-${p._id}-row`) == undefined) {
-            let html = `
+        let row = this.participantList.querySelector(`#paticipant-${p._id}-row`);
+        if (row != undefined) {
+            if (row.parentNode != undefined) {
+                row.parentNode.removeChild(row)
+            }
+        }
+
+        let html = `
             <div id="paticipant-${p._id}-row" class="participant-table-row">
                 <div>
-                    <img src="${p.profilPicture_}"> </img>
+                    <img style="width: 48px; height: 48px; display: ${p.profilPicture_ == undefined ? "none" : "block"};" src="${p.profilPicture_}"></img>
+                    <iron-icon icon="account-circle" style="width: 48px; height: 48px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${p.profilPicture_ != undefined ? "none" : "block"};"></iron-icon>
                 </div>
                 <div style="flex-grow: 1;">
                     <span><span style="font-style: italic;">${p.name_}</span> ${p.firstName_} ${p.lastName_}</span>
@@ -1553,8 +1586,9 @@ export class ParticipantsList extends HTMLElement {
                 </div>
             </div>
             `
-            this.shadowRoot.querySelector("#paticipants-lst").appendChild(document.createRange().createContextualFragment(html))
-        }
+        row = document.createRange().createContextualFragment(html)
+        this.shadowRoot.querySelector("#paticipants-lst").appendChild(row)
+
     }
 
     /** Set the kickout action. */
@@ -1927,9 +1961,9 @@ export class MessageEditor extends HTMLElement {
                 this.shadowRoot.querySelector(".answer-bar").style.display = "flex";
                 Account.getAccount(msg.getAuthor(), account => {
                     this.shadowRoot.querySelector("#reply-to").innerHTML = `${account.firstName} ${account.lastName}`;
-                }, err => { 
+                }, err => {
                     ApplicationView.displayMessage(err, 3000)
-                    console.log(err) 
+                    console.log(err)
                 })
 
                 this.shadowRoot.querySelector(".answer-to-text").innerHTML = msg.getText()
@@ -2150,11 +2184,11 @@ export class InvitationCard extends HTMLElement {
             }, false)
 
         // initialyse account informations.
-        Account.getAccount(account, () => { }, err => { 
+        Account.getAccount(account, () => { }, err => {
             console.log(err)
         })
 
-        Account.getAccount(contact, () => { }, err => { 
+        Account.getAccount(contact, () => { }, err => {
             console.log(err)
         })
 
@@ -2174,7 +2208,7 @@ export class InvitationCard extends HTMLElement {
     }
 
     deleteMe() {
-        if(this.parentNode !=null){
+        if (this.parentNode != null) {
             this.parentNode.removeChild(this)
         }
 
@@ -2336,7 +2370,7 @@ export class LikeDisLikeBtn extends HTMLElement {
                     div.className = "liker-unliker-lst"
                     div.innerHTML = `<span style="padding-right: 2px;">${account.firstName}</span><span>${account.lastName}</span>`
                     this.card.appendChild(div)
-                }, err => { 
+                }, err => {
                     ApplicationView.displayMessage(err, 3000)
                     console.log(err)
                 })

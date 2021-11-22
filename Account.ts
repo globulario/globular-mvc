@@ -351,10 +351,12 @@ export class Account extends Model {
         if (this.middleName == undefined) {
             this.middleName = "";
         }
-        this.profilPicture = data["profilPicture_"];
+        if( data["profilPicture_"]!=undefined){
+            this.profilPicture = data["profilPicture_"];
 
-        // keep the user data into the localstore.
-        localStorage.setItem(this.id, JSON.stringify(data))
+            // keep the user data into the localstore.
+            localStorage.setItem(this.id, JSON.stringify(data))
+        }
 
     }
 
@@ -371,7 +373,14 @@ export class Account extends Model {
             userName, // The database to search into 
             (data: any) => {
 
-                this.setData(data);
+                if(Object.keys(data).length == 0){
+                    if(localStorage.getItem(this.id) != undefined){
+                        data = JSON.parse(localStorage.getItem(this.id));
+                        this.setData(data);
+                    }
+                }else{
+                    this.setData(data);
+                }
 
                 // Here I will keep the Account up-to date.
                 if (Account.getListener(this.id) == undefined) {
@@ -415,10 +424,8 @@ export class Account extends Model {
 
             },
             (err: any) => {
-                let data = localStorage.getItem(this.id)
-                if(data != undefined){
-                    this.setData(data)
-                    this.hasData = true;
+                if(localStorage.getItem(this.id) != undefined){
+                    this.setData(JSON.parse(localStorage.getItem(this.id)))
                     callback(this);
                     return
                 }
