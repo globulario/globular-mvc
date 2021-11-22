@@ -1003,7 +1003,8 @@ export class Application extends Model {
       Application.account.session.state = SessionState.Offline;
 
       Model.eventHub.publish(`__session_state_${Application.account.id}_change_event__`, Application.account.session, true)
-
+      Model.eventHub.publish(`session_state_${Application.account.id}_change_event`, Application.account.session.toString(), false)
+      
       // Set room to undefined.
       Application.account = null;
     }
