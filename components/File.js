@@ -2393,6 +2393,7 @@ export class FileExplorer extends HTMLElement {
                 flex-direction: column;
                 min-width: 735px;
                 position: relative;
+                height: 100%;
             }
 
             paper-card{
@@ -2573,14 +2574,25 @@ export class FileExplorer extends HTMLElement {
             this.style.right = ""
             this.shadowRoot.querySelector("#file-explorer-layout").style.height = "55vh "
 
+            this.fileExplorerBox.style.position = "";
+            this.fileExplorerBox.style.top = "";
+            this.fileExplorerBox.style.bottom = "";
+            this.fileExplorerBox.style.right = "";
+            this.fileExplorerBox.style.left = "";
         }
 
         this.enterFullScreenBtn.onclick = () => {
             this.style.top = "60px"
             this.style.bottom = "0px"
             this.style.right = "0px"
-            this.shadowRoot.querySelector("#file-explorer-layout").style.height = "calc(79vh - 70px)"
 
+            this.fileExplorerBox.style.position = "absolute";
+            this.fileExplorerBox.style.top = "0px";
+            this.fileExplorerBox.style.bottom = "0px";
+            this.fileExplorerBox.style.right = "0px";
+            this.fileExplorerBox.style.left = "0px";
+    
+            // set buttons.
             this.enterFullScreenBtn.style.display = "none"
             this.exitFullScreenBtn.style.display = "block"
         }

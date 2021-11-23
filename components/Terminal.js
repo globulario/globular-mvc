@@ -2,8 +2,18 @@
 import { Globular } from "globular-web-client";
 import { RunCmdRequest } from "globular-web-client/admin/admin_pb";
 import { DisconnectResponse } from "globular-web-client/conversation/conversation_pb";
+import { ReadDirRequest } from "globular-web-client/file/file_pb";
 import { Application } from "../Application";
+import { File } from "../File";
 import { theme } from "./Theme";
+
+// Merge tow array together.
+function mergeTypedArraysUnsafe(a, b) {
+    const c = new a.constructor(a.length + b.length);
+    c.set(a);
+    c.set(b, a.length);
+    return c;
+}
 
 /**
  * Command prompt to execute command on the server.
@@ -24,7 +34,6 @@ export class Terminal extends HTMLElement {
 
             paper-card{
                 position: relative;
-                margin-top: 7px;
                 display: flex;
                 flex-direction: column;
                 width: 100%;
@@ -50,6 +59,11 @@ export class Terminal extends HTMLElement {
 
             textarea:focus, input:focus{
                 outline: none;
+            }
+
+            .error-message {
+                word-break: break-all;
+                color: var(--palette-secondary-main);
             }
 
             .title{
@@ -114,6 +128,7 @@ export class Terminal extends HTMLElement {
         this.input = this.shadowRoot.querySelector("input")
         this.output = this.shadowRoot.querySelector(".oupout")
         this.path = Application.globular.config.WebRoot
+        this.dirObj = null
         this.currentPathSpan = this.shadowRoot.querySelector("#current-dir")
         this.currentPathSpan.innerHTML = this.path
         // enter full screen and exit full screen btn
@@ -128,18 +143,31 @@ export class Terminal extends HTMLElement {
 
         // Now the action....
         this.input.onkeydown = (evt) => {
+            evt.stopPropagation()
+            if (this.input.value.length == 0) {
+                return
+            }
+
             if (evt.key === "Enter") {
                 this.runCommand(this.input.value)
                 this.input.value = ""
                 this.input.focus()
+            } else if (evt.key === "Tab") {
+                this.autocomplete(this.input.value)
             }
         }
 
+        this.input.onkeyup = (evt) => {
+            evt.stopPropagation()
+            this.gotoBottom()
+            this.input.focus()
+        }
 
         // I will use the resize event to set the size of the file explorer.
         this.exitFullScreenBtn.onclick = () => {
             this.enterFullScreenBtn.style.display = "block"
             this.exitFullScreenBtn.style.display = "none"
+            this.shadowRoot.querySelector("paper-card").style.marginTop = "7px"
             this.style.position = ""
             this.style.top = ""
             this.style.bottom = ""
@@ -150,9 +178,10 @@ export class Terminal extends HTMLElement {
         }
 
         this.enterFullScreenBtn.onclick = () => {
+            this.shadowRoot.querySelector("paper-card").style.marginTop = "0px"
             this.style.position = "absolute"
             this.style.top = "60px"
-            this.style.bottom = "70px"
+            this.style.bottom = "00px"
             this.style.right = "0px"
             this.style.left = "0px"
             //this.shadowRoot.querySelector("#container").style.height = "calc(79vh - 70px)"
@@ -162,9 +191,22 @@ export class Terminal extends HTMLElement {
         }
     }
 
+    /**
+     * Read the dir object.
+     */
     connectedCallback() {
         // Focus the input
         this.input.focus();
+
+        // get the list of files on the directory, use to validate actions and 
+        // autocomplete input.
+        this.getFiles(this.path,
+            dir => {
+                this.dirObj = dir
+            },
+            err => {
+                console.log(err)
+            })
     }
 
     /**
@@ -173,6 +215,37 @@ export class Terminal extends HTMLElement {
     gotoBottom() {
         var element = this.shadowRoot.querySelector("#container");
         element.scrollTop = element.scrollHeight - element.clientHeight;
+    }
+
+    /**
+     * Retreive list of files at a given path.
+     * @param {*} path 
+     * @param {*} onSuccessCallback 
+     * @param {*} onErrorCallback 
+     */
+    getFiles(path, callback, errorCallback) {
+        const rqst = new ReadDirRequest();
+        rqst.setPath(path);
+        rqst.setRecursive(false);
+        rqst.setThumnailheight(0);
+        rqst.setThumnailwidth(0);
+
+        let uint8array = new Uint8Array(0);
+        const stream = Application.globular.fileService.readDir(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") });
+
+        stream.on("data", (rsp) => {
+            uint8array = mergeTypedArraysUnsafe(uint8array, rsp.getData());
+        });
+
+        stream.on("status", (status) => {
+            if (status.code === 0) {
+                const content = JSON.parse(new TextDecoder("utf-8").decode(uint8array));
+                callback(content);
+            } else {
+                // error here...
+                errorCallback({ message: status.details });
+            }
+        });
     }
 
     /**
@@ -218,14 +291,20 @@ export class Terminal extends HTMLElement {
             if (args[0] == ("..")) {
                 // Here I will split the path and remove the last value...
                 let dirs = path.split("/")
-                dirs.splice(0, 1) // remove the first element
                 dirs.pop() // remove the last
                 if (dirs.length == 0) {
                     path = "/"
                 } else {
                     path = ""
                     for (var i = 0; i < dirs.length; i++) {
-                        path += "/" + dirs[i]
+                        if (dirs[i].length > 0) { // remove empty values (happend the path begin by / )
+                            if (dirs[i].indexOf(":") == -1) {
+                                path += "/" + dirs[i]
+                            } else {
+                                // not begin by a slash...
+                                path += dirs[i]
+                            }
+                        }
                     }
                 }
             } else if (args[0].startsWith("~")) {
@@ -233,29 +312,38 @@ export class Terminal extends HTMLElement {
             } else {
                 let path_ = args[0]
                 // make it absolute...
-                if (path_[0] != "/") {
+                if (path_[0] != "/" && path_[1] != ":") {
                     if (path == "/") {
                         path_ = path + path_
                     } else {
                         path_ = path + "/" + path_
                     }
 
+                } else if (path_.endsWith(":")) {
+                    // TODO make it work with c:...
                 }
+
                 // Test if the directory exist...
                 path = path_
             }
 
-            this.path = path
+            this.getFiles(path,
+                dir => {
+                    // Set the path and the dir object.
+                    this.path = path
+                    this.dirObj = dir
 
-            // display the path.
-            this.currentPathSpan.innerHTML = this.path
+                    // display the path.
+                    this.currentPathSpan.innerHTML = this.path
+                },
+                err => {
+                    this.displayErrorMessage(JSON.parse(err.message).ErrorMsg, cmd)
+                })
             return
         }
 
         // Set the request...
         let rqst = new RunCmdRequest
-
-
 
         // Set the command...
         rqst.setCmd(cmd_) // get the first element and set it as a command...
@@ -281,9 +369,53 @@ export class Terminal extends HTMLElement {
                 console.log({ pid: pid, infos: "", done: true });
             } else {
                 // error here...
-                ApplicationView.displayMessage(status.details, 3000)
+                this.displayErrorMessage(JSON.parse(status.details).ErrorMsg, cmd)
             }
         });
+    }
+
+    // Try to autocomplete the commande line...
+    autocomplete(cmd_line) {
+        console.log("try to autocomplete the command: ", cmd_line)
+        if (cmd_line.startsWith("cd ") || cmd_line.startsWith("rm ")) {
+            // Here I will try to autocomple from the actual list of file contain in dir..
+            // remove the command...
+            let cmd = cmd_line.split(" ")[0]
+            let val = cmd_line.substring(3).trim()
+            let candidates = []
+            this.dirObj.Files.forEach(f => {
+                // Here I will get the list of possible values...
+                if (f.Name.startsWith(val)) {
+                    candidates.push(f.Name)
+                }
+            })
+
+            // set the value...
+            if (candidates.length == 1) {
+                this.input.value = cmd + " " + candidates[0]
+            } else if (candidates.length > 1) {
+                // Here I will display the list of possible values...
+            }
+        }
+    }
+
+    // Display error message
+    displayErrorMessage(err, cmd_line) {
+        let html = `
+        <div class="cmd-input" style="margin-top: 10px;"> 
+            <span style="color:var(--palette-success-main);">${Application.account.id}@${Application.globular.config.Domain}</span>:
+            <span style="color:var(--palette-warning-main);">${this.path}</span>
+            <iron-icon icon="icons:chevron-right"></iron-icon>
+            ${cmd_line}
+        </div>
+        <div class="error-message">
+            ${err}
+        </div>
+        `
+        let range = document.createRange()
+        this.output.appendChild(range.createContextualFragment(html))
+        this.input.value = ""
+        this.input.focus()
     }
 
     // Here I will display the command results...
