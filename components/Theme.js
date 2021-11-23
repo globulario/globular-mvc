@@ -202,7 +202,7 @@ export let theme = `
     padding-bottom: 4px;
     padding-top: 8px;
     padding-left: 8px;
-    background-color: var(--palette-background-default);
+    background-color: var(--palette-background-paper);;
   }
 
   .card-actions {
@@ -210,6 +210,7 @@ export let theme = `
     justify-content: flex-end;
     align-items: center;
     font-size: 1rem;
+    background-color: var(--palette-background-paper);;
   }
 
   .card-subtitle {

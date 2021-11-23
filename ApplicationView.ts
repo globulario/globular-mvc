@@ -1111,7 +1111,9 @@ export class ApplicationView extends View {
    * Clear the workspace.
    */
   clearWorkspace(): void {
+    this. getWorkspace().innerHTML = "";
     ApplicationView.layout.clearWorkspace();
+    
   }
 
   /**
