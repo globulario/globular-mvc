@@ -1,5 +1,7 @@
 
+import { Globular } from "globular-web-client";
 import { RunCmdRequest } from "globular-web-client/admin/admin_pb";
+import { DisconnectResponse } from "globular-web-client/conversation/conversation_pb";
 import { Application } from "../Application";
 import { theme } from "./Theme";
 
@@ -21,13 +23,13 @@ export class Terminal extends HTMLElement {
             ${theme}
 
             paper-card{
+                position: relative;
+                margin-top: 7px;
                 display: flex;
                 flex-direction: column;
-                margin-top: 10%;
-                marging-bottom: 10%;
                 width: 100%;
                 height: 100%;
-                font: 1.1rem Inconsolata, monospace;
+                font: 1rem Inconsolata, monospace;
                 text-shadow: 0 0 1px #C8C8C8;
                 background: repeating-linear-gradient(
                     0deg,
@@ -43,7 +45,7 @@ export class Terminal extends HTMLElement {
                 background: transparent;
                 color: var(--palette-text-primary);
                 flex-grow: 1;
-                font: 1.1rem Inconsolata, monospace;
+                font: 1rem Inconsolata, monospace;
             }
 
             textarea:focus, input:focus{
@@ -51,13 +53,18 @@ export class Terminal extends HTMLElement {
             }
 
             .title{
+                text-align: center;
                 height: 20px;
-                padding: 10px;
+                padding-top: 10px;
+                padding-bottom: 10px;
                 color: var(--palette-action-disabled);
+                
+                flex-grow: 1;
             }
 
             .cmd-input{
                 displex: flex;
+                align-items: center;
                 color: var(--palette-action-disabled);
             }
 
@@ -75,16 +82,28 @@ export class Terminal extends HTMLElement {
                 flex-direction: column-reverse;
             }
 
+            #current-user{
+                color:var(--palette-success-main);
+            }
+
+            #current-dir{
+                color:var(--palette-warning-main);
+            }
+
         </style>
         <paper-card>
-            <span class="title">
-              Terminal
-            </span>
+            <div style="display: flex; width: 100%; border-bottom: 1px solid var(--palette-action-disabled);">
+                <span class="title">Terminal @${Application.globular.config.Domain} Globular ${Application.globular.config.Version}</span>
+                <paper-icon-button icon="icons:fullscreen" id="enter-full-screen-btn"></paper-icon-button>
+                <paper-icon-button icon="icons:fullscreen-exit" id="exit-full-screen-btn" style="display: none;"></paper-icon-button>
+            </div>
             <div id="container" style="flex-grow: 1; height: 55vh; overflow-y: auto;">
                 <div class="oupout" style=""> 
 
                 </div>
-                <div  style="display: flex; margin-top: 16px; padding-top: 5px; padding-bottom: 5px;">
+                <div  style="display: flex; margin-top: 10px; padding-top: 5px; padding-bottom: 5px; align-items: center;">
+                    <span id="current-user">${Application.account.id}@${Application.globular.config.Domain}</span>:
+                    <span id="current-dir"></span>
                     <iron-icon icon="icons:chevron-right"></iron-icon>
                     <input type="text" class="rq-form-element" />
                 </div>
@@ -94,7 +113,18 @@ export class Terminal extends HTMLElement {
         // The command input...
         this.input = this.shadowRoot.querySelector("input")
         this.output = this.shadowRoot.querySelector(".oupout")
+        this.path = Application.globular.config.WebRoot
+        this.currentPathSpan = this.shadowRoot.querySelector("#current-dir")
+        this.currentPathSpan.innerHTML = this.path
+        // enter full screen and exit full screen btn
+        this.enterFullScreenBtn = this.shadowRoot.querySelector("#enter-full-screen-btn")
+        this.exitFullScreenBtn = this.shadowRoot.querySelector("#exit-full-screen-btn")
 
+
+        this.shadowRoot.querySelector("#container").onclick = () => {
+            this.gotoBottom()
+            this.input.focus()
+        }
 
         // Now the action....
         this.input.onkeydown = (evt) => {
@@ -103,6 +133,32 @@ export class Terminal extends HTMLElement {
                 this.input.value = ""
                 this.input.focus()
             }
+        }
+
+
+        // I will use the resize event to set the size of the file explorer.
+        this.exitFullScreenBtn.onclick = () => {
+            this.enterFullScreenBtn.style.display = "block"
+            this.exitFullScreenBtn.style.display = "none"
+            this.style.position = ""
+            this.style.top = ""
+            this.style.bottom = ""
+            this.style.right = ""
+            this.style.left = ""
+            this.shadowRoot.querySelector("#container").style.height = "55vh "
+
+        }
+
+        this.enterFullScreenBtn.onclick = () => {
+            this.style.position = "absolute"
+            this.style.top = "60px"
+            this.style.bottom = "70px"
+            this.style.right = "0px"
+            this.style.left = "0px"
+            //this.shadowRoot.querySelector("#container").style.height = "calc(79vh - 70px)"
+
+            this.enterFullScreenBtn.style.display = "none"
+            this.exitFullScreenBtn.style.display = "block"
         }
     }
 
@@ -114,10 +170,10 @@ export class Terminal extends HTMLElement {
     /**
      * Go to the bottom of the div...
      */
-    gotoBottom(){
+    gotoBottom() {
         var element = this.shadowRoot.querySelector("#container");
         element.scrollTop = element.scrollHeight - element.clientHeight;
-     }
+    }
 
     /**
      * Run a command on the server and print the outpout in the terminal.
@@ -125,14 +181,6 @@ export class Terminal extends HTMLElement {
      * @returns 
      */
     runCommand(cmd) {
-        if (cmd.length == 0) {
-            return
-        } else if (cmd == "clear") {
-            this.output.innerHTML = ""
-            return
-        }
-
-        let rqst = new RunCmdRequest
 
         // split values and keep value inside quote mark intact...
         let values = cmd.match(/\\?.|^$/g).reduce((p, c) => {
@@ -146,9 +194,7 @@ export class Terminal extends HTMLElement {
             return p;
         }, { a: [''] }).a
 
-        // Set the command...
-        rqst.setCmd(values.splice(0, 1)[0]) // get the first element and set it as a command...
-
+        let cmd_ = values.splice(0, 1)[0]
         // Keep no empty values...
         let args = []
         values.forEach(val => {
@@ -156,7 +202,65 @@ export class Terminal extends HTMLElement {
                 args.push(val)
             }
         })
+
+        let path = this.path
+        if (path.startsWith("~")) {
+            path = path.replace("~", Application.globular.config.DataPath + "/files/users/" + Application.account.id)
+        }
+
+        if (cmd_.length == 0) {
+            return
+        } else if (cmd_ == "clear") {
+            this.output.innerHTML = ""
+            return
+        } else if (cmd_ == "cd" && args.length > 0) {
+            // keep the actual path in memory...
+            if (args[0] == ("..")) {
+                // Here I will split the path and remove the last value...
+                let dirs = path.split("/")
+                dirs.splice(0, 1) // remove the first element
+                dirs.pop() // remove the last
+                if (dirs.length == 0) {
+                    path = "/"
+                } else {
+                    path = ""
+                    for (var i = 0; i < dirs.length; i++) {
+                        path += "/" + dirs[i]
+                    }
+                }
+            } else if (args[0].startsWith("~")) {
+                path = args[0]
+            } else {
+                let path_ = args[0]
+                // make it absolute...
+                if (path_[0] != "/") {
+                    if (path == "/") {
+                        path_ = path + path_
+                    } else {
+                        path_ = path + "/" + path_
+                    }
+
+                }
+                // Test if the directory exist...
+                path = path_
+            }
+
+            this.path = path
+
+            // display the path.
+            this.currentPathSpan.innerHTML = this.path
+            return
+        }
+
+        // Set the request...
+        let rqst = new RunCmdRequest
+
+
+
+        // Set the command...
+        rqst.setCmd(cmd_) // get the first element and set it as a command...
         rqst.setArgsList(args)
+        rqst.setPath(path)
         rqst.setBlocking(true) // wait for the response...
 
         let stream = Application.globular.adminService.runCmd(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
@@ -189,13 +293,16 @@ export class Terminal extends HTMLElement {
         let range = document.createRange()
         if (cmdOutput == undefined) {
             let html = `
-            <div id=${id} style="margin-top: 16px;">
-                <div class="cmd-input">  <iron-icon icon="icons:chevron-right"></iron-icon>${cmd_line}</div>
-                <div class="cmd-output">
+            <div id=${id} style="margin-top: 10px;">
+                <div class="cmd-input"> 
+                    <span style="color:var(--palette-success-main);">${Application.account.id}@${Application.globular.config.Domain}</span>:
+                    <span style="color:var(--palette-warning-main);">${this.path}</span>
+                    <iron-icon icon="icons:chevron-right"></iron-icon>
+                    ${cmd_line}
                 </div>
+                <div class="cmd-output"></div>
             </div>
             `
-
             this.output.appendChild(range.createContextualFragment(html))
             cmdOutput = this.output.querySelector(`#${id}`)
         }
