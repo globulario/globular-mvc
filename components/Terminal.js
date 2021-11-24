@@ -111,7 +111,7 @@ export class Terminal extends HTMLElement {
                 <paper-icon-button icon="icons:fullscreen" id="enter-full-screen-btn"></paper-icon-button>
                 <paper-icon-button icon="icons:fullscreen-exit" id="exit-full-screen-btn" style="display: none;"></paper-icon-button>
             </div>
-            <div id="container" style="flex-grow: 1; overflow-y: auto;">
+            <div id="container" style="flex-grow: 1; height: 55vh; overflow-y: auto;">
                 <div class="oupout" style=""> 
 
                 </div>
@@ -173,7 +173,7 @@ export class Terminal extends HTMLElement {
             this.style.bottom = ""
             this.style.right = ""
             this.style.left = ""
-            //this.shadowRoot.querySelector("#container").style.height = "55vh "
+            this.shadowRoot.querySelector("#container").style.height = "55vh "
 
         }
 
