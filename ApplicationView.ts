@@ -648,11 +648,14 @@ export class ApplicationView extends View {
    */
   onLogin(account: Account) {
     // Do nothing if it's already login...
-    if(this.isLogin == true){
+    if (this.isLogin == true) {
       return
     }
 
-    this.isLogin = true;
+    // Set the file explorer...
+    ApplicationView._fileExplorer.setRoot("/users/" + account.id)
+    ApplicationView._fileExplorer.init();
+
 
     /** implement it as needed */
     if (this.login_.parentNode != null) {
@@ -699,18 +702,16 @@ export class ApplicationView extends View {
 
     // Manage groups
     let groupSettings = new GroupSettings(this.settingsMenu, this.settingsPanel)
-    
+
     // The logs
     let logs = new LogSettings(this.settingsMenu, this.settingsPanel);
-
-    // Set the file explorer...
-    ApplicationView._fileExplorer.setRoot("/users/" + account.id)
-    ApplicationView._fileExplorer.init();
 
     // Set the onerror callback for the component.
     ApplicationView._fileExplorer.onerror = (err: any) => {
       ApplicationView.displayMessage(err, 4000)
     };
+
+    this.isLogin = true;
 
     window.dispatchEvent(new Event("resize"));
   }
@@ -735,7 +736,7 @@ export class ApplicationView extends View {
     this.clearSideMenu();
 
     // Close the messenger
-    if( this.messenger.parentNode!=null){
+    if (this.messenger.parentNode != null) {
       this.messenger.parentNode.removeChild(this.messenger)
     }
 
@@ -826,6 +827,7 @@ export class ApplicationView extends View {
   }
 
   static showFilebrowser(path: string, onclose: () => void) {
+    console.log("show file explorer at path: ", path)
 
     ApplicationView._fileExplorer = new FileExplorer
     ApplicationView._fileExplorer.setRoot(path)
@@ -1111,9 +1113,9 @@ export class ApplicationView extends View {
    * Clear the workspace.
    */
   clearWorkspace(): void {
-    this. getWorkspace().innerHTML = "";
+    this.getWorkspace().innerHTML = "";
     ApplicationView.layout.clearWorkspace();
-    
+
   }
 
   /**
