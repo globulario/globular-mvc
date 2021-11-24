@@ -829,7 +829,7 @@ export class Messenger extends HTMLElement {
 
             #layout-div-1{
                 display: flex;
-
+                height: 100vh;
             }
 
             #layout-div-1-1{
@@ -840,12 +840,11 @@ export class Messenger extends HTMLElement {
             #layout-div-1-2{
                 flex-grow: 1;
             }
-
-            .container{
+            
+            paper-card{
                 display: none;
                 flex-direction: column;
                 min-width: 477.58px;
-                max-height: calc( 100vh - 64px );
                 background-color: var(--palette-background-paper);
                 color: var(--palette-text-primary);
             }
@@ -886,8 +885,8 @@ export class Messenger extends HTMLElement {
             #messages-list-container{
                 background-color: var(--palette-background-default);
                 overflow-y: auto;
-                min-height: 75vh; 
                 max-height: 75vh;
+                min-height: 58vh;
                 display: grid;
             }
 
@@ -895,7 +894,7 @@ export class Messenger extends HTMLElement {
                 width: 100%;
             }
         </style>
-
+        
         <paper-card class="container">
             <div class="header">
                 <div class="btn">
@@ -930,7 +929,7 @@ export class Messenger extends HTMLElement {
                 <div id="messages-list-container">
                     <globular-messages-list style="align-self: end;"></globular-messages-list>
                 </div>
-                
+
                 <globular-message-editor></globular-message-editor>
             </iron-collapse>
         </paper-card>
@@ -941,8 +940,12 @@ export class Messenger extends HTMLElement {
             if (button && content) {
                 if (!content.opened) {
                     button.icon = "expand-less"
+                    var element =this.shadowRoot.querySelector("#messages-list-container");
+                    element.style.maxHeight = "58vh"
+                    element.scrollTop = element.scrollHeight - element.clientHeight;
                 } else {
                     button.icon = "expand-more"
+                    this.shadowRoot.querySelector("#messages-list-container").style.maxHeight = "75vh"
                 }
                 content.toggle();
             }
