@@ -202,7 +202,6 @@ export let theme = `
     padding-bottom: 4px;
     padding-top: 8px;
     padding-left: 8px;
-    background-color: var(--palette-background-paper);;
   }
 
   .card-actions {

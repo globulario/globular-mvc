@@ -2409,6 +2409,7 @@ export class FileExplorer extends HTMLElement {
                 display: flex; 
                 flex-grow: 1;
                 overflow: hidden;
+                min-height: 55vh;
             }
 
             @media only screen and (max-width: 800px) {
@@ -2478,7 +2479,7 @@ export class FileExplorer extends HTMLElement {
                     <paper-icon-button id="navigation-create-dir-btn" icon="icons:create-new-folder"></paper-icon-button>
                     <paper-icon-button id="navigation-refresh-btn" icon="icons:refresh"></paper-icon-button>
                 </div>
-                <div id="file-explorer-layout" style="height: 55vh">
+                <div id="file-explorer-layout">
                     <div id="file-navigation-panel">
                         <globular-file-navigator id="globular-file-navigator"></globular-file-navigator>
                     </div>
@@ -2572,7 +2573,6 @@ export class FileExplorer extends HTMLElement {
             this.style.top = ""
             this.style.bottom = ""
             this.style.right = ""
-            this.shadowRoot.querySelector("#file-explorer-layout").style.height = "55vh "
 
             this.fileExplorerBox.style.position = "";
             this.fileExplorerBox.style.top = "";

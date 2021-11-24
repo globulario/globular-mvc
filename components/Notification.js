@@ -84,13 +84,13 @@ export class NotificationMenu extends Menu {
         }
 
         iron-collapse{
-            border-bottom: 1px solid #e8e8e8;
-            border-top: 1px solid #e8e8e8;
+            border-bottom: 1px solid var(--palette-action-disabled);
+            border-top: 1px solid var(--palette-action-disabled);
         }
 
         iron-collapse{
-            border-bottom: 1px solid #e8e8e8;
-            border-top: 1px solid #e8e8e8;
+            border-bottom: 1px solid var(--palette-action-disabled);
+            border-top: 1px solid var(--palette-action-disabled);
         }
 
         .notification_panel{
@@ -117,7 +117,7 @@ export class NotificationMenu extends Menu {
     </style>
 
         <div>
-            <div class="header" style="border-bottom: 1px solid #e8e8e8;">
+            <div class="header" style="border-bottom: 1px solid var(--palette-action-disabled);">
                 <div>Notifications</div>
                 <div class="btn_div">
                     <div class="btn">
@@ -174,7 +174,7 @@ export class NotificationMenu extends Menu {
                 this.applicationNotificationsCollapse.toggle()
             }
             if (this.userNotificationsCollapse.opened == true) {
-                this.userNotificationsBtn.style.borderTop = "1px solid #e8e8e8"
+                this.userNotificationsBtn.style.borderTop = "1px solid var(--palette-action-disabled)"
             } else {
                 this.userNotificationsBtn.style.borderTop = ""
             }
@@ -187,7 +187,7 @@ export class NotificationMenu extends Menu {
                 this.userNotificationsCollapse.toggle()
             }
             if (this.userNotificationsCollapse.opened == true) {
-                this.userNotificationsBtn.style.borderTop = "1px solid #e8e8e8"
+                this.userNotificationsBtn.style.borderTop = "1px solid var(--palette-action-disabled)"
             } else {
                 this.userNotificationsBtn.style.borderTop = ""
             }
