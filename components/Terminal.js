@@ -1,19 +1,12 @@
 
 import { Globular } from "globular-web-client";
-import { RunCmdRequest } from "globular-web-client/admin/admin_pb";
+import { GetFileInfoRequest, RunCmdRequest } from "globular-web-client/admin/admin_pb";
 import { DisconnectResponse } from "globular-web-client/conversation/conversation_pb";
 import { ReadDirRequest } from "globular-web-client/file/file_pb";
 import { Application } from "../Application";
 import { File } from "../File";
 import { theme } from "./Theme";
 
-// Merge tow array together.
-function mergeTypedArraysUnsafe(a, b) {
-    const c = new a.constructor(a.length + b.length);
-    c.set(a);
-    c.set(b, a.length);
-    return c;
-}
 
 /**
  * Command prompt to execute command on the server.
@@ -224,28 +217,13 @@ export class Terminal extends HTMLElement {
      * @param {*} onErrorCallback 
      */
     getFiles(path, callback, errorCallback) {
-        const rqst = new ReadDirRequest();
+        const rqst = new GetFileInfoRequest();
         rqst.setPath(path);
-        rqst.setRecursive(false);
-        rqst.setThumnailheight(0);
-        rqst.setThumnailwidth(0);
-
-        let uint8array = new Uint8Array(0);
-        const stream = Application.globular.fileService.readDir(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") });
-
-        stream.on("data", (rsp) => {
-            uint8array = mergeTypedArraysUnsafe(uint8array, rsp.getData());
-        });
-
-        stream.on("status", (status) => {
-            if (status.code === 0) {
-                const content = JSON.parse(new TextDecoder("utf-8").decode(uint8array));
-                callback(content);
-            } else {
-                // error here...
-                errorCallback({ message: status.details });
-            }
-        });
+        Application.globular.adminService.getFileInfo(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+            .then(rsp => {
+                callback(rsp.getInfo())
+            })
+            .catch(errorCallback)
     }
 
     /**
@@ -305,6 +283,9 @@ export class Terminal extends HTMLElement {
                                 path += dirs[i]
                             }
                         }
+                    }
+                    if(path.length == 0){
+                        path = "/"
                     }
                 }
             } else if (args[0].startsWith("~")) {
@@ -383,10 +364,10 @@ export class Terminal extends HTMLElement {
             let cmd = cmd_line.split(" ")[0]
             let val = cmd_line.substring(3).trim()
             let candidates = []
-            this.dirObj.Files.forEach(f => {
+            this.dirObj.getFilesList().forEach(f => {
                 // Here I will get the list of possible values...
-                if (f.Name.startsWith(val)) {
-                    candidates.push(f.Name)
+                if (f.getName().startsWith(val)) {
+                    candidates.push(f.getName())
                 }
             })
 
