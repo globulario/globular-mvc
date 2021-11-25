@@ -928,7 +928,7 @@ export class FilesListView extends FilesView {
      */
     setDir(dir) {
         // if the dire is hidden or the dir is the user dir... 
-        if (dir.name.startsWith(".") || !(dir.path.startsWith("/shared") || dir.path.startsWith("/users/" + Application.account.id))) {
+        if (dir.name.startsWith(".") || !(dir.path.startsWith("/shared") || dir.path.startsWith("/applications/" + Application.application) || dir.path.startsWith("/users/" + Application.account.id))) {
             return;
         }
 
@@ -1203,7 +1203,7 @@ export class FilesIconView extends FilesView {
      */
     setDir(dir) {
 
-        if (dir.name.startsWith(".") || !(dir.path.startsWith("/shared") || dir.path.startsWith("/users/" + Application.account.id))) {
+        if (dir.name.startsWith(".") || !(dir.path.startsWith("/shared") || dir.path.startsWith("/applications/" + Application.application) || dir.path.startsWith("/users/" + Application.account.id))) {
             return;
         }
 
@@ -1726,7 +1726,7 @@ export class PathNavigator extends HTMLElement {
     // Set the directory.
     setDir(dir) {
 
-        if (this.path == dir._path || !(dir.path.startsWith("/shared") || dir.path.startsWith("/users/" + Application.account.id))) {
+        if (this.path == dir._path || !(dir.path.startsWith("/shared") || dir.path.startsWith("/applications/" + Application.application) || dir.path.startsWith("/users/" + Application.account.id))) {
             return;
         }
 
@@ -2142,7 +2142,7 @@ export class FileNavigator extends HTMLElement {
     // Set the directory.
     setDir(dir) {
         console.log("set file navigation to dir: ", dir)
-        if (this.dir == dir || !(dir.path.startsWith("/shared") || dir.path.startsWith("/users/" + Application.account.id))) {
+        if (this.dir == dir || !(dir.path.startsWith("/shared")  || dir.path.startsWith("/applications/" + Application.application) || dir.path.startsWith("/users/" + Application.account.id))) {
             return;
         }
 
@@ -3097,7 +3097,7 @@ export class FileExplorer extends HTMLElement {
     }
 
     setDir(dir) {
-        if(!(dir.path.startsWith("/shared") || dir.path.startsWith("/users/" + Application.account.id))){
+        if(!(dir.path.startsWith("/shared") || dir.path.startsWith("/applications/" + Application.application) || dir.path.startsWith("/users/" + Application.account.id))){
             return
         }
 

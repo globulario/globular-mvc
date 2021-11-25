@@ -93,13 +93,12 @@ export class UserSettings extends Settings {
         generalSettings.addSetting(userEmailSetting)
 
         // The default theme...
-        /*
-        let userThemeDefault = new RadioGroupSetting("Theme", "Ligth mode or dark mode")
+        /*let userThemeDefault = new RadioGroupSetting("Theme", "Ligth mode or dark mode")
         if(localStorage.getItem(account.id)!=null){
             userThemeDefault.setValue(JSON.parse(localStorage.getItem(account.id)))
         }
-        generalSettings.addSetting(userEmailSetting)
-        */
+        generalSettings.addSetting(userThemeDefault)*/
+        
 
         Application.eventHub.subscribe("save_settings_evt",
             (uuid: string) => {
