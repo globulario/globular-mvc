@@ -154,14 +154,20 @@ export class Account extends Model {
                     return
                 }
                 
+                             
                 let data = accounts_[0]
-                let account = new Account(data.getId(), data.getEmail(), data.getName())
 
                 // so here I will get the session for the account...
+                if (Account.accounts[data.getId()] != null) {
+                    successCallback(Account.accounts[data.getId()]);
+                    return
+                }
+   
+                let account = new Account(data.getId(), data.getEmail(), data.getName())
                 account.session = new Session(account)
-
+                Account.accounts[data.getId()] = account;
                 account.initData(() => {
-                    Account.accounts[data.getId()] = account;
+                   
                     // here I will initialyse groups...
                     account.groups_ = data.getGroupsList();
                     successCallback(account)
@@ -367,6 +373,11 @@ export class Account extends Model {
     initData(callback: (account: Account) => void, onError: (err: any) => void) {
         let userName = this.name
 
+        console.log("----------> init data for ", userName)
+        if(this.hasData == true){
+            return this
+        }
+
         // Retreive user data... 
         Account.readOneUserData(
             `{"$or":[{"_id":"${this.id}"},{"name":"${this.id}"} ]}`, // The query is made on the user database and not local_ressource Accounts here so name is name_ here
@@ -424,13 +435,12 @@ export class Account extends Model {
 
             },
             (err: any) => {
+                this.hasData = false;
                 if(localStorage.getItem(this.id) != undefined){
                     this.setData(JSON.parse(localStorage.getItem(this.id)))
                     callback(this);
                     return
                 }
-
-                this.hasData = false;
                 // Call success callback ...
                 if (callback != undefined && this.session != null) {
                     this.session.initData(() => {
@@ -624,7 +634,7 @@ export class Account extends Model {
                     return
                 }
 
-                let initAccountData = () => {
+               let initAccountData = () => {
                     let a_ = accounts_.pop()
                     if (Account.accounts[a_.getId()] == undefined) {
                         let a = new Account(a_.getId(), a_.getEmail(), a_.getName())

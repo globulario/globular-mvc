@@ -380,7 +380,8 @@ export class ApplicationView extends View {
         this.messenger = new Messenger(account);
 
         // Also display it inside the workspace.
-        this.workspace_.appendChild(this.messenger)
+        // put the messenger in the body directly.
+        document.body.appendChild(this.messenger)
 
 
         Model.eventHub.subscribe("__create_new_conversation_event__",
@@ -829,18 +830,18 @@ export class ApplicationView extends View {
   static showFilebrowser(path: string, onclose: () => void) {
     console.log("show file explorer at path: ", path)
 
-    ApplicationView._fileExplorer = new FileExplorer
-    ApplicationView._fileExplorer.setRoot(path)
-    ApplicationView._fileExplorer.init()
-    ApplicationView._fileExplorer.open()
+    let fileExplorer = new FileExplorer
+    fileExplorer.setRoot(path)
+    fileExplorer.init()
+    fileExplorer.open()
 
-    ApplicationView._fileExplorer.onclose = () => {
-      ApplicationView._fileExplorer.parentNode.removeChild(ApplicationView._fileExplorer)
-      ApplicationView._fileExplorer.delete() // remove all listeners.
-      ApplicationView._fileExplorer = null;
+    fileExplorer.onclose = () => {
+      fileExplorer.parentNode.removeChild(ApplicationView._fileExplorer)
+      fileExplorer.delete() // remove all listeners.
+      fileExplorer = null;
     }
 
-    return ApplicationView._fileExplorer
+    return fileExplorer
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////////
