@@ -96,6 +96,11 @@ export let theme = `
     --palette-background-paper: #424242;
     /** Divider **/
     --palette-divider: rgba(255, 255, 255, 0.12);
+
+  }
+  
+  paper-radio-button[checked]{
+    --paper-radio-button-label-color: var(--palette-text-accent);
   }
   
   :host-context(globular-login-box, globular-register-box){
@@ -143,7 +148,7 @@ export let theme = `
   }
 
   paper-radio-button[checked]{
-    --paper-radio-button-label-color: var(--palette-text-accent);
+    /*--paper-radio-button-label-color: var(--palette-text-accent);*/
   }
 
   paper-card {

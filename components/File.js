@@ -2163,7 +2163,6 @@ export class FileNavigator extends HTMLElement {
 
             let userId = share.getPath().split("/")[2];
             if (userId == Application.account.id) {
-                console.log("--------------> 2166")
                 callback()
                 return // I will not display it...
             }
@@ -2174,7 +2173,6 @@ export class FileNavigator extends HTMLElement {
                 this.shared[userId].files = [];
                 this.shared[userId].mime = "";
                 this.shared[userId].modTime = new Date()
-                console.log("--------------> 2177")
                 Model.eventHub.subscribe(userId + "_change_permission_event", uuid => { },
                     evt => {
                         // refresh the shared...
@@ -2187,11 +2185,9 @@ export class FileNavigator extends HTMLElement {
                 // create a local directory if none exist...
                 if (this.shared[userId].files.find(f => f.path == dir.path) == undefined) {
                     this.shared[userId].files.push(dir)
-                    console.log("--------------> 2190")
                     callback()
                 }
             }, err => {
-                console.log("--------------> 2194")
                 // The file is not a directory so the file will simply put in the share.
                 if (err.message.endsWith("is a directory")) {
                     this.getFileInfo(share.getPath(),
@@ -2222,7 +2218,6 @@ export class FileNavigator extends HTMLElement {
                             } else {
                                 if (this.shared[userId].files.find(f_ => f.path == f_.path) == undefined) {
                                     this.shared[userId].files.push(f)
-                                    console.log("--------------> 2224")
                                     callback()
                                 }
                             }

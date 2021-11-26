@@ -133,6 +133,12 @@ export class Application extends Model {
       view.setTitle(this.title);
     }
 
+    // Set the application theme...
+    let theme = localStorage.getItem("globular_theme")
+    if (theme != null) {
+      let html = document.querySelector("html")
+      html.setAttribute("theme", theme)
+    }
   }
 
   /**
@@ -777,7 +783,7 @@ export class Application extends Model {
               this.initNotifications();
               this.startRefreshToken();
               ApplicationView.resume();
-              
+
             },
             (err: any) => {
               Model.eventHub.publish("login_event", account, true);
@@ -1004,7 +1010,7 @@ export class Application extends Model {
 
       Model.eventHub.publish(`__session_state_${Application.account.id}_change_event__`, Application.account.session, true)
       Model.eventHub.publish(`session_state_${Application.account.id}_change_event`, Application.account.session.toString(), false)
-      
+
       // Set room to undefined.
       Application.account = null;
     }

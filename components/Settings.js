@@ -282,7 +282,7 @@ export class SettingsPage extends HTMLElement {
   }
 
   appendSettings(title, subtitle) {
-    const id =  "_" + uuidv4()// title.split(" ").join("");
+    const id = "_" + uuidv4()// title.split(" ").join("");
 
     const html = `<globular-settings id="${id}" title="${title}" subtitle="${subtitle}"></globular-settings>`;
     const range = document.createRange()
@@ -415,9 +415,9 @@ export class Settings extends HTMLElement {
     this.shadowRoot.getElementById("hide-btn").onclick = this.hideSettings.bind(this);
     this.container = this.shadowRoot.getElementById("container")
     this.backBtn = this.shadowRoot.getElementById("back-btn")
-    if(this.title.length == 0){
+    if (this.title.length == 0) {
       this.container.style.marginTop = "0px";
-    }else{
+    } else {
       this.container.style.marginTop = "45px";
     }
   }
@@ -465,8 +465,8 @@ export class Setting extends HTMLElement {
     }
 
     if (!this.hasAttribute("id")) {
-        // generate a unique id.
-        this.setAttribute("id", "_" + uuidv4())
+      // generate a unique id.
+      this.setAttribute("id", "_" + uuidv4())
     }
 
     // set icon to empty icon by default.
@@ -635,7 +635,7 @@ export class ComplexSetting extends Setting {
 
       // display the settings.
       this._panel.style.display = "block"
-      
+
       if (this._panel.children.length > 0) {
         let e = this._panel.children[0].getElement()
         if (e != undefined) {
@@ -864,7 +864,7 @@ customElements.define("globular-string-setting", StringSetting);
 /**
  * Set exclusive select setting...
  */
- export class RadioGroupSetting extends Setting {
+export class RadioGroupSetting extends Setting {
   constructor(name, description) {
     super(name, description);
     this.onchange = null;
@@ -875,29 +875,14 @@ customElements.define("globular-string-setting", StringSetting);
 
       </style>
 
-      <paper-radio-group selected="">
-        <paper-radio-button name="a">allosaurus</paper-radio-button>
-        <paper-radio-button name="b">brontosaurus</paper-radio-button>
-        <paper-radio-button name="d" disabled>diplodocus</paper-radio-button>
-      </paper-radio-group>
+      <paper-radio-group selected=""></paper-radio-group>
     `
     let range = document.createRange();
     this.title = description;
 
     this.shadowRoot.insertBefore(range.createContextualFragment(html), this.description)
-    this.radioBtnGrp = this.shadowRoot.getElementById("setting-input");
-
+    this.radioBtnGrp = this.shadowRoot.querySelector("paper-radio-group");
     this.description.style.display = "none";
-    this.setAttribute("title", "")
-    if (description.length > 0) {
-      this.input.label = description;
-    }
-    this.input.setAttribute("title", description);
-    this.input.onblur = () => {
-      if (this.onblur != null) {
-        this.onblur()
-      }
-    }
   }
 
   getElement() {
@@ -908,12 +893,29 @@ customElements.define("globular-string-setting", StringSetting);
     return this.input.value
   }
 
-  setValue(value) {
-    console.log("----------------------> value: ", value)
+  setValue(value) {   
+    this.radioBtnGrp.setAttribute("selected", value)
+    this.shadowRoot.querySelector(`#${value}-radio-btn`).click()
   }
 
-  setValues(values) {
-    console.log("--------------> append values: ", values)
+  // That function must be overide.
+  onSelect(value) {
+
+  }
+
+  setChoices(values) {
+    values.forEach(val => {
+      let choice = document.createElement("paper-radio-button")
+      choice.name = val
+      choice.id = val + "-radio-btn"
+      choice.innerHTML = val
+      this.radioBtnGrp.appendChild(choice)
+      choice.onclick = () => {
+        if (this.onSelect != null) {
+          this.onSelect(choice.name)
+        }
+      }
+    })
   }
 }
 
@@ -968,7 +970,7 @@ customElements.define("globular-textarea-setting", TextAreaSetting);
 /**
  * true false on of...
  */
- export class OnOffSetting extends Setting {
+export class OnOffSetting extends Setting {
   constructor(name, description) {
     super(name, description);
 
@@ -1347,34 +1349,34 @@ export class StringListSetting extends Setting {
         <paper-icon-button id="new_item_btn"  icon="add"></paper-icon-button>
       </div>
     `
-    if(this.getAttribute("description")!=undefined){
+    if (this.getAttribute("description") != undefined) {
       description = this.getAttribute("description")
     }
 
- 
+
     let range = document.createRange();
     this.title = description;
 
     this.shadowRoot.insertBefore(range.createContextualFragment(html), this.description)
     this.div = this.shadowRoot.getElementById("container");
 
-    this.div.onfocus = ()=>{
-      
-        let inputs = this.shadowRoot.querySelectorAll("paper-input");
-        setTimeout(() => {
-          if (inputs.length > 0) {
-            //inputs[0].input.setSelectionRange(0, inputs[0].input.value.length);
-            inputs[0].focus()
-          }
-    
-        }, 50)
-      
+    this.div.onfocus = () => {
+
+      let inputs = this.shadowRoot.querySelectorAll("paper-input");
+      setTimeout(() => {
+        if (inputs.length > 0) {
+          //inputs[0].input.setSelectionRange(0, inputs[0].input.value.length);
+          inputs[0].focus()
+        }
+
+      }, 50)
+
     }
-    
-    if(this.getAttribute("name")!=undefined){
+
+    if (this.getAttribute("name") != undefined) {
       this.name.innerHTML = this.getAttribute("name")
     }
-    
+
     this.description.style.display = "none";
     this.setAttribute("title", "")
     if (description.length > 0) {
@@ -1392,7 +1394,7 @@ export class StringListSetting extends Setting {
     }
   }
 
-  connectedCallback(){
+  connectedCallback() {
 
 
   }
@@ -1403,7 +1405,7 @@ export class StringListSetting extends Setting {
 
   appendValue(index, value) {
     let input = this.div.querySelector("#item_" + index)
-    if(input !=undefined){
+    if (input != undefined) {
       return
     }
 
@@ -1535,8 +1537,8 @@ export class ActionSetting extends Setting {
     let range = document.createRange();
     this.shadowRoot.appendChild(range.createContextualFragment(html))
     this.onclick = onclick
-    this.shadowRoot.getElementById("btn").onclick = ()=>{
-      if(this.onclick != nil){
+    this.shadowRoot.getElementById("btn").onclick = () => {
+      if (this.onclick != nil) {
         this.onclick()
       }
     }

@@ -4,8 +4,8 @@ import { Account } from "./Account";
 import { Application } from "./Application";
 import { ApplicationView } from "./ApplicationView";
 import { FileExplorer } from "./components/File";
-import { RoleManager} from "./components/Role"
-import { GroupManager} from "./components/Group"
+import { RoleManager } from "./components/Role"
+import { GroupManager } from "./components/Group"
 import { ImageCropperSetting, SettingsMenu, SettingsPanel, ComplexSetting, EmailSetting, StringSetting, RadioGroupSetting } from "./components/Settings";
 import { Model } from "./Model";
 import "@polymer/iron-icons/social-icons";
@@ -92,13 +92,37 @@ export class UserSettings extends Settings {
         userEmailSetting.setValue(account.email)
         generalSettings.addSetting(userEmailSetting)
 
-        // The default theme...
-        /*let userThemeDefault = new RadioGroupSetting("Theme", "Ligth mode or dark mode")
-        if(localStorage.getItem(account.id)!=null){
-            userThemeDefault.setValue(JSON.parse(localStorage.getItem(account.id)))
+        // The set the application mode...
+        let displayModeSelector = new RadioGroupSetting("Theme", "Ligth mode or dark mode")
+        displayModeSelector.setChoices(["light", "dark"])
+        displayModeSelector.onSelect = (value) => {
+            if (localStorage.getItem(account.id) != null) {
+                let theme = localStorage.getItem(account.id + "_theme")
+                let html = document.querySelector("html")
+                if (theme != null) {
+                    if(theme!=value){
+                        displayModeSelector.setValue(value)
+                        localStorage.setItem(account.id + "_theme", value)
+                        localStorage.setItem("globular_theme", value)
+                        html.setAttribute("theme", value)
+                    }
+                } else {
+                    localStorage.setItem(account.id + "_theme", value)
+                    localStorage.setItem("globular_theme", value)
+                    html.setAttribute("theme", value)
+                }
+            }
         }
-        generalSettings.addSetting(userThemeDefault)*/
-        
+        let theme = localStorage.getItem(account.id + "_theme")
+        let html = document.querySelector("html")
+        if (theme != null) {
+            displayModeSelector.setValue(theme)
+            html.setAttribute("theme", theme)
+        }else{
+            displayModeSelector.setValue(html.getAttribute("theme"))
+        }
+        generalSettings.addSetting(displayModeSelector)
+
 
         Application.eventHub.subscribe("save_settings_evt",
             (uuid: string) => {
@@ -316,7 +340,7 @@ export class ApplicationsSettings extends Settings {
         let installApplicationBtn = applicationsSettingPage.querySelector("#install-application-btn")
 
         // Install application
-        installApplicationBtn.onclick = ()=>{
+        installApplicationBtn.onclick = () => {
             // So here I will get the list of availble package from the pacakage manager.
             console.log("----------> look for applications at ", Model.globular.config.Discoveries)
             // Get all package infos from that localisation.
@@ -326,7 +350,7 @@ export class ApplicationsSettings extends Settings {
 }
 
 export class PeersSettings extends Settings {
-   peersManager: PeersManager;
+    peersManager: PeersManager;
 
     // The application.
     constructor(settingsMenu: SettingsMenu, settingsPanel: SettingsPanel) {
@@ -378,7 +402,7 @@ export class PeersSettings extends Settings {
  * Model to manage users account settings.
  */
 export class UsersSettings extends Settings {
-  
+
     accountManager: AccountManager;
 
     // The application.
@@ -434,12 +458,12 @@ export class UsersSettings extends Settings {
  */
 export class LogSettings extends Settings {
 
-    private infos:Array<LogInfo>
+    private infos: Array<LogInfo>
     private table: any;
     private header: any;
     private errorCheckBox: any;
-    private warningCheckBox:any;
-    private infoCheckBox:any;
+    private warningCheckBox: any;
+    private infoCheckBox: any;
 
     // The application.
     constructor(settingsMenu: SettingsMenu, settingsPanel: SettingsPanel) {
@@ -522,63 +546,63 @@ export class LogSettings extends Settings {
         logSettingPage.appendChild(document.createRange().createContextualFragment(html));
 
 
-        this.errorCheckBox = <any> logSettingPage.querySelector("#error_log_checkbox");
-        this.warningCheckBox =  <any> logSettingPage.querySelector("#warning_log_checkbox");
-        this.infoCheckBox =  <any> logSettingPage.querySelector("#info_log_checkbox");
+        this.errorCheckBox = <any>logSettingPage.querySelector("#error_log_checkbox");
+        this.warningCheckBox = <any>logSettingPage.querySelector("#warning_log_checkbox");
+        this.infoCheckBox = <any>logSettingPage.querySelector("#info_log_checkbox");
 
 
-        this.infoCheckBox.onclick = this.warningCheckBox.onclick = this.errorCheckBox.onclick = ()=>{
+        this.infoCheckBox.onclick = this.warningCheckBox.onclick = this.errorCheckBox.onclick = () => {
             this.table.clear(); // remove all values...
-            if(this.errorCheckBox.checked){
+            if (this.errorCheckBox.checked) {
                 this.getLogs("/error/*",
-                (infos: Array<LogInfo>) => {
-                    this.setInfos(infos)
-                    this.getLogs("/fatal/*",
+                    (infos: Array<LogInfo>) => {
+                        this.setInfos(infos)
+                        this.getLogs("/fatal/*",
+                            (infos: Array<LogInfo>) => {
+                                this.setInfos(infos)
+                            },
+                            (err: any) => {
+                                ApplicationView.displayMessage(err, 3000)
+                            })
+                    },
+                    (err: any) => {
+                        ApplicationView.displayMessage(err, 3000)
+                    })
+            }
+            if (this.warningCheckBox.checked) {
+                this.getLogs("/warning/*",
                     (infos: Array<LogInfo>) => {
                         this.setInfos(infos)
                     },
                     (err: any) => {
                         ApplicationView.displayMessage(err, 3000)
                     })
-                },
-                (err: any) => {
-                    ApplicationView.displayMessage(err, 3000)
-                })
-            }
-            if(this.warningCheckBox.checked){
-                this.getLogs("/warning/*",
-                (infos: Array<LogInfo>) => {
-                    this.setInfos(infos)
-                },
-                (err: any) => {
-                    ApplicationView.displayMessage(err, 3000)
-                })
             }
 
-            if(this.infoCheckBox.checked){
+            if (this.infoCheckBox.checked) {
                 this.getLogs("/info/*",
-                (infos: Array<LogInfo>) => {
-                    this.setInfos(infos)
-                    this.getLogs("/debug/*",
                     (infos: Array<LogInfo>) => {
                         this.setInfos(infos)
-                        this.getLogs("/trace/*",
-                        (infos: Array<LogInfo>) => {
-                            this.setInfos(infos)
-                        },
-                        (err: any) => {
-                            ApplicationView.displayMessage(err, 3000)
-                        })
+                        this.getLogs("/debug/*",
+                            (infos: Array<LogInfo>) => {
+                                this.setInfos(infos)
+                                this.getLogs("/trace/*",
+                                    (infos: Array<LogInfo>) => {
+                                        this.setInfos(infos)
+                                    },
+                                    (err: any) => {
+                                        ApplicationView.displayMessage(err, 3000)
+                                    })
+                            },
+                            (err: any) => {
+                                ApplicationView.displayMessage(err, 3000)
+                            })
                     },
                     (err: any) => {
                         ApplicationView.displayMessage(err, 3000)
                     })
-                },
-                (err: any) => {
-                    ApplicationView.displayMessage(err, 3000)
-                })
             }
-            
+
         }
 
         logSettingPage.querySelector("paper-button").onclick = () => {
@@ -587,7 +611,7 @@ export class LogSettings extends Settings {
             if (data.length < this.table.data.length) {
 
                 let deleteRows = (index: number) => {
-                    
+
 
                     let index_ = parseInt(data[index].index)
                     this.deleteLog(this.infos[index_],
@@ -597,9 +621,9 @@ export class LogSettings extends Settings {
 
                             index += 1
                             if (index < data.length) {
-                                deleteRows(index)  
+                                deleteRows(index)
                             }
-                            
+
 
                         },
                         (err: any) => {
@@ -608,40 +632,40 @@ export class LogSettings extends Settings {
                 }
                 let index = 0
                 deleteRows(index)
-                
+
             } else {
                 // Remove error/fatal logs.
-                if(this.errorCheckBox.checked){
-                    this.clearLogs("/error/"+ Application.application + "/*",()=>{
+                if (this.errorCheckBox.checked) {
+                    this.clearLogs("/error/" + Application.application + "/*", () => {
                         this.table.clear();
-                    }, (err:any)=>{ApplicationView.displayMessage(err, 300)})
+                    }, (err: any) => { ApplicationView.displayMessage(err, 300) })
 
-                    this.clearLogs("/fatal/"+ Application.application+ "/*",()=>{
+                    this.clearLogs("/fatal/" + Application.application + "/*", () => {
                         this.table.clear();
-                    }, (err:any)=>{ApplicationView.displayMessage(err, 300)})
+                    }, (err: any) => { ApplicationView.displayMessage(err, 300) })
                 }
-        
+
                 // Remove warnings
-                if(this.warningCheckBox.checked){
-                    this.clearLogs("/warning/"+ Application.application+ "/*", ()=>{
+                if (this.warningCheckBox.checked) {
+                    this.clearLogs("/warning/" + Application.application + "/*", () => {
                         this.table.clear();
-                    }, (err:any)=>{ApplicationView.displayMessage(err, 300)})
+                    }, (err: any) => { ApplicationView.displayMessage(err, 300) })
                 }
-                
+
                 // Remove debug, info and tace.
-                if(this.infoCheckBox.checked){
-                    this.clearLogs("/info/"+ Application.application+ "/*", ()=>{
+                if (this.infoCheckBox.checked) {
+                    this.clearLogs("/info/" + Application.application + "/*", () => {
                         this.table.clear();
-                    }, (err:any)=>{ApplicationView.displayMessage(err, 300)})
+                    }, (err: any) => { ApplicationView.displayMessage(err, 300) })
 
-                    this.clearLogs("/debug/"+ Application.application+ "/*", ()=>{
+                    this.clearLogs("/debug/" + Application.application + "/*", () => {
                         this.table.clear();
-                    }, (err:any)=>{ApplicationView.displayMessage(err, 300)})
+                    }, (err: any) => { ApplicationView.displayMessage(err, 300) })
 
 
-                    this.clearLogs("/trace/"+ Application.application+ "/*", ()=>{
+                    this.clearLogs("/trace/" + Application.application + "/*", () => {
                         this.table.clear();
-                    }, (err:any)=>{ApplicationView.displayMessage(err, 300)})
+                    }, (err: any) => { ApplicationView.displayMessage(err, 300) })
                 }
             }
         }
@@ -703,18 +727,18 @@ export class LogSettings extends Settings {
                         }
 
                         let range = document.createRange()
-                        occurences.sort((a:Occurence, b:Occurence) =>{return b.getDate() - a.getDate()})
+                        occurences.sort((a: Occurence, b: Occurence) => { return b.getDate() - a.getDate() })
 
                         // Now I will set the occurence infromations...
-                        occurences.forEach(o =>{
+                        occurences.forEach(o => {
                             let html = `
                                 <div style="display: flex; padding: 2px;">
                                     <div>${new Date(o.getDate() * 1000).toLocaleString()} </div>
-                                    <div style="padding-left: 10px;">${ o.getUserid() + " " + o.getApplication() }</div>
+                                    <div style="padding-left: 10px;">${o.getUserid() + " " + o.getApplication()}</div>
                                 </div>
                             `
                             collapse_panel.appendChild(range.createContextualFragment(html))
-                            
+
                         })
 
                     }
@@ -744,10 +768,10 @@ export class LogSettings extends Settings {
 
     }
 
-    setInfos(infos: Array<LogInfo>){
+    setInfos(infos: Array<LogInfo>) {
         // Here I will transform the the info to fit into the table.
         infos.forEach((info: LogInfo) => {
-   
+
             let level = ""
             if (info.getLevel() == 0) {
                 level = "fatal"
@@ -774,7 +798,7 @@ export class LogSettings extends Settings {
      * @param successCallback On logs clear
      * @param errorCallback On error
      */
-    clearLogs(query: string, successCallback: () => void, errorCallback: (err: any) => void){
+    clearLogs(query: string, successCallback: () => void, errorCallback: (err: any) => void) {
         let rqst = new ClearAllLogRqst
         rqst.setQuery(query)
 
