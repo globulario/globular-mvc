@@ -118,8 +118,10 @@ export class UserSettings extends Settings {
         if (theme != null) {
             displayModeSelector.setValue(theme)
             html.setAttribute("theme", theme)
-        }else{
+        }else if(html.getAttribute("theme")!=null){
             displayModeSelector.setValue(html.getAttribute("theme"))
+        }else{
+            displayModeSelector.setValue("light")
         }
         generalSettings.addSetting(displayModeSelector)
 

@@ -378,11 +378,15 @@ export class ApplicationView extends View {
 
         // Set the messenger.
         this.messenger = new Messenger(account);
-
-        // Also display it inside the workspace.
-        // put the messenger in the body directly.
-        document.body.appendChild(this.messenger)
-
+        
+        // Display the conversation manager.
+        Model.eventHub.subscribe(`__join_conversation_evt__`,
+            (uuid) => {
+                
+            },
+            (evt) => {
+                document.body.appendChild(this.messenger)
+            }, true)
 
         Model.eventHub.subscribe("__create_new_conversation_event__",
           (uuid) => { },
