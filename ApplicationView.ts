@@ -832,7 +832,12 @@ export class ApplicationView extends View {
   }
 
   static showFilebrowser(path: string, onclose: () => void) {
-    console.log("show file explorer at path: ", path)
+
+    /*let fileExplorer = ApplicationView._fileExplorer
+    if(ApplicationView._fileExplorer == undefined){
+      fileExplorer = new FileExplorer
+      ApplicationView._fileExplorer = fileExplorer
+    }*/
 
     let fileExplorer = new FileExplorer
     fileExplorer.setRoot(path)
