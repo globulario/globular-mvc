@@ -838,8 +838,12 @@ export class ApplicationView extends View {
     fileExplorer.setRoot(path)
     fileExplorer.init()
     fileExplorer.open()
-
+    
     fileExplorer.onclose = () => {
+      // Remove the file explorer.
+      if(fileExplorer.parentNode!=undefined){
+        return
+      }
       fileExplorer.parentNode.removeChild(ApplicationView._fileExplorer)
       fileExplorer.delete() // remove all listeners.
       fileExplorer = null;

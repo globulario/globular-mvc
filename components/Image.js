@@ -1,152 +1,153 @@
 import { theme } from "./Theme";
 import '@polymer/paper-button/paper-button.js';
 import '@polymer/paper-slider/paper-slider.js';
+import { Model } from "../Model";
 
 export class ImageCropper extends HTMLElement {
-    constructor() {
-        super();
-        this.oldSrc = '';
-        this.croppedImage = null;
+  constructor() {
+    super();
+    this.oldSrc = '';
+    this.croppedImage = null;
 
-        this.attachShadow({ mode: 'open' });
-    }
+    this.attachShadow({ mode: 'open' });
+  }
 
-    get width() {
-        return this.hasAttribute('width');
-    }
+  get width() {
+    return this.hasAttribute('width');
+  }
 
-    get height() {
-        return this.hasAttribute('height');
-    }
+  get height() {
+    return this.hasAttribute('height');
+  }
 
-    get rounded() {
-        return this.hasAttribute('rounded');
-    }
+  get rounded() {
+    return this.hasAttribute('rounded');
+  }
 
-    setCropImage(dataUrl){
-      this.croppedImage = dataUrl;
-    }
-  
-    // Set the image from data url.
-    setImage(data){
-      this.loadPic({target:{files:[data]}})
-    }
+  setCropImage(dataUrl) {
+    this.croppedImage = dataUrl;
+  }
 
-    loadPic(e) {
-        this.resetAll();
-        var reader = new FileReader();
-        reader.readAsDataURL(e.target.files[0]);
-        reader.cmp = this;
-        reader.onload = function (event) {
-            var shdRoot = event.target.cmp.shadowRoot;
-            shdRoot.querySelector(".resize-image").setAttribute('src', event.target.result);
-            event.target.cmp.oldSrc = event.target.result;
-            shdRoot.querySelector(".resize-image").cmp = shdRoot;
-            shdRoot.querySelector(".resize-image").onload = function (e) {
-                var shdRoot = e.target.cmp;
-                shdRoot.querySelector('.slidecontainer').style.display = 'block';
-                shdRoot.querySelector('.crop').style.display = 'initial';
-                var widthTotal = shdRoot.querySelector(".resize-image").offsetWidth;
-                shdRoot.querySelector(".resize-container").style.width = widthTotal + 'px';
-                shdRoot.querySelector(".resize-image").style.width = widthTotal + 'px';
-                shdRoot.querySelector("#myRange").max = widthTotal + widthTotal;
-                shdRoot.querySelector("#myRange").value = widthTotal;
-                shdRoot.querySelector("#myRange").min = widthTotal - widthTotal;
-            }
-        }
-    }
-    dragElement(elmnt) {
-        var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-        elmnt.onmousedown = dragMouseDown;
-        elmnt.ontouchstart = dragMouseDown;
+  // Set the image from data url.
+  setImage(data) {
+    this.loadPic({ target: { files: [data] } })
+  }
 
-        function dragMouseDown(e) {
-            e.preventDefault();
-            // get the mouse cursor position at startup:
-            pos3 = e.clientX || e.targetTouches[0].pageX;
-            pos4 = e.clientY || e.targetTouches[0].pageY;
-            document.onmouseup = closeDragElement;
-            document.ontouchend = closeDragElement;
-            // call a function whenever the cursor moves:
-            document.onmousemove = elementDrag;
-            document.ontouchmove = elementDrag;
-        }
-        function elementDrag(e) {
-            e = e || window.event;
-            // calculate the new cursor position:
-            pos1 = pos3 - (e.clientX || e.targetTouches[0].pageX);
-            pos2 = pos4 - (e.clientY || e.targetTouches[0].pageY);
-            pos3 = (e.clientX || e.targetTouches[0].pageX);
-            pos4 = (e.clientY || e.targetTouches[0].pageY);
-            // set the element's new position:
-            elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
-            elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
-        }
-        function closeDragElement() {
-            // stop moving when mouse button is released:
-            document.onmouseup = '';
-            document.ontouchend = '';
-            document.onmousemove = '';
-            document.ontouchmove = '';
-        }
+  loadPic(e) {
+    this.resetAll();
+    var reader = new FileReader();
+    reader.readAsDataURL(e.target.files[0]);
+    reader.cmp = this;
+    reader.onload = function (event) {
+      var shdRoot = event.target.cmp.shadowRoot;
+      shdRoot.querySelector(".resize-image").setAttribute('src', event.target.result);
+      event.target.cmp.oldSrc = event.target.result;
+      shdRoot.querySelector(".resize-image").cmp = shdRoot;
+      shdRoot.querySelector(".resize-image").onload = function (e) {
+        var shdRoot = e.target.cmp;
+        shdRoot.querySelector('.slidecontainer').style.display = 'block';
+        shdRoot.querySelector('.crop').style.display = 'initial';
+        var widthTotal = shdRoot.querySelector(".resize-image").offsetWidth;
+        shdRoot.querySelector(".resize-container").style.width = widthTotal + 'px';
+        shdRoot.querySelector(".resize-image").style.width = widthTotal + 'px';
+        shdRoot.querySelector("#myRange").max = widthTotal + widthTotal;
+        shdRoot.querySelector("#myRange").value = widthTotal;
+        shdRoot.querySelector("#myRange").min = widthTotal - widthTotal;
+      }
     }
-    crop() {
-        this.shadowRoot.querySelector('.crop').style.display = 'none';
-        this.shadowRoot.querySelector('.reset').style.display = 'initial';
-        this.shadowRoot.querySelector('.slidecontainer').style.display = 'none';
-        var image = this.shadowRoot.querySelector('.resize-image');
+  }
+  dragElement(elmnt) {
+    var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    elmnt.onmousedown = dragMouseDown;
+    elmnt.ontouchstart = dragMouseDown;
 
-        var resize_canvas = document.createElement('canvas');
-        resize_canvas.width = image.offsetWidth;
-        resize_canvas.height = image.offsetHeight;
-        resize_canvas.getContext('2d').drawImage(image, 0, 0, image.offsetWidth, image.offsetHeight);
-
-        image.setAttribute('src', resize_canvas.toDataURL("image/jepg"));
-
-        var imageContainer = this.shadowRoot.querySelector('.resize-container');
-        var centerContainer = this.shadowRoot.querySelector('.center');
-        var left = centerContainer.offsetLeft - imageContainer.offsetLeft;
-        var top = centerContainer.offsetTop - imageContainer.offsetTop;
-        var width = centerContainer.offsetWidth;
-        var height = centerContainer.offsetHeight;
-        var newTop = centerContainer.offsetTop;
-        var newLeft = centerContainer.offsetLeft;
-
-        var crop_canvas = document.createElement('canvas');
-        crop_canvas.width = width;
-        crop_canvas.height = height;
-        crop_canvas.getContext('2d').drawImage(resize_canvas, left, top, width, height, 0, 0, width, height);
-
-        var imageC = this.shadowRoot.querySelector('.imageCropped');
-        imageC.src = crop_canvas.toDataURL("image/jepg");
-        this.shadowRoot.querySelector('.resize-image').setAttribute('src', '');
+    function dragMouseDown(e) {
+      e.preventDefault();
+      // get the mouse cursor position at startup:
+      pos3 = e.clientX || e.targetTouches[0].pageX;
+      pos4 = e.clientY || e.targetTouches[0].pageY;
+      document.onmouseup = closeDragElement;
+      document.ontouchend = closeDragElement;
+      // call a function whenever the cursor moves:
+      document.onmousemove = elementDrag;
+      document.ontouchmove = elementDrag;
     }
-    slide(w) {
-        this.shadowRoot.querySelector(".resize-container").style.width = (w) + 'px';
-        this.shadowRoot.querySelector(".resize-image").style.width = (w) + 'px';
+    function elementDrag(e) {
+      e = e || window.event;
+      // calculate the new cursor position:
+      pos1 = pos3 - (e.clientX || e.targetTouches[0].pageX);
+      pos2 = pos4 - (e.clientY || e.targetTouches[0].pageY);
+      pos3 = (e.clientX || e.targetTouches[0].pageX);
+      pos4 = (e.clientY || e.targetTouches[0].pageY);
+      // set the element's new position:
+      elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+      elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
     }
-    getCropped() {
-        return this.shadowRoot.querySelector(".imageCropped").getAttribute('src');
+    function closeDragElement() {
+      // stop moving when mouse button is released:
+      document.onmouseup = '';
+      document.ontouchend = '';
+      document.onmousemove = '';
+      document.ontouchmove = '';
     }
-    resetAll() {
-        this.shadowRoot.querySelector(".reset").style.display = 'none';
-        this.shadowRoot.querySelector(".crop").style.display = 'none';
-        this.shadowRoot.querySelector(".slidecontainer").style.display = 'none';
-        this.shadowRoot.querySelector(".resize-container").removeAttribute('style');
-        this.shadowRoot.querySelector(".resize-image").setAttribute('src', '');
-        this.shadowRoot.querySelector(".imageCropped").setAttribute('src', '');
-        this.shadowRoot.querySelector(".resize-image").style.width = '100%';
-        this.shadowRoot.querySelector("#myRange").max = 10;
-        this.shadowRoot.querySelector("#myRange").value = 5;
-        this.shadowRoot.querySelector("#myRange").min = 0;
-    }
-    reset() {
-        this.resetAll();
-        this.shadowRoot.querySelector(".resize-image").setAttribute('src', this.oldSrc);
-    }
-    connectedCallback() {
+  }
+  crop() {
+    this.shadowRoot.querySelector('.crop').style.display = 'none';
+    this.shadowRoot.querySelector('.reset').style.display = 'initial';
+    this.shadowRoot.querySelector('.slidecontainer').style.display = 'none';
+    var image = this.shadowRoot.querySelector('.resize-image');
 
-        this.shadowRoot.innerHTML = `
+    var resize_canvas = document.createElement('canvas');
+    resize_canvas.width = image.offsetWidth;
+    resize_canvas.height = image.offsetHeight;
+    resize_canvas.getContext('2d').drawImage(image, 0, 0, image.offsetWidth, image.offsetHeight);
+
+    image.setAttribute('src', resize_canvas.toDataURL("image/jepg"));
+
+    var imageContainer = this.shadowRoot.querySelector('.resize-container');
+    var centerContainer = this.shadowRoot.querySelector('.center');
+    var left = centerContainer.offsetLeft - imageContainer.offsetLeft;
+    var top = centerContainer.offsetTop - imageContainer.offsetTop;
+    var width = centerContainer.offsetWidth;
+    var height = centerContainer.offsetHeight;
+    var newTop = centerContainer.offsetTop;
+    var newLeft = centerContainer.offsetLeft;
+
+    var crop_canvas = document.createElement('canvas');
+    crop_canvas.width = width;
+    crop_canvas.height = height;
+    crop_canvas.getContext('2d').drawImage(resize_canvas, left, top, width, height, 0, 0, width, height);
+
+    var imageC = this.shadowRoot.querySelector('.imageCropped');
+    imageC.src = crop_canvas.toDataURL("image/jepg");
+    this.shadowRoot.querySelector('.resize-image').setAttribute('src', '');
+  }
+  slide(w) {
+    this.shadowRoot.querySelector(".resize-container").style.width = (w) + 'px';
+    this.shadowRoot.querySelector(".resize-image").style.width = (w) + 'px';
+  }
+  getCropped() {
+    return this.shadowRoot.querySelector(".imageCropped").getAttribute('src');
+  }
+  resetAll() {
+    this.shadowRoot.querySelector(".reset").style.display = 'none';
+    this.shadowRoot.querySelector(".crop").style.display = 'none';
+    this.shadowRoot.querySelector(".slidecontainer").style.display = 'none';
+    this.shadowRoot.querySelector(".resize-container").removeAttribute('style');
+    this.shadowRoot.querySelector(".resize-image").setAttribute('src', '');
+    this.shadowRoot.querySelector(".imageCropped").setAttribute('src', '');
+    this.shadowRoot.querySelector(".resize-image").style.width = '100%';
+    this.shadowRoot.querySelector("#myRange").max = 10;
+    this.shadowRoot.querySelector("#myRange").value = 5;
+    this.shadowRoot.querySelector("#myRange").min = 0;
+  }
+  reset() {
+    this.resetAll();
+    this.shadowRoot.querySelector(".resize-image").setAttribute('src', this.oldSrc);
+  }
+  connectedCallback() {
+
+    this.shadowRoot.innerHTML = `
         <style>
           ${theme}
           .slidecontainer {
@@ -276,38 +277,38 @@ export class ImageCropper extends HTMLElement {
           </div>
         </div>
         `;
-        this.shadowRoot.querySelector('.uploader').addEventListener('change', e => {
-            this.loadPic(e);
-        });
-        this.shadowRoot.querySelector('#myRange').addEventListener('immediate-value-change', e => {
-            this.slide(e.target.immediateValue);
-        });
-        this.shadowRoot.querySelector('.crop').addEventListener('click', e => {
-            this.crop();
-        });
-        this.shadowRoot.querySelector('.reset').addEventListener('click', e => {
-            this.reset();
-        });
-        if (this.width) {
-          this.shadowRoot.querySelector('.center').style.width = this.getAttribute('width');
-          this.shadowRoot.querySelector('.center').style.left = 'calc(50% - ' + this.getAttribute('width') + '/2)';
-        }
-        if (this.height) {
-          this.shadowRoot.querySelector('.center').style.height = this.getAttribute('height');
-          this.shadowRoot.querySelector('.center').style.top = 'calc(50% - ' + this.getAttribute('height') + '/2)';
-        }
-        if (this.rounded) {
-          this.shadowRoot.querySelector('.center').style.borderRadius = '200px';
-          this.shadowRoot.querySelector('.imageCropped').style.borderRadius = '200px';
-        }
-
-        if(this.croppedImage != null){
-          var imageC = this.shadowRoot.querySelector('.imageCropped');
-          imageC.src = this.croppedImage;
-        }
-
-        this.dragElement(this.shadowRoot.querySelector(".resize-container"));
+    this.shadowRoot.querySelector('.uploader').addEventListener('change', e => {
+      this.loadPic(e);
+    });
+    this.shadowRoot.querySelector('#myRange').addEventListener('immediate-value-change', e => {
+      this.slide(e.target.immediateValue);
+    });
+    this.shadowRoot.querySelector('.crop').addEventListener('click', e => {
+      this.crop();
+    });
+    this.shadowRoot.querySelector('.reset').addEventListener('click', e => {
+      this.reset();
+    });
+    if (this.width) {
+      this.shadowRoot.querySelector('.center').style.width = this.getAttribute('width');
+      this.shadowRoot.querySelector('.center').style.left = 'calc(50% - ' + this.getAttribute('width') + '/2)';
     }
+    if (this.height) {
+      this.shadowRoot.querySelector('.center').style.height = this.getAttribute('height');
+      this.shadowRoot.querySelector('.center').style.top = 'calc(50% - ' + this.getAttribute('height') + '/2)';
+    }
+    if (this.rounded) {
+      this.shadowRoot.querySelector('.center').style.borderRadius = '200px';
+      this.shadowRoot.querySelector('.imageCropped').style.borderRadius = '200px';
+    }
+
+    if (this.croppedImage != null) {
+      var imageC = this.shadowRoot.querySelector('.imageCropped');
+      imageC.src = this.croppedImage;
+    }
+
+    this.dragElement(this.shadowRoot.querySelector(".resize-container"));
+  }
 }
 
 window.customElements.define('globular-image-cropper', ImageCropper);
@@ -317,11 +318,11 @@ window.customElements.define('globular-image-cropper', ImageCropper);
  */
 class ImageViewer extends HTMLElement {
 
-  constructor () {
+  constructor() {
     super();
     this.onclose = null;
 
-    let shadowRoot = this.attachShadow({mode: 'open'});
+    let shadowRoot = this.attachShadow({ mode: 'open' });
 
     shadowRoot.innerHTML = `
       <style>
@@ -434,26 +435,26 @@ class ImageViewer extends HTMLElement {
         </div>
       </div>`;
 
-      shadowRoot.querySelector('#closeBtn').addEventListener('click', e => {
-        this.style.display = 'none';
-        if(this.onclose!=undefined){
-          this.onclose()
-        }
-      });
-
-      if(this.noinfo){
-        shadowRoot.querySelector('#info').style.display='none';
+    shadowRoot.querySelector('#closeBtn').addEventListener('click', e => {
+      this.style.display = 'none';
+      if (this.onclose != undefined) {
+        this.onclose()
       }
+    });
 
-      //right arrow event
-      shadowRoot.querySelector('#rightA').addEventListener('click', e => {
-        this.nextImage();
-      });
+    if (this.noinfo) {
+      shadowRoot.querySelector('#info').style.display = 'none';
+    }
 
-      //left arrow event
-      shadowRoot.querySelector('#leftA').addEventListener('click', e => {
-        this.prevImage();
-      });
+    //right arrow event
+    shadowRoot.querySelector('#rightA').addEventListener('click', e => {
+      this.nextImage();
+    });
+
+    //left arrow event
+    shadowRoot.querySelector('#leftA').addEventListener('click', e => {
+      this.prevImage();
+    });
 
   }
 
@@ -461,12 +462,12 @@ class ImageViewer extends HTMLElement {
     return this.hasAttribute('noinfo');
   }
 
-  populateChildren(){
-    if(this.children.length!=0){
+  populateChildren() {
+    if (this.children.length != 0) {
       var ch = this.children;
       var cant = ch.length;
       for (var i = 0; i < cant; i++) {
-        if(i == 0)
+        if (i == 0)
           ch[i].style.display = 'block';
         else
           ch[i].style.display = 'none';
@@ -476,7 +477,7 @@ class ImageViewer extends HTMLElement {
         ch[i].style.maxHeight = '75vh';
       }
       //counter
-      this.shadowRoot.querySelector('#counter').innerHTML = '1/'+cant;
+      this.shadowRoot.querySelector('#counter').innerHTML = '1/' + cant;
     } else {
       //hide the arrows
       this.shadowRoot.querySelector('#leftA').style.display = 'none';
@@ -484,17 +485,17 @@ class ImageViewer extends HTMLElement {
     }
   }
 
-  activeImage(e){
+  activeImage(e) {
     var ch = this.children;
     var cant = ch.length;
     for (var i = 0; i < cant; i++) {
       ch[i].style.display = 'none';
     }
     ch[e].style.display = 'block';
-    this.shadowRoot.querySelector('#counter').innerHTML = (e+1)+'/'+(cant);
+    this.shadowRoot.querySelector('#counter').innerHTML = (e + 1) + '/' + (cant);
   }
 
-  addImage(e){
+  addImage(e) {
     this.appendChild(e);
     this.populateChildren();
     //show the arrows
@@ -502,41 +503,45 @@ class ImageViewer extends HTMLElement {
     this.shadowRoot.querySelector('#rightA').style.display = 'block';
   }
 
-  loadImgFrom(ele){
+  loadImgFrom(ele) {
     var el = ele.querySelectorAll('img');
     this.style.display = 'block';
     this.innerHTML = '';
     for (var i = 0; i < el.length; i++) {
-      var src = el[i].getAttribute('src') + "?token=" + localStorage.getItem("user_token");
+      var src = el[i].getAttribute('src')
+      src += "?application=" + Model.application;
+      if (localStorage.getItem("user_token") != undefined) {
+        src += "&token=" + localStorage.getItem("user_token");
+      }
       var newPic = document.createElement('img');
-      newPic.setAttribute('slot','images');
-      newPic.setAttribute('src',src);
+      newPic.setAttribute('slot', 'images');
+      newPic.setAttribute('src', src);
       console.log(src)
 
       //if have data-info
-      if(el[i].getAttribute('data-info'))
-            newPic.setAttribute('data-info',el[i].getAttribute('data-info'));
+      if (el[i].getAttribute('data-info'))
+        newPic.setAttribute('data-info', el[i].getAttribute('data-info'));
 
       //adding to the component
       this.addImage(newPic);
     }
   }
 
-  infoClick(title,fn){
+  infoClick(title, fn) {
     this.shadowRoot.querySelector('#info').innerHTML = title;
     this.shadowRoot.querySelector('#info').addEventListener('click', function func(event) {
       fn(event);
     });
   }
 
-  nextImage(){
+  nextImage() {
     var ch = this.children;
     var cant = ch.length;
     for (var i = 0; i < cant; i++) {
-      if(ch[i].style.display == 'block'){
+      if (ch[i].style.display == 'block') {
         var actived = ch[0];
         var index = 0;
-        if(i < (cant-1)){
+        if (i < (cant - 1)) {
           actived = ch[i + 1];
           index = i + 1;
         }
@@ -544,17 +549,17 @@ class ImageViewer extends HTMLElement {
       ch[i].style.display = 'none';
     }
     actived.style.display = 'block';
-    this.shadowRoot.querySelector('#counter').innerHTML = (index+1)+'/'+(cant);
+    this.shadowRoot.querySelector('#counter').innerHTML = (index + 1) + '/' + (cant);
   }
 
-  prevImage(){
+  prevImage() {
     var ch = this.children;
     var cant = ch.length;
     for (var i = 0; i < cant; i++) {
-      if(ch[i].style.display == 'block'){
-        var actived = ch[cant-1];
-        var index = cant-1;
-        if(i > 0){
+      if (ch[i].style.display == 'block') {
+        var actived = ch[cant - 1];
+        var index = cant - 1;
+        if (i > 0) {
           actived = ch[i - 1];
           index = i - 1;
         }
@@ -562,10 +567,10 @@ class ImageViewer extends HTMLElement {
       ch[i].style.display = 'none';
     }
     actived.style.display = 'block';
-    this.shadowRoot.querySelector('#counter').innerHTML = (index+1)+'/'+(cant);
+    this.shadowRoot.querySelector('#counter').innerHTML = (index + 1) + '/' + (cant);
   }
 
-  connectedCallback () {
+  connectedCallback() {
 
   }
 }
