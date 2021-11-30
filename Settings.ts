@@ -111,6 +111,10 @@ export class UserSettings extends Settings {
                     localStorage.setItem("globular_theme", value)
                     html.setAttribute("theme", value)
                 }
+            }else{
+                localStorage.setItem(account.id + "_theme", value)
+                localStorage.setItem("globular_theme", value)
+                html.setAttribute("theme", value)
             }
         }
         let theme = localStorage.getItem(account.id + "_theme")

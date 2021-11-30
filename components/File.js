@@ -2898,7 +2898,7 @@ export class FileExplorer extends HTMLElement {
                 }, (path) => {
                     _readDir(path, (dir) => {
                         if (dir.path == this.path) {
-                            Model.eventHub.publish("__set_dir_event__", { path: dir, file_explorer_id: this._file_explorer_.id }, true)
+                            Model.eventHub.publish("__set_dir_event__", { path: dir, file_explorer_id: this.id }, true)
                         }
                         this.fileNavigator.reload(dir)
                     }, () => { }, true)

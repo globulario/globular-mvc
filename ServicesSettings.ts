@@ -123,7 +123,19 @@ export class ServicesSettings extends Settings {
 
                 let div = <any>serviceSetting.getDescriptionDiv()
                 div.appendChild(range.createContextualFragment(serviceToolBar))
-                this.servicesSettings.push(new ServiceSetting(service, serviceSetting))
+
+                let s: ServiceSetting
+                if(service.name == "ldap.LdapService"){
+                    let s = new LdapServiceSetting(service, serviceSetting)
+                }else if(service.name == "slq.SqlService"){
+                    let s = new SqlServiceSetting(service, serviceSetting)
+                }else if(service.name == "persistence.PersistenceService"){
+                    let s = new PersistenceServiceSetting(service, serviceSetting)
+                }else{
+                   s = new ServiceSetting(service, serviceSetting)
+                }
+
+                this.servicesSettings.push(s)
 
                 // Now I will set the actions 
                 let startServiceBtn = div.querySelector("#start-service-btn-" + service.Id)
@@ -260,8 +272,8 @@ export class ServicesSettings extends Settings {
 }
 
 export class ServiceSetting {
-    private service: any;
-    private needSave:boolean;
+    protected service: any;
+    protected needSave:boolean;
     
 
     constructor(service: any, serviceSetting: any) {
@@ -406,5 +418,30 @@ export class ServiceSetting {
         }).catch(err=>{
             ApplicationView.displayMessage(err, 3000)
         })
+    }
+}
+
+// Now specific settings...
+// LDAP
+export class LdapServiceSetting extends ServiceSetting {
+
+    constructor(service: any, serviceSetting: any){
+        super(service, serviceSetting)
+    }
+}
+
+// SQL
+export class SqlServiceSetting extends ServiceSetting {
+
+    constructor(service: any, serviceSetting: any){
+        super(service, serviceSetting)
+    }
+}
+
+// Persistence
+export class PersistenceServiceSetting extends ServiceSetting {
+
+    constructor(service: any, serviceSetting: any){
+        super(service, serviceSetting)
     }
 }

@@ -385,9 +385,23 @@ globular-file-explorer{
 @media only screen and (max-width: 600px) {
 
 
-   globular-blog-post, globular-terminal{
+   globular-blog-post {
       grid-row-start: 1;
       grid-column-start: 1;
+      grid-column-end: 17;
+   }
+
+   globular-terminal{
+      grid-row-start: 1;
+      grid-row-end: 3;
+      grid-column-end: 1;
+      grid-column-end: 17;
+   }
+
+   globular-console{
+      grid-row-start: 3;
+      grid-row-end: 5;
+      grid-column-end: 1;
       grid-column-end: 17;
    }
 
@@ -419,8 +433,22 @@ globular-file-explorer{
 @media only screen and (max-width: 1024px) and (min-width: 600px)  {
 
    /** Blog post **/
-   globular-blog-post, globular-terminal{
+   globular-blog-post{
       grid-row-start: 1;
+      grid-column-start: 3;
+      grid-column-end: 15;
+   }
+
+   globular-terminal{
+      grid-row-start: 1;
+      grid-row-end: 3;
+      grid-column-start: 3;
+      grid-column-end: 15;
+   }
+
+   globular-console{
+      grid-row-start: 3;
+      grid-row-end: 5;
       grid-column-start: 3;
       grid-column-end: 15;
    }
@@ -451,8 +479,22 @@ globular-file-explorer{
 
 /** Large */
 @media only screen and (max-width: 1800px) and (min-width: 1024px) {
-   globular-blog-post, globular-terminal{
+   globular-blog-post{
       grid-row-start: 1;
+      grid-column-start: 5;
+      grid-column-end: 13;
+   }
+
+   globular-terminal{
+      grid-row-start: 1;
+      grid-row-end: 3;
+      grid-column-start: 5;
+      grid-column-end: 13;
+   }
+
+   globular-console{
+      grid-row-start: 3;
+      grid-row-end: 5;
       grid-column-start: 5;
       grid-column-end: 13;
    }
@@ -491,10 +533,26 @@ globular-file-explorer{
 
 /** x-large **/
 @media only screen and (min-width: 1800px) {
-   globular-blog-post, globular-terminal{
+
+   globular-blog-post{
       grid-row-start: 1;
       grid-column-start: 6;
       grid-column-end: 12;
+   }
+
+   globular-terminal{
+      grid-row-start: 1;
+      grid-row-end: 3;
+      grid-column-start: 4;
+      grid-column-end: 14;
+   }
+
+   
+   globular-console{
+      grid-row-start: 3;
+      grid-row-end: 5;
+      grid-column-start: 4;
+      grid-column-end: 14;
    }
 
    globular-settings-panel, globular-blog-posts{
