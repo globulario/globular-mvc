@@ -1538,7 +1538,7 @@ export class ActionSetting extends Setting {
     this.shadowRoot.appendChild(range.createContextualFragment(html))
     this.onclick = onclick
     this.shadowRoot.getElementById("btn").onclick = () => {
-      if (this.onclick != nil) {
+      if (this.onclick != null) {
         this.onclick()
       }
     }

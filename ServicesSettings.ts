@@ -3,6 +3,7 @@ import { SettingsMenu, SettingsPanel, ComplexSetting, ActionSetting, OnOffSettin
 import { ApplicationView } from "./ApplicationView";
 import * as servicesManager from "globular-web-client/services_manager/services_manager_pb"
 import { Model } from "./Model";
+import { Application } from "./Application";
 
 export class ServicesSettings extends Settings {
     private services: any
@@ -123,7 +124,19 @@ export class ServicesSettings extends Settings {
 
                 let div = <any>serviceSetting.getDescriptionDiv()
                 div.appendChild(range.createContextualFragment(serviceToolBar))
-                this.servicesSettings.push(new ServiceSetting(service, serviceSetting))
+
+                let s: ServiceSetting
+                if(service.Name == "ldap.LdapService"){
+                    let s = new LdapServiceSetting(service, serviceSetting)
+                }else if(service.Name == "slq.SqlService"){
+                    let s = new SqlServiceSetting(service, serviceSetting)
+                }else if(service.Name == "persistence.PersistenceService"){
+                    let s = new PersistenceServiceSetting(service, serviceSetting)
+                }else{
+                   s = new ServiceSetting(service, serviceSetting)
+                }
+
+                this.servicesSettings.push(s)
 
                 // Now I will set the actions 
                 let startServiceBtn = div.querySelector("#start-service-btn-" + service.Id)
@@ -260,13 +273,25 @@ export class ServicesSettings extends Settings {
 }
 
 export class ServiceSetting {
-    private service: any;
-    private needSave:boolean;
+    protected service: any;
+    protected needSave:boolean;
     
 
     constructor(service: any, serviceSetting: any) {
         this.service = service;
         this.needSave = false;
+
+        // Now The actions...
+        let updateServiceAction = new ActionSetting("Update", "Update service to the last version", () => {
+            console.log("update service call")
+        })
+        serviceSetting.addSetting(updateServiceAction)
+
+        let uninstallServiceAction = new ActionSetting("Uninstall", "Uninstall the service", () => {
+            console.log("uninstall services")
+        })
+
+        serviceSetting.addSetting(uninstallServiceAction)
 
         // Here I will display the non editable informations...
         let descriptionSetting = new ReadOnlyStringSetting("Description", "")
@@ -374,17 +399,6 @@ export class ServiceSetting {
         corsOriginsSettings_.addSetting(corsOriginsSettings)
         serviceSetting.addSetting(corsOriginsSettings_)
 
-        // Now The actions...
-        let updateServiceAction = new ActionSetting("Update", "Update service to the last version", () => {
-            console.log("update service call")
-        })
-        serviceSetting.addSetting(updateServiceAction)
-
-        let uninstallServiceAction = new ActionSetting("Uninstall", "Uninstall the service", () => {
-            console.log("uninstall services")
-        })
-
-        serviceSetting.addSetting(uninstallServiceAction)
     }
 
     save() {
@@ -406,5 +420,41 @@ export class ServiceSetting {
         }).catch(err=>{
             ApplicationView.displayMessage(err, 3000)
         })
+    }
+}
+
+// Now specific settings...
+// LDAP
+export class LdapServiceSetting extends ServiceSetting {
+
+    constructor(service: any, serviceSetting: any){
+        super(service, serviceSetting)
+
+        let syncLdap = new ActionSetting("Sync", "synchronize ldap and globular account and groups", () => {
+            // Application.globular.ldapService.
+            console.log("sync ldap")
+        })
+
+        // Append the synch button
+        serviceSetting.addSetting(syncLdap)
+    }
+
+
+
+}
+
+// SQL
+export class SqlServiceSetting extends ServiceSetting {
+
+    constructor(service: any, serviceSetting: any){
+        super(service, serviceSetting)
+    }
+}
+
+// Persistence
+export class PersistenceServiceSetting extends ServiceSetting {
+
+    constructor(service: any, serviceSetting: any){
+        super(service, serviceSetting)
     }
 }

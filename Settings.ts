@@ -111,6 +111,10 @@ export class UserSettings extends Settings {
                     localStorage.setItem("globular_theme", value)
                     html.setAttribute("theme", value)
                 }
+            }else{
+                localStorage.setItem(account.id + "_theme", value)
+                localStorage.setItem("globular_theme", value)
+                html.setAttribute("theme", value)
             }
         }
         let theme = localStorage.getItem(account.id + "_theme")
@@ -118,8 +122,10 @@ export class UserSettings extends Settings {
         if (theme != null) {
             displayModeSelector.setValue(theme)
             html.setAttribute("theme", theme)
-        }else{
+        }else if(html.getAttribute("theme")!=null){
             displayModeSelector.setValue(html.getAttribute("theme"))
+        }else{
+            displayModeSelector.setValue("light")
         }
         generalSettings.addSetting(displayModeSelector)
 

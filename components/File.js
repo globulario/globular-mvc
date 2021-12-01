@@ -28,6 +28,7 @@ import { ApplicationView } from '../ApplicationView';
 import { Application } from '../Application';
 import { RunCmdRequest } from 'globular-web-client/admin/admin_pb';
 import { GetSharedResourceRqst, SubjectType } from 'globular-web-client/rbac/rbac_pb';
+import { randomUUID } from './utility';
 
 function escapePathSpace(path) {
     /*let values = path.split("/")
@@ -116,10 +117,10 @@ function _readDir(path, callback, errorCallback) {
 
 }
 
-function _publishSetDirEvent(path) {
+function _publishSetDirEvent(path, file_explorer_id) {
     _readDir(path, (dir) => {
         console.log(dir)
-        Model.eventHub.publish("set_dir_event", dir, true)
+        Model.eventHub.publish("__set_dir_event__", { path: dir, file_explorer_id: file_explorer_id }, true)
     }, err => { console.log(err) })
 }
 
@@ -129,6 +130,8 @@ function _publishSetDirEvent(path) {
 export class FilesView extends HTMLElement {
     constructor() {
         super()
+
+
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
 
@@ -615,13 +618,15 @@ export class FilesView extends HTMLElement {
 
     init() {
         // The the path
-        Model.eventHub.subscribe("set_dir_event",
+        Model.eventHub.subscribe("__set_dir_event__",
             (uuid) => {
                 /** Nothin here. */
             },
-            (dir) => {
-                this.__dir__ = dir
-                this.setDir(dir)
+            (evt) => {
+                if (this._file_explorer_.id == evt.file_explorer_id) {
+                    this.__dir__ = evt.path
+                    this.setDir(evt.path)
+                }
             }, true, this
         )
 
@@ -913,12 +918,12 @@ export class FilesView extends HTMLElement {
                     toast.dismiss();
                 }
 
-            } 
+            }
 
         } else if (evt.dataTransfer.files.length > 0) {
             // So here I will simply upload the files...
             Model.eventHub.publish("__upload_files_event__", { path: this.__dir__.path, files: evt.dataTransfer.files, lnk: lnk }, true)
-        } 
+        }
     }
 }
 
@@ -1102,11 +1107,11 @@ export class FilesListView extends FilesView {
             span.onclick = (evt) => {
                 evt.stopPropagation();
                 if (f.mime.startsWith("video")) {
-                    Model.eventHub.publish("__play_video__", f.path, true)
+                    Model.eventHub.publish("__play_video__", { path: f.path, file_explorer_id: this._file_explorer_.id }, true)
                 } else if (f.isDir) {
-                    _publishSetDirEvent(f._path)
+                    _publishSetDirEvent(f._path, this._file_explorer_.id)
                 } else if (f.mime.startsWith("image")) {
-                    Model.eventHub.publish("__show_image__", f.path, true)
+                    Model.eventHub.publish("__show_image__", { path: f.path, file_explorer_id: this._file_explorer_.id }, true)
                 }
                 this.menu.close()
             }
@@ -1173,7 +1178,7 @@ export class FilesListView extends FilesView {
                     let lnk = this.div.getElementsByClassName("file-lnk-ico")[0]
                     lnk.onclick = (evt) => {
                         evt.stopPropagation();
-                        _publishSetDirEvent(f._path)
+                        _publishSetDirEvent(f._path, this._file_explorer_.id)
                     }
 
                     lnk.onmouseover = () => {
@@ -1507,7 +1512,7 @@ export class FilesIconView extends FilesView {
 
                     fileIconDiv.onclick = (evt) => {
                         evt.stopPropagation();
-                        _publishSetDirEvent(file._path)
+                        _publishSetDirEvent(file._path, this._file_explorer_.id)
                     }
 
                     folderIcon.draggable = false
@@ -1528,6 +1533,8 @@ export class FilesIconView extends FilesView {
                                 fileNameSpan.style.maxWidth = w + "px";
                             })
 
+                            // keep the explorer link...
+                            preview._file_explorer_ = this._file_explorer_
                             preview.name = file.name;
                             preview.onpreview = () => {
                                 let previews = this.div.querySelectorAll("globular-video-preview")
@@ -1557,13 +1564,13 @@ export class FilesIconView extends FilesView {
                     if (fileType == "image") {
                         img.onclick = (evt) => {
                             evt.stopPropagation();
-                            Model.eventHub.publish("__show_image__", file.path, true)
+                            Model.eventHub.publish("__show_image__", { path: file.path, file_explorer_id: this._file_explorer_.id }, true)
                         }
                     } else if (fileType == "audio") {
 
                         img.onclick = (evt) => {
                             evt.stopPropagation();
-                            Model.eventHub.publish("__play_audio__", file.path, true)
+                            Model.eventHub.publish("__play_audio__", { path: file.path, file_explorer_id: this._file_explorer_.id }, true)
                         }
 
                     } else {
@@ -1571,7 +1578,7 @@ export class FilesIconView extends FilesView {
 
                         img.onclick = (evt) => {
                             evt.stopPropagation();
-                            Model.eventHub.publish("__read_file__", file.path, true)
+                            Model.eventHub.publish("__read_file__", { path: file.path, file_explorer_id: this._file_explorer_.id }, true)
                         }
                     }
                 }
@@ -1725,12 +1732,14 @@ export class PathNavigator extends HTMLElement {
 
     init() {
         // The the path
-        Model.eventHub.subscribe("set_dir_event",
+        Model.eventHub.subscribe("__set_dir_event__",
             (uuid) => {
                 /** Nothin here. */
             },
-            (dir) => {
-                this.setDir(dir)
+            (evt) => {
+                if (this._file_explorer_.id == evt.file_explorer_id) {
+                    this.setDir(evt.path)
+                }
             }, true, this
         )
     }
@@ -1832,7 +1841,7 @@ export class PathNavigator extends HTMLElement {
 
                                 subDirSpan.onclick = (evt) => {
                                     evt.stopPropagation()
-                                    _publishSetDirEvent(subDir._path)
+                                    _publishSetDirEvent(subDir._path, this._file_explorer_.id)
                                     directoriesDiv.style.display = "none"
                                     btn.icon = "icons:chevron-right"
                                 }
@@ -1881,7 +1890,7 @@ export class PathNavigator extends HTMLElement {
                 evt.stopPropagation();
                 _readDir(path_, (dir) => {
                     // Send read dir event.
-                    _publishSetDirEvent(dir._path)
+                    _publishSetDirEvent(dir._path, this._file_explorer_.id)
                 }, this.onerror)
             }
 
@@ -2138,7 +2147,7 @@ export class FileNavigator extends HTMLElement {
 
         dirLnk.onclick = (evt) => {
             evt.stopPropagation();
-            _publishSetDirEvent(dir._path)
+            _publishSetDirEvent(dir._path, this._file_explorer_.id)
         }
 
         dirLnk.onmouseover = () => {
@@ -2326,6 +2335,10 @@ export class FileExplorer extends HTMLElement {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
+
+        // The file expoler id...
+        this.id = "_" + randomUUID()
+        this.setAttribute("id", this.id)
 
         // The active explorer path.
         this.path = undefined
@@ -2535,6 +2548,9 @@ export class FileExplorer extends HTMLElement {
         this.filesListView = this.shadowRoot.querySelector("#globular-files-list-view")
         this.filesIconView = this.shadowRoot.querySelector("#globular-files-icon-view")
 
+        // Keep reference to the file explorer...
+        this.filesListView._file_explorer_ = this.filesIconView._file_explorer_ = this
+
         // The permission manager
         this.permissionManager = new PermissionsManager()
 
@@ -2556,9 +2572,11 @@ export class FileExplorer extends HTMLElement {
 
         // The path navigator
         this.pathNavigator = this.shadowRoot.querySelector("#globular-path-navigator")
+        this.pathNavigator._file_explorer_ = this 
 
         // The file navigator.
         this.fileNavigator = this.shadowRoot.querySelector("#globular-file-navigator")
+        this.fileNavigator._file_explorer_ = this
 
         this.filesListBtn = this.shadowRoot.querySelector("#files-list-btn")
         this.fileIconBtn = this.shadowRoot.querySelector("#files-icon-btn")
@@ -2608,7 +2626,7 @@ export class FileExplorer extends HTMLElement {
             this.fileExplorerBox.style.bottom = "0px";
             this.fileExplorerBox.style.right = "0px";
             this.fileExplorerBox.style.left = "0px";
-    
+
             // set buttons.
             this.enterFullScreenBtn.style.display = "none"
             this.exitFullScreenBtn.style.display = "block"
@@ -2621,7 +2639,7 @@ export class FileExplorer extends HTMLElement {
             let index = this.navigations.indexOf(this.path)
             index--
             if (index < this.navigations.length && index > -1) {
-                _publishSetDirEvent(this.navigations[index])
+                _publishSetDirEvent(this.navigations[index], this.id)
             }
         }
 
@@ -2630,7 +2648,7 @@ export class FileExplorer extends HTMLElement {
             let index = this.navigations.indexOf(this.path)
             index++
             if (index < this.navigations.length && index > -1) {
-                _publishSetDirEvent(this.navigations[index])
+                _publishSetDirEvent(this.navigations[index], this.id)
             }
         }
 
@@ -2639,7 +2657,7 @@ export class FileExplorer extends HTMLElement {
             if (this.path.split("/").length > 2) {
                 this.path = this.path.substring(0, this.path.lastIndexOf("/"))
 
-                _publishSetDirEvent(this.path)
+                _publishSetDirEvent(this.path, this.id)
             }
         }
 
@@ -2785,7 +2803,7 @@ export class FileExplorer extends HTMLElement {
 
             _readDir(this.root, (dir) => {
 
-                _publishSetDirEvent(this.path)
+                _publishSetDirEvent(this.path, this.id)
 
                 // Clear selection.
                 this.filesListView.clearSelection()
@@ -2847,15 +2865,17 @@ export class FileExplorer extends HTMLElement {
         // Init file upload event listener...
         this.filesUploader.init();
 
-        if (this.listeners["set_dir_event"] == undefined) {
+        if (this.listeners["__set_dir_event__"] == undefined) {
 
-            Model.eventHub.subscribe("set_dir_event",
+            Model.eventHub.subscribe("__set_dir_event__",
                 (uuid) => {
-                    this.listeners["set_dir_event"] = uuid;
+                    this.listeners["__set_dir_event__"] = uuid;
                 },
-                (dir) => {
+                (evt) => {
                     // keep the active path.
-                    this.setDir(dir)
+                    if (this.id == evt.file_explorer_id) {
+                        this.setDir(evt.path)
+                    }
                 }, true
             )
         }
@@ -2867,7 +2887,7 @@ export class FileExplorer extends HTMLElement {
                     this.listeners["file_rename_event"] = uuid;
                 }, (path) => {
                     if (path.startsWith(this.getRoot())) {
-                        _publishSetDirEvent(this.path)
+                        _publishSetDirEvent(this.path, this.id)
                     }
                 }, false, this)
         }
@@ -2896,7 +2916,7 @@ export class FileExplorer extends HTMLElement {
                 }, (path) => {
                     _readDir(path, (dir) => {
                         if (dir.path == this.path) {
-                            Model.eventHub.publish("set_dir_event", dir, true)
+                            Model.eventHub.publish("__set_dir_event__", { path: dir, file_explorer_id: this.id }, true)
                         }
                         this.fileNavigator.reload(dir)
                     }, () => { }, true)
@@ -2921,9 +2941,10 @@ export class FileExplorer extends HTMLElement {
         if (this.listeners["__play_video__"] == undefined) {
             Model.eventHub.subscribe("__play_video__", (uuid) => {
                 this.listeners["__play_video__"] = uuid
-            }, (path) => {
-                this.playVideo(path)
-
+            }, (evt) => {
+                if (this.id == evt.file_explorer_id) {
+                    this.playVideo(evt.path)
+                }
             }, true)
         }
 
@@ -2931,8 +2952,10 @@ export class FileExplorer extends HTMLElement {
         if (this.listeners["__play_audio__"] == undefined) {
             Model.eventHub.subscribe("__play_audio__", (uuid) => {
                 this.listeners["__play_audio__"] = uuid
-            }, (path) => {
-                this.playAudio(path)
+            }, (evt) => {
+                if (this.id == evt.file_explorer_id) {
+                    this.playAudio(evt.path)
+                }
 
             }, true)
         }
@@ -2941,8 +2964,10 @@ export class FileExplorer extends HTMLElement {
         if (this.listeners["__read_file__"] == undefined) {
             Model.eventHub.subscribe("__read_file__", (uuid) => {
                 this.listeners["__read_file__"] = uuid
-            }, (path) => {
-                this.readFile(path)
+            }, (evt) => {
+                if (this.id == evt.file_explorer_id) {
+                    this.readFile(evt.path)
+                }
             }, true, this)
         }
 
@@ -2950,10 +2975,10 @@ export class FileExplorer extends HTMLElement {
         if (this.listeners["__show_image__"] == undefined) {
             Model.eventHub.subscribe("__show_image__", (uuid) => {
                 this.listeners["__show_image__"] = uuid
-            }, (path) => {
-
-                this.showImage(path)
-
+            }, (evt) => {
+                if (this.id == evt.file_explorer_id) {
+                    this.showImage(evt.path)
+                }
 
             }, true)
         }
@@ -3228,7 +3253,7 @@ export class FileExplorer extends HTMLElement {
 
                     navigationLine.onclick = () => {
                         navigationLst.style.display = "none"
-                        _publishSetDirEvent(this.navigations[index])
+                        _publishSetDirEvent(this.navigations[index], this.id)
                     }
                 }
             }
@@ -3535,7 +3560,7 @@ export class VideoPreview extends HTMLElement {
      * Play video
      */
     play() {
-        Model.eventHub.publish("__play_video__", this.path, true)
+        Model.eventHub.publish("__play_video__", { path: this.path, file_explorer_id: this._file_explorer_.id }, true)
         if (this.onplay != undefined) {
             this.onplay(this.path)
         }

@@ -3,6 +3,7 @@ import { Globular } from "globular-web-client";
 import { GetFileInfoRequest, RunCmdRequest } from "globular-web-client/admin/admin_pb";
 import { DisconnectResponse } from "globular-web-client/conversation/conversation_pb";
 import { ReadDirRequest } from "globular-web-client/file/file_pb";
+import { TargetsRequest } from "globular-web-client/monitoring/monitoring_pb";
 import { Application } from "../Application";
 import { File } from "../File";
 import { theme } from "./Theme";
@@ -17,6 +18,10 @@ export class Terminal extends HTMLElement {
     // Create the applicaiton view.
     constructor() {
         super()
+
+        this.onenterfullscreen = null
+        this.onexitfullscreen = null
+
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
 
@@ -104,7 +109,7 @@ export class Terminal extends HTMLElement {
                 <paper-icon-button icon="icons:fullscreen" id="enter-full-screen-btn"></paper-icon-button>
                 <paper-icon-button icon="icons:fullscreen-exit" id="exit-full-screen-btn" style="display: none;"></paper-icon-button>
             </div>
-            <div id="container" style="flex-grow: 1; height: 55vh; overflow-y: auto;">
+            <div id="container" style="flex-grow: 1; height: 50vh; overflow-y: auto;">
                 <div class="oupout" style=""> 
 
                 </div>
@@ -160,27 +165,30 @@ export class Terminal extends HTMLElement {
         this.exitFullScreenBtn.onclick = () => {
             this.enterFullScreenBtn.style.display = "block"
             this.exitFullScreenBtn.style.display = "none"
-            this.shadowRoot.querySelector("paper-card").style.marginTop = "7px"
             this.style.position = ""
             this.style.top = ""
             this.style.bottom = ""
             this.style.right = ""
             this.style.left = ""
-            this.shadowRoot.querySelector("#container").style.height = "55vh "
-
+            this.shadowRoot.querySelector("#container").style.height = "50vh "
+            document.querySelector("globular-console").style.display = ""
+            if(this.onexitfullscreen){
+                this.onexitfullscreen()
+            }
         }
 
         this.enterFullScreenBtn.onclick = () => {
-            this.shadowRoot.querySelector("paper-card").style.marginTop = "0px"
             this.style.position = "absolute"
             this.style.top = "60px"
             this.style.bottom = "00px"
             this.style.right = "0px"
             this.style.left = "0px"
-            //this.shadowRoot.querySelector("#container").style.height = "calc(79vh - 70px)"
-
             this.enterFullScreenBtn.style.display = "none"
             this.exitFullScreenBtn.style.display = "block"
+            
+            if(this.onenterfullscreen){
+                this.onenterfullscreen()
+            }
         }
     }
 
