@@ -53,6 +53,12 @@ export class PeersManager extends HTMLElement {
                       min-width: 380px;
                     }
                   }
+
+                  #create-peer-card{
+                    width: 400px;
+                    right: 0px;
+                    position: absolute;
+                  }
           
              </style>
              <div id="container">
@@ -85,6 +91,48 @@ export class PeersManager extends HTMLElement {
                     console.log("no peers found")
                     ApplicationView.displayMessage(err, 3000) 
                 })
+        }
+
+        // Here I will dispay the create peer card.
+        this.shadowRoot.querySelector("#create-peer-btn").onclick = ()=>{
+            let panel = this.shadowRoot.querySelector("#create-peer-card")
+            if(panel != null){
+                setTimeout(() => {
+                    panel.querySelector("paper-input").focus()
+                  }, 100)
+                return
+            }
+
+            let html = `
+            <paper-card id="create-peer-card">
+                <div style="display: flex; align-items: center;">
+                    <div style="flex-grow: 1; padding: 5px;">
+                        Send a connection request to peer at domain
+                    </div>
+                    <paper-icon-button id="cancel-btn" icon="close"></paper-icon-button>
+                </div>
+                <div style="display: flex; flex-direction: column; padding: 10px;">
+                    <paper-input  label="Domain"></paper-input>
+                    <paper-button style="align-self: end;">Create</paper-button>
+                </div>
+            </paper-card>
+            `
+
+            // The query selector.
+            container.appendChild(document.createRange().createContextualFragment(html))
+            panel = this.shadowRoot.querySelector("#create-peer-card")
+
+            // Now the actions.
+            let closeBtn = panel.querySelector("#cancel-btn")
+            closeBtn.onclick = () => {
+                panel.parentNode.removeChild(panel)
+            }
+
+            let input = panel.querySelector("paper-input")
+            setTimeout(()=>{
+                input.focus()
+            }, 100)
+
         }
 
         // call once
@@ -150,7 +198,7 @@ export class PeerPanel extends HTMLElement {
                 <paper-icon-button id="delete-peer-btn" icon="delete"></paper-icon-button>
                 <span class="title">${this.peer.getName()}</span>
                 <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
-                    <iron-icon  id="hide-btn"  icon="unfold-less" style="flex-grow: 1; --iron-icon-fill-color:var(--palette-text-primary);" icon="add"></iron-icon>
+                    <iron-icon  id="hide-btn"  icon="unfold-less" style="flex-grow: 1; --iron-icon-fill-color:var(--palette-text-primary);" icon="unfold-more"></iron-icon>
                     <paper-ripple class="circle" recenters=""></paper-ripple>
                 </div>
             </div>

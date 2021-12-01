@@ -42,6 +42,18 @@ function escapePathSpace(path) {
     return path
 }
 
+// keep track of shared directory
+var shared = {}
+
+function markAsShare(dir){
+    shared[dir.path] = {};
+    dir._files.forEach(f=>{
+        if(f._isDir){
+            markAsShare(f)
+        }
+    })
+}
+
 function getElementIndex(element) {
     return Array.from(element.parentNode.children).indexOf(element);
 }
@@ -928,7 +940,7 @@ export class FilesListView extends FilesView {
      */
     setDir(dir) {
         // if the dire is hidden or the dir is the user dir... 
-        if (dir.name.startsWith(".") || !(dir.path.startsWith("/shared") || dir.path.startsWith("/applications/" + Application.application) || dir.path.startsWith("/users/" + Application.account.id))) {
+        if (dir.name.startsWith(".") || !(dir.path.startsWith("/shared")  || shared[dir.path] != undefined  || dir.path.startsWith("/applications/" + Application.application) || dir.path.startsWith("/users/" + Application.account.id))) {
             return;
         }
 
@@ -1203,7 +1215,7 @@ export class FilesIconView extends FilesView {
      */
     setDir(dir) {
 
-        if (dir.name.startsWith(".") || !(dir.path.startsWith("/shared") || dir.path.startsWith("/applications/" + Application.application) || dir.path.startsWith("/users/" + Application.account.id))) {
+        if (dir.name.startsWith(".") || !(dir.path.startsWith("/shared")  || shared[dir.path] != undefined || dir.path.startsWith("/applications/" + Application.application) || dir.path.startsWith("/users/" + Application.account.id))) {
             return;
         }
 
@@ -1726,7 +1738,7 @@ export class PathNavigator extends HTMLElement {
     // Set the directory.
     setDir(dir) {
 
-        if (this.path == dir._path || !(dir.path.startsWith("/shared") || dir.path.startsWith("/applications/" + Application.application) || dir.path.startsWith("/users/" + Application.account.id))) {
+        if (this.path == dir._path || !(dir.path.startsWith("/shared")  || shared[dir.path] != undefined || dir.path.startsWith("/applications/" + Application.application) || dir.path.startsWith("/users/" + Application.account.id))) {
             return;
         }
 
@@ -2142,7 +2154,7 @@ export class FileNavigator extends HTMLElement {
     // Set the directory.
     setDir(dir) {
         console.log("set file navigation to dir: ", dir)
-        if (this.dir == dir || !(dir.path.startsWith("/shared")  || dir.path.startsWith("/applications/" + Application.application) || dir.path.startsWith("/users/" + Application.account.id))) {
+        if (this.dir == dir || !(dir.path.startsWith("/shared")  || shared[dir.path] != undefined || shared[dir.path] != undefined || dir.path.startsWith("/applications/" + Application.application) || dir.path.startsWith("/users/" + Application.account.id))) {
             return;
         }
 
@@ -2157,6 +2169,9 @@ export class FileNavigator extends HTMLElement {
     initShared() {
         this.sharedDiv.innerHTML = ""
         this.shared = {}
+
+        // keep track of all sub-dir...
+        shared = {}
 
         // Init the share info
         let initShared = (share, callback) => {
@@ -2181,6 +2196,9 @@ export class FileNavigator extends HTMLElement {
             }
 
             _readDir(share.getPath(), dir => {
+                // used by set dir...
+                markAsShare(dir)
+
                 // From the path I will get the user id who share the file and 
                 // create a local directory if none exist...
                 if (this.shared[userId].files.find(f => f.path == dir.path) == undefined) {
@@ -2221,7 +2239,7 @@ export class FileNavigator extends HTMLElement {
                                     callback()
                                 }
                             }
-                        }, e => console.log("========>", e))
+                        }, e => console.log(e))
                 }
             })
         }
@@ -2242,14 +2260,12 @@ export class FileNavigator extends HTMLElement {
 
                 let callback = () => {
                     let s = rsp.getSharedresourceList().pop()
-                    console.log("--------------------------> 2247 ", s)
                     if (s != undefined) {
                         initShared(s, callback)
                     } else {
                         for (const id in this.shared) {
                             let shared = this.shared[id]
                             this.initTreeView(shared, this.sharedDiv, 0)
-                            console.log("--------------------------> 2253 ", shared.path)
                             Model.eventHub.publish("reload_dir_event", shared.path, false);
                         }
                     }
@@ -3098,7 +3114,9 @@ export class FileExplorer extends HTMLElement {
     }
 
     setDir(dir) {
-        if(!(dir.path.startsWith("/shared") || dir.path.startsWith("/applications/" + Application.application) || dir.path.startsWith("/users/" + Application.account.id))){
+
+
+        if(!(dir.path.startsWith("/shared")  || shared[dir.path] != undefined || shared[dir.path] != undefined ||  dir.path.startsWith("/applications/" + Application.application) || dir.path.startsWith("/users/" + Application.account.id))){
             return
         }
 
