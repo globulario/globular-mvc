@@ -394,14 +394,14 @@ globular-file-explorer{
    globular-terminal{
       grid-row-start: 1;
       grid-row-end: 3;
-      grid-column-end: 1;
+      grid-column-start: 1;
       grid-column-end: 17;
    }
 
    globular-console{
       grid-row-start: 3;
       grid-row-end: 5;
-      grid-column-end: 1;
+      grid-column-start: 1;
       grid-column-end: 17;
    }
 

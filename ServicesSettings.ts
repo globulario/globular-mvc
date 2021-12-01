@@ -3,6 +3,7 @@ import { SettingsMenu, SettingsPanel, ComplexSetting, ActionSetting, OnOffSettin
 import { ApplicationView } from "./ApplicationView";
 import * as servicesManager from "globular-web-client/services_manager/services_manager_pb"
 import { Model } from "./Model";
+import { Application } from "./Application";
 
 export class ServicesSettings extends Settings {
     private services: any
@@ -125,11 +126,11 @@ export class ServicesSettings extends Settings {
                 div.appendChild(range.createContextualFragment(serviceToolBar))
 
                 let s: ServiceSetting
-                if(service.name == "ldap.LdapService"){
+                if(service.Name == "ldap.LdapService"){
                     let s = new LdapServiceSetting(service, serviceSetting)
-                }else if(service.name == "slq.SqlService"){
+                }else if(service.Name == "slq.SqlService"){
                     let s = new SqlServiceSetting(service, serviceSetting)
-                }else if(service.name == "persistence.PersistenceService"){
+                }else if(service.Name == "persistence.PersistenceService"){
                     let s = new PersistenceServiceSetting(service, serviceSetting)
                 }else{
                    s = new ServiceSetting(service, serviceSetting)
@@ -280,6 +281,18 @@ export class ServiceSetting {
         this.service = service;
         this.needSave = false;
 
+        // Now The actions...
+        let updateServiceAction = new ActionSetting("Update", "Update service to the last version", () => {
+            console.log("update service call")
+        })
+        serviceSetting.addSetting(updateServiceAction)
+
+        let uninstallServiceAction = new ActionSetting("Uninstall", "Uninstall the service", () => {
+            console.log("uninstall services")
+        })
+
+        serviceSetting.addSetting(uninstallServiceAction)
+
         // Here I will display the non editable informations...
         let descriptionSetting = new ReadOnlyStringSetting("Description", "")
         descriptionSetting.setValue(service.Description)
@@ -386,17 +399,6 @@ export class ServiceSetting {
         corsOriginsSettings_.addSetting(corsOriginsSettings)
         serviceSetting.addSetting(corsOriginsSettings_)
 
-        // Now The actions...
-        let updateServiceAction = new ActionSetting("Update", "Update service to the last version", () => {
-            console.log("update service call")
-        })
-        serviceSetting.addSetting(updateServiceAction)
-
-        let uninstallServiceAction = new ActionSetting("Uninstall", "Uninstall the service", () => {
-            console.log("uninstall services")
-        })
-
-        serviceSetting.addSetting(uninstallServiceAction)
     }
 
     save() {
@@ -427,7 +429,18 @@ export class LdapServiceSetting extends ServiceSetting {
 
     constructor(service: any, serviceSetting: any){
         super(service, serviceSetting)
+
+        let syncLdap = new ActionSetting("Sync", "synchronize ldap and globular account and groups", () => {
+            // Application.globular.ldapService.
+            console.log("sync ldap")
+        })
+
+        // Append the synch button
+        serviceSetting.addSetting(syncLdap)
     }
+
+
+
 }
 
 // SQL
