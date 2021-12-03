@@ -24,8 +24,6 @@ export class Console extends HTMLElement {
         this.shadowRoot.innerHTML = `
          <style>
              ${theme}
-   
-
              paper-card{
                 position: relative;
                 display: flex;
