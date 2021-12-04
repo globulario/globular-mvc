@@ -362,7 +362,7 @@ export class HostInfos extends HTMLElement {
 
             #container{
                 display: table;
-                width: 99%;
+                width: 98%;
                 height: 100%;
             }
 
