@@ -8,6 +8,9 @@ import { Application } from "../Application";
 import { GetProcessInfosRequest } from "globular-web-client/admin/admin_pb";
 import { ApplicationView } from "../ApplicationView";
 import { v4 as uuidv4 } from "uuid";
+import { Chart, registerables } from 'chart.js';
+
+Chart.register(...registerables);
 
 function secondsToDhms(seconds) {
     seconds = Number(seconds);
@@ -528,6 +531,10 @@ export class ResourcesDisplay extends HTMLElement {
                         <div class="cell value" id="cpu-model-name-div"></div>
                     </div>
                     <div class="row">
+                        <div class="cell label">Vendor</div>
+                        <div class="cell value" id="cpu-vendor-div"></div>
+                    </div>
+                    <div class="row">
                         <div class="cell label">Speed</div>
                         <div class="cell value" id="cpu-speed-div"></div>
                     </div>
@@ -536,31 +543,124 @@ export class ResourcesDisplay extends HTMLElement {
                         <div class="cell value" id="cpu-threads-div"></div>
                     </div>
                 </div>
+                <div id="cpu-utilizations-chart-div">
+                   <slot></slot>
+                </div>
                 <div id="cpu-utilizations-div">
 
                 </div>
             </div>
         </div>
         `
+        // Create the context for the chart.
+        this.canvas = document.createElement("canvas")
+        this.canvas.id = "myChart"
+        this.canvas.style.width = "100%"
+        this.canvas.style.maxHeight = "500px"
+        this.appendChild(this.canvas)
     }
 
+    setChartData(infos){
+        let index = 0;
+        infos.cpu.utilizations.forEach(val => {
+            let dataset = this.threadsChart.data.datasets[index]
+            dataset.data.push(parseFloat(val.utilization))
+            dataset.data.shift()
+            index++
+        })
+
+        console.log( this.threadsChart.data.datasets)
+        this.threadsChart.update()
+    }
+
+    drawChart(infos, colors) {
+        const ctx = document.getElementById('myChart').getContext('2d');
+        var xValues = []
+        for(let i=60; i >0; i--){
+            if(i%10==0){
+                xValues.push(i + "s")
+            }else if(i==1){
+                xValues.push("0s")
+            }else{
+                xValues.push("")
+            }
+        }
+
+        this.threadsChart = new Chart(ctx, {
+            type: "line",
+            data: {
+                labels: xValues,
+                datasets: [
+                ]
+            },
+            options: {
+                animation: {
+                    duration: 0
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                },
+                tooltips: {
+                    enabled: false
+                },
+                scales: {
+                    yAxes: [{
+                        display: true,
+                        ticks: {
+                            beginAtZero: true,
+                            steps: 10,
+                            stepValue: 5,
+                            max: 100
+                        }
+                    }]
+                },
+                elements: {
+                    point: {
+                        radius: 0 // remove point...
+                    },
+                    line: {
+                        tension: 0.8 // set line tension
+                    }
+                }
+            }
+        });
+
+        // Set up the first value...
+        let index = 0;
+        infos.cpu.utilizations.forEach(val => {
+            let data = []
+            for(let i=0; i < 60; i++){
+                data.push("")
+            }
+            data[59] = parseFloat(val.utilization)
+            let dataset = {data:data, borderColor:colors[index], fill:false}
+            this.threadsChart.data.datasets.push(dataset)
+            index++
+        })
+
+        console.log(this.threadsChart.data.datasets)
+    }
 
     setInfos(infos) {
         // Display the model name.
         this.shadowRoot.querySelector("#cpu-model-name-div").innerHTML = infos.cpu.model_name
+        this.shadowRoot.querySelector("#cpu-vendor-div").innerHTML = infos.cpu.vendor_id
         this.shadowRoot.querySelector("#cpu-speed-div").innerHTML = infos.cpu.speed + "Mhz"
         this.shadowRoot.querySelector("#cpu-threads-div").innerHTML = infos.cpu.utilizations.length.toString()
 
         // Here I will reset the cpu utilization div and recreate it.
         let cpuUtilizationsDiv = this.shadowRoot.querySelector("#cpu-utilizations-div")
         if (cpuUtilizationsDiv.children.length == 0) {
+
             let colors = generateRandomColors(infos.cpu.utilizations.length)
             let range = document.createRange()
             let index = 0;
             infos.cpu.utilizations.forEach(val => {
                 let html = `
             <div class="cell" style="width: 25%; border-bottom: none; padding-top:2px; padding-bottom:2px;">
-                <div style="display: flex; ">
+                <div style="display: flex; align-items: center;">
                     <div style="height: 20px; width: 32px; background-color: ${colors[index]}; 1px solid var(--palette-text-accent);">
                     </div>
                     <div style="display: flex; margin-left: 5px;">
@@ -586,7 +686,14 @@ export class ResourcesDisplay extends HTMLElement {
                 row.appendChild(range.createContextualFragment(html))
                 index++
             })
+
+            // Draw the chart...
+            this.drawChart(infos, colors)
+        }else{
+            // refresh chart data
+            this.setChartData(infos)
         }
+
         let index = 0;
         infos.cpu.utilizations.forEach(val => {
             let cpuUtilizationDiv = cpuUtilizationsDiv.querySelector(`#cpu-utilization-div-${index}`)
