@@ -398,7 +398,7 @@ globular-file-explorer{
       grid-column-end: 17;
    }
 
-   globular-process-manager{
+   globular-system-monitor{
       grid-row-start: 5;
       grid-row-end: 7;
       grid-column-start: 1;
@@ -453,7 +453,7 @@ globular-file-explorer{
       grid-column-end: 15;
    }
 
-   globular-process-manager{
+   globular-system-monitor{
       grid-row-start: 5;
       grid-row-end: 7;
       grid-column-start: 3;
@@ -513,7 +513,7 @@ globular-file-explorer{
       grid-column-end: 13;
    }
    
-   globular-process-manager{
+   globular-system-monitor{
       grid-row-start: 5;
       grid-row-end: 7;
       grid-column-start: 5;
@@ -576,7 +576,7 @@ globular-file-explorer{
       grid-column-end: 14;
    }
 
-   globular-process-manager{
+   globular-system-monitor{
       grid-row-start: 5;
       grid-row-end: 7;
       grid-column-start: 4;
