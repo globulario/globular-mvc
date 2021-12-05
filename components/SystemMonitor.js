@@ -5,12 +5,25 @@
 import { theme } from "./Theme";
 import { Model } from '../Model';
 import { Application } from "../Application";
-import { GetProcessInfosRequest } from "globular-web-client/admin/admin_pb";
+import { GetProcessInfosRequest, KillProcessRequest } from "globular-web-client/admin/admin_pb";
 import { ApplicationView } from "../ApplicationView";
 import { v4 as uuidv4 } from "uuid";
 import { Chart, registerables } from 'chart.js';
 
 Chart.register(...registerables);
+
+// System information (constant)
+let number_of_thread = 1;
+let memory_total_size = 0;
+let memory_total_used = 0;
+
+function bytesToSize(bytes) {
+    const sizes = ['Bytes', 'KiB', 'MiB', 'GiB', 'TiB']
+    if (bytes === 0) return 'n/a'
+    const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)), 10)
+    if (i === 0) return `${bytes} ${sizes[i]})`
+    return `${(bytes / (1024 ** i)).toFixed(1)} ${sizes[i]}`
+}
 
 function secondsToDhms(seconds) {
     seconds = Number(seconds);
@@ -381,6 +394,10 @@ export class SystemMonitor extends HTMLElement {
         this.shadowRoot.querySelector(`.title`).innerHTML = `System Monitor @${Application.globular.config.Domain} Globular ${Application.globular.config.Version}`
 
         getStats((stats) => {
+            memory_total_size = stats.memory.total
+            number_of_thread = stats.cpu.utilizations.length
+            memory_total_used = stats.memory.used
+
             this.hostInfos.setInfos(stats)
             this.resourcesDisplay.setInfos(stats)
         }, err => ApplicationView.displayMessage(err, 3000))
@@ -411,6 +428,10 @@ export class ProcessesManager extends HTMLElement {
     // Create the applicaiton view.
     constructor() {
         super()
+
+        this.sortDirection = ""
+        this.sortIndex = -1
+
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
 
@@ -418,8 +439,156 @@ export class ProcessesManager extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
             ${theme}
+
+            #processes-table {
+                display: table;
+            }
+
+            .tr {
+                display: table-row;
+            }
+
+            .td {
+                display: table-cell;
+                padding: 5px;
+                border-bottom: 1px solid var(--palette-primary-accent);
+                min-width: 80px;
+            }
+
+            .theader {
+                display: table-header-group;
+            }
+
+            .tbody{
+                display: table-row-group;
+            }
+
+            #container{
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 10px;
+            }
+
+            iron-icon:hover{
+                cursor: pointer;
+            }
+
+            paper-button{
+                font-size: 1rem;
+            }
         </style>
+        <div id="container">
+            <div id="processes-table">
+                <div class="theader">
+                    <div class="tr">
+                        <div class="td">
+                            <div style="display: flex; align-items: center;">
+                                <span>
+                                    Process Name 
+                                </span>
+                                <iron-icon icon="icons:arrow-drop-down" style="display: none;"></iron-icon>
+                                <iron-icon icon="icons:arrow-drop-up" style="display: none;"></iron-icon>
+                            </div>
+                        </div>
+                        <div class="td">
+                            <div style="display: flex; align-items: center;">
+                                <span>
+                                    User
+                                </span>
+                                <iron-icon icon="icons:arrow-drop-down" style="display: none;"></iron-icon>
+                                <iron-icon icon="icons:arrow-drop-up" style="display: none;"></iron-icon>
+                            </div>
+                        </div>
+                        <div class="td">
+                            <div style="display: flex; align-items: center;">
+                                <span>
+                                    %CPU
+                                </span>
+                                <iron-icon icon="icons:arrow-drop-down" style="display: none;"></iron-icon>
+                                <iron-icon icon="icons:arrow-drop-up" style="display: none;"></iron-icon>
+                            </div>
+                        </div>
+                        <div class="td">
+                            <div style="display: flex; align-items: center;">
+                                <span>
+                                    %Memory
+                                </span>
+                                <iron-icon icon="icons:arrow-drop-down" style="display: none;"></iron-icon>
+                                <iron-icon icon="icons:arrow-drop-up" style="display: none;"></iron-icon>
+                            </div>
+                        </div>
+                        <div class="td">
+                            <div style="display: flex; align-items: center;">
+                                <span>
+                                    ID
+                                </span>
+                                <iron-icon icon="icons:arrow-drop-down" style="display: none;"></iron-icon>
+                                <iron-icon icon="icons:arrow-drop-up" style="display: none;"></iron-icon>
+                            </div>
+                        </div>
+                        <div class="td">
+                            <div style="display: flex; align-items: center;">
+                                <span>
+                                    Priority
+                                </span>
+                                <iron-icon icon="icons:arrow-drop-down" style="display: none;"></iron-icon>
+                                <iron-icon icon="icons:arrow-drop-up" style="display: none;"></iron-icon>
+                            </div>
+                        </div>
+
+                        <div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tbody">
+                </div>
+            </div>
+        </div>
         `
+
+        // get the list of all icons
+        let headers = this.shadowRoot.querySelectorAll(".td")
+        for (var i = 0; i < headers.length; i++) {
+            let header = headers[i]
+            let sortIndex = i
+            header.onclick = (evt) => {
+                evt.stopPropagation()
+                let ironIcons = this.shadowRoot.querySelectorAll("iron-icon")
+                let desc = header.children[0].children[1].style.display == "block"
+                let asc = header.children[0].children[2].style.display == "block"
+                for (var j = 0; j < ironIcons.length; j++) {
+                    ironIcons[j].style.display = "none"
+                }
+
+                // set the sort info...
+                this.sortIndex = -1
+                this.sortDirection = ""
+                let tableBody = this.shadowRoot.querySelector(".tbody")
+
+                if (!asc && !desc) {
+                    header.children[0].children[1].style.display = "block"
+                    this.sortDirection = "desc"
+                    this.sortIndex = sortIndex
+                    tableBody.innerHTML = ""
+                    this.displayProcess(this.infos)
+                } else if (!asc && desc) {
+                    header.children[0].children[1].style.display = "none"
+                    header.children[0].children[2].style.display = "block"
+                    this.sortDirection = "asc"
+                    this.sortIndex = sortIndex
+                    tableBody.innerHTML = ""
+                    this.displayProcess(this.infos)
+                } else{
+                    this.sortDirection = "asc"
+                    this.sortIndex = 4
+                    tableBody.innerHTML = ""
+                    this.displayProcess(this.infos)
+                    this.sortDirection = ""
+                    this.sortIndex = -1
+                }
+            }
+        }
     }
 
     /**
@@ -437,12 +606,158 @@ export class ProcessesManager extends HTMLElement {
             .catch(err => ApplicationView.displayMessage(err, 3000))
     }
 
+    sort() {
+        if (this.sortIndex == -1) {
+            return this.infos
+        }
+
+        // Now I will sort the infos before display it...
+        if (this.sortDirection.length > 0) {
+            if (this.sortDirection == "asc") {
+                return this.infos.sort((a, b) => {
+                    if (this.sortIndex == 0) {
+                        if (a.getName().toLowerCase() < b.getName().toLowerCase()) {
+                            return -1
+                        } else if (a.getName().toLowerCase() > b.getName().toLowerCase()) {
+                            return 1
+                        }
+                        return 0
+                    } else if (this.sortIndex == 1) {
+                        if (a.getUser().toLowerCase() < b.getUser().toLowerCase()) {
+                            return -1
+                        } else if (a.getUser().toLowerCase() > b.getUser().toLowerCase()) {
+                            return 1
+                        }
+                        return 0
+                    } else if (this.sortIndex == 2) {
+                        if (a.getCpuUsagePercent() < b.getCpuUsagePercent()) {
+                            return -1
+                        } else if (a.getCpuUsagePercent() > b.getCpuUsagePercent()) {
+                            return 1
+                        }
+                        return 0
+                    } else if (this.sortIndex == 3) {
+                        if (a.getMemoryUsagePercent() < b.getMemoryUsagePercent()) {
+                            return -1
+                        } else if (a.getMemoryUsagePercent() > b.getMemoryUsagePercent()) {
+                            return 1
+                        }
+                        return 0
+                    } else if (this.sortIndex == 4) {
+                        if (a.getPid() < b.getPid()) {
+                            return -1
+                        } else if (a.getPid() > b.getPid()) {
+                            return 1
+                        }
+                        return 0
+                    } else if (this.sortIndex == 5) {
+                        if (a.getPriority().toLowerCase() < b.getPriority().toLowerCase()) {
+                            return -1
+                        } else if (a.getPriority().toLowerCase() > b.getPriority().toLowerCase()) {
+                            return 1
+                        }
+                        return 0
+                    }
+                })
+            } else {
+                return this.infos.sort((a, b) => {
+                    if (this.sortIndex == 0) {
+                        if (a.getName().toLowerCase() < b.getName().toLowerCase()) {
+                            return 1
+                        } else if (a.getName().toLowerCase() > b.getName().toLowerCase()) {
+                            return -1
+                        }
+                        return 0
+                    } else if (this.sortIndex == 1) {
+                        if (a.getUser().toLowerCase() < b.getUser().toLowerCase()) {
+                            return 1
+                        } else if (a.getUser().toLowerCase() > b.getUser().toLowerCase()) {
+                            return -1
+                        }
+                        return 0
+                    } else if (this.sortIndex == 2) {
+                        if (a.getCpuUsagePercent() < b.getCpuUsagePercent()) {
+                            return 1
+                        } else if (a.getCpuUsagePercent() > b.getCpuUsagePercent()) {
+                            return -1
+                        }
+                        return 0
+                    } else if (this.sortIndex == 3) {
+                        if (a.getMemoryUsagePercent() < b.getMemoryUsagePercent()) {
+                            return 1
+                        } else if (a.getMemoryUsagePercent() > b.getMemoryUsagePercent()) {
+                            return -1
+                        }
+                        return 0
+                    } else if (this.sortIndex == 4) {
+                        if (a.getPid() < b.getPid()) {
+                            return 1
+                        } else if (a.getPid() > b.getPid()) {
+                            return -1
+                        }
+                        return 0
+                    } else if (this.sortIndex == 5) {
+                        if (a.getPriority().toLowerCase() < b.getPriority().toLowerCase()) {
+                            return 1
+                        } else if (a.getPriority().toLowerCase() > b.getPriority().toLowerCase()) {
+                            return -1
+                        }
+                        return 0
+                    }
+                })
+            }
+        }
+
+    }
+
     /**
      * display process infos...
      * @param {*} infos 
      */
     displayProcess(infos) {
-        // console.log(infos)
+
+        let range = document.createRange()
+        this.infos = infos
+
+        // Now I will sort the infos before display it...
+        let tableBody = this.shadowRoot.querySelector(".tbody")
+        this.sort().forEach(info => {
+            let processRow = tableBody.querySelector(`#process-row-${info.getPid()}`)
+            if (info.getName().length > 0) {
+                if (processRow == undefined) {
+                    let html = `
+                <div class="tr" id="process-row-${info.getPid()}">
+                    <div class="td">${info.getName()}</div>
+                    <div class="td">${info.getUser()}</div>
+                    <div class="td">${(info.getCpuUsagePercent() / number_of_thread).toFixed(2)}</div>
+                    <div class="td">${info.getMemoryUsagePercent().toFixed(2)}</div>
+                    <div class="td">${info.getPid()}</div>
+                    <div class="td">${info.getPriority()}</div>
+                    <paper-button>Kill</paper-button>
+                </div>`
+
+                    tableBody.appendChild(range.createContextualFragment(html))
+                    // Now I will connect the kill proecess button.
+                    processRow = tableBody.querySelector(`#process-row-${info.getPid()}`)
+                    processRow.children[6].onclick = ()=>{
+                        console.log("kill process ", info.getPid())
+                        let rqst = new KillProcessRequest
+                        rqst.setPid( info.getPid() )
+                        Model.globular.adminService.killProcess(rqst,{ domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") } )
+                        .then(rsp=>{
+                            // remove the process.
+                            processRow.parentNode.removeChild(processRow)
+                        })
+                        .catch(err=>ApplicationView.displayMessage(err, 3000))
+                    }
+                } else {
+                    // Here I will update the value of the cpu usage and memory usage.
+                    processRow.children[2].innerHTML = (info.getCpuUsagePercent() / number_of_thread).toFixed(2)
+                    processRow.children[3].innerHTML = info.getMemoryUsagePercent().toFixed(2)
+                }
+            }
+        })
+
     }
 
     /**
@@ -560,7 +875,7 @@ export class ResourcesDisplay extends HTMLElement {
         this.appendChild(this.canvas)
     }
 
-    setChartData(infos){
+    setChartData(infos) {
         let index = 0;
         infos.cpu.utilizations.forEach(val => {
             let dataset = this.threadsChart.data.datasets[index]
@@ -569,19 +884,18 @@ export class ResourcesDisplay extends HTMLElement {
             index++
         })
 
-        console.log( this.threadsChart.data.datasets)
         this.threadsChart.update()
     }
 
     drawChart(infos, colors) {
         const ctx = document.getElementById('myChart').getContext('2d');
         var xValues = []
-        for(let i=60; i >0; i--){
-            if(i%10==0){
+        for (let i = 60; i > 0; i--) {
+            if (i % 10 == 0) {
                 xValues.push(i + "s")
-            }else if(i==1){
+            } else if (i == 1) {
                 xValues.push("0s")
-            }else{
+            } else {
                 xValues.push("")
             }
         }
@@ -605,17 +919,6 @@ export class ResourcesDisplay extends HTMLElement {
                 tooltips: {
                     enabled: false
                 },
-                scales: {
-                    yAxes: [{
-                        display: true,
-                        ticks: {
-                            beginAtZero: true,
-                            steps: 10,
-                            stepValue: 5,
-                            max: 100
-                        }
-                    }]
-                },
                 elements: {
                     point: {
                         radius: 0 // remove point...
@@ -631,16 +934,14 @@ export class ResourcesDisplay extends HTMLElement {
         let index = 0;
         infos.cpu.utilizations.forEach(val => {
             let data = []
-            for(let i=0; i < 60; i++){
+            for (let i = 0; i < 60; i++) {
                 data.push("")
             }
             data[59] = parseFloat(val.utilization)
-            let dataset = {data:data, borderColor:colors[index], fill:false}
+            let dataset = { data: data, borderColor: colors[index], fill: false }
             this.threadsChart.data.datasets.push(dataset)
             index++
         })
-
-        console.log(this.threadsChart.data.datasets)
     }
 
     setInfos(infos) {
@@ -689,7 +990,7 @@ export class ResourcesDisplay extends HTMLElement {
 
             // Draw the chart...
             this.drawChart(infos, colors)
-        }else{
+        } else {
             // refresh chart data
             this.setChartData(infos)
         }
@@ -787,7 +1088,6 @@ export class HostInfos extends HTMLElement {
             return
         }
 
-        console.log(infos)
         this.shadowRoot.querySelector("#hostname-div").innerHTML = infos.hostname;
         this.shadowRoot.querySelector("#os-div").innerHTML = infos.os;
         this.shadowRoot.querySelector("#platform-div").innerHTML = infos.platform;
