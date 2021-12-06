@@ -766,6 +766,7 @@ export class BlogComments extends HTMLElement {
 
     // Append a new comment into the list of comment.
     setComment(comment) {
+        
         console.log("--------------> comment ", comment)
     }
 }
@@ -837,7 +838,7 @@ export class BlogCommentEditor extends HTMLElement {
                 <iron-icon id="blog-comment-editor-author-icon"  icon="account-circle" style="width: 34px; height: 34px; --iron-icon-fill-color:var(--palette-action-disabled); display: block;"></iron-icon>
             </div>
             <div class="add-comment-btn" style="display: flex;">
-                <div style="border-bottom: 1px solid var(--palette-action-disabled); min-width: 200px; margin-right: 5px;">
+                <div style="border-bottom: 1px solid var(--palette-action-disabled); min-width: 200px; margin-right: 5px; text-align: left;">
                     <iron-icon  style="width: 16px; height: 16px; --iron-icon-fill-color:var(--palette-action-disabled);" icon="add"></iron-icon>
                     <span>add comment</span> 
                     <paper-ripple recenters></paper-ripple>

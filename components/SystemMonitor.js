@@ -318,6 +318,7 @@ export class SystemMonitor extends HTMLElement {
         this.appendChild(this.processesManager)
 
 
+
         // Here I will connect the tab and the panel...
         hostInfosTab.onclick = () => {
             this.hostInfos.style.display = "block"
@@ -371,6 +372,15 @@ export class SystemMonitor extends HTMLElement {
             }
         }
 
+        // set the header shadow...
+        let tabContent = this.shadowRoot.querySelector("#tab-content")
+        tabContent.onscroll = () => {
+            if (tabContent.scrollTop == 0) {
+                tabContent.style.boxShadow = ""
+            } else {
+                tabContent.style.boxShadow = "inset 0px 5px 6px -3px rgb(0 0 0 / 40%)"
+            }
+        }
 
     }
 
@@ -465,8 +475,6 @@ export class ProcessesManager extends HTMLElement {
 
             #container{
                 display: flex;
-                align-items: center;
-                justify-content: center;
                 padding: 10px;
             }
 
@@ -579,7 +587,7 @@ export class ProcessesManager extends HTMLElement {
                     this.sortIndex = sortIndex
                     tableBody.innerHTML = ""
                     this.displayProcess(this.infos)
-                } else{
+                } else {
                     this.sortDirection = "asc"
                     this.sortIndex = 4
                     tableBody.innerHTML = ""
@@ -739,16 +747,16 @@ export class ProcessesManager extends HTMLElement {
                     tableBody.appendChild(range.createContextualFragment(html))
                     // Now I will connect the kill proecess button.
                     processRow = tableBody.querySelector(`#process-row-${info.getPid()}`)
-                    processRow.children[6].onclick = ()=>{
+                    processRow.children[6].onclick = () => {
                         console.log("kill process ", info.getPid())
                         let rqst = new KillProcessRequest
-                        rqst.setPid( info.getPid() )
-                        Model.globular.adminService.killProcess(rqst,{ domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") } )
-                        .then(rsp=>{
-                            // remove the process.
-                            processRow.parentNode.removeChild(processRow)
-                        })
-                        .catch(err=>ApplicationView.displayMessage(err, 3000))
+                        rqst.setPid(info.getPid())
+                        Model.globular.adminService.killProcess(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+                            .then(rsp => {
+                                // remove the process.
+                                processRow.parentNode.removeChild(processRow)
+                            })
+                            .catch(err => ApplicationView.displayMessage(err, 3000))
                     }
                 } else {
                     // Here I will update the value of the cpu usage and memory usage.
