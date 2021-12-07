@@ -73,11 +73,20 @@ function getImage(callback, images, files, index) {
 
     url += f.path
 
+    // Set url query parameter.
+    url += "?domain=" + Model.domain
+    url += "&application=" + Model.application
+    if (localStorage.getItem("user_token") != undefined) {
+      url += "&token=" + localStorage.getItem("user_token")
+    }
+
     var xhr = new XMLHttpRequest();
     xhr.open('GET', url, true);
     xhr.setRequestHeader("token", localStorage.getItem("user_token"));
     xhr.setRequestHeader("application", Model.application);
     xhr.setRequestHeader("domain", Model.domain);
+
+    
 
     // Set responseType to 'arraybuffer', we want raw binary data buffer
     xhr.responseType = 'blob';

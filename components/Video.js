@@ -81,8 +81,6 @@ export class VideoPlayer extends HTMLElement {
             this.video.src += "&token=" + localStorage.getItem("user_token")
         }
 
-        console.log(this.video.src)
-
         this.video.style.maxWidth = this.parentNode.offsetWidth + "px"
     }
 

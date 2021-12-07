@@ -34,6 +34,12 @@ function getFileConfig(url: string, callback: (obj: any) => void, errorcallback:
     }
   };
 
+  url += "?domain=" + Model.domain
+  url += "&application=" + Model.application
+  if (localStorage.getItem("user_token") != undefined) {
+    url += "&token=" + localStorage.getItem("user_token")
+  }
+
   xmlhttp.open("GET", url, true);
   xmlhttp.setRequestHeader("domain", Model.domain);
 

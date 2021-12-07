@@ -198,6 +198,12 @@ function getStats(callback, errorcallback) {
         }
     };
 
+    url += "?domain=" + Model.domain
+    url += "&application=" + Model.application
+    if (localStorage.getItem("user_token") != undefined) {
+      url += "&token=" + localStorage.getItem("user_token")
+    }
+
     xmlhttp.open("GET", url, true);
     xmlhttp.setRequestHeader("domain", Model.domain);
 
@@ -238,7 +244,6 @@ export class SystemMonitor extends HTMLElement {
                      transparent 2px
                    );
              }
- 
              
              .title{
                  text-align: center;
