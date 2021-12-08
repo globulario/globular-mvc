@@ -126,14 +126,14 @@ export class ServicesSettings extends Settings {
                 div.appendChild(range.createContextualFragment(serviceToolBar))
 
                 let s: ServiceSetting
-                if(service.Name == "ldap.LdapService"){
+                if (service.Name == "ldap.LdapService") {
                     let s = new LdapServiceSetting(service, serviceSetting)
-                }else if(service.Name == "slq.SqlService"){
+                } else if (service.Name == "slq.SqlService") {
                     let s = new SqlServiceSetting(service, serviceSetting)
-                }else if(service.Name == "persistence.PersistenceService"){
+                } else if (service.Name == "persistence.PersistenceService") {
                     let s = new PersistenceServiceSetting(service, serviceSetting)
-                }else{
-                   s = new ServiceSetting(service, serviceSetting)
+                } else {
+                    s = new ServiceSetting(service, serviceSetting)
                 }
 
                 this.servicesSettings.push(s)
@@ -274,8 +274,8 @@ export class ServicesSettings extends Settings {
 
 export class ServiceSetting {
     protected service: any;
-    protected needSave:boolean;
-    
+    protected needSave: boolean;
+
 
     constructor(service: any, serviceSetting: any) {
         this.service = service;
@@ -365,18 +365,25 @@ export class ServiceSetting {
         let corsOriginsSettings_ = new ComplexSetting("Allowed Origins", "List of allowed Cross-origin")
 
         let corsOriginsSettings = new StringListSetting("Allowed Origins", "List of allowed Cross-origin")
-        let allowedOrigins = service.AllowedOrigins.split(",")
-        corsOriginsSettings.setValues(allowedOrigins)
-        corsOriginsSettings.onchange = () => {
-            let allowedOrigins = corsOriginsSettings.getValues()
-            service.AllowedOrigins = ""
-            for (var i = 0; i < allowedOrigins.length; i++) {
-                service.AllowedOrigins += allowedOrigins[i]
-                if (i < allowedOrigins.length - 1) {
-                    service.AllowedOrigins += " ,"
+        if (serviceSetting.AllowedOrigins != undefined) {
+            if (serviceSetting.AllowedOrigins.length > 0) {
+                if (service.AllowedOrigins.indexOf(",") > 0) {
+                    let allowedOrigins = service.AllowedOrigins.split(",")
+                    corsOriginsSettings.setValues(allowedOrigins)
+                    corsOriginsSettings.onchange = () => {
+                        let allowedOrigins = corsOriginsSettings.getValues()
+                        service.AllowedOrigins = ""
+                        for (var i = 0; i < allowedOrigins.length; i++) {
+                            service.AllowedOrigins += allowedOrigins[i]
+                            if (i < allowedOrigins.length - 1) {
+                                service.AllowedOrigins += " ,"
+                            }
+                        }
+                        this.needSave = true
+                    }
                 }
             }
-            this.needSave = true
+
         }
 
         if (!service.AllowAllOrigins) {
@@ -402,10 +409,10 @@ export class ServiceSetting {
     }
 
     save() {
-        if(!this.needSave){
+        if (!this.needSave) {
             return
         }
-        
+
         console.log("save service ", this.service)
         let rqst = new servicesManager.SaveServiceConfigRequest()
         rqst.setConfig(JSON.stringify(this.service))
@@ -414,10 +421,10 @@ export class ServiceSetting {
             token: localStorage.getItem("user_token"),
             application: Model.application,
             domain: Model.domain
-        }).then(rsp=>{
-           // ApplicationView.displayMessage(err, 3000)
+        }).then(rsp => {
+            // ApplicationView.displayMessage(err, 3000)
             console.log("service was saved! ", this.service)
-        }).catch(err=>{
+        }).catch(err => {
             ApplicationView.displayMessage(err, 3000)
         })
     }
@@ -427,7 +434,7 @@ export class ServiceSetting {
 // LDAP
 export class LdapServiceSetting extends ServiceSetting {
 
-    constructor(service: any, serviceSetting: any){
+    constructor(service: any, serviceSetting: any) {
         super(service, serviceSetting)
 
         let syncLdap = new ActionSetting("Sync", "synchronize ldap and globular account and groups", () => {
@@ -446,7 +453,7 @@ export class LdapServiceSetting extends ServiceSetting {
 // SQL
 export class SqlServiceSetting extends ServiceSetting {
 
-    constructor(service: any, serviceSetting: any){
+    constructor(service: any, serviceSetting: any) {
         super(service, serviceSetting)
     }
 }
@@ -454,7 +461,7 @@ export class SqlServiceSetting extends ServiceSetting {
 // Persistence
 export class PersistenceServiceSetting extends ServiceSetting {
 
-    constructor(service: any, serviceSetting: any){
+    constructor(service: any, serviceSetting: any) {
         super(service, serviceSetting)
     }
 }
