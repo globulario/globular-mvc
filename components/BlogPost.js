@@ -26,6 +26,45 @@ import { GetThumbnailsResponse } from 'globular-web-client/file/file_pb';
 import * as getUuidByString from 'uuid-by-string';
 import { localToGlobal } from './utility';
 
+// Get the image default size...
+function getMeta(url, callback) {
+    const img = new Image();
+    img.addEventListener("load", () => {
+        callback({ width: img.naturalWidth, height: img.naturalHeight });
+    });
+    img.src = url;
+}
+
+// generate html from json data
+function jsonToHtml(data) {
+    // So here I will get the plain html from the output json data.
+    const edjsParser = edjsHTML();
+    let elements = edjsParser.parse(data);
+    let html = ""
+    elements.forEach(e => {
+        html += e
+    });
+
+    var div = document.createElement('div');
+    div.className = "blog-read-div"
+    div.slot = "read-only-blog-content"
+    div.innerHTML = html.trim();
+
+    // Now I will set image height.
+    let images = div.querySelectorAll("img")
+    images.forEach(img => {
+        getMeta(img.src, meta => {
+            if (meta.width < div.offsetWidth && meta.height < div.offsetHeight) {
+                img.style.width = meta.width + "px"
+                img.style.height = meta.height + "px"
+            }
+        })
+
+    })
+
+    return div
+}
+
 /**
  * Search Box
  */
@@ -308,7 +347,7 @@ export class BlogPostElement extends HTMLElement {
                 ico.style.display = "none"
             }
 
-        }, e => { 
+        }, e => {
             console.log(e)
         })
 
@@ -437,45 +476,6 @@ export class BlogPostElement extends HTMLElement {
 
     }
 
-    // Get the image default size...
-    getMeta(url, callback) {
-        const img = new Image();
-        img.addEventListener("load", () => {
-            callback({ width: img.naturalWidth, height: img.naturalHeight });
-        });
-        img.src = url;
-    }
-
-    // generate html from json data
-    jsonToHtml(data) {
-        // So here I will get the plain html from the output json data.
-        const edjsParser = edjsHTML();
-        let elements = edjsParser.parse(data);
-        let html = ""
-        elements.forEach(e => {
-            html += e
-        });
-
-        var div = document.createElement('div');
-        div.className = "blog-read-div"
-        div.slot = "read-only-blog-content"
-        div.innerHTML = html.trim();
-
-        // Now I will set image height.
-        let images = div.querySelectorAll("img")
-        images.forEach(img => {
-
-            this.getMeta(img.src, meta => {
-                if (meta.width < div.offsetWidth && meta.height < div.offsetHeight) {
-                    img.style.width = meta.width + "px"
-                    img.style.height = meta.height + "px"
-                }
-            })
-
-        })
-
-        return div
-    }
 
     /**
      * Display the blog in read mode.
@@ -493,12 +493,12 @@ export class BlogPostElement extends HTMLElement {
 
         if (this.editor != null) {
             this.editor.save().then((outputData) => {
-                let div = this.jsonToHtml(outputData)
+                let div = jsonToHtml(outputData)
                 this.appendChild(div)
                 callback()
             })
         } else {
-            let div = this.jsonToHtml(JSON.parse(this.blog.getText()))
+            let div = jsonToHtml(JSON.parse(this.blog.getText()))
             this.appendChild(div)
             callback()
         }
@@ -754,20 +754,23 @@ export class BlogComments extends HTMLElement {
             uuid => this["new_blog_" + this.blog.getUuid() + "_comment_listener"] = uuid,
             evt => {
                 let comment = Comment.deserializeBinary(Uint8Array.from(evt.split(",")))
-               
+
                 this.setComment(comment)
             }, false, this)
 
         // Display the comment...
-        this.blog.getCommentsList().forEach(c=>{
+        this.blog.getCommentsList().forEach(c => {
             this.setComment(c)
         })
     }
 
     // Append a new comment into the list of comment.
     setComment(comment) {
-        
-        console.log("--------------> comment ", comment)
+        // So here I will display information about the comment 
+        let blogComment = new BlogComment(comment)
+        blogComment.slot = "blog-comments"
+        this.prepend(blogComment)
+        blogComment.display()
     }
 }
 
@@ -780,19 +783,68 @@ export class BlogComment extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor() {
+    constructor(comment) {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
+
+        this.comment = comment;
+
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
             ${theme}
+
+            .container{
+                display: flex;
+                flex-direction: column;
+            }
+
         </style>
-        <div>
+        <div class="container" id="_${comment.getUuid()}">
+            <div style="display: flex;">
+                <div style="display: flex; flex-direction: column; padding-left: 5px;">
+                    <div>
+                        <img id="blog-comment-author-picture" style="width: 32px; height: 32px; border-radius: 16px; display:none;"></img>
+                        <iron-icon id="blog-comment-author-icon"  icon="account-circle" style="width: 34px; height: 34px; --iron-icon-fill-color:var(--palette-action-disabled); display: block;"></iron-icon>
+                    </div>
+                    <span  id="blog-comment-author-id"></span>
+                </div>
+                <div id="comment-text-div">
+                </div>
+            </div>
         </div>
         `
+
+        // Here I will set the blog various information...
+        let authorIdSpan = this.shadowRoot.querySelector("#blog-comment-author-id")
+        authorIdSpan.innerHTML = comment.getAccountId()
+
+        Account.getAccount(comment.getAccountId(), a => {
+            let img = this.shadowRoot.querySelector("#blog-comment-author-picture")
+            let ico = this.shadowRoot.querySelector("#blog-comment-author-icon")
+            if (a.profilPicture_ != undefined) {
+                img.src = a.profilPicture_
+                img.style.display = "block"
+                ico.style.display = "none"
+            }
+
+        }, e => {
+            console.log(e)
+        })
+        // let content = jsonToHtml(JSON.parse(comment.getText()))
+    }
+
+    display() {
+        let textDiv = this.shadowRoot.querySelector("#comment-text-div")
+        textDiv.innerHTML = ""
+        textDiv.appendChild(jsonToHtml(JSON.parse(this.comment.getText())))
+
+    }
+
+    editComment() {
+
     }
 
 }
@@ -1004,7 +1056,7 @@ export class BlogCommentEditor extends HTMLElement {
 
         }, e => {
             console.log(e)
-         })
+        })
     }
 
     setBlog(blog) {
@@ -1056,7 +1108,7 @@ export class BlogEmotions extends HTMLElement {
             let html = `
             <div id="${uuid}" class="blog-emitions" style="position: relative;">
                 ${emoji.unicode}
-                <paper-card style="z-index: 100; display: none; flex-direction: column; position: absolute; top: 30px; left: 15px;">
+                <paper-card style="background-color: var(--palette-background-paper); color: var(--palette-text-primary); z-index: 100; display: none; flex-direction: column; position: absolute; top: 30px; left: 15px;">
                     <div class="emotion-title">${emoji.emoji.annotation}</div>
                     <div class="emotion-peoples"> </div>
                 </paper-card>
@@ -1127,7 +1179,7 @@ export class BlogEmotions extends HTMLElement {
                 ApplicationView.displayMessage(`${userName} put emoji '${emoji.emoji.annotation}' ${emoji.unicode} to your <div style="padding-left: 5px;" onclick="document.getElementById('${blog.getUuid()}').scrollIntoView();">blog</div>`, 3000)
             }, e => {
                 console.log(e)
-             })
+            })
 
 
             this.addEmotion(emotion)
