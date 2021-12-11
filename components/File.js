@@ -137,7 +137,6 @@ function _readDir(path, callback, errorCallback) {
 
 function _publishSetDirEvent(path, file_explorer_id) {
     _readDir(path, (dir) => {
-        console.log(dir)
         Model.eventHub.publish("__set_dir_event__", { path: dir, file_explorer_id: file_explorer_id }, true)
     }, err => { console.log(err) })
 }
@@ -1593,7 +1592,6 @@ export class FilesIconView extends FilesView {
 
                     } else {
                         // here I will try the file viewer.
-
                         img.onclick = (evt) => {
                             evt.stopPropagation();
                             Model.eventHub.publish("__read_file__", { path: file.path, file_explorer_id: this._file_explorer_.id }, true)
@@ -3177,7 +3175,6 @@ export class FileExplorer extends HTMLElement {
             if (dir.files[i].mime.startsWith("image")) {
                 let f = dir.files[i]
                 images_.push(f)
-
             }
         }
 
@@ -3214,7 +3211,7 @@ export class FileExplorer extends HTMLElement {
     setDir(dir) {
 
 
-        if (!(dir.path.startsWith("/shared") || shared[dir.path] != undefined || shared[dir.path] != undefined || dir.path.startsWith("/applications/" + Application.application) || dir.path.startsWith("/users/" + Application.account.id))) {
+        if (!(dir.path.startsWith("/public") || public_[dir.path] != undefined || dir.path.startsWith("/shared") || shared[dir.path] != undefined || dir.path.startsWith("/applications/" + Application.application) || dir.path.startsWith("/users/" + Application.account.id))) {
             return
         }
 
@@ -3599,19 +3596,14 @@ export class VideoPreview extends HTMLElement {
         this.interval = setInterval(() => {
 
             let img = this.images[index]
-            console.log("-----> 3602")
             if (img != undefined) {
-                console.log("-----> 3604")
                 img.draggable = false;
                 while (this.container.children.length > 2) {
-                    console.log("-----> 3607")
                     this.container.removeChild(this.container.children[this.container.children.length - 1])
                 }
 
                 this.container.appendChild(img, this.container.firstChild)
             }
-
-            console.log("-----> 3614 ", this.images.length)
             // reset the conter if index reach the number of preview images.
             if (index < this.images.length) {
                 index++
