@@ -9,6 +9,7 @@ import '@polymer/iron-icons/editor-icons.js'
 import "@polymer/iron-icons/social-icons";
 import "@polymer/iron-icons/av-icons";
 import "@polymer/paper-progress/paper-progress.js"
+import * as getUuid from 'uuid-by-string'
 
 import { Model } from '../Model';
 import { File } from "../File";
@@ -45,12 +46,22 @@ function escapePathSpace(path) {
 
 // keep track of shared directory
 var shared = {}
+var public_ = {}
 
-function markAsShare(dir){
+function markAsShare(dir) {
     shared[dir.path] = {};
-    dir._files.forEach(f=>{
-        if(f._isDir){
+    dir._files.forEach(f => {
+        if (f._isDir) {
             markAsShare(f)
+        }
+    })
+}
+
+function markAsPublic(dir) {
+    public_[dir.path] = {};
+    dir._files.forEach(f => {
+        if (f._isDir) {
+            markAsPublic(f)
         }
     })
 }
@@ -77,7 +88,7 @@ function getImage(callback, images, files, index) {
     url += "?domain=" + Model.domain
     url += "&application=" + Model.application
     if (localStorage.getItem("user_token") != undefined) {
-      url += "&token=" + localStorage.getItem("user_token")
+        url += "&token=" + localStorage.getItem("user_token")
     }
 
     var xhr = new XMLHttpRequest();
@@ -85,8 +96,6 @@ function getImage(callback, images, files, index) {
     xhr.setRequestHeader("token", localStorage.getItem("user_token"));
     xhr.setRequestHeader("application", Model.application);
     xhr.setRequestHeader("domain", Model.domain);
-
-    
 
     // Set responseType to 'arraybuffer', we want raw binary data buffer
     xhr.responseType = 'blob';
@@ -954,7 +963,7 @@ export class FilesListView extends FilesView {
      */
     setDir(dir) {
         // if the dire is hidden or the dir is the user dir... 
-        if (dir.name.startsWith(".") || !(dir.path.startsWith("/shared")  || shared[dir.path] != undefined  || dir.path.startsWith("/applications/" + Application.application) || dir.path.startsWith("/users/" + Application.account.id))) {
+        if (dir.name.startsWith(".") || !(dir.path.startsWith("/public") || public_[dir.path] != undefined || dir.path.startsWith("/shared") || shared[dir.path] != undefined || dir.path.startsWith("/applications/" + Application.application) || dir.path.startsWith("/users/" + Application.account.id))) {
             return;
         }
 
@@ -1229,7 +1238,7 @@ export class FilesIconView extends FilesView {
      */
     setDir(dir) {
 
-        if (dir.name.startsWith(".") || !(dir.path.startsWith("/shared")  || shared[dir.path] != undefined || dir.path.startsWith("/applications/" + Application.application) || dir.path.startsWith("/users/" + Application.account.id))) {
+        if (dir.name.startsWith(".") || !(dir.path.startsWith("/public") || public_[dir.path] != undefined || dir.path.startsWith("/shared") || shared[dir.path] != undefined || dir.path.startsWith("/applications/" + Application.application) || dir.path.startsWith("/users/" + Application.account.id))) {
             return;
         }
 
@@ -1530,7 +1539,7 @@ export class FilesIconView extends FilesView {
 
                     /** In that case I will display the vieo preview. */
                     let file_ = hiddens[parentPath];
-
+    
                     for (var j = 0; j < file_.files.length; j++) {
                         let file__ = file_.files[j]
                         if (file__.name == "__preview__") {
@@ -1756,7 +1765,7 @@ export class PathNavigator extends HTMLElement {
     // Set the directory.
     setDir(dir) {
 
-        if (this.path == dir._path || !(dir.path.startsWith("/shared")  || shared[dir.path] != undefined || dir.path.startsWith("/applications/" + Application.application) || dir.path.startsWith("/users/" + Application.account.id))) {
+        if (this.path == dir._path || !(dir.path.startsWith("/public") || public_[dir.path] != undefined || dir.path.startsWith("/shared") || shared[dir.path] != undefined || dir.path.startsWith("/applications/" + Application.application) || dir.path.startsWith("/users/" + Application.account.id))) {
             return;
         }
 
@@ -1939,6 +1948,9 @@ export class FileNavigator extends HTMLElement {
         // The list of shared directory
         this.shared = {}
 
+        // The list of public directory
+        this.public_ = null
+
         // The root div.
         this.div = null
 
@@ -1967,6 +1979,7 @@ export class FileNavigator extends HTMLElement {
         <div id="file-navigator-div" style="">
             <div id="user-files-div"></div>
             <div id="shared-files-div"></div>
+            <div id="public-files-div"></div>
         </div>
         `
 
@@ -1974,6 +1987,7 @@ export class FileNavigator extends HTMLElement {
         this.div = this.shadowRoot.querySelector("#file-navigator-div ");
         this.userDiv = this.shadowRoot.querySelector("#user-files-div");
         this.sharedDiv = this.shadowRoot.querySelector("#shared-files-div");
+        this.publicDiv = this.shadowRoot.querySelector("#public-files-div");
     }
 
     // The connection callback.
@@ -2017,7 +2031,8 @@ export class FileNavigator extends HTMLElement {
             return;
         }
 
-        let id = dir.path.split("/").join("_").split("@").join("_")
+        // old id value was dir.path.split("/").join("_").split("@").join("_")
+        let id = "_" + getUuid(dir.path).split("-").join("_") 
 
         // keep it in memory 
         this.dirs[dir.path] = { id: id, level: level }
@@ -2172,7 +2187,7 @@ export class FileNavigator extends HTMLElement {
     // Set the directory.
     setDir(dir) {
         console.log("set file navigation to dir: ", dir)
-        if (this.dir == dir || !(dir.path.startsWith("/shared")  || shared[dir.path] != undefined || shared[dir.path] != undefined || dir.path.startsWith("/applications/" + Application.application) || dir.path.startsWith("/users/" + Application.account.id))) {
+        if (this.dir == dir || !(dir.path.startsWith("/public") || public_[dir.path] != undefined || dir.path.startsWith("/shared") || shared[dir.path] != undefined || shared[dir.path] != undefined || dir.path.startsWith("/applications/" + Application.application) || dir.path.startsWith("/users/" + Application.account.id))) {
             return;
         }
 
@@ -2181,7 +2196,58 @@ export class FileNavigator extends HTMLElement {
 
         // Init shared...
         this.initShared()
+
+        // Init public list of directories
+        this.initPublic()
     }
+
+    // Init the public folder...
+    initPublic() {
+        console.log(Model.globular.config.Public)
+        this.publicDiv.innerHTML = ""
+
+        // The public directory will contain a list of directories readable by 
+        // any use, permission can also be set on file and directories, but all is 
+        // accessible by default.
+        if (this.public_ == undefined) {
+            this.public_ = new File("public", "/public", true)
+            this.public_.isDir = true;
+            this.public_.files = [];
+            this.public_.mime = "";
+            this.public_.modTime = new Date()
+            Model.eventHub.subscribe("public_change_permission_event", uuid => { },
+                evt => {
+                    // refresh the shared...
+                    this.initPublic()
+                }, false, this)
+        }
+
+        let index = 0;
+        let initPublicDir = (callback, errorCallback) => {
+            if (index < Model.globular.config.Public.length) {
+                let path = Model.globular.config.Public[index]
+                // Read the dir content (files and directory informations.)
+                _readDir(path, dir => {
+                    // used by set dir...
+                    markAsPublic(dir)
+                    this.public_.files.push(dir)
+                    index++
+                    initPublicDir(callback, errorCallback)
+                }, errorCallback)
+
+            }else{
+                callback()
+            }
+        }
+
+        // Init
+        initPublicDir(()=>{
+            this.initTreeView(this.public_, this.publicDiv, 0)
+        })
+       
+    }
+
+
 
     // Init shared folders
     initShared() {
@@ -2322,8 +2388,6 @@ export class FileNavigator extends HTMLElement {
             })
             .catch(e => errorCallback(e))
     }
-
-
 }
 
 customElements.define('globular-file-navigator', FileNavigator)
@@ -2581,7 +2645,7 @@ export class FileExplorer extends HTMLElement {
 
         // The path navigator
         this.pathNavigator = this.shadowRoot.querySelector("#globular-path-navigator")
-        this.pathNavigator._file_explorer_ = this 
+        this.pathNavigator._file_explorer_ = this
 
         // The file navigator.
         this.fileNavigator = this.shadowRoot.querySelector("#globular-file-navigator")
@@ -3150,7 +3214,7 @@ export class FileExplorer extends HTMLElement {
     setDir(dir) {
 
 
-        if(!(dir.path.startsWith("/shared")  || shared[dir.path] != undefined || shared[dir.path] != undefined ||  dir.path.startsWith("/applications/" + Application.application) || dir.path.startsWith("/users/" + Application.account.id))){
+        if (!(dir.path.startsWith("/shared") || shared[dir.path] != undefined || shared[dir.path] != undefined || dir.path.startsWith("/applications/" + Application.application) || dir.path.startsWith("/users/" + Application.account.id))) {
             return
         }
 
@@ -3443,10 +3507,10 @@ export class VideoPreview extends HTMLElement {
         let index = 0;
 
         if (previews[0] != undefined) {
-
             // Get the preview image...
             getImage((images) => {
                 this.images = images
+                this.firstImage = images[0]
                 if (this.images.length > 0) {
                     this.container.appendChild(this.images[0])
                     this.width = this.images[0].width
@@ -3535,14 +3599,19 @@ export class VideoPreview extends HTMLElement {
         this.interval = setInterval(() => {
 
             let img = this.images[index]
+            console.log("-----> 3602")
             if (img != undefined) {
+                console.log("-----> 3604")
                 img.draggable = false;
                 while (this.container.children.length > 2) {
+                    console.log("-----> 3607")
                     this.container.removeChild(this.container.children[this.container.children.length - 1])
                 }
 
                 this.container.appendChild(img, this.container.firstChild)
             }
+
+            console.log("-----> 3614 ", this.images.length)
             // reset the conter if index reach the number of preview images.
             if (index < this.images.length) {
                 index++
@@ -3556,13 +3625,18 @@ export class VideoPreview extends HTMLElement {
      * Stop the image preview...
      */
     stopPreview() {
+        if(this.images.length == 0){
+            return
+        }
+        
         clearInterval(this.interval)
         this.interval = null
         this.playBtn.style.display = "none";
         while (this.container.children.length > 2) {
             this.container.removeChild(this.container.children[this.container.children.length - 1])
         }
-        this.container.appendChild(this.images[0])
+       
+        this.container.appendChild(this.firstImage)
     }
 
     /**
