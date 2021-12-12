@@ -398,6 +398,7 @@ export class FilesView extends HTMLElement {
                     if (f.isDir) {
                         deleteDir(Application.globular, f.path,
                             () => {
+                                delete dirs[path]
                                 Model.eventHub.publish("reload_dir_event", path, false);
                                 if (index < Object.keys(this.selected).length) {
                                     deleteFile_()
@@ -409,6 +410,7 @@ export class FilesView extends HTMLElement {
                     } else {
                         deleteFile(Application.globular, f.path,
                             () => {
+                                delete dirs[path]
                                 Model.eventHub.publish("reload_dir_event", path, false);
                                 if (index < Object.keys(this.selected).length) {
                                     deleteFile_()
@@ -604,6 +606,7 @@ export class FilesView extends HTMLElement {
             }).then(() => {
                 this.paperTray = []
                 this.edit = ""
+                delete dirs[path]
                 Model.eventHub.publish("reload_dir_event", path, false);
             })
             .catch(err => {
@@ -634,10 +637,12 @@ export class FilesView extends HTMLElement {
                 for (var i = 0; i < this.paperTray.length; i++) {
                     let f = this.paperTray[i]
                     let path_ = f.substring(0, f.lastIndexOf("/"))
+                    delete dirs[path]
                     Model.eventHub.publish("reload_dir_event", path_, false);
                 }
                 this.paperTray = []
                 this.edit = ""
+                delete dirs[path]
                 Model.eventHub.publish("reload_dir_event", path, false);
             })
             .catch(err => {
@@ -795,6 +800,7 @@ export class FilesView extends HTMLElement {
             renameFile(Application.globular, path, input.value, f.name,
                 () => {
                     // Refresh the parent folder...
+                    delete dirs[path]
                     Model.eventHub.publish("reload_dir_event", path, false);
                 }, err => { ApplicationView.displayMessage(err, 3000) })
         }
@@ -832,12 +838,16 @@ export class FilesView extends HTMLElement {
                         pid = rsp.getPid()
                     }
                     // Publish local event.
-                    Model.eventHub.publish("__upload_torrent_event__", { pid: pid, path: this.__dir__.path, infos: rsp.getResult(), done: false, lnk: lnk }, true);
+                    if (this.__dir__ != undefined) {
+                        Model.eventHub.publish("__upload_torrent_event__", { pid: pid, path: this.__dir__.path, infos: rsp.getResult(), done: false, lnk: lnk }, true);
+                    }
                 });
 
                 stream.on("status", (status) => {
                     if (status.code === 0) {
-                        Model.eventHub.publish("__upload_torrent_event__", { pid: pid, path: this.__dir__.path, infos: "done", done: true, lnk: lnk }, true);
+                        if (this.__dir__ != undefined) {
+                            Model.eventHub.publish("__upload_torrent_event__", { pid: pid, path: this.__dir__.path, infos: "done", done: true, lnk: lnk }, true);
+                        }
                     } else {
                         // error here...
                         ApplicationView.displayMessage(status.details, 3000)
@@ -2030,7 +2040,6 @@ export class FileNavigator extends HTMLElement {
 
     // remove div and reload it from it content...
     reload(dir) {
-        console.log("reload dir ", dir)
         if (this.dirs[dir.path] != undefined) {
             let div = this.div.querySelector(`#${this.dirs[dir.path].id}`)
             if (div != null) {
@@ -2377,6 +2386,7 @@ export class FileNavigator extends HTMLElement {
                         for (const id in this.shared) {
                             let shared = this.shared[id]
                             this.initTreeView(shared, this.sharedDiv, 0)
+                            delete dirs[shared.path]
                             Model.eventHub.publish("reload_dir_event", shared.path, false);
                         }
                     }
@@ -2627,7 +2637,7 @@ export class FileExplorer extends HTMLElement {
                 <div id="progress-div" style="display: none; flex-grow: 1; margin-right: 20px;">
                     <div style="diplay:flex; flex-direction: column;">
                         <span id="progress-message">wait...</span>
-                        <paper-progress id="globular-dir-loading-progress-bar" indeterminate style="width: 100%;"></paper-progress>
+                        <paper-progress id="globular-dir-loading-progress-bar" indeterminate style=""></paper-progress>
                     </div>
                 </div>
                 <paper-icon-button id="files-icon-btn" class="active" icon="icons:view-module" style="--iron-icon-fill-color: var(--palette-action-active);"></paper-icon-button>
@@ -2894,6 +2904,7 @@ export class FileExplorer extends HTMLElement {
                     })
                     .then(() => {
                         // The new directory was created.
+                        delete dirs[this.path]
                         Model.eventHub.publish("reload_dir_event", this.path, false);
                     })
                     .catch((err) => {
@@ -2909,9 +2920,12 @@ export class FileExplorer extends HTMLElement {
             // set the root...
             this.setRoot(this.root)
             this.displayWaitMessage("load " + this.root)
+
+            // force reload the current dir with the content from the server.
+            delete dirs[getUuidByString(this.path)]
+
             _readDir(this.root, (dir) => {
                 this.resume()
-                delete dirs[getUuidByString(this.path)]
                 _publishSetDirEvent(this.path, this)
 
                 // Clear selection.
@@ -2954,7 +2968,10 @@ export class FileExplorer extends HTMLElement {
 
     displayWaitMessage(message) {
         this.progressDiv.style.display = "block"
-        this.progressDiv.querySelector("#progress-message").innerHTML = message
+        let messageDiv = this.progressDiv.querySelector("#progress-message")
+        messageDiv.innerHTML = message
+        let progressBar = this.progressDiv.querySelector("paper-progress")
+        progressBar.style.width = messageDiv.offsetWidth + "px"
     }
 
     resume() {
@@ -3032,6 +3049,8 @@ export class FileExplorer extends HTMLElement {
                 (uuid) => {
                     this.listeners["reload_dir_event"] = uuid
                 }, (path) => {
+                    // remove existing...
+                    delete dirs[path]
                     this.displayWaitMessage("load " + path)
                     _readDir(path, (dir) => {
                         this.resume()
@@ -4012,8 +4031,9 @@ export class FilesUploader extends HTMLElement {
         let row = this.shadowRoot.querySelector("#" + id)
 
         if (done) {
-            let span_title = this.links_download_table.querySelector("#" + id + "_title")
-            ApplicationView.displayMessage("File " + span_title.innerHTML + " was now uploaded!", 3000)
+            ApplicationView.displayMessage("File " + id + " was now uploaded!", 3000)
+            delete dirs[path]
+            Model.eventHub.publish("reload_dir_event", path, false);
             row.parentNode.removeChild(row)
             return
         }
@@ -4061,16 +4081,17 @@ export class FilesUploader extends HTMLElement {
             row.appendChild(cellDest);
 
             cancelBtn.onclick = () => {
-                row.style.display = "none";
                 let rqst = new KillProcessRequest
                 let token = localStorage.getItem("user_token");
+
                 rqst.setPid(pid)
                 Model.globular.adminService.killProcess(rqst, {
                     token: token,
                     application: Application.application,
                     domain: Application.domain
-                }).then(() => ApplicationView.displayMessage("torrent was close"))
-                    .catch(err => ApplicationView.displayMessage(err, 3000))
+                }).then(() => {
+                    row.parentElement.removeChild(row)
+                }).catch(err => ApplicationView.displayWaitMessage(err, 3000))
             }
 
             // Append to files panels.
@@ -4080,13 +4101,18 @@ export class FilesUploader extends HTMLElement {
         } else {
             console.log(infos)
             let span_infos = row.querySelector("#" + id + "_infos")
-
             let html = `<div style="display: flex; flex-direction: column;">`
-            infos.trim().split(":").forEach(info => {
-                html += `<div>${info}</div>`
-            })
-            html += `</div>`
-            span_infos.innerHTML = html;
+            let infos_ = infos.trim().split(":")
+            if (infos_.length > 2) {
+                infos_.forEach(info => {
+                    html += `<div>${info}</div>`
+                })
+                html += `</div>`
+                span_infos.innerHTML = html;
+            } else {
+                row.parentNode.removeChild(row)
+                console.log(infos.trim())
+            }
         }
 
     }
@@ -4198,6 +4224,7 @@ export class FilesUploader extends HTMLElement {
         // Start file upload!
         uploadFile(0, () => {
             ApplicationView.displayMessage("All files are now uploaded!", 2000)
+            delete dirs[path]
             Model.eventHub.publish("reload_dir_event", path, false)
             //this.btn.click()
         })
