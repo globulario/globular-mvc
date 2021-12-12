@@ -27,9 +27,10 @@ import { CopyRequest, CreateDirRequest, GetFileInfoRequest, GetThumbnailsRespons
 import { createArchive, deleteDir, deleteFile, downloadFileHttp, renameFile, uploadFiles } from 'globular-web-client/api';
 import { ApplicationView } from '../ApplicationView';
 import { Application } from '../Application';
-import { RunCmdRequest } from 'globular-web-client/admin/admin_pb';
+import { KillProcessRequest, RunCmdRequest } from 'globular-web-client/admin/admin_pb';
 import { GetSharedResourceRqst, SubjectType } from 'globular-web-client/rbac/rbac_pb';
 import { randomUUID } from './utility';
+import * as getUuidByString from 'uuid-by-string';
 
 function escapePathSpace(path) {
     /*let values = path.split("/")
@@ -119,6 +120,10 @@ function getImage(callback, images, files, index) {
     xhr.send();
 }
 
+
+// Keep dir info in map to save time...
+let dirs = {}
+
 /**
  * Read dir from local map if available. Read from the server
  * if not in the map of force (in case of refresh)
@@ -128,16 +133,25 @@ function getImage(callback, images, files, index) {
  * @param {*} force If set the dir will be read from the server.
  */
 function _readDir(path, callback, errorCallback) {
+    let key = getUuidByString(path)
+    if (dirs[key] != null) {
+        callback(dirs[key])
+        return
+    }
 
+    // Here I will keep the dir info in the cache...
     File.readDir(path, false, (dir) => {
         callback(dir)
+        dirs[key] = dir
     }, errorCallback)
 
 }
 
-function _publishSetDirEvent(path, file_explorer_id) {
+function _publishSetDirEvent(path, file_explorer_) {
+    file_explorer_.displayWaitMessage("load " + path)
     _readDir(path, (dir) => {
-        Model.eventHub.publish("__set_dir_event__", { path: dir, file_explorer_id: file_explorer_id }, true)
+        Model.eventHub.publish("__set_dir_event__", { path: dir, file_explorer_id: file_explorer_.id }, true)
+        file_explorer_.resume()
     }, err => { console.log(err) })
 }
 
@@ -799,10 +813,14 @@ export class FilesView extends HTMLElement {
                 // there is the way to install the torrent client on the server side.
                 // https://www.maketecheasier.com/how-to-download-torrents-from-the-command-line-in-ubuntu/
                 // there is an exemple of the command called on the sever side.
-                let dest = "/files" + this.__dir__.path
+                let path = this.__dir__.path
+                if (path.startsWith("/users/") || path.startsWith("/applications/")) {
+                    path = Model.globular.config.DataPath + "/files" + path
+                }
                 let rqst = new RunCmdRequest
-                rqst.setCmd("transmission-cli")
-                rqst.setArgsList(["-f", "killall transmission-cli", url, "-w", escapePathSpace(dest)])
+                rqst.setCmd("torrent")
+                rqst.setArgsList(["download", url])
+                rqst.setPath(path)
                 rqst.setBlocking(true)
 
                 let stream = Application.globular.adminService.runCmd(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
@@ -819,7 +837,7 @@ export class FilesView extends HTMLElement {
 
                 stream.on("status", (status) => {
                     if (status.code === 0) {
-                        Model.eventHub.publish("__upload_torrent_event__", { pid: pid, path: this.__dir__.path, infos: rsp.getResult(), done: true, lnk: lnk }, true);
+                        Model.eventHub.publish("__upload_torrent_event__", { pid: pid, path: this.__dir__.path, infos: "done", done: true, lnk: lnk }, true);
                     } else {
                         // error here...
                         ApplicationView.displayMessage(status.details, 3000)
@@ -896,7 +914,11 @@ export class FilesView extends HTMLElement {
                 okBtn.onclick = () => {
                     let rqst = new RunCmdRequest
                     rqst.setCmd("youtube-dl")
-                    let dest = root + `/files${this.__dir__.path}/%(title)s.%(ext)s`
+                    let path = this.__dir__.path
+                    if (path.startsWith("/users/") || path.startsWith("/applications/")) {
+                        path = Model.globular.config.DataPath + "/files" + path
+                    }
+                    let dest = root + `${path}/%(title)s.%(ext)s`
 
 
                     if (mp3Radio.checked) {
@@ -1126,7 +1148,7 @@ export class FilesListView extends FilesView {
                 if (f.mime.startsWith("video")) {
                     Model.eventHub.publish("__play_video__", { path: f.path, file_explorer_id: this._file_explorer_.id }, true)
                 } else if (f.isDir) {
-                    _publishSetDirEvent(f._path, this._file_explorer_.id)
+                    _publishSetDirEvent(f._path, this._file_explorer_)
                 } else if (f.mime.startsWith("image")) {
                     Model.eventHub.publish("__show_image__", { path: f.path, file_explorer_id: this._file_explorer_.id }, true)
                 }
@@ -1195,7 +1217,7 @@ export class FilesListView extends FilesView {
                     let lnk = this.div.getElementsByClassName("file-lnk-ico")[0]
                     lnk.onclick = (evt) => {
                         evt.stopPropagation();
-                        _publishSetDirEvent(f._path, this._file_explorer_.id)
+                        _publishSetDirEvent(f._path, this._file_explorer_)
                     }
 
                     lnk.onmouseover = () => {
@@ -1529,7 +1551,7 @@ export class FilesIconView extends FilesView {
 
                     fileIconDiv.onclick = (evt) => {
                         evt.stopPropagation();
-                        _publishSetDirEvent(file._path, this._file_explorer_.id)
+                        _publishSetDirEvent(file._path, this._file_explorer_)
                     }
 
                     folderIcon.draggable = false
@@ -1538,7 +1560,7 @@ export class FilesIconView extends FilesView {
 
                     /** In that case I will display the vieo preview. */
                     let file_ = hiddens[parentPath];
-    
+
                     for (var j = 0; j < file_.files.length; j++) {
                         let file__ = file_.files[j]
                         if (file__.name == "__preview__") {
@@ -1829,8 +1851,10 @@ export class PathNavigator extends HTMLElement {
                     directoriesDiv.style.right = "0px"
                     directoriesDiv.style.backgroundColor = "var(--palette-background-paper)"
                     directoriesDiv.style.color = "var(--palette-text-primary)"
-
+                    this._file_explorer_.displayWaitMessage("load " + path_)
                     _readDir(path_, (dir) => {
+
+                        this._file_explorer_.resume()
 
                         // Send read dir event.
                         for (let subDir of dir.files) {
@@ -1857,7 +1881,7 @@ export class PathNavigator extends HTMLElement {
 
                                 subDirSpan.onclick = (evt) => {
                                     evt.stopPropagation()
-                                    _publishSetDirEvent(subDir._path, this._file_explorer_.id)
+                                    _publishSetDirEvent(subDir._path, this._file_explorer_)
                                     directoriesDiv.style.display = "none"
                                     btn.icon = "icons:chevron-right"
                                 }
@@ -1904,9 +1928,11 @@ export class PathNavigator extends HTMLElement {
             // Set the current directory to the clicked one.
             title.onclick = (evt) => {
                 evt.stopPropagation();
+                this._file_explorer_.displayWaitMessage("load " + path_)
                 _readDir(path_, (dir) => {
+                    this._file_explorer_.resume()
                     // Send read dir event.
-                    _publishSetDirEvent(dir._path, this._file_explorer_.id)
+                    _publishSetDirEvent(dir._path, this._file_explorer_)
                 }, this.onerror)
             }
 
@@ -2030,7 +2056,7 @@ export class FileNavigator extends HTMLElement {
         }
 
         // old id value was dir.path.split("/").join("_").split("@").join("_")
-        let id = "_" + getUuid(dir.path).split("-").join("_") 
+        let id = "_" + getUuid(dir.path).split("-").join("_")
 
         // keep it in memory 
         this.dirs[dir.path] = { id: id, level: level }
@@ -2169,7 +2195,7 @@ export class FileNavigator extends HTMLElement {
 
         dirLnk.onclick = (evt) => {
             evt.stopPropagation();
-            _publishSetDirEvent(dir._path, this._file_explorer_.id)
+            _publishSetDirEvent(dir._path, this._file_explorer_)
         }
 
         dirLnk.onmouseover = () => {
@@ -2225,7 +2251,9 @@ export class FileNavigator extends HTMLElement {
             if (index < Model.globular.config.Public.length) {
                 let path = Model.globular.config.Public[index]
                 // Read the dir content (files and directory informations.)
+                this._file_explorer_.displayWaitMessage("load " + path)
                 _readDir(path, dir => {
+                    this._file_explorer_.resume()
                     // used by set dir...
                     markAsPublic(dir)
                     this.public_.files.push(dir)
@@ -2233,16 +2261,16 @@ export class FileNavigator extends HTMLElement {
                     initPublicDir(callback, errorCallback)
                 }, errorCallback)
 
-            }else{
+            } else {
                 callback()
             }
         }
 
         // Init
-        initPublicDir(()=>{
+        initPublicDir(() => {
             this.initTreeView(this.public_, this.publicDiv, 0)
         })
-       
+
     }
 
 
@@ -2276,8 +2304,9 @@ export class FileNavigator extends HTMLElement {
                         this.initShared()
                     }, false, this)
             }
-
+            this._file_explorer_.displayWaitMessage("load " + path)
             _readDir(share.getPath(), dir => {
+                this._file_explorer_.resume()
                 // used by set dir...
                 markAsShare(dir)
 
@@ -2595,7 +2624,12 @@ export class FileExplorer extends HTMLElement {
                 </div>
             </div>
             <div class="card-actions">
-                <span style="flex-grow: 1;"></span>
+                <div id="progress-div" style="display: none; flex-grow: 1; margin-right: 20px;">
+                    <div style="diplay:flex; flex-direction: column;">
+                        <span id="progress-message">wait...</span>
+                        <paper-progress id="globular-dir-loading-progress-bar" indeterminate style="width: 100%;"></paper-progress>
+                    </div>
+                </div>
                 <paper-icon-button id="files-icon-btn" class="active" icon="icons:view-module" style="--iron-icon-fill-color: var(--palette-action-active);"></paper-icon-button>
                 <paper-icon-button id="files-list-btn" icon="icons:view-list" style="--iron-icon-fill-color: var(--palette-action-disabled);"></paper-icon-button>
                 <globular-files-uploader></globular-files-uploader>
@@ -2606,6 +2640,9 @@ export class FileExplorer extends HTMLElement {
         </paper-card>
         </div>
         `
+
+        // Give information about loading data...
+        this.progressDiv = this.shadowRoot.querySelector("#progress-div")
 
         // enter full screen and exit full screen btn
         this.enterFullScreenBtn = this.shadowRoot.querySelector("#enter-full-screen-btn")
@@ -2710,7 +2747,7 @@ export class FileExplorer extends HTMLElement {
             let index = this.navigations.indexOf(this.path)
             index--
             if (index < this.navigations.length && index > -1) {
-                _publishSetDirEvent(this.navigations[index], this.id)
+                _publishSetDirEvent(this.navigations[index], this)
             }
         }
 
@@ -2719,7 +2756,7 @@ export class FileExplorer extends HTMLElement {
             let index = this.navigations.indexOf(this.path)
             index++
             if (index < this.navigations.length && index > -1) {
-                _publishSetDirEvent(this.navigations[index], this.id)
+                _publishSetDirEvent(this.navigations[index], this)
             }
         }
 
@@ -2728,7 +2765,7 @@ export class FileExplorer extends HTMLElement {
             if (this.path.split("/").length > 2) {
                 this.path = this.path.substring(0, this.path.lastIndexOf("/"))
 
-                _publishSetDirEvent(this.path, this.id)
+                _publishSetDirEvent(this.path, this)
             }
         }
 
@@ -2871,10 +2908,11 @@ export class FileExplorer extends HTMLElement {
         this.refreshBtn.onclick = () => {
             // set the root...
             this.setRoot(this.root)
-
+            this.displayWaitMessage("load " + this.root)
             _readDir(this.root, (dir) => {
-
-                _publishSetDirEvent(this.path, this.id)
+                this.resume()
+                delete dirs[getUuidByString(this.path)]
+                _publishSetDirEvent(this.path, this)
 
                 // Clear selection.
                 this.filesListView.clearSelection()
@@ -2912,6 +2950,15 @@ export class FileExplorer extends HTMLElement {
                 this.filesUploader.uploadFiles(this.path, fileInput.files)
             }
         }
+    }
+
+    displayWaitMessage(message) {
+        this.progressDiv.style.display = "block"
+        this.progressDiv.querySelector("#progress-message").innerHTML = message
+    }
+
+    resume() {
+        this.progressDiv.style.display = "none"
     }
 
     hideNavigator() {
@@ -2958,7 +3005,7 @@ export class FileExplorer extends HTMLElement {
                     this.listeners["file_rename_event"] = uuid;
                 }, (path) => {
                     if (path.startsWith(this.getRoot())) {
-                        _publishSetDirEvent(this.path, this.id)
+                        _publishSetDirEvent(this.path, this)
                     }
                 }, false, this)
         }
@@ -2985,7 +3032,9 @@ export class FileExplorer extends HTMLElement {
                 (uuid) => {
                     this.listeners["reload_dir_event"] = uuid
                 }, (path) => {
+                    this.displayWaitMessage("load " + path)
                     _readDir(path, (dir) => {
+                        this.resume()
                         if (dir.path == this.path) {
                             Model.eventHub.publish("__set_dir_event__", { path: dir, file_explorer_id: this.id }, true)
                         }
@@ -3002,6 +3051,7 @@ export class FileExplorer extends HTMLElement {
                 evt => {
                     if (evt == this.path) {
                         // refresh the interface.
+                        delete dirs[getUuidByString(this.path)]
                         this.refreshBtn.click();
                     }
                 }, false)
@@ -3054,8 +3104,10 @@ export class FileExplorer extends HTMLElement {
             }, true)
         }
 
+        this.displayWaitMessage("load " + this.root)
         _readDir(this.root, (dir) => {
             // set interface with the given directory.
+            this.resume()
 
             if (this.fileNavigator != null) {
                 this.fileNavigator.setDir(dir)
@@ -3323,7 +3375,7 @@ export class FileExplorer extends HTMLElement {
 
                     navigationLine.onclick = () => {
                         navigationLst.style.display = "none"
-                        _publishSetDirEvent(this.navigations[index], this.id)
+                        _publishSetDirEvent(this.navigations[index], this)
                     }
                 }
             }
@@ -3617,17 +3669,17 @@ export class VideoPreview extends HTMLElement {
      * Stop the image preview...
      */
     stopPreview() {
-        if(this.images.length == 0){
+        if (this.images.length == 0) {
             return
         }
-        
+
         clearInterval(this.interval)
         this.interval = null
         this.playBtn.style.display = "none";
         while (this.container.children.length > 2) {
             this.container.removeChild(this.container.children[this.container.children.length - 1])
         }
-       
+
         this.container.appendChild(this.firstImage)
     }
 
@@ -4010,6 +4062,15 @@ export class FilesUploader extends HTMLElement {
 
             cancelBtn.onclick = () => {
                 row.style.display = "none";
+                let rqst = new KillProcessRequest
+                let token = localStorage.getItem("user_token");
+                rqst.setPid(pid)
+                Model.globular.adminService.killProcess(rqst, {
+                    token: token,
+                    application: Application.application,
+                    domain: Application.domain
+                }).then(() => ApplicationView.displayMessage("torrent was close"))
+                    .catch(err => ApplicationView.displayMessage(err, 3000))
             }
 
             // Append to files panels.
@@ -4019,11 +4080,13 @@ export class FilesUploader extends HTMLElement {
         } else {
             console.log(infos)
             let span_infos = row.querySelector("#" + id + "_infos")
-            if (infos.startsWith("Progress:") && infos.trim().endsWith("]")) {
-                span_infos.innerHTML = infos.trim();
-            } else {
-                // span_infos.innerHTML += infos.trim();
-            }
+
+            let html = `<div style="display: flex; flex-direction: column;">`
+            infos.trim().split(":").forEach(info => {
+                html += `<div>${info}</div>`
+            })
+            html += `</div>`
+            span_infos.innerHTML = html;
         }
 
     }
