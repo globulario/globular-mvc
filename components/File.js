@@ -398,7 +398,7 @@ export class FilesView extends HTMLElement {
                     if (f.isDir) {
                         deleteDir(Application.globular, f.path,
                             () => {
-                                delete dirs[path]
+                                delete dirs[getUuidByString(path)]
                                 Model.eventHub.publish("reload_dir_event", path, false);
                                 if (index < Object.keys(this.selected).length) {
                                     deleteFile_()
@@ -410,7 +410,7 @@ export class FilesView extends HTMLElement {
                     } else {
                         deleteFile(Application.globular, f.path,
                             () => {
-                                delete dirs[path]
+                                delete dirs[getUuidByString(path)]
                                 Model.eventHub.publish("reload_dir_event", path, false);
                                 if (index < Object.keys(this.selected).length) {
                                     deleteFile_()
@@ -606,7 +606,7 @@ export class FilesView extends HTMLElement {
             }).then(() => {
                 this.paperTray = []
                 this.edit = ""
-                delete dirs[path]
+                delete dirs[getUuidByString(path)]
                 Model.eventHub.publish("reload_dir_event", path, false);
             })
             .catch(err => {
@@ -637,12 +637,12 @@ export class FilesView extends HTMLElement {
                 for (var i = 0; i < this.paperTray.length; i++) {
                     let f = this.paperTray[i]
                     let path_ = f.substring(0, f.lastIndexOf("/"))
-                    delete dirs[path]
+                    delete dirs[getUuidByString(path)]
                     Model.eventHub.publish("reload_dir_event", path_, false);
                 }
                 this.paperTray = []
                 this.edit = ""
-                delete dirs[path]
+                delete dirs[getUuidByString(path)]
                 Model.eventHub.publish("reload_dir_event", path, false);
             })
             .catch(err => {
@@ -800,7 +800,7 @@ export class FilesView extends HTMLElement {
             renameFile(Application.globular, path, input.value, f.name,
                 () => {
                     // Refresh the parent folder...
-                    delete dirs[path]
+                    delete dirs[getUuidByString(path)]
                     Model.eventHub.publish("reload_dir_event", path, false);
                 }, err => { ApplicationView.displayMessage(err, 3000) })
         }
@@ -2386,7 +2386,7 @@ export class FileNavigator extends HTMLElement {
                         for (const id in this.shared) {
                             let shared = this.shared[id]
                             this.initTreeView(shared, this.sharedDiv, 0)
-                            delete dirs[shared.path]
+                            delete dirs[getUuidByString(shared.path)]
                             Model.eventHub.publish("reload_dir_event", shared.path, false);
                         }
                     }
@@ -2904,7 +2904,7 @@ export class FileExplorer extends HTMLElement {
                     })
                     .then(() => {
                         // The new directory was created.
-                        delete dirs[this.path]
+                        delete dirs[getUuidByString(this.path)]
                         Model.eventHub.publish("reload_dir_event", this.path, false);
                     })
                     .catch((err) => {
@@ -2971,7 +2971,9 @@ export class FileExplorer extends HTMLElement {
         let messageDiv = this.progressDiv.querySelector("#progress-message")
         messageDiv.innerHTML = message
         let progressBar = this.progressDiv.querySelector("paper-progress")
-        progressBar.style.width = messageDiv.offsetWidth + "px"
+        if (messageDiv.offsetWidth > 0) {
+            progressBar.style.width = messageDiv.offsetWidth + "px"
+        }
     }
 
     resume() {
@@ -3050,7 +3052,7 @@ export class FileExplorer extends HTMLElement {
                     this.listeners["reload_dir_event"] = uuid
                 }, (path) => {
                     // remove existing...
-                    delete dirs[path]
+                    delete dirs[getUuidByString(path)]
                     this.displayWaitMessage("load " + path)
                     _readDir(path, (dir) => {
                         this.resume()
@@ -3162,6 +3164,12 @@ export class FileExplorer extends HTMLElement {
     connectedCallback() {
         // set the root...
         this.setRoot(this.root)
+        
+        let messageDiv = this.progressDiv.querySelector("#progress-message")
+        let progressBar = this.progressDiv.querySelector("paper-progress")
+        if (messageDiv.offsetWidth > 0) {
+            progressBar.style.width = messageDiv.offsetWidth + "px"
+        }
     }
 
     setRoot(root) {
@@ -4032,7 +4040,7 @@ export class FilesUploader extends HTMLElement {
 
         if (done) {
             ApplicationView.displayMessage("File " + id + " was now uploaded!", 3000)
-            delete dirs[path]
+            delete dirs[getUuidByString(path)]
             Model.eventHub.publish("reload_dir_event", path, false);
             row.parentNode.removeChild(row)
             return
@@ -4224,7 +4232,7 @@ export class FilesUploader extends HTMLElement {
         // Start file upload!
         uploadFile(0, () => {
             ApplicationView.displayMessage("All files are now uploaded!", 2000)
-            delete dirs[path]
+            delete dirs[getUuidByString(path)]
             Model.eventHub.publish("reload_dir_event", path, false)
             //this.btn.click()
         })
