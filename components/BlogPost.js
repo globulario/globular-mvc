@@ -25,6 +25,8 @@ import { Database, Picker } from 'emoji-picker-element'
 import { GetThumbnailsResponse } from 'globular-web-client/file/file_pb';
 import * as getUuidByString from 'uuid-by-string';
 import { localToGlobal } from './utility';
+import { GetApplicationVersionRqst } from 'globular-web-client/resource/resource_pb';
+import { LogarithmicScale } from 'chart.js';
 
 // Get the image default size...
 function getMeta(url, callback) {
@@ -72,8 +74,16 @@ export class BlogPostElement extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor() {
+    constructor(blog) {
         super()
+
+        console.log(blog)
+
+        this.blog = blog
+
+        if (blog != undefined) {
+            this.id = "_" + blog.getUuid()
+        }
 
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
@@ -212,7 +222,7 @@ export class BlogPostElement extends HTMLElement {
         `
 
         // The comments container...
-        this.blogComments = new BlogComments()
+        this.blogComments = new BlogComments(blog)
         this.blogComments.slot = "blog-comments"
         this.appendChild(this.blogComments)
 
@@ -286,6 +296,11 @@ export class BlogPostElement extends HTMLElement {
                 ApplicationView.displayMessage("you'r in edit mode, click save to exit...", 3000)
             })
         }
+
+        // set the blog.
+        if (blog != undefined) {
+            this.setBlog(blog)
+        }
     }
 
     // Connection callback
@@ -302,7 +317,6 @@ export class BlogPostElement extends HTMLElement {
 
     // Set the blog...
     setBlog(blog) {
-
         this.blog = blog;
         this.blogComments.setBlog(blog)
 
@@ -677,9 +691,8 @@ export class BlogPosts extends HTMLElement {
             return
         }
 
-        let blog = new BlogPostElement()
-        blog.id = "_" + b.getUuid()
-        blog.setBlog(b)
+        // Create a new BlogPostElement...
+        let blog = new BlogPostElement(b)
 
         // Generate the blog display and set in the list.
         blog.read(() => {
@@ -713,7 +726,7 @@ export class BlogComments extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor(parent) {
+    constructor(blog, comment) {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
@@ -731,40 +744,84 @@ export class BlogComments extends HTMLElement {
         `
 
         // The emotions 
-        this.emotions = new BlogEmotions()
+        this.emotions = new BlogEmotions(blog, comment)
         this.emotions.slot = "blog-emotions"
         this.appendChild(this.emotions)
 
         // The comment editior
-        this.editor = new BlogCommentEditor(parent)
+        console.log("------------>", blog, comment)
+
+        this.editor = new BlogCommentEditor(blog, comment)
         this.editor.slot = "blog-comment-editor"
         this.appendChild(this.editor)
 
+        if (comment != undefined) {
+            this.setComment(comment, blog)
+        }
 
+        if (blog != undefined) {
+            this.setBlog(blog)
+        }
     }
 
     setBlog(blog) {
+        if (this.blog != undefined) {
+            return
+        }
+
         this.blog = blog
-        this.editor.setParent(blog)
-        this.emotions.setParent(blog)
+        this.editor.setBlog(blog)
+        this.emotions.setBlog(blog)
+
+        if (this.comment == undefined) {
+            // Here I will connect the event channel for comment.
+            Model.eventHub.subscribe("new_" + this.blog.getUuid() + "_comment_evt",
+                uuid => this["new_blog_" + this.blog.getUuid() + "_comment_listener"] = uuid,
+                evt => {
+                    let comment = Comment.deserializeBinary(Uint8Array.from(evt.split(",")))
+                    this.appendComment(comment, blog)
+                }, false, this)
+
+            // Display the comment...
+            this.blog.getCommentsList().forEach(c => {
+                this.appendComment(c, blog)
+            })
+        }
+    }
+
+    setComment(comment, blog) {
+        if (this.comment != undefined) {
+            return
+        }
+
+        this.comment = comment
+        this.editor.setComment(comment)
+        this.emotions.setComment(comment)
+
         // Here I will connect the event channel for comment.
-        Model.eventHub.subscribe("new_blog_" + this.blog.getUuid() + "_comment_evt",
-            uuid => this["new_blog_" + this.blog.getUuid() + "_comment_listener"] = uuid,
+        Model.eventHub.subscribe("new_" + this.comment.getUuid() + "_comment_evt",
+            uuid => this["new_" + this.comment.getUuid() + "_comment_listener"] = uuid,
             evt => {
                 let comment = Comment.deserializeBinary(Uint8Array.from(evt.split(",")))
-                this.setComment(comment)
+                this.appendComment(comment, blog)
             }, false, this)
 
         // Display the comment...
-        this.blog.getCommentsList().forEach(c => {
-            this.setComment(c)
+        this.comment.getCommentsList().forEach(c => {
+            this.appendComment(c, blog)
         })
+
     }
 
     // Append a new comment into the list of comment.
-    setComment(comment) {
+    appendComment(comment, blog) {
+        // append the comment once.
+        if (this.querySelector("#_" + comment.getUuid()) != undefined) {
+            return
+        }
+
         // So here I will display information about the comment 
-        let blogComment = new BlogComment(comment)
+        let blogComment = new BlogComment(blog, comment)
         blogComment.slot = "blog-comments"
         this.prepend(blogComment)
         blogComment.display()
@@ -780,12 +837,14 @@ export class BlogComment extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor(comment) {
+    constructor(blog, comment) {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
 
         this.comment = comment;
+        this.blog = blog;
+        this.id = "_" + comment.getUuid()
 
 
         // Innitialisation of the layout.
@@ -797,6 +856,7 @@ export class BlogComment extends HTMLElement {
                 display: flex;
                 flex-direction: column;
                 padding: 8px 16px 8px 16px;
+                overflow: auto;
             }
 
         </style>
@@ -817,7 +877,7 @@ export class BlogComment extends HTMLElement {
         `
 
         // The comments container...
-        this.blogComments = new BlogComments(comment)
+        this.blogComments = new BlogComments(blog, comment)
         this.blogComments.slot = "blog-comments"
         this.appendChild(this.blogComments)
 
@@ -862,10 +922,11 @@ export class BlogCommentEditor extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor(parent) {
+    constructor(blog, comment) {
         super()
 
-        this.parent = parent
+        this.blog = blog
+        this.comment = comment
 
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
@@ -899,7 +960,7 @@ export class BlogCommentEditor extends HTMLElement {
                     <paper-icon-button id="collapse-btn" icon="editor:insert-emoticon" style="--iron-icon-fill-color:var(--palette-action-disabled);"></paper-icon-button>
                 </div>
             </div>
-            <div  style="display: flex; flex-direction: column; width: 100%;">
+            <div id="edit-div" style="display: flex; flex-direction: column; width: 100%;">
                 <slot name="edit-comment-content"></slot>
                 <iron-collapse id="collapse-panel" style="display: flex; flex-direction: column;">
                     <emoji-picker></emoji-picker>
@@ -915,6 +976,8 @@ export class BlogCommentEditor extends HTMLElement {
 
         this.collapse_btn = this.shadowRoot.querySelector("#collapse-btn")
         this.collapse_panel = this.shadowRoot.querySelector("#collapse-panel")
+        this.editDiv = this.shadowRoot.querySelector("#edit-div")
+
         this.collapse_btn.onclick = () => {
             if (!this.collapse_panel.opened) {
                 this.collapse_btn.icon = "icons:close"
@@ -933,13 +996,17 @@ export class BlogCommentEditor extends HTMLElement {
             let emoji = new Emoji
             emoji.setAccountId(Application.account.id)
             emoji.setEmoji(JSON.stringify(event.detail))
-            emoji.setParent(this.parent.getUuid())
-            rqst.setUuid(this.parent.getUuid())
+            emoji.setParent(this.blog.getUuid())
+            if (comment != undefined) {
+                emoji.setParent(comment.getUuid())
+            }
+
+            rqst.setUuid(this.blog.getUuid())
             rqst.setEmoji(emoji)
 
             Model.globular.blogService.addEmoji(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
                 .then(rsp => {
-                    Model.eventHub.publish(this.parent.getUuid() + "_new_emotion_event", rsp.getEmoji().serializeBinary(), false)
+                    Model.eventHub.publish(emoji.getParent() + "_new_emotion_event", rsp.getEmoji().serializeBinary(), false)
                 })
                 .catch(e => {
                     ApplicationView.displayMessage(e, 3000)
@@ -951,6 +1018,7 @@ export class BlogCommentEditor extends HTMLElement {
         let addCommentBtn = this.shadowRoot.querySelector(".add-comment-btn")
         this.shadowRoot.querySelector("paper-ripple").ontransitionend = () => {
             addCommentBtn.style.display = "none"
+            this.editDiv.style.display = ""
             this.collapse_panel.style.display = "none"
             this.editorDiv = document.createElement("div")
             this.editorDiv.id = "_" + uuidv4() + "editorjs"
@@ -1026,18 +1094,34 @@ export class BlogCommentEditor extends HTMLElement {
             this.editor.save().then((outputData) => {
                 let rqst = new AddCommentRequest
                 let comment = new Comment
-                rqst.setUuid(this.parent.getUuid())
+                rqst.setUuid(this.blog.getUuid())
                 comment.setAccountId(Application.account.id)
                 comment.setLanguage(navigator.language.split("-")[0])
                 comment.setText(JSON.stringify(outputData))
+                comment.setParent(this.blog.getUuid())
+                if (this.comment != undefined) {
+                    comment.setParent(this.comment.getUuid())
+                }
                 rqst.setComment(comment)
 
                 Model.globular.blogService.addComment(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
                     .then(rsp => {
-                        Model.eventHub.publish("new_blog_" + this.parent.getUuid() + "_comment_evt", rsp.getComment().serializeBinary(), false)
+                        Model.eventHub.publish("new_" + comment.getParent() + "_comment_evt", rsp.getComment().serializeBinary(), false)
+                        addCommentBtn.style.display = "flex"
+                        this.collapse_panel.style.display = ""
+                        this.editDiv.style.display = "none"
+                        this.removeChild(this.editorDiv)
                     })
 
             })
+        }
+
+        let cancelCommentButton = this.shadowRoot.querySelector('#cancel-blog-comment')
+        cancelCommentButton.onclick = () => {
+            addCommentBtn.style.display = "flex"
+            this.collapse_panel.style.display = ""
+            this.editDiv.style.display = "none"
+            this.removeChild(this.editorDiv)
         }
 
     }
@@ -1045,8 +1129,12 @@ export class BlogCommentEditor extends HTMLElement {
     connectedCallback() {
     }
 
-    setParent(parent) {
-        this.parent = parent
+    setBlog(blog) {
+        this.blog = blog
+    }
+
+    setComment(comment) {
+        this.comment = comment
     }
 }
 
@@ -1061,7 +1149,7 @@ export class BlogEmotions extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor() {
+    constructor(blog, comment) {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
@@ -1080,6 +1168,16 @@ export class BlogEmotions extends HTMLElement {
         `
 
         // test create offer...
+        this.blog = blog
+        this.comment = comment
+
+        if (this.comment != undefined) {
+            // In that case the emotion is related to the comment and not the blog.
+            this.setComment(comment)
+        } else if (blog != undefined) {
+            // The emotion is related to the blog.
+            this.setBlog(blog)
+        }
     }
 
     addEmotion(emotion) {
@@ -1144,15 +1242,44 @@ export class BlogEmotions extends HTMLElement {
 
     }
 
-    // Set the parent...
-    setParent(parent) {
-        this.parent = parent
-        parent.getEmotionsList().forEach(emotion => {
+    // If the parent is a blog.
+    setBlog(blog) {
+
+        this.blog = blog
+        if (this.comment == undefined) {
+            this.blog.getEmotionsList().forEach(emotion => {
+                this.addEmotion(emotion)
+            })
+
+            // Now I will connect emotion event...
+            Model.eventHub.subscribe(blog.getUuid() + "_new_emotion_event", uuid => { }, evt => {
+                let emotion = Emoji.deserializeBinary(Uint8Array.from(evt.split(",")))
+
+                Account.getAccount(emotion.getAccountId(), a => {
+                    let userName = a.name
+                    if (a.firstName.length > 0) {
+                        userName = a.firstName + " " + a.lastName
+                    }
+                    let emoji = JSON.parse(emotion.getEmoji())
+                    ApplicationView.displayMessage(`${userName} put emoji '${emoji.emoji.annotation}' ${emoji.unicode} to your <div style="padding-left: 5px;" onclick="document.getElementById('${blog.getUuid()}').scrollIntoView();">blog</div>`, 3000)
+                }, e => {
+                    console.log(e)
+                })
+
+
+                this.addEmotion(emotion)
+            }, false, this)
+        }
+    }
+
+    // If the parent is a comment...
+    setComment(comment) {
+        this.comment = comment
+        this.comment.getEmotionsList().forEach(emotion => {
             this.addEmotion(emotion)
         })
-
         // Now I will connect emotion event...
-        Model.eventHub.subscribe(parent.getUuid() + "_new_emotion_event", uuid => { }, evt => {
+        Model.eventHub.subscribe(comment.getUuid() + "_new_emotion_event", uuid => { }, evt => {
             let emotion = Emoji.deserializeBinary(Uint8Array.from(evt.split(",")))
 
             Account.getAccount(emotion.getAccountId(), a => {
@@ -1161,7 +1288,7 @@ export class BlogEmotions extends HTMLElement {
                     userName = a.firstName + " " + a.lastName
                 }
                 let emoji = JSON.parse(emotion.getEmoji())
-                ApplicationView.displayMessage(`${userName} put emoji '${emoji.emoji.annotation}' ${emoji.unicode} to your <div style="padding-left: 5px;" onclick="document.getElementById('${blog.getUuid()}').scrollIntoView();">blog</div>`, 3000)
+                ApplicationView.displayMessage(`${userName} put emoji '${emoji.emoji.annotation}' ${emoji.unicode} to your <div style="padding-left: 5px;" onclick="document.getElementById('${comment.getUuid()}').scrollIntoView();">blog</div>`, 3000)
             }, e => {
                 console.log(e)
             })
@@ -1169,14 +1296,6 @@ export class BlogEmotions extends HTMLElement {
 
             this.addEmotion(emotion)
         }, false, this)
-    }
-
-    // Set the comment...
-    setComment(comment) {
-        this.comment = comment
-        this.comment.getEmotionsList().forEach(emotion => {
-            this.addEmotion(emotion)
-        })
     }
 }
 
