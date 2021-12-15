@@ -331,4 +331,8 @@ export let theme = `
     --category-font-color:var(--palette-text-primary);
   }
 
+  .blog-post-editor-div, .blog-post-reader-div{
+    background-color: var(--palette-background-paper);
+    color: var(--palette-text-primary);
+  }
 `
