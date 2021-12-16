@@ -736,7 +736,7 @@ export class BlogComments extends HTMLElement {
         <style>
             ${theme}
         </style>
-        <div style="padding: 10px;">
+        <div id="container" style="padding: 10px;">
             <slot name="blog-emotions"> </slot>
             <slot name="blog-comment-editor"></slot>
             <slot name="blog-comments"></slot>
@@ -749,8 +749,6 @@ export class BlogComments extends HTMLElement {
         this.appendChild(this.emotions)
 
         // The comment editior
-        console.log("------------>", blog, comment)
-
         this.editor = new BlogCommentEditor(blog, comment)
         this.editor.slot = "blog-comment-editor"
         this.appendChild(this.editor)
@@ -815,6 +813,11 @@ export class BlogComments extends HTMLElement {
 
     // Append a new comment into the list of comment.
     appendComment(comment, blog) {
+
+        if(this.comment!=null){
+            this.shadowRoot.querySelector("#container").style.borderLeft = "1px solid var(--palette-action-disabled)"
+        }
+        
         // append the comment once.
         if (this.querySelector("#_" + comment.getUuid()) != undefined) {
             return
