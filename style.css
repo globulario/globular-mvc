@@ -354,6 +354,8 @@ globular-processes-manager .table-item-value{
 }
 
 .blog-read-div p{
+   text-align: left;
+   padding-left: 10px;
 }
 
 .blog-emitions{

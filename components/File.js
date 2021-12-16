@@ -2257,19 +2257,23 @@ export class FileNavigator extends HTMLElement {
 
         let index = 0;
         let initPublicDir = (callback, errorCallback) => {
-            if (index < Model.globular.config.Public.length) {
-                let path = Model.globular.config.Public[index]
-                // Read the dir content (files and directory informations.)
-                this._file_explorer_.displayWaitMessage("load " + path)
-                _readDir(path, dir => {
-                    this._file_explorer_.resume()
-                    // used by set dir...
-                    markAsPublic(dir)
-                    this.public_.files.push(dir)
-                    index++
-                    initPublicDir(callback, errorCallback)
-                }, errorCallback)
+            if (Model.globular.config.Public != undefined) {
+                if (index < Model.globular.config.Public.length) {
+                    let path = Model.globular.config.Public[index]
+                    // Read the dir content (files and directory informations.)
+                    this._file_explorer_.displayWaitMessage("load " + path)
+                    _readDir(path, dir => {
+                        this._file_explorer_.resume()
+                        // used by set dir...
+                        markAsPublic(dir)
+                        this.public_.files.push(dir)
+                        index++
+                        initPublicDir(callback, errorCallback)
+                    }, errorCallback)
 
+                } else {
+                    callback()
+                }
             } else {
                 callback()
             }
@@ -3164,7 +3168,7 @@ export class FileExplorer extends HTMLElement {
     connectedCallback() {
         // set the root...
         this.setRoot(this.root)
-        
+
         let messageDiv = this.progressDiv.querySelector("#progress-message")
         let progressBar = this.progressDiv.querySelector("paper-progress")
         if (messageDiv.offsetWidth > 0) {

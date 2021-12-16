@@ -28,6 +28,22 @@ import { localToGlobal } from './utility';
 import { GetApplicationVersionRqst } from 'globular-web-client/resource/resource_pb';
 import { LogarithmicScale } from 'chart.js';
 
+const intervals = [
+    { label: 'year', seconds: 31536000 },
+    { label: 'month', seconds: 2592000 },
+    { label: 'day', seconds: 86400 },
+    { label: 'hour', seconds: 3600 },
+    { label: 'minute', seconds: 60 },
+    { label: 'second', seconds: 1 }
+  ];
+  
+  function timeSince(date) {
+    const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+    const interval = intervals.find(i => i.seconds < seconds);
+    const count = Math.floor(seconds / interval.seconds);
+    return `${count} ${interval.label}${count !== 1 ? 's' : ''} ago`;
+  }
+
 // Get the image default size...
 function getMeta(url, callback) {
     const img = new Image();
@@ -123,6 +139,10 @@ export class BlogPostElement extends HTMLElement {
                 text-align: left;
                 margin-left: 16px;
                 padding: 8px;
+            }
+            
+            .blog-read-div p{
+                text-align: left;
             }
 
             .blog-options-panel{
@@ -274,7 +294,7 @@ export class BlogPostElement extends HTMLElement {
         }
 
         // The editor values.
-        this.titleSpan = this.shadowRoot.querySelector("#blog-editor-title")
+        this.titleSpan = this.shadowRoot.querySelector(".blog-reader-title")
         this.titleInput = this.shadowRoot.querySelector("#blog-title-input")
         this.keywordsEditList = this.shadowRoot.querySelector("#keywords-list")
 
@@ -331,7 +351,7 @@ export class BlogPostElement extends HTMLElement {
                 this.blog = BlogPost.deserializeBinary(Uint8Array.from(evt.split(",")))
                 this.read(() => {
                     // set back values.
-                    this.titleSpan.value = this.blog.getTitle()
+                    this.titleSpan.innerHTML = this.blog.getTitle()
                     this.titleInput.value = this.blog.getTitle()
                     this.keywordsEditList.setValues(this.blog.getKeywordsList())
                 })
@@ -365,7 +385,7 @@ export class BlogPostElement extends HTMLElement {
 
         this.shadowRoot.querySelector(".blog-reader-title").innerHTML = blog.getTitle()
 
-        this.titleSpan.value = blog.getTitle()
+        this.titleSpan.innerHTML = blog.getTitle()
         this.titleInput.value = blog.getTitle()
         this.keywordsEditList.setValues(blog.getKeywordsList())
     }
@@ -736,7 +756,7 @@ export class BlogComments extends HTMLElement {
         <style>
             ${theme}
         </style>
-        <div id="container" style="padding: 10px;">
+        <div id="container" style="padding-left: 10px;">
             <slot name="blog-emotions"> </slot>
             <slot name="blog-comment-editor"></slot>
             <slot name="blog-comments"></slot>
@@ -817,7 +837,7 @@ export class BlogComments extends HTMLElement {
         if(this.comment!=null){
             this.shadowRoot.querySelector("#container").style.borderLeft = "1px solid var(--palette-action-disabled)"
         }
-        
+
         // append the comment once.
         if (this.querySelector("#_" + comment.getUuid()) != undefined) {
             return
@@ -858,10 +878,22 @@ export class BlogComment extends HTMLElement {
             .container{
                 display: flex;
                 flex-direction: column;
-                padding: 8px 16px 8px 16px;
+                padding: 8px 0px 8px 16px;
                 overflow: auto;
             }
 
+            #blog-comment-author-id, #blog-comment-time{
+                font-size: .85rem;
+            }
+
+            #blog-comment-time{
+                align-self: flex-end;
+                padding-right: 10px;
+            }
+
+            .blog-read-div p{
+                text-align: left;
+            }
         </style>
         <div class="container" id="_${comment.getUuid()}">
             <div style="display: flex;">
@@ -869,13 +901,16 @@ export class BlogComment extends HTMLElement {
                     <div>
                         <img id="blog-comment-author-picture" style="width: 32px; height: 32px; border-radius: 16px; display:none;"></img>
                         <iron-icon id="blog-comment-author-icon"  icon="account-circle" style="width: 34px; height: 34px; --iron-icon-fill-color:var(--palette-action-disabled); display: block;"></iron-icon>
+                        
                     </div>
                     <span  id="blog-comment-author-id"></span>
                 </div>
                 <div id="comment-text-div">
                 </div>
             </div>
+            <div id="blog-comment-time"></div>
             <slot name="blog-comments"></slot>
+            
         </div>
         `
 
@@ -900,7 +935,13 @@ export class BlogComment extends HTMLElement {
         }, e => {
             console.log(e)
         })
-        // let content = jsonToHtml(JSON.parse(comment.getText()))
+        
+        let timeDiv =  this.shadowRoot.querySelector("#blog-comment-time"); 
+        let commentCreationTime = new Date(comment.getCreationtime()*1000)
+        setInterval(()=>{
+            timeDiv.innerHTML = timeSince(commentCreationTime)
+        }, 1000)
+
     }
 
     display() {
@@ -963,7 +1004,7 @@ export class BlogCommentEditor extends HTMLElement {
                     <paper-icon-button id="collapse-btn" icon="editor:insert-emoticon" style="--iron-icon-fill-color:var(--palette-action-disabled);"></paper-icon-button>
                 </div>
             </div>
-            <div id="edit-div" style="display: flex; flex-direction: column; width: 100%;">
+            <div style="display: flex; flex-direction: column; width: 100%;">
                 <slot name="edit-comment-content"></slot>
                 <iron-collapse id="collapse-panel" style="display: flex; flex-direction: column;">
                     <emoji-picker></emoji-picker>
@@ -979,7 +1020,7 @@ export class BlogCommentEditor extends HTMLElement {
 
         this.collapse_btn = this.shadowRoot.querySelector("#collapse-btn")
         this.collapse_panel = this.shadowRoot.querySelector("#collapse-panel")
-        this.editDiv = this.shadowRoot.querySelector("#edit-div")
+        this.editDiv = this.shadowRoot.querySelector("#edit-comment-content")
 
         this.collapse_btn.onclick = () => {
             if (!this.collapse_panel.opened) {
@@ -1022,7 +1063,6 @@ export class BlogCommentEditor extends HTMLElement {
         this.shadowRoot.querySelector("paper-ripple").ontransitionend = () => {
             addCommentBtn.style.display = "none"
             this.editDiv.style.display = ""
-            this.collapse_panel.style.display = "none"
             this.editorDiv = document.createElement("div")
             this.editorDiv.id = "_" + uuidv4() + "editorjs"
             this.editorDiv.slot = "edit-comment-content"
@@ -1111,7 +1151,6 @@ export class BlogCommentEditor extends HTMLElement {
                     .then(rsp => {
                         Model.eventHub.publish("new_" + comment.getParent() + "_comment_evt", rsp.getComment().serializeBinary(), false)
                         addCommentBtn.style.display = "flex"
-                        this.collapse_panel.style.display = ""
                         this.editDiv.style.display = "none"
                         this.removeChild(this.editorDiv)
                     })
