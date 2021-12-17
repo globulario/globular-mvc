@@ -32,18 +32,6 @@ import { GetSharedResourceRqst, SubjectType } from 'globular-web-client/rbac/rba
 import { randomUUID } from './utility';
 import * as getUuidByString from 'uuid-by-string';
 
-function escapePathSpace(path) {
-    /*let values = path.split("/")
-    values.forEach(v=>{
-        if(v.indexOf(" ") > 0){
-            //v = `"${v}"`
-        }
-    })
-
-    return values.join("/")
-    */
-    return path
-}
 
 // keep track of shared directory
 var shared = {}
@@ -924,17 +912,20 @@ export class FilesView extends HTMLElement {
                 okBtn.onclick = () => {
                     let rqst = new RunCmdRequest
                     rqst.setCmd("youtube-dl")
+                    
                     let path = this.__dir__.path
                     if (path.startsWith("/users/") || path.startsWith("/applications/")) {
                         path = Model.globular.config.DataPath + "/files" + path
                     }
-                    let dest = root + `${path}/%(title)s.%(ext)s`
+                    console.log("path is ", path)
+                    rqst.setPath(path)
+                    let dest = `%(title)s.%(ext)s`
 
 
                     if (mp3Radio.checked) {
-                        rqst.setArgsList(["-f", "bestaudio", "--extract-audio", "--audio-format", "mp3", "--audio-quality", "0", "-o", escapePathSpace(dest), url]);
+                        rqst.setArgsList(["-f", "bestaudio", "--extract-audio", "--audio-format", "mp3", "--audio-quality", "0", "-o",dest, url]);
                     } else {
-                        rqst.setArgsList(["-f", "mp4", "-o", escapePathSpace(dest), url])
+                        rqst.setArgsList(["-f", "mp4", "-o", dest, url])
                     }
 
                     rqst.setBlocking(true)
