@@ -925,9 +925,9 @@ export class FilesView extends HTMLElement {
                     let rqst = new RunCmdRequest
                     rqst.setCmd("youtube-dl")
                     let path = this.__dir__.path
-                    if (path.startsWith("/users/") || path.startsWith("/applications/")) {
+                    /*if (path.startsWith("/users/") || path.startsWith("/applications/")) {
                         path = Model.globular.config.DataPath + "/files" + path
-                    }
+                    }*/
                     let dest = root + `${path}/%(title)s.%(ext)s`
 
 
