@@ -917,11 +917,12 @@ export class FilesView extends HTMLElement {
                     if (path.startsWith("/users/") || path.startsWith("/applications/")) {
                         path = Model.globular.config.DataPath + "/files" + path
                     }
-                    console.log("path is ", path)
+
+                    // The path will be set at the command level, not at file level.
                     rqst.setPath(path)
+
                     let dest = `%(title)s.%(ext)s`
-
-
+  
                     if (mp3Radio.checked) {
                         rqst.setArgsList(["-f", "bestaudio", "--extract-audio", "--audio-format", "mp3", "--audio-quality", "0", "-o",dest, url]);
                     } else {
