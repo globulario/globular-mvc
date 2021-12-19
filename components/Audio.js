@@ -69,7 +69,7 @@ export class AudioPlayer extends HTMLElement {
 
         // Set the path and play.
         this.audio.src = path
-        this.video.src += "?application=" + Model.application
+        this.audio.src += "?application=" + Model.application
         if(localStorage.getItem("user_token")!=undefined){
             this.audio.src += "&token=" + localStorage.getItem("user_token")
         } 
