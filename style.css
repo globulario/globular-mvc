@@ -575,8 +575,8 @@ globular-file-explorer{
 
    globular-blog-post{
       grid-row-start: 1;
-      grid-column-start: 6;
-      grid-column-end: 12;
+      grid-column-start: 4;
+      grid-column-end: 14;
    }
 
    globular-terminal{
@@ -604,8 +604,8 @@ globular-file-explorer{
 
    globular-settings-panel, globular-blog-posts{
       grid-row-start: 2;
-      grid-column-start: 6;
-      grid-column-end: 12;
+      grid-column-start: 4;
+      grid-column-end: 14;
    }
 
    globular-settings-panel{

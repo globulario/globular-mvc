@@ -49,6 +49,11 @@ export class FileReader extends HTMLElement {
     
         // Set the file location.
         this.frame.src =url + path
+        this.frame.src += "?application=" + Model.application
+        if(localStorage.getItem("user_token")!=undefined){
+            this.frame.src += "&token=" + localStorage.getItem("user_token")
+        }
+        
         this.frame.style.height = this.parentNode.offsetHeight + "px"
         // must be white...
         this.frame.style.background = "white";
