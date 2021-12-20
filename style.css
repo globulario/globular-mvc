@@ -106,6 +106,15 @@ div, span, h1, h2, h3{
    background-color: var(--palette-background-paper);
    color: var(--palette-text-primary);
 }
+
+
+paper-tabs {
+   /* custom CSS property */
+   --paper-tabs-selection-bar-color: var(--palette-primary-main); 
+   color: var(--palette-text-primary);
+   --paper-tab-ink: var(--palette-action-disabled);
+ }
+ 
 /** Table element **/
 /** Simple table style **/
 table-element{

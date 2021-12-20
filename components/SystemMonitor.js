@@ -5,7 +5,7 @@
 import { theme } from "./Theme";
 import { Model } from '../Model';
 import { Application } from "../Application";
-import { GetProcessInfosRequest, KillProcessRequest } from "globular-web-client/admin/admin_pb";
+import { GetProcessInfosRequest, KillProcessRequest, ProcessInfo } from "globular-web-client/admin/admin_pb";
 import { ApplicationView } from "../ApplicationView";
 import { v4 as uuidv4 } from "uuid";
 import { Chart, registerables } from 'chart.js';
@@ -201,7 +201,7 @@ function getStats(callback, errorcallback) {
     url += "?domain=" + Model.domain
     url += "&application=" + Model.application
     if (localStorage.getItem("user_token") != undefined) {
-      url += "&token=" + localStorage.getItem("user_token")
+        url += "&token=" + localStorage.getItem("user_token")
     }
 
     xmlhttp.open("GET", url, true);
@@ -612,11 +612,22 @@ export class ProcessesManager extends HTMLElement {
         let rqst = new GetProcessInfosRequest
         rqst.setName("")
         rqst.setPid(0)
-        Application.globular.adminService.getProcessInfos(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
-            .then(rsp => {
-                callback(rsp.getInfosList())
-            })
-            .catch(err => ApplicationView.displayMessage(err, 3000))
+        const stream = Application.globular.adminService.getProcessInfos(rqst, {
+            domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token")
+        });
+
+        // display process info at each second...
+        stream.on("data", (rsp) => {
+            callback(rsp.getInfosList())
+        });
+
+        stream.on("status", (status) => {
+            if (status.code === 0) {
+
+            } else {
+                console.log(status.details)
+            }
+        })
     }
 
     sort() {
@@ -777,10 +788,12 @@ export class ProcessesManager extends HTMLElement {
      * The this is call at login time.
      */
     connectedCallback() {
+        /*
         this.interval = setInterval(() => {
-            this.getProcessesInfo((infos) => this.displayProcess(infos))
+            
         }, 1000)
-
+        */
+        this.getProcessesInfo((infos) => this.displayProcess(infos))
     }
 
     /**

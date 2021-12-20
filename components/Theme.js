@@ -154,7 +154,7 @@ export let theme = `
   paper-card {
     background-color: transparent;
     font-size: 1rem;
-    text-align: left;
+    text-align: left;F
   }
 
   paper-button {
