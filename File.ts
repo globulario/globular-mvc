@@ -185,8 +185,8 @@ export class File extends Model {
             callback(File._local_files[path])
             return
         }
-
-        readDir(Model.globular, path, recursive, (data: any) => {
+        
+        readDir(Model.globular,path, recursive, (data: any) => {
             callback(File.fromObject(data))
         }, errorCallback)
     }
