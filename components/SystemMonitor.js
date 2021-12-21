@@ -5,7 +5,7 @@
 import { theme } from "./Theme";
 import { Model } from '../Model';
 import { Application } from "../Application";
-import { GetProcessInfosRequest, KillProcessRequest } from "globular-web-client/admin/admin_pb";
+import { GetProcessInfosRequest, KillProcessRequest, ProcessInfo } from "globular-web-client/admin/admin_pb";
 import { ApplicationView } from "../ApplicationView";
 import { v4 as uuidv4 } from "uuid";
 import { Chart, registerables } from 'chart.js';
@@ -14,11 +14,10 @@ Chart.register(...registerables);
 
 // System information (constant)
 let number_of_thread = 1;
-let memory_total_size = 0;
-let memory_total_used = 0;
+let services_memory_used = 0; // %
 
 function bytesToSize(bytes) {
-    const sizes = ['Bytes', 'KiB', 'MiB', 'GiB', 'TiB']
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
     if (bytes === 0) return 'n/a'
     const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)), 10)
     if (i === 0) return `${bytes} ${sizes[i]})`
@@ -201,7 +200,7 @@ function getStats(callback, errorcallback) {
     url += "?domain=" + Model.domain
     url += "&application=" + Model.application
     if (localStorage.getItem("user_token") != undefined) {
-      url += "&token=" + localStorage.getItem("user_token")
+        url += "&token=" + localStorage.getItem("user_token")
     }
 
     xmlhttp.open("GET", url, true);
@@ -409,7 +408,6 @@ export class SystemMonitor extends HTMLElement {
         this.shadowRoot.querySelector(`.title`).innerHTML = `System Monitor @${Application.globular.config.Domain} Globular ${Application.globular.config.Version}`
 
         getStats((stats) => {
-            memory_total_size = stats.memory.total
             number_of_thread = stats.cpu.utilizations.length
             memory_total_used = stats.memory.used
 
@@ -612,11 +610,22 @@ export class ProcessesManager extends HTMLElement {
         let rqst = new GetProcessInfosRequest
         rqst.setName("")
         rqst.setPid(0)
-        Application.globular.adminService.getProcessInfos(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
-            .then(rsp => {
-                callback(rsp.getInfosList())
-            })
-            .catch(err => ApplicationView.displayMessage(err, 3000))
+        const stream = Application.globular.adminService.getProcessInfos(rqst, {
+            domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token")
+        });
+
+        // display process info at each second...
+        stream.on("data", (rsp) => {
+            callback(rsp.getInfosList())
+        });
+
+        stream.on("status", (status) => {
+            if (status.code === 0) {
+
+            } else {
+                console.log(status.details)
+            }
+        })
     }
 
     sort() {
@@ -731,13 +740,17 @@ export class ProcessesManager extends HTMLElement {
 
         let range = document.createRange()
         this.infos = infos
-
+        services_memory_used = 0;
         // Now I will sort the infos before display it...
         let tableBody = this.shadowRoot.querySelector(".tbody")
         this.sort().forEach(info => {
             let processRow = tableBody.querySelector(`#process-row-${info.getPid()}`)
             if (info.getName().length > 0) {
                 if (processRow == undefined) {
+                    if (info.getName().indexOf("_server") > 0 || info.getName().indexOf("Globular") > 0  || info.getName().indexOf("grpcwebproxy") > 0) {
+                        services_memory_used += info.getMemoryUsagePercent()
+                    }
+
                     let html = `
                 <div class="tr" id="process-row-${info.getPid()}">
                     <div class="td">${info.getName()}</div>
@@ -777,10 +790,12 @@ export class ProcessesManager extends HTMLElement {
      * The this is call at login time.
      */
     connectedCallback() {
+        /*
         this.interval = setInterval(() => {
-            this.getProcessesInfo((infos) => this.displayProcess(infos))
+            
         }, 1000)
-
+        */
+        this.getProcessesInfo((infos) => this.displayProcess(infos))
     }
 
     /**
@@ -848,11 +863,40 @@ export class ResourcesDisplay extends HTMLElement {
             #cpu-utilizations-div{
                 display: table;
             }
+
+            #free-memory-div, #used-memory-div, #total-memory-div{
+                display: flex;
+            }
+
+            #free-memory-color, #used-memory-color{
+                height: 20px;
+                width: 32px;
+                border: 1px solid var(--palette-text-accent);
+            }
+
+            #free-memory-title, #used-memory-title, #total-memory-title {
+                font-weight: 550px;
+            }
+
+            .memory-table-cell {
+                display: table-cell;
+                vertical-align:middle;
+            }
             
         </style>
         <div id="container">
+            <paper-tabs>
+                <paper-tab id="cpu-tab">
+                    <div class="section-title">CPU</div>
+                </paper-tab>
+                <paper-tab id="memory-tab">
+                    <div class="section-title">Memory</div>
+                </paper-tab>
+                <paper-tab id="network-tab">
+                    <div class="section-title">Network</div>
+                </paper-tab>
+            </paper-tabs>
             <div id="cpu-div">
-                <div class="section-title">CPU</div>
                 <div id="cpu-info">
                     <div class="row">
                         <div class="cell label">Model</div>
@@ -872,23 +916,87 @@ export class ResourcesDisplay extends HTMLElement {
                     </div>
                 </div>
                 <div id="cpu-utilizations-chart-div">
-                   <slot></slot>
+                <slot name="cpu-utilizations-chart"></slot>
                 </div>
                 <div id="cpu-utilizations-div">
-
                 </div>
+            </div>
+            <div id="memory-div">
+                <div style="display: table; border-collapse: separate; border-spacing: 4px;">
+                    <div style="display: table-row;" id="total-memory-div">
+                        <div class="memory-table-cell"></div>
+                        <div class="memory-table-cell" id="total-memory-title">Total</div>
+                        <div class="memory-table-cell" id="total-memory-value"></div>
+                    </div>
+                    <div style="display: table-row;" id="free-memory-div">
+                        <div class="memory-table-cell" id="free-memory-color"></div>
+                        <div class="memory-table-cell" id="free-memory-title">Free</div>
+                        <div class="memory-table-cell" id="free-memory-value"></div>
+                    </div>
+                    <div style="display: table-row;" id="used-memory-div">
+                        <div class="memory-table-cell" id="used-memory-color"></div>
+                        <div class="memory-table-cell" id="used-memory-title">Used</div>
+                        <div class="memory-table-cell" id="used-memory-value"></div>
+                    </div>
+                </div>
+                <slot name="memory-utilizations-chart"></slot>
+            </div>
+            <div id="network-div">
             </div>
         </div>
         `
+
+        // Tabs...
+        let cpu_tab = this.shadowRoot.querySelector("#cpu-tab")
+        let memory_tab = this.shadowRoot.querySelector("#memory-tab")
+        let network_tab = this.shadowRoot.querySelector("#network-tab")
+
+        // Divs...   
+        let cpu_div = this.shadowRoot.querySelector("#cpu-div")
+        let memory_div = this.shadowRoot.querySelector("#memory-div")
+        let network_div = this.shadowRoot.querySelector("#network-div")
+
+        // Here I will connect the events...
+        cpu_tab.onclick = () => {
+            cpu_div.style.display = ""
+            memory_div.style.display = "none"
+            network_div.style.display = "none"
+        }
+
+        memory_tab.onclick = () => {
+            cpu_div.style.display = "none"
+            memory_div.style.display = ""
+            network_div.style.display = "none"
+        }
+
+        network_tab.onclick = () => {
+            cpu_div.style.display = "none"
+            memory_div.style.display = "none"
+            network_div.style.display = ""
+        }
+
+        cpu_div.click()
+
         // Create the context for the chart.
-        this.canvas = document.createElement("canvas")
-        this.canvas.id = "myChart"
-        this.canvas.style.width = "100%"
-        this.canvas.style.maxHeight = "500px"
-        this.appendChild(this.canvas)
+        let cpu_canvas = document.createElement("canvas")
+        cpu_canvas.id = "cpu_chart"
+        cpu_canvas.style.width = "100%"
+        cpu_canvas.style.maxHeight = "500px"
+        cpu_canvas.slot = "cpu-utilizations-chart"
+        this.appendChild(cpu_canvas)
+
+        let memory_canvas = document.createElement("canvas")
+        memory_canvas.id = "memory_chart"
+        memory_canvas.style.width = "50%"
+        memory_canvas.style.maxHeight = "500px"
+        memory_canvas.slot = "memory-utilizations-chart"
+        this.appendChild(memory_canvas)
+
+        console.log("-------> ", services_memory_used)
     }
 
-    setChartData(infos) {
+    // Set cpu chart values
+    setCpuChartData(infos) {
         let index = 0;
         infos.cpu.utilizations.forEach(val => {
             let dataset = this.threadsChart.data.datasets[index]
@@ -896,12 +1004,14 @@ export class ResourcesDisplay extends HTMLElement {
             dataset.data.shift()
             index++
         })
-
         this.threadsChart.update()
     }
 
-    drawChart(infos, colors) {
-        const ctx = document.getElementById('myChart').getContext('2d');
+    // Draw cpu chart
+    drawCpuChart(infos, colors) {
+
+        // CPU Chart
+        const ctx = document.getElementById('cpu_chart').getContext('2d');
         var xValues = []
         for (let i = 60; i > 0; i--) {
             if (i % 10 == 0) {
@@ -957,36 +1067,97 @@ export class ResourcesDisplay extends HTMLElement {
         })
     }
 
+    // Draw memory chart.
+    drawMemoryChart(infos, colors) {
+        const ctx = document.getElementById('memory_chart').getContext('2d');
+        this.memoryChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ["Free", "Used"],
+                datasets: [
+                    {
+                        data: [parseInt((infos.memory.free / infos.memory.total) * 100), parseInt((infos.memory.used / infos.memory.total) * 100)],
+                        backgroundColor: [colors[0], colors[1]]
+                    }
+                ]
+            },
+
+            options: {
+                animation: {
+                    duration: 0
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                },
+                tooltips: {
+                    enabled: false
+                }
+            }
+        });
+
+        this.shadowRoot.querySelector("#total-memory-value").innerHTML = bytesToSize(infos.memory.total)
+
+        this.shadowRoot.querySelector("#free-memory-color").style.backgroundColor = colors[0]
+        this.shadowRoot.querySelector("#free-memory-value").innerHTML = bytesToSize(infos.memory.free)
+
+        this.shadowRoot.querySelector("#used-memory-color").style.backgroundColor = colors[1]
+        this.shadowRoot.querySelector("#used-memory-value").innerHTML = bytesToSize(infos.memory.used)
+
+    }
+
+    setMemoryChartData(infos, colors) {
+
+        this.memoryChart.data.datasets = [
+            {
+                data: [parseInt((infos.memory.free / infos.memory.total) * 100), parseInt((infos.memory.used / infos.memory.total) * 100)],
+                backgroundColor: [colors[0], colors[1]]
+            }
+        ]
+
+        this.memoryChart.update()
+        this.shadowRoot.querySelector("#free-memory-color").style.backgroundColor = colors[0]
+        this.shadowRoot.querySelector("#free-memory-value").innerHTML = bytesToSize(infos.memory.free)
+
+        this.shadowRoot.querySelector("#used-memory-color").style.backgroundColor = colors[1]
+        this.shadowRoot.querySelector("#used-memory-value").innerHTML = bytesToSize(infos.memory.used)
+    }
+
     setInfos(infos) {
         // Display the model name.
         this.shadowRoot.querySelector("#cpu-model-name-div").innerHTML = infos.cpu.model_name
         this.shadowRoot.querySelector("#cpu-vendor-div").innerHTML = infos.cpu.vendor_id
         this.shadowRoot.querySelector("#cpu-speed-div").innerHTML = infos.cpu.speed + "Mhz"
         this.shadowRoot.querySelector("#cpu-threads-div").innerHTML = infos.cpu.utilizations.length.toString()
+        console.log(infos)
 
         // Here I will reset the cpu utilization div and recreate it.
         let cpuUtilizationsDiv = this.shadowRoot.querySelector("#cpu-utilizations-div")
-        if (cpuUtilizationsDiv.children.length == 0) {
 
-            let colors = generateRandomColors(infos.cpu.utilizations.length)
+        if (this.colors == null) {
+            this.colors = generateRandomColors(infos.cpu.utilizations.length)
+        }
+
+        if (cpuUtilizationsDiv.children.length == 0) {
             let range = document.createRange()
             let index = 0;
             infos.cpu.utilizations.forEach(val => {
                 let html = `
-            <div class="cell" style="width: 25%; border-bottom: none; padding-top:2px; padding-bottom:2px;">
-                <div style="display: flex; align-items: center;">
-                    <div style="height: 20px; width: 32px; background-color: ${colors[index]}; 1px solid var(--palette-text-accent);">
-                    </div>
-                    <div style="display: flex; margin-left: 5px;">
-                        <div>
-                            CPU${index + 1}
+                <div class="cell" style="width: 25%; border-bottom: none; padding-top:2px; padding-bottom:2px;">
+                    <div style="display: flex; align-items: center;">
+                        <div style="height: 20px; width: 32px; background-color: ${this.colors[index]}; border: 1px solid var(--palette-text-accent);">
                         </div>
-                        <div style="padding-left: 15px;" id="cpu-utilization-div-${index}">
+                        <div style="display: flex; margin-left: 5px;">
+                            <div>
+                                CPU${index + 1}
+                            </div>
+                            <div style="padding-left: 15px;" id="cpu-utilization-div-${index}">
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            `
+                `
                 let row = null
                 if (index % 4 == 0) {
                     row = document.createElement("div")
@@ -1001,13 +1172,19 @@ export class ResourcesDisplay extends HTMLElement {
                 index++
             })
 
-            // Draw the chart...
-            this.drawChart(infos, colors)
+            // Draw the chart
+            this.drawCpuChart(infos, this.colors)
+
+            // Draw the memory chart
+            this.drawMemoryChart(infos, this.colors)
+
         } else {
             // refresh chart data
-            this.setChartData(infos)
+            this.setCpuChartData(infos)
+            this.setMemoryChartData(infos, this.colors)
         }
 
+        // set cpu usage percent...
         let index = 0;
         infos.cpu.utilizations.forEach(val => {
             let cpuUtilizationDiv = cpuUtilizationsDiv.querySelector(`#cpu-utilization-div-${index}`)
