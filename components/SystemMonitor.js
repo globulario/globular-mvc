@@ -395,6 +395,7 @@ export class SystemMonitor extends HTMLElement {
         var element = this.shadowRoot.querySelector("#container");
         element.scrollTop = element.scrollHeight - element.clientHeight;
     }
+    
 
     displayStats(stats) {
         this.hostInfos.setUptime(stats.uptime)
