@@ -395,7 +395,7 @@ export class SystemMonitor extends HTMLElement {
         var element = this.shadowRoot.querySelector("#container");
         element.scrollTop = element.scrollHeight - element.clientHeight;
     }
-    
+
 
     displayStats(stats) {
         this.hostInfos.setUptime(stats.uptime)
@@ -410,7 +410,6 @@ export class SystemMonitor extends HTMLElement {
 
         getStats((stats) => {
             number_of_thread = stats.cpu.utilizations.length
-            memory_total_used = stats.memory.used
 
             this.hostInfos.setInfos(stats)
             this.resourcesDisplay.setInfos(stats)
@@ -748,10 +747,6 @@ export class ProcessesManager extends HTMLElement {
             let processRow = tableBody.querySelector(`#process-row-${info.getPid()}`)
             if (info.getName().length > 0) {
                 if (processRow == undefined) {
-                    if (info.getName().indexOf("_server") > 0 || info.getName().indexOf("Globular") > 0  || info.getName().indexOf("grpcwebproxy") > 0) {
-                        services_memory_used += info.getMemoryUsagePercent()
-                    }
-
                     let html = `
                 <div class="tr" id="process-row-${info.getPid()}">
                     <div class="td">${info.getName()}</div>
@@ -781,6 +776,9 @@ export class ProcessesManager extends HTMLElement {
                     // Here I will update the value of the cpu usage and memory usage.
                     processRow.children[2].innerHTML = (info.getCpuUsagePercent() / number_of_thread).toFixed(2)
                     processRow.children[3].innerHTML = info.getMemoryUsagePercent().toFixed(2)
+                    if (info.getName().indexOf("_server") > 0 || info.getName().indexOf("Globular") > 0 || info.getName().indexOf("grpcwebproxy") > 0) {
+                        services_memory_used += info.getMemoryUsagePercent()
+                    }
                 }
             }
         })
@@ -865,17 +863,17 @@ export class ResourcesDisplay extends HTMLElement {
                 display: table;
             }
 
-            #free-memory-div, #used-memory-div, #total-memory-div{
+            #free-memory-div, #used-memory-div, #total-memory-div, services-memory-div{
                 display: flex;
             }
 
-            #free-memory-color, #used-memory-color{
+            #free-memory-color, #used-memory-color, #services-memory-color{
                 height: 20px;
                 width: 32px;
                 border: 1px solid var(--palette-text-accent);
             }
 
-            #free-memory-title, #used-memory-title, #total-memory-title {
+            #free-memory-title, #used-memory-title, #total-memory-title, #services-memory-title{
                 font-weight: 550px;
             }
 
@@ -923,7 +921,7 @@ export class ResourcesDisplay extends HTMLElement {
                 </div>
             </div>
             <div id="memory-div">
-                <div style="display: table; border-collapse: separate; border-spacing: 4px;">
+                <div style="display: table; border-collapse: separate; border-spacing: 12px; padding-left: 33%; padding-bottom: 20px; padding-top: 20px;">
                     <div style="display: table-row;" id="total-memory-div">
                         <div class="memory-table-cell"></div>
                         <div class="memory-table-cell" id="total-memory-title">Total</div>
@@ -938,6 +936,11 @@ export class ResourcesDisplay extends HTMLElement {
                         <div class="memory-table-cell" id="used-memory-color"></div>
                         <div class="memory-table-cell" id="used-memory-title">Used</div>
                         <div class="memory-table-cell" id="used-memory-value"></div>
+                    </div>
+                    <div style="display: table-row;" id="services-memory-div">
+                        <div class="memory-table-cell" id="services-memory-color"></div>
+                        <div class="memory-table-cell" id="services-memory-title">Services</div>
+                        <div class="memory-table-cell" id="services-memory-value"></div>
                     </div>
                 </div>
                 <slot name="memory-utilizations-chart"></slot>
@@ -992,8 +995,6 @@ export class ResourcesDisplay extends HTMLElement {
         memory_canvas.style.maxHeight = "500px"
         memory_canvas.slot = "memory-utilizations-chart"
         this.appendChild(memory_canvas)
-
-        console.log("-------> ", services_memory_used)
     }
 
     // Set cpu chart values
@@ -1077,8 +1078,8 @@ export class ResourcesDisplay extends HTMLElement {
                 labels: ["Free", "Used"],
                 datasets: [
                     {
-                        data: [parseInt((infos.memory.free / infos.memory.total) * 100), parseInt((infos.memory.used / infos.memory.total) * 100)],
-                        backgroundColor: [colors[0], colors[1]]
+                        data: [parseInt((infos.memory.free / infos.memory.total) * 100), parseInt(((infos.memory.used - services_memory_used) / infos.memory.total) * 100), services_memory_used],
+                        backgroundColor: [colors[0], colors[1], colors[2]]
                     }
                 ]
             },
@@ -1106,14 +1107,17 @@ export class ResourcesDisplay extends HTMLElement {
         this.shadowRoot.querySelector("#used-memory-color").style.backgroundColor = colors[1]
         this.shadowRoot.querySelector("#used-memory-value").innerHTML = bytesToSize(infos.memory.used)
 
+        this.shadowRoot.querySelector("#services-memory-color").style.backgroundColor = colors[2]
+        this.shadowRoot.querySelector("#services-memory-value").innerHTML = bytesToSize(services_memory_used/100 * infos.memory.total)
+
     }
 
     setMemoryChartData(infos, colors) {
 
         this.memoryChart.data.datasets = [
             {
-                data: [parseInt((infos.memory.free / infos.memory.total) * 100), parseInt((infos.memory.used / infos.memory.total) * 100)],
-                backgroundColor: [colors[0], colors[1]]
+                data: [parseInt((infos.memory.free / infos.memory.total) * 100), parseInt((infos.memory.used / infos.memory.total) * 100), services_memory_used],
+                backgroundColor: [colors[0], colors[1], colors[2]]
             }
         ]
 
@@ -1123,6 +1127,9 @@ export class ResourcesDisplay extends HTMLElement {
 
         this.shadowRoot.querySelector("#used-memory-color").style.backgroundColor = colors[1]
         this.shadowRoot.querySelector("#used-memory-value").innerHTML = bytesToSize(infos.memory.used)
+
+        this.shadowRoot.querySelector("#services-memory-color").style.backgroundColor = colors[2]
+        this.shadowRoot.querySelector("#services-memory-value").innerHTML = bytesToSize(services_memory_used/100 * infos.memory.total)
     }
 
     setInfos(infos) {
@@ -1131,7 +1138,6 @@ export class ResourcesDisplay extends HTMLElement {
         this.shadowRoot.querySelector("#cpu-vendor-div").innerHTML = infos.cpu.vendor_id
         this.shadowRoot.querySelector("#cpu-speed-div").innerHTML = infos.cpu.speed + "Mhz"
         this.shadowRoot.querySelector("#cpu-threads-div").innerHTML = infos.cpu.utilizations.length.toString()
-        console.log(infos)
 
         // Here I will reset the cpu utilization div and recreate it.
         let cpuUtilizationsDiv = this.shadowRoot.querySelector("#cpu-utilizations-div")
