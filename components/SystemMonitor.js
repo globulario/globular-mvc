@@ -895,7 +895,7 @@ export class ResourcesDisplay extends HTMLElement {
                     <div class="section-title">Network</div>
                 </paper-tab>
             </paper-tabs>
-            <div id="cpu-div">
+            <div id="cpu-div" style="display: flex;">
                 <div id="cpu-info">
                     <div class="row">
                         <div class="cell label">Model</div>
@@ -920,7 +920,7 @@ export class ResourcesDisplay extends HTMLElement {
                 <div id="cpu-utilizations-div">
                 </div>
             </div>
-            <div id="memory-div">
+            <div id="memory-div" style="display: none;">
                 <div style="display: table; border-collapse: separate; border-spacing: 12px; padding-left: 33%; padding-bottom: 20px; padding-top: 20px;">
                     <div style="display: table-row;" id="total-memory-div">
                         <div class="memory-table-cell"></div>
@@ -945,7 +945,7 @@ export class ResourcesDisplay extends HTMLElement {
                 </div>
                 <slot name="memory-utilizations-chart"></slot>
             </div>
-            <div id="network-div">
+            <div id="network-div" style="display: none;">
             </div>
         </div>
         `
@@ -962,21 +962,21 @@ export class ResourcesDisplay extends HTMLElement {
 
         // Here I will connect the events...
         cpu_tab.onclick = () => {
-            cpu_div.style.display = ""
+            cpu_div.style.display = "flex"
             memory_div.style.display = "none"
             network_div.style.display = "none"
         }
 
         memory_tab.onclick = () => {
             cpu_div.style.display = "none"
-            memory_div.style.display = ""
+            memory_div.style.display = "block"
             network_div.style.display = "none"
         }
 
         network_tab.onclick = () => {
             cpu_div.style.display = "none"
             memory_div.style.display = "none"
-            network_div.style.display = ""
+            network_div.style.display = "block"
         }
 
         cpu_div.click()
@@ -1072,13 +1072,16 @@ export class ResourcesDisplay extends HTMLElement {
     // Draw memory chart.
     drawMemoryChart(infos, colors) {
         const ctx = document.getElementById('memory_chart').getContext('2d');
+        let services_memory_used_ = services_memory_used/100 * infos.memory.total
+        let free =  infos.memory.total - infos.memory.used
+        let used =  infos.memory.used
         this.memoryChart = new Chart(ctx, {
             type: 'doughnut',
             data: {
                 labels: ["Free", "Used"],
                 datasets: [
                     {
-                        data: [parseInt((infos.memory.free / infos.memory.total) * 100), parseInt(((infos.memory.used - services_memory_used) / infos.memory.total) * 100), services_memory_used],
+                        data: [parseInt((free / infos.memory.total) * 100), parseInt(((used - services_memory_used) / infos.memory.total) * 100), services_memory_used],
                         backgroundColor: [colors[0], colors[1], colors[2]]
                     }
                 ]
@@ -1102,34 +1105,37 @@ export class ResourcesDisplay extends HTMLElement {
         this.shadowRoot.querySelector("#total-memory-value").innerHTML = bytesToSize(infos.memory.total)
 
         this.shadowRoot.querySelector("#free-memory-color").style.backgroundColor = colors[0]
-        this.shadowRoot.querySelector("#free-memory-value").innerHTML = bytesToSize(infos.memory.free)
+        this.shadowRoot.querySelector("#free-memory-value").innerHTML = bytesToSize(free)
 
         this.shadowRoot.querySelector("#used-memory-color").style.backgroundColor = colors[1]
-        this.shadowRoot.querySelector("#used-memory-value").innerHTML = bytesToSize(infos.memory.used)
+        this.shadowRoot.querySelector("#used-memory-value").innerHTML = bytesToSize(used - services_memory_used_)
 
         this.shadowRoot.querySelector("#services-memory-color").style.backgroundColor = colors[2]
-        this.shadowRoot.querySelector("#services-memory-value").innerHTML = bytesToSize(services_memory_used/100 * infos.memory.total)
+        this.shadowRoot.querySelector("#services-memory-value").innerHTML = bytesToSize(services_memory_used_)
 
     }
 
     setMemoryChartData(infos, colors) {
+        let services_memory_used_ = services_memory_used/100 * infos.memory.total
+        let free =  infos.memory.total - infos.memory.used
+        let used =  infos.memory.used
 
         this.memoryChart.data.datasets = [
             {
-                data: [parseInt((infos.memory.free / infos.memory.total) * 100), parseInt((infos.memory.used / infos.memory.total) * 100), services_memory_used],
+                data: [parseInt((free / infos.memory.total) * 100), parseInt(((used - services_memory_used_) / infos.memory.total) * 100), services_memory_used],
                 backgroundColor: [colors[0], colors[1], colors[2]]
             }
         ]
 
         this.memoryChart.update()
         this.shadowRoot.querySelector("#free-memory-color").style.backgroundColor = colors[0]
-        this.shadowRoot.querySelector("#free-memory-value").innerHTML = bytesToSize(infos.memory.free)
+        this.shadowRoot.querySelector("#free-memory-value").innerHTML = bytesToSize(free)
 
         this.shadowRoot.querySelector("#used-memory-color").style.backgroundColor = colors[1]
-        this.shadowRoot.querySelector("#used-memory-value").innerHTML = bytesToSize(infos.memory.used)
+        this.shadowRoot.querySelector("#used-memory-value").innerHTML = bytesToSize(used - services_memory_used_)
 
         this.shadowRoot.querySelector("#services-memory-color").style.backgroundColor = colors[2]
-        this.shadowRoot.querySelector("#services-memory-value").innerHTML = bytesToSize(services_memory_used/100 * infos.memory.total)
+        this.shadowRoot.querySelector("#services-memory-value").innerHTML = bytesToSize(services_memory_used_)
     }
 
     setInfos(infos) {
