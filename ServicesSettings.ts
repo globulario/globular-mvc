@@ -127,11 +127,13 @@ export class ServicesSettings extends Settings {
 
                 let s: ServiceSetting
                 if (service.Name == "ldap.LdapService") {
-                    let s = new LdapServiceSetting(service, serviceSetting)
+                    s = new LdapServiceSetting(service, serviceSetting)
                 } else if (service.Name == "slq.SqlService") {
-                    let s = new SqlServiceSetting(service, serviceSetting)
+                    s = new SqlServiceSetting(service, serviceSetting)
                 } else if (service.Name == "persistence.PersistenceService") {
-                    let s = new PersistenceServiceSetting(service, serviceSetting)
+                    s = new PersistenceServiceSetting(service, serviceSetting)
+                } else if (service.Name == "dns.DnsService") {
+                    s = new DnsServiceSetting(service, serviceSetting)
                 } else {
                     s = new ServiceSetting(service, serviceSetting)
                 }
@@ -464,4 +466,38 @@ export class PersistenceServiceSetting extends ServiceSetting {
     constructor(service: any, serviceSetting: any) {
         super(service, serviceSetting)
     }
+}
+
+// DNS
+export class DnsServiceSetting extends ServiceSetting {
+
+    constructor(service: any, serviceSetting: any) {
+        super(service, serviceSetting)
+
+        // There is the service specific settings.
+        let domains = new StringListSetting("Domains", "List of domains managed by the dns")
+        if (service["Domains"] != undefined) {
+            domains.setValues(service["Domains"])
+        }
+
+        let dnsPortSetting = new NumberSetting("DNS port number", "Enter the DNS port number")
+        dnsPortSetting.setValue(service["DnsPort"])
+        dnsPortSetting.onchange = () => {
+            service["DnsPort"]= parseInt(dnsPortSetting.getValue())
+            this.needSave = true
+        }
+
+        serviceSetting.addSetting(dnsPortSetting)
+
+        // on change event.
+        domains.onchange = () => {
+            service["Domains"]= domains.getValues()
+            this.needSave = true
+        }
+
+        // Append the synch button
+        serviceSetting.addSetting(domains)
+    }
+
+
 }

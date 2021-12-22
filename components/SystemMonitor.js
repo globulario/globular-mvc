@@ -991,8 +991,7 @@ export class ResourcesDisplay extends HTMLElement {
 
         let memory_canvas = document.createElement("canvas")
         memory_canvas.id = "memory_chart"
-        memory_canvas.style.width = "50%"
-        memory_canvas.style.maxHeight = "500px"
+        memory_canvas.style.maxHeight = "350px"
         memory_canvas.slot = "memory-utilizations-chart"
         this.appendChild(memory_canvas)
     }
@@ -1149,7 +1148,12 @@ export class ResourcesDisplay extends HTMLElement {
         let cpuUtilizationsDiv = this.shadowRoot.querySelector("#cpu-utilizations-div")
 
         if (this.colors == null) {
-            this.colors = generateRandomColors(infos.cpu.utilizations.length)
+            let numberOfColors = 3
+            if (numberOfColors < infos.cpu.utilizations.length){
+                numberOfColors = infos.cpu.utilizations.length
+            }
+
+            this.colors = generateRandomColors(numberOfColors)
         }
 
         if (cpuUtilizationsDiv.children.length == 0) {
