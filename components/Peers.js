@@ -2,7 +2,7 @@ import { theme } from './Theme';
 import '@polymer/iron-icons/iron-icons.js';
 
 import { Model } from '../Model';
-import { AddPeerActionsRqst, Peer, RemovePeerActionRqst } from 'globular-web-client/resource/resource_pb';
+import { AddPeerActionsRqst, Peer, RegisterPeerRqst, RemovePeerActionRqst } from 'globular-web-client/resource/resource_pb';
 import { getAllPeersInfo } from 'globular-web-client/api';
 import { ApplicationView } from '../ApplicationView';
 import { SearchableList } from './List.js'
@@ -87,13 +87,12 @@ export class PeersManager extends HTMLElement {
 
                     })
                 }, err => { 
-
                     console.log("no peers found")
                     ApplicationView.displayMessage(err, 3000) 
                 })
         }
 
-        // Here I will dispay the create peer card.
+        // Here I will display the create peer card.
         this.shadowRoot.querySelector("#create-peer-btn").onclick = ()=>{
             let panel = this.shadowRoot.querySelector("#create-peer-card")
             if(panel != null){
@@ -112,8 +111,8 @@ export class PeersManager extends HTMLElement {
                     <paper-icon-button id="cancel-btn" icon="close"></paper-icon-button>
                 </div>
                 <div style="display: flex; flex-direction: column; padding: 10px;">
-                    <paper-input  label="Domain"></paper-input>
-                    <paper-button style="align-self: end;">Create</paper-button>
+                    <paper-input id="peer-address-input" title="connect with peer at address"  label="address"></paper-input>
+                    <paper-button id="create-peer-connection-btn" style="align-self: end;">Create</paper-button>
                 </div>
             </paper-card>
             `
@@ -126,6 +125,22 @@ export class PeersManager extends HTMLElement {
             let closeBtn = panel.querySelector("#cancel-btn")
             closeBtn.onclick = () => {
                 panel.parentNode.removeChild(panel)
+            }
+
+            let createPeerConnectionBtn = panel.querySelector("#create-peer-connection-btn")
+            createPeerConnectionBtn.onclick = ()=>{
+                let peer = new Peer
+                // the hostname.domain:port
+                let address =  panel.querySelector("#peer-address-input").value
+                peer.setAddress(address)
+                let rqst = new RegisterPeerRqst
+                rqst.setPeer(peer)
+
+                Model.globular.resourceService.registerPeer(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+                .then(()=>{
+                    console.log("peer was register")
+                })
+                .catch(err=>ApplicationView.displayMessage(err))
             }
 
             let input = panel.querySelector("paper-input")
@@ -196,7 +211,7 @@ export class PeerPanel extends HTMLElement {
         <div id="container">
             <div class="header">
                 <paper-icon-button id="delete-peer-btn" icon="delete"></paper-icon-button>
-                <span class="title">${this.peer.getName()}</span>
+                <span class="title">${this.peer.getHostname()}</span>
                 <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
                     <iron-icon  id="hide-btn"  icon="unfold-less" style="flex-grow: 1; --iron-icon-fill-color:var(--palette-text-primary);" icon="unfold-more"></iron-icon>
                     <paper-ripple class="circle" recenters=""></paper-ripple>
@@ -376,7 +391,7 @@ export class PeerPanel extends HTMLElement {
     
           </style>
           <div id="yes-no-contact-delete-box">
-            <div>Your about to delete the peer ${peer.getName()}</div>
+            <div>Your about to delete the peer ${peer.getHostname()}</div>
             <div>Is it what you want to do? </div>
             <div style="justify-content: flex-end;">
               <paper-button id="yes-delete-contact">Yes</paper-button>
