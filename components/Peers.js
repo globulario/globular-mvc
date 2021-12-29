@@ -81,24 +81,29 @@ export class PeersManager extends HTMLElement {
             // Here I will get the list of all peers.
             getAllPeersInfo(Model.globular,
                 (peers) => {
+                    // sort by status
+                    peers.sort((a, b) => {
+                        a.getState() - b.getState()
+                    })
+
                     peers.forEach(p => {
                         let panel = new PeerPanel(p)
                         content.appendChild(panel)
 
                     })
-                }, err => { 
+                }, err => {
                     console.log("no peers found")
-                    ApplicationView.displayMessage(err, 3000) 
+                    ApplicationView.displayMessage(err, 3000)
                 })
         }
 
         // Here I will display the create peer card.
-        this.shadowRoot.querySelector("#create-peer-btn").onclick = ()=>{
+        this.shadowRoot.querySelector("#create-peer-btn").onclick = () => {
             let panel = this.shadowRoot.querySelector("#create-peer-card")
-            if(panel != null){
+            if (panel != null) {
                 setTimeout(() => {
                     panel.querySelector("paper-input").focus()
-                  }, 100)
+                }, 100)
                 return
             }
 
@@ -128,23 +133,23 @@ export class PeersManager extends HTMLElement {
             }
 
             let createPeerConnectionBtn = panel.querySelector("#create-peer-connection-btn")
-            createPeerConnectionBtn.onclick = ()=>{
+            createPeerConnectionBtn.onclick = () => {
                 let peer = new Peer
                 // the hostname.domain:port
-                let address =  panel.querySelector("#peer-address-input").value
+                let address = panel.querySelector("#peer-address-input").value
                 peer.setAddress(address)
                 let rqst = new RegisterPeerRqst
                 rqst.setPeer(peer)
 
                 Model.globular.resourceService.registerPeer(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
-                .then(()=>{
-                    console.log("peer was register")
-                })
-                .catch(err=>ApplicationView.displayMessage(err))
+                    .then(() => {
+                        console.log("peer was register")
+                    })
+                    .catch(err => ApplicationView.displayMessage(err))
             }
 
             let input = panel.querySelector("paper-input")
-            setTimeout(()=>{
+            setTimeout(() => {
                 input.focus()
             }, 100)
 
@@ -168,7 +173,9 @@ export class PeersManager extends HTMLElement {
 customElements.define('globular-peer-manager', PeersManager)
 
 
-
+/**
+ * Display each peers
+ */
 export class PeerPanel extends HTMLElement {
     // attributes.
     // Create the applicaiton view.
@@ -179,6 +186,13 @@ export class PeerPanel extends HTMLElement {
 
         // Keep group informations.
         this.peer = peer;
+
+        let address = this.peer.getDomain()
+        if (this.peer.getAddress().length > 0) {
+            if (this.peer.getAddress().indexOf(":") > 0) {
+                address += ":" + this.peer.getAddress().split(":")[1]
+            }
+        }
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -204,31 +218,138 @@ export class PeerPanel extends HTMLElement {
             }
 
             .title{
+                padding-left: 20px;
                 flex-grow: 1;
+                color: var(--palette-text-primary);
+            }
+            a:visited {
+                color: var(--palette-text-primary);
+                background-color: transparent;
+                text-decoration: none;
+            }
+
+            .state{
+                padding-right: 20px;
+            }
+
+            .state-pending{
+                color: var(--palette-error-main);
+            }
+
+            .state-rejected{
+                color: var(--palette-secondary-main);
+            }
+
+            .state-accepted{
+                color: var(--palette-success-main);
+            }
+
+            .card-content{
+                overflow-y: auto;
+                min-width: 400px;
+                max-height: 260px;
+                overflow-y: auto;
+            }
+
+            .peer-card-content {
+                display: table;
+                border-spacing: 30px 10px;
+                border-collapse: separate;
+            }
+
+            .peer-card-content .row {
+                display: table-row;
+            }
+
+            .peer-card-content .cell {
+                display: table-cell;
             }
 
         </style>
         <div id="container">
             <div class="header">
-                <paper-icon-button id="delete-peer-btn" icon="delete"></paper-icon-button>
-                <span class="title">${this.peer.getHostname()}</span>
+                <a class="title">${this.peer.getHostname()}</a>
+                <span class="state state-${this.getState()}">${this.getState()}</span>
                 <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
                     <iron-icon  id="hide-btn"  icon="unfold-less" style="flex-grow: 1; --iron-icon-fill-color:var(--palette-text-primary);" icon="unfold-more"></iron-icon>
                     <paper-ripple class="circle" recenters=""></paper-ripple>
                 </div>
             </div>
             <iron-collapse id="collapse-panel"  style="width: 90%;" >
-
+                <div style="display: flex; flex-direction: column;">
+                    <div class="peer-card-content">
+                        <div class="row">
+                            <div class="cell label">Mac Address</div>
+                            <div class="cell value">${this.peer.getMac()}</div>
+                        </div>
+                        <div class="row">
+                            <div class="cell label">address</div>
+                            <div class="cell value">${this.peer.getAddress()}</div>
+                        </div>
+                        <div class="row">
+                            <div class="cell label">domain</div>
+                            <div class="cell value">${this.peer.getDomain()}</div>
+                        </div>
+                        <div class="row">
+                            <div class="cell label">public IP</div>
+                            <div class="cell value">${this.peer.getExternalIpAddress()}</div>
+                        </div>
+                        <div class="row">
+                            <div class="cell label">local IP</div>
+                            <div class="cell value">${this.peer.getLocalIpAddress()}</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; justify-content: end;">
+                        <paper-button title="accept a peer." id="accept-peer-btn">
+                            Accept
+                        </paper-button>
+                        <paper-button title="keep a peer in a black list until it be deleted." id="reject-peer-btn" >
+                            Reject
+                        </paper-button>
+                        <paper-button title="delete a peer from the peer list, it also delete keys and permissions associated with that peer." id="delete-peer-btn" >
+                            Delete
+                        </paper-button>
+                    </div>
+                </div>
             </iron-collapse>
         </div>
         `
+
+        let lnk = this.shadowRoot.querySelector(".title")
+        lnk.href = 'http://' + address + "/console"
+        lnk.target = "_blank"
 
         let content = this.shadowRoot.querySelector("#collapse-panel")
         this.hideBtn = this.shadowRoot.querySelector("#hide-btn")
 
         let deleteBtn = this.shadowRoot.querySelector("#delete-peer-btn")
         deleteBtn.onclick = () => {
-            this.onDeleteRole(peer)
+            this.onDeletePeer(peer)
+        }
+
+        let rejectBtn = this.shadowRoot.querySelector("#reject-peer-btn")
+        rejectBtn.onclick = () => {
+            this.onRejectPeer(peer)
+        }
+
+        let acceptBtn = this.shadowRoot.querySelector("#accept-peer-btn")
+        acceptBtn.onclick = () => {
+            this.onAcceptPeer(peer)
+        }
+
+        // Here I will set the button state.
+        if (this.peer.getState() == 0) {
+            deleteBtn.style.display = "none"
+            rejectBtn.style.display = "block"
+            acceptBtn.style.display = "block"
+        } else if (this.peer.getState() == 1) {
+            deleteBtn.style.display = "block"
+            rejectBtn.style.display = "none"
+            acceptBtn.style.display = "none"
+        } else if (this.peer.getState() == 2) {
+            deleteBtn.style.display = "block"
+            rejectBtn.style.display = "none"
+            acceptBtn.style.display = "none"
         }
 
 
@@ -275,13 +396,6 @@ export class PeerPanel extends HTMLElement {
                                 right: 0px;
                                 z-index: 1;
                             }
-                            .card-content{
-                                overflow-y: auto;
-                                min-width: 400px;
-                                max-height: 260px;
-                                overflow-y: auto;
-                            }
-        
                         </style>
                         <paper-card id="add-peer-action-panel">
                             <div style="display: flex; align-items: center;">
@@ -291,7 +405,6 @@ export class PeerPanel extends HTMLElement {
                                 <paper-icon-button id="cancel-btn" icon="close"></paper-icon-button>
                             </div>
                             <div class="card-content">
-                                <div></div>
                             </div>
                         </paper-card>
                         `
@@ -365,7 +478,27 @@ export class PeerPanel extends HTMLElement {
 
     }
 
-    onDeleteRole(peer) {
+    getState() {
+        if (this.peer.getState() == 0) {
+            return "pending"
+        } else if (this.peer.getState() == 1) {
+            return "accepted"
+        } else if (this.peer.getState() == 2) {
+            return "rejected"
+        }
+
+        return ""
+    }
+
+    onAcceptPeer(peer) {
+        console.log("accept peer ", peer)
+    }
+
+    onRejectPeer(peer) {
+        console.log("reject peer ", peer)
+    }
+
+    onDeletePeer(peer) {
         let toast = ApplicationView.displayMessage(
             `
           <style>
