@@ -362,7 +362,7 @@ export class PeersSettings extends Settings {
     constructor(settingsMenu: SettingsMenu, settingsPanel: SettingsPanel) {
         super(settingsMenu, settingsPanel);
 
-        settingsMenu.appendSettingsMenuItem("social:share", "Peers");
+        settingsMenu.appendSettingsMenuItem("hardware:computer", "Peers");
 
         let peersSettingPage = <any>settingsPanel.appendSettingsPage("Peers");
 

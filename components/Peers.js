@@ -1,12 +1,14 @@
 import { theme } from './Theme';
 import '@polymer/iron-icons/iron-icons.js';
+import "@polymer/iron-icons/hardware-icons";
 
 import { Model } from '../Model';
-import { AddPeerActionsRqst, Peer, RegisterPeerRqst, RemovePeerActionRqst } from 'globular-web-client/resource/resource_pb';
+import { AddPeerActionsRqst, GetPeerApprovalStateRqst, GetPeersRqst, Peer, RegisterPeerRqst, RemovePeerActionRqst } from 'globular-web-client/resource/resource_pb';
 import { getAllPeersInfo } from 'globular-web-client/api';
 import { ApplicationView } from '../ApplicationView';
 import { SearchableList } from './List.js'
 import { GetAllActionsRequest } from 'globular-web-client/services_manager/services_manager_pb';
+import { ResourceServicePromiseClient } from 'globular-web-client/resource/resource_grpc_web_pb';
 
 export class PeersManager extends HTMLElement {
     // attributes.
@@ -143,7 +145,7 @@ export class PeersManager extends HTMLElement {
 
                 Model.globular.resourceService.registerPeer(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
                     .then(() => {
-                        console.log("peer was register")
+
                     })
                     .catch(err => ApplicationView.displayMessage(err))
             }
@@ -158,9 +160,14 @@ export class PeersManager extends HTMLElement {
         // call once
         displayPeers()
 
-        Model.globular.eventHub.subscribe("refresh_peer_evt", uuid => { }, evt => {
+        Model.globular.eventHub.subscribe("update_peers_evt", uuid => { }, evt => {
             displayPeers()
-        }, true)
+        }, false)
+
+        Model.globular.eventHub.subscribe("delete_peer_evt", uuid => { }, evt => {
+            console.log("peer ", evt, "was deleted")
+            displayPeers()
+        }, false)
 
     }
 
@@ -218,7 +225,7 @@ export class PeerPanel extends HTMLElement {
             }
 
             .title{
-                padding-left: 20px;
+                padding-left: 10px;
                 flex-grow: 1;
                 color: var(--palette-text-primary);
             }
@@ -268,14 +275,15 @@ export class PeerPanel extends HTMLElement {
         </style>
         <div id="container">
             <div class="header">
+                <iron-icon style="padding: 10px;" icon="hardware:computer"></iron-icon>
                 <a class="title">${this.peer.getHostname()}</a>
-                <span class="state state-${this.getState()}">${this.getState()}</span>
+                <span id="approval-state-span" class="state"></span>
                 <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
                     <iron-icon  id="hide-btn"  icon="unfold-less" style="flex-grow: 1; --iron-icon-fill-color:var(--palette-text-primary);" icon="unfold-more"></iron-icon>
                     <paper-ripple class="circle" recenters=""></paper-ripple>
                 </div>
             </div>
-            <iron-collapse id="collapse-panel"  style="width: 90%;" >
+            <iron-collapse id="collapse-panel"  style="width: 100%;" >
                 <div style="display: flex; flex-direction: column;">
                     <div class="peer-card-content">
                         <div class="row">
@@ -337,20 +345,32 @@ export class PeerPanel extends HTMLElement {
             this.onAcceptPeer(peer)
         }
 
-        // Here I will set the button state.
-        if (this.peer.getState() == 0) {
-            deleteBtn.style.display = "none"
-            rejectBtn.style.display = "block"
-            acceptBtn.style.display = "block"
-        } else if (this.peer.getState() == 1) {
-            deleteBtn.style.display = "block"
-            rejectBtn.style.display = "none"
-            acceptBtn.style.display = "none"
-        } else if (this.peer.getState() == 2) {
-            deleteBtn.style.display = "block"
-            rejectBtn.style.display = "none"
-            acceptBtn.style.display = "none"
-        }
+        // get the remote state for this peers.
+        this.getRemoteState((state) => {
+
+            let stateSpan = this.shadowRoot.querySelector("#approval-state-span")
+            stateSpan.innerHTML = this.getState(state)
+            stateSpan.className = "state state-" + this.getState(state)
+
+            // Here I will set the button state.ff,
+            if (state == 0) {
+                deleteBtn.style.display = "none"
+                rejectBtn.style.display = "block"
+                acceptBtn.style.display = "block"
+            } else if (state == 1) {
+                deleteBtn.style.display = "block"
+                rejectBtn.style.display = "none"
+                acceptBtn.style.display = "none"
+            } else if (state == 2) {
+                deleteBtn.style.display = "block"
+                rejectBtn.style.display = "none"
+                acceptBtn.style.display = "none"
+            }
+
+
+        })
+
+
 
 
         // Here I will create the searchable actions list.
@@ -474,24 +494,34 @@ export class PeerPanel extends HTMLElement {
                 content.toggle();
             }
         }
+    }
 
+    getRemoteState(callback) {
+        let rqst = new GetPeerApprovalStateRqst
+        rqst.setRemotePeerAddress(this.peer.getAddress())
+        Model.globular.resourceService.getPeerApprovalState(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+            .then(rsp => {
+                callback(rsp.getState())
+            })
+            .catch(err => ApplicationView.displayMessage(err, 3000))
 
     }
 
-    getState() {
-        if (this.peer.getState() == 0) {
+
+    getState(state) {
+        if (state == 0) {
             return "pending"
-        } else if (this.peer.getState() == 1) {
+        } else if (state == 1) {
             return "accepted"
-        } else if (this.peer.getState() == 2) {
+        } else if (state == 2) {
             return "rejected"
         }
-
         return ""
     }
 
     onAcceptPeer(peer) {
         console.log("accept peer ", peer)
+
     }
 
     onRejectPeer(peer) {
@@ -550,7 +580,7 @@ export class PeerPanel extends HTMLElement {
                     " was deleted!</div>",
                     3000
                 );
-                Model.globular.eventHub.publish("refresh_peer_evt", {}, true)
+                Model.globular.eventHub.publish("update_peers_evt", {}, true)
                 toast.dismiss();
             }).catch(e => {
                 ApplicationView.displayMessage(e, 3000)
