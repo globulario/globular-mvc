@@ -611,7 +611,7 @@ export class ProcessesManager extends HTMLElement {
         rqst.setName("")
         rqst.setPid(0)
         const stream = Application.globular.adminService.getProcessInfos(rqst, {
-            domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token")
+            domain: Model.domain, application: Model.application,address: Model.address, token: localStorage.getItem("user_token")
         });
 
         // display process info at each second...
@@ -765,7 +765,7 @@ export class ProcessesManager extends HTMLElement {
                         console.log("kill process ", info.getPid())
                         let rqst = new KillProcessRequest
                         rqst.setPid(info.getPid())
-                        Model.globular.adminService.killProcess(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+                        Model.globular.adminService.killProcess(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
                             .then(rsp => {
                                 // remove the process.
                                 processRow.parentNode.removeChild(processRow)

@@ -157,7 +157,7 @@ export class GroupManager extends HTMLElement {
                     group.setName(groupId)
 
                     rqst.setGroup(group)
-                    Model.globular.resourceService.createGroup(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+                    Model.globular.resourceService.createGroup(rqst, { domain: Model.domain,address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
                     .then(rsp => {
                         ApplicationView.displayMessage("Group " + groupId + " was created!", 3000)
                         panel.parentNode.removeChild(panel)
@@ -289,7 +289,7 @@ export class GroupPanel extends HTMLElement {
                     let rqst = new RemoveGroupMemberAccountRqst
                     rqst.setGroupid(group.getId())
                     rqst.setAccountid(a._id)
-                    Model.globular.resourceService.removeGroupMemberAccount(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+                    Model.globular.resourceService.removeGroupMemberAccount(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
                         .then(rsp => {
                             accountsList.removeItem(a)
                             ApplicationView.displayMessage("Account " + a._id + " was removed from group " + group.getId(), 3000)
@@ -302,7 +302,7 @@ export class GroupPanel extends HTMLElement {
                         let rqst = new AddGroupMemberAccountRqst
                         rqst.setGroupid(group.getId())
                         rqst.setAccountid(a._id)
-                        Model.globular.resourceService.addGroupMemberAccount(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+                        Model.globular.resourceService.addGroupMemberAccount(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
                             .then(rsp => {
                                 accountsList.appendItem(a)
                                 ApplicationView.displayMessage("Account " + a._id + " has now group " + group.getId(), 3000)
@@ -380,7 +380,7 @@ export class GroupPanel extends HTMLElement {
 
           let rqst = new DeleteGroupRqst
           rqst.setGroupid(group.getId())
-          Model.globular.resourceService.deleteGroup(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") } ).then((rsp)=>{
+          Model.globular.resourceService.deleteGroup(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") } ).then((rsp)=>{
             ApplicationView.displayMessage(
                 "<iron-icon icon='communication:message' style='margin-right: 10px;'></iron-icon><div>Group named " +
                 group.getName() +

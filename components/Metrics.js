@@ -91,6 +91,7 @@ export class MetricsDisplay extends HTMLElement {
             .createConnection(rqst, {
                 application: Model.application,
                 domain: Model.domain,
+                address: Model.address
             })
             .then(() => {
 

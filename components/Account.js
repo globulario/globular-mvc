@@ -28,7 +28,12 @@ export function getAllAccountsInfo(callback, errorCallback) {
   rqst.setQuery("{}")
   let accounts = [];
 
-  let stream = Model.globular.resourceService.getAccounts(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") });
+  let stream = Model.globular.resourceService.getAccounts(rqst, 
+    { domain: Model.domain, 
+      address: Model.address, 
+      application: 
+      Model.application, 
+      token: localStorage.getItem("user_token") });
 
   // Get the stream and set event on it...
   stream.on("data", (rsp) => {
@@ -428,7 +433,12 @@ export class AccountManager extends HTMLElement {
           rqst.setConfirmPassword("1234")
 
           rqst.setAccount(account)
-          Model.globular.resourceService.registerAccount(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+          Model.globular.resourceService.registerAccount(rqst, 
+            { domain: Model.domain, 
+              address: Model.address,
+              application: Model.application, 
+              token: localStorage.getItem("user_token") 
+            })
             .then(rsp => {
               ApplicationView.displayMessage("account " + accountId + " was created!", 3000)
               panel.parentNode.removeChild(panel)
@@ -608,7 +618,7 @@ export class AccountPanel extends HTMLElement {
             let rqst = new RemoveOrganizationAccountRqst
             rqst.setOrganizationid(o.getId())
             rqst.setAccountid(a._id)
-            Model.globular.resourceService.removeOrganizationAccount(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+            Model.globular.resourceService.removeOrganizationAccount(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
               .then(rsp => {
                 this.organizationsList.removeItem(a)
                 ApplicationView.displayMessage("Account " + a._id + " was removed from account " + o.getName(), 3000)
@@ -621,7 +631,7 @@ export class AccountPanel extends HTMLElement {
             let rqst = new AddOrganizationAccountRqst
             rqst.setOrganizationid(o.getId())
             rqst.setAccountid(a._id)
-            Model.globular.resourceService.addOrganizationAccount(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+            Model.globular.resourceService.addOrganizationAccount(rqst, { domain: Model.domain,address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
               .then(rsp => {
                 this.organizationsList.appendItem(a)
                 ApplicationView.displayMessage("Account " + a._id + " has now organization " + o.getName(), 3000)
@@ -658,7 +668,7 @@ export class AccountPanel extends HTMLElement {
             let rqst = new RemoveAccountRoleRqst
             rqst.setAccountid(a.getId())
             rqst.setRoleid(r.getId())
-            Model.globular.resourceService.removeAccountRole(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+            Model.globular.resourceService.removeAccountRole(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
               .then(rsp => {
                 this.rolesList.removeItem(r)
                 ApplicationView.displayMessage("Role " + r.getName() + " was removed from account " + a.getName(), 3000)
@@ -671,7 +681,7 @@ export class AccountPanel extends HTMLElement {
             let rqst = new AddAccountRoleRqst
             rqst.setAccountid(a.getId())
             rqst.setRoleid(r.getId())
-            Model.globular.resourceService.addAccountRole(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+            Model.globular.resourceService.addAccountRole(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
               .then(rsp => {
                 this.rolesList.appendItem(r)
                 ApplicationView.displayMessage("Role " + r.getName() + " has now account " + a.getName(), 3000)
@@ -706,7 +716,7 @@ export class AccountPanel extends HTMLElement {
             let rqst = new RemoveGroupMemberAccountRqst
             rqst.setAccountid(a.getId())
             rqst.setGroupid(g.getId())
-            Model.globular.resourceService.removeGroupMemberAccount(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+            Model.globular.resourceService.removeGroupMemberAccount(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
               .then(rsp => {
                 this.groupsList.removeItem(g)
                 ApplicationView.displayMessage("Group " + g.getName() + " was removed from account " + a.getName(), 3000)
@@ -719,7 +729,7 @@ export class AccountPanel extends HTMLElement {
             let rqst = new AddGroupMemberAccountRqst
             rqst.setAccountid(a.getId())
             rqst.setGroupid(g.getId())
-            Model.globular.resourceService.addGroupMemberAccount(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+            Model.globular.resourceService.addGroupMemberAccount(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
               .then(rsp => {
                 this.groupsList.appendItem(g)
                 ApplicationView.displayMessage("Group " + g.getName() + " has now account " + a.getName(), 3000)
@@ -793,7 +803,7 @@ export class AccountPanel extends HTMLElement {
 
       let rqst = new DeleteAccountRqst
       rqst.setId(a.getId())
-      Model.globular.resourceService.deleteAccount(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") }).then((rsp) => {
+      Model.globular.resourceService.deleteAccount(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") }).then((rsp) => {
         ApplicationView.displayMessage(
           "<iron-icon icon='communication:message' style='margin-right: 10px;'></iron-icon><div>account named " +
           a.getName() +

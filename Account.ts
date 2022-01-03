@@ -530,6 +530,7 @@ export class Account extends Model {
             token: localStorage.getItem("user_token"),
             application: Model.application,
             domain: Model.domain,
+            address: Model.address
         });
 
         let data: any;

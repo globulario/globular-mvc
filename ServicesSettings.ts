@@ -15,7 +15,7 @@ export class ServicesSettings extends Settings {
         Model.globular.eventHub.subscribe("save_settings_evt", uuid => { }, evt => {
             this.save()
         }, true)
-
+        return 
         // Init the service configuration...
         this.getServicesConfiguration(
             (services: any) => {

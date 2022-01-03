@@ -812,6 +812,7 @@ export class LogSettings extends Settings {
             token: localStorage.getItem("user_token"),
             application: Model.application,
             domain: Model.domain,
+            address: Model.address
         }).then((rsp: DeleteLogRsp) => {
             successCallback()
         }).catch(errorCallback)
@@ -830,6 +831,7 @@ export class LogSettings extends Settings {
             token: localStorage.getItem("user_token"),
             application: Model.application,
             domain: Model.domain,
+            address: Model.address
         }).then((rsp: DeleteLogRsp) => {
             successCallback()
         })
@@ -850,6 +852,7 @@ export class LogSettings extends Settings {
             token: localStorage.getItem("user_token"),
             application: Model.application,
             domain: Model.domain,
+            address: Model.address
         });
 
         let data = new Array<LogInfo>();

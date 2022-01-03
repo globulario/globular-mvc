@@ -27,6 +27,7 @@ export class ConversationManager {
       token: localStorage.getItem("user_token"),
       application: Model.application,
       domain: Model.domain,
+      address: Model.address
     })
 
     stream.on("data", (rsp: ConnectResponse) => {
@@ -60,6 +61,7 @@ export class ConversationManager {
       token: localStorage.getItem("user_token"),
       application: Model.application,
       domain: Model.domain,
+      address: Model.address
     }).then((rsp: CreateConversationResponse) => {
       succesCallback(rsp.getConversation())
     }).catch(errorCallback)
@@ -79,6 +81,7 @@ export class ConversationManager {
       token: localStorage.getItem("user_token"),
       application: Model.application,
       domain: Model.domain,
+      address: Model.address
     }).then((rsp: GetConversationsResponse) => {
       succesCallback(rsp.getConversations())
     }).catch((err: any) => {
@@ -94,6 +97,7 @@ export class ConversationManager {
       token: localStorage.getItem("user_token"),
       application: Model.application,
       domain: Model.domain,
+      address: Model.address
     }).then((rsp: DeleteConversationResponse) => {
       succesCallback()
 
@@ -117,6 +121,7 @@ export class ConversationManager {
       token: localStorage.getItem("user_token"),
       application: Model.application,
       domain: Model.domain,
+      address: Model.address
     }).then((rsp: DeleteConversationResponse) => {
       succesCallback()
       Model.eventHub.publish(`kickout_conversation_${conversationUuid}_evt`, account, false)
@@ -135,6 +140,7 @@ export class ConversationManager {
       token: localStorage.getItem("user_token"),
       application: Model.application,
       domain: Model.domain,
+      address: Model.address
     }).then((rsp: FindConversationsResponse) => {
       succesCallback(rsp.getConversationsList())
     }).catch((err: any) => {
@@ -157,6 +163,7 @@ export class ConversationManager {
       token: localStorage.getItem("user_token"),
       application: Model.application,
       domain: Model.domain,
+      address: Model.address
     })
 
     // Now I will get existing message from the conversation.
@@ -209,6 +216,7 @@ export class ConversationManager {
       token: localStorage.getItem("user_token"),
       application: Model.application,
       domain: Model.domain,
+      address: Model.address
     }).then((rsp: LeaveConversationResponse) => {
       successCallback();
       let participants = rsp.getConversation().getParticipantsList()
@@ -233,6 +241,7 @@ export class ConversationManager {
       token: localStorage.getItem("user_token"),
       application: Model.application,
       domain: Model.domain,
+      address: Model.address
     }).then((rsp: SendMessageResponse) => {
       /** Nothing to do here... */
       successCallback()
@@ -256,6 +265,7 @@ export class ConversationManager {
       token: localStorage.getItem("user_token"),
       application: Model.application,
       domain: Model.domain,
+      address: Model.address
     }).then((rsp: GetReceivedInvitationsResponse) => {
       /** Nothing to do here... */
       successCallback(rsp.getInvitations().getInvitationsList())
@@ -279,6 +289,7 @@ export class ConversationManager {
       token: localStorage.getItem("user_token"),
       application: Model.application,
       domain: Model.domain,
+      address: Model.address
     }).then((rsp: GetSentInvitationsResponse) => {
       /** Nothing to do here... */
       successCallback(rsp.getInvitations().getInvitationsList())
@@ -302,6 +313,7 @@ export class ConversationManager {
       token: localStorage.getItem("user_token"),
       application: Model.application,
       domain: Model.domain,
+      address: Model.address
     }).then((rsp: AcceptInvitationRequest) => {
       /** Nothing to do here... */
       successCallback()
@@ -322,6 +334,7 @@ export class ConversationManager {
       token: localStorage.getItem("user_token"),
       application: Model.application,
       domain: Model.domain,
+      address: Model.address
     }).then((rsp: AcceptInvitationRequest) => {
       /** Nothing to do here... */
       successCallback()
@@ -335,6 +348,7 @@ export class ConversationManager {
       token: localStorage.getItem("user_token"),
       application: Model.application,
       domain: Model.domain,
+      address: Model.address
     }).then((rsp: RevokeInvitationResponse) => {
       /** Nothing to do here... */
       successCallback()
@@ -351,6 +365,7 @@ export class ConversationManager {
       token: localStorage.getItem("user_token"),
       application: Model.application,
       domain: Model.domain,
+      address: Model.address
     }).then((rsp: LikeMessageResponse) => {
       if(successCallback!=undefined){
         successCallback()
@@ -369,6 +384,7 @@ export class ConversationManager {
       token: localStorage.getItem("user_token"),
       application: Model.application,
       domain: Model.domain,
+      address: Model.address
     }).then((rsp: DislikeMessageResponse) => {
       if(successCallback!=undefined){
         successCallback()
@@ -387,6 +403,7 @@ export class ConversationManager {
       token: localStorage.getItem("user_token"),
       application: Model.application,
       domain: Model.domain,
+      address: Model.address
     }).then((rsp: DeleteMessageResponse) => {
       if(successCallback!=undefined){
         successCallback()
@@ -422,6 +439,7 @@ export class ConversationManager {
       token: localStorage.getItem("user_token"),
       application: Model.application,
       domain: Model.domain,
+      address: Model.address
     }).then((rsp: SendMessageResponse) => {
       /** Nothing to do here... */
       console.log("----> message was sent!", message)

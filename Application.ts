@@ -203,6 +203,7 @@ export class Application extends Model {
           token: localStorage.getItem("user_token"),
           application: Model.application,
           domain: Model.domain,
+          address: Model.address
         }).then((rsp: LogRsp) => {
           console.log("info was log!")
         })
@@ -563,6 +564,7 @@ export class Application extends Model {
     const stream = Model.globular.resourceService.getApplications(rqst, {
       application: Model.application.length > 0 ? Model.application : Model.globular.config.IndexApplication,
       domain: Model.domain,
+      address: Model.address
     });
 
     let applications = new Array<resource.Application>();
@@ -1099,6 +1101,7 @@ export class Application extends Model {
       token: localStorage.getItem("user_token"),
       application: Model.application,
       domain: Model.domain,
+      address: Model.address
     }).then((rsp: UpdateOneRsp) => {
       successCallback(info_);
     }).catch(errorCallback)
@@ -1176,6 +1179,7 @@ export class Application extends Model {
         token: localStorage.getItem("user_token"),
         application: Model.application,
         domain: Model.domain,
+        address: Model.address
       })
       .then(() => {
         // Here I will throw a network event...
@@ -1217,6 +1221,7 @@ export class Application extends Model {
       token: localStorage.getItem("user_token"),
       application: Model.application,
       domain: Model.domain,
+      address: Model.address
     });
 
     let notifications = new Array<resource.Notification>();
@@ -1258,6 +1263,7 @@ export class Application extends Model {
         token: localStorage.getItem("user_token"),
         application: Model.application,
         domain: Model.domain,
+        address: Model.address
       })
       .then(() => {
         // The notification is not deleted so I will send network event to remove it from

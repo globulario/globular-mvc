@@ -18,14 +18,14 @@ import '@polymer/iron-icons/av-icons'
 function getPermissionNames(callbak, errorCallback) {
     let permissionsNames = []
     let getAllActionsRqst = new GetAllActionsRequest
-    Model.globular.servicesManagerService.getAllActions(getAllActionsRqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+    Model.globular.servicesManagerService.getAllActions(getAllActionsRqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
         .then(rsp => {
             let actions = rsp.getActionsList()
             let index = 0;
             actions.forEach(a => {
                 let rqst_ = new GetActionResourceInfosRqst
                 rqst_.setAction(a)
-                Model.globular.rbacService.getActionResourceInfos(rqst_, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+                Model.globular.rbacService.getActionResourceInfos(rqst_, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
                     .then(rsp => {
                         let infos = rsp.getInfosList()
                         infos.forEach(info => {
@@ -341,6 +341,7 @@ export class PermissionsManager extends HTMLElement {
                         token: localStorage.getItem("user_token"),
                         application: Model.application,
                         domain: Model.domain,
+                        address: Model.address
                     }).then(rsp => {
                         console.log("succed to save permissions for path ", this.path)
                         ApplicationView.displayMessage("Permissions for path " + this.path + " was changed", 3000)
@@ -374,6 +375,7 @@ export class PermissionsManager extends HTMLElement {
             token: localStorage.getItem("user_token"),
             application: Model.application,
             domain: Model.domain,
+            address: Model.address
         }).then(rsp => {
 
             // Here I will display the owner's

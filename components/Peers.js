@@ -144,7 +144,7 @@ export class PeersManager extends HTMLElement {
                 let rqst = new RegisterPeerRqst
                 rqst.setPeer(peer)
 
-                Model.globular.resourceService.registerPeer(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+                Model.globular.resourceService.registerPeer(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
                     .then(() => {
                         panel.parentNode.removeChild(panel)
                     })
@@ -421,7 +421,7 @@ export class PeerPanel extends HTMLElement {
                 let removeActionRqst = new RemovePeerActionRqst
                 removeActionRqst.setAction(action)
                 removeActionRqst.setRoleid(peer.getId())
-                Model.globular.resourceService.removePeerAction(removeActionRqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+                Model.globular.resourceService.removePeerAction(removeActionRqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
                     .then(rsp => {
                         actionsList.removeItem(action)
                         ApplicationView.displayMessage("Action " + action + " was removed from peer " + peer.getId(), 3000)
@@ -438,7 +438,7 @@ export class PeerPanel extends HTMLElement {
 
                 // Now I will get the list of all actions install on the server.
                 let getAllActionsRqst = new GetAllActionsRequest
-                Model.globular.servicesManagerService.getAllActions(getAllActionsRqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+                Model.globular.servicesManagerService.getAllActions(getAllActionsRqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
                     .then(rsp => {
                         console.log(rsp.getActionsList())
                         let actions_ = rsp.getActionsList()
@@ -499,7 +499,7 @@ export class PeerPanel extends HTMLElement {
                                     let rqst = new AddPeerActionsRqst
                                     rqst.setPeerid(peer.getId())
                                     rqst.setActionsList([a])
-                                    Model.globular.resourceService.addPeerAction(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+                                    Model.globular.resourceService.addPeerAction(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
                                         .then(rsp => {
 
                                             actionDiv.parentNode.removeChild(actionDiv)
@@ -542,11 +542,15 @@ export class PeerPanel extends HTMLElement {
     getRemoteState(callback) {
         let rqst = new GetPeerApprovalStateRqst
         rqst.setRemotePeerAddress(this.peer.getAddress())
-        Model.globular.resourceService.getPeerApprovalState(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+        console.log ("--------------> try to get remote peer approval state: ", this.peer.getAddress())
+        Model.globular.resourceService.getPeerApprovalState(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
             .then(rsp => {
                 callback(rsp.getState())
             })
-            .catch(callback(-1))
+            .catch((err)=>{
+                ApplicationView.displayMessage(err, 3000)
+                callback(-1)
+            })
 
     }
 
@@ -565,7 +569,7 @@ export class PeerPanel extends HTMLElement {
     onAcceptPeer(peer) {
         let rqst = new AcceptPeerRqst
         rqst.setPeer(peer)
-        Model.globular.resourceService.acceptPeer(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+        Model.globular.resourceService.acceptPeer(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
             .then(rsp => {
                 console.log(rsp)
             }).catch(err => ApplicationView.displayMessage(err, 3000))
@@ -621,7 +625,7 @@ export class PeerPanel extends HTMLElement {
 
             let rqst = new DeletePeerRqst
             rqst.setPeer(peer)
-            Model.globular.resourceService.deletePeer(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") }).then((rsp) => {
+            Model.globular.resourceService.deletePeer(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") }).then((rsp) => {
                 ApplicationView.displayMessage(
                     "<iron-icon icon='communication:message' style='margin-right: 10px;'></iron-icon><div>Peer with hostname " +
                     peer.getHostname() +
