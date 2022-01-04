@@ -83,7 +83,8 @@ export class ServicesSettings extends Settings {
             Model.globular.servicesManagerService.restartAllServices(rqst, {
                 token: localStorage.getItem("user_token"),
                 application: Model.application,
-                domain: Model.domain
+                domain: Model.domain,
+                address: Model.address
             }).then(() => {
                 console.log("services was restarted!")
             })
@@ -164,7 +165,8 @@ export class ServicesSettings extends Settings {
                     Model.globular.servicesManagerService.startServiceInstance(rqst, {
                         token: localStorage.getItem("user_token"),
                         application: Model.application,
-                        domain: Model.domain
+                        domain: Model.domain,
+                        address: Model.address
                     }).then(() => {
 
                     }).catch((err: any) => {
@@ -187,7 +189,8 @@ export class ServicesSettings extends Settings {
                     Model.globular.servicesManagerService.stopServiceInstance(rqst, {
                         token: localStorage.getItem("user_token"),
                         application: Model.application,
-                        domain: Model.domain
+                        domain: Model.domain,
+                        address: Model.address
                     }).then(() => {
 
                     }).catch((err: any) => {
@@ -256,7 +259,8 @@ export class ServicesSettings extends Settings {
         Model.globular.servicesManagerService.getServicesConfiguration(rqst, {
             token: localStorage.getItem("user_token"),
             application: Model.application,
-            domain: Model.domain
+            domain: Model.domain,
+            address: Model.address
         }).then((rsp: servicesManager.GetServicesConfigurationResponse) => {
             let services = []
 
@@ -422,7 +426,8 @@ export class ServiceSetting {
         Model.globular.servicesManagerService.saveServiceConfig(rqst, {
             token: localStorage.getItem("user_token"),
             application: Model.application,
-            domain: Model.domain
+            domain: Model.domain,
+            address: Model.address
         }).then(rsp => {
             // ApplicationView.displayMessage(err, 3000)
             console.log("service was saved! ", this.service)

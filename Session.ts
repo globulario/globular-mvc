@@ -99,7 +99,8 @@ export class Session extends Model {
             .getSession(rqst, {
                 token: localStorage.getItem("user_token"),
                 application: Model.application,
-                domain: Model.domain
+                domain: Model.domain,
+                address: Model.address
             })
             .then((rsp: resource.GetSessionResponse) => {
                 let obj = rsp.getSession()
@@ -167,7 +168,8 @@ export class Session extends Model {
             .updateSession(rqst, {
                 token: localStorage.getItem("user_token"),
                 application: Model.application,
-                domain: Model.domain
+                domain: Model.domain,
+                address: Model.address
             })
             .then((rsp: resource.UpdateSessionResponse) => {
                 // Here I will return the value with it

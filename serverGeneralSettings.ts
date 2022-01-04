@@ -314,7 +314,8 @@ export class ServerGeneralSettings extends Settings {
         Model.globular.adminService.saveConfig(saveRqst, {
             token: localStorage.getItem("user_token"),
             application: Model.application,
-            domain: Model.domain
+            domain: Model.domain,
+            address: Model.address
         }).then(() => { })
             .catch(err => {
                 ApplicationView.displayMessage(err, 3000)

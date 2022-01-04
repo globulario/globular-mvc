@@ -773,13 +773,18 @@ export class Application extends Model {
         connection.setName(name)
         connection.setPort(27017)
         connection.setTimeout(60)
-        connection.setHost(Application.domain)
+
         rqst.setConnection(connection)
+
+        let address =  (<any>decoded).address;
+        let domain =  (<any>decoded).domain;
+        connection.setHost(domain)
 
         Model.globular.persistenceService.createConnection(rqst, {
           token: localStorage.getItem("user_token"),
           application: Model.application,
-          domain: Model.domain
+          domain: domain,
+          address: address
         }).then(() => {
           // Callback on login.
           Application.account = new Account(name, email, name);
@@ -887,6 +892,8 @@ export class Application extends Model {
         let userName = (<any>decoded).username;
         let email = (<any>decoded).email;
         let id = (<any>decoded).id;
+        let address =  (<any>decoded).address;
+        let domain =  (<any>decoded).domain;
 
         // here I will save the user token and user_name in the local storage.
         localStorage.setItem("user_token", token);
@@ -907,13 +914,14 @@ export class Application extends Model {
         connection.setName(id)
         connection.setPort(27017)
         connection.setTimeout(60)
-        connection.setHost(Application.domain)
+        connection.setHost(domain)
         rqst.setConnection(connection)
 
         Model.globular.persistenceService.createConnection(rqst, {
           token: localStorage.getItem("user_token"),
           application: Model.application,
-          domain: Model.domain
+          domain: domain,
+          address: address
         }).then(() => {
           console.log("connection was created! ", id)
           Application.account = new Account(id, email, userName);

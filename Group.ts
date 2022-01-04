@@ -92,7 +92,8 @@ export class Group extends Model {
         Model.globular.resourceService.updateGroup(rqst, {
             token: localStorage.getItem("user_token"),
             application: Model.application,
-            domain: Model.domain
+            domain: Model.domain,
+            address: Model.address
         })
             .then((rsp: ReplaceOneRsp) => {
                 // Here I will return the value with it
