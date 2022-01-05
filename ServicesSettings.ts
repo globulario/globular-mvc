@@ -43,7 +43,9 @@ export class ServicesSettings extends Settings {
 
     save() {
         this.servicesSettings.forEach(s => {
-            s.save()
+            if(s !=undefined){
+                s.save()
+            }
         })
     }
 
