@@ -516,7 +516,7 @@ export class ApplicationPanel extends HTMLElement {
                 let rqst = new RemoveApplicationActionRqst
                 rqst.setAction(action)
                 rqst.setApplicationid(application.getId())
-                Model.globular.resourceService.removeApplicationAction(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+                Model.globular.resourceService.removeApplicationAction(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
                     .then(rsp => {
                         actionsList.removeItem(action)
                         ApplicationView.displayMessage("Action " + action + " was removed from application " + application.getId(), 3000)
@@ -533,7 +533,7 @@ export class ApplicationPanel extends HTMLElement {
 
                 // Now I will get the list of all actions install on the server.
                 let getAllActionsRqst = new GetAllActionsRequest
-                Model.globular.servicesManagerService.getAllActions(getAllActionsRqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+                Model.globular.servicesManagerService.getAllActions(getAllActionsRqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
                     .then(rsp => {
                         let actions_ = rsp.getActionsList()
                         actions.forEach(a => {
@@ -601,7 +601,7 @@ export class ApplicationPanel extends HTMLElement {
                                     let rqst = new AddApplicationActionsRqst
                                     rqst.setApplicationid(application.getId())
                                     rqst.setActionsList([a])
-                                    Model.globular.resourceService.addApplicationActions(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+                                    Model.globular.resourceService.addApplicationActions(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
                                         .then(rsp => {
 
                                             actionDiv.parentNode.removeChild(actionDiv)
@@ -689,7 +689,7 @@ export class ApplicationPanel extends HTMLElement {
 
             let rqst = new DeleteApplicationRqst
             rqst.setApplicationid(application.getId())
-            Model.globular.resourceService.deleteApplication(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") }).then((rsp) => {
+            Model.globular.resourceService.deleteApplication(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: localStorage.getItem("user_token") }).then((rsp) => {
                 ApplicationView.displayMessage(
                     "<iron-icon icon='communication:message' style='margin-right: 10px;'></iron-icon><div>Application named " +
                     application.getName() +
@@ -755,7 +755,7 @@ export class ApplicationPanel extends HTMLElement {
 
             let rqst = new UninstallApplicationRequest
             rqst.setApplicationid(application.getId())
-            Model.globular.applicationsManagerService.uninstallApplication(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") }).then((rsp) => {
+            Model.globular.applicationsManagerService.uninstallApplication(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") }).then((rsp) => {
                 ApplicationView.displayMessage(
                     "<iron-icon icon='communication:message' style='margin-right: 10px;'></iron-icon><div>Application named " +
                     application.getName() +

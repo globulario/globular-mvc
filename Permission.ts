@@ -26,6 +26,7 @@ export class PermissionManager {
             token: localStorage.getItem("user_token"),
             application: Model.application,
             domain: Model.domain,
+            address: Model.address
         }).then((rsp: rbac.GetResourcePermissionRsp) => {
             successCallback(rsp.getPermission());
         }).then(errorCallback)
@@ -45,6 +46,7 @@ export class PermissionManager {
             token: localStorage.getItem("user_token"),
             application: Model.application,
             domain: Model.domain,
+            address: Model.address
         }).then((rsp: rbac.GetResourcePermissionsRsp) => {
             successCallback(rsp.getPermissions());
         }).catch(errorCallback)

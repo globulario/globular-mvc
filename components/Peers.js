@@ -1,12 +1,14 @@
 import { theme } from './Theme';
 import '@polymer/iron-icons/iron-icons.js';
+import "@polymer/iron-icons/hardware-icons";
 
 import { Model } from '../Model';
-import { AddPeerActionsRqst, Peer, RemovePeerActionRqst } from 'globular-web-client/resource/resource_pb';
+import { AcceptPeerRqst, AddPeerActionsRqst, DeletePeerRqst, GetPeerApprovalStateRqst, GetPeersRqst, Peer, RegisterPeerRqst, RemovePeerActionRqst } from 'globular-web-client/resource/resource_pb';
 import { getAllPeersInfo } from 'globular-web-client/api';
 import { ApplicationView } from '../ApplicationView';
 import { SearchableList } from './List.js'
 import { GetAllActionsRequest } from 'globular-web-client/services_manager/services_manager_pb';
+import { ResourceServicePromiseClient } from 'globular-web-client/resource/resource_grpc_web_pb';
 
 export class PeersManager extends HTMLElement {
     // attributes.
@@ -58,6 +60,7 @@ export class PeersManager extends HTMLElement {
                     width: 400px;
                     right: 0px;
                     position: absolute;
+                    background-color: var(--palette-background-paper);
                   }
           
              </style>
@@ -81,25 +84,29 @@ export class PeersManager extends HTMLElement {
             // Here I will get the list of all peers.
             getAllPeersInfo(Model.globular,
                 (peers) => {
+                    // sort by status
+                    peers.sort((a, b) => {
+                        a.getState() - b.getState()
+                    })
+
                     peers.forEach(p => {
                         let panel = new PeerPanel(p)
                         content.appendChild(panel)
 
                     })
-                }, err => { 
-
+                }, err => {
                     console.log("no peers found")
-                    ApplicationView.displayMessage(err, 3000) 
+                    ApplicationView.displayMessage(err, 3000)
                 })
         }
 
-        // Here I will dispay the create peer card.
-        this.shadowRoot.querySelector("#create-peer-btn").onclick = ()=>{
+        // Here I will display the create peer card.
+        this.shadowRoot.querySelector("#create-peer-btn").onclick = () => {
             let panel = this.shadowRoot.querySelector("#create-peer-card")
-            if(panel != null){
+            if (panel != null) {
                 setTimeout(() => {
                     panel.querySelector("paper-input").focus()
-                  }, 100)
+                }, 100)
                 return
             }
 
@@ -112,8 +119,8 @@ export class PeersManager extends HTMLElement {
                     <paper-icon-button id="cancel-btn" icon="close"></paper-icon-button>
                 </div>
                 <div style="display: flex; flex-direction: column; padding: 10px;">
-                    <paper-input  label="Domain"></paper-input>
-                    <paper-button style="align-self: end;">Create</paper-button>
+                    <paper-input id="peer-address-input" title="connect with peer at address"  label="address"></paper-input>
+                    <paper-button id="create-peer-connection-btn" style="align-self: end;">Create</paper-button>
                 </div>
             </paper-card>
             `
@@ -128,8 +135,24 @@ export class PeersManager extends HTMLElement {
                 panel.parentNode.removeChild(panel)
             }
 
+            let createPeerConnectionBtn = panel.querySelector("#create-peer-connection-btn")
+            createPeerConnectionBtn.onclick = () => {
+                let peer = new Peer
+                // the hostname.domain:port
+                let address = panel.querySelector("#peer-address-input").value
+                peer.setAddress(address)
+                let rqst = new RegisterPeerRqst
+                rqst.setPeer(peer)
+
+                Model.globular.resourceService.registerPeer(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
+                    .then(() => {
+                        panel.parentNode.removeChild(panel)
+                    })
+                    .catch(err => ApplicationView.displayMessage(err))
+            }
+
             let input = panel.querySelector("paper-input")
-            setTimeout(()=>{
+            setTimeout(() => {
                 input.focus()
             }, 100)
 
@@ -138,9 +161,14 @@ export class PeersManager extends HTMLElement {
         // call once
         displayPeers()
 
-        Model.globular.eventHub.subscribe("refresh_peer_evt", uuid => { }, evt => {
+        Model.globular.eventHub.subscribe("update_peers_evt", uuid => { }, evt => {
             displayPeers()
-        }, true)
+        }, false)
+
+        Model.globular.eventHub.subscribe("delete_peer_evt", uuid => { }, evt => {
+            console.log("peer ", evt, "was deleted")
+            displayPeers()
+        }, false)
 
     }
 
@@ -153,7 +181,9 @@ export class PeersManager extends HTMLElement {
 customElements.define('globular-peer-manager', PeersManager)
 
 
-
+/**
+ * Display each peers
+ */
 export class PeerPanel extends HTMLElement {
     // attributes.
     // Create the applicaiton view.
@@ -164,6 +194,17 @@ export class PeerPanel extends HTMLElement {
 
         // Keep group informations.
         this.peer = peer;
+
+        let address = this.peer.getHostname()
+        if (this.peer.getDomain().length > 0) {
+            address += "." + this.peer.getDomain()
+        }
+
+        if (this.peer.getAddress().length > 0) {
+            if (this.peer.getAddress().indexOf(":") > 0) {
+                address += ":" + this.peer.getAddress().split(":")[1]
+            }
+        }
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -189,32 +230,188 @@ export class PeerPanel extends HTMLElement {
             }
 
             .title{
+                padding-left: 10px;
                 flex-grow: 1;
+                color: var(--palette-text-primary);
+            }
+            a:visited {
+                color: var(--palette-text-primary);
+                background-color: transparent;
+                text-decoration: none;
+            }
+
+            .state{
+                padding-right: 20px;
+            }
+
+            .state-pending{
+                color: var(--palette-error-main);
+            }
+
+            .state-rejected .state-deleted{
+                color: var(--palette-secondary-main);
+            }
+
+            .state-unreachable{
+                color: var(--palette-error-dark);
+            }
+
+            .state-accepted{
+                color: var(--palette-success-main);
+            }
+
+            .card-content{
+                overflow-y: auto;
+                min-width: 400px;
+                max-height: 260px;
+                overflow-y: auto;
+            }
+
+            .peer-card-content {
+                display: table;
+                border-spacing: 30px 10px;
+                border-collapse: separate;
+            }
+
+            .peer-card-content .row {
+                display: table-row;
+            }
+
+            .peer-card-content .cell {
+                display: table-cell;
+            }
+
+            #actions-lst{
+                padding-left: 30px;
+                padding-right: 30px;
+                padding-bottom: 10px;
             }
 
         </style>
         <div id="container">
             <div class="header">
-                <paper-icon-button id="delete-peer-btn" icon="delete"></paper-icon-button>
-                <span class="title">${this.peer.getName()}</span>
+                <iron-icon style="padding: 10px;" icon="hardware:computer"></iron-icon>
+                <a class="title">${this.peer.getHostname()}</a>
+                <span id="approval-state-span" class="state"></span>
                 <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
                     <iron-icon  id="hide-btn"  icon="unfold-less" style="flex-grow: 1; --iron-icon-fill-color:var(--palette-text-primary);" icon="unfold-more"></iron-icon>
                     <paper-ripple class="circle" recenters=""></paper-ripple>
                 </div>
             </div>
-            <iron-collapse id="collapse-panel"  style="width: 90%;" >
-
+            <iron-collapse id="collapse-panel"  style="width: 100%;" >
+                <div id="content" style="display: flex; flex-direction: column;">
+                    <div class="peer-card-content">
+                        <div class="row">
+                            <div class="cell label">Mac Address</div>
+                            <div class="cell value">${this.peer.getMac()}</div>
+                        </div>
+                        <div class="row">
+                            <div class="cell label">address</div>
+                            <div class="cell value">${this.peer.getAddress()}</div>
+                        </div>
+                        <div class="row">
+                            <div class="cell label">domain</div>
+                            <div class="cell value">${this.peer.getDomain()}</div>
+                        </div>
+                        <div class="row">
+                            <div class="cell label">public IP</div>
+                            <div class="cell value">${this.peer.getExternalIpAddress()}</div>
+                        </div>
+                        <div class="row">
+                            <div class="cell label">local IP</div>
+                            <div class="cell value">${this.peer.getLocalIpAddress()}</div>
+                        </div>
+                    </div>
+                    <div id="actions-lst">
+                    </div>
+                    <div style="display: flex; justify-content: end;">
+                        <paper-button title="accept a peer." id="accept-peer-btn">
+                            Accept
+                        </paper-button>
+                        <paper-button title="keep a peer in a black list until it be deleted." id="reject-peer-btn" >
+                            Reject
+                        </paper-button>
+                        <paper-button title="delete a peer from the peer list, it also delete keys and permissions associated with that peer." id="delete-peer-btn" >
+                            Delete
+                        </paper-button>
+                    </div>
+                </div>
             </iron-collapse>
         </div>
         `
+
+        let lnk = this.shadowRoot.querySelector(".title")
+        lnk.href = 'http://' + address + "/console"
+        lnk.target = "_blank"
 
         let content = this.shadowRoot.querySelector("#collapse-panel")
         this.hideBtn = this.shadowRoot.querySelector("#hide-btn")
 
         let deleteBtn = this.shadowRoot.querySelector("#delete-peer-btn")
         deleteBtn.onclick = () => {
-            this.onDeleteRole(peer)
+            this.onDeletePeer(peer)
         }
+
+        let rejectBtn = this.shadowRoot.querySelector("#reject-peer-btn")
+        rejectBtn.onclick = () => {
+            this.onRejectPeer(peer)
+        }
+
+        let acceptBtn = this.shadowRoot.querySelector("#accept-peer-btn")
+        acceptBtn.onclick = () => {
+            this.onAcceptPeer(peer)
+        }
+
+        // get the remote state for this peers.
+        this.getRemoteState((remote_state) => {
+
+            let state = 0
+            let stateSpan = this.shadowRoot.querySelector("#approval-state-span")
+
+            if (this.peer.getState() != 0 && remote_state != 0) {
+                if (remote_state == -1) {
+                    state = "unreachable"
+                    stateSpan.innerHTML = "unreachable"
+                    stateSpan.className = "state state-unreachable"
+                } else {
+                    if (this.peer.getState() == 1 && remote_state == 1) {
+                        state = 1
+                    }
+                    if (this.peer.getState() == 2 || remote_state == 2) {
+                        state = 2
+                    }
+                    stateSpan.innerHTML = this.getState(state)
+
+                    stateSpan.className = "state state-" + this.getState(state)
+
+                }
+
+            }
+
+            // Here I will set the button state.ff,
+            if (remote_state == -1) {
+                deleteBtn.style.display = "none"
+                rejectBtn.style.display = "none"
+                acceptBtn.style.display = "none"
+            } else if (this.peer.getState() == 0) {
+                deleteBtn.style.display = "none"
+                rejectBtn.style.display = "block"
+                acceptBtn.style.display = "block"
+            } else if (this.peer.getState() == 1) {
+                deleteBtn.style.display = "block"
+                rejectBtn.style.display = "none"
+                acceptBtn.style.display = "none"
+            } else if (this.peer.getState() == 2) {
+                deleteBtn.style.display = "block"
+                rejectBtn.style.display = "none"
+                acceptBtn.style.display = "none"
+            }
+
+
+
+        })
+
+
 
 
         // Here I will create the searchable actions list.
@@ -224,7 +421,7 @@ export class PeerPanel extends HTMLElement {
                 let removeActionRqst = new RemovePeerActionRqst
                 removeActionRqst.setAction(action)
                 removeActionRqst.setRoleid(peer.getId())
-                Model.globular.resourceService.removePeerAction(removeActionRqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+                Model.globular.resourceService.removePeerAction(removeActionRqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
                     .then(rsp => {
                         actionsList.removeItem(action)
                         ApplicationView.displayMessage("Action " + action + " was removed from peer " + peer.getId(), 3000)
@@ -241,7 +438,7 @@ export class PeerPanel extends HTMLElement {
 
                 // Now I will get the list of all actions install on the server.
                 let getAllActionsRqst = new GetAllActionsRequest
-                Model.globular.servicesManagerService.getAllActions(getAllActionsRqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+                Model.globular.servicesManagerService.getAllActions(getAllActionsRqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
                     .then(rsp => {
                         console.log(rsp.getActionsList())
                         let actions_ = rsp.getActionsList()
@@ -260,13 +457,6 @@ export class PeerPanel extends HTMLElement {
                                 right: 0px;
                                 z-index: 1;
                             }
-                            .card-content{
-                                overflow-y: auto;
-                                min-width: 400px;
-                                max-height: 260px;
-                                overflow-y: auto;
-                            }
-        
                         </style>
                         <paper-card id="add-peer-action-panel">
                             <div style="display: flex; align-items: center;">
@@ -276,7 +466,6 @@ export class PeerPanel extends HTMLElement {
                                 <paper-icon-button id="cancel-btn" icon="close"></paper-icon-button>
                             </div>
                             <div class="card-content">
-                                <div></div>
                             </div>
                         </paper-card>
                         `
@@ -310,7 +499,7 @@ export class PeerPanel extends HTMLElement {
                                     let rqst = new AddPeerActionsRqst
                                     rqst.setPeerid(peer.getId())
                                     rqst.setActionsList([a])
-                                    Model.globular.resourceService.addPeerAction(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+                                    Model.globular.resourceService.addPeerAction(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
                                         .then(rsp => {
 
                                             actionDiv.parentNode.removeChild(actionDiv)
@@ -334,6 +523,8 @@ export class PeerPanel extends HTMLElement {
                     })
             })
 
+        this.shadowRoot.querySelector("#actions-lst").appendChild(actionsList)
+
         // give the focus to the input.
         this.hideBtn.onclick = () => {
             let button = this.shadowRoot.querySelector("#hide-btn")
@@ -346,11 +537,50 @@ export class PeerPanel extends HTMLElement {
                 content.toggle();
             }
         }
+    }
 
+    getRemoteState(callback) {
+        let rqst = new GetPeerApprovalStateRqst
+        rqst.setRemotePeerAddress(this.peer.getAddress())
+        console.log ("--------------> try to get remote peer approval state: ", this.peer.getAddress())
+        Model.globular.resourceService.getPeerApprovalState(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
+            .then(rsp => {
+                callback(rsp.getState())
+            })
+            .catch((err)=>{
+                ApplicationView.displayMessage(err, 3000)
+                callback(-1)
+            })
 
     }
 
-    onDeleteRole(peer) {
+
+    getState(state) {
+        if (state == 0) {
+            return "pending"
+        } else if (state == 1) {
+            return "accepted"
+        } else if (state == 2) {
+            return "rejected"
+        }
+        return ""
+    }
+
+    onAcceptPeer(peer) {
+        let rqst = new AcceptPeerRqst
+        rqst.setPeer(peer)
+        Model.globular.resourceService.acceptPeer(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
+            .then(rsp => {
+                console.log(rsp)
+            }).catch(err => ApplicationView.displayMessage(err, 3000))
+
+    }
+
+    onRejectPeer(peer) {
+        console.log("reject peer ", peer)
+    }
+
+    onDeletePeer(peer) {
         let toast = ApplicationView.displayMessage(
             `
           <style>
@@ -376,7 +606,7 @@ export class PeerPanel extends HTMLElement {
     
           </style>
           <div id="yes-no-contact-delete-box">
-            <div>Your about to delete the peer ${peer.getName()}</div>
+            <div>Your about to delete the peer ${peer.getHostname()}</div>
             <div>Is it what you want to do? </div>
             <div style="justify-content: flex-end;">
               <paper-button id="yes-delete-contact">Yes</paper-button>
@@ -393,16 +623,15 @@ export class PeerPanel extends HTMLElement {
         // On yes
         yesBtn.onclick = () => {
 
-            let rqst = new DeleteRoleRqst
-            rqst.setRoleid(peer.getId())
-            Model.globular.resourceService.deleteRole(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") }).then((rsp) => {
+            let rqst = new DeletePeerRqst
+            rqst.setPeer(peer)
+            Model.globular.resourceService.deletePeer(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") }).then((rsp) => {
                 ApplicationView.displayMessage(
-                    "<iron-icon icon='communication:message' style='margin-right: 10px;'></iron-icon><div>Role named " +
-                    peer.getName() +
+                    "<iron-icon icon='communication:message' style='margin-right: 10px;'></iron-icon><div>Peer with hostname " +
+                    peer.getHostname() +
                     " was deleted!</div>",
                     3000
                 );
-                Model.globular.eventHub.publish("refresh_peer_evt", {}, true)
                 toast.dismiss();
             }).catch(e => {
                 ApplicationView.displayMessage(e, 3000)

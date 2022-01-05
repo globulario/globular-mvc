@@ -158,7 +158,7 @@ export class RoleManager extends HTMLElement {
                     role.setName(roleId)
 
                     createRoleRqst.setRole(role)
-                    Model.globular.resourceService.createRole(createRoleRqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+                    Model.globular.resourceService.createRole(createRoleRqst, { domain: Model.domain,address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
                     .then(rsp => {
                         ApplicationView.displayMessage("Role " + roleId + " was created!", 3000)
                         panel.parentNode.removeChild(panel)
@@ -287,7 +287,7 @@ export class RolePanel extends HTMLElement {
                 let removeActionRqst = new RemoveRoleActionRqst
                 removeActionRqst.setAction(action)
                 removeActionRqst.setRoleid(role.getId())
-                Model.globular.resourceService.removeRoleAction(removeActionRqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+                Model.globular.resourceService.removeRoleAction(removeActionRqst, { domain: Model.domain,address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
                     .then(rsp => {
                         actionsList.removeItem(action)
                         ApplicationView.displayMessage("Action " + action + " was removed from role " + role.getId(), 3000)
@@ -304,7 +304,7 @@ export class RolePanel extends HTMLElement {
 
                 // Now I will get the list of all actions install on the server.
                 let getAllActionsRqst = new GetAllActionsRequest
-                Model.globular.servicesManagerService.getAllActions(getAllActionsRqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+                Model.globular.servicesManagerService.getAllActions(getAllActionsRqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
                     .then(rsp => {
                         console.log(rsp.getActionsList())
                         let actions_ = rsp.getActionsList()
@@ -373,7 +373,7 @@ export class RolePanel extends HTMLElement {
                                     let rqst = new AddRoleActionsRqst
                                     rqst.setRoleid(role.getId())
                                     rqst.setActionsList([a])
-                                    Model.globular.resourceService.addRoleActions(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+                                    Model.globular.resourceService.addRoleActions(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
                                         .then(rsp => {
 
                                             actionDiv.parentNode.removeChild(actionDiv)
@@ -417,7 +417,7 @@ export class RolePanel extends HTMLElement {
                     let rqst = new RemoveAccountRoleRqst
                     rqst.setRoleid(role.getId())
                     rqst.setAccountid(a._id)
-                    Model.globular.resourceService.removeAccountRole(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+                    Model.globular.resourceService.removeAccountRole(rqst, { domain: Model.domain,address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
                         .then(rsp => {
                             accountsList.removeItem(a)
                             ApplicationView.displayMessage("Account " + a._id + " was removed from role " + role.getId(), 3000)
@@ -430,7 +430,7 @@ export class RolePanel extends HTMLElement {
                         let rqst = new AddAccountRoleRqst
                         rqst.setRoleid(role.getId())
                         rqst.setAccountid(a._id)
-                        Model.globular.resourceService.addAccountRole(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+                        Model.globular.resourceService.addAccountRole(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
                             .then(rsp => {
                                 accountsList.appendItem(a)
                                 ApplicationView.displayMessage("Account " + a._id + " has now role " + role.getId(), 3000)
@@ -508,7 +508,7 @@ export class RolePanel extends HTMLElement {
 
           let rqst = new DeleteRoleRqst
           rqst.setRoleid(role.getId())
-          Model.globular.resourceService.deleteRole(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") } ).then((rsp)=>{
+          Model.globular.resourceService.deleteRole(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") } ).then((rsp)=>{
             ApplicationView.displayMessage(
                 "<iron-icon icon='communication:message' style='margin-right: 10px;'></iron-icon><div>Role named " +
                 role.getName() +

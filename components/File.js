@@ -2309,7 +2309,7 @@ export class FileNavigator extends HTMLElement {
                         this.initShared()
                     }, false, this)
             }
-            this._file_explorer_.displayWaitMessage("load " + path)
+            this._file_explorer_.displayWaitMessage("load " + share.getPath())
             _readDir(share.getPath(), dir => {
                 this._file_explorer_.resume()
                 // used by set dir...

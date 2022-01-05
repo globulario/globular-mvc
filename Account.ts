@@ -6,6 +6,8 @@ import { Group } from "./Group";
 import { Session } from "./Session"
 import { ApplicationView } from "./ApplicationView";
 import { Application } from "./Application";
+import * as jwt from "jwt-decode";
+
 /**
  * Basic account class that contain the user id and email.
  */
@@ -140,7 +142,12 @@ export class Account extends Model {
         rqst.setQuery(`{"$or":[{"_id":"${id}"},{"name":"${id}"} ]}`); // search by name and not id... the id will be retreived.
         rqst.setOptions(`[{"Projection":{"_id":1, "email":1, "name":1, "groups":1, "organizations":1, "roles":1}}]`);
 
-        let stream = Model.globular.resourceService.getAccounts(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+        let token = localStorage.getItem("user_token")
+        let decoded = jwt(token);
+        let address =  (<any>decoded).address;
+        let domain =  (<any>decoded).domain;
+
+        let stream = Model.globular.resourceService.getAccounts(rqst, { domain: domain, address: address, application: Model.application, token: token })
         let accounts_ = new Array<ResourceService.Account>();
 
         stream.on("data", (rsp) => {
@@ -289,12 +296,20 @@ export class Account extends Model {
         rqst.setQuery(query);
         rqst.setOptions("");
 
+        // So here I will set the address from the address found in the token and not 
+        // the address of the client itself.
+        let token = localStorage.getItem("user_token")
+        let decoded = jwt(token);
+        let address =  (<any>decoded).address;
+        let domain =  (<any>decoded).domain;
+
         // call persist data
         Model.globular.persistenceService
             .findOne(rqst, {
-                token: localStorage.getItem("user_token"),
+                token: token,
                 application: Model.application,
-                domain: Model.domain
+                domain: domain,
+                address: address
             })
             .then((rsp: any) => {
                 let data = rsp.getResult().toJavaScript();
@@ -491,12 +506,20 @@ export class Account extends Model {
         rqst.setValue(data);
         rqst.setOptions(`[{"upsert": true}]`);
 
+        // So here I will set the address from the address found in the token and not 
+        // the address of the client itself.
+        let token = localStorage.getItem("user_token")
+        let decoded = jwt(token);
+        let address =  (<any>decoded).address;
+        let domain =  (<any>decoded).domain;
+
         // call persist data
         Model.globular.persistenceService
             .replaceOne(rqst, {
-                token: localStorage.getItem("user_token"),
+                token: token,
                 application: Model.application,
-                domain: Model.domain
+                domain: domain,
+                address: address
             })
             .then((rsp: ReplaceOneRsp) => {
                 // Here I will return the value with it
@@ -523,13 +546,19 @@ export class Account extends Model {
 
         rqst.setId(id);
         rqst.setDatabase(db);
-
         rqst.setCollection("Contacts");
         rqst.setQuery(query);
+
+        let token = localStorage.getItem("user_token")
+        let decoded = jwt(token);
+        let address =  (<any>decoded).address;
+        let domain =  (<any>decoded).domain;
+
         let stream = Model.globular.persistenceService.find(rqst, {
-            token: localStorage.getItem("user_token"),
+            token: token,
             application: Model.application,
-            domain: Model.domain,
+            domain: domain,
+            address: address
         });
 
         let data: any;
@@ -562,11 +591,16 @@ export class Account extends Model {
         contact.setStatus(status_from)
         contact.setInvitationtime(Math.round(Date.now() / 1000))
         rqst.setContact(contact)
+        let token = localStorage.getItem("user_token")
+        let decoded = jwt(token);
+        let address =  (<any>decoded).address;
+        let domain =  (<any>decoded).domain;
 
         Model.globular.resourceService.setAccountContact(rqst, {
-            token: localStorage.getItem("user_token"),
+            token: token,
             application: Model.application,
-            domain: Model.domain
+            domain: domain,
+            address: address
         })
             .then((rsp: ResourceService.SetAccountContactRsp) => {
                 let sentInvitation = `{"_id":"${to.id}", "invitationTime":${Math.floor(Date.now() / 1000)}, "status":"${status_from}"}`
@@ -581,13 +615,18 @@ export class Account extends Model {
                 contact.setStatus(status_to)
                 contact.setInvitationtime(Math.round(Date.now() / 1000))
                 rqst.setContact(contact)
+                let token = localStorage.getItem("user_token")
+                let decoded = jwt(token);
+                let address =  (<any>decoded).address;
+                let domain =  (<any>decoded).domain;
 
                 // call persist data
                 Model.globular.resourceService
                     .setAccountContact(rqst, {
-                        token: localStorage.getItem("user_token"),
+                        token: token,
                         application: Model.application,
-                        domain: Model.domain
+                        domain: domain,
+                        address: address
                     })
                     .then((rsp: ReplaceOneRsp) => {
                         // Here I will return the value with it

@@ -15,6 +15,9 @@ export class Model {
     // The domain of the application.
     public static domain: string;
 
+    // The address...
+    public static address: string;
+
     // The name of the applicaition where the model is use.
     public static get application(): string {
         let app = window.location.pathname.split('/')[1]
@@ -39,6 +42,8 @@ export class Model {
         // Set the application name.
         // The domain will be set with the hostname.
         Model.domain = window.location.hostname
+        Model.address = Model.domain + ":" + window.location.port
+        
         this.listeners = new Array<any>();
     }
 

@@ -303,7 +303,7 @@ export class BlogPostElement extends HTMLElement {
             rqst.setUuid(this.blog.getUuid())
 
             // Delete the blog...
-            Model.globular.blogService.deleteBlogPost(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+            Model.globular.blogService.deleteBlogPost(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: localStorage.getItem("user_token") })
                 .then(rsp => {
                     Model.eventHub.publish(this.blog.getUuid() + "_blog_delete_event", {}, false)
                 })
@@ -570,7 +570,7 @@ export class BlogPostElement extends HTMLElement {
                 rqst.setKeywordsList(this.keywordsEditList.getValues())
                 rqst.setThumbnail("")
 
-                Model.globular.blogService.createBlogPost(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+                Model.globular.blogService.createBlogPost(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: localStorage.getItem("user_token") })
                     .then(rsp => {
                         this.blog = rsp.getBlogPost();
                         ApplicationView.displayMessage("Your post is published!", 3000)
@@ -591,7 +591,7 @@ export class BlogPostElement extends HTMLElement {
                 this.blog.setKeywordsList(this.keywordsEditList.getValues())
 
                 rqst.setBlogPost(this.blog)
-                Model.globular.blogService.saveBlogPost(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+                Model.globular.blogService.saveBlogPost(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: localStorage.getItem("user_token") })
                     .then(rsp => {
                         ApplicationView.displayMessage("Your post was updated!", 3000)
 
@@ -689,7 +689,7 @@ export class BlogPosts extends HTMLElement {
         rqst.setAuthorsList(authors)
         rqst.setMax(100)
 
-        let stream = Model.globular.blogService.getBlogPostsByAuthors(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") });
+        let stream = Model.globular.blogService.getBlogPostsByAuthors(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: localStorage.getItem("user_token") });
         let blogs = []
 
         stream.on("data", (rsp) => {
@@ -1048,7 +1048,7 @@ export class BlogCommentEditor extends HTMLElement {
             rqst.setUuid(this.blog.getUuid())
             rqst.setEmoji(emoji)
 
-            Model.globular.blogService.addEmoji(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+            Model.globular.blogService.addEmoji(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: localStorage.getItem("user_token") })
                 .then(rsp => {
                     Model.eventHub.publish(emoji.getParent() + "_new_emotion_event", rsp.getEmoji().serializeBinary(), false)
                 })
@@ -1147,7 +1147,7 @@ export class BlogCommentEditor extends HTMLElement {
                 }
                 rqst.setComment(comment)
 
-                Model.globular.blogService.addComment(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+                Model.globular.blogService.addComment(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: localStorage.getItem("user_token") })
                     .then(rsp => {
                         Model.eventHub.publish("new_" + comment.getParent() + "_comment_evt", rsp.getComment().serializeBinary(), false)
                         addCommentBtn.style.display = "flex"
