@@ -32,6 +32,7 @@ export class SlideShow extends HTMLElement {
             },
             () => {
                 this.stop();
+                
             },
             true, this
         );

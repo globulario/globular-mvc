@@ -209,6 +209,8 @@ export class ApplicationView extends View {
 
     // set the global varialbe...
     applicationView = this;
+
+    this.getWorkspace()
   }
 
   // Must be call by the model when after it initialisation was done.
@@ -1120,7 +1122,7 @@ export class ApplicationView extends View {
     if (this.workspace_.parentElement == null) {
       ApplicationView.layout.workspace().appendChild(this.workspace_)
     }
-    return this.workspace_; //ApplicationView.layout.workspace();
+    return this.workspace_;
   }
 
   /**
