@@ -5,7 +5,7 @@ import { Application } from "../Application";
 /**
  * Sample empty component
  */
-export class FileReader extends HTMLElement {
+export class GlobularFileReader extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
@@ -62,4 +62,4 @@ export class FileReader extends HTMLElement {
 
 }
 
-customElements.define('globular-file-reader', FileReader)
+customElements.define('globular-file-reader', GlobularFileReader)

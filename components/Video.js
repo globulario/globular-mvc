@@ -2,6 +2,8 @@
 import { theme } from "./Theme";
 import { Model } from '../Model';
 import { Application } from "../Application";
+import Plyr from 'plyr';
+import "./plyr.css"
 
 Object.defineProperty(HTMLMediaElement.prototype, 'playing', {
     get: function () {
@@ -40,19 +42,30 @@ export class VideoPlayer extends HTMLElement {
             }
         </style>
         <div id="container">
-            <video controls autoplay>
-            </video>
+            <slot></slot>
         </div>
         `
+        // <!--video id="player" controls autoplay></video-->
+        
         // give the focus to the input.
         let container = this.shadowRoot.querySelector("#container")
-        this.video = this.shadowRoot.querySelector("video")
+        this.video =  document.createElement("video")// this.shadowRoot.querySelector("video")
+        this.video.id = "player"
+        this.video.autoplay = true
+        this.video.controls = true
 
+        this.appendChild(this.video)
+        
+        const player = new Plyr(this.video);
 
         // Get the parent size and set the max width of te
         window.addEventListener("resize", () => {
             this.video.style.maxWidth = this.parentNode.offsetWidth + "px"
         });
+    }
+
+    connectedCallback() {
+  
     }
 
     play(path) {

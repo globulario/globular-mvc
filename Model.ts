@@ -1,12 +1,22 @@
 // Globular conneciton.
 import * as GlobularWebClient from "globular-web-client";
+import { getAllPeersInfo } from "globular-web-client/api";
+import { Application, GetPeersRqst, GetPeersRsp, Peer } from "globular-web-client/resource/resource_pb";
 import { View } from "./View";
 
 export class Model {
 
     protected listeners: Array<any>;
 
-    // Static class.
+    // Here I will keep list of connected globules...
+    public static globules: Map<string, GlobularWebClient.Globular>
+
+    // That function will return a 
+    public static getGlobule(address: string): GlobularWebClient.Globular {
+        return Model.globules.get(address);
+    }
+
+    // This is the globule where the application is running.
     public static globular: GlobularWebClient.Globular;
 
     // This is the event controller.
@@ -21,7 +31,7 @@ export class Model {
     // The name of the applicaition where the model is use.
     public static get application(): string {
         let app = window.location.pathname.split('/')[1]
-        if(app.length == 0){
+        if (app.length == 0) {
             app = Model.globular.config.IndexApplication;
         }
         return app;
@@ -39,11 +49,12 @@ export class Model {
     }
 
     constructor() {
+
         // Set the application name.
         // The domain will be set with the hostname.
         Model.domain = window.location.hostname
         Model.address = Model.domain + ":" + window.location.port
-        
+
         this.listeners = new Array<any>();
     }
 
@@ -80,7 +91,7 @@ export class Model {
      * @param json The class data.
      */
     static fromString(json: string): any {
-        
+
     }
 
     /**
@@ -97,15 +108,48 @@ export class Model {
      * @param adminPort The admin service port
      * @param adminProxy The admin service proxy
      */
-    init(url:string , initCallback: () => void, errorCallback: (err: any) => void) {
+    init(url: string, initCallback: () => void, errorCallback: (err: any) => void) {
         // So here I will initilyse the server connection.
-        // let url = window.location.origin
-        // url += "/config"
-        Model.globular = new GlobularWebClient.Globular(url, ()=>{
+        Model.globular = new GlobularWebClient.Globular(url, () => {
             // set the event hub.
             Model.eventHub = Model.globular.eventHub;
-            initCallback();
+
+            // So here I will create connection to peers know by globular...
+            Model.globules = new Map<string, GlobularWebClient.Globular>();
+            Model.globules.set(Model.address, Model.globular)
+
+            getAllPeersInfo(Model.globular, (peers: Peer[]) => {
+                
+                let index = 0;
+                let connectToPeers = () => {
+                    let peer = peers[index]
+                    if (index < peers.length) {
+                        index++
+                        let url = location.protocol + "//"  + peer.getAddress() + "/config"
+                        let globule = new GlobularWebClient.Globular(url, connectToPeers, (err: any) => {
+                            console.log(err, "fail to connect with globule at address ", peer.getAddress())
+                            if (index < peers.length) {
+                                connectToPeers()
+                            }else {
+                                initCallback();
+                            }
+                        })
+
+                        // append the globule to the list.
+                        Model.globules.set(peer.getAddress(), globule)
+                    } else {
+                        initCallback();
+                    }
+                }
+
+                connectToPeers()
+            }, (err: any) => {
+                console.log("no peers found ", err)
+                initCallback();
+            });
+
+
         }, errorCallback);
-      
+
     }
 }

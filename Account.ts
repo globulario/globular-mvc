@@ -7,6 +7,7 @@ import { Session } from "./Session"
 import { ApplicationView } from "./ApplicationView";
 import { Application } from "./Application";
 import * as jwt from "jwt-decode";
+import { Globular } from "globular-web-client";
 
 /**
  * Basic account class that contain the user id and email.
@@ -147,7 +148,7 @@ export class Account extends Model {
         let address =  (<any>decoded).address;
         let domain =  (<any>decoded).domain;
 
-        let stream = Model.globular.resourceService.getAccounts(rqst, { domain: domain, address: address, application: Model.application, token: token })
+        let stream =  Model.getGlobule(address).resourceService.getAccounts(rqst, { domain: domain, address: address, application: Model.application, token: token })
         let accounts_ = new Array<ResourceService.Account>();
 
         stream.on("data", (rsp) => {
@@ -304,7 +305,7 @@ export class Account extends Model {
         let domain =  (<any>decoded).domain;
 
         // call persist data
-        Model.globular.persistenceService
+        Model.getGlobule(address).persistenceService
             .findOne(rqst, {
                 token: token,
                 application: Model.application,
@@ -514,7 +515,7 @@ export class Account extends Model {
         let domain =  (<any>decoded).domain;
 
         // call persist data
-        Model.globular.persistenceService
+        Model.getGlobule(address).persistenceService
             .replaceOne(rqst, {
                 token: token,
                 application: Model.application,
@@ -554,7 +555,7 @@ export class Account extends Model {
         let address =  (<any>decoded).address;
         let domain =  (<any>decoded).domain;
 
-        let stream = Model.globular.persistenceService.find(rqst, {
+        let stream =  Model.getGlobule(address).persistenceService.find(rqst, {
             token: token,
             application: Model.application,
             domain: domain,
@@ -596,7 +597,7 @@ export class Account extends Model {
         let address =  (<any>decoded).address;
         let domain =  (<any>decoded).domain;
 
-        Model.globular.resourceService.setAccountContact(rqst, {
+        Model.getGlobule(address).resourceService.setAccountContact(rqst, {
             token: token,
             application: Model.application,
             domain: domain,
@@ -621,7 +622,7 @@ export class Account extends Model {
                 let domain =  (<any>decoded).domain;
 
                 // call persist data
-                Model.globular.resourceService
+                Model.getGlobule(address).resourceService
                     .setAccountContact(rqst, {
                         token: token,
                         application: Model.application,
@@ -636,15 +637,27 @@ export class Account extends Model {
                     })
                     .catch(errorCallback);
             }).catch(errorCallback);
+    }
 
+    // Get all account on all globule 
+    static getAccounts(query: string, callback: (accounts: Array<Account>) => void, errorCallback: (err: any) => void) {
+        let accounts = new Array<Account>()
+        let iter = Model.globules.values()
+        let _getAccounts_ = (accounts: Array<Account>)=>{
+            let globule = iter.next().value
+            //if()
+            Account._getAccounts( globule, query, callback, errorCallback)
+        }
+
+        Account._getAccounts(Model.globular, query, callback, errorCallback)
     }
 
     // Get all account data...
-    static getAccounts(query: string, callback: (accounts: Array<Account>) => void, errorCallback: (err: any) => void) {
+    private static _getAccounts(globule: Globular, query: string, callback: (accounts: Array<Account>) => void, errorCallback: (err: any) => void) {
         let rqst = new ResourceService.GetAccountsRqst
         rqst.setQuery(query)
 
-        let stream = Model.globular.resourceService.getAccounts(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
+        let stream = globule.resourceService.getAccounts(rqst, { domain: Model.domain, application: Model.application, token: localStorage.getItem("user_token") })
         let accounts_ = new Array<ResourceService.Account>();
 
         stream.on("data", (rsp) => {

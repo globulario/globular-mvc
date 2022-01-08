@@ -316,7 +316,7 @@ window.customElements.define('globular-image-cropper', ImageCropper);
 /**
  * Classic image viewer
  */
-class ImageViewer extends HTMLElement {
+export class ImageViewer extends HTMLElement {
 
   constructor() {
     super();

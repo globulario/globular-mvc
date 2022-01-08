@@ -3,7 +3,7 @@ import '@polymer/iron-icons/iron-icons.js';
 import "@polymer/iron-icons/hardware-icons";
 
 import { Model } from '../Model';
-import { AcceptPeerRqst, AddPeerActionsRqst, DeletePeerRqst, GetPeerApprovalStateRqst, GetPeersRqst, Peer, RegisterPeerRqst, RemovePeerActionRqst } from 'globular-web-client/resource/resource_pb';
+import { AcceptPeerRqst, AddPeerActionsRqst, DeletePeerRqst, GetPeerApprovalStateRqst, Peer, RegisterPeerRqst, RemovePeerActionRqst } from 'globular-web-client/resource/resource_pb';
 import { getAllPeersInfo } from 'globular-web-client/api';
 import { ApplicationView } from '../ApplicationView';
 import { SearchableList } from './List.js'

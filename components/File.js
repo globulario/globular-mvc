@@ -17,7 +17,7 @@ import { Menu } from './Menu';
 import { PermissionsManager } from './Permissions';
 import { VideoPlayer } from './Video'
 import { AudioPlayer } from './Audio'
-import { } from './Reader'
+import { GlobularFileReader } from './Reader'
 import { theme } from './Theme';
 import { v4 as uuidv4 } from "uuid";
 
@@ -31,6 +31,8 @@ import { KillProcessRequest, RunCmdRequest } from 'globular-web-client/admin/adm
 import { GetSharedResourceRqst, SubjectType } from 'globular-web-client/rbac/rbac_pb';
 import { randomUUID } from './utility';
 import * as getUuidByString from 'uuid-by-string';
+import { TimeScale } from 'chart.js';
+import { ImageViewer } from './Image';
 
 
 // keep track of shared directory
@@ -2620,12 +2622,7 @@ export class FileExplorer extends HTMLElement {
                         <globular-file-navigator id="globular-file-navigator"></globular-file-navigator>
                     </div>
                     <div  id="file-selection-panel" style="position: relative;">
-                        <globular-files-list-view id="globular-files-list-view" style="display:none;" ></globular-files-list-view>
-                        <globular-files-icon-view id="globular-files-icon-view"></globular-files-icon-view>
-                        <globular-video-player id="globular-video-player"></globular-video-player>
-                        <globular-audio-player id="globular-audio-player"></globular-audio-player>
-                        <globular-file-reader id="globular-file-reader"></globular-file-reader>
-                        <globular-image-viewer id="globular-image-viewer"></globular-image-viewer>
+                        <slot></slot>
                     </div>
                 </div>
             </div>
@@ -2659,8 +2656,17 @@ export class FileExplorer extends HTMLElement {
         this.fileExplererCloseBtn = this.shadowRoot.querySelector("#file-explorer-box-close-btn")
 
         // The file view.
-        this.filesListView = this.shadowRoot.querySelector("#globular-files-list-view")
-        this.filesIconView = this.shadowRoot.querySelector("#globular-files-icon-view")
+        //this.shadowRoot.querySelector("#globular-files-list-view")
+        this.filesListView = new FilesListView()
+        this.filesListView.id = "globular-files-list-view"
+        this.filesListView.style.display = "none"
+        this.appendChild(this.filesListView)
+
+        // this.shadowRoot.querySelector("#globular-files-icon-view")
+        this.filesIconView = new FilesIconView()
+        this.filesIconView.id = "globular-files-icon-view"
+        this.filesIconView.style.display = "none"
+        this.appendChild(this.filesIconView)
 
         // Keep reference to the file explorer...
         this.filesListView._file_explorer_ = this.filesIconView._file_explorer_ = this
@@ -2669,20 +2675,37 @@ export class FileExplorer extends HTMLElement {
         this.permissionManager = new PermissionsManager()
 
         // The video player
-        this.videoPlayer = this.shadowRoot.querySelector("#globular-video-player")
+        // this.shadowRoot.querySelector("#globular-video-player")
+        this.videoPlayer = new VideoPlayer()
+        this.videoPlayer.id = "#globular-video-player"
+        this.videoPlayer.style.display = "none"
+        this.appendChild(this.videoPlayer)
+
 
         // The file uploader
         this.filesUploader = this.shadowRoot.querySelector("globular-files-uploader")
 
 
         // The file reader
-        this.fileReader = this.shadowRoot.querySelector("#globular-file-reader")
+        // this.fileReader = this.shadowRoot.querySelector("#globular-file-reader")
+        this.fileReader = new GlobularFileReader()
+        this.fileReader.id = "#globular-file-reader"
+        this.fileReader.style.display = "none"
+        this.appendChild(this.fileReader)
 
         // The audio player 
-        this.audioPlayer = this.shadowRoot.querySelector("#globular-audio-player")
+        // this.audioPlayer = this.shadowRoot.querySelector("#globular-audio-player")
+        this.audioPlayer = new AudioPlayer()
+        this.audioPlayer.id = "#globular-audio-player"
+        this.audioPlayer.style.display = "none"
+        this.appendChild(this.audioPlayer)
 
         // The image viewer
-        this.imageViewer = this.shadowRoot.querySelector("#globular-image-viewer")
+        // this.imageViewer = this.shadowRoot.querySelector("#globular-image-viewer")
+        this.imageViewer = new ImageViewer()
+        this.imageViewer.id = "#globular-image-viewer"
+        this.imageViewer.style.display = "none"
+        this.appendChild(this.imageViewer)
 
         // The path navigator
         this.pathNavigator = this.shadowRoot.querySelector("#globular-path-navigator")

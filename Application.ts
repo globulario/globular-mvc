@@ -780,7 +780,7 @@ export class Application extends Model {
         let domain =  (<any>decoded).domain;
         connection.setHost(domain)
 
-        Model.globular.persistenceService.createConnection(rqst, {
+        Model.getGlobule(address).persistenceService.createConnection(rqst, {
           token: localStorage.getItem("user_token"),
           application: Model.application,
           domain: domain,
@@ -917,7 +917,7 @@ export class Application extends Model {
         connection.setHost(domain)
         rqst.setConnection(connection)
 
-        Model.globular.persistenceService.createConnection(rqst, {
+        Model.getGlobule(address).persistenceService.createConnection(rqst, {
           token: localStorage.getItem("user_token"),
           application: Model.application,
           domain: domain,
