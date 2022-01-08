@@ -56,6 +56,8 @@ export class VideoPlayer extends HTMLElement {
 
         this.appendChild(this.video)
         
+        // Plyr give a nice visual to the video player.
+        // TODO set the preview and maybe quality bitrate if possible...
         const player = new Plyr(this.video);
 
         // Get the parent size and set the max width of te
