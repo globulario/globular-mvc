@@ -35,7 +35,7 @@ export class Model {
     public static get application(): string {
         let app = window.location.pathname.split('/')[1]
         if (app.length == 0) {
-            app = Model.globular.config.IndexApplication;
+            app = Model._globular.config.IndexApplication;
         }
         return app;
     }

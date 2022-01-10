@@ -34,8 +34,7 @@ function getFileConfig(url: string, callback: (obj: any) => void, errorcallback:
     }
   };
 
-  url += "?domain=" + Model.domain
-  url += "&application=" + Model.application
+  url += "?domain=" + Model.domain // application is not know at this time...
   if (localStorage.getItem("user_token") != undefined) {
     url += "&token=" + localStorage.getItem("user_token")
   }
