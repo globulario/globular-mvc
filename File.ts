@@ -1,5 +1,6 @@
 import { Model } from './Model';
 import { readDir } from "globular-web-client/api";
+import * as jwt from "jwt-decode";
 
 /**
  * Server side file accessor. That 
@@ -185,8 +186,14 @@ export class File extends Model {
             callback(File._local_files[path])
             return
         }
-        
-        readDir(Model.globular,path, recursive, (data: any) => {
+
+        // So here I will get the dir of the current user...
+        let token = localStorage.getItem("user_token")
+        let decoded = jwt(token);
+        let address =  (<any>decoded).address;
+        let globule = Model.getGlobule(address)
+
+        readDir(globule,path, recursive, (data: any) => {
             callback(File.fromObject(data))
         }, errorCallback)
     }

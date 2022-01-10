@@ -17,7 +17,10 @@ export class Model {
     }
 
     // This is the globule where the application is running.
-    public static globular: GlobularWebClient.Globular;
+    private static _globular: GlobularWebClient.Globular;
+    public static get globular(): GlobularWebClient.Globular {
+        return Model.getGlobule(Model.address);
+    }
 
     // This is the event controller.
     public static eventHub: GlobularWebClient.EventHub;
@@ -54,6 +57,13 @@ export class Model {
         // The domain will be set with the hostname.
         Model.domain = window.location.hostname
         Model.address = Model.domain + ":" + window.location.port
+        if (Model.address.endsWith(":")) {
+            if (window.location.protocol.toLocaleLowerCase() == "https:") {
+                Model.address += "443"
+            } else {
+                Model.address += "80"
+            }
+        }
 
         this.listeners = new Array<any>();
     }
@@ -110,38 +120,60 @@ export class Model {
      */
     init(url: string, initCallback: () => void, errorCallback: (err: any) => void) {
         // So here I will initilyse the server connection.
-        Model.globular = new GlobularWebClient.Globular(url, () => {
+        Model._globular = new GlobularWebClient.Globular(url, () => {
             // set the event hub.
-            Model.eventHub = Model.globular.eventHub;
+            Model.eventHub = Model._globular.eventHub;
 
             // So here I will create connection to peers know by globular...
             Model.globules = new Map<string, GlobularWebClient.Globular>();
-            Model.globules.set(Model.address, Model.globular)
+            Model.globules.set(Model.address, Model._globular)
+
+            // I will also set the globule to other address...
+            let alternateDomains = Model._globular.config.AlternateDomains
+            alternateDomains.forEach(domain => {
+                Model.globules.set(domain, Model._globular)
+                let address = domain + ":" + window.location.port
+                if (address.endsWith(":")) {
+                    if (window.location.protocol.toLocaleLowerCase() == "https:") {
+                        address += "443"
+                    } else {
+                        address += "80"
+                    }
+                }
+                Model.globules.set(address, Model._globular)
+            });
 
             getAllPeersInfo(Model.globular, (peers: Peer[]) => {
-                
+
                 let index = 0;
                 let connectToPeers = () => {
                     let peer = peers[index]
                     if (index < peers.length) {
                         index++
-                        let url = location.protocol + "//"  + peer.getAddress() + "/config"
-                        let globule = new GlobularWebClient.Globular(url, connectToPeers, (err: any) => {
+                        let url = location.protocol + "//" + peer.getAddress() + "/config"
+
+                        let globule = new GlobularWebClient.Globular(url, () => {
+                            // append the globule to the list.
+                            Model.globules.set(peer.getAddress(), globule)
+                            if (index < peers.length) {
+                                connectToPeers()
+                            } else {
+                                initCallback();
+                            }
+                        }, (err: any) => {
                             console.log(err, "fail to connect with globule at address ", peer.getAddress())
                             if (index < peers.length) {
                                 connectToPeers()
-                            }else {
+                            } else {
                                 initCallback();
                             }
                         })
-
-                        // append the globule to the list.
-                        Model.globules.set(peer.getAddress(), globule)
                     } else {
                         initCallback();
                     }
                 }
 
+                // call onces
                 connectToPeers()
             }, (err: any) => {
                 console.log("no peers found ", err)

@@ -639,20 +639,31 @@ export class Account extends Model {
             }).catch(errorCallback);
     }
 
-    // Get all account on all globule 
+    // Get all accounts from all globules... 
     static getAccounts(query: string, callback: (accounts: Array<Account>) => void, errorCallback: (err: any) => void) {
-        let accounts = new Array<Account>()
-        let iter = Model.globules.values()
-        let _getAccounts_ = (accounts: Array<Account>)=>{
-            let globule = iter.next().value
-            //if()
-            Account._getAccounts( globule, query, callback, errorCallback)
+        let accounts_ = new Array<Account>()
+        let connections = Array.from(Model.globules.values())
+        let _getAccounts_ = ()=>{
+            let globule = connections.pop()
+            if(connections.length == 0){
+                Account._getAccounts( globule, query, (accounts: Array<Account>)=>{
+                    console.log(accounts_)
+                    accounts_ = accounts_.concat(accounts)
+                    callback(accounts_)
+                }, errorCallback)
+            }else{
+                Account._getAccounts( globule, query, (accounts: Array<Account>)=>{
+                    accounts_ = accounts_.concat(accounts)
+                    _getAccounts_() // get the account from the next globule.
+                }, errorCallback)
+            }
         }
 
-        Account._getAccounts(Model.globular, query, callback, errorCallback)
+        // get account from all register peers.
+        _getAccounts_()
     }
 
-    // Get all account data...
+    // Get all account data from a give globule...
     private static _getAccounts(globule: Globular, query: string, callback: (accounts: Array<Account>) => void, errorCallback: (err: any) => void) {
         let rqst = new ResourceService.GetAccountsRqst
         rqst.setQuery(query)

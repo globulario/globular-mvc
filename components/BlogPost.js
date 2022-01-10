@@ -682,14 +682,39 @@ export class BlogPosts extends HTMLElement {
         }
     }
 
-    // Get the list of blogs.
+    // Retreive all blog from all connected peers...
     getBlogs(authors, callback) {
+        let connections = Array.from(Model.globules.values())
+        let blogs_ = []
+
+        let _getBlogs_ = ()=>{
+            let globule = connections.pop()
+            if(connections.length == 0){
+                this._getBlogs( globule, authors, (blogs)=>{
+                    console.log(blogs)
+                    blogs_ = blogs_.concat(blogs)
+                    callback(blogs_)
+                })
+            }else{
+                this._getBlogs( globule, authors, (blogs)=>{
+                    blogs_ = blogs_.concat(blogs)
+                    _getBlogs_() // get the account from the next globule.
+                })
+            }
+        }
+
+        // get account from all register peers.
+        _getBlogs_()
+    }
+
+    // Get the list of blogs.
+    _getBlogs(globule, authors, callback) {
 
         let rqst = new GetBlogPostsByAuthorsRequest
         rqst.setAuthorsList(authors)
         rqst.setMax(100)
 
-        let stream = Model.globular.blogService.getBlogPostsByAuthors(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: localStorage.getItem("user_token") });
+        let stream = globule.blogService.getBlogPostsByAuthors(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: localStorage.getItem("user_token") });
         let blogs = []
 
         stream.on("data", (rsp) => {
