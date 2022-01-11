@@ -79,24 +79,6 @@ export class ServicesSettings extends Settings {
         // Create installed services ...
         let servicesSettings = serverSettingsPage.appendSettings("", `Installed gRPC service instances( ${Object.keys(services).length})`);
 
-        // Now The actions...
-        let resartAllServicesAction = new ActionSetting("Restart", "Restart all gRpc services", () => {
-            let rqst = new servicesManager.RestartAllServicesRequest
-            Model.globular.servicesManagerService.restartAllServices(rqst, {
-                token: localStorage.getItem("user_token"),
-                application: Model.application,
-                domain: Model.domain,
-                address: Model.address
-            }).then(() => {
-                console.log("services was restarted!")
-            })
-                .catch((err: any) => {
-                    ApplicationView.displayMessage(err, 3000)
-                })
-        })
-
-        servicesSettings.addSetting(resartAllServicesAction)
-
         for (var s in services) {
             let service = services[s]
             if (service.Name != undefined) {
