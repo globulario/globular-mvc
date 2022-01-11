@@ -3569,7 +3569,13 @@ export class VideoPreview extends HTMLElement {
                 left: 50%;
                 top: 50%;
                 transform: translate(-50%,-50%);
-                --iron-icon-fill-color: var(--palette-text-accent);
+                background-color: #00b3ff;
+                width: 28px;
+                height: 28px;
+                padding: 2px;
+                border-radius: 16px;
+                border: 1px px solid darkgrey;
+                --iron-icon-fill-color: white;
                 display: none;
             }
 
@@ -3588,7 +3594,7 @@ export class VideoPreview extends HTMLElement {
             }
         </style>
        <div id = "container" draggable="false" >
-            <iron-icon id="play-btn" icon="av:play-circle-outline"></iron-icon>
+            <iron-icon id="play-btn" icon="av:play-arrow"></iron-icon>
             <paper-ripple></paper-ripple>
         </div>
         `
