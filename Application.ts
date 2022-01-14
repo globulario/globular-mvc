@@ -178,7 +178,7 @@ export class Application extends Model {
       // This error will be available in the setting -> error(s)
       window.onerror = (message, source, lineno, colno, error) => {
         let info = new LogInfo
-
+        console.log(error)
         info.setLevel(LogLevel.ERROR_MESSAGE)
 
         let occurence = new Occurence
@@ -189,6 +189,10 @@ export class Application extends Model {
         if (Application.account != undefined) {
           occurence.setUserid(Application.account.id)
           occurence.setUsername(Application.account.name)
+        }
+
+        if(error == undefined) {
+          return
         }
 
         info.setMethod(error.name + " " + error.message)
