@@ -389,7 +389,6 @@ export class Account extends Model {
     initData(callback: (account: Account) => void, onError: (err: any) => void) {
         let userName = this.name
 
-        console.log("----------> init data for ", userName)
         if(this.hasData == true){
             return this
         }
