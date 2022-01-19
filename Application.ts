@@ -156,6 +156,7 @@ export class Application extends Model {
     url = url.replace("index.html", "")
     getFileConfig(url + "config.json",
       (config: any) => {
+        
         callback(config)
       }, errorCallback)
   }

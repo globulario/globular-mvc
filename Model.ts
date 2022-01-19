@@ -1,7 +1,7 @@
 // Globular conneciton.
 import * as GlobularWebClient from "globular-web-client";
 import { getAllPeersInfo } from "globular-web-client/api";
-import { Application, GetPeersRqst, GetPeersRsp, Peer } from "globular-web-client/resource/resource_pb";
+import { Application, GetPeersRqst, GetPeersRsp, Peer, SetEmailResponse } from "globular-web-client/resource/resource_pb";
 import { View } from "./View";
 
 export class Model {
@@ -126,6 +126,23 @@ export class Model {
 
             // So here I will create connection to peers know by globular...
             Model.globules = new Map<string, GlobularWebClient.Globular>();
+            Model.globules.set(Model.address, Model._globular)
+
+            // Use when globular is not the http server.
+            let domain = Model._globular.config.Name
+            if(domain.length > 0){
+                if( Model._globular.config.Domain.length > 0){
+                    domain += "." + Model._globular.config.Domain;
+                }
+            } else {
+                domain = Model._globular.config.Domain;
+            }
+
+            Model.globules.set(domain, Model._globular)
+            Model.globules.set(domain + ":" + Model._globular.config.PortHttp , Model._globular)
+            Model.globules.set(domain + ":" + Model._globular.config.PortHttps , Model._globular)
+            Model.globules.set(Model._globular.config.Domain + ":" + Model._globular.config.PortHttp , Model._globular)
+            Model.globules.set(Model._globular.config.Domain + ":" + Model._globular.config.PortHttps , Model._globular)
             Model.globules.set(Model.address, Model._globular)
 
             // I will also set the globule to other address...
