@@ -695,7 +695,6 @@ export class Application extends Model {
    * Refresh the token to keep it usable.
    */
   private startRefreshToken() {
-    console.log("-----------> start refresh token...")
     let expireAt = parseInt(localStorage.getItem("token_expired"), 10)
     let now = Math.floor(Date.now() / 1000)
     let delay = (expireAt - now) * 1000// in second (10 second to give time to token to refresh before error)

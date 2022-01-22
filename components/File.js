@@ -140,6 +140,7 @@ function _readDir(path, callback, errorCallback) {
 function _publishSetDirEvent(path, file_explorer_) {
     file_explorer_.displayWaitMessage("load " + path)
     _readDir(path, (dir) => {
+        
         Model.eventHub.publish("__set_dir_event__", { path: dir, file_explorer_id: file_explorer_.id }, true)
         file_explorer_.resume()
     }, err => { console.log(err) })
@@ -2990,6 +2991,7 @@ export class FileExplorer extends HTMLElement {
     displayWaitMessage(message) {
         this.progressDiv.style.display = "block"
         let messageDiv = this.progressDiv.querySelector("#progress-message")
+        Model.eventHub.publish("refresh_dir_evt", this.path, false);
         messageDiv.innerHTML = message
         let progressBar = this.progressDiv.querySelector("paper-progress")
         if (messageDiv.offsetWidth > 0) {
@@ -3075,6 +3077,7 @@ export class FileExplorer extends HTMLElement {
                     // remove existing...
                     delete dirs[getUuidByString(path)]
                     this.displayWaitMessage("load " + path)
+
                     _readDir(path, (dir) => {
                         this.resume()
                         if (dir.path == this.path) {
