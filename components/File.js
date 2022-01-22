@@ -836,6 +836,7 @@ export class FilesView extends HTMLElement {
                 stream.on("status", (status) => {
                     if (status.code === 0) {
                         if (this.__dir__ != undefined) {
+                            Model.eventHub.publish("refresh_dir_evt", this.__dir__.path, false);
                             Model.eventHub.publish("__upload_torrent_event__", { pid: pid, path: this.__dir__.path, infos: "done", done: true, lnk: lnk }, true);
                         }
                     } else {
@@ -946,6 +947,7 @@ export class FilesView extends HTMLElement {
 
                     stream.on("status", (status) => {
                         if (status.code === 0) {
+                            Model.eventHub.publish("refresh_dir_evt", this.__dir__.path, false);
                             Model.eventHub.publish("__upload_link_event__", { pid: pid, path: this.__dir__.path, infos: "", done: true, lnk: lnk }, true);
                         } else {
                             // error here...
