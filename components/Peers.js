@@ -195,16 +195,7 @@ export class PeerPanel extends HTMLElement {
         // Keep group informations.
         this.peer = peer;
 
-        let address = this.peer.getHostname()
-        if (this.peer.getDomain().length > 0) {
-            address += "." + this.peer.getDomain()
-        }
-
-        if (this.peer.getAddress().length > 0) {
-            if (this.peer.getAddress().indexOf(":") > 0) {
-                address += ":" + this.peer.getAddress().split(":")[1]
-            }
-        }
+        let address = peer.getAddress()
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -341,7 +332,14 @@ export class PeerPanel extends HTMLElement {
         `
 
         let lnk = this.shadowRoot.querySelector(".title")
-        lnk.href = 'http://' + address + "/console"
+        if(address.endsWith(":443")){
+            lnk.href = 'https://' + address.split(":")[0] + "/console"
+        }else if(address.endsWith(":80")){
+            lnk.href = 'http://' + address.split(":")[0] + "/console"
+        }else{
+            lnk.href = 'http://' + address + "/console"
+        }
+        
         lnk.target = "_blank"
 
         let content = this.shadowRoot.querySelector("#collapse-panel")

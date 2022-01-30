@@ -167,7 +167,18 @@ export class Model {
                     let peer = peers[index]
                     if (index < peers.length) {
                         index++
-                        let url = location.protocol + "//" + peer.getAddress() + "/config"
+                        let address = peer.getAddress().split(":")[0]
+                        let port = 80
+                        if(peer.getAddress().split(":").length == 2) {
+                            port = parseInt(peer.getAddress().split(":")[1])
+                            if(location.protocol == "https:" && port != 80 && port!=443){
+                                port += 1
+                            }else if(location.protocol == "https:" && port == 80){
+                                port = 443
+                            }
+                        }
+
+                        let url = location.protocol + "//" + address + ":" + port  + "/config"
 
                         let globule = new GlobularWebClient.Globular(url, () => {
                             // append the globule to the list.
