@@ -4,6 +4,7 @@ import { ApplicationView } from "./ApplicationView";
 import * as servicesManager from "globular-web-client/services_manager/services_manager_pb"
 import { Model } from "./Model";
 import { Application } from "./Application";
+import { SynchronizeRequest } from "globular-web-client/ldap/ldap_pb";
 
 export class ServicesSettings extends Settings {
     private services: any
@@ -431,6 +432,18 @@ export class LdapServiceSetting extends ServiceSetting {
         let syncLdap = new ActionSetting("Sync", "synchronize ldap and globular account and groups", () => {
             // Application.globular.ldapService.
             console.log("sync ldap")
+            let rqst = new SynchronizeRequest
+            Application.globular.ldapService.synchronize(rqst, {
+                token: localStorage.getItem("user_token"),
+                application: Model.application,
+                domain: Model.domain,
+                address: Model.address
+            }).then(rsp => {
+                // ApplicationView.displayMessage(err, 3000)
+                console.log("synchronization start...", this.service)
+            }).catch(err => {
+                ApplicationView.displayMessage(err, 3000)
+            })
         })
 
         // Append the synch button
