@@ -646,7 +646,7 @@ export class Account extends Model {
             let globule = connections.pop()
             if(connections.length == 0){
                 Account._getAccounts( globule, query, (accounts: Array<Account>)=>{
-                    console.log(accounts_)
+                    //console.log(accounts_)
                     accounts_ = accounts_.concat(accounts)
                     callback(accounts_)
                 }, errorCallback)
