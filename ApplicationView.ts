@@ -186,7 +186,7 @@ export class ApplicationView extends View {
 
     // The search bar to give end user the power to search almost anything...
     this._searchBar = new SearchBar();
-
+   
     // The application layout 
     this.workspace_ = new Workspace()
 
@@ -552,6 +552,7 @@ export class ApplicationView extends View {
    */
   setTitle(title: string) {
     ApplicationView.layout.title().innerHTML = "<span>" + title + "</span>";
+    console.log("--------------------------------> title ", title, ApplicationView.layout.title())
   }
 
   hideHeader() {
@@ -669,6 +670,9 @@ export class ApplicationView extends View {
       this.login_.parentNode.removeChild(this.login_);
     }
 
+    ApplicationView.layout.title().innerHTML = "";
+    ApplicationView.layout.title().appendChild(this._searchBar);
+
     ApplicationView.layout.toolbar().appendChild(this.notificationMenu);
     ApplicationView.layout.toolbar().appendChild(this.accountMenu);
 
@@ -734,8 +738,11 @@ export class ApplicationView extends View {
 
     /** implement it as needed */
     ApplicationView.layout.toolbar().appendChild(this.login_);
-
+    ApplicationView.layout.title().removeChild(this._searchBar);
+    
+    this.setTitle(Application.name)
     // Remove notification menu and account.
+    
     this.accountMenu.parentNode.removeChild(this.notificationMenu);
     this.accountMenu.parentNode.removeChild(this.accountMenu);
 

@@ -379,7 +379,7 @@ export class GroupPanel extends HTMLElement {
         yesBtn.onclick = () => {
 
           let rqst = new DeleteGroupRqst
-          rqst.setGroupid(group.getId())
+          rqst.setGroup(group.getId())
           Model.globular.resourceService.deleteGroup(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") } ).then((rsp)=>{
             ApplicationView.displayMessage(
                 "<iron-icon icon='communication:message' style='margin-right: 10px;'></iron-icon><div>Group named " +

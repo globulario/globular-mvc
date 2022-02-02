@@ -27,6 +27,15 @@ export class Account extends Model {
         this.session_ = value;
     }
 
+    // The domain where the account came from.
+    private _domain: string;
+    public get domain(): string {
+        return this._domain;
+    }
+    public set domain(value: string) {
+        this._domain = value;
+    }
+
     // Must be unique
     private _id: string;
     public get id(): string {
@@ -103,11 +112,12 @@ export class Account extends Model {
         return name + " " + this.lastName;
     }
 
-    constructor(id: string, email: string, name: string) {
+    constructor(id: string, email: string, name: string, domain: string) {
         super();
 
         this._id = id;
         this.name_ = name;
+        this._domain = domain;
         this.email_ = email;
         this.hasData = false;
         this.firstName_ = "";
@@ -134,21 +144,21 @@ export class Account extends Model {
             Account.accounts = {}
         }
 
-        if (Account.accounts[id] != null) {
-            successCallback(Account.accounts[id]);
-            return
-        }
-
         let rqst = new ResourceService.GetAccountsRqst
         rqst.setQuery(`{"$or":[{"_id":"${id}"},{"name":"${id}"} ]}`); // search by name and not id... the id will be retreived.
         rqst.setOptions(`[{"Projection":{"_id":1, "email":1, "name":1, "groups":1, "organizations":1, "roles":1}}]`);
 
         let token = localStorage.getItem("user_token")
         let decoded = jwt(token);
-        let address =  (<any>decoded).address;
-        let domain =  (<any>decoded).domain;
+        let address = (<any>decoded).address;
+        let domain = (<any>decoded).domain;
 
-        let stream =  Model.getGlobule(address).resourceService.getAccounts(rqst, { domain: domain, address: address, application: Model.application, token: token })
+        if (Account.accounts[id] != null) {
+            successCallback(Account.accounts[id + "@" + domain]);
+            return
+        }
+
+        let stream = Model.getGlobule(address).resourceService.getAccounts(rqst, { domain: domain, address: address, application: Model.application, token: token })
         let accounts_ = new Array<ResourceService.Account>();
 
         stream.on("data", (rsp) => {
@@ -157,25 +167,25 @@ export class Account extends Model {
 
         stream.on("status", (status) => {
             if (status.code == 0) {
-                if(accounts_.length == 0){
+                if (accounts_.length == 0) {
                     errorCallback("no account found with id " + id)
                     return
                 }
-                
-                             
+
+
                 let data = accounts_[0]
 
                 // so here I will get the session for the account...
-                if (Account.accounts[data.getId()] != null) {
-                    successCallback(Account.accounts[data.getId()]);
+                if (Account.accounts[data.getId() + "@" + data.getDomain()] != null) {
+                    successCallback(Account.accounts[data.getId() + "@" + data.getDomain()]);
                     return
                 }
-   
-                let account = new Account(data.getId(), data.getEmail(), data.getName())
+
+                let account = new Account(data.getId(), data.getEmail(), data.getName(), data.getDomain())
                 account.session = new Session(account)
-                Account.accounts[data.getId()] = account;
+                Account.accounts[data.getId() + "@" + data.getDomain()] = account;
                 account.initData(() => {
-                   
+
                     // here I will initialyse groups...
                     account.groups_ = data.getGroupsList();
                     successCallback(account)
@@ -245,7 +255,7 @@ export class Account extends Model {
         if (Account.accounts == null) {
             Account.accounts = []
         }
-        Account.accounts[a.id] = a;
+        Account.accounts[a.id + "@" + a.domain] = a;
     }
 
     private static getListener(id: string) {
@@ -301,8 +311,8 @@ export class Account extends Model {
         // the address of the client itself.
         let token = localStorage.getItem("user_token")
         let decoded = jwt(token);
-        let address =  (<any>decoded).address;
-        let domain =  (<any>decoded).domain;
+        let address = (<any>decoded).address;
+        let domain = (<any>decoded).domain;
 
         // call persist data
         Model.getGlobule(address).persistenceService
@@ -373,7 +383,7 @@ export class Account extends Model {
         if (this.middleName == undefined) {
             this.middleName = "";
         }
-        if( data["profilPicture_"]!=undefined){
+        if (data["profilPicture_"] != undefined) {
             this.profilPicture = data["profilPicture_"];
 
             // keep the user data into the localstore.
@@ -389,7 +399,7 @@ export class Account extends Model {
     initData(callback: (account: Account) => void, onError: (err: any) => void) {
         let userName = this.name
 
-        if(this.hasData == true){
+        if (this.hasData == true) {
             return this
         }
 
@@ -399,12 +409,12 @@ export class Account extends Model {
             userName, // The database to search into 
             (data: any) => {
 
-                if(Object.keys(data).length == 0){
-                    if(localStorage.getItem(this.id) != undefined){
+                if (Object.keys(data).length == 0) {
+                    if (localStorage.getItem(this.id) != undefined) {
                         data = JSON.parse(localStorage.getItem(this.id));
                         this.setData(data);
                     }
-                }else{
+                } else {
                     this.setData(data);
                 }
 
@@ -451,7 +461,7 @@ export class Account extends Model {
             },
             (err: any) => {
                 this.hasData = false;
-                if(localStorage.getItem(this.id) != undefined){
+                if (localStorage.getItem(this.id) != undefined) {
                     this.setData(JSON.parse(localStorage.getItem(this.id)))
                     callback(this);
                     return
@@ -510,8 +520,8 @@ export class Account extends Model {
         // the address of the client itself.
         let token = localStorage.getItem("user_token")
         let decoded = jwt(token);
-        let address =  (<any>decoded).address;
-        let domain =  (<any>decoded).domain;
+        let address = (<any>decoded).address;
+        let domain = (<any>decoded).domain;
 
         // call persist data
         Model.getGlobule(address).persistenceService
@@ -551,10 +561,10 @@ export class Account extends Model {
 
         let token = localStorage.getItem("user_token")
         let decoded = jwt(token);
-        let address =  (<any>decoded).address;
-        let domain =  (<any>decoded).domain;
+        let address = (<any>decoded).address;
+        let domain = (<any>decoded).domain;
 
-        let stream =  Model.getGlobule(address).persistenceService.find(rqst, {
+        let stream = Model.getGlobule(address).persistenceService.find(rqst, {
             token: token,
             application: Model.application,
             domain: domain,
@@ -593,8 +603,8 @@ export class Account extends Model {
         rqst.setContact(contact)
         let token = localStorage.getItem("user_token")
         let decoded = jwt(token);
-        let address =  (<any>decoded).address;
-        let domain =  (<any>decoded).domain;
+        let address = (<any>decoded).address;
+        let domain = (<any>decoded).domain;
 
         Model.getGlobule(address).resourceService.setAccountContact(rqst, {
             token: token,
@@ -617,8 +627,8 @@ export class Account extends Model {
                 rqst.setContact(contact)
                 let token = localStorage.getItem("user_token")
                 let decoded = jwt(token);
-                let address =  (<any>decoded).address;
-                let domain =  (<any>decoded).domain;
+                let address = (<any>decoded).address;
+                let domain = (<any>decoded).domain;
 
                 // call persist data
                 Model.getGlobule(address).resourceService
@@ -641,18 +651,31 @@ export class Account extends Model {
     // Get all accounts from all globules... 
     static getAccounts(query: string, callback: (accounts: Array<Account>) => void, errorCallback: (err: any) => void) {
         let accounts_ = new Array<Account>()
-        let connections = Array.from(Model.globules.values())
-        let _getAccounts_ = ()=>{
+        let connections = Model.getGlobules()
+        
+        let _getAccounts_ = () => {
             let globule = connections.pop()
-            if(connections.length == 0){
-                Account._getAccounts( globule, query, (accounts: Array<Account>)=>{
+           
+            if (connections.length == 0) {
+                Account._getAccounts(globule, query, (accounts: Array<Account>) => {
                     //console.log(accounts_)
-                    accounts_ = accounts_.concat(accounts)
+                    //accounts_ = accounts_.concat(accounts)
+                    for (var i = 0; i < accounts.length; i++) {
+                        let a = accounts[i]
+                        if (accounts_.filter(a_ => { return a.id == a_.id && a.domain == a_.domain; }).length == 0) {
+                            accounts_.push(a)
+                        }
+                    }
                     callback(accounts_)
                 }, errorCallback)
-            }else{
-                Account._getAccounts( globule, query, (accounts: Array<Account>)=>{
-                    accounts_ = accounts_.concat(accounts)
+            } else {
+                Account._getAccounts(globule, query, (accounts: Array<Account>) => {
+                    for (var i = 0; i < accounts.length; i++) {
+                        let a = accounts[i]
+                        if (accounts_.filter(a_ => { return a.id == a_.id && a.domain == a_.domain; }).length == 0) {
+                            accounts_.push(a)
+                        }
+                    }
                     _getAccounts_() // get the account from the next globule.
                 }, errorCallback)
             }
@@ -684,23 +707,23 @@ export class Account extends Model {
                 }
 
                 // In that case I will return the list of account without init ther data
-                if(query == "{}"){
-                    accounts_.forEach(a_ =>{
-                        if(Account.accounts[a_.getId()] != undefined){
-                            accounts.push(Account.accounts[a_.getId()])
-                        }else{
-                            accounts.push(new Account(a_.getId(), a_.getEmail(), a_.getName()))
+                if (query == "{}") {
+                    accounts_.forEach(a_ => {
+                        if (Account.accounts[a_.getId() + "@" + a_.getDomain()] != undefined) {
+                            accounts.push(Account.accounts[a_.getId() + "@" + a_.getDomain()])
+                        } else {
+                            accounts.push(new Account(a_.getId(), a_.getEmail(), a_.getName(), a_.getDomain()))
                         }
                     })
                     callback(accounts)
                     return
                 }
 
-               let initAccountData = () => {
+                let initAccountData = () => {
                     let a_ = accounts_.pop()
-                    if (Account.accounts[a_.getId()] == undefined) {
-                        let a = new Account(a_.getId(), a_.getEmail(), a_.getName())
-                        
+                    if (Account.accounts[a_.getId() + "@" + a_.getDomain()] == undefined) {
+                        let a = new Account(a_.getId(), a_.getEmail(), a_.getName(), a_.getDomain())
+
                         if (accounts_.length > 0) {
                             a.initData(() => {
                                 accounts.push(a)
@@ -714,7 +737,7 @@ export class Account extends Model {
                                 }, errorCallback)
                         }
                     } else {
-                        accounts.push(Account.accounts[a_.getId()])
+                        accounts.push(Account.accounts[a_.getId() + "@" + a_.getDomain()])
                         if (accounts_.length > 0) {
                             initAccountData()
                         } else {

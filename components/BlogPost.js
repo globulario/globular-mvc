@@ -93,10 +93,7 @@ export class BlogPostElement extends HTMLElement {
     constructor(blog) {
         super()
 
-        console.log(blog)
-
         this.blog = blog
-
         if (blog != undefined) {
             this.id = "_" + blog.getUuid()
         }
@@ -684,19 +681,21 @@ export class BlogPosts extends HTMLElement {
 
     // Retreive all blog from all connected peers...
     getBlogs(authors, callback) {
-        let connections = Array.from(Model.globules.values())
+        let connections = Model.getGlobules();
         let blogs_ = []
-
+        console.log("get blogs")
         let _getBlogs_ = ()=>{
             let globule = connections.pop()
             if(connections.length == 0){
                 this._getBlogs( globule, authors, (blogs)=>{
                     console.log(blogs)
                     blogs_ = blogs_.concat(blogs)
+                    console.log("get blogs: ", blogs_)
                     callback(blogs_)
                 })
             }else{
                 this._getBlogs( globule, authors, (blogs)=>{
+                    console.log("get blogs: ", blogs_)
                     blogs_ = blogs_.concat(blogs)
                     _getBlogs_() // get the account from the next globule.
                 })

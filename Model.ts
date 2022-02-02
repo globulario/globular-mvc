@@ -16,6 +16,19 @@ export class Model {
         return Model.globules.get(address);
     }
 
+    public static getGlobules():Array<GlobularWebClient.Globular>{
+        let connections_ = Array.from(Model.globules.values())
+        let connections = new Array<GlobularWebClient.Globular>()
+        // Remove duplicat
+        connections_.forEach(c=>{
+            if (connections.filter(c_ => { return c.config.Name == c_.config.Name && c_.config.Domain == c_.config.Domain; }).length == 0) {
+                connections.push(c)
+            }
+        })
+
+        return connections
+    }
+
     // This is the globule where the application is running.
     private static _globular: GlobularWebClient.Globular;
     public static get globular(): GlobularWebClient.Globular {
