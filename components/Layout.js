@@ -240,34 +240,34 @@ export class Layout extends HTMLElement {
    * That contain the application title.
    */
   title() {
-    return document.getElementById("title");
+    return this.querySelector(`[slot="title"]`)
   }
   /**
    * The toolbar contain the application menu.
    */
   toolbar() {
-    return document.getElementById("toolbar");
+    return this.querySelector(`[slot="toolbar"]`)
   }
 
   /**
    * Return the side menu
    */
   sideMenu() {
-    return document.getElementById("side-menu");
+    return this.querySelector(`[slot="side-menu"]`)
   }
 
   /**
    * Clear the side menu
    */
   clearSideMenu() {
-    document.getElementById("side-menu").innerHTML = "";
+    this.sideMenu().innerHTML = "";
   }
 
   /**
    * Return the workspace
    */
   workspace() {
-    return document.getElementById("workspace");
+    return this.querySelector(`[slot="workspace"]`)
   }
 
   /**

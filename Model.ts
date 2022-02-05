@@ -172,7 +172,10 @@ export class Model {
                         if(peer.getAddress().split(":").length == 2) {
                             port = parseInt(peer.getAddress().split(":")[1])
                             if(location.protocol == "https:" && port != 80 && port!=443){
-                                port += 1
+                                if(port % 2 != 0){
+                                    port += 1
+                                }
+                               
                             }else if(location.protocol == "https:" && port == 80){
                                 port = 443
                             }

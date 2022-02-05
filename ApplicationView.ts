@@ -104,6 +104,9 @@ export class ApplicationView extends View {
   /** The settings Panel */
   protected settingsPanel: SettingsPanel;
 
+  /** Keep title content between login and logout... */
+  private _title_: any;
+ 
 
   /** The camera */
   private _camera: Camera;
@@ -572,7 +575,7 @@ export class ApplicationView extends View {
     icon.style.marginRight = "10px";
     icon.style.marginLeft = "10px";
 
-    let title = ApplicationView.layout.title();
+    let title = <any> ApplicationView.layout.title();
     title.style.display = "flex";
 
     title.insertBefore(icon, title.firstChild);
@@ -713,6 +716,11 @@ export class ApplicationView extends View {
     // The logs
     let logs = new LogSettings(this.settingsMenu, this.settingsPanel);
 
+    this._title_ = ApplicationView.layout.title().innerHTML;
+    ApplicationView.layout.title().innerHTML = ""
+    ApplicationView.layout.title().appendChild(this._searchBar)
+
+
     // Set the onerror callback for the component.
     ApplicationView._fileExplorer.onerror = (err: any) => {
       ApplicationView.displayMessage(err, 4000)
@@ -746,6 +754,10 @@ export class ApplicationView extends View {
     if (this.messenger.parentNode != null) {
       this.messenger.parentNode.removeChild(this.messenger)
     }
+
+    // set back the title.
+    this._searchBar.parentNode.removeChild(this._searchBar)
+    ApplicationView.layout.title().innerHTML = this._title_
 
     window.dispatchEvent(new Event("resize"));
   }
