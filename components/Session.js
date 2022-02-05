@@ -142,8 +142,12 @@ export class SessionState extends HTMLElement {
      * Initialyse the session panel values.
      */
     init() {
+        if (this.account == undefined)  {
+            console.log("account is not define!!!")
+            return
+        }
 
-        if (this.hasAttribute("editable")) {
+        if (this.hasAttribute("editable"))  {
             sessionTime = this.account.session.lastStateTime;
         }
 

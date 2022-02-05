@@ -133,10 +133,9 @@ export class Application extends Model {
     this.title = title;
     this.view = view;
 
-    if (document.getElementsByTagName("title").length > 0) {
-      document.getElementsByTagName("title")[0].innerHTML = this.title;
-      view.setTitle(this.title);
-    }
+
+    view.setTitle(Application.name);
+    
 
     // Set the application theme...
     let theme = localStorage.getItem("globular_theme")
@@ -442,12 +441,13 @@ export class Application extends Model {
         let userId = localStorage.getItem("user_id");
         let userEmail = localStorage.getItem("user_email");
         let userName = localStorage.getItem("user_name");
+        let userDomain = localStorage.getItem("user_domain");
 
         ApplicationView.wait(
           "<div>log in</div><div>" + userName + "</div><div>...</div>"
         );
 
-        Application.account = new Account(userId, userEmail, userName)
+        Application.account = new Account(userId, userEmail, userName, userDomain)
 
         this.refreshToken(
           (account: Account) => {
@@ -790,7 +790,7 @@ export class Application extends Model {
           address: address
         }).then(() => {
           // Callback on login.
-          Application.account = new Account(name, email, name);
+          Application.account = new Account(name, email, name, domain);
           Application.account.initData(
             (account: Account) => {
               // Here I will send a login success.
@@ -904,6 +904,7 @@ export class Application extends Model {
         localStorage.setItem("user_email", email);
         localStorage.setItem("user_name", userName);
         localStorage.setItem("user_id", id);
+        localStorage.setItem("user_domain", domain);
 
         let rqst = new CreateConnectionRqst
         let connectionId = userName.split("@").join("_").split(".").join("_");
@@ -927,7 +928,7 @@ export class Application extends Model {
           address: address
         }).then(() => {
           console.log("connection was created! ", id)
-          Application.account = new Account(id, email, userName);
+          Application.account = new Account(id, email, userName, domain);
           Account.getAccount(id, (account: Account) => {
             Application.account = account;
 
