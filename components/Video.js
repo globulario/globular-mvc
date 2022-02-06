@@ -90,8 +90,12 @@ export class VideoPlayer extends HTMLElement {
             url += Application.globular.config.PortHttp
         }
 
+        path.split("/").forEach(item=>{
+            url += "/" +  encodeURIComponent(item.trim())
+        })
+
         // Set the path and play.
-        this.video.src = url + path
+        this.video.src = url
         this.video.src += "?application=" + Model.application
         if (localStorage.getItem("user_token") != undefined) {
             this.video.src += "&token=" + localStorage.getItem("user_token")

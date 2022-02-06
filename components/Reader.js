@@ -46,9 +46,14 @@ export class GlobularFileReader extends HTMLElement {
         }else{
             url += Application.globular.config.PortHttp
         }
+
+        path.split("/").forEach(item=>{
+            url += "/" +  encodeURIComponent(item.trim())
+        })
+
     
         // Set the file location.
-        this.frame.src =url + path
+        this.frame.src =url
         this.frame.src += "?application=" + Model.application
         if(localStorage.getItem("user_token")!=undefined){
             this.frame.src += "&token=" + localStorage.getItem("user_token")

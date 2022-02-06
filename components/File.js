@@ -73,7 +73,10 @@ function getImage(callback, images, files, index) {
         url += Application.globular.config.PortHttp
     }
 
-    url += f.path
+    let path = f.path.split("/")
+    path.forEach(item=>{
+        url += "/" +  encodeURIComponent(item.trim())
+    })
 
     // Set url query parameter.
     url += "?domain=" + Model.domain
@@ -81,7 +84,6 @@ function getImage(callback, images, files, index) {
     if (localStorage.getItem("user_token") != undefined) {
         url += "&token=" + localStorage.getItem("user_token")
     }
-
     var xhr = new XMLHttpRequest();
     xhr.open('GET', url, true);
     xhr.setRequestHeader("token", localStorage.getItem("user_token"));
@@ -255,7 +257,17 @@ export class FilesView extends HTMLElement {
         }
 
         this.openInNewTabItem.action = ()=>{
-            var url = this.menu.file.path
+            let url = window.location.protocol + "//" + window.location.hostname + ":"
+            if (Application.globular.config.Protocol == "https") {
+                url += Application.globular.config.PortHttps
+            } else {
+                url += Application.globular.config.PortHttp
+            }
+            
+            this.menu.file.path.split("/").forEach(item=>{
+                url += "/" +  encodeURIComponent(item.trim())
+            })
+
             url += "?application=" + Model.application;
             if (localStorage.getItem("user_token") != undefined) {
                 url += "&token=" + localStorage.getItem("user_token");
@@ -1575,7 +1587,6 @@ export class FilesIconView extends FilesView {
                     folderIcon.draggable = false
 
                 } else if (fileType == "video" && hiddens[parentPath] != undefined) {
-
                     /** In that case I will display the vieo preview. */
                     let file_ = hiddens[parentPath];
 

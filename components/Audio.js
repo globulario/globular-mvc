@@ -67,8 +67,19 @@ export class AudioPlayer extends HTMLElement {
             return
         }
 
+        let url = window.location.protocol + "//" + window.location.hostname + ":"
+        if (Application.globular.config.Protocol == "https") {
+            url += Application.globular.config.PortHttps
+        } else {
+            url += Application.globular.config.PortHttp
+        }
+
+        path.split("/").forEach(item=>{
+            url += "/" +  encodeURIComponent(item.trim())
+        })
+
         // Set the path and play.
-        this.audio.src = path
+        this.audio.src = url
         this.audio.src += "?application=" + Model.application
         if(localStorage.getItem("user_token")!=undefined){
             this.audio.src += "&token=" + localStorage.getItem("user_token")
