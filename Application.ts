@@ -134,7 +134,7 @@ export class Application extends Model {
     this.view = view;
 
 
-    view.setTitle(Application.name);
+    view.setTitle(title); // set the title.
     
 
     // Set the application theme...

@@ -183,6 +183,7 @@ export class FilesView extends HTMLElement {
         <globular-dropdown-menu-item separator="true"  id="rename-menu-item" text="Rename" icon="icons:create" action=""> </globular-dropdown-menu-item>
         <globular-dropdown-menu-item id="delete-menu-item" icon="icons:delete" action="" text="Delete"> </globular-dropdown-menu-item>
         <globular-dropdown-menu-item separator="true"  id="download-menu-item" icon="icons:cloud-download" text="Download" action=""> </globular-dropdown-menu-item>
+        <globular-dropdown-menu-item id="open-in-new-tab-menu-item" icon="icons:open-in-new" text="Open in new tab" action=""> </globular-dropdown-menu-item>
         `
 
         this.menu = new DropdownMenu("icons:more-vert")
@@ -192,6 +193,7 @@ export class FilesView extends HTMLElement {
         this.renameMenuItem = this.menu.querySelector("#rename-menu-item")
         this.deleteMenuItem = this.menu.querySelector("#delete-menu-item")
         this.downloadMenuItem = this.menu.querySelector("#download-menu-item")
+        this.openInNewTabItem = this.menu.querySelector("#open-in-new-tab-menu-item")
 
         // Now the cut copy and paste menu...
         this.cutMenuItem = this.menu.querySelector("#cut-menu-item")
@@ -250,6 +252,15 @@ export class FilesView extends HTMLElement {
 
             // Remove it from it parent...
             this.menu.parentNode.removeChild(this.menu)
+        }
+
+        this.openInNewTabItem.action = ()=>{
+            var url = this.menu.file.path
+            url += "?application=" + Model.application;
+            if (localStorage.getItem("user_token") != undefined) {
+                url += "&token=" + localStorage.getItem("user_token");
+            }
+            window.open(url, '_blank');
         }
 
         this.downloadMenuItem.action = () => {

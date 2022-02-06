@@ -80,7 +80,8 @@
     "uuid": "^8.3.2",
     "uuid-by-string": "^3.0.4",
     "web-animations-js": "^2.3.2",
-    "webrtc-adapter": "^7.7.0"
+    "webrtc-adapter": "^7.7.0",
+    "webxr-polyfill": "^2.0.3"
   },
   "devDependencies": {
     "@editorjs/attaches": "^1.2.0",

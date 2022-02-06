@@ -5,6 +5,7 @@ import { Application } from "../Application";
 import Plyr from 'plyr';
 import "./plyr.css"
 
+
 Object.defineProperty(HTMLMediaElement.prototype, 'playing', {
     get: function () {
         return !!(this.currentTime > 0 && !this.paused && !this.ended && this.readyState > 2);
