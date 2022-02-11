@@ -33,6 +33,7 @@ import { randomUUID } from './utility';
 import * as getUuidByString from 'uuid-by-string';
 import { TimeScale } from 'chart.js';
 import { ImageViewer } from './Image';
+import { ConversationServicePromiseClient } from 'globular-web-client/conversation/conversation_grpc_web_pb';
 
 
 // keep track of shared directory
@@ -74,8 +75,8 @@ function getImage(callback, images, files, index) {
     }
 
     let path = f.path.split("/")
-    path.forEach(item=>{
-        url += "/" +  encodeURIComponent(item.trim())
+    path.forEach(item => {
+        url += "/" + encodeURIComponent(item.trim())
     })
 
     // Set url query parameter.
@@ -142,7 +143,7 @@ function _readDir(path, callback, errorCallback) {
 function _publishSetDirEvent(path, file_explorer_) {
     file_explorer_.displayWaitMessage("load " + path)
     _readDir(path, (dir) => {
-        
+
         Model.eventHub.publish("__set_dir_event__", { path: dir, file_explorer_id: file_explorer_.id }, true)
         file_explorer_.resume()
     }, err => { console.log(err) })
@@ -256,16 +257,16 @@ export class FilesView extends HTMLElement {
             this.menu.parentNode.removeChild(this.menu)
         }
 
-        this.openInNewTabItem.action = ()=>{
+        this.openInNewTabItem.action = () => {
             let url = window.location.protocol + "//" + window.location.hostname + ":"
             if (Application.globular.config.Protocol == "https") {
                 url += Application.globular.config.PortHttps
             } else {
                 url += Application.globular.config.PortHttp
             }
-            
-            this.menu.file.path.split("/").forEach(item=>{
-                url += "/" +  encodeURIComponent(item.trim())
+
+            this.menu.file.path.split("/").forEach(item => {
+                url += "/" + encodeURIComponent(item.trim())
             })
 
             url += "?application=" + Model.application;
@@ -822,6 +823,8 @@ export class FilesView extends HTMLElement {
 
     // The ondrop evt...
     ondrop(evt) {
+        evt.stopPropagation()
+
         let lnk = evt.dataTransfer.getData('text/html');
         if (evt.dataTransfer.getData("Url").length > 0) {
             // Here we got an url...
@@ -939,7 +942,7 @@ export class FilesView extends HTMLElement {
                 okBtn.onclick = () => {
                     let rqst = new RunCmdRequest
                     rqst.setCmd("youtube-dl")
-                    
+
                     let path = this.__dir__.path
                     if (path.startsWith("/users/") || path.startsWith("/applications/")) {
                         path = Model.globular.config.DataPath + "/files" + path
@@ -949,9 +952,9 @@ export class FilesView extends HTMLElement {
                     rqst.setPath(path)
 
                     let dest = `%(title)s.%(ext)s`
-  
+
                     if (mp3Radio.checked) {
-                        rqst.setArgsList(["-f", "bestaudio", "--extract-audio", "--audio-format", "mp3", "--audio-quality", "0", "-o",dest, url]);
+                        rqst.setArgsList(["-f", "bestaudio", "--extract-audio", "--audio-format", "mp3", "--audio-quality", "0", "-o", dest, url]);
                     } else {
                         rqst.setArgsList(["-f", "mp4", "-o", dest, url])
                     }
@@ -1615,6 +1618,90 @@ export class FilesIconView extends FilesView {
                             }
                             fileIconDiv.insertBefore(preview, fileIconDiv.firstChild)
                             preview.draggable = false
+                            fileIconDiv.ondrop = (evt) => {
+                                evt.stopPropagation();
+                                evt.preventDefault()
+                                let url = evt.dataTransfer.getData("Url");
+                                if (url.startsWith("https://www.imdb.com/title")) {
+
+                                    let matchs = url.match(/ev\d{7}\/\d{4}(-\d)?|(ch|co|ev|nm|tt)\d{7}/);
+                                    if (matchs.length == 0) {
+                                        return // nothing to todo...
+                                    }
+
+                                    let getImdbInfo = (id, callback, errorcallback) => {
+                                        let query = window.location.protocol + "//" + window.location.hostname + ":"
+                                        if (Application.globular.config.Protocol == "https") {
+                                            query += Application.globular.config.PortHttps
+                                        } else {
+                                            query += Application.globular.config.PortHttp
+                                        }
+
+                                        query += "/imdb_title?id=" + id
+
+                                        var xmlhttp = new XMLHttpRequest();
+
+                                        xmlhttp.onreadystatechange = function () {
+                                            if (this.readyState == 4 && (this.status == 201 || this.status == 200)) {
+                                                var obj = JSON.parse(this.responseText);
+                                                callback(obj);
+                                            } else if (this.readyState == 4) {
+                                                errorcallback("fail to get info from query " + query + " status " + this.status)
+                                            }
+                                        };
+                                        /* TODO see if we protected it...
+                                          query += "?domain=" + Model.domain // application is not know at this time...
+                                          if (localStorage.getItem("user_token") != undefined) {
+                                              query += "&token=" + localStorage.getItem("user_token")
+                                          }
+                                        */
+                                        xmlhttp.open("GET", query, true);
+                                        xmlhttp.setRequestHeader("domain", Model.domain);
+
+                                        xmlhttp.send();
+                                    }
+
+                                    getImdbInfo(matchs[0], (info) => {
+                                        // So here I will get the information from imdb and propose to assciate it with the file.
+                                        let toast = ApplicationView.displayMessage(`
+                                        <style>
+                                            ${theme}
+                                        </style>
+                                        <div id="select-media-dialog">
+                                            <div>Your about to associate <span id="title-type"></span> <a id="title-name" target="_blank"></a></div>
+                                            <div>with file <span style="font-style: italic;" id="file-path"></span></div>
+                                            <div style="display: flex; flex-direction: column; justify-content: center;">
+                                                <img style="width: 185.31px; align-self: center; padding-top: 10px; padding-bottom: 15px;" id="title-poster"> </img>
+                                            </div>
+                                            <div>Is that what you want to do? </div>
+                                            <div style="display: flex; justify-content: flex-end;">
+                                                <paper-button id="imdb-lnk-ok-button">Ok</paper-button>
+                                                <paper-button id="imdb-lnk-cancel-button">Cancel</paper-button>
+                                            </div>
+                                        </div>
+                                        `, 60 * 1000)
+
+                                        let okBtn = toast.el.querySelector("#imdb-lnk-ok-button")
+                                        okBtn.onclick = () => {
+                                            toast.dismiss();
+                                        }
+
+                                        let cancelBtn = toast.el.querySelector("#imdb-lnk-cancel-button")
+                                        cancelBtn.onclick = () => {
+                                            toast.dismiss();
+                                        }
+
+                                        toast.el.querySelector("#title-type").innerHTML = info.Type
+                                        toast.el.querySelector("#title-name").innerHTML = info.Name
+                                        toast.el.querySelector("#title-name").href = info.URL
+                                        toast.el.querySelector("#title-poster").src = info.Poster.ContentURL
+                                        toast.el.querySelector("#file-path").innerHTML = file.name
+   
+                                        console.log(info)
+
+                                    }, err => ApplicationView.displayMessage(err, 3000))
+                                }
+                            }
                         }
 
                         break;
