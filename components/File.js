@@ -1624,7 +1624,7 @@ export class FilesIconView extends FilesView {
                                 let url = evt.dataTransfer.getData("Url");
                                 if (url.startsWith("https://www.imdb.com/title")) {
 
-                                    let matchs = url.match(/ev\d{7}\/\d{4}(-\d)?|(ch|co|ev|nm|tt)\d{7}/);
+                                    let matchs = url.match(/tt\d{5,8}/);
                                     if (matchs.length == 0) {
                                         return // nothing to todo...
                                     }
