@@ -34,6 +34,7 @@ import * as getUuidByString from 'uuid-by-string';
 import { TimeScale } from 'chart.js';
 import { ImageViewer } from './Image';
 import { ConversationServicePromiseClient } from 'globular-web-client/conversation/conversation_grpc_web_pb';
+import { IndexJsonObjectRequest, SearchDocumentsRequest, SearchResult, SearchResults } from 'globular-web-client/search/search_pb';
 
 
 // keep track of shared directory
@@ -1681,10 +1682,6 @@ export class FilesIconView extends FilesView {
                                         </div>
                                         `, 60 * 1000)
 
-                                        let okBtn = toast.el.querySelector("#imdb-lnk-ok-button")
-                                        okBtn.onclick = () => {
-                                            toast.dismiss();
-                                        }
 
                                         let cancelBtn = toast.el.querySelector("#imdb-lnk-cancel-button")
                                         cancelBtn.onclick = () => {
@@ -1696,8 +1693,13 @@ export class FilesIconView extends FilesView {
                                         toast.el.querySelector("#title-name").href = info.URL
                                         toast.el.querySelector("#title-poster").src = info.Poster.ContentURL
                                         toast.el.querySelector("#file-path").innerHTML = file.name
-   
-                                        console.log(info)
+
+                                        let okBtn = toast.el.querySelector("#imdb-lnk-ok-button")
+                                        okBtn.onclick = () => {
+                                            this.setFileInfo(info, file)
+                                            toast.dismiss();
+                                        }
+
 
                                     }, err => ApplicationView.displayMessage(err, 3000))
                                 }
@@ -1826,6 +1828,15 @@ export class FilesIconView extends FilesView {
                 }
             })
         }
+    }
+
+    /**
+     * Set file info, this will made use of the search engine...
+     */
+    setFileInfo(info, file) {
+        console.log("set file info: ", info, file)
+
+        // So here 
     }
 }
 
