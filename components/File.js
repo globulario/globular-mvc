@@ -27,7 +27,7 @@ import { CopyRequest, CreateDirRequest, GetFileInfoRequest, GetThumbnailsRespons
 import { createArchive, deleteDir, deleteFile, downloadFileHttp, renameFile, uploadFiles } from 'globular-web-client/api';
 import { ApplicationView } from '../ApplicationView';
 import { Application } from '../Application';
-import { KillProcessRequest, RunCmdRequest } from 'globular-web-client/admin/admin_pb';
+import { GetPidsResponse, KillProcessRequest, RunCmdRequest } from 'globular-web-client/admin/admin_pb';
 import { GetSharedResourceRqst, SubjectType } from 'globular-web-client/rbac/rbac_pb';
 import { randomUUID } from './utility';
 import * as getUuidByString from 'uuid-by-string';
@@ -35,7 +35,7 @@ import { TimeScale } from 'chart.js';
 import { ImageViewer } from './Image';
 import { ConversationServicePromiseClient } from 'globular-web-client/conversation/conversation_grpc_web_pb';
 import { IndexJsonObjectRequest, SearchDocumentsRequest, SearchResult, SearchResults } from 'globular-web-client/search/search_pb';
-import { CreateTitleRequest, Title } from 'globular-web-client/title/title_pb';
+import { AssociateFileWithTitleRequest, CreateTitleRequest, GetFileTitlesRequest, Person, Poster, Title } from 'globular-web-client/title/title_pb';
 
 
 // keep track of shared directory
@@ -181,7 +181,8 @@ export class FilesView extends HTMLElement {
         let id = "_" + uuidv4().split("-").join("_").split("@").join("_");
 
         let menuItemsHTML = `
-        <globular-dropdown-menu-item id="manage-acess-menu-item" icon="folder-shared" text="Manage access"action=""></globular-dropdown-menu-item>
+        <globular-dropdown-menu-item  id="infos-menu-item" icon="icons:info" text="Infos" action=""> </globular-dropdown-menu-item>
+        <globular-dropdown-menu-item  separator="true" id="manage-acess-menu-item" icon="folder-shared" text="Manage access"action=""></globular-dropdown-menu-item>
         <globular-dropdown-menu-item separator="true"  id="cut-menu-item"  icon="icons:content-cut" text="Cut" action=""></globular-dropdown-menu-item>
         <globular-dropdown-menu-item id="copy-menu-item" icon="content-copy" text="Copy" action=""></globular-dropdown-menu-item>
         <globular-dropdown-menu-item id="paste-menu-item" icon="icons:content-paste" action="" text="Paste"></globular-dropdown-menu-item>
@@ -194,6 +195,7 @@ export class FilesView extends HTMLElement {
         this.menu = new DropdownMenu("icons:more-vert")
         this.menu.innerHTML = menuItemsHTML
 
+        this.infosMenuItem = this.menu.querySelector("#infos-menu-item")
         this.mananageAccessMenuItem = this.menu.querySelector("#manage-acess-menu-item")
         this.renameMenuItem = this.menu.querySelector("#rename-menu-item")
         this.deleteMenuItem = this.menu.querySelector("#delete-menu-item")
@@ -454,6 +456,34 @@ export class FilesView extends HTMLElement {
         this.renameMenuItem.action = () => {
             // Display the rename input...
             this.menu.rename()
+            this.menu.parentNode.removeChild(this.menu)
+        }
+
+        this.infosMenuItem.action = () => {
+            // So here I will create a new permission manager object and display it for the given file.
+  
+            // Now I will test if imdb info are allready asscociated.
+            let getTitleInfo = (file, callback) => {
+                let rqst = new GetFileTitlesRequest
+                rqst.setIndexpath(Model.globular.config.DataPath + "/search/titles")
+                rqst.setFilepath(file.path)
+                Model.globular.titleService.getFileTitles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+                    .then(rsp => {
+                        callback(rsp.getTitlesList())
+                    })
+                    .catch(err => {
+                        callback([])
+                    })
+            }
+
+            // get the title infos...
+            getTitleInfo(this.menu.file, (titles) => {
+                this.menu.file.titles = titles // keep in the file itself...
+                console.log(this.menu.file)
+                Model.eventHub.publish("display_file_infos_event", this.menu.file, true)
+            })
+
+            // hide the menu...
             this.menu.parentNode.removeChild(this.menu)
         }
 
@@ -1618,8 +1648,11 @@ export class FilesIconView extends FilesView {
                                     }
                                 })
                             }
+
                             fileIconDiv.insertBefore(preview, fileIconDiv.firstChild)
+
                             preview.draggable = false
+
                             fileIconDiv.ondrop = (evt) => {
                                 evt.stopPropagation();
                                 evt.preventDefault()
@@ -1631,6 +1664,7 @@ export class FilesIconView extends FilesView {
                                         return // nothing to todo...
                                     }
 
+                                    // That function will be use to asscociate file with imdb information.
                                     let getImdbInfo = (id, callback, errorcallback) => {
                                         let query = window.location.protocol + "//" + window.location.hostname + ":"
                                         if (Application.globular.config.Protocol == "https") {
@@ -1837,11 +1871,67 @@ export class FilesIconView extends FilesView {
     setFileInfo(info, file) {
         console.log("set file info: ", info, file)
 
-        
         let rqst = new CreateTitleRequest
-
         let title = new Title
+
+        // init person infos...
+        let createPersons = (values) => {
+            let persons = []
+            values.forEach(v => {
+                let p = new Person
+                p.setId(v.ID)
+                p.setUrl(v.URL)
+                p.setFullname(v.FullName)
+                persons.push(p)
+            })
+
+            return persons
+        }
+
+        // Create title object and set it values from json...
         title.setId(info.ID)
+        title.setName(info.Name)
+        title.setAkaList(info.AKA)
+        title.setDescription(info.Description)
+        title.setDuration(info.Duration)
+        title.setGenresList(info.Genres)
+        title.setNationalitiesList(info.Nationalities)
+        title.setRating(parseFloat(info.Raiting))
+        title.setRatingcount(info.RaitingCount)
+        title.setType(info.Type)
+        title.setUrl(info.URL)
+        title.setYear(info.Year)
+
+        title.setDirectorsList(createPersons(info.Directors))
+        title.setActorsList(createPersons(info.Actors))
+        title.setWritersList(createPersons(info.Writers))
+
+        let poster = new Poster
+        poster.setId(info.Poster.ID)
+        poster.setUrl(info.Poster.URL)
+        poster.setContenturl(info.Poster.ContentURL)
+
+        let indexPath = Model.globular.config.DataPath + "/search/titles"
+        rqst.setIndexpath(indexPath)
+        rqst.setTitle(title)
+
+        // Now I will create the title info...
+        Model.globular.titleService.createTitle(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+            .then(rsp => {
+                console.log("title was created!")
+                // Now I will asscociated the file and the title.
+                let rqst_ = new AssociateFileWithTitleRequest
+                rqst_.setFilepath(file.path)
+                rqst_.setTitleid(title.getId())
+                rqst_.setIndexpath(indexPath)
+
+                Model.globular.titleService.associateFileWithTitle(rqst_, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+                    .then(rsp => {
+                        console.log("file " + file.path + " and title " + title.getName() + " are asscociated")
+                    }).catch(err => ApplicationView.displayMessage(err, 3000))
+
+            }).catch(err => ApplicationView.displayMessage(err, 3000))
+        console.log(title)
     }
 }
 
