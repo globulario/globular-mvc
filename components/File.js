@@ -35,6 +35,7 @@ import { TimeScale } from 'chart.js';
 import { ImageViewer } from './Image';
 import { ConversationServicePromiseClient } from 'globular-web-client/conversation/conversation_grpc_web_pb';
 import { IndexJsonObjectRequest, SearchDocumentsRequest, SearchResult, SearchResults } from 'globular-web-client/search/search_pb';
+import { CreateTitleRequest, Title } from 'globular-web-client/title/title_pb';
 
 
 // keep track of shared directory
@@ -1836,7 +1837,11 @@ export class FilesIconView extends FilesView {
     setFileInfo(info, file) {
         console.log("set file info: ", info, file)
 
-        // So here 
+        
+        let rqst = new CreateTitleRequest
+
+        let title = new Title
+        title.setId(info.ID)
     }
 }
 
