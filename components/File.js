@@ -15,6 +15,7 @@ import { Model } from '../Model';
 import { File } from "../File";
 import { Menu } from './Menu';
 import { PermissionsManager } from './Permissions';
+import { InformationsManager } from './Informations'
 import { VideoPlayer } from './Video'
 import { AudioPlayer } from './Audio'
 import { GlobularFileReader } from './Reader'
@@ -461,7 +462,7 @@ export class FilesView extends HTMLElement {
 
         this.infosMenuItem.action = () => {
             // So here I will create a new permission manager object and display it for the given file.
-  
+
             // Now I will test if imdb info are allready asscociated.
             let getTitleInfo = (file, callback) => {
                 let rqst = new GetFileTitlesRequest
@@ -478,9 +479,11 @@ export class FilesView extends HTMLElement {
 
             // get the title infos...
             getTitleInfo(this.menu.file, (titles) => {
-                this.menu.file.titles = titles // keep in the file itself...
-                console.log(this.menu.file)
-                Model.eventHub.publish("display_file_infos_event", this.menu.file, true)
+                if (titles.length > 0) {
+                    this.menu.file.titles = titles // keep in the file itself...
+                    console.log(this.menu.file)
+                    Model.eventHub.publish("display_file_infos_event", this.menu.file, true)
+                }
             })
 
             // hide the menu...
@@ -1896,8 +1899,8 @@ export class FilesIconView extends FilesView {
         title.setDuration(info.Duration)
         title.setGenresList(info.Genres)
         title.setNationalitiesList(info.Nationalities)
-        title.setRating(parseFloat(info.Raiting))
-        title.setRatingcount(info.RaitingCount)
+        title.setRating(parseFloat(info.Rating))
+        title.setRatingcount(parseInt(info.RatingCount))
         title.setType(info.Type)
         title.setUrl(info.URL)
         title.setYear(info.Year)
@@ -1910,6 +1913,8 @@ export class FilesIconView extends FilesView {
         poster.setId(info.Poster.ID)
         poster.setUrl(info.Poster.URL)
         poster.setContenturl(info.Poster.ContentURL)
+
+        title.setPoster(poster)
 
         let indexPath = Model.globular.config.DataPath + "/search/titles"
         rqst.setIndexpath(indexPath)
@@ -2701,6 +2706,9 @@ export class FileExplorer extends HTMLElement {
         // The permissions manager
         this.permissionManager = undefined
 
+        // The information manager
+        this.informationManager = undefined
+
         // The path navigator
         this.pathNavigator = undefined
 
@@ -2801,7 +2809,7 @@ export class FileExplorer extends HTMLElement {
             }
 
             /** How the permission manager is display in the explorer **/
-            globular-permissions-manager{
+            globular-permissions-manager, globular-informations-manager{
                 background-color: var(--palette-background-default);
                 position: absolute;
                 top: 0px;
@@ -2809,6 +2817,7 @@ export class FileExplorer extends HTMLElement {
                 right: 0px;
                 bottom: 0px;
                 z-index: 100;
+                overflow: auto;
             }
 
             #enter-full-screen-btn:hover{
@@ -2891,6 +2900,9 @@ export class FileExplorer extends HTMLElement {
 
         // The permission manager
         this.permissionManager = new PermissionsManager()
+
+        // The information manager
+        this.informationManager = new InformationsManager()
 
         // The video player
         // this.shadowRoot.querySelector("#globular-video-player")
@@ -3278,6 +3290,21 @@ export class FileExplorer extends HTMLElement {
 
                     // I will display the permission manager.
                     this.fileSelectionPanel.appendChild(this.permissionManager)
+
+                }, false)
+        }
+
+        // Informations
+        if (this.listeners["display_file_infos_event"] == undefined) {
+            Model.eventHub.subscribe("display_file_infos_event",
+                (uuid) => {
+                    this.listeners["display_file_infos_event"] = uuid;
+                }, (file) => {
+
+                    this.informationManager.setTitlesInformation(file.titles)
+
+                    // I will display the permission manager.
+                    this.fileSelectionPanel.appendChild(this.informationManager)
 
                 }, false)
         }
