@@ -403,7 +403,7 @@ globular-file-explorer{
 @media only screen and (max-width: 600px) {
 
 
-   globular-blog-post {
+   globular-blog-post, globular-search-results {
       grid-row-start: 1;
       grid-column-start: 1;
       grid-column-end: 17;
@@ -456,9 +456,10 @@ globular-file-explorer{
 
 /** Medium */
 @media only screen and (max-width: 1024px) and (min-width: 600px)  {
+   
 
    /** Blog post **/
-   globular-blog-post{
+   globular-blog-post, globular-search-results{
       grid-row-start: 1;
       grid-column-start: 3;
       grid-column-end: 15;
@@ -511,7 +512,7 @@ globular-file-explorer{
 
 /** Large */
 @media only screen and (max-width: 1800px) and (min-width: 1024px) {
-   globular-blog-post{
+   globular-blog-post, globular-search-results{
       grid-row-start: 1;
       grid-column-start: 5;
       grid-column-end: 13;
@@ -573,11 +574,12 @@ globular-file-explorer{
 /** x-large **/
 @media only screen and (min-width: 1800px) {
 
-   globular-blog-post{
+   globular-blog-post, globular-search-results{
       grid-row-start: 1;
       grid-column-start: 4;
       grid-column-end: 14;
    }
+
 
    globular-terminal{
       grid-row-start: 1;

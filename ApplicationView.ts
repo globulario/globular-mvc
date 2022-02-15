@@ -15,7 +15,7 @@ import { OverflowMenu } from "./components/Menu";
 import { ApplicationsMenu } from "./components/Applications";
 import { Camera } from "./components/Camera";
 import { FileExplorer, FilesMenu } from "./components/File";
-import { SearchBar } from "./components/Search";
+import { SearchBar, SearchResults } from "./components/Search";
 import { ContactCard, ContactsMenu } from "./components/Contact";
 import { MessengerMenu, Messenger } from "./components/Messenger";
 import { SettingsMenu, SettingsPanel, StringListSetting } from "./components/Settings";
@@ -45,7 +45,7 @@ import { ServicesSettings } from "./ServicesSettings";
 import { OrganizationManager } from "./components/Organization.js";
 import * as getUuid from 'uuid-by-string'
 import { ConversationServicePromiseClient } from "globular-web-client/conversation/conversation_grpc_web_pb";
-
+import { SearchTitlesRequest } from "globular-web-client/title/title_pb";
 /**
  * Application view made use of Web-component and Materialyse to create a basic application
  * layout that can be use as starting point to any web-application.
@@ -106,7 +106,7 @@ export class ApplicationView extends View {
 
   /** Keep title content between login and logout... */
   private _title_: any;
- 
+
 
   /** The camera */
   private _camera: Camera;
@@ -121,10 +121,16 @@ export class ApplicationView extends View {
     return ApplicationView._fileExplorer;
   }
 
-  /** The seach bar */
+  /** The search bar */
   private _searchBar: SearchBar;
   public get searchBar(): SearchBar {
     return this._searchBar;
+  }
+
+  /** The search result panel */
+  private _searchResults: SearchResults
+  public get searchResults(): SearchResults {
+    return this._searchResults;
   }
 
   /** various listener's */
@@ -189,7 +195,7 @@ export class ApplicationView extends View {
 
     // The search bar to give end user the power to search almost anything...
     this._searchBar = new SearchBar();
-   
+
     // The application layout 
     this.workspace_ = new Workspace()
 
@@ -231,6 +237,7 @@ export class ApplicationView extends View {
     this.applicationsMenu.init();
     this.notificationMenu.init();
     this.filesMenu.init();
+
 
     // Logout event
     Model.eventHub.subscribe(
@@ -383,15 +390,15 @@ export class ApplicationView extends View {
 
         // Set the messenger.
         this.messenger = new Messenger(account);
-        
+
         // Display the conversation manager.
         Model.eventHub.subscribe(`__join_conversation_evt__`,
-            (uuid) => {
-                
-            },
-            (evt) => {
-                document.body.appendChild(this.messenger)
-            }, true)
+          (uuid) => {
+
+          },
+          (evt) => {
+            document.body.appendChild(this.messenger)
+          }, true)
 
         Model.eventHub.subscribe("__create_new_conversation_event__",
           (uuid) => { },
@@ -440,6 +447,47 @@ export class ApplicationView extends View {
       },
       true, this
     );
+
+    // Search result event...
+    Model.eventHub.subscribe("_display_search_results_",
+      uuid => { },
+      evt => {
+        this._sidemenu_childnodes = new Array<any>();
+        this._workspace_childnodes = new Array<any>();
+
+        // Keep the content of the workspace.
+        while (this.getWorkspace().childNodes.length > 0) {
+          let node = this.getWorkspace().childNodes[this.getWorkspace().childNodes.length - 1]
+          this._workspace_childnodes.push(node)
+          this.getWorkspace().removeChild(node)
+        }
+
+        // The search result panel where the result will be displayed.
+        if (this._searchResults == null) {
+          this._searchResults = new SearchResults()
+        }
+
+        this.getWorkspace().appendChild(this._searchResults);
+
+      }, true)
+
+    Model.eventHub.subscribe("_hide_search_results_",
+      uuid => { },
+      evt => {
+
+        // The search results
+        if (this._searchResults.parentNode != undefined) {
+          this._searchResults.parentNode.removeChild(this._searchResults)
+        }
+
+        // restore the workspace
+        for (var i = 0; i < this._workspace_childnodes.length; i++) {
+          let node = this._workspace_childnodes[i]
+          this.getWorkspace().appendChild(node)
+        }
+
+
+      }, true)
 
     /**
      * The resize listener.
@@ -518,6 +566,7 @@ export class ApplicationView extends View {
     });
 
     window.dispatchEvent(new Event("resize"));
+
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -575,8 +624,8 @@ export class ApplicationView extends View {
     icon.style.marginRight = "10px";
     icon.style.marginLeft = "10px";
 
- 
-    let title = <any> ApplicationView.layout.title();
+
+    let title = <any>ApplicationView.layout.title();
     title.style.display = "flex";
 
     title.insertBefore(icon, title.firstChild);
@@ -748,7 +797,7 @@ export class ApplicationView extends View {
     /** implement it as needed */
     ApplicationView.layout.toolbar().appendChild(this.login_);
     ApplicationView.layout.title().removeChild(this._searchBar);
-    
+
     this.accountMenu.parentNode.removeChild(this.notificationMenu);
     this.accountMenu.parentNode.removeChild(this.accountMenu);
 
@@ -862,10 +911,10 @@ export class ApplicationView extends View {
     fileExplorer.setRoot(path)
     fileExplorer.init()
     fileExplorer.open()
-    
+
     fileExplorer.onclose = () => {
       // Remove the file explorer.
-      if(fileExplorer.parentNode!=undefined){
+      if (fileExplorer.parentNode != undefined) {
         return
       }
       fileExplorer.parentNode.removeChild(ApplicationView._fileExplorer)
