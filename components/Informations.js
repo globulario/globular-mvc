@@ -85,6 +85,13 @@ export class InformationsManager extends HTMLElement {
             
         }
 
+
+
+    }
+
+    hideHeader(){
+        this.shadowRoot.querySelector("paper-icon-button").style.display = "none"
+        this.shadowRoot.querySelector("#title-name").style.display = "none"
     }
 
     /**
@@ -276,6 +283,7 @@ export class InformationsManager extends HTMLElement {
             this.querySelector("#title-actors-title").innerHTML = "Actors"
         }
     }
+
 }
 
 customElements.define('globular-informations-manager', InformationsManager)
