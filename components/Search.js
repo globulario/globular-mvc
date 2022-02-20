@@ -17,6 +17,8 @@ function searchTitles(query) {
     let rqst = new SearchTitlesRequest
     rqst.setIndexpath(indexPath)
     rqst.setQuery(query)
+    rqst.setOffset(0)
+    rqst.setSize(100)
 
     let stream = Model.globular.titleService.searchTitles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
     stream.on("data", (rsp) => {
@@ -210,8 +212,8 @@ export class SearchResults extends HTMLElement {
             evt => {
                 let uuid = "_" + getUuid(evt.query)
                 let tab = this.tabs.querySelector(`#${uuid}-tab`)
-                
-                if(tab==null){
+
+                if (tab == null) {
                     let html = `
                     <paper-tab id="${uuid}-tab">
                         <paper-icon-button id="${uuid}-refresh-btn" icon="icons:refresh"></paper-icon-button>
@@ -226,36 +228,36 @@ export class SearchResults extends HTMLElement {
                     tab.onclick = () => {
                         let page = this.querySelector(`#${uuid}-results-page`)
 
-                        if(page == undefined){
+                        if (page == undefined) {
                             return
                         }
                         let index = 0
                         for (var i = 0; i < this.children.length; i++) {
                             this.children[i].style.display = "none";
-                            if(this.children[i].id == `${uuid}-results-page`){
+                            if (this.children[i].id == `${uuid}-results-page`) {
                                 index = i
                             }
                         }
-                       
-                        this.tabs.selected  = index;
+
+                        this.tabs.selected = index;
                         page.style.display = ""
                     }
-    
-    
+
+
                     let refreshBtn = this.tabs.querySelector(`#${uuid}-refresh-btn`)
                     refreshBtn.onclick = (evt_) => {
                         evt_.stopPropagation()
                         searchTitles(evt.query)
                     }
-    
+
                     let closeBtn = this.tabs.querySelector(`#${uuid}-close-btn`)
                     closeBtn.onclick = (evt_) => {
                         evt_.stopPropagation()
                         this.deletePageResults(uuid)
                     }
-                    this.tabs.selected  = this.children.length;
+                    this.tabs.selected = this.children.length;
 
-                }else{
+                } else {
                     tab.click()
                 }
 
@@ -267,7 +269,7 @@ export class SearchResults extends HTMLElement {
                         this.children[i].style.display = "none";
                     }
                     this.appendChild(resultsPage)
-                }else{
+                } else {
                     resultsPage.innerHTML = ""
                 }
 
@@ -346,11 +348,13 @@ export class SearchResultsPage extends HTMLElement {
 
         Model.eventHub.subscribe(`${uuid}_search_hit_event__`, listner_uuid => { },
             evt => {
-                if(this.querySelector(`#hit-div-${evt.hit.getIndex()}`) != null){
+                if (this.querySelector(`#hit-div-${evt.hit.getIndex()}`) != null) {
                     return;
                 }
+                let html = ""
 
-                let html = `
+                if (evt.hit.hasTitle()) {
+                    html = `
                     <style>
                         .hit-div{
                             display: flex; 
@@ -418,23 +422,24 @@ export class SearchResultsPage extends HTMLElement {
                         </div>
                     </div>
                 `
+                }if (evt.hit.hasVideo()) {
 
-
+                }
 
                 let range = document.createRange()
                 this.appendChild(range.createContextualFragment(html))
                 let snippetDiv = this.children[this.children.length - 1].children[1]
 
-                
+
                 let titleInfoDiv = this.children[this.children.length - 1].children[2]
 
                 let infoDisplay = new InformationsManager()
                 infoDisplay.setTitlesInformation([evt.hit.getTitle()])
                 infoDisplay.hideHeader()
-                titleInfoDiv.appendChild(infoDisplay)     
+                titleInfoDiv.appendChild(infoDisplay)
 
                 // Here  I will display the snippet results.
-                evt.hit.getSnippetsList().forEach(snippet =>{
+                evt.hit.getSnippetsList().forEach(snippet => {
                     let html = `
                     <div style="display: flex; flex-direction: column; padding: 10px;">
                         <div class="snippet-field">${snippet.getField()}</div>
@@ -451,7 +456,7 @@ export class SearchResultsPage extends HTMLElement {
                         fragmentDiv.appendChild(div)
                     })
                 })
-                
+
                 // print in the console the find results...
                 /*
                */

@@ -36,7 +36,7 @@ import { TimeScale } from 'chart.js';
 import { ImageViewer } from './Image';
 import { ConversationServicePromiseClient } from 'globular-web-client/conversation/conversation_grpc_web_pb';
 import { IndexJsonObjectRequest, SearchDocumentsRequest, SearchResult, SearchResults } from 'globular-web-client/search/search_pb';
-import { AssociateFileWithTitleRequest, CreateTitleRequest, GetFileTitlesRequest, Person, Poster, Title } from 'globular-web-client/title/title_pb';
+import { AssociateFileWithTitleRequest, CreateTitleRequest, GetFileTitlesRequest, GetFileVideosRequest, GetVideoByIdRequest, Person, Poster, Title } from 'globular-web-client/title/title_pb';
 
 
 // keep track of shared directory
@@ -278,7 +278,7 @@ export class FilesView extends HTMLElement {
             if (localStorage.getItem("user_token") != undefined) {
                 url += "&token=" + localStorage.getItem("user_token");
             }
-            window.open(url, '_blank');
+            window.open(url, '_blank', "fullscreen=yes");
         }
 
         this.downloadMenuItem.action = () => {
@@ -468,11 +468,31 @@ export class FilesView extends HTMLElement {
                 let rqst = new GetFileTitlesRequest
                 rqst.setIndexpath(Model.globular.config.DataPath + "/search/titles")
                 rqst.setFilepath(file.path)
+                
+                console.log("---------> get file titles: ", file.path)
                 Model.globular.titleService.getFileTitles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
                     .then(rsp => {
-                        callback(rsp.getTitlesList())
+                        callback(rsp.getTitles().getTitlesList())
                     })
                     .catch(err => {
+                        console.log("---------> no title found: ", file.path)
+                        callback([])
+                    })
+            }
+
+
+            let getVideoInfo = (file, callback) => {
+                let rqst = new GetFileVideosRequest
+                rqst.setIndexpath(Model.globular.config.DataPath + "/search/videos")
+                rqst.setFilepath(file.path)
+                
+                console.log("---------> get file video: ", file.path)
+                Model.globular.titleService.getFileVideos(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+                    .then(rsp => {
+                        callback(rsp.getVideos().getVideosList())
+                    })
+                    .catch(err => {
+                        console.log("---------> no video found: ", file.path)
                         callback([])
                     })
             }
@@ -481,11 +501,17 @@ export class FilesView extends HTMLElement {
             getTitleInfo(this.menu.file, (titles) => {
                 if (titles.length > 0) {
                     this.menu.file.titles = titles // keep in the file itself...
-                    console.log(this.menu.file)
                     Model.eventHub.publish("display_file_infos_event", this.menu.file, true)
                 }
             })
 
+            getVideoInfo(this.menu.file, (videos) => {
+                if (videos.length > 0) {
+                    console.log(videos)
+                    this.menu.file.videos = videos // keep in the file itself...
+                    Model.eventHub.publish("display_file_infos_event", this.menu.file, true)
+                }
+            })
             // hide the menu...
             this.menu.parentNode.removeChild(this.menu)
         }
@@ -3794,6 +3820,7 @@ export class VideoPreview extends HTMLElement {
         this.previews = previews;
         this.onpreview = null;
         this.onplay = null;
+        this.__show_play_btn__ = false;
 
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
@@ -3873,6 +3900,7 @@ export class VideoPreview extends HTMLElement {
 
         // Play the video
         this.playBtn.onclick = this.container.onclick = (evt) => {
+            evt.stopPropagation()
             this.play()
         }
 
@@ -3926,7 +3954,9 @@ export class VideoPreview extends HTMLElement {
 
         this.container.onmouseout = (evt) => {
             evt.stopPropagation();
-            this.playBtn.style.display = "none";
+            if(!this.__show_play_btn__){
+                this.playBtn.style.display = "none";
+            }
             if (this.interval != null && !is_over_play_btn) {
                 this.stopPreview();
             }
@@ -3934,6 +3964,10 @@ export class VideoPreview extends HTMLElement {
 
     }
 
+    showPlayBtn() {
+        this.__show_play_btn__ = true
+        this.playBtn.style.display = "block";
+    }
 
     /**
      * Start display the image 
@@ -3986,7 +4020,10 @@ export class VideoPreview extends HTMLElement {
      * Play video
      */
     play() {
-        Model.eventHub.publish("__play_video__", { path: this.path, file_explorer_id: this._file_explorer_.id }, true)
+        if(this._file_explorer_!=undefined){
+            Model.eventHub.publish("__play_video__", { path: this.path, file_explorer_id: this._file_explorer_.id }, true)
+        }
+
         if (this.onplay != undefined) {
             this.onplay(this.path)
         }

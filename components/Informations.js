@@ -1,6 +1,107 @@
 import { theme } from "./Theme";
 import { Model } from '../Model';
 import { Application } from "../Application";
+import { GetTitleFilesRequest } from "globular-web-client/title/title_pb";
+import { ConversationServiceClient } from "globular-web-client/conversation/conversation_grpc_web_pb";
+import { GetFileInfoRequest } from "globular-web-client/admin/admin_pb";
+import { File } from "../File";
+import { VideoPreview } from "./File";
+
+// Read dir content.
+function _readDir(path, callback, errorCallback) {
+    // Here I will keep the dir info in the cache...
+    File.readDir(path, false, (dir) => {
+        callback(dir)
+    }, errorCallback)
+}
+
+// Return the content of video preview div.
+function getHiddenFiles(path, callback) {
+    let index = path.lastIndexOf("/")
+    let hiddenFilePath = path.substring(0, index) + "/.hidden/" + path.substring(index + 1, path.lastIndexOf(".")) + "/__preview__"
+    _readDir(hiddenFilePath, callback, err => { console.log(err); callback(null); })
+}
+
+// Create the video preview...
+function getVideoPreview(parent, path, name, callback) {
+    getHiddenFiles(path, previewDir => {
+        let h = 100;
+        let w = 180;
+        let preview = new VideoPreview(path, previewDir._files, h, () => {
+            if (preview.width > 0 && preview.height > 0) {
+                w = (preview.width / preview.height) * h
+            }
+            let fileNameSpan = document.createElement("span")
+            fileNameSpan.style.maxWidth = w + "px";
+        })
+
+        preview.showPlayBtn()
+
+        preview.onplay = (path)=>{
+            console.log("play movie ", path)
+            let url = window.location.protocol + "//" + window.location.hostname + ":"
+            if (Application.globular.config.Protocol == "https") {
+                url += Application.globular.config.PortHttps
+            } else {
+                url += Application.globular.config.PortHttp
+            }
+
+            path.split("/").forEach(item => {
+                url += "/" + encodeURIComponent(item.trim())
+            })
+
+            url += "?application=" + Model.application;
+            if (localStorage.getItem("user_token") != undefined) {
+                url += "&token=" + localStorage.getItem("user_token");
+            }
+            window.open(url, '_blank', "fullscreen=yes");
+        }
+
+        // keep the explorer link...
+        preview.name = name
+        preview.onpreview = () => {
+            let previews = parent.querySelectorAll("globular-video-preview")
+            previews.forEach(p => {
+                // stop all other preview...
+                if (preview.name != p.name) {
+                    p.stopPreview()
+                }
+            })
+        }
+
+        callback(preview)
+    })
+}
+
+/**
+ * Return the list of file of a given tile...
+ * @param {*} title The title 
+ * @param {*} callback 
+ */
+function GetTitleFiles(title, parent, callback) {
+    let rqst = new GetTitleFilesRequest
+    rqst.setTitleid(title.getId())
+    rqst.setIndexpath(Model.globular.config.DataPath + "/search/titles")
+
+    Model.globular.titleService.getTitleFiles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+        .then(rsp => {
+            let previews = []
+            let _getVideoPreview_ = () => {
+                if (rsp.getFilepathsList().length > 0) {
+                    getVideoPreview(parent, rsp.getFilepathsList().pop(), title.getName(), p => {
+                        parent.appendChild(p)
+                        _getVideoPreview_() // call again...
+                    })
+                } else {
+                    callback(previews)
+                }
+            }
+
+            _getVideoPreview_() // call once...
+        })
+        .catch(err => { callback([]); console.log(err); })
+
+}
 
 /**
  * Display information about given object ex. titles, files...
@@ -82,14 +183,14 @@ export class InformationsManager extends HTMLElement {
         closeButton.onclick = () => {
             // remove it from it parent.
             this.parentNode.removeChild(this)
-            
+
         }
 
 
 
     }
 
-    hideHeader(){
+    hideHeader() {
         this.shadowRoot.querySelector("paper-icon-button").style.display = "none"
         this.shadowRoot.querySelector("#title-name").style.display = "none"
     }
@@ -108,7 +209,7 @@ export class InformationsManager extends HTMLElement {
         this.shadowRoot.querySelector("#title-duration").innerHTML = title.getDuration();
 
         let posterUrl = ""
-        if(title.getPoster()!=undefined){
+        if (title.getPoster() != undefined) {
             posterUrl = title.getPoster().getContenturl()
         }
 
@@ -168,6 +269,11 @@ export class InformationsManager extends HTMLElement {
                 border-color: var(--palette-divider);
                 width: 100%;
                 margin-bottom: 10px;
+            }
+
+            .title-files-div {
+                padding: 30px;
+                display: flex;
             }
 
             .title-top-credit, title-credit{
@@ -240,6 +346,8 @@ export class InformationsManager extends HTMLElement {
                     </div>
                 </div>
             </div>
+            <div class="title-files-div">
+            </div>
         </div>
         `
         let range = document.createRange()
@@ -247,7 +355,7 @@ export class InformationsManager extends HTMLElement {
         this.appendChild(range.createContextualFragment(html))
 
         let genresDiv = this.querySelector(".title-genres-div")
-        title.getGenresList().forEach(g=>{
+        title.getGenresList().forEach(g => {
             let genreSpan = document.createElement("span")
             genreSpan.classList.add("title-genre-span")
             genreSpan.innerHTML = g
@@ -255,33 +363,39 @@ export class InformationsManager extends HTMLElement {
         })
 
         // Display list of persons...
-        let displayPersons = (div, persons) =>{
-            persons.forEach(p=>{
+        let displayPersons = (div, persons) => {
+            persons.forEach(p => {
                 let lnk = document.createElement("a")
                 lnk.href = p.getUrl()
                 lnk.innerHTML = p.getFullname()
-                lnk.target="_blank"
+                lnk.target = "_blank"
                 div.appendChild(lnk)
             })
         }
 
         // display directors
         displayPersons(this.querySelector("#title-directors-lst"), title.getDirectorsList())
-        if(title.getDirectorsList().length > 0){
+        if (title.getDirectorsList().length > 0) {
             this.querySelector("#title-directors-title").innerHTML = "Directors"
         }
 
         // display writers
         displayPersons(this.querySelector("#title-writers-lst"), title.getWritersList())
-        if(title.getWritersList().length > 0){
+        if (title.getWritersList().length > 0) {
             this.querySelector("#title-writers-title").innerHTML = "Writers"
         }
 
         // display actors
         displayPersons(this.querySelector("#title-actors-lst"), title.getActorsList())
-        if(title.getActorsList().length > 0){
+        if (title.getActorsList().length > 0) {
             this.querySelector("#title-actors-title").innerHTML = "Actors"
         }
+
+        let filesDiv = this.querySelector(".title-files-div")
+        GetTitleFiles(title, filesDiv, (previews) => {
+
+        })
+
     }
 
 }
