@@ -469,13 +469,11 @@ export class FilesView extends HTMLElement {
                 rqst.setIndexpath(Model.globular.config.DataPath + "/search/titles")
                 rqst.setFilepath(file.path)
                 
-                console.log("---------> get file titles: ", file.path)
                 Model.globular.titleService.getFileTitles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
                     .then(rsp => {
                         callback(rsp.getTitles().getTitlesList())
                     })
                     .catch(err => {
-                        console.log("---------> no title found: ", file.path)
                         callback([])
                     })
             }
@@ -486,13 +484,11 @@ export class FilesView extends HTMLElement {
                 rqst.setIndexpath(Model.globular.config.DataPath + "/search/videos")
                 rqst.setFilepath(file.path)
                 
-                console.log("---------> get file video: ", file.path)
                 Model.globular.titleService.getFileVideos(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
                     .then(rsp => {
                         callback(rsp.getVideos().getVideosList())
                     })
                     .catch(err => {
-                        console.log("---------> no video found: ", file.path)
                         callback([])
                     })
             }
@@ -3327,7 +3323,11 @@ export class FileExplorer extends HTMLElement {
                     this.listeners["display_file_infos_event"] = uuid;
                 }, (file) => {
 
-                    this.informationManager.setTitlesInformation(file.titles)
+                    if(file.titles != undefined){
+                        this.informationManager.setTitlesInformation(file.titles)
+                    }else if(file.videos != undefined){
+                        this.informationManager.setVideosInformation(file.videos)
+                    }
 
                     // I will display the permission manager.
                     this.fileSelectionPanel.appendChild(this.informationManager)
