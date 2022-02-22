@@ -452,6 +452,12 @@ export class ApplicationView extends View {
     Model.eventHub.subscribe("_display_search_results_",
       uuid => { },
       evt => {
+        if (this._searchResults != undefined) {
+          if (this._searchResults.parentNode != undefined) {
+            return // the search result is already visible.
+          }
+        }
+
         this._sidemenu_childnodes = new Array<any>();
         this._workspace_childnodes = new Array<any>();
 
@@ -476,8 +482,10 @@ export class ApplicationView extends View {
       evt => {
 
         // The search results
-        if (this._searchResults.parentNode != undefined) {
-          this._searchResults.parentNode.removeChild(this._searchResults)
+        if (this._searchBar != undefined) {
+          if (this._searchResults.parentNode != undefined) {
+            this._searchResults.parentNode.removeChild(this._searchResults)
+          }
         }
 
         // restore the workspace

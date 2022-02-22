@@ -331,7 +331,7 @@ export class InformationsManager extends HTMLElement {
 
         this.innerHTML = "" // remove previous content.
 
-        let score = video.getRating() * 10
+        let score = video.getRating()
 
 
         // So here I will create the display for the title.

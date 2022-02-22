@@ -10,10 +10,9 @@ import * as getUuid from 'uuid-by-string'
 import { InformationsManager } from './Informations';
 
 
-function searchTitles(query) {
+function searchTitles(query, indexPath) {
 
     // This is a simple test...
-    let indexPath = Model.globular.config.DataPath + "/search/titles"
     let rqst = new SearchTitlesRequest
     rqst.setIndexpath(indexPath)
     rqst.setQuery(query)
@@ -28,7 +27,8 @@ function searchTitles(query) {
             Model.eventHub.publish("__new_search_event__", { query: query, summary: rsp.getSummary() }, true)
 
         } else if (rsp.hasFacets()) {
-
+            let uuid = "_" + getUuid(query)
+            Model.eventHub.publish(`${uuid}_search_facets_event__`, { facets: rsp.getFacets() }, true)
         } else if (rsp.hasHit()) {
             let hit = rsp.getHit()
             // display the value in the console...
@@ -58,6 +58,7 @@ export class SearchBar extends HTMLElement {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
+        this.searchContext = "titles"
     }
 
     // The connection callback.
@@ -76,16 +77,32 @@ export class SearchBar extends HTMLElement {
                 color: var(--cr-primary-text-color);
                 background-color: var(--palette-background-paper);
                 box-sizing: border-box;
+                font-size: 1.2rem;
             }
 
 
             iron-icon{
                 padding-left: 11px;
                 padding-right: 11px;
+                height: 36px;
+                width: 36px;
             }
 
             input:focus{
                 outline: none;
+            }
+
+            #context-search-selector{
+                display: none;
+                flex-direction: column;
+                position: absolute;
+                top: 55px;
+                right: 0px;
+                left: 0px;
+                border-radius: 5px;
+
+                background-color: var(--palette-background-paper);
+
             }
 
             #search-bar {
@@ -102,24 +119,30 @@ export class SearchBar extends HTMLElement {
                 color: var(--cr-primary-text-color);
                 background-color: var(--palette-background-paper);
                 border: 1px solid var(--palette-action-disabled);
+                position: relative;
             }
 
         </style>
         <div id="search-bar">
             <iron-icon icon="search" style="--iron-icon-fill-color: var(--palette-action-active);" ></iron-icon>
-            <input id='search_input' placeholder="Search"></input>
-            <paper-icon-button icon="icons:expand-more" style="--iron-icon-fill-color: var(--palette-action-active); margin-right: 2px; height: 36px;" ></paper-icon-button>
+            <input id='search_input' placeholder="Search Movies"></input>
+            <paper-icon-button id="change-search-context" icon="icons:expand-more" style="--iron-icon-fill-color: var(--palette-action-active); margin-right: 2px; height: 36px;" ></paper-icon-button>
+            <paper-card id="context-search-selector">
+                <paper-button id="context-search-selector-movies">Movies</paper-button>
+                <paper-button id="context-search-selector-videos" style="color: var(--palette-text-disabled)">Videos</paper-button>
+                <paper-button id="context-search-selector-close">Close</paper-button>
+            </paper-card>
         </div>
         `
 
         // give the focus to the input.
         let searchInput = this.shadowRoot.getElementById("search_input")
         let div = this.shadowRoot.getElementById("search-bar")
-
-        searchInput.onfocus = (evt) => {
-            evt.stopPropagation();
-            div.style.boxShadow = "var(--dark-mode-shadow)"
-        }
+      
+        let changeSearchContextBtn = this.shadowRoot.getElementById("change-search-context")
+        let contextSearchSelector = this.shadowRoot.getElementById("context-search-selector")
+        let contextSearchSelectorMovies = this.shadowRoot.getElementById("context-search-selector-movies")
+        let contextSearchSelectorVideos = this.shadowRoot.getElementById("context-search-selector-videos")
 
         searchInput.onblur = () => {
             div.style.boxShadow = ""
@@ -128,12 +151,48 @@ export class SearchBar extends HTMLElement {
         searchInput.onkeydown = (evt) => {
             if (evt.key == "Enter") {
                 // TODO search with givin context ex titles, blogs etc...
-                searchTitles(searchInput.value)
+                let indexPath = Model.globular.config.DataPath + "/search/" + this.searchContext
+
+                searchTitles(searchInput.value, indexPath)
                 searchInput.value = ""
             }
 
         }
 
+                
+        searchInput.onfocus = (evt) => {
+            evt.stopPropagation();
+            div.style.boxShadow = "var(--dark-mode-shadow)"
+            contextSearchSelector.style.display = "none"
+            Model.eventHub.publish("_display_search_results_", {}, true)
+        }
+
+        // Change the search context, this will search over other indexations...
+          changeSearchContextBtn.onclick = ()=>{
+            if(contextSearchSelector.style.display != "flex"){
+                contextSearchSelector.style.display = "flex"
+            }else{
+                contextSearchSelector.style.display = "none"
+            }
+        }
+
+        this.shadowRoot.getElementById("context-search-selector-close").onclick = ()=> {
+            contextSearchSelector.style.display = "none"
+        }
+
+        contextSearchSelectorMovies.onclick = ()=>{
+            contextSearchSelectorVideos.style.color = "var(--palette-text-disabled)"
+            contextSearchSelectorMovies.style.color = ""
+            this.searchContext = "titles"
+            searchInput.placeholder = "Search Movies"
+        }
+
+        contextSearchSelectorVideos.onclick = ()=>{
+            contextSearchSelectorVideos.style.color = ""
+            contextSearchSelectorMovies.style.color = "var(--palette-text-disabled)"
+            this.searchContext = "videos"
+            searchInput.placeholder = "Search Videos"
+        }
 
     }
 }
@@ -206,6 +265,11 @@ export class SearchResults extends HTMLElement {
         `
 
         this.tabs = this.shadowRoot.querySelector("#search-results")
+
+        this.closeAllBtn = this.shadowRoot.querySelector("#close-all-btn") 
+        this.closeAllBtn.onclick = ()=>{
+            Model.eventHub.publish("_hide_search_results_", {}, true)
+        }
 
         // So here I will create a new Search Result page if none exist...
         Model.eventHub.subscribe("__new_search_event__", uuid => { },
@@ -301,6 +365,11 @@ export class SearchResults extends HTMLElement {
             let tab_uuid = nextPage.id.replace("-results-page", "-tab")
             this.tabs.querySelector(`#${tab_uuid}`).click()
         }
+
+        // close the results view
+        if(this.tabs.querySelectorAll("paper-tab").length == 0){
+            Model.eventHub.publish("_hide_search_results_", {}, true)
+        }
     }
 
 }
@@ -346,6 +415,14 @@ export class SearchResultsPage extends HTMLElement {
         </div>
         `
 
+        // Display facets
+        Model.eventHub.subscribe(`${uuid}_search_facets_event__`, listner_uuid => { },
+        evt=>{
+            console.log(evt.facets)
+
+        }, true)
+
+        // Append it to the results.
         Model.eventHub.subscribe(`${uuid}_search_hit_event__`, listner_uuid => { },
             evt => {
                 if (this.querySelector(`#hit-div-${evt.hit.getIndex()}`) != null) {
@@ -353,8 +430,15 @@ export class SearchResultsPage extends HTMLElement {
                 }
                 let html = ""
 
+                let titleName = ""
+
                 if (evt.hit.hasTitle()) {
-                    html = `
+                    titleName = evt.hit.getTitle().getName()
+                }else{
+
+                }
+
+                html = `
                     <style>
                         .hit-div{
                             display: flex; 
@@ -409,7 +493,7 @@ export class SearchResultsPage extends HTMLElement {
                                 ${evt.hit.getIndex() + 1}.
                             </span>
                             <span  class="hit-title-name-div">
-                                ${evt.hit.getTitle().getName()}
+                                ${titleName}
                             </span>
                             <span class="hit-score-div">
                                 ${evt.hit.getScore().toFixed(3)}
@@ -422,9 +506,7 @@ export class SearchResultsPage extends HTMLElement {
                         </div>
                     </div>
                 `
-                }if (evt.hit.hasVideo()) {
 
-                }
 
                 let range = document.createRange()
                 this.appendChild(range.createContextualFragment(html))
@@ -434,7 +516,12 @@ export class SearchResultsPage extends HTMLElement {
                 let titleInfoDiv = this.children[this.children.length - 1].children[2]
 
                 let infoDisplay = new InformationsManager()
-                infoDisplay.setTitlesInformation([evt.hit.getTitle()])
+                if (evt.hit.hasTitle()) {
+                    infoDisplay.setTitlesInformation([evt.hit.getTitle()])
+                }else{
+                    infoDisplay.setVideosInformation([evt.hit.getVideo()])
+                }
+
                 infoDisplay.hideHeader()
                 titleInfoDiv.appendChild(infoDisplay)
 
