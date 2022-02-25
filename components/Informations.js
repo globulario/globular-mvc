@@ -308,6 +308,7 @@ export class InformationsManager extends HTMLElement {
         let publisherName = ""
         if (video.getPublisherid() != undefined) {
             publisherName = video.getPublisherid().getName()
+            
         }
 
         // Set the header section.
@@ -326,7 +327,7 @@ export class InformationsManager extends HTMLElement {
         let posterUrl = ""
         if (video.getPoster() != undefined) {
             // must be getContentUrl here... 
-            posterUrl = video.getPoster().getUrl()
+            posterUrl = video.getPoster().getContenturl()
         }
 
         this.innerHTML = "" // remove previous content.

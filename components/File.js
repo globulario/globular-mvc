@@ -1019,11 +1019,15 @@ export class FilesView extends HTMLElement {
                     rqst.setBlocking(true)
                     let stream = Application.globular.adminService.runCmd(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
                     let pid = -1;
+                    let fileName = ""
 
                     // Here I will create a local event to be catch by the file uploader...
                     stream.on("data", (rsp) => {
                         if (rsp.getPid() != null) {
                             pid = rsp.getPid()
+                        }
+                        if (rsp.getResult().startsWith("[download] Destination:") && fileName.length == 0) {
+                            fileName = rsp.getResult().split(":")[1].trim()
                         }
                         // Publish local event.
                         Model.eventHub.publish("__upload_link_event__", { pid: pid, path: this.__dir__.path, infos: rsp.getResult(), done: false, lnk: lnk }, true);
@@ -1033,6 +1037,38 @@ export class FilesView extends HTMLElement {
                         if (status.code === 0) {
                             Model.eventHub.publish("refresh_dir_evt", this.__dir__.path, false);
                             Model.eventHub.publish("__upload_link_event__", { pid: pid, path: this.__dir__.path, infos: "", done: true, lnk: lnk }, true);
+        
+                            // Now I will index the file...
+                            var xmlhttp = new XMLHttpRequest();
+
+                            xmlhttp.onreadystatechange = () => {
+                              if (this.readyState == 4 && (this.status == 201 || this.status == 200)) {
+                                console.log("file" + this.__dir__.path + "/" + fileName + "was indexed!")
+                              } else if (this.readyState == 4) {
+                                console.log("fail to index file " + this.__dir__.path + "/" + fileName + " with infos from" + url + " with error status " + this.status)
+                              }
+                            };
+
+                            let url_ = window.location.protocol + "//" + window.location.hostname + ":"
+                            if (Application.globular.config.Protocol == "https") {
+                                url_ += Application.globular.config.PortHttps
+                            } else {
+                                url_ += Application.globular.config.PortHttp
+                            }
+
+                            url_ += "/index_video?domain=" + Model.domain // application is not know at this time...
+                            if (localStorage.getItem("user_token") != undefined) {
+                                url_ += "&token=" + localStorage.getItem("user_token")
+                            }
+
+                            // The file path to index.
+                            url_ += "&video-path=" + this.__dir__.path + "/" + fileName
+                            url_ += "&video-url=" + url;
+                            url_ += "&index-path=" + Application.globular.config.DataPath + "/search/videos"
+                          
+                            xmlhttp.open("GET", url_, true);
+                            xmlhttp.setRequestHeader("domain", Model.domain);
+                            xmlhttp.send();
                         } else {
                             // error here...
                             ApplicationView.displayMessage(status.details, 3000)
