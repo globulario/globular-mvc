@@ -1765,7 +1765,7 @@ export class FilesIconView extends FilesView {
                                             ${theme}
                                         </style>
                                         <div id="select-media-dialog">
-                                            <div>Your about to associate <span id="title-type"></span> <a id="title-name" target="_blank"></a></div>
+                                            <div>Your about to associate <span id="title-type" style="max-width: 300px;"></span> <a id="title-name" target="_blank"></a></div>
                                             <div>with file <span style="font-style: italic;" id="file-path"></span></div>
                                             <div style="display: flex; flex-direction: column; justify-content: center;">
                                                 <img style="width: 185.31px; align-self: center; padding-top: 10px; padding-bottom: 15px;" id="title-poster"> </img>

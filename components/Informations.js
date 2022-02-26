@@ -1,11 +1,12 @@
 import { theme } from "./Theme";
 import { Model } from '../Model';
 import { Application } from "../Application";
-import { GetTitleFilesRequest } from "globular-web-client/title/title_pb";
+import { DeleteTitleRequest, DeleteVideoRequest, GetTitleFilesRequest } from "globular-web-client/title/title_pb";
 import { ConversationServiceClient } from "globular-web-client/conversation/conversation_grpc_web_pb";
 import { GetFileInfoRequest } from "globular-web-client/admin/admin_pb";
 import { File } from "../File";
 import { VideoPreview } from "./File";
+import { ApplicationView } from "../ApplicationView";
 
 const __style__ = `
 .title-div {
@@ -29,7 +30,9 @@ const __style__ = `
 
 .title-genre-span {
     border: 1px solid var(--palette-divider);
-    padding: 5px;
+    padding: 1px;
+    padding-left: 5px;
+    padding-right: 5px;
     margin-right: 5px;
 }
 
@@ -45,6 +48,10 @@ const __style__ = `
     align-items: center;
     color: var(--palette-text-secondery);
     font-size: 1rem;
+}
+
+.title-genres-div{
+    padding: 5px;
 }
 
 #rating-span{
@@ -264,6 +271,8 @@ export class InformationsManager extends HTMLElement {
                 padding: 10px;
             }
 
+ 
+
         </style>
         <div id="container">
             <div id="header">
@@ -339,6 +348,10 @@ export class InformationsManager extends HTMLElement {
         let html = `
         <style>
             ${__style__}
+            .action-div{
+                display: flex;
+                justify-content: end;
+            }
         </style>
         <div id="${video.getId()}-div" class="title-div">
             <div class="title-poster-div" >
@@ -362,11 +375,13 @@ export class InformationsManager extends HTMLElement {
                     </div>
                 </div>
             </div>
-
+        </div>
+        <div class="action-div">
+            <paper-button id="delete-indexation-btn">Delete</paper-button>
         </div>
         `
 
-
+  
         let range = document.createRange()
         this.appendChild(range.createContextualFragment(html))
 
@@ -400,6 +415,55 @@ export class InformationsManager extends HTMLElement {
         GetTitleFiles(Model.globular.config.DataPath + "/search/videos", video, filesDiv, (previews) => {
 
         })
+
+        let deleteIndexationBtn = this.querySelector("#delete-indexation-btn")
+
+        // Delete the indexation from the database.
+        deleteIndexationBtn.onclick = ()=>{
+            let toast = ApplicationView.displayMessage(`
+            <style>
+                ${theme}
+            </style>
+            <div id="select-media-dialog">
+                <div>Your about to delete indexation</div>
+                <p style="font-style: italic;  max-width: 300px;" id="title-type"></p>
+                <div style="display: flex; flex-direction: column; justify-content: center;">
+                    <img style="width: 185.31px; align-self: center; padding-top: 10px; padding-bottom: 15px;" id="title-poster"> </img>
+                </div>
+                <div>Is that what you want to do? </div>
+                <div style="display: flex; justify-content: flex-end;">
+                    <paper-button id="imdb-lnk-ok-button">Ok</paper-button>
+                    <paper-button id="imdb-lnk-cancel-button">Cancel</paper-button>
+                </div>
+            </div>
+            `, 60 * 1000)
+
+            let cancelBtn = toast.el.querySelector("#imdb-lnk-cancel-button")
+            cancelBtn.onclick = () => {
+                toast.dismiss();
+            }
+
+            toast.el.querySelector("#title-type").innerHTML = video.getDescription()
+            toast.el.querySelector("#title-poster").src = posterUrl
+
+            let okBtn = toast.el.querySelector("#imdb-lnk-ok-button")
+            okBtn.onclick = () => {
+                let rqst = new DeleteVideoRequest()
+                rqst.setVideoid(video.getId())
+                rqst.setIndexpath(Model.globular.config.DataPath + "/search/videos")
+                Model.globular.titleService.deleteVideo(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+                    .then(()=>{
+                        ApplicationView.displayMessage(`file indexation was deleted`, 3000)
+                        this.parentNode.removeChild(this)
+                    })
+                    .catch(err=>ApplicationView.displayMessage(err, 3000))
+
+                toast.dismiss();
+            }
+
+
+        }
+
 
     }
 
@@ -437,6 +501,10 @@ export class InformationsManager extends HTMLElement {
         let html = `
         <style>
             ${__style__}
+            .action-div{
+                display: flex;
+                justify-content: end;
+            }
         </style>
         <div id="${title.getId()}-div" class="title-div">
             <div class="title-poster-div" >
@@ -469,6 +537,9 @@ export class InformationsManager extends HTMLElement {
             </div>
             <div class="title-files-div">
             </div>
+        </div>
+        <div class="action-div">
+            <paper-button id="delete-indexation-btn">Delete</paper-button>
         </div>
         `
         let range = document.createRange()
@@ -517,6 +588,52 @@ export class InformationsManager extends HTMLElement {
 
         })
 
+        
+        let deleteIndexationBtn = this.querySelector("#delete-indexation-btn")
+
+        // Delete the indexation from the database.
+        deleteIndexationBtn.onclick = ()=>{
+            let toast = ApplicationView.displayMessage(`
+            <style>
+                ${theme}
+            </style>
+            <div id="select-media-dialog">
+                <div>Your about to delete indexation</div>
+                <p style="font-style: italic;  max-width: 300px;" id="title-type"></p>
+                <div style="display: flex; flex-direction: column; justify-content: center;">
+                    <img style="width: 185.31px; align-self: center; padding-top: 10px; padding-bottom: 15px;" id="title-poster"> </img>
+                </div>
+                <div>Is that what you want to do? </div>
+                <div style="display: flex; justify-content: flex-end;">
+                    <paper-button id="imdb-lnk-ok-button">Ok</paper-button>
+                    <paper-button id="imdb-lnk-cancel-button">Cancel</paper-button>
+                </div>
+            </div>
+            `, 60 * 1000)
+
+            let cancelBtn = toast.el.querySelector("#imdb-lnk-cancel-button")
+            cancelBtn.onclick = () => {
+                toast.dismiss();
+            }
+
+            toast.el.querySelector("#title-type").innerHTML = title.getName()
+            toast.el.querySelector("#title-poster").src = posterUrl
+
+            let okBtn = toast.el.querySelector("#imdb-lnk-ok-button")
+            okBtn.onclick = () => {
+                let rqst = new DeleteTitleRequest()
+                rqst.setTitleid(title.getId())
+                rqst.setIndexpath(Model.globular.config.DataPath + "/search/videos")
+                Model.globular.titleService.deleteTitle(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+                    .then(()=>{
+                        ApplicationView.displayMessage(`file indexation was deleted`, 3000)
+                        this.parentNode.removeChild(this)
+                    })
+                    .catch(err=>ApplicationView.displayMessage(err, 3000))
+
+                toast.dismiss();
+            }
+        }
     }
 
 }
