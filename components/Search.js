@@ -138,7 +138,7 @@ export class SearchBar extends HTMLElement {
         // give the focus to the input.
         let searchInput = this.shadowRoot.getElementById("search_input")
         let div = this.shadowRoot.getElementById("search-bar")
-      
+
         let changeSearchContextBtn = this.shadowRoot.getElementById("change-search-context")
         let contextSearchSelector = this.shadowRoot.getElementById("context-search-selector")
         let contextSearchSelectorMovies = this.shadowRoot.getElementById("context-search-selector-movies")
@@ -159,7 +159,7 @@ export class SearchBar extends HTMLElement {
 
         }
 
-                
+
         searchInput.onfocus = (evt) => {
             evt.stopPropagation();
             div.style.boxShadow = "var(--dark-mode-shadow)"
@@ -168,26 +168,26 @@ export class SearchBar extends HTMLElement {
         }
 
         // Change the search context, this will search over other indexations...
-          changeSearchContextBtn.onclick = ()=>{
-            if(contextSearchSelector.style.display != "flex"){
+        changeSearchContextBtn.onclick = () => {
+            if (contextSearchSelector.style.display != "flex") {
                 contextSearchSelector.style.display = "flex"
-            }else{
+            } else {
                 contextSearchSelector.style.display = "none"
             }
         }
 
-        this.shadowRoot.getElementById("context-search-selector-close").onclick = ()=> {
+        this.shadowRoot.getElementById("context-search-selector-close").onclick = () => {
             contextSearchSelector.style.display = "none"
         }
 
-        contextSearchSelectorMovies.onclick = ()=>{
+        contextSearchSelectorMovies.onclick = () => {
             contextSearchSelectorVideos.style.color = "var(--palette-text-disabled)"
             contextSearchSelectorMovies.style.color = ""
             this.searchContext = "titles"
             searchInput.placeholder = "Search Movies"
         }
 
-        contextSearchSelectorVideos.onclick = ()=>{
+        contextSearchSelectorVideos.onclick = () => {
             contextSearchSelectorVideos.style.color = ""
             contextSearchSelectorMovies.style.color = "var(--palette-text-disabled)"
             this.searchContext = "videos"
@@ -266,8 +266,8 @@ export class SearchResults extends HTMLElement {
 
         this.tabs = this.shadowRoot.querySelector("#search-results")
 
-        this.closeAllBtn = this.shadowRoot.querySelector("#close-all-btn") 
-        this.closeAllBtn.onclick = ()=>{
+        this.closeAllBtn = this.shadowRoot.querySelector("#close-all-btn")
+        this.closeAllBtn.onclick = () => {
             Model.eventHub.publish("_hide_search_results_", {}, true)
         }
 
@@ -367,7 +367,7 @@ export class SearchResults extends HTMLElement {
         }
 
         // close the results view
-        if(this.tabs.querySelectorAll("paper-tab").length == 0){
+        if (this.tabs.querySelectorAll("paper-tab").length == 0) {
             Model.eventHub.publish("_hide_search_results_", {}, true)
         }
     }
@@ -405,151 +405,201 @@ export class SearchResultsPage extends HTMLElement {
                 display: flex;
             }
 
+            #summary span {
+                flex-grow: 1;
+            }
+
+            .disable{
+                --iron-icon-fill-color: var(--palette-action-disabled);
+            }
+
         </style>
         <div class="container">
             <div id="summary">
                 <span style="padding: 15px;"> ${summary.getQuery()} ${summary.getTotal()} results (${summary.getTook()}ms)</span>
+                <paper-icon-button id="search-result-icon-view-btn" style="" icon="icons:view-module"></paper-icon-button>
+                <paper-icon-button class="disable"  id="search-result-lst-view-btn" icon="icons:view-list"></paper-icon-button>
             </div>
-            <slot>
+            <slot> </slot>
+            <slot name="mosaic" style="display: flex; flex-wrap: wrap;">
+
             </slot>
         </div>
         `
 
+        // Get the tow button...
+        this.searchReusltLstViewBtn = this.shadowRoot.querySelector("#search-result-lst-view-btn")
+        this.searchReusltIconViewBtn = this.shadowRoot.querySelector("#search-result-icon-view-btn")
+        this.viewType = "icon"
+        this.hits = [] // keep the current list in memory...
+
+        this.searchReusltLstViewBtn.onclick = () => {
+            this.searchReusltLstViewBtn.classList.remove("disable")
+            this.searchReusltIconViewBtn.classList.add("disable")
+            this.viewType = "lst"
+            this.classList.remove("mosaic")
+            this.refresh()
+        }
+
+        this.searchReusltIconViewBtn.onclick = () => {
+            this.searchReusltLstViewBtn.classList.add("disable")
+            this.searchReusltIconViewBtn.classList.remove("disable")
+            this.viewType = "mosaic"
+            this.refresh()
+        }
+
         // Display facets
         Model.eventHub.subscribe(`${uuid}_search_facets_event__`, listner_uuid => { },
-        evt=>{
-            console.log(evt.facets)
+            evt => {
+                console.log(evt.facets)
 
-        }, true)
+            }, true)
 
         // Append it to the results.
         Model.eventHub.subscribe(`${uuid}_search_hit_event__`, listner_uuid => { },
             evt => {
-                if (this.querySelector(`#hit-div-${evt.hit.getIndex()}`) != null) {
-                    return;
-                }
-                let html = ""
+                this.hits.push(evt.hit)
 
-                let titleName = ""
-
-                if (evt.hit.hasTitle()) {
-                    titleName = evt.hit.getTitle().getName()
-                }else{
-
+                if (this.viewType == "lst") {
+                    this.displayListHit(evt.hit)
+                } else {
+                    this.displayMosaicHit(evt.hit)
                 }
 
-                html = `
-                    <style>
-                        .hit-div{
-                            display: flex; 
-                            flex-direction: column;
-                            padding: 10px;
-                            border: 1px solid var(--palette-background-paper);
-                        }
-
-                        .hit-header-div{
-                            display: flex;
-                        }
-
-                        .hit-index-div{
-                            font-size: 1.4rem;
-                            font-weight: 600;
-                        }
-
-                        .hit-title-name-div{
-                            margin-left: 15px;
-                            font-size: 1.4rem;
-                            font-weight: 600;
-                            flex-grow: 1;
-                        }
-
-                        .snippet-field {
-                            font-size: 1.20rem;
-                            font-weight: 400;
-                        }
-
-                        .field-div{
-
-                        }
-
-                        .snippet-fragments{
-                            padding-left: 15px;
-                            font-size: 1.20rem;
-                        }
-
-                        mark {
-                            
-                        }
-
-                        /** Small **/
-                        @media only screen and (max-width: 600px) {
-                            
-                        }
-
-                    </style>
-                    <div id="hit-div-${evt.hit.getIndex()}" class="hit-div">
-                        <div class="hit-header-div">
-                            <span class="hit-index-div">
-                                ${evt.hit.getIndex() + 1}.
-                            </span>
-                            <span  class="hit-title-name-div">
-                                ${titleName}
-                            </span>
-                            <span class="hit-score-div">
-                                ${evt.hit.getScore().toFixed(3)}
-                            </span>
-                        </div>
-                        <div class="snippets-div">
-                            
-                        </div>
-                        <div class="title-info-div">
-                        </div>
-                    </div>
-                `
-
-
-                let range = document.createRange()
-                this.appendChild(range.createContextualFragment(html))
-                let snippetDiv = this.children[this.children.length - 1].children[1]
-
-
-                let titleInfoDiv = this.children[this.children.length - 1].children[2]
-
-                let infoDisplay = new InformationsManager()
-                if (evt.hit.hasTitle()) {
-                    infoDisplay.setTitlesInformation([evt.hit.getTitle()])
-                }else{
-                    infoDisplay.setVideosInformation([evt.hit.getVideo()])
-                }
-
-                infoDisplay.hideHeader()
-                titleInfoDiv.appendChild(infoDisplay)
-
-                // Here  I will display the snippet results.
-                evt.hit.getSnippetsList().forEach(snippet => {
-                    let html = `
-                    <div style="display: flex; flex-direction: column; padding: 10px;">
-                        <div class="snippet-field">${snippet.getField()}</div>
-                        <div class="snippet-fragments"></div>
-                    </div>
-                    `
-                    snippetDiv.appendChild(range.createContextualFragment(html))
-
-                    let fragmentDiv = snippetDiv.children[snippetDiv.children.length - 1].children[1]
-                    snippet.getFragmentsList().forEach(f => {
-                        let div = document.createElement("div")
-                        div.style.paddingBottom = "5px";
-                        div.innerHTML = f
-                        fragmentDiv.appendChild(div)
-                    })
-                })
-
-                // print in the console the find results...
-                /*
-               */
             }, true)
     }
 
+    // Refresh the view....
+    refresh() {
+        this.innerHTML = ""
+        this.hits.forEach(hit => {
+            if (this.viewType == "lst") {
+                this.displayListHit(hit)
+            } else {
+                this.displayMosaicHit(hit)
+            }
+        })
+    }
+
+    clear() {
+        this.hits = []
+    }
+
+    displayMosaicHit(hit) {
+        if (this.querySelector(`#hit-div-mosaic-${hit.getIndex()}`) != null) {
+            return;
+        }
+
+        let posterUrl = ""
+        if (hit.hasTitle()) {
+            if (hit.getTitle().getPoster() != undefined) {
+                // must be getContentUrl here... 
+                posterUrl = hit.getTitle().getPoster().getContenturl()
+            }
+        } else {
+            if (hit.getVideo().getPoster() != undefined) {
+                // must be getContentUrl here... 
+                posterUrl = hit.getVideo().getPoster().getContenturl()
+            }
+        }
+
+        let html = `
+        <style>
+        @media only screen and (min-width: 1800px){
+            globular-search-results {
+                grid-row-start: 1;
+                grid-column-start: 1;
+                grid-column-end: 18;
+            }
+         }
+        </style>
+        <paper-card slot="mosaic" id="hit-div-mosaic-${hit.getIndex()}">
+            <img src="${posterUrl}"></img>
+        </paper-card>
+        `
+
+        let range = document.createRange()
+        this.appendChild(range.createContextualFragment(html))
+
+    }
+
+    displayListHit(hit) {
+        if (this.querySelector(`#hit-div-${hit.getIndex()}`) != null) {
+            return;
+        }
+
+        let titleName = ""
+
+        if (hit.hasTitle()) {
+            titleName = hit.getTitle().getName()
+        }
+
+        let html = `
+        <style>
+        @media only screen and (min-width: 1800px){
+            globular-search-results {
+                grid-row-start: 1;
+                grid-column-start: 4;
+                grid-column-end: 14;
+            }
+         }
+        </style>
+            <div id="hit-div-${hit.getIndex()}" class="hit-div">
+                <div class="hit-header-div">
+                    <span class="hit-index-div">
+                        ${hit.getIndex() + 1}.
+                    </span>
+                    <span  class="hit-title-name-div">
+                        ${titleName}
+                    </span>
+                    <span class="hit-score-div">
+                        ${hit.getScore().toFixed(3)}
+                    </span>
+                </div>
+                <div class="snippets-div">
+                    
+                </div>
+                <div class="title-info-div">
+                </div>
+            </div>
+        `
+
+
+        let range = document.createRange()
+        this.appendChild(range.createContextualFragment(html))
+        let snippetDiv = this.children[this.children.length - 1].children[1]
+
+        let titleInfoDiv = this.children[this.children.length - 1].children[2]
+
+        let infoDisplay = new InformationsManager()
+        if (hit.hasTitle()) {
+            infoDisplay.setTitlesInformation([hit.getTitle()])
+        } else {
+            infoDisplay.setVideosInformation([hit.getVideo()])
+        }
+
+        infoDisplay.hideHeader()
+        titleInfoDiv.appendChild(infoDisplay)
+
+        // Here  I will display the snippet results.
+        hit.getSnippetsList().forEach(snippet => {
+            let html = `
+            <div style="display: flex; flex-direction: column; padding: 10px;">
+                <div class="snippet-field">${snippet.getField()}</div>
+                <div class="snippet-fragments"></div>
+            </div>
+            `
+            snippetDiv.appendChild(range.createContextualFragment(html))
+
+            let fragmentDiv = snippetDiv.children[snippetDiv.children.length - 1].children[1]
+            snippet.getFragmentsList().forEach(f => {
+                let div = document.createElement("div")
+                div.style.paddingBottom = "5px";
+                div.innerHTML = f
+                fragmentDiv.appendChild(div)
+            })
+        })
+    }
 }
 
 customElements.define('globular-search-results-page', SearchResultsPage)

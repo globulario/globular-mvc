@@ -643,3 +643,54 @@ globular-file-explorer{
    }
 }
 
+
+globular-search-results-page img {
+   max-width: 256px;
+   object-fit: cover; 
+}
+/*
+globular-search-results-page img.cover { 
+   object-fit: cover; 
+}
+*/
+globular-search-results-page paper-card {
+   margin: 7.5px;
+   background-color: transparent;
+   display: flex;
+   width: 256px;
+   height: 385.73px;
+   overflow: hidden;
+}
+
+.hit-div{
+   display: flex; 
+   flex-direction: column;
+   padding: 10px;
+   border: 1px solid var(--palette-background-paper);
+}
+
+.hit-header-div{
+   display: flex;
+}
+
+.hit-index-div{
+   font-size: 1.4rem;
+   font-weight: 600;
+}
+
+.hit-title-name-div{
+   margin-left: 15px;
+   font-size: 1.4rem;
+   font-weight: 600;
+   flex-grow: 1;
+}
+
+.snippet-field {
+   font-size: 1.20rem;
+   font-weight: 400;
+}
+
+.snippet-fragments{
+   padding-left: 15px;
+   font-size: 1.20rem;
+}
