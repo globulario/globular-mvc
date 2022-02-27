@@ -494,12 +494,21 @@ export class SearchResultsPage extends HTMLElement {
         if (hit.hasTitle()) {
             if (hit.getTitle().getPoster() != undefined) {
                 // must be getContentUrl here... 
-                posterUrl = hit.getTitle().getPoster().getContenturl()
+                if(hit.getTitle().getPoster().getContenturl().length > 0 ){
+                    posterUrl = hit.getTitle().getPoster().getContenturl()
+                }else{
+                    posterUrl = hit.getTitle().getPoster().getUrl()
+                }
             }
         } else {
             if (hit.getVideo().getPoster() != undefined) {
                 // must be getContentUrl here... 
-                posterUrl = hit.getVideo().getPoster().getContenturl()
+                if(hit.getVideo().getPoster().getContenturl().length > 0 ){
+                    posterUrl = hit.getVideo().getPoster().getContenturl()
+                }else{
+                    posterUrl = hit.getVideo().getPoster().getUrl()
+                }
+               
             }
         }
 
