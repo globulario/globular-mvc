@@ -534,7 +534,7 @@ export class SearchResultsPage extends HTMLElement {
 
             .flip-container, .front, .back {
                 width: 256px;
-                height: 385.72px;
+                height: 380px;
             }
 
             /* flip speed goes here */
@@ -551,7 +551,7 @@ export class SearchResultsPage extends HTMLElement {
                 top: 0;
                 left: 0;
                 text-align: center;
-                box-shadow: var(--paper-material-elevation-1_-_box-shadow);
+                
             }
 
             /* front pane, placed above back */
@@ -561,6 +561,17 @@ export class SearchResultsPage extends HTMLElement {
                 transform: rotateY(0deg);
             }
 
+            .front img {
+                max-width: 256px;
+                object-fit: cover;
+                border-radius: 3.5px;
+                box-shadow: rgba(0, 0, 0, 0.16) 0px 3px 6px, rgba(0, 0, 0, 0.23) 0px 3px 6px;
+             }
+
+             .front img:hover{
+                box-shadow: rgba(0, 0, 0, 0.19) 0px 10px 20px, rgba(0, 0, 0, 0.23) 0px 6px 6px;
+             }
+
             /* back, initially hidden pane */
             .back {
                 transform: rotateY(180deg);
@@ -568,7 +579,7 @@ export class SearchResultsPage extends HTMLElement {
 
         </style>
 
-        <div class="title-card" style="margin: 7.5px; display: flex;" slot="mosaic" id="hit-div-mosaic-${hit.getIndex()}">
+        <div class="title-card" style="margin: 7.5px; display: flex; overflow: hidden; height: 380px; width: 256px;" slot="mosaic" id="hit-div-mosaic-${hit.getIndex()}">
             <div class="flip-container" ontouchstart="this.classList.toggle('hover');">
                 <div class="flipper">
                     <div class="front">
@@ -696,9 +707,10 @@ export class SearchTitleDetail extends HTMLElement {
             .search-title-detail{
                 position: absolute;               
                 max-width: 256px;
-                max-height: 385.72px;
-
+                max-height: 380px;
+                border-radius: 3.5px;
                 background-color: var(--palette-background-paper);
+                box-shadow: rgba(0, 0, 0, 0.16) 0px 3px 6px, rgba(0, 0, 0, 0.23) 0px 3px 6px;
                 z-index: 1000;
                 bottom: 0px;
                 left: 0px;
@@ -706,12 +718,16 @@ export class SearchTitleDetail extends HTMLElement {
                 top: 0px;
             }
 
+            .search-title-detail:hover{
+                box-shadow: rgba(0, 0, 0, 0.19) 0px 10px 20px, rgba(0, 0, 0, 0.23) 0px 6px 6px;
+            }
+
         </style>
 
         
-        <paper-card class="search-title-detail">
+        <div class="search-title-detail">
         
-        </paper-card>
+        </div>
         `
 
         // test create offer...
