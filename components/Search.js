@@ -493,16 +493,21 @@ export class SearchResultsPage extends HTMLElement {
         if (hit.hasTitle()) {
             if (hit.getTitle().getPoster() != undefined) {
                 // must be getContentUrl here... 
-                posterUrl = hit.getTitle().getPoster().getContenturl()
+                if(hit.getTitle().getPoster().getContenturl().length > 0 ){
+                    posterUrl = hit.getTitle().getPoster().getContenturl()
+                }else{
+                    posterUrl = hit.getTitle().getPoster().getUrl()
+                }
             }
         } else {
             if (hit.getVideo().getPoster() != undefined) {
                 // must be getContentUrl here... 
-               
-                posterUrl = hit.getVideo().getPoster().getContenturl()
-                if(posterUrl.length == 0){
+                if(hit.getVideo().getPoster().getContenturl().length > 0 ){
+                    posterUrl = hit.getVideo().getPoster().getContenturl()
+                }else{
                     posterUrl = hit.getVideo().getPoster().getUrl()
                 }
+               
             }
         }
 
@@ -517,20 +522,25 @@ export class SearchResultsPage extends HTMLElement {
             }
 
             .title-card{
-                margin: 7.5px;
-  
+                margin: 7.5px; 
+                display: flex; 
+                height: 380px; 
+                width: 256px;
             }
 
-            img {
-                max-width: 256px;
-                object-fit: cover; 
+            .title-card img{
+                box-shadow: rgba(0, 0, 0, 0.16) 0px 3px 6px, rgba(0, 0, 0, 0.23) 0px 3px 6px;
+                border: 1px solid var(--palette-action-disabled);
+                border-radius: 3.5px;
             }
+
+            .title-card img:hover{
+                box-shadow: rgba(0, 0, 0, 0.19) 0px 10px 20px, rgba(0, 0, 0, 0.23) 0px 6px 6px;
+             }
 
             /* entire container, keeps perspective */
             .flip-container {
                 perspective: 1000;
-                width: 256px;
-                height: 385.72px;
             }
             
             /* flip the pane when hovered */
@@ -540,8 +550,7 @@ export class SearchResultsPage extends HTMLElement {
 
             .flip-container, .front, .back {
                 width: 256px;
-                height: 385.72px;
-                margin: 1em auto;
+                height: 380px;
             }
 
             /* flip speed goes here */
@@ -557,10 +566,8 @@ export class SearchResultsPage extends HTMLElement {
                 position: absolute;
                 top: 0;
                 left: 0;
-                color: cornSilk;
                 text-align: center;
-                font: 3em/240px 'Helvetica Neue', Helvetica, sans-serif;
-                box-shadow: var(--paper-material-elevation-1_-_box-shadow);
+                
             }
 
             /* front pane, placed above back */
@@ -569,6 +576,14 @@ export class SearchResultsPage extends HTMLElement {
                 /* for firefox 31 */
                 transform: rotateY(0deg);
             }
+
+            .front img {
+                max-width: 256px;
+                max-height: 380px;
+                object-fit: cover;
+             }
+
+  
 
             /* back, initially hidden pane */
             .back {
@@ -715,14 +730,23 @@ export class SearchTitleDetail extends HTMLElement {
             ${theme}
            
             .search-title-detail{
-                position: absolute;
+                position: absolute;               
+                max-width: 256px;
+                max-height: 380px;
+                border-radius: 3.5px;
                 background-color: var(--palette-background-paper);
+                box-shadow: rgba(0, 0, 0, 0.16) 0px 3px 6px, rgba(0, 0, 0, 0.23) 0px 3px 6px;
+                border: 1px solid var(--palette-action-disabled);
                 z-index: 1000;
                 bottom: 0px;
                 left: 0px;
                 right: 0px;
                 top: 0px;
                 
+            }
+
+            .search-title-detail:hover{
+                box-shadow: rgba(0, 0, 0, 0.19) 0px 10px 20px, rgba(0, 0, 0, 0.23) 0px 6px 6px;
             }
 
         </style>
