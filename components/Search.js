@@ -521,6 +521,22 @@ export class SearchResultsPage extends HTMLElement {
                 }
             }
 
+            .title-card{
+                margin: 7.5px; 
+                display: flex; 
+                height: 380px; 
+                width: 256px;
+            }
+
+            .title-card img{
+                box-shadow: rgba(0, 0, 0, 0.16) 0px 3px 6px, rgba(0, 0, 0, 0.23) 0px 3px 6px;
+                border: 1px solid var(--palette-action-disabled);
+                border-radius: 3.5px;
+            }
+
+            .title-card img:hover{
+                box-shadow: rgba(0, 0, 0, 0.19) 0px 10px 20px, rgba(0, 0, 0, 0.23) 0px 6px 6px;
+             }
 
             /* entire container, keeps perspective */
             .flip-container {
@@ -563,15 +579,11 @@ export class SearchResultsPage extends HTMLElement {
 
             .front img {
                 max-width: 256px;
+                max-height: 380px;
                 object-fit: cover;
-                border-radius: 3.5px;
-                box-shadow: rgba(0, 0, 0, 0.16) 0px 3px 6px, rgba(0, 0, 0, 0.23) 0px 3px 6px;
-                border: 1px solid var(--palette-action-disabled);
              }
 
-             .front img:hover{
-                box-shadow: rgba(0, 0, 0, 0.19) 0px 10px 20px, rgba(0, 0, 0, 0.23) 0px 6px 6px;
-             }
+  
 
             /* back, initially hidden pane */
             .back {
@@ -580,7 +592,7 @@ export class SearchResultsPage extends HTMLElement {
 
         </style>
 
-        <div class="title-card" style="margin: 7.5px; display: flex; overflow: hidden; height: 380px; width: 256px;" slot="mosaic" id="hit-div-mosaic-${hit.getIndex()}">
+        <div class="title-card" slot="mosaic" id="hit-div-mosaic-${hit.getIndex()}">
             <div class="flip-container" ontouchstart="this.classList.toggle('hover');">
                 <div class="flipper">
                     <div class="front">
