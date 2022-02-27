@@ -566,6 +566,7 @@ export class SearchResultsPage extends HTMLElement {
                 object-fit: cover;
                 border-radius: 3.5px;
                 box-shadow: rgba(0, 0, 0, 0.16) 0px 3px 6px, rgba(0, 0, 0, 0.23) 0px 3px 6px;
+                border: 1px solid var(--palette-action-disabled);
              }
 
              .front img:hover{
@@ -711,6 +712,7 @@ export class SearchTitleDetail extends HTMLElement {
                 border-radius: 3.5px;
                 background-color: var(--palette-background-paper);
                 box-shadow: rgba(0, 0, 0, 0.16) 0px 3px 6px, rgba(0, 0, 0, 0.23) 0px 3px 6px;
+                border: 1px solid var(--palette-action-disabled);
                 z-index: 1000;
                 bottom: 0px;
                 left: 0px;
