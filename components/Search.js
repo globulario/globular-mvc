@@ -114,7 +114,6 @@ export class SearchBar extends HTMLElement {
                 font-size: 16px;
                 height: var(--searchbox-height);
                 opacity: 1;
-                position: relative;
                 transition: none;
                 color: var(--cr-primary-text-color);
                 background-color: var(--palette-background-paper);
@@ -505,21 +504,99 @@ export class SearchResultsPage extends HTMLElement {
 
         let html = `
         <style>
-        @media only screen and (min-width: 1800px){
-            globular-search-results {
-                grid-row-start: 1;
-                grid-column-start: 1;
-                grid-column-end: 18;
+            @media only screen and (min-width: 1800px){
+                globular-search-results {
+                    grid-row-start: 1;
+                    grid-column-start: 1;
+                    grid-column-end: 18;
+                }
             }
-         }
+
+            .title-card{
+                margin: 7.5px;
+  
+            }
+
+            img {
+                max-width: 256px;
+                object-fit: cover; 
+            }
+
+            /* entire container, keeps perspective */
+            .flip-container {
+                perspective: 1000;
+                width: 256px;
+                height: 385.72px;
+            }
+            
+            /* flip the pane when hovered */
+            .flip-container:hover .flipper, .flip-container.hover .flipper {
+                transform: rotateY(180deg);
+            }
+
+            .flip-container, .front, .back {
+                width: 256px;
+                height: 385.72px;
+                margin: 1em auto;
+            }
+
+            /* flip speed goes here */
+            .flipper {
+                transition: 0.6s;
+                transform-style: preserve-3d;
+                position: relative;
+            }
+
+            /* hide back of pane during swap */
+            .front, .back {
+                backface-visibility: hidden;
+                position: absolute;
+                top: 0;
+                left: 0;
+                color: cornSilk;
+                text-align: center;
+                font: 3em/240px 'Helvetica Neue', Helvetica, sans-serif;
+                box-shadow: var(--paper-material-elevation-1_-_box-shadow);
+            }
+
+            /* front pane, placed above back */
+            .front {
+                z-index: 2;
+                /* for firefox 31 */
+                transform: rotateY(0deg);
+            }
+
+            /* back, initially hidden pane */
+            .back {
+                transform: rotateY(180deg);
+            }
+
         </style>
-        <paper-card slot="mosaic" id="hit-div-mosaic-${hit.getIndex()}">
-            <img src="${posterUrl}"></img>
-        </paper-card>
+
+        <div class="title-card" slot="mosaic" id="hit-div-mosaic-${hit.getIndex()}">
+            <div class="flip-container" ontouchstart="this.classList.toggle('hover');">
+                <div class="flipper">
+                    <div class="front">
+                        <!-- front content -->
+                        <img src="${posterUrl}"></img>
+                    </div>
+                    <div class="back">
+                        <globular-search-title-detail></globular-search-title-detail>
+                    </div>
+                </div>
+            </div>
+        </div>
         `
 
         let range = document.createRange()
         this.appendChild(range.createContextualFragment(html))
+        this.detailView = this.querySelector("globular-search-title-detail")
+        if (hit.hasTitle()) {
+            this.detailView.setTitle(hit.getTitle())
+        } else {
+            this.detailView.setVideo(hit.getVideo())
+        }
+
 
     }
 
@@ -603,3 +680,52 @@ export class SearchResultsPage extends HTMLElement {
 }
 
 customElements.define('globular-search-results-page', SearchResultsPage)
+
+/**
+ * Search Detail Title 
+ */
+export class SearchTitleDetail extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor() {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+            ${theme}
+           
+            .search-title-detail{
+                position: absolute;
+                background-color: var(--palette-background-paper);
+                z-index: 1000;
+                bottom: 0px;
+                left: 0px;
+                right: 0px;
+                top: 0px;
+            }
+
+        </style>
+
+        
+        <paper-card class="search-title-detail">
+        
+        </paper-card>
+        `
+
+        // test create offer...
+    }
+
+    setTitle(title) {
+
+    }
+
+    setVideo(video) {
+
+    }
+}
+
+customElements.define('globular-search-title-detail', SearchTitleDetail)

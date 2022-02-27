@@ -655,11 +655,9 @@ globular-search-results-page img.cover {
 */
 globular-search-results-page paper-card {
    margin: 7.5px;
-   background-color: transparent;
    display: flex;
    width: 256px;
    height: 385.73px;
-   overflow: hidden;
 }
 
 .hit-div{
