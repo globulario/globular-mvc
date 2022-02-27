@@ -498,7 +498,11 @@ export class SearchResultsPage extends HTMLElement {
         } else {
             if (hit.getVideo().getPoster() != undefined) {
                 // must be getContentUrl here... 
+               
                 posterUrl = hit.getVideo().getPoster().getContenturl()
+                if(posterUrl.length == 0){
+                    posterUrl = hit.getVideo().getPoster().getUrl()
+                }
             }
         }
 
@@ -580,8 +584,8 @@ export class SearchResultsPage extends HTMLElement {
                         <!-- front content -->
                         <img src="${posterUrl}"></img>
                     </div>
-                    <div class="back">
-                        <globular-search-title-detail></globular-search-title-detail>
+                    <div id="back-container" class="back">
+                     <globular-search-title-detail id="search-title-${hit.getIndex()}"></globular-search-title-detail>   
                     </div>
                 </div>
             </div>
@@ -590,14 +594,26 @@ export class SearchResultsPage extends HTMLElement {
 
         let range = document.createRange()
         this.appendChild(range.createContextualFragment(html))
-        this.detailView = this.querySelector("globular-search-title-detail")
+
+        let infoDisplayMosaic = new InformationsManager()       
         if (hit.hasTitle()) {
+            infoDisplayMosaic.setTitlesInformation([hit.getTitle()])
+        } else {
+            infoDisplayMosaic.setVideosInformation([hit.getVideo()])
+        }
+        infoDisplayMosaic.hideHeader()
+
+        
+       
+         this.detailView = this.querySelector(`#search-title-${hit.getIndex()}`)
+         this.detailView.appendChild(infoDisplayMosaic)
+/*         if (hit.hasTitle()) {
             this.detailView.setTitle(hit.getTitle())
         } else {
             this.detailView.setVideo(hit.getVideo())
-        }
+        }  */
 
-
+        console.log("==========>",this.detailView.querySelector("globular-informations-manager"))
     }
 
     displayListHit(hit) {
@@ -706,13 +722,14 @@ export class SearchTitleDetail extends HTMLElement {
                 left: 0px;
                 right: 0px;
                 top: 0px;
+                
             }
 
         </style>
 
         
         <paper-card class="search-title-detail">
-        
+        <slot> </slot>
         </paper-card>
         `
 
