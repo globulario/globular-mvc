@@ -521,21 +521,10 @@ export class SearchResultsPage extends HTMLElement {
                 }
             }
 
-            .title-card{
-                margin: 7.5px;
-  
-            }
-
-            img {
-                max-width: 256px;
-                object-fit: cover; 
-            }
 
             /* entire container, keeps perspective */
             .flip-container {
                 perspective: 1000;
-                width: 256px;
-                height: 385.72px;
             }
             
             /* flip the pane when hovered */
@@ -546,7 +535,6 @@ export class SearchResultsPage extends HTMLElement {
             .flip-container, .front, .back {
                 width: 256px;
                 height: 385.72px;
-                margin: 1em auto;
             }
 
             /* flip speed goes here */
@@ -562,9 +550,7 @@ export class SearchResultsPage extends HTMLElement {
                 position: absolute;
                 top: 0;
                 left: 0;
-                color: cornSilk;
                 text-align: center;
-                font: 3em/240px 'Helvetica Neue', Helvetica, sans-serif;
                 box-shadow: var(--paper-material-elevation-1_-_box-shadow);
             }
 
@@ -582,7 +568,7 @@ export class SearchResultsPage extends HTMLElement {
 
         </style>
 
-        <div class="title-card" slot="mosaic" id="hit-div-mosaic-${hit.getIndex()}">
+        <div class="title-card" style="margin: 7.5px; display: flex;" slot="mosaic" id="hit-div-mosaic-${hit.getIndex()}">
             <div class="flip-container" ontouchstart="this.classList.toggle('hover');">
                 <div class="flipper">
                     <div class="front">
@@ -708,7 +694,10 @@ export class SearchTitleDetail extends HTMLElement {
             ${theme}
            
             .search-title-detail{
-                position: absolute;
+                position: absolute;               
+                max-width: 256px;
+                max-height: 385.72px;
+
                 background-color: var(--palette-background-paper);
                 z-index: 1000;
                 bottom: 0px;
