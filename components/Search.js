@@ -1,8 +1,8 @@
 import '@polymer/iron-icons/iron-icons.js';
+import '@polymer/iron-icons/av-icons'
 import '@polymer/paper-icon-button/paper-icon-button.js';
-import { searchDocuments } from "globular-web-client/api";
-import { Application } from 'globular-web-client/resource/resource_pb';
-import { SearchTitlesRequest } from 'globular-web-client/title/title_pb';
+import { Application } from '../Application';
+import { GetTitleFilesRequest, SearchTitlesRequest } from 'globular-web-client/title/title_pb';
 
 import { Model } from '../Model';
 import { theme } from "./Theme";
@@ -493,21 +493,21 @@ export class SearchResultsPage extends HTMLElement {
         if (hit.hasTitle()) {
             if (hit.getTitle().getPoster() != undefined) {
                 // must be getContentUrl here... 
-                if(hit.getTitle().getPoster().getContenturl().length > 0 ){
+                if (hit.getTitle().getPoster().getContenturl().length > 0) {
                     posterUrl = hit.getTitle().getPoster().getContenturl()
-                }else{
+                } else {
                     posterUrl = hit.getTitle().getPoster().getUrl()
                 }
             }
         } else {
             if (hit.getVideo().getPoster() != undefined) {
                 // must be getContentUrl here... 
-                if(hit.getVideo().getPoster().getContenturl().length > 0 ){
+                if (hit.getVideo().getPoster().getContenturl().length > 0) {
                     posterUrl = hit.getVideo().getPoster().getContenturl()
-                }else{
+                } else {
                     posterUrl = hit.getVideo().getPoster().getUrl()
                 }
-               
+
             }
         }
 
@@ -609,26 +609,24 @@ export class SearchResultsPage extends HTMLElement {
 
         let range = document.createRange()
         this.appendChild(range.createContextualFragment(html))
+        let detailView = this.querySelector(`#search-title-${hit.getIndex()}`)
 
-        let infoDisplayMosaic = new InformationsManager()       
         if (hit.hasTitle()) {
-            infoDisplayMosaic.setTitlesInformation([hit.getTitle()])
+            detailView.setTitle(hit.getTitle())
         } else {
-            infoDisplayMosaic.setVideosInformation([hit.getVideo()])
+            detailView.setVideo(hit.getVideo())
         }
-        infoDisplayMosaic.hideHeader()
 
-        
-       
-         this.detailView = this.querySelector(`#search-title-${hit.getIndex()}`)
-         this.detailView.appendChild(infoDisplayMosaic)
-/*         if (hit.hasTitle()) {
-            this.detailView.setTitle(hit.getTitle())
-        } else {
-            this.detailView.setVideo(hit.getVideo())
-        }  */
+        this.querySelector(`#hit-div-mosaic-${hit.getIndex()}`).onmouseover = (evt)=>{
+            evt.stopPropagation()
+            detailView.playPreview()
+        }
 
-        console.log("==========>",this.detailView.querySelector("globular-informations-manager"))
+        this.querySelector(`#hit-div-mosaic-${hit.getIndex()}`).onmouseout = (evt)=>{
+            evt.stopPropagation()
+            detailView.pausePreview()
+        }
+
     }
 
     displayListHit(hit) {
@@ -723,6 +721,7 @@ export class SearchTitleDetail extends HTMLElement {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
+        this.title_ = null;
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -742,6 +741,8 @@ export class SearchTitleDetail extends HTMLElement {
                 left: 0px;
                 right: 0px;
                 top: 0px;
+                display: flex;
+                flex-direction: column;
                 
             }
 
@@ -749,23 +750,96 @@ export class SearchTitleDetail extends HTMLElement {
                 box-shadow: rgba(0, 0, 0, 0.19) 0px 10px 20px, rgba(0, 0, 0, 0.23) 0px 6px 6px;
             }
 
+            .video-div{
+                
+            }
+
+            .video-div video{
+                max-width: 256px;
+            }
+
+            .title-title-div{
+                
+            }
+
         </style>
 
         
-        <paper-card class="search-title-detail">
-        <slot> </slot>
-        </paper-card>
+        <div class="search-title-detail">
+            <div class="video-div">
+                <div class="title-title-div"></div>
+                <video></video>
+            </div>
+
+            <div style="display: flex;">
+                <paper-icon-button icon="av:play-circle-filled"></paper-icon-button>
+                <paper-icon-button icon="av:icons:add-circle"></paper-icon-button>
+                <span style="flex-grow: 1;"></span>
+                <paper-icon-button icon="icons:arrow-drop-down-circle"></paper-icon-button>
+            </div>
+            <div>
+
+            </div>
+        </div>
         `
 
         // test create offer...
+        this.video = this.shadowRoot.querySelector("video")
     }
 
     setTitle(title) {
+
+        this.video.src = ""
+        this.video.autoplay = false
+        this.video.controls = false
+        this.title_ = title;
+
+        let url = window.location.protocol + "//" + window.location.hostname + ":"
+        if (Application.globular.config.Protocol == "https") {
+            url += Application.globular.config.PortHttps
+        } else {
+            url += Application.globular.config.PortHttp
+        }
+
+        // paly only the first file...
+        let rqst = new GetTitleFilesRequest
+        rqst.setTitleid(title.getId())
+        let indexPath = Application.globular.config.DataPath + "/search/titles"
+        rqst.setIndexpath(indexPath)
+
+        Model.globular.titleService.getTitleFiles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+            .then(rsp => {
+                if (rsp.getFilepathsList().length > 0) {
+                    let path = rsp.getFilepathsList().pop()
+
+                    // creste a clean url 
+                    path.split("/").forEach(item => {
+                        url += "/" + encodeURIComponent(item.trim())
+                    })
+
+                    // Set the path and play.
+                    this.video.src = url
+                    this.video.src += "?application=" + Model.application
+                    if (localStorage.getItem("user_token") != undefined) {
+                        this.video.src += "&token=" + localStorage.getItem("user_token")
+                    }
+                }
+            })
 
     }
 
     setVideo(video) {
 
+    }
+
+    playPreview(){
+        console.log("play video ", this.title_.getName())
+        this.video.play()
+    }
+
+    pausePreview(){
+        console.log("stop video ", this.title_.getName())
+        this.video.pause()
     }
 }
 
