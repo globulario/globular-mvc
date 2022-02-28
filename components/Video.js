@@ -47,19 +47,20 @@ export class VideoPlayer extends HTMLElement {
         </div>
         `
         // <!--video id="player" controls autoplay></video-->
-        
+
         // give the focus to the input.
         let container = this.shadowRoot.querySelector("#container")
-        this.video =  document.createElement("video")// this.shadowRoot.querySelector("video")
+        this.video = document.createElement("video")// this.shadowRoot.querySelector("video")
         this.video.id = "player"
         this.video.autoplay = true
         this.video.controls = true
 
         this.appendChild(this.video)
-        
+
         // Plyr give a nice visual to the video player.
         // TODO set the preview and maybe quality bitrate if possible...
-        const player = new Plyr(this.video);
+        // So here I will get the vtt file if one exist...
+        this.player = new Plyr(this.video);
 
         // Get the parent size and set the max width of te
         window.addEventListener("resize", () => {
@@ -68,10 +69,21 @@ export class VideoPlayer extends HTMLElement {
     }
 
     connectedCallback() {
-  
+
     }
 
     play(path) {
+
+
+        let thumbnailPath = path
+        // /users/sa/Fucking Her Way to Fame.mp4
+        // /users/sa/.hidden/Fucking Her Way to Fame/__timeline__/thumbnails.vtt
+        thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("."))
+        thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/__timeline__/thumbnails.vtt"
+        console.log(thumbnailPath)
+        // this.player
+        this.player.setPreviewThumbnails({ enabled: "true", src: thumbnailPath })
+
 
         if (!this.video.paused && this.video.currentSrc.endsWith(path)) {
             // Do nothing...
@@ -82,6 +94,7 @@ export class VideoPlayer extends HTMLElement {
             return
         }
 
+
         // set the complete url.
         let url = window.location.protocol + "//" + window.location.hostname + ":"
         if (Application.globular.config.Protocol == "https") {
@@ -90,8 +103,8 @@ export class VideoPlayer extends HTMLElement {
             url += Application.globular.config.PortHttp
         }
 
-        path.split("/").forEach(item=>{
-            url += "/" +  encodeURIComponent(item.trim())
+        path.split("/").forEach(item => {
+            url += "/" + encodeURIComponent(item.trim())
         })
 
         // Set the path and play.

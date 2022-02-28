@@ -2,8 +2,6 @@ import { theme } from "./Theme";
 import { Model } from '../Model';
 import { Application } from "../Application";
 import { DeleteTitleRequest, DeleteVideoRequest, GetTitleFilesRequest } from "globular-web-client/title/title_pb";
-import { ConversationServiceClient } from "globular-web-client/conversation/conversation_grpc_web_pb";
-import { GetFileInfoRequest } from "globular-web-client/admin/admin_pb";
 import { File } from "../File";
 import { VideoPreview } from "./File";
 import { ApplicationView } from "../ApplicationView";
@@ -328,7 +326,7 @@ export class InformationsManager extends HTMLElement {
                 <h3 class="title-sub-title-div">          
                     <span id="title-type"><span>Genre: </span>${genres}</span>
                 </h3>    
-                <span id="title-duration" style="padding-left: 10px;"><span>Duration: </span> ${video.getDuration()} min.</span>
+                <span id="title-duration" style="padding-left: 10px;"><span>Duration: </span> ${video.getDuration()}</span>
             </span>
         </h3>
         `
