@@ -143,6 +143,13 @@ function _readDir(path, callback, errorCallback) {
 
 }
 
+function getHiddenFiles(path, callback) {
+    let index = path.lastIndexOf("/")
+    let hiddenFilePath = path.substring(0, index) + "/.hidden/" + path.substring(index + 1, path.lastIndexOf(".")) + "/__preview__"
+    console.log("---------> read hidden folder... ", hiddenFilePath)
+    _readDir(hiddenFilePath, callback, err => { console.log(err); callback(null); })
+}
+
 function _publishSetDirEvent(path, file_explorer_) {
     file_explorer_.displayWaitMessage("load " + path)
     _readDir(path, (dir) => {
@@ -468,7 +475,7 @@ export class FilesView extends HTMLElement {
                 let rqst = new GetFileTitlesRequest
                 rqst.setIndexpath(Model.globular.config.DataPath + "/search/titles")
                 rqst.setFilepath(file.path)
-                
+
                 Model.globular.titleService.getFileTitles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
                     .then(rsp => {
                         callback(rsp.getTitles().getTitlesList())
@@ -483,7 +490,7 @@ export class FilesView extends HTMLElement {
                 let rqst = new GetFileVideosRequest
                 rqst.setIndexpath(Model.globular.config.DataPath + "/search/videos")
                 rqst.setFilepath(file.path)
-                
+
                 Model.globular.titleService.getFileVideos(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
                     .then(rsp => {
                         callback(rsp.getVideos().getVideosList())
@@ -1037,16 +1044,16 @@ export class FilesView extends HTMLElement {
                         if (status.code === 0) {
                             Model.eventHub.publish("refresh_dir_evt", this.__dir__.path, false);
                             Model.eventHub.publish("__upload_link_event__", { pid: pid, path: this.__dir__.path, infos: "", done: true, lnk: lnk }, true);
-        
+
                             // Now I will index the file...
                             var xmlhttp = new XMLHttpRequest();
 
                             xmlhttp.onreadystatechange = () => {
-                              if (this.readyState == 4 && (this.status == 201 || this.status == 200)) {
-                                console.log("file" + this.__dir__.path + "/" + fileName + "was indexed!")
-                              } else if (this.readyState == 4) {
-                                console.log("fail to index file " + this.__dir__.path + "/" + fileName + " with infos from" + url + " with error status " + this.status)
-                              }
+                                if (this.readyState == 4 && (this.status == 201 || this.status == 200)) {
+                                    console.log("file" + this.__dir__.path + "/" + fileName + "was indexed!")
+                                } else if (this.readyState == 4) {
+                                    console.log("fail to index file " + this.__dir__.path + "/" + fileName + " with infos from" + url + " with error status " + this.status)
+                                }
                             };
 
                             let url_ = window.location.protocol + "//" + window.location.hostname + ":"
@@ -1065,7 +1072,7 @@ export class FilesView extends HTMLElement {
                             url_ += "&video-path=" + this.__dir__.path + "/" + fileName
                             url_ += "&video-url=" + url;
                             url_ += "&index-path=" + Application.globular.config.DataPath + "/search/videos"
-                          
+
                             xmlhttp.open("GET", url_, true);
                             xmlhttp.setRequestHeader("domain", Model.domain);
                             xmlhttp.send();
@@ -1682,85 +1689,82 @@ export class FilesIconView extends FilesView {
 
                     folderIcon.draggable = false
 
-                } else if (fileType == "video" && hiddens[parentPath] != undefined) {
+                } else if (fileType == "video") {
                     /** In that case I will display the vieo preview. */
-                    let file_ = hiddens[parentPath];
-
-                    for (var j = 0; j < file_.files.length; j++) {
-                        let file__ = file_.files[j]
-                        if (file__.name == "__preview__") {
-                            let files__ = file__.files;
-                            let preview = new VideoPreview(file.path, files__, h, () => {
-                                if (preview.width > 0 && preview.height > 0) {
-                                    w = (preview.width / preview.height) * h
-                                }
-                                fileNameSpan.style.maxWidth = w + "px";
-                            })
-
-                            // keep the explorer link...
-                            preview._file_explorer_ = this._file_explorer_
-                            preview.name = file.name;
-                            preview.onpreview = () => {
-                                let previews = this.div.querySelectorAll("globular-video-preview")
-                                previews.forEach(p => {
-                                    // stop all other preview...
-                                    if (preview.name != p.name) {
-                                        p.stopPreview()
-                                    }
-                                })
+                    getHiddenFiles(file.path, previewDir => {
+                        let h = 100;
+                        let w = 180;
+                        let preview = new VideoPreview(file.path, previewDir._files, h, () => {
+                            if (preview.width > 0 && preview.height > 0) {
+                                w = (preview.width / preview.height) * h
                             }
+                            fileNameSpan.style.maxWidth = w + "px";
+                        })
 
-                            fileIconDiv.insertBefore(preview, fileIconDiv.firstChild)
+                        // keep the explorer link...
+                        preview._file_explorer_ = this._file_explorer_
+                        preview.name = file.name;
+                        preview.onpreview = () => {
+                            let previews = this.div.querySelectorAll("globular-video-preview")
+                            previews.forEach(p => {
+                                // stop all other preview...
+                                if (preview.name != p.name) {
+                                    p.stopPreview()
+                                }
+                            })
+                        }
 
-                            preview.draggable = false
+                        fileIconDiv.insertBefore(preview, fileIconDiv.firstChild)
 
-                            fileIconDiv.ondrop = (evt) => {
-                                evt.stopPropagation();
-                                evt.preventDefault()
-                                let url = evt.dataTransfer.getData("Url");
-                                if (url.startsWith("https://www.imdb.com/title")) {
+                        preview.draggable = false
 
-                                    let matchs = url.match(/tt\d{5,8}/);
-                                    if (matchs.length == 0) {
-                                        return // nothing to todo...
+                        fileIconDiv.ondrop = (evt) => {
+                            evt.stopPropagation();
+                            evt.preventDefault()
+                            let url = evt.dataTransfer.getData("Url");
+                            if (url.startsWith("https://www.imdb.com/title")) {
+
+                                let matchs = url.match(/tt\d{5,8}/);
+                                if (matchs.length == 0) {
+                                    return // nothing to todo...
+                                }
+
+                                // That function will be use to asscociate file with imdb information.
+                                let getImdbInfo = (id, callback, errorcallback) => {
+                                    let query = window.location.protocol + "//" + window.location.hostname + ":"
+                                    if (Application.globular.config.Protocol == "https") {
+                                        query += Application.globular.config.PortHttps
+                                    } else {
+                                        query += Application.globular.config.PortHttp
                                     }
 
-                                    // That function will be use to asscociate file with imdb information.
-                                    let getImdbInfo = (id, callback, errorcallback) => {
-                                        let query = window.location.protocol + "//" + window.location.hostname + ":"
-                                        if (Application.globular.config.Protocol == "https") {
-                                            query += Application.globular.config.PortHttps
-                                        } else {
-                                            query += Application.globular.config.PortHttp
+                                    query += "/imdb_title?id=" + id
+
+                                    var xmlhttp = new XMLHttpRequest();
+
+                                    xmlhttp.onreadystatechange = function () {
+                                        if (this.readyState == 4 && (this.status == 201 || this.status == 200)) {
+                                            var obj = JSON.parse(this.responseText);
+                                            callback(obj);
+                                        } else if (this.readyState == 4) {
+                                            errorcallback("fail to get info from query " + query + " status " + this.status)
                                         }
+                                    };
+                                    /* TODO see if we protected it...
+                                      query += "?domain=" + Model.domain // application is not know at this time...
+                                      if (localStorage.getItem("user_token") != undefined) {
+                                          query += "&token=" + localStorage.getItem("user_token")
+                                      }
+                                    */
+                                    xmlhttp.open("GET", query, true);
+                                    xmlhttp.setRequestHeader("domain", Model.domain);
 
-                                        query += "/imdb_title?id=" + id
+                                    xmlhttp.send();
+                                }
 
-                                        var xmlhttp = new XMLHttpRequest();
-
-                                        xmlhttp.onreadystatechange = function () {
-                                            if (this.readyState == 4 && (this.status == 201 || this.status == 200)) {
-                                                var obj = JSON.parse(this.responseText);
-                                                callback(obj);
-                                            } else if (this.readyState == 4) {
-                                                errorcallback("fail to get info from query " + query + " status " + this.status)
-                                            }
-                                        };
-                                        /* TODO see if we protected it...
-                                          query += "?domain=" + Model.domain // application is not know at this time...
-                                          if (localStorage.getItem("user_token") != undefined) {
-                                              query += "&token=" + localStorage.getItem("user_token")
-                                          }
-                                        */
-                                        xmlhttp.open("GET", query, true);
-                                        xmlhttp.setRequestHeader("domain", Model.domain);
-
-                                        xmlhttp.send();
-                                    }
-
-                                    getImdbInfo(matchs[0], (info) => {
-                                        // So here I will get the information from imdb and propose to assciate it with the file.
-                                        let toast = ApplicationView.displayMessage(`
+                                getImdbInfo(matchs[0], (info) => {
+                                    // So here I will get the information from imdb and propose to assciate it with the file.
+                                    let toast = ApplicationView.displayMessage(`
                                         <style>
                                             ${theme}
                                         </style>
@@ -1779,31 +1783,29 @@ export class FilesIconView extends FilesView {
                                         `, 60 * 1000)
 
 
-                                        let cancelBtn = toast.el.querySelector("#imdb-lnk-cancel-button")
-                                        cancelBtn.onclick = () => {
-                                            toast.dismiss();
-                                        }
+                                    let cancelBtn = toast.el.querySelector("#imdb-lnk-cancel-button")
+                                    cancelBtn.onclick = () => {
+                                        toast.dismiss();
+                                    }
 
-                                        toast.el.querySelector("#title-type").innerHTML = info.Type
-                                        toast.el.querySelector("#title-name").innerHTML = info.Name
-                                        toast.el.querySelector("#title-name").href = info.URL
-                                        toast.el.querySelector("#title-poster").src = info.Poster.ContentURL
-                                        toast.el.querySelector("#file-path").innerHTML = file.name
+                                    toast.el.querySelector("#title-type").innerHTML = info.Type
+                                    toast.el.querySelector("#title-name").innerHTML = info.Name
+                                    toast.el.querySelector("#title-name").href = info.URL
+                                    toast.el.querySelector("#title-poster").src = info.Poster.ContentURL
+                                    toast.el.querySelector("#file-path").innerHTML = file.name
 
-                                        let okBtn = toast.el.querySelector("#imdb-lnk-ok-button")
-                                        okBtn.onclick = () => {
-                                            this.setFileInfo(info, file)
-                                            toast.dismiss();
-                                        }
+                                    let okBtn = toast.el.querySelector("#imdb-lnk-ok-button")
+                                    okBtn.onclick = () => {
+                                        this.setFileInfo(info, file)
+                                        toast.dismiss();
+                                    }
 
 
-                                    }, err => ApplicationView.displayMessage(err, 3000))
-                                }
+                                }, err => ApplicationView.displayMessage(err, 3000))
                             }
                         }
+                    })
 
-                        break;
-                    }
                 } else if (file.thumbnail != undefined) {
                     /** Display the thumbnail. */
                     let img = document.createElement("img")
@@ -3359,9 +3361,9 @@ export class FileExplorer extends HTMLElement {
                     this.listeners["display_file_infos_event"] = uuid;
                 }, (file) => {
 
-                    if(file.titles != undefined){
+                    if (file.titles != undefined) {
                         this.informationManager.setTitlesInformation(file.titles)
-                    }else if(file.videos != undefined){
+                    } else if (file.videos != undefined) {
                         this.informationManager.setVideosInformation(file.videos)
                     }
 
@@ -3990,7 +3992,7 @@ export class VideoPreview extends HTMLElement {
 
         this.container.onmouseout = (evt) => {
             evt.stopPropagation();
-            if(!this.__show_play_btn__){
+            if (!this.__show_play_btn__) {
                 this.playBtn.style.display = "none";
             }
             if (this.interval != null && !is_over_play_btn) {
@@ -4056,7 +4058,7 @@ export class VideoPreview extends HTMLElement {
      * Play video
      */
     play() {
-        if(this._file_explorer_!=undefined){
+        if (this._file_explorer_ != undefined) {
             Model.eventHub.publish("__play_video__", { path: this.path, file_explorer_id: this._file_explorer_.id }, true)
         }
 

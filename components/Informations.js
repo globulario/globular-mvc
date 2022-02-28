@@ -131,9 +131,9 @@ function getHiddenFiles(path, callback) {
 // Create the video preview...
 function getVideoPreview(parent, path, name, callback) {
     getHiddenFiles(path, previewDir => {
-        let h = 100;
-        let w = 180;
-        let preview = new VideoPreview(path, previewDir._files, h, () => {
+        /*let h = 100;
+        let w = 180;*/
+        let preview = new VideoPreview(path, previewDir._files, 64, () => {
             if (preview.width > 0 && preview.height > 0) {
                 w = (preview.width / preview.height) * h
             }
