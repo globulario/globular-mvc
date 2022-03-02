@@ -131,9 +131,15 @@ function getHiddenFiles(path, callback) {
 // Create the video preview...
 function getVideoPreview(parent, path, name, callback) {
     getHiddenFiles(path, previewDir => {
-        /*let h = 100;
-        let w = 180;*/
-        let preview = new VideoPreview(path, previewDir._files, 64, () => {
+
+        let files = []
+        if(previewDir){
+            if(previewDir._files){
+                files = previewDir._files
+            }
+        }
+
+        let preview = new VideoPreview(path, files, 64, () => {
             if (preview.width > 0 && preview.height > 0) {
                 w = (preview.width / preview.height) * h
             }
@@ -486,6 +492,11 @@ export class InformationsManager extends HTMLElement {
         this.shadowRoot.querySelector("#title-name").innerHTML = title.getName();
         this.shadowRoot.querySelector("#title-type").innerHTML = title.getType();
         this.shadowRoot.querySelector("#title-year").innerHTML = title.getYear();
+        if(title.getType() == "TVEpisode"){
+            if(title.getSeason()>0 && title.getEpisode()>0){
+                this.shadowRoot.querySelector("#title-year").innerHTML =`<span>${title.getYear()}</span>&middot<span>S${title.getSeason()}</span>&middot<span>E${title.getEpisode()}</span>`
+            }
+        }
         this.shadowRoot.querySelector("#title-duration").innerHTML = title.getDuration();
 
         let posterUrl = ""

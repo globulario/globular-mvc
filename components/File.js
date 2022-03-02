@@ -478,6 +478,7 @@ export class FilesView extends HTMLElement {
 
                 Model.globular.titleService.getFileTitles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
                     .then(rsp => {
+                        console.log(rsp.getTitles().getTitlesList())
                         callback(rsp.getTitles().getTitlesList())
                     })
                     .catch(err => {
@@ -892,10 +893,6 @@ export class FilesView extends HTMLElement {
         let lnk = evt.dataTransfer.getData('text/html');
         if (evt.dataTransfer.getData("Url").length > 0) {
             // Here we got an url...
-            let url = evt.dataTransfer.getData("Url");
-            let root = Model.globular.config.DataPath
-
-            // Depending of your need... or the hour of the day.
             if (url.endsWith(".torrent") || url.startsWith("magnet:")) {
                 // there is the way to install the torrent client on the server side.
                 // https://www.maketecheasier.com/how-to-download-torrents-from-the-command-line-in-ubuntu/
@@ -1692,8 +1689,8 @@ export class FilesIconView extends FilesView {
                 } else if (fileType == "video") {
                     /** In that case I will display the vieo preview. */
                     getHiddenFiles(file.path, previewDir => {
-                        let h = 100;
-                        let w = 180;
+                        let h = 72;
+                        let w = 128;
                         let preview = new VideoPreview(file.path, previewDir._files, h, () => {
                             if (preview.width > 0 && preview.height > 0) {
                                 w = (preview.width / preview.height) * h
@@ -1723,85 +1720,7 @@ export class FilesIconView extends FilesView {
                             evt.preventDefault()
                             let url = evt.dataTransfer.getData("Url");
                             if (url.startsWith("https://www.imdb.com/title")) {
-
-                                let matchs = url.match(/tt\d{5,8}/);
-                                if (matchs.length == 0) {
-                                    return // nothing to todo...
-                                }
-
-                                // That function will be use to asscociate file with imdb information.
-                                let getImdbInfo = (id, callback, errorcallback) => {
-                                    let query = window.location.protocol + "//" + window.location.hostname + ":"
-                                    if (Application.globular.config.Protocol == "https") {
-                                        query += Application.globular.config.PortHttps
-                                    } else {
-                                        query += Application.globular.config.PortHttp
-                                    }
-
-                                    query += "/imdb_title?id=" + id
-
-                                    var xmlhttp = new XMLHttpRequest();
-
-                                    xmlhttp.onreadystatechange = function () {
-                                        if (this.readyState == 4 && (this.status == 201 || this.status == 200)) {
-                                            var obj = JSON.parse(this.responseText);
-                                            callback(obj);
-                                        } else if (this.readyState == 4) {
-                                            errorcallback("fail to get info from query " + query + " status " + this.status)
-                                        }
-                                    };
-                                    /* TODO see if we protected it...
-                                      query += "?domain=" + Model.domain // application is not know at this time...
-                                      if (localStorage.getItem("user_token") != undefined) {
-                                          query += "&token=" + localStorage.getItem("user_token")
-                                      }
-                                    */
-                                    xmlhttp.open("GET", query, true);
-                                    xmlhttp.setRequestHeader("domain", Model.domain);
-
-                                    xmlhttp.send();
-                                }
-
-                                getImdbInfo(matchs[0], (info) => {
-                                    // So here I will get the information from imdb and propose to assciate it with the file.
-                                    let toast = ApplicationView.displayMessage(`
-                                        <style>
-                                            ${theme}
-                                        </style>
-                                        <div id="select-media-dialog">
-                                            <div>Your about to associate <span id="title-type" style="max-width: 300px;"></span> <a id="title-name" target="_blank"></a></div>
-                                            <div>with file <span style="font-style: italic;" id="file-path"></span></div>
-                                            <div style="display: flex; flex-direction: column; justify-content: center;">
-                                                <img style="width: 185.31px; align-self: center; padding-top: 10px; padding-bottom: 15px;" id="title-poster"> </img>
-                                            </div>
-                                            <div>Is that what you want to do? </div>
-                                            <div style="display: flex; justify-content: flex-end;">
-                                                <paper-button id="imdb-lnk-ok-button">Ok</paper-button>
-                                                <paper-button id="imdb-lnk-cancel-button">Cancel</paper-button>
-                                            </div>
-                                        </div>
-                                        `, 60 * 1000)
-
-
-                                    let cancelBtn = toast.el.querySelector("#imdb-lnk-cancel-button")
-                                    cancelBtn.onclick = () => {
-                                        toast.dismiss();
-                                    }
-
-                                    toast.el.querySelector("#title-type").innerHTML = info.Type
-                                    toast.el.querySelector("#title-name").innerHTML = info.Name
-                                    toast.el.querySelector("#title-name").href = info.URL
-                                    toast.el.querySelector("#title-poster").src = info.Poster.ContentURL
-                                    toast.el.querySelector("#file-path").innerHTML = file.name
-
-                                    let okBtn = toast.el.querySelector("#imdb-lnk-ok-button")
-                                    okBtn.onclick = () => {
-                                        this.setFileInfo(info, file)
-                                        toast.dismiss();
-                                    }
-
-
-                                }, err => ApplicationView.displayMessage(err, 3000))
+                                this.setImdbTitleInfo(url, file)
                             }
                         }
                     })
@@ -1862,10 +1781,13 @@ export class FilesIconView extends FilesView {
                     }
 
                     fileIconDiv.ondrop = (evt) => {
+                        evt.stopPropagation()
 
                         evt.preventDefault()
-
-                        if (evt.dataTransfer.files.length > 0) {
+                        let url = evt.dataTransfer.getData("Url");
+                        if (url.startsWith("https://www.imdb.com/title")) {
+                            this.setImdbTitleInfo(url, file)
+                        } else if (evt.dataTransfer.files.length > 0) {
                             // So here I will simply upload the files...
                             Model.eventHub.publish("__upload_files_event__", { path: file.path, files: evt.dataTransfer.files }, true)
                         } else {
@@ -1874,7 +1796,9 @@ export class FilesIconView extends FilesView {
                             fileIconDiv.children[0].icon = "icons:folder"
 
                             // Create drop_file_event...
-                            Model.eventHub.publish("drop_file_event", { file: f, dir: file.path, id: id }, true)
+                            if (f != undefined && id.length > 0) {
+                                Model.eventHub.publish("drop_file_event", { file: f, dir: file.path, id: id }, true)
+                            }
                         }
                     }
                 }
@@ -1940,13 +1864,15 @@ export class FilesIconView extends FilesView {
         // init person infos...
         let createPersons = (values) => {
             let persons = []
-            values.forEach(v => {
-                let p = new Person
-                p.setId(v.ID)
-                p.setUrl(v.URL)
-                p.setFullname(v.FullName)
-                persons.push(p)
-            })
+            if (values != undefined) {
+                values.forEach(v => {
+                    let p = new Person
+                    p.setId(v.ID)
+                    p.setUrl(v.URL)
+                    p.setFullname(v.FullName)
+                    persons.push(p)
+                })
+            }
 
             return persons
         }
@@ -1962,6 +1888,13 @@ export class FilesIconView extends FilesView {
         title.setRating(parseFloat(info.Rating))
         title.setRatingcount(parseInt(info.RatingCount))
         title.setType(info.Type)
+
+        // Set TVEpisode Season and Episode number.
+        if(info.Type == "TVEpisode"){
+            title.setSeason(info.Season)
+            title.setEpisode(info.Episode)
+        }
+
         title.setUrl(info.URL)
         title.setYear(info.Year)
 
@@ -1986,6 +1919,7 @@ export class FilesIconView extends FilesView {
                 console.log("title was created!")
                 // Now I will asscociated the file and the title.
                 let rqst_ = new AssociateFileWithTitleRequest
+                console.log(file)
                 rqst_.setFilepath(file.path)
                 rqst_.setTitleid(title.getId())
                 rqst_.setIndexpath(indexPath)
@@ -1997,6 +1931,92 @@ export class FilesIconView extends FilesView {
 
             }).catch(err => ApplicationView.displayMessage(err, 3000))
         console.log(title)
+    }
+
+
+    // Set imdb title info.
+    setImdbTitleInfo(url, file) {
+
+
+        let matchs = url.match(/tt\d{5,8}/);
+        if (matchs.length == 0) {
+            return // nothing to todo...
+        }
+
+        // That function will be use to asscociate file with imdb information.
+        let getImdbInfo = (id, callback, errorcallback) => {
+            let query = window.location.protocol + "//" + window.location.hostname + ":"
+            if (Application.globular.config.Protocol == "https") {
+                query += Application.globular.config.PortHttps
+            } else {
+                query += Application.globular.config.PortHttp
+            }
+
+            query += "/imdb_title?id=" + id
+
+            var xmlhttp = new XMLHttpRequest();
+
+            xmlhttp.onreadystatechange = function () {
+                if (this.readyState == 4 && (this.status == 201 || this.status == 200)) {
+                    var obj = JSON.parse(this.responseText);
+                    callback(obj);
+                } else if (this.readyState == 4) {
+                    errorcallback("fail to get info from query " + query + " status " + this.status)
+                }
+            };
+            /* TODO see if we protected it...
+              query += "?domain=" + Model.domain // application is not know at this time...
+              if (localStorage.getItem("user_token") != undefined) {
+                  query += "&token=" + localStorage.getItem("user_token")
+              }
+            */
+            xmlhttp.open("GET", query, true);
+            xmlhttp.setRequestHeader("domain", Model.domain);
+
+            xmlhttp.send();
+        }
+
+        getImdbInfo(matchs[0], (info) => {
+            // So here I will get the information from imdb and propose to assciate it with the file.
+            let toast = ApplicationView.displayMessage(`
+                    <style>
+                        ${theme}
+                    </style>
+                    <div id="select-media-dialog">
+                        <div>Your about to associate <span id="title-type" style="max-width: 300px;"></span> <a id="title-name" target="_blank"></a></div>
+                        <div>with file <span style="font-style: italic;" id="file-path"></span></div>
+                        <div style="display: flex; flex-direction: column; justify-content: center;">
+                            <img style="width: 185.31px; align-self: center; padding-top: 10px; padding-bottom: 15px;" id="title-poster"> </img>
+                        </div>
+                        <div>Is that what you want to do? </div>
+                        <div style="display: flex; justify-content: flex-end;">
+                            <paper-button id="imdb-lnk-ok-button">Ok</paper-button>
+                            <paper-button id="imdb-lnk-cancel-button">Cancel</paper-button>
+                        </div>
+                    </div>
+                    `, 60 * 1000)
+
+
+            let cancelBtn = toast.el.querySelector("#imdb-lnk-cancel-button")
+            cancelBtn.onclick = () => {
+                toast.dismiss();
+            }
+
+            toast.el.querySelector("#title-type").innerHTML = info.Type
+            toast.el.querySelector("#title-name").innerHTML = info.Name
+            toast.el.querySelector("#title-name").href = info.URL
+            toast.el.querySelector("#title-poster").src = info.Poster.ContentURL
+            toast.el.querySelector("#file-path").innerHTML = file.name
+
+            let okBtn = toast.el.querySelector("#imdb-lnk-ok-button")
+            okBtn.onclick = () => {
+                this.setFileInfo(info, file)
+                toast.dismiss();
+            }
+
+
+        }, err => ApplicationView.displayMessage(err, 3000))
+
     }
 }
 
@@ -2068,6 +2088,7 @@ export class PathNavigator extends HTMLElement {
             }, true, this
         )
     }
+
 
     // Set the directory.
     setDir(dir) {
@@ -2423,8 +2444,9 @@ export class FileNavigator extends HTMLElement {
             let f = evt.dataTransfer.getData('file')
             let id = evt.dataTransfer.getData('id')
             dirIco.icon = "icons:folder"
-
-            Model.eventHub.publish("drop_file_event", { file: f, dir: dir.path, id: id }, true)
+            if (f != undefined && id.length > 0) {
+                Model.eventHub.publish("drop_file_event", { file: f, dir: dir.path, id: id }, true)
+            }
         }
 
         let hasSubdir = false;
