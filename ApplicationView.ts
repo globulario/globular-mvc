@@ -453,7 +453,7 @@ export class ApplicationView extends View {
       uuid => { },
       evt => {
         if (this._searchResults != undefined) {
-          if (this._searchResults.parentNode != undefined) {
+          if (this._searchResults.parentNode != undefined || this._searchResults.isEmpty()) {
             return // the search result is already visible.
           }
         }
@@ -472,7 +472,11 @@ export class ApplicationView extends View {
         if (this._searchResults == null) {
           this._searchResults = new SearchResults()
         }
-
+        
+        if (this._searchResults.isEmpty()) {
+          return // the search result is already visible.
+        }
+        
         this.getWorkspace().appendChild(this._searchResults);
 
       }, true)

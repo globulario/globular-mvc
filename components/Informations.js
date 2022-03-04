@@ -6,6 +6,7 @@ import { File } from "../File";
 import { VideoPreview } from "./File";
 import { ApplicationView } from "../ApplicationView";
 import { randomUUID } from "./utility";
+import { VideoPlayer } from "./Video";
 
 const __style__ = `
 .title-div {
@@ -71,6 +72,12 @@ const __style__ = `
 
 .title-files-div {
     display: flex;
+    width: 100%;
+    flex-direction: column;
+}
+
+
+.title-files-div paper-progress{
     width: 100%;
 }
 
@@ -142,12 +149,16 @@ function getVideoPreview(parent, path, name, callback) {
             }
         }
 
+        let fileNameSpan = document.createElement("span")
+
         let preview = new VideoPreview(path, files, 85, () => {
             if (preview.width > 0 && preview.height > 0) {
                 w = (preview.width / preview.height) * h
             }
-            let fileNameSpan = document.createElement("span")
+            fileNameSpan.style.wordBreak = "break-all"
+            fileNameSpan.style.fontSize = ".85rem"
             fileNameSpan.style.maxWidth = w + "px";
+            fileNameSpan.innerHTML = path.substring(path.lastIndexOf("/") + 1)
         })
 
         let range = document.createRange()
@@ -155,21 +166,47 @@ function getVideoPreview(parent, path, name, callback) {
         preview.appendChild(range.createContextualFragment(`<paper-icon-button icon="icons:remove-circle" id="_${uuid}" style="position: absolute;"> </paper-icon-button>`))
         let unlinkBtn = preview.querySelector(`#_${uuid}`)
 
+        // When the file will be unlink...
         unlinkBtn.onclick = (evt) => {
             evt.stopPropagation();
 
-            let rqst = new DissociateFileWithTitleRequest
-            rqst.setFilepath(path)
-            rqst.setTitleid(name)
-            if (name.startsWith("tt")) {
-                rqst.setIndexpath(Application.globular.config.DataPath + "/search/titles")
-            } else {
-                rqst.setIndexpath(Application.globular.config.DataPath + "/search/video")
+            let toast = ApplicationView.displayMessage(`
+            <style>
+                ${theme}
+            </style>
+            <div id="select-media-dialog">
+                <div>Your about to delete file association</div>
+                <p style="font-style: italic;  max-width: 300px;" id="file-name"></p>
+                <div>Is that what you want to do? </div>
+                <div style="display: flex; justify-content: flex-end;">
+                    <paper-button id="imdb-lnk-ok-button">Ok</paper-button>
+                    <paper-button id="imdb-lnk-cancel-button">Cancel</paper-button>
+                </div>
+            </div>
+            `, 60 * 1000)
+
+            let cancelBtn = toast.el.querySelector("#imdb-lnk-cancel-button")
+            cancelBtn.onclick = () => {
+                toast.dismiss();
             }
-            Model.globular.titleService.dissociateFileWithTitle(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
-                .then(rsp => {
-                    console.log("unlink ", path, name)
-                }).catch(err => ApplicationView.displayMessage(err, 3000))
+
+            toast.el.querySelector("#file-name").innerHTML = path.substring(path.lastIndexOf("/") + 1)
+
+            let okBtn = toast.el.querySelector("#imdb-lnk-ok-button")
+            okBtn.onclick = () => {
+                let rqst = new DissociateFileWithTitleRequest
+                rqst.setFilepath(path)
+                rqst.setTitleid(name)
+                if (name.startsWith("tt")) {
+                    rqst.setIndexpath(Application.globular.config.DataPath + "/search/titles")
+                } else {
+                    rqst.setIndexpath(Application.globular.config.DataPath + "/search/video")
+                }
+                Model.globular.titleService.dissociateFileWithTitle(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+                    .then(rsp => {
+                        console.log("unlink ", path, name)
+                    }).catch(err => ApplicationView.displayMessage(err, 3000))
+            }
 
         }
 
@@ -192,7 +229,18 @@ function getVideoPreview(parent, path, name, callback) {
             if (localStorage.getItem("user_token") != undefined) {
                 url += "&token=" + localStorage.getItem("user_token");
             }
-            window.open(url, '_blank', "fullscreen=yes");
+            let videoPlayer = document.getElementById("video-player-x")
+            if (videoPlayer == null) {
+                videoPlayer = new VideoPlayer()
+                videoPlayer.id = "video-player-x"
+                document.body.appendChild(videoPlayer)
+                videoPlayer.style.position = "fixed"
+                videoPlayer.style.top = "50%"
+                videoPlayer.style.left = "50%"
+                videoPlayer.style.transform = "translate(-50%, -50%)"
+            }
+            videoPlayer.play(path)
+
         }
 
         // keep the explorer link...
@@ -207,7 +255,13 @@ function getVideoPreview(parent, path, name, callback) {
             })
         }
 
-        callback(preview)
+        // Here I will set the filename 
+        let previewDiv = document.createElement("div")
+        previewDiv.style.display = "flex"
+        previewDiv.style.flexDirection = "column"
+        previewDiv.appendChild(preview)
+        previewDiv.appendChild(fileNameSpan)
+        callback(previewDiv)
     })
 }
 
@@ -226,8 +280,10 @@ function GetTitleFiles(indexPath, title, parent, callback) {
             let previews = []
             let _getVideoPreview_ = () => {
                 if (rsp.getFilepathsList().length > 0) {
+                    let path = rsp.getFilepathsList().pop()
                     // Return the first file only... 
-                    getVideoPreview(parent, rsp.getFilepathsList().pop(), title.getId(), p => {
+                    getVideoPreview(parent, path, title.getId(), p => {
+
                         parent.appendChild(p)
                         _getVideoPreview_() // call again...
                     })
@@ -616,6 +672,7 @@ export class InformationsManager extends HTMLElement {
                 </div>
             </div>
             <div class="title-files-div">
+                <paper-progress indeterminate></paper-progress>
             </div>
         </div>
         <div class="action-div">
@@ -668,7 +725,7 @@ export class InformationsManager extends HTMLElement {
             filesDiv.style.paddingTop = "35px"
             filesDiv.style.paddingLeft = "15px"
             GetTitleFiles(Model.globular.config.DataPath + "/search/titles", title, filesDiv, (previews) => {
-
+                filesDiv.querySelector("paper-progress").style.display = "none"
             })
         } else {
             // Here the title is a series...
@@ -677,6 +734,7 @@ export class InformationsManager extends HTMLElement {
                 let indexPath = Application.globular.config.DataPath + "/search/titles"
                 GetEpisodes(indexPath, title, (episodes) => {
                     this.displayEpisodes(episodes, filesDiv)
+                    filesDiv.querySelector("paper-progress").style.display = "none"
                 })
             }
         }
@@ -830,6 +888,7 @@ export class InformationsManager extends HTMLElement {
                 let html = `
                     <div class="episode-small-div">
                         <img src="${posterUrl}"></img>
+
                     </div>
                 `
 

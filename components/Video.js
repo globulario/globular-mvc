@@ -33,7 +33,19 @@ export class VideoPlayer extends HTMLElement {
         <style>
             ${theme}
             #container{
-                max-width: 500px;
+                max-width: 1080px;
+                margin: 10px;
+            }
+
+            .header{
+                display: flex;
+                align-items: center;
+                background-color: var(--palette-primary-accent);
+            }
+
+            .header span{
+                flex-grow: 1;
+                text-align: center;
             }
 
             video{
@@ -42,18 +54,23 @@ export class VideoPlayer extends HTMLElement {
                 height: auto;
             }
         </style>
-        <div id="container">
+        <paper-card id="container">
+            <div class="header">
+                <paper-icon-button id="video-close-btn" icon="icons:close"></paper-icon-button>
+                <span id="title-span"></span>
+            </div>
             <slot></slot>
-        </div>
+        </paper-card>
         `
         // <!--video id="player" controls autoplay></video-->
 
         // give the focus to the input.
-        let container = this.shadowRoot.querySelector("#container")
         this.video = document.createElement("video")// this.shadowRoot.querySelector("video")
         this.video.id = "player"
         this.video.autoplay = true
         this.video.controls = true
+        this.onclose = null
+        
 
         this.appendChild(this.video)
 
@@ -66,6 +83,14 @@ export class VideoPlayer extends HTMLElement {
         window.addEventListener("resize", () => {
             this.video.style.maxWidth = this.parentNode.offsetWidth + "px"
         });
+
+        this.shadowRoot.querySelector("#video-close-btn").onclick = ()=>{
+            this.stop()
+            this.shadowRoot.querySelector("#container").style.display = "none"
+            if(this.onclose){
+                this.onclose()
+            }
+        }
     }
 
     connectedCallback() {
@@ -74,6 +99,8 @@ export class VideoPlayer extends HTMLElement {
 
     play(path) {
 
+        this.shadowRoot.querySelector("#title-span").innerHTML = path.substring(path.lastIndexOf("/") + 1)
+        this.shadowRoot.querySelector("#container").style.display = ""
 
         let thumbnailPath = path
         // /users/sa/Fucking Her Way to Fame.mp4

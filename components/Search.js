@@ -208,9 +208,6 @@ export class SearchResults extends HTMLElement {
     constructor() {
         super()
 
-        // this will contain the list of search pages.
-        this.pages = {}
-
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
 
@@ -279,7 +276,7 @@ export class SearchResults extends HTMLElement {
                 if (tab == null) {
                     let html = `
                     <paper-tab id="${uuid}-tab">
-                        <paper-icon-button id="${uuid}-refresh-btn" icon="icons:refresh"></paper-icon-button>
+                        <paper-icon-button id="${uuid}-refresh-btn" icon="icons:refresh" style="display:none;"></paper-icon-button>
                         <span >${evt.query} (${evt.summary.getTotal()})</span>
                         <paper-icon-button id="${uuid}-close-btn" icon="icons:close"></paper-icon-button>
                     </paper-tab>
@@ -337,6 +334,10 @@ export class SearchResults extends HTMLElement {
                 }
 
             }, true)
+    }
+
+    isEmpty(){
+        return this.tabs.querySelectorAll("paper-tab").length == 0
     }
 
     deletePageResults(uuid) {
@@ -458,7 +459,7 @@ export class SearchResultsPage extends HTMLElement {
         Model.eventHub.subscribe(`${uuid}_search_hit_event__`, listner_uuid => { },
             evt => {
                 this.hits.push(evt.hit)
-
+                Model.eventHub.publish("_display_search_results_", {}, true)
                 if (this.viewType == "lst") {
                     this.displayListHit(evt.hit)
                 } else {

@@ -146,7 +146,6 @@ function _readDir(path, callback, errorCallback) {
 function getHiddenFiles(path, callback) {
     let index = path.lastIndexOf("/")
     let hiddenFilePath = path.substring(0, index) + "/.hidden/" + path.substring(index + 1, path.lastIndexOf(".")) + "/__preview__"
-    console.log("---------> read hidden folder... ", hiddenFilePath)
     _readDir(hiddenFilePath, callback, err => { console.log(err); callback(null); })
 }
 
@@ -1695,6 +1694,8 @@ export class FilesIconView extends FilesView {
                             if (preview.width > 0 && preview.height > 0) {
                                 w = (preview.width / preview.height) * h
                             }
+                            fileNameSpan.style.wordBreak = "break-all"
+                            fileNameSpan.style.fontSize = ".85rem"
                             fileNameSpan.style.maxWidth = w + "px";
                         })
 
@@ -1890,7 +1891,7 @@ export class FilesIconView extends FilesView {
         title.setType(info.Type)
 
         // Set TVEpisode Season and Episode number.
-        if(info.Type == "TVEpisode"){
+        if (info.Type == "TVEpisode") {
             title.setSeason(info.Season)
             title.setEpisode(info.Episode)
         }
@@ -2986,14 +2987,6 @@ export class FileExplorer extends HTMLElement {
         // The information manager
         this.informationManager = new InformationsManager()
 
-        // The video player
-        // this.shadowRoot.querySelector("#globular-video-player")
-        this.videoPlayer = new VideoPlayer()
-        this.videoPlayer.id = "#globular-video-player"
-        this.videoPlayer.style.display = "none"
-        this.appendChild(this.videoPlayer)
-
-
         // The file uploader
         this.filesUploader = this.shadowRoot.querySelector("globular-files-uploader")
 
@@ -3116,8 +3109,6 @@ export class FileExplorer extends HTMLElement {
             this.imageViewer.style.display = "none"
             this.filesListView.style.display = ""
             this.filesIconView.style.display = "none"
-            this.videoPlayer.stop();
-            this.videoPlayer.style.display = "none"
             this.audioPlayer.stop();
             this.audioPlayer.style.display = "none"
             this.fileReader.style.display = "none"
@@ -3134,8 +3125,6 @@ export class FileExplorer extends HTMLElement {
             this.fileIconBtn.classList.add("active")
             this.filesListView.style.display = "none"
             this.filesIconView.style.display = ""
-            this.videoPlayer.stop();
-            this.videoPlayer.style.display = "none"
             this.audioPlayer.stop();
             this.audioPlayer.style.display = "none"
             this.fileReader.style.display = "none"
@@ -3536,13 +3525,24 @@ export class FileExplorer extends HTMLElement {
 
     playVideo(path) {
 
-        // hide the content.
-        this.filesListView.style.display = "none"
-        this.filesIconView.style.display = "none"
-        this.videoPlayer.style.display = "block"
+        let videoPlayer = document.getElementById("video-player-x")
+        if (videoPlayer == null) {
+            videoPlayer = new VideoPlayer()
+            videoPlayer.id = "video-player-x"
+            document.body.appendChild(videoPlayer)
+            videoPlayer.style.position = "fixed"
+            videoPlayer.style.top = "50%"
+            videoPlayer.style.left = "50%"
+            videoPlayer.style.transform = "translate(-50%, -50%)"
+        }
 
-        // Display the video only if the path match the video player /applications vs /users
-        this.videoPlayer.play(path)
+        videoPlayer.play(path)
+        videoPlayer.onclose = () => {
+            this.open()
+        }
+
+        this.close()
+
     }
 
     playAudio(path) {
@@ -3648,10 +3648,6 @@ export class FileExplorer extends HTMLElement {
 
         // Set back the list and icon view
         this.displayView(dir)
-
-        // stop and hide the video player.
-        this.videoPlayer.style.display = "none"
-        this.videoPlayer.stop();
 
         this.audioPlayer.style.display = "none"
         this.audioPlayer.stop();
@@ -3900,10 +3896,8 @@ export class VideoPreview extends HTMLElement {
 
             #play-btn{
                 position: absolute;
-                left: 50%;
-                top: 50%;
                 transform: translate(-50%,-50%);
-                background-color: #00b3ff;
+                background-color:  rgb(0, 179, 255);
                 width: 28px;
                 height: 28px;
                 padding: 2px;
@@ -3946,15 +3940,19 @@ export class VideoPreview extends HTMLElement {
             // Get the preview image...
             getImage((images) => {
                 this.images = images
-                this.firstImage = images[0]
                 if (this.images.length > 0) {
-                    this.container.appendChild(this.images[0])
-                    this.width = this.images[0].width
-                    this.height = this.images[0].height
-                    if (this.onresize != undefined) {
-                        this.onresize()
+                    this.firstImage = images[0]
+                    this.firstImage.onload = () => {
+                        this.width = this.firstImage.width;
+                        this.height = this.firstImage.height;
+                        this.container.style.maxWidth = this.width + "px"
+                        this.playBtn.style.top = this.height / 2 + "px"
+                        this.playBtn.style.left = this.width / 2 + "px"
+                        if (this.onresize != undefined) {
+                            this.onresize()
+                        }
                     }
-
+                    this.container.appendChild(this.firstImage)
                 }
             }, this.images, [previews[0]], index) // Download the first image only...
         }
@@ -3968,7 +3966,6 @@ export class VideoPreview extends HTMLElement {
         // the next image timeout...
         this.timeout = null;
         let is_over_play_btn = false;
-
 
         this.playBtn.onmouseenter = (evt) => {
             evt.stopPropagation();
@@ -3989,8 +3986,6 @@ export class VideoPreview extends HTMLElement {
                     this.images = images
                     if (this.images.length > 0) {
                         this.container.appendChild(this.images[0])
-                        this.width = this.images[0].width
-                        this.height = this.images[0].height
 
                         this.playBtn.style.display = "block";
                         if (this.interval == null && !is_over_play_btn) {
@@ -4057,6 +4052,12 @@ export class VideoPreview extends HTMLElement {
                 index = 0
             }
         }, 500)
+    }
+
+    connectedCallback() {
+
+        //or however you get a handle to the IMG
+
     }
 
     /**
