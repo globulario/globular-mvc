@@ -3928,6 +3928,7 @@ export class VideoPreview extends HTMLElement {
             }
         </style>
        <div id = "container" draggable="false" >
+            <slot style="position: relative;"></slot>
             <iron-icon id="play-btn" icon="av:play-arrow"></iron-icon>
             <paper-ripple></paper-ripple>
         </div>
