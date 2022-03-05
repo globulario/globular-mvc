@@ -314,7 +314,8 @@ export function GetEpisodes(indexPath, title, callback) {
                 let episodes = []
                 let getAssociatedTitlte = () => {
                     let rqst_ = new GetFileTitlesRequest
-                    rqst_.setFilepath(rsp.getFilepathsList().pop())
+                    let path = rsp.getFilepathsList().pop()
+                    rqst_.setFilepath(path)
                     rqst_.setIndexpath(indexPath)
                     Model.globular.titleService.getFileTitles(rqst_, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
                         .then(rsp => {
@@ -825,6 +826,7 @@ export class InformationsManager extends HTMLElement {
             .episode-small-div{
                 display: flex;
                 margin: 10px;
+                position: relative;
             }
 
             .episode-small-div img{
@@ -833,6 +835,37 @@ export class InformationsManager extends HTMLElement {
                 height: 132px;
                 max-width: 175px;
                 min-width: 140px;
+            }
+
+            .slide-on-panel{
+                position: absolute;
+                bottom: 0px;
+                left: 0px;
+                right: 0px;
+                background: rgba(0,0,0,.65);
+                padding: 5px;
+                border-top: 1px solid black;
+                display: flex;
+                align-items: center;
+            }
+
+            .slide-on-panel-title-name{
+                flex-grow: 1;
+                font-size: .85rem;
+            }
+
+            .episode-number-div {
+                top: 2px;
+                right: 10px;
+                color: lightgray;
+                position: absolute;
+                font-weight: 600;
+                font-size: larger;
+            }
+
+            .play-episode-button{
+                position: absolute;
+                /*--iron-icon-fill-color: rgb(0, 179, 255);*/
             }
 
             paper-tab{
@@ -845,7 +878,7 @@ export class InformationsManager extends HTMLElement {
             <div class="header">
                 <paper-tabs selected="0" scrollable style="width: 100%;"></paper-tabs>
             </div>
-            <div id="episodes-content" style="width: 100%; height: 100%; overflow-y: auto;">
+            <div id="episodes-content" style="width: 100%; height: 425px; overflow-y: auto;">
 
             </div>
         </div>
@@ -884,15 +917,49 @@ export class InformationsManager extends HTMLElement {
                 if (e.getPoster() != undefined) {
                     posterUrl = e.getPoster().getContenturl()
                 }
-
+                let uuid = randomUUID()
                 let html = `
                     <div class="episode-small-div">
+                        <div class="episode-number-div">${e.getEpisode()}</div>
+                        <paper-icon-button id="_${uuid}" class="play-episode-button" icon="av:play-circle-filled" ></paper-icon-button>
                         <img src="${posterUrl}"></img>
-
+                        <div class="slide-on-panel">
+                            <div class="slide-on-panel-title-name">
+                                ${e.getName()}
+                            </div>
+                            <paper-icon-button icon="icons:info-outline"></paper-icon-button>
+                        </div>
                     </div>
                 `
 
                 page.appendChild(range.createContextualFragment(html))
+                let playBtn = page.querySelector(`#_${uuid}`)
+                playBtn.onclick = () => {
+                    let rqst = new GetTitleFilesRequest
+                    rqst.setIndexpath(Application.globular.DataPath + "/search/titles")
+                    rqst.setTitleid(e.getId())
+                    Model.globular.titleService.getTitleFiles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+                        .then(rsp => {
+                            let path = rsp.getFilepathsList().pop()
+                            let videoPlayer = document.getElementById("video-player-x")
+                            if (videoPlayer == null) {
+                                videoPlayer = new VideoPlayer()
+                                videoPlayer.id = "video-player-x"
+                                document.body.appendChild(videoPlayer)
+                                videoPlayer.style.position = "fixed"
+                                videoPlayer.style.top = "50%"
+                                videoPlayer.style.left = "50%"
+                                videoPlayer.style.transform = "translate(-50%, -50%)"
+                            }
+
+                            videoPlayer.play(path)
+                            videoPlayer.onclose = () => {
+                                this.open()
+                            }
+                        }).catch(err => ApplicationView.displayMessage(err, 3000))
+
+
+                }
 
             })
             index++
