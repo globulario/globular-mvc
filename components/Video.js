@@ -17,6 +17,31 @@ String.prototype.endsWith = function (suffix) {
 };
 
 /**
+ * Function to play a video on the same player.
+ * @param {*} path 
+ * @param {*} onplay 
+ * @param {*} onclose 
+ */
+export function playVideo(path, onplay, onclose) {
+
+    let videoPlayer = document.getElementById("video-player-x")
+    if (videoPlayer == null) {
+        videoPlayer = new VideoPlayer()
+        videoPlayer.id = "video-player-x"
+        document.body.appendChild(videoPlayer)
+        videoPlayer.style.position = "fixed"
+        videoPlayer.style.top = "50%"
+        videoPlayer.style.left = "50%"
+        videoPlayer.style.transform = "translate(-50%, -50%)"
+    }
+    
+    videoPlayer.onplay = onplay
+    videoPlayer.onclose = onclose
+    videoPlayer.play(path)
+}
+
+
+/**
  * Sample empty component
  */
 export class VideoPlayer extends HTMLElement {
@@ -70,6 +95,7 @@ export class VideoPlayer extends HTMLElement {
         this.video.autoplay = true
         this.video.controls = true
         this.onclose = null
+        this.onplay = null
         
 
         this.appendChild(this.video)
@@ -142,6 +168,10 @@ export class VideoPlayer extends HTMLElement {
         }
 
         this.video.style.maxWidth = this.parentNode.offsetWidth + "px"
+
+        if(this.onplay != null){
+            this.onplay()
+        }
     }
 
     stop() {

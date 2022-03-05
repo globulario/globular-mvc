@@ -16,7 +16,7 @@ import { File } from "../File";
 import { Menu } from './Menu';
 import { PermissionsManager } from './Permissions';
 import { InformationsManager } from './Informations'
-import { VideoPlayer } from './Video'
+import { playVideo, VideoPlayer } from './Video'
 import { AudioPlayer } from './Audio'
 import { GlobularFileReader } from './Reader'
 import { theme } from './Theme';
@@ -3524,25 +3524,10 @@ export class FileExplorer extends HTMLElement {
     }
 
     playVideo(path) {
-
-        let videoPlayer = document.getElementById("video-player-x")
-        if (videoPlayer == null) {
-            videoPlayer = new VideoPlayer()
-            videoPlayer.id = "video-player-x"
-            document.body.appendChild(videoPlayer)
-            videoPlayer.style.position = "fixed"
-            videoPlayer.style.top = "50%"
-            videoPlayer.style.left = "50%"
-            videoPlayer.style.transform = "translate(-50%, -50%)"
-        }
-
-        videoPlayer.play(path)
-        videoPlayer.onclose = () => {
+        playVideo(path, null, () => {
             this.open()
-        }
-
+        })
         this.close()
-
     }
 
     playAudio(path) {

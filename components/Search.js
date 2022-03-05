@@ -8,7 +8,7 @@ import { Model } from '../Model';
 import { theme } from "./Theme";
 import * as getUuid from 'uuid-by-string'
 import { InformationsManager } from './Informations';
-import { VideoPlayer } from './Video';
+import { playVideo, VideoPlayer } from './Video';
 import { randomUUID } from './utility';
 
 
@@ -816,14 +816,14 @@ export class SearchTitleDetail extends HTMLElement {
             let titleInfoBox = document.getElementById("title-info-box")
             if (titleInfoBox == undefined) {
                 let range = document.createRange()
-                document.body.appendChild(range.createContextualFragment(html)) 
+                document.body.appendChild(range.createContextualFragment(html))
                 titleInfoBox = document.getElementById("title-info-box")
                 titleInfoBox.parentNode.style.position = "fixed"
                 titleInfoBox.parentNode.style.top = "50%"
                 titleInfoBox.parentNode.style.left = "50%"
                 titleInfoBox.parentNode.style.transform = "translate(-50%, -50%)"
             }
-                titleInfoBox.setTitlesInformation([title])
+            titleInfoBox.setTitlesInformation([title])
         }
 
         let url = window.location.protocol + "//" + window.location.hostname + ":"
@@ -857,25 +857,12 @@ export class SearchTitleDetail extends HTMLElement {
                     }
 
                     this.shadowRoot.querySelector("#play-video-button").onclick = () => {
-                        let videoPlayer = document.getElementById("video-player-x")
-                        if (videoPlayer == null) {
-                            videoPlayer = new VideoPlayer()
-                            videoPlayer.id = "video-player-x"
-                            document.body.appendChild(videoPlayer)
-                            videoPlayer.style.position = "fixed"
-                            videoPlayer.style.top = "50%"
-                            videoPlayer.style.left = "50%"
-                            videoPlayer.style.transform = "translate(-50%, -50%)"
-                        }
-
-                        videoPlayer.play(path)
+                        playVideo(path, null, null)
                     }
                 }
             })
 
     }
-
-
 
     setVideo(video) {
 

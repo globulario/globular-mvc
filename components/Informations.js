@@ -6,7 +6,7 @@ import { File } from "../File";
 import { VideoPreview } from "./File";
 import { ApplicationView } from "../ApplicationView";
 import { randomUUID } from "./utility";
-import { VideoPlayer } from "./Video";
+import { playVideo, VideoPlayer } from "./Video";
 
 //#tt1375666-div > div.title-informations-div
 
@@ -217,34 +217,12 @@ function getVideoPreview(parent, path, name, callback) {
         preview.showPlayBtn()
 
         preview.onplay = (path) => {
-            console.log("play movie ", path)
-            let url = window.location.protocol + "//" + window.location.hostname + ":"
-            if (Application.globular.config.Protocol == "https") {
-                url += Application.globular.config.PortHttps
-            } else {
-                url += Application.globular.config.PortHttp
-            }
-
-            path.split("/").forEach(item => {
-                url += "/" + encodeURIComponent(item.trim())
-            })
-
-            url += "?application=" + Model.application;
-            if (localStorage.getItem("user_token") != undefined) {
-                url += "&token=" + localStorage.getItem("user_token");
-            }
-            let videoPlayer = document.getElementById("video-player-x")
-            if (videoPlayer == null) {
-                videoPlayer = new VideoPlayer()
-                videoPlayer.id = "video-player-x"
-                document.body.appendChild(videoPlayer)
-                videoPlayer.style.position = "fixed"
-                videoPlayer.style.top = "50%"
-                videoPlayer.style.left = "50%"
-                videoPlayer.style.transform = "translate(-50%, -50%)"
-            }
-            videoPlayer.play(path)
-
+            playVideo(path, ()=>{
+                let titleInfoBox = document.getElementById("title-info-box")
+                if(titleInfoBox){
+                    titleInfoBox.parentNode.removeChild(titleInfoBox)
+                }
+            }, null)
         }
 
         // keep the explorer link...
@@ -324,6 +302,7 @@ export function GetEpisodes(indexPath, title, callback) {
                     Model.globular.titleService.getFileTitles(rqst_, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
                         .then(rsp => {
                             episodes = episodes.concat(rsp.getTitles().getTitlesList())
+                            
                             if (rsp.getFilepathsList().length == 0) {
                                 callback(episodes)
                                 return
@@ -939,27 +918,15 @@ export class InformationsManager extends HTMLElement {
                 page.appendChild(range.createContextualFragment(html))
                 let playBtn = page.querySelector(`#_${uuid}`)
                 playBtn.onclick = () => {
+                    let indexPath = Application.globular.config.DataPath + "/search/titles"
                     let rqst = new GetTitleFilesRequest
-                    rqst.setIndexpath(Application.globular.DataPath + "/search/titles")
                     rqst.setTitleid(e.getId())
+                    rqst.setIndexpath(indexPath)
                     Model.globular.titleService.getTitleFiles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
                         .then(rsp => {
                             let path = rsp.getFilepathsList().pop()
-                            let videoPlayer = document.getElementById("video-player-x")
-                            if (videoPlayer == null) {
-                                videoPlayer = new VideoPlayer()
-                                videoPlayer.id = "video-player-x"
-                                document.body.appendChild(videoPlayer)
-                                videoPlayer.style.position = "fixed"
-                                videoPlayer.style.top = "50%"
-                                videoPlayer.style.left = "50%"
-                                videoPlayer.style.transform = "translate(-50%, -50%)"
-                            }
+                            playVideo(path, null, null)
 
-                            videoPlayer.play(path)
-                            videoPlayer.onclose = () => {
-                                this.open()
-                            }
                         }).catch(err => ApplicationView.displayMessage(err, 3000))
 
 
