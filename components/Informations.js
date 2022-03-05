@@ -61,7 +61,7 @@ const __style__ = `
 
 #rating-span{
     font-weight: 600;
-    font-size: 1.3rem;
+    font-size: 1.2rem;
     color: var(--palette-text-primery);
 }
 
@@ -852,7 +852,7 @@ export class InformationsManager extends HTMLElement {
             }
 
             paper-tab{
-                font-size: 1.17em;
+                font-size: 1rem;
                 font-weight: bold;
             }
 

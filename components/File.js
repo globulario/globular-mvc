@@ -891,6 +891,7 @@ export class FilesView extends HTMLElement {
 
         let lnk = evt.dataTransfer.getData('text/html');
         if (evt.dataTransfer.getData("Url").length > 0) {
+            let url = evt.dataTransfer.getData("Url")
             // Here we got an url...
             if (url.endsWith(".torrent") || url.startsWith("magnet:")) {
                 // there is the way to install the torrent client on the server side.
