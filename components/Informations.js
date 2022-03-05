@@ -8,21 +8,23 @@ import { ApplicationView } from "../ApplicationView";
 import { randomUUID } from "./utility";
 import { VideoPlayer } from "./Video";
 
+//#tt1375666-div > div.title-informations-div
+
 const __style__ = `
 .title-div {
     display: flex;
 }
 
 .title-poster-div {
-    
+    padding-right: 20px;
 }
 
 
 .title-informations-div {
-    padding-left: 20px;
-    font-size: 1.17em;
+    
+    font-size: 1em;
     max-width: 450px;
-    min-width: 256px;
+  
 }
 
 .title-poster-div img, p{
@@ -53,6 +55,8 @@ const __style__ = `
 
 .title-genres-div{
     padding: 5px;
+    display: flex;
+    flex-wrap: wrap;
 }
 
 #rating-span{
@@ -349,7 +353,7 @@ export class InformationsManager extends HTMLElement {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
-
+        let isShort = this.hasAttribute("short")
         // Innitialisation of the layout.
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -403,7 +407,7 @@ export class InformationsManager extends HTMLElement {
         <div id="container">
             <div id="header">
                 <div class="title-div"></div>
-                <paper-icon-button icon="close"></paper-icon-button>
+                <paper-icon-button icon="close" style="${isShort?"display: none;":""}"></paper-icon-button>
             </div>
             <slot></slot>
         </div>
@@ -430,6 +434,7 @@ export class InformationsManager extends HTMLElement {
      * @param {*} videos 
      */
     setVideosInformation(videos) {
+        let isShort = this.hasAttribute("short")
         let video = videos[0]
 
         let genres = ""
@@ -449,7 +454,7 @@ export class InformationsManager extends HTMLElement {
         // Set the header section.
         this.shadowRoot.querySelector(".title-div").innerHTML = `
         <h3 class="title-sub-title-div"> 
-            <h1 id="title-name" class="title"> ${publisherName} </h1>
+            <h1 id="title-name" class="title" style="${isShort?"font-size: 1rem;":""}"> ${publisherName} </h1>
             <div style="display: flex; align-items: baseline;">
                 <h3 class="title-sub-title-div">          
                     <span id="title-type"><span>Genre: </span>${genres}</span>
@@ -458,7 +463,6 @@ export class InformationsManager extends HTMLElement {
             </span>
         </h3>
         `
-
         let posterUrl = ""
         if (video.getPoster() != undefined) {
             // must be getContentUrl here... 
@@ -502,7 +506,7 @@ export class InformationsManager extends HTMLElement {
                 </div>
             </div>
         </div>
-        <div class="action-div">
+        <div class="action-div" style="${isShort?"display: none;":""}">
             <paper-button id="delete-indexation-btn">Delete</paper-button>
         </div>
         `
@@ -598,7 +602,7 @@ export class InformationsManager extends HTMLElement {
      * @param {*} titles 
      */
     setTitlesInformation(titles) {
-
+        let isShort = this.hasAttribute("short")
         if (titles.length == 0) {
             /** nothinh to display... */
             return;
@@ -608,7 +612,7 @@ export class InformationsManager extends HTMLElement {
 
         // Set the title div.
         this.shadowRoot.querySelector(".title-div").innerHTML = `
-        <h1 id="title-name" class="title"> </h1>
+        <h1 id="title-name" class="title" style="${isShort?"font-size: 1.3rem;text-align: left;":""}"> </h1>
         <h3 class="title-sub-title-div">             
             <span id="title-type"></span>
             <span id="title-year"></span>
@@ -642,13 +646,13 @@ export class InformationsManager extends HTMLElement {
                 justify-content: end;
             }
         </style>
-        <div id="${title.getId()}-div" class="title-div">
-            <div class="title-poster-div" >
+        <div id="${title.getId()}-div" class="title-div" >
+            <div class="title-poster-div" style="${isShort?"display: none;":""}">
                 <img src="${posterUrl}"></img>
             </div>
             <div class="title-informations-div">
                 <div class="title-genres-div"></div>
-                <p class="title-synopsis-div">${title.getDescription()}</p>
+                <p class="title-synopsis-div" style="${isShort?"display: none;":""}">${title.getDescription()}</p>
                 <div class="title-rating-div">
                     <iron-icon class="rating-star" icon="icons:star"></iron-icon>
                     <div style="display: flex; flex-direction: column;">
@@ -656,7 +660,7 @@ export class InformationsManager extends HTMLElement {
                         <div>${title.getRatingcount()}</div>
                     </div>
                 </div>
-                <div class="title-top-credit">
+                <div class="title-top-credit" style="${isShort?"display: none;":""}">
                     <div class="title-credit">
                         <div id="title-directors-title" class="title-credit-title">Director</div>
                         <div  id="title-directors-lst" class="title-credit-lst"></div>
@@ -671,11 +675,11 @@ export class InformationsManager extends HTMLElement {
                     </div>
                 </div>
             </div>
-            <div class="title-files-div">
+            <div class="title-files-div" style="${isShort?"display: none;":""}">
                 <paper-progress indeterminate></paper-progress>
             </div>
         </div>
-        <div class="action-div">
+        <div class="action-div" style="${isShort?"display: none;":""}">
             <paper-button id="delete-indexation-btn">Delete</paper-button>
         </div>
         `

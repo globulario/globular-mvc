@@ -8,6 +8,8 @@ import { Model } from '../Model';
 import { theme } from "./Theme";
 import * as getUuid from 'uuid-by-string'
 import { InformationsManager } from './Informations';
+import { VideoPlayer } from './Video';
+import { randomUUID } from './utility';
 
 
 function searchTitles(query, indexPath) {
@@ -336,7 +338,7 @@ export class SearchResults extends HTMLElement {
             }, true)
     }
 
-    isEmpty(){
+    isEmpty() {
         return this.tabs.querySelectorAll("paper-tab").length == 0
     }
 
@@ -618,12 +620,12 @@ export class SearchResultsPage extends HTMLElement {
             detailView.setVideo(hit.getVideo())
         }
 
-        this.querySelector(`#hit-div-mosaic-${hit.getIndex()}`).onmouseover = (evt)=>{
+        this.querySelector(`#hit-div-mosaic-${hit.getIndex()}`).onmouseover = (evt) => {
             evt.stopPropagation()
             detailView.playPreview()
         }
 
-        this.querySelector(`#hit-div-mosaic-${hit.getIndex()}`).onmouseout = (evt)=>{
+        this.querySelector(`#hit-div-mosaic-${hit.getIndex()}`).onmouseout = (evt) => {
             evt.stopPropagation()
             detailView.pausePreview()
         }
@@ -773,13 +775,13 @@ export class SearchTitleDetail extends HTMLElement {
             </div>
 
             <div style="display: flex;">
-                <paper-icon-button icon="av:play-circle-filled"></paper-icon-button>
+                <paper-icon-button id="play-video-button" icon="av:play-circle-filled"></paper-icon-button>
                 <paper-icon-button icon="av:icons:add-circle"></paper-icon-button>
                 <span style="flex-grow: 1;"></span>
-                <paper-icon-button icon="icons:arrow-drop-down-circle"></paper-icon-button>
+                <paper-icon-button id="title-info-button" icon="icons:arrow-drop-down-circle"></paper-icon-button>              
             </div>
             <div>
-
+                <globular-informations-manager short></globular-informations-manager>
             </div>
         </div>
         `
@@ -788,12 +790,41 @@ export class SearchTitleDetail extends HTMLElement {
         this.video = this.shadowRoot.querySelector("video")
     }
 
-    setTitle(title) {
 
+    setTitle(title) {
+        this.shadowRoot.querySelector("globular-informations-manager").setTitlesInformation([title])
         this.video.src = ""
         this.video.autoplay = false
         this.video.controls = false
+        this.video.muted = true
         this.title_ = title;
+
+        this.shadowRoot.querySelector("#title-info-button").onclick = () => {
+            //let uuid = randomUUID()
+            let html = `
+            <style>
+             ${theme}
+             paper-card {
+                 background-color: var(--palette-background-paper);
+             }
+            </style>
+
+            <paper-card>
+                <globular-informations-manager id="title-info-box"></globular-informations-manager>
+            </paper-card>
+            `
+            let titleInfoBox = document.getElementById("title-info-box")
+            if (titleInfoBox == undefined) {
+                let range = document.createRange()
+                document.body.appendChild(range.createContextualFragment(html)) 
+                titleInfoBox = document.getElementById("title-info-box")
+                titleInfoBox.parentNode.style.position = "fixed"
+                titleInfoBox.parentNode.style.top = "50%"
+                titleInfoBox.parentNode.style.left = "50%"
+                titleInfoBox.parentNode.style.transform = "translate(-50%, -50%)"
+            }
+                titleInfoBox.setTitlesInformation([title])
+        }
 
         let url = window.location.protocol + "//" + window.location.hostname + ":"
         if (Application.globular.config.Protocol == "https") {
@@ -824,21 +855,38 @@ export class SearchTitleDetail extends HTMLElement {
                     if (localStorage.getItem("user_token") != undefined) {
                         this.video.src += "&token=" + localStorage.getItem("user_token")
                     }
+
+                    this.shadowRoot.querySelector("#play-video-button").onclick = () => {
+                        let videoPlayer = document.getElementById("video-player-x")
+                        if (videoPlayer == null) {
+                            videoPlayer = new VideoPlayer()
+                            videoPlayer.id = "video-player-x"
+                            document.body.appendChild(videoPlayer)
+                            videoPlayer.style.position = "fixed"
+                            videoPlayer.style.top = "50%"
+                            videoPlayer.style.left = "50%"
+                            videoPlayer.style.transform = "translate(-50%, -50%)"
+                        }
+
+                        videoPlayer.play(path)
+                    }
                 }
             })
 
     }
 
+
+
     setVideo(video) {
 
     }
 
-    playPreview(){
+    playPreview() {
         console.log("play video ", this.title_.getName())
         this.video.play()
     }
 
-    pausePreview(){
+    pausePreview() {
         console.log("stop video ", this.title_.getName())
         this.video.pause()
     }
