@@ -925,7 +925,21 @@ export class InformationsManager extends HTMLElement {
                     Model.globular.titleService.getTitleFiles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
                         .then(rsp => {
                             let path = rsp.getFilepathsList().pop()
-                            playVideo(path, null, null)
+                            let titleInfoBox = document.getElementById("title-info-box")
+                            let parentNode = null
+                            if(titleInfoBox){
+                                parentNode = titleInfoBox.parentNode
+                            }
+
+                            playVideo(path, ()=>{
+                                if(titleInfoBox){
+                                    titleInfoBox.parentNode.removeChild(titleInfoBox)
+                                }
+                            }, ()=>{
+                                if(parentNode!=null){
+                                    parentNode.appendChild(titleInfoBox)
+                                }
+                            })
 
                         }).catch(err => ApplicationView.displayMessage(err, 3000))
 
