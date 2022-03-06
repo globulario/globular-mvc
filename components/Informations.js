@@ -592,7 +592,7 @@ export class InformationsManager extends HTMLElement {
 
         // Set the title div.
         this.shadowRoot.querySelector(".title-div").innerHTML = `
-        <h1 id="title-name" class="title" style="${isShort?"font-size: 1.3rem;text-align: left;":""}"> </h1>
+        <h1 id="title-name" class="title" style="${isShort?"font-size: 1.2rem;text-align: left;":""}"> </h1>
         <h3 class="title-sub-title-div">             
             <span id="title-type"></span>
             <span id="title-year"></span>

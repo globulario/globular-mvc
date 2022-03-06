@@ -37,11 +37,25 @@ import { ImageViewer } from './Image';
 import { ConversationServicePromiseClient } from 'globular-web-client/conversation/conversation_grpc_web_pb';
 import { IndexJsonObjectRequest, SearchDocumentsRequest, SearchResult, SearchResults } from 'globular-web-client/search/search_pb';
 import { AssociateFileWithTitleRequest, CreateTitleRequest, GetFileTitlesRequest, GetFileVideosRequest, GetVideoByIdRequest, Person, Poster, Title } from 'globular-web-client/title/title_pb';
+import { DownloadTorrentRequest, DropTorrentRequest, GetTorrentInfosRequest } from 'globular-web-client/torrent/torrent_pb';
+import { SetEmailResponse } from 'globular-web-client/resource/resource_pb';
 
 
 // keep track of shared directory
 var shared = {}
 var public_ = {}
+
+function formatBytes(bytes, decimals = 2) {
+    if (bytes === 0) return '0 Bytes';
+
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+}
 
 function markAsShare(dir) {
     shared[dir.path] = {};
@@ -662,6 +676,7 @@ export class FilesView extends HTMLElement {
                 this.menu.parentNode.removeChild(this.menu)
             }
         }
+
     }
 
     /**
@@ -894,44 +909,22 @@ export class FilesView extends HTMLElement {
             let url = evt.dataTransfer.getData("Url")
             // Here we got an url...
             if (url.endsWith(".torrent") || url.startsWith("magnet:")) {
-                // there is the way to install the torrent client on the server side.
-                // https://www.maketecheasier.com/how-to-download-torrents-from-the-command-line-in-ubuntu/
-                // there is an exemple of the command called on the sever side.
                 let path = this.__dir__.path
                 if (path.startsWith("/users/") || path.startsWith("/applications/")) {
                     path = Model.globular.config.DataPath + "/files" + path
                 }
-                let rqst = new RunCmdRequest
-                rqst.setCmd("torrent")
-                rqst.setArgsList(["download", url])
-                rqst.setPath(path)
-                rqst.setBlocking(true)
 
-                let stream = Application.globular.adminService.runCmd(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
-                let pid = -1;
+                let rqst = new DownloadTorrentRequest
+                rqst.setLink(url)
+                rqst.setDest(path)
+                rqst.setSeed(true) // Can be an option in the console interface...
 
-                // Here I will create a local event to be catch by the file uploader...
-                stream.on("data", (rsp) => {
-                    if (rsp.getPid() != null) {
-                        pid = rsp.getPid()
-                    }
-                    // Publish local event.
-                    if (this.__dir__ != undefined) {
-                        Model.eventHub.publish("__upload_torrent_event__", { pid: pid, path: this.__dir__.path, infos: rsp.getResult(), done: false, lnk: lnk }, true);
-                    }
-                });
-
-                stream.on("status", (status) => {
-                    if (status.code === 0) {
-                        if (this.__dir__ != undefined) {
-                            Model.eventHub.publish("refresh_dir_evt", this.__dir__.path, false);
-                            Model.eventHub.publish("__upload_torrent_event__", { pid: pid, path: this.__dir__.path, infos: "done", done: true, lnk: lnk }, true);
-                        }
-                    } else {
-                        // error here...
-                        ApplicationView.displayMessage(status.details, 3000)
-                    }
-                });
+                // Display the message.
+                Model.globular.torrentService.downloadTorrent(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+                    .then(() => {
+                        ApplicationView.displayMessage("your torrent was added and will start download soon...", 3000)
+                        // Here I will 
+                    }).catch(err => ApplicationView.displayMessage(err, 3000))
 
             } else if (url.endsWith(".jpeg") || url.endsWith(".jpg") || url.startsWith(".bpm") || url.startsWith(".gif") || url.startsWith(".png")) {
                 // I will get the file from the url and save it on the server in the current directory.
@@ -4116,35 +4109,73 @@ export class FilesUploader extends HTMLElement {
 
             }
 
+            .content{
+                min-width: 350px;
+
+            }
+
             .card-content{
                 overflow-y: auto;
+                width: 100%;
+
+            }
+
+            table {
+                width: 100%;
             }
 
             td {
                 text-align: center;
                 vertical-align: middle;
                 white-space: nowrap;
+                padding: 0px 5px 0px 5px;
             }
-
-
+            .file-name {
+               
+                overflow: hidden;
+                white-space:nowrap;
+                text-overflow:ellipsis;
+                max-width:500px;
+                display:inline-block;
+                background-color:var(--palette-background-default);
+            }
+            .file-path {
+                overflow: hidden;
+                white-space:nowrap;
+                text-overflow:ellipsis;
+                max-width:300px;
+                display:inline-block;
+                background-color:var(--palette-background-default);
+            }
+            .speedometer-div {
+                min-width: 60px;
+                text-align: right;
+            }
             tbody{
                 position: relative;
+                width: 100%;
             }
 
             tbody tr {
                 background-color: var(--palette-background-default);
                 transition: background 0.2s ease,padding 0.8s linear;
+                width: 100%;
             }
 
             tr.active{
                 filter: invert(10%);
             }
 
+            paper-tabs{
+                background: var(--palette-background-default); 
+                border-top: 1px solid var(--palette-background-paper);
+                width: 100%;
+            }
         </style>
         <div id="container">
             <iron-collapse id="collapse-panel">
                 <paper-card class="content">
-                    <paper-tabs selected="0" style="background: var(--palette-background-default);">
+                    <paper-tabs selected="0" style="">
                         <paper-tab id="file-upload-tab">Files</paper-tab>
                         <paper-tab id="links-download-tab">Links</paper-tab>
                         <paper-tab id="torrents-dowload-tab">Torrents</paper-tab>
@@ -4276,10 +4307,15 @@ export class FilesUploader extends HTMLElement {
         Model.eventHub.subscribe(
             "__upload_torrent_event__", (uuid) => { },
             (evt) => {
-                this.uploadTorrent(evt.pid, evt.path, evt.infos, evt.lnk, evt.done)
+                this.uploadTorrent(evt)
             }
             , true, this
         )
+
+
+        // Start display torrent infos...
+        this.getTorrentsInfo()
+
     }
 
     /**
@@ -4385,23 +4421,13 @@ export class FilesUploader extends HTMLElement {
 
     /**
      * Dowload a torrent on globular server.
-     * @param {*} pid The pid of the torrent command on the server side.
-     * @param {*} path The path of the torrent on the server
-     * @param {*} infos The infos receive from about the file transfert.
-     * @param {*} done If true 
+     * @param {*} torrent 
+     * @returns 
      */
-    uploadTorrent(pid, path, infos, lnk, done) {
-
-        let id = "torrent-download-row-" + pid
+    uploadTorrent(torrent) {
+        let uuid = getUuid(torrent.getName())
+        let id = "torrent-download-row-" + uuid
         let row = this.shadowRoot.querySelector("#" + id)
-
-        if (done) {
-            ApplicationView.displayMessage("File " + id + " was now uploaded!", 3000)
-            delete dirs[getUuidByString(path)]
-            Model.eventHub.publish("reload_dir_event", path, false);
-            row.parentNode.removeChild(row)
-            return
-        }
 
         // display the button.
         this.btn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-active)")
@@ -4409,6 +4435,7 @@ export class FilesUploader extends HTMLElement {
 
         if (row == undefined) {
             let row = document.createElement("tr")
+            row.done = false
             row.id = id
             let cancelCell = document.createElement("td")
             let cancelBtn = document.createElement("paper-icon-button")
@@ -4418,66 +4445,56 @@ export class FilesUploader extends HTMLElement {
             cellSource.style.textAlign = "left"
             cellSource.style.paddingLeft = "5px"
             cellSource.innerHTML = `
-            <style>
-                a {
-                    color: var(--palette-text-primary);
-                }
-
-                a span{
-                    padding: 2px;
-                }
-
-                a img{
-                    display: none;
-                }
-                
-            </style>
             <div style="display: flex; flex-direction: column;">
-                <span id="${id}_title" style="background-color:var(--palette-background-default);">${lnk}</span>
-                <span id="${id}_infos" style="background-color:var(--palette-background-default);"></span>
+                <div style="display: flex;">
+                    <span id="${id}_title" class="file-name" style="flex-grow: 1;">${torrent.getName()}</span>
+                    <span class="speedometer-div"></span>
+                </div>
+                <paper-progress style="width: 100%;"></paper-progress>
             </div>`;
             let cellDest = document.createElement("td")
             cellDest.style.textAlign = "left"
             cellDest.style.paddingLeft = "5px"
-            cellDest.innerHTML = `<span style="background-color:var(--palette-background-default);">${path}</span>`;
+            cellDest.innerHTML = `<span class="file-path">${torrent.getDestination()}</span>`;
 
             row.appendChild(cancelCell)
             row.appendChild(cellSource);
             row.appendChild(cellDest);
 
             cancelBtn.onclick = () => {
-                let rqst = new KillProcessRequest
-                let token = localStorage.getItem("user_token");
-
-                rqst.setPid(pid)
-                Model.globular.adminService.killProcess(rqst, {
-                    token: token,
-                    application: Application.application,
-                    domain: Application.domain
-                }).then(() => {
-                    row.parentElement.removeChild(row)
-                }).catch(err => ApplicationView.displayWaitMessage(err, 3000))
+                // So here I will remove the torrent from the list...
+                let rqst = new DropTorrentRequest
+                rqst.setName(torrent.getName())
+                Model.globular.torrentService.getTorrentInfos(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+                .then(rsp => {
+                    row.parentNode.removeChild(row)
+                }).catch(err=>ApplicationView.displayMessage(err, 3000))
             }
 
             // Append to files panels.
             this.torrent_download_table.appendChild(row)
             this.btn.click()
             this.torrentsDowloadTab.click();
-        } else {
-            console.log(infos)
-            let span_infos = row.querySelector("#" + id + "_infos")
-            let html = `<div style="display: flex; flex-direction: column;">`
-            let infos_ = infos.trim().split(":")
-            if (infos_.length > 2) {
-                infos_.forEach(info => {
-                    html += `<div>${info}</div>`
-                })
-                html += `</div>`
-                span_infos.innerHTML = html;
-            } else {
-                row.parentNode.removeChild(row)
-                console.log(infos.trim())
-            }
+        }
+
+        let progressBar = row.querySelector("paper-progress")
+        progressBar.value = torrent.getPercent()
+
+        let speedo = row.querySelector(".speedometer-div")
+
+        // TODO display the list of files...
+
+        if( torrent.getPercent() == 100){
+            progressBar.style.display = "none"
+            speedo.innerHTML = "Done"
+        }else{
+            speedo.innerHTML = formatBytes(torrent.getDownloadrate(), 1)
+        }
+
+        if (row.done) {
+            ApplicationView.displayMessage("File " + torrent.getName() + " was now uploaded!", 3000)
+            Model.eventHub.publish("reload_dir_event", torrent.getDestination(), false);
+            return
         }
 
     }
@@ -4595,6 +4612,29 @@ export class FilesUploader extends HTMLElement {
         })
 
     }
+
+    /**
+    * A loop that get torrent info from the server...
+    */
+    getTorrentsInfo() {
+
+        let getTorrentInfo = () => {
+            let rqst = new GetTorrentInfosRequest
+            Model.globular.torrentService.getTorrentInfos(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+                .then(rsp => {
+                    /** console.log(rsp.getInfosList())*/
+                    rsp.getInfosList().forEach(torrent => {
+                        Model.eventHub.publish("__upload_torrent_event__", torrent, true);
+                    })
+
+                }).catch(err => {
+                    console.log(err)
+                })
+        }
+
+        setInterval(getTorrentInfo, 1000)
+    }
+
 }
 
 customElements.define('globular-files-uploader', FilesUploader)

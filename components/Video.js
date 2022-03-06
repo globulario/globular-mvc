@@ -65,7 +65,6 @@ export class VideoPlayer extends HTMLElement {
             .header{
                 display: flex;
                 align-items: center;
-                background-color: var(--palette-primary-accent);
             }
 
             .header span{
@@ -77,6 +76,12 @@ export class VideoPlayer extends HTMLElement {
                 display: block;
                 width:auto;
                 height: auto;
+            }
+
+            paper-card {
+                background: var(--palette-background-default); 
+                border-top: 1px solid var(--palette-background-paper);
+                border-left: 1px solid var(--palette-background-paper);
             }
         </style>
         <paper-card id="container">
