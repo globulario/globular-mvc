@@ -759,6 +759,8 @@ export class SearchTitleDetail extends HTMLElement {
 
             .video-div video{
                 max-width: 256px;
+                max-height: 150px;
+                background-color: black;
             }
 
             .title-title-div{

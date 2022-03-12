@@ -158,9 +158,14 @@ function _readDir(path, callback, errorCallback) {
 }
 
 function getHiddenFiles(path, callback) {
-    let index = path.lastIndexOf("/")
-    let hiddenFilePath = path.substring(0, index) + "/.hidden/" + path.substring(index + 1, path.lastIndexOf(".")) + "/__preview__"
-    _readDir(hiddenFilePath, callback, err => { console.log(err); callback(null); })
+
+    let thumbnailPath = path.replace("/playlist.m3u8", "")
+    if (thumbnailPath.lastIndexOf(".") != -1) {
+        thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("."))
+    }
+    thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/__preview__"
+
+    _readDir(thumbnailPath, callback, err => { console.log(err); callback(null); })
 }
 
 function _publishSetDirEvent(path, file_explorer_) {
@@ -293,6 +298,10 @@ export class FilesView extends HTMLElement {
             this.menu.file.path.split("/").forEach(item => {
                 url += "/" + encodeURIComponent(item.trim())
             })
+
+            if (this.menu.file.mime == "video/hls-stream") {
+                url += "/playlist.m3u8"
+            }
 
             url += "?application=" + Model.application;
             if (localStorage.getItem("user_token") != undefined) {
@@ -1204,7 +1213,11 @@ export class FilesListView extends FilesView {
             let mime = "Dossier de fichiers"
             let icon = "icons:folder"
 
-            if (!f.isDir) {
+            if (f._mime.length > 0) {
+                mime = f._mime
+            }
+
+            if (f._mime.length > 0) {
                 icon = "editor:insert-drive-file";
                 if (f.size > 1024) {
                     if (f.size > 1024 * 1024) {
@@ -1269,7 +1282,12 @@ export class FilesListView extends FilesView {
             span.onclick = (evt) => {
                 evt.stopPropagation();
                 if (f.mime.startsWith("video")) {
-                    Model.eventHub.publish("__play_video__", { path: f.path, file_explorer_id: this._file_explorer_.id }, true)
+                    let path = f.path
+                    if (f.mime == "video/hls-stream") {
+                        path += "/playlist.m3u8"
+                    }
+
+                    Model.eventHub.publish("__play_video__", { path: path, file_explorer_id: this._file_explorer_.id }, true)
                 } else if (f.isDir) {
                     _publishSetDirEvent(f._path, this._file_explorer_)
                 } else if (f.mime.startsWith("image")) {
@@ -1565,8 +1583,10 @@ export class FilesIconView extends FilesView {
             }
             // the first part of the mime type will be use as tile and category of file.
             let fileType = f._mime.split("/")[0]
-            if (f.isDir) {
+
+            if (f.isDir && fileType.length == 0) {
                 fileType = "folder"
+
             }
             if (filesByType[fileType] == undefined) {
                 filesByType[fileType] = []
@@ -1665,7 +1685,52 @@ export class FilesIconView extends FilesView {
                     parentPath = file.path.substring(0, file.path.lastIndexOf("."))
                 }
 
-                if (file.isDir) {
+                if (fileType == "video") {
+                    /** In that case I will display the vieo preview. */
+                    getHiddenFiles(file.path, previewDir => {
+                        let h = 72;
+                        let w = 128;
+                        if (previewDir) {
+                            let path = file.path
+                            let preview = new VideoPreview(path, previewDir._files, h, () => {
+                                if (preview.width > 0 && preview.height > 0) {
+                                    w = (preview.width / preview.height) * h
+                                }
+                                fileNameSpan.style.wordBreak = "break-all"
+                                fileNameSpan.style.fontSize = ".85rem"
+                                fileNameSpan.style.maxWidth = w + "px";
+                            })
+
+                            // keep the explorer link...
+                            preview._file_explorer_ = this._file_explorer_
+                            preview.name = file.name;
+                            preview.onpreview = () => {
+                                let previews = this.div.querySelectorAll("globular-video-preview")
+                                previews.forEach(p => {
+                                    // stop all other preview...
+                                    if (preview.name != p.name) {
+                                        p.stopPreview()
+                                    }
+                                })
+                            }
+
+                            fileIconDiv.insertBefore(preview, fileIconDiv.firstChild)
+
+                            preview.draggable = false
+
+                            fileIconDiv.ondrop = (evt) => {
+                                evt.stopPropagation();
+                                evt.preventDefault()
+                                let url = evt.dataTransfer.getData("Url");
+                                if (url.startsWith("https://www.imdb.com/title")) {
+                                    this.setImdbTitleInfo(url, file)
+                                }
+                            }
+                        }
+                    })
+
+
+                } else if (file.isDir) {
 
                     // Here I will create a folder mosaic from the folder content...
                     let folderIcon = document.createRange().createContextualFragment(`<iron-icon icon="icons:folder"></iron-icon>`)
@@ -1678,47 +1743,6 @@ export class FilesIconView extends FilesView {
                     }
 
                     folderIcon.draggable = false
-
-                } else if (fileType == "video") {
-                    /** In that case I will display the vieo preview. */
-                    getHiddenFiles(file.path, previewDir => {
-                        let h = 72;
-                        let w = 128;
-                        let preview = new VideoPreview(file.path, previewDir._files, h, () => {
-                            if (preview.width > 0 && preview.height > 0) {
-                                w = (preview.width / preview.height) * h
-                            }
-                            fileNameSpan.style.wordBreak = "break-all"
-                            fileNameSpan.style.fontSize = ".85rem"
-                            fileNameSpan.style.maxWidth = w + "px";
-                        })
-
-                        // keep the explorer link...
-                        preview._file_explorer_ = this._file_explorer_
-                        preview.name = file.name;
-                        preview.onpreview = () => {
-                            let previews = this.div.querySelectorAll("globular-video-preview")
-                            previews.forEach(p => {
-                                // stop all other preview...
-                                if (preview.name != p.name) {
-                                    p.stopPreview()
-                                }
-                            })
-                        }
-
-                        fileIconDiv.insertBefore(preview, fileIconDiv.firstChild)
-
-                        preview.draggable = false
-
-                        fileIconDiv.ondrop = (evt) => {
-                            evt.stopPropagation();
-                            evt.preventDefault()
-                            let url = evt.dataTransfer.getData("Url");
-                            if (url.startsWith("https://www.imdb.com/title")) {
-                                this.setImdbTitleInfo(url, file)
-                            }
-                        }
-                    })
 
                 } else if (file.thumbnail != undefined) {
                     /** Display the thumbnail. */
@@ -1749,9 +1773,9 @@ export class FilesIconView extends FilesView {
                             Model.eventHub.publish("__read_file__", { path: file.path, file_explorer_id: this._file_explorer_.id }, true)
                         }
                     }
-                }
+                } else
 
-                fileIconDiv.draggable = true
+                    fileIconDiv.draggable = true
 
                 fileIconDiv.ondragstart = (evt) => {
                     evt.dataTransfer.setData('file', file.path);
@@ -2090,6 +2114,12 @@ export class PathNavigator extends HTMLElement {
 
         if (this.path == dir._path || !(dir.path.startsWith("/public") || public_[dir.path] != undefined || dir.path.startsWith("/shared") || shared[dir.path] != undefined || dir.path.startsWith("/applications/" + Application.application) || dir.path.startsWith("/users/" + Application.account.id))) {
             return;
+        }
+
+        console.log("----------> dir ", dir)
+        if (dir._mime == "stream.hls") {
+            // Here I will simply return...
+            return
         }
 
         let values = dir._path.split("/")
@@ -2701,24 +2731,7 @@ export class FileNavigator extends HTMLElement {
         rqst.setPath(path)
         Model.globular.fileService.getFileInfo(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
             .then(rsp => {
-                let f = File.fromString(rsp.getData());
-                if (f.mime.startsWith("video") || f.mime.startsWith("audio") || f.mime.startsWith("image")) {
-                    // So here I will get the hidden file for the video previews.
-                    let path = f.path.replace(f.name, "")
-                    let hiddenDirPath = path + ".hidden/" + f.name.substring(0, f.name.lastIndexOf("."))
-                    // Get the hidden video directory...
-                    _readDir(hiddenDirPath, dir => {
-                        callback(dir);
-                        callback(f);
-                    }, e => {
-                        callback(f);
-                    })
-
-                } else {
-                    callback(f);
-                }
-
-
+                callback(f);
 
             })
             .catch(e => errorCallback(e))
@@ -4062,7 +4075,11 @@ export class VideoPreview extends HTMLElement {
      */
     play() {
         if (this._file_explorer_ != undefined) {
-            Model.eventHub.publish("__play_video__", { path: this.path, file_explorer_id: this._file_explorer_.id }, true)
+            let path = this.path
+            if (path.indexOf(".") == -1) {
+                path += "/playlist.m3u8"
+            }
+            Model.eventHub.publish("__play_video__", { path: path, file_explorer_id: this._file_explorer_.id }, true)
         }
 
         if (this.onplay != undefined) {
@@ -4447,10 +4464,18 @@ export class FilesUploader extends HTMLElement {
             cellSource.innerHTML = `
             <div style="display: flex; flex-direction: column;">
                 <div style="display: flex;">
+                    <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
+                        <iron-icon  id="collapse-btn"  icon="unfold-less" --iron-icon-fill-color:var(--palette-text-primary);"></iron-icon>
+                        <paper-ripple class="circle" recenters=""></paper-ripple>
+                    </div>
                     <span id="${id}_title" class="file-name" style="flex-grow: 1;">${torrent.getName()}</span>
                     <span class="speedometer-div"></span>
                 </div>
-                <paper-progress style="width: 100%;"></paper-progress>
+                <iron-collapse id="collapse-panel" style="display: flex; flex-direction: column; width: 90%;">
+                    <div id="file-list-div" style="display: flex; flex-direction: column;">
+                    </div>
+                </iron-collapse>
+                <paper-progress  id="${id}_progress_bar"  style="width: 100%;"></paper-progress>
             </div>`;
             let cellDest = document.createElement("td")
             cellDest.style.textAlign = "left"
@@ -4465,36 +4490,64 @@ export class FilesUploader extends HTMLElement {
                 // So here I will remove the torrent from the list...
                 let rqst = new DropTorrentRequest
                 rqst.setName(torrent.getName())
-                Model.globular.torrentService.getTorrentInfos(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
-                .then(rsp => {
-                    row.parentNode.removeChild(row)
-                }).catch(err=>ApplicationView.displayMessage(err, 3000))
+                Model.globular.torrentService.dropTorrent(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+                    .then(rsp => {
+                        row.parentNode.removeChild(row)
+                    }).catch(err => ApplicationView.displayMessage(err, 3000))
             }
 
             // Append to files panels.
             this.torrent_download_table.appendChild(row)
             this.btn.click()
             this.torrentsDowloadTab.click();
-        }
+        } else {
 
-        let progressBar = row.querySelector("paper-progress")
-        progressBar.value = torrent.getPercent()
+            let progressBar = row.querySelector(`#${id}_progress_bar`)
 
-        let speedo = row.querySelector(".speedometer-div")
+            let speedo = row.querySelector(".speedometer-div")
+            if (torrent.getPercent() == 100) {
+                progressBar.style.display = "none"
+                speedo.innerHTML = "Done"
+            } else {
+                speedo.innerHTML = formatBytes(torrent.getDownloadrate(), 1)
+                progressBar.value = torrent.getPercent()
 
-        // TODO display the list of files...
+            }
 
-        if( torrent.getPercent() == 100){
-            progressBar.style.display = "none"
-            speedo.innerHTML = "Done"
-        }else{
-            speedo.innerHTML = formatBytes(torrent.getDownloadrate(), 1)
-        }
+            let collapse_btn = row.querySelector("#collapse-btn")
+            let collapse_panel = row.querySelector("#collapse-panel")
+            collapse_btn.onclick = () => {
+                if (!collapse_panel.opened) {
+                    collapse_btn.icon = "unfold-more"
+                } else {
+                    collapse_btn.icon = "unfold-less"
+                }
+                collapse_panel.toggle();
+            }
 
-        if (row.done) {
-            ApplicationView.displayMessage("File " + torrent.getName() + " was now uploaded!", 3000)
-            Model.eventHub.publish("reload_dir_event", torrent.getDestination(), false);
-            return
+            let filesDiv = row.querySelector("#file-list-div")
+            let range = document.createRange()
+            /*
+                        // So here I will display the list of files contain in the torrent.
+                        torrent.getFilesList().forEach(f => {
+                            // So here I will create the file list...
+                            let id = "_"+getUuid(f.getPath())
+                            let fileRow = filesDiv.querySelector(`#_${id}`)
+                            if(fileRow == undefined){
+                                let html=`
+                                <div id="${id}" style="display: flex; flex-direction: column;"> 
+                                    <div style="display: flex;">
+                                        <span>${f.getPath()}</span>
+                                    </div>
+                                    <paper-progress id="${id}_progress_bar" style="width: 100%;"></paper-progress>
+                                </div>
+                                `
+                                filesDiv.appendChild(range.createContextualFragment(html))
+                                fileRow = filesDiv.querySelector(`#${id}`)
+                            }
+                            let progressBar_ = fileRow.querySelector(`#${id}_progress_bar`)
+                            progressBar_.value = f.getPercent()
+                        })*/
         }
 
     }
@@ -4608,7 +4661,6 @@ export class FilesUploader extends HTMLElement {
             ApplicationView.displayMessage("All files are now uploaded!", 2000)
             delete dirs[getUuidByString(path)]
             Model.eventHub.publish("reload_dir_event", path, false)
-            //this.btn.click()
         })
 
     }
@@ -4618,21 +4670,22 @@ export class FilesUploader extends HTMLElement {
     */
     getTorrentsInfo() {
 
-        let getTorrentInfo = () => {
-            let rqst = new GetTorrentInfosRequest
-            Model.globular.torrentService.getTorrentInfos(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
-                .then(rsp => {
-                    /** console.log(rsp.getInfosList())*/
-                    rsp.getInfosList().forEach(torrent => {
-                        Model.eventHub.publish("__upload_torrent_event__", torrent, true);
-                    })
+        let rqst = new GetTorrentInfosRequest
 
-                }).catch(err => {
-                    console.log(err)
-                })
-        }
+        let stream = Model.globular.torrentService.getTorrentInfos(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+        stream.on("data", (rsp) => {
+            /** Local event... */
+            rsp.getInfosList().forEach(torrent => {
+                Model.eventHub.publish("__upload_torrent_event__", torrent, true);
+            })
+        });
 
-        setInterval(getTorrentInfo, 1000)
+        stream.on("status", (status) => {
+            if (status.code != 0) {
+                console.log(err)
+            }
+        });
+
     }
 
 }

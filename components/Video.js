@@ -4,6 +4,7 @@ import { Model } from '../Model';
 import { Application } from "../Application";
 import Plyr from 'plyr';
 import "./plyr.css"
+import Hls, { ElementaryStreamTypes } from "hls.js";
 
 
 Object.defineProperty(HTMLMediaElement.prototype, 'playing', {
@@ -34,7 +35,7 @@ export function playVideo(path, onplay, onclose) {
         videoPlayer.style.left = "50%"
         videoPlayer.style.transform = "translate(-50%, -50%)"
     }
-    
+
     videoPlayer.onplay = onplay
     videoPlayer.onclose = onclose
     videoPlayer.play(path)
@@ -101,7 +102,7 @@ export class VideoPlayer extends HTMLElement {
         this.video.controls = true
         this.onclose = null
         this.onplay = null
-        
+
 
         this.appendChild(this.video)
 
@@ -115,12 +116,18 @@ export class VideoPlayer extends HTMLElement {
             this.video.style.maxWidth = this.parentNode.offsetWidth + "px"
         });
 
-        this.shadowRoot.querySelector("#video-close-btn").onclick = ()=>{
+        this.shadowRoot.querySelector("#video-close-btn").onclick = () => {
             this.stop()
             this.shadowRoot.querySelector("#container").style.display = "none"
-            if(this.onclose){
+            if (this.onclose) {
                 this.onclose()
             }
+        }
+
+        // HLS for streamming...
+        this.hls = null;
+        if (Hls.isSupported()) {
+            this.hls = new Hls();
         }
     }
 
@@ -130,16 +137,18 @@ export class VideoPlayer extends HTMLElement {
 
     play(path) {
 
-        this.shadowRoot.querySelector("#title-span").innerHTML = path.substring(path.lastIndexOf("/") + 1)
-        this.shadowRoot.querySelector("#container").style.display = ""
+        // Set the title...
+        let thumbnailPath = path.replace("/playlist.m3u8", "")
 
-        let thumbnailPath = path
-        // /users/sa/Fucking Her Way to Fame.mp4
-        // /users/sa/.hidden/Fucking Her Way to Fame/__timeline__/thumbnails.vtt
-        thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("."))
+        this.shadowRoot.querySelector("#title-span").innerHTML = thumbnailPath.substring(thumbnailPath.lastIndexOf("/") + 1)
+        this.shadowRoot.querySelector("#container").style.display = ""
+       
+        if(thumbnailPath.lastIndexOf(".")!= -1){
+            thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("."))
+        }
+        
         thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/__timeline__/thumbnails.vtt"
-        console.log(thumbnailPath)
-        // this.player
+
         this.player.setPreviewThumbnails({ enabled: "true", src: thumbnailPath })
 
 
@@ -152,7 +161,6 @@ export class VideoPlayer extends HTMLElement {
             return
         }
 
-
         // set the complete url.
         let url = window.location.protocol + "//" + window.location.hostname + ":"
         if (Application.globular.config.Protocol == "https") {
@@ -162,23 +170,45 @@ export class VideoPlayer extends HTMLElement {
         }
 
         path.split("/").forEach(item => {
-            url += "/" + encodeURIComponent(item.trim())
+            item = item.trim()
+            if (item.length > 0) {
+                url += "/" + encodeURIComponent(item)
+            }
         })
 
-        // Set the path and play.
-        this.video.src = url
-        this.video.src += "?application=" + Model.application
+        url += "?application=" + Model.application
         if (localStorage.getItem("user_token") != undefined) {
-            this.video.src += "&token=" + localStorage.getItem("user_token")
+            url += "&token=" + localStorage.getItem("user_token")
+        }
+          // Set the path and play.
+          this.video.src = url
+
+        if (path.endsWith(".m3u8")) {
+            console.log(url)
+            this.hls.attachMedia(this.video);
+            this.hls.on(Hls.Events.MEDIA_ATTACHED, () => {
+                console.log('video and hls.js are now bound together !');
+                this.hls.loadSource(url);
+                this.hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
+                    console.log(
+                        'manifest loaded, found ' + data.levels.length + ' quality level'
+                    );
+                    this.video.play();
+                });
+            });
         }
 
         this.video.style.maxWidth = this.parentNode.offsetWidth + "px"
 
-        if(this.onplay != null){
+        if (this.onplay != null) {
             this.onplay()
         }
+
     }
 
+    /**
+     * Stop the video.
+     */
     stop() {
         this.video.pause();
     }
