@@ -8,8 +8,7 @@ import { Model } from '../Model';
 import { theme } from "./Theme";
 import * as getUuid from 'uuid-by-string'
 import { InformationsManager } from './Informations';
-import { playVideo, VideoPlayer } from './Video';
-import { randomUUID } from './utility';
+import { playVideo } from './Video';
 
 
 function searchTitles(query, indexPath) {
@@ -622,12 +621,12 @@ export class SearchResultsPage extends HTMLElement {
 
         this.querySelector(`#hit-div-mosaic-${hit.getIndex()}`).onmouseover = (evt) => {
             evt.stopPropagation()
-            detailView.playPreview()
+            //detailView.playPreview()
         }
 
         this.querySelector(`#hit-div-mosaic-${hit.getIndex()}`).onmouseout = (evt) => {
             evt.stopPropagation()
-            detailView.pausePreview()
+            //detailView.pausePreview()
         }
 
     }
@@ -753,18 +752,10 @@ export class SearchTitleDetail extends HTMLElement {
                 box-shadow: rgba(0, 0, 0, 0.19) 0px 10px 20px, rgba(0, 0, 0, 0.23) 0px 6px 6px;
             }
 
-            .video-div{
-                
-            }
-
-            .video-div video{
+            .video-div img{
                 max-width: 256px;
                 max-height: 150px;
                 background-color: black;
-            }
-
-            .title-title-div{
-                
             }
 
         </style>
@@ -773,7 +764,7 @@ export class SearchTitleDetail extends HTMLElement {
         <div class="search-title-detail">
             <div class="video-div">
                 <div class="title-title-div"></div>
-                <video></video>
+                <img id="title-preview"></img>
             </div>
 
             <div style="display: flex;">
@@ -789,16 +780,12 @@ export class SearchTitleDetail extends HTMLElement {
         `
 
         // test create offer...
-        this.video = this.shadowRoot.querySelector("video")
+        this.titlePreview = this.shadowRoot.querySelector("#title-preview")
     }
 
 
     setTitle(title) {
         this.shadowRoot.querySelector("globular-informations-manager").setTitlesInformation([title])
-        this.video.src = ""
-        this.video.autoplay = false
-        this.video.controls = false
-        this.video.muted = true
         this.title_ = title;
 
         this.shadowRoot.querySelector("#title-info-button").onclick = () => {
@@ -835,6 +822,8 @@ export class SearchTitleDetail extends HTMLElement {
             url += Application.globular.config.PortHttp
         }
 
+
+    
         // paly only the first file...
         let rqst = new GetTitleFilesRequest
         rqst.setTitleid(title.getId())
@@ -846,17 +835,21 @@ export class SearchTitleDetail extends HTMLElement {
                 if (rsp.getFilepathsList().length > 0) {
                     let path = rsp.getFilepathsList().pop()
 
-                    // creste a clean url 
-                    path.split("/").forEach(item => {
-                        url += "/" + encodeURIComponent(item.trim())
+                    let thumbnailPath = path
+                    if (thumbnailPath.lastIndexOf(".mp4") != -1) {
+                        thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("."))
+                    }
+                    thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/preview.gif"
+            
+                    thumbnailPath.split("/").forEach(item => {
+                        item = item.trim()
+                        if (item.length > 0) {
+                            url += "/" + encodeURIComponent(item)
+                        }
                     })
 
-                    // Set the path and play.
-                    this.video.src = url
-                    this.video.src += "?application=" + Model.application
-                    if (localStorage.getItem("user_token") != undefined) {
-                        this.video.src += "&token=" + localStorage.getItem("user_token")
-                    }
+                    console.log(url)
+                    this.titlePreview.src = url
 
                     this.shadowRoot.querySelector("#play-video-button").onclick = () => {
                         playVideo(path, null, null)
@@ -870,15 +863,6 @@ export class SearchTitleDetail extends HTMLElement {
 
     }
 
-    playPreview() {
-        console.log("play video ", this.title_.getName())
-        this.video.play()
-    }
-
-    pausePreview() {
-        console.log("stop video ", this.title_.getName())
-        this.video.pause()
-    }
 }
 
 customElements.define('globular-search-title-detail', SearchTitleDetail)

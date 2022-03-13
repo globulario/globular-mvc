@@ -79,7 +79,7 @@ function getElementIndex(element) {
     return Array.from(element.parentNode.children).indexOf(element);
 }
 
-function getImage(callback, images, files, index) {
+export function getImage(callback, images, files, index) {
     let f = files[index];
     index++
 

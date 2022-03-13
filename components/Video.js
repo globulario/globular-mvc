@@ -24,22 +24,37 @@ String.prototype.endsWith = function (suffix) {
  * @param {*} onplay 
  * @param {*} onclose 
  */
-export function playVideo(path, onplay, onclose) {
-
+export function playVideo(path, onplay, onclose, parent) {
     let videoPlayer = document.getElementById("video-player-x")
     if (videoPlayer == null) {
         videoPlayer = new VideoPlayer()
         videoPlayer.id = "video-player-x"
-        document.body.appendChild(videoPlayer)
+    }
+
+    if (parent == undefined) {
+        parent = document.body
         videoPlayer.style.position = "fixed"
         videoPlayer.style.top = "50%"
         videoPlayer.style.left = "50%"
         videoPlayer.style.transform = "translate(-50%, -50%)"
+    } else {
+        // reset it...
+        videoPlayer.style.position = ""
+        videoPlayer.style.top = ""
+        videoPlayer.style.left = ""
+        videoPlayer.style.transform = ""
     }
 
-    videoPlayer.onplay = onplay
-    videoPlayer.onclose = onclose
+    parent.appendChild(videoPlayer)
+    if (onplay && !videoPlayer.onplay) {
+        videoPlayer.onplay = onplay
+    }
+    if (onclose && !videoPlayer.onclose) {
+        videoPlayer.onclose = onclose
+    }
+
     videoPlayer.play(path)
+    return videoPlayer
 }
 
 
@@ -54,6 +69,7 @@ export class VideoPlayer extends HTMLElement {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
+        let hideheader = this.getAttribute("hideheader") != undefined
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -87,7 +103,7 @@ export class VideoPlayer extends HTMLElement {
             }
         </style>
         <paper-card id="container">
-            <div class="header">
+            <div class="header" style="${hideheader ? "display:none;" : ""}">
                 <paper-icon-button id="video-close-btn" icon="icons:close"></paper-icon-button>
                 <span id="title-span"></span>
             </div>
@@ -114,7 +130,9 @@ export class VideoPlayer extends HTMLElement {
 
         // Get the parent size and set the max width of te
         window.addEventListener("resize", () => {
-            this.video.style.maxWidth = this.parentNode.offsetWidth + "px"
+            if (this.parentElement.offsetWidth > 0) {
+                this.video.style.maxWidth = this.parentNode.offsetWidth + "px"
+            }
         });
 
         this.shadowRoot.querySelector("#video-close-btn").onclick = () => {
@@ -143,20 +161,20 @@ export class VideoPlayer extends HTMLElement {
 
         this.shadowRoot.querySelector("#title-span").innerHTML = thumbnailPath.substring(thumbnailPath.lastIndexOf("/") + 1)
         this.shadowRoot.querySelector("#container").style.display = ""
-       
+
         // Only HLS and MP4 are allow by the video player so if is not one it's the other...
-        if(thumbnailPath.lastIndexOf(".mp4")!= -1){
+        if (thumbnailPath.lastIndexOf(".mp4") != -1) {
             thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("."))
-        }else if(!path.endsWith("/playlist.m3u8")){
+        } else if (!path.endsWith("/playlist.m3u8")) {
             path += "/playlist.m3u8"
-        }else{
+        } else {
             ApplicationView.displayMessage("the file cannot be play by the video player", 3000)
             return
         }
         thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/__timeline__/thumbnails.vtt"
 
         this.player.setPreviewThumbnails({ enabled: "true", src: thumbnailPath })
-        
+
         if (!this.video.paused && this.video.currentSrc.endsWith(path)) {
             // Do nothing...
             return
@@ -185,11 +203,10 @@ export class VideoPlayer extends HTMLElement {
         if (localStorage.getItem("user_token") != undefined) {
             url += "&token=" + localStorage.getItem("user_token")
         }
-          // Set the path and play.
-          this.video.src = url
+        // Set the path and play.
+        this.video.src = url
 
         if (path.endsWith(".m3u8")) {
-            console.log(url)
             this.hls.attachMedia(this.video);
             this.hls.on(Hls.Events.MEDIA_ATTACHED, () => {
                 console.log('video and hls.js are now bound together !');
@@ -203,7 +220,9 @@ export class VideoPlayer extends HTMLElement {
             });
         }
 
-        this.video.style.maxWidth = this.parentNode.offsetWidth + "px"
+        if (this.parentNode.offsetWidth > 0) {
+            this.video.style.maxWidth = this.parentNode.offsetWidth + "px"
+        }
 
         if (this.onplay != null) {
             this.onplay()
@@ -216,6 +235,22 @@ export class VideoPlayer extends HTMLElement {
      */
     stop() {
         this.video.pause();
+    }
+
+    hideHeader() {
+        this.shadowRoot.querySelector(".header").style.display = "none";
+    }
+
+    showHeader() {
+        this.shadowRoot.querySelector(".header").style.display = "";
+    }
+
+    setHeight(h){
+        this.querySelector("video").style.maxHeight = h + "px"
+    }
+
+    resetHeight(){
+        this.querySelector("video").style.maxHeight = ""
     }
 }
 
