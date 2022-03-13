@@ -5,6 +5,7 @@ import { Application } from "../Application";
 import Plyr from 'plyr';
 import "./plyr.css"
 import Hls, { ElementaryStreamTypes } from "hls.js";
+import { ApplicationView } from "../ApplicationView";
 
 
 Object.defineProperty(HTMLMediaElement.prototype, 'playing', {
@@ -143,14 +144,19 @@ export class VideoPlayer extends HTMLElement {
         this.shadowRoot.querySelector("#title-span").innerHTML = thumbnailPath.substring(thumbnailPath.lastIndexOf("/") + 1)
         this.shadowRoot.querySelector("#container").style.display = ""
        
-        if(thumbnailPath.lastIndexOf(".")!= -1){
+        // Only HLS and MP4 are allow by the video player so if is not one it's the other...
+        if(thumbnailPath.lastIndexOf(".mp4")!= -1){
             thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("."))
+        }else if(!path.endsWith("/playlist.m3u8")){
+            path += "/playlist.m3u8"
+        }else{
+            ApplicationView.displayMessage("the file cannot be play by the video player", 3000)
+            return
         }
         thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/__timeline__/thumbnails.vtt"
 
         this.player.setPreviewThumbnails({ enabled: "true", src: thumbnailPath })
-
-
+        
         if (!this.video.paused && this.video.currentSrc.endsWith(path)) {
             // Do nothing...
             return

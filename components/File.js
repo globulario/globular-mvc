@@ -4076,9 +4076,6 @@ export class VideoPreview extends HTMLElement {
     play() {
         if (this._file_explorer_ != undefined) {
             let path = this.path
-            if (path.indexOf(".mp4") == -1) {
-                path += "/playlist.m3u8"
-            }
             Model.eventHub.publish("__play_video__", { path: path, file_explorer_id: this._file_explorer_.id }, true)
         }
 

@@ -136,9 +136,13 @@ function _readDir(path, callback, errorCallback) {
 
 // Return the content of video preview div.
 function getHiddenFiles(path, callback) {
-    let index = path.lastIndexOf("/")
-    let hiddenFilePath = path.substring(0, index) + "/.hidden/" + path.substring(index + 1, path.lastIndexOf(".")) + "/__preview__"
-    _readDir(hiddenFilePath, callback, err => { console.log(err); callback(null); })
+    // Set the title...
+    let thumbnailPath = path.replace("/playlist.m3u8", "")
+    if (thumbnailPath.lastIndexOf(".mp4") != -1) {
+        thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("."))
+    }
+    thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/__preview__"
+    _readDir(thumbnailPath, callback, err => { console.log(err); callback(null); })
 }
 
 // Create the video preview...
@@ -217,9 +221,9 @@ function getVideoPreview(parent, path, name, callback) {
         preview.showPlayBtn()
 
         preview.onplay = (path) => {
-            playVideo(path, ()=>{
+            playVideo(path, () => {
                 let titleInfoBox = document.getElementById("title-info-box")
-                if(titleInfoBox){
+                if (titleInfoBox) {
                     titleInfoBox.parentNode.removeChild(titleInfoBox)
                 }
             }, null)
@@ -302,7 +306,7 @@ export function GetEpisodes(indexPath, title, callback) {
                     Model.globular.titleService.getFileTitles(rqst_, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
                         .then(rsp => {
                             episodes = episodes.concat(rsp.getTitles().getTitlesList())
-                            
+
                             if (rsp.getFilepathsList().length == 0) {
                                 callback(episodes)
                                 return
@@ -387,7 +391,7 @@ export class InformationsManager extends HTMLElement {
         <div id="container">
             <div id="header">
                 <div class="title-div"></div>
-                <paper-icon-button icon="close" style="${isShort?"display: none;":""}"></paper-icon-button>
+                <paper-icon-button icon="close" style="${isShort ? "display: none;" : ""}"></paper-icon-button>
             </div>
             <slot></slot>
         </div>
@@ -434,7 +438,7 @@ export class InformationsManager extends HTMLElement {
         // Set the header section.
         this.shadowRoot.querySelector(".title-div").innerHTML = `
         <h3 class="title-sub-title-div"> 
-            <h1 id="title-name" class="title" style="${isShort?"font-size: 1rem;":""}"> ${publisherName} </h1>
+            <h1 id="title-name" class="title" style="${isShort ? "font-size: 1rem;" : ""}"> ${publisherName} </h1>
             <div style="display: flex; align-items: baseline;">
                 <h3 class="title-sub-title-div">          
                     <span id="title-type"><span>Genre: </span>${genres}</span>
@@ -486,7 +490,7 @@ export class InformationsManager extends HTMLElement {
                 </div>
             </div>
         </div>
-        <div class="action-div" style="${isShort?"display: none;":""}">
+        <div class="action-div" style="${isShort ? "display: none;" : ""}">
             <paper-button id="delete-indexation-btn">Delete</paper-button>
         </div>
         `
@@ -592,7 +596,7 @@ export class InformationsManager extends HTMLElement {
 
         // Set the title div.
         this.shadowRoot.querySelector(".title-div").innerHTML = `
-        <h1 id="title-name" class="title" style="${isShort?"font-size: 1.2rem;text-align: left;":""}"> </h1>
+        <h1 id="title-name" class="title" style="${isShort ? "font-size: 1.2rem;text-align: left;" : ""}"> </h1>
         <h3 class="title-sub-title-div">             
             <span id="title-type"></span>
             <span id="title-year"></span>
@@ -627,12 +631,12 @@ export class InformationsManager extends HTMLElement {
             }
         </style>
         <div id="${title.getId()}-div" class="title-div" >
-            <div class="title-poster-div" style="${isShort?"display: none;":""}">
+            <div class="title-poster-div" style="${isShort ? "display: none;" : ""}">
                 <img src="${posterUrl}"></img>
             </div>
             <div class="title-informations-div">
                 <div class="title-genres-div"></div>
-                <p class="title-synopsis-div" style="${isShort?"display: none;":""}">${title.getDescription()}</p>
+                <p class="title-synopsis-div" style="${isShort ? "display: none;" : ""}">${title.getDescription()}</p>
                 <div class="title-rating-div">
                     <iron-icon class="rating-star" icon="icons:star"></iron-icon>
                     <div style="display: flex; flex-direction: column;">
@@ -640,7 +644,7 @@ export class InformationsManager extends HTMLElement {
                         <div>${title.getRatingcount()}</div>
                     </div>
                 </div>
-                <div class="title-top-credit" style="${isShort?"display: none;":""}">
+                <div class="title-top-credit" style="${isShort ? "display: none;" : ""}">
                     <div class="title-credit">
                         <div id="title-directors-title" class="title-credit-title">Director</div>
                         <div  id="title-directors-lst" class="title-credit-lst"></div>
@@ -655,11 +659,11 @@ export class InformationsManager extends HTMLElement {
                     </div>
                 </div>
             </div>
-            <div class="title-files-div" style="${isShort?"display: none;":""}">
+            <div class="title-files-div" style="${isShort ? "display: none;" : ""}">
                 <paper-progress indeterminate></paper-progress>
             </div>
         </div>
-        <div class="action-div" style="${isShort?"display: none;":""}">
+        <div class="action-div" style="${isShort ? "display: none;" : ""}">
             <paper-button id="delete-indexation-btn">Delete</paper-button>
         </div>
         `
@@ -927,16 +931,16 @@ export class InformationsManager extends HTMLElement {
                             let path = rsp.getFilepathsList().pop()
                             let titleInfoBox = document.getElementById("title-info-box")
                             let parentNode = null
-                            if(titleInfoBox){
+                            if (titleInfoBox) {
                                 parentNode = titleInfoBox.parentNode
                             }
 
-                            playVideo(path, ()=>{
-                                if(titleInfoBox){
+                            playVideo(path, () => {
+                                if (titleInfoBox) {
                                     titleInfoBox.parentNode.removeChild(titleInfoBox)
                                 }
-                            }, ()=>{
-                                if(parentNode!=null){
+                            }, () => {
+                                if (parentNode != null) {
                                     parentNode.appendChild(titleInfoBox)
                                 }
                             })
