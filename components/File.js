@@ -158,9 +158,9 @@ function _readDir(path, callback, errorCallback) {
 }
 
 function getHiddenFiles(path, callback) {
-
+  
     let thumbnailPath = path.replace("/playlist.m3u8", "")
-    if (thumbnailPath.lastIndexOf(".") != -1) {
+    if (thumbnailPath.lastIndexOf(".mp4") != -1) {
         thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("."))
     }
     thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/__preview__"
@@ -4076,7 +4076,7 @@ export class VideoPreview extends HTMLElement {
     play() {
         if (this._file_explorer_ != undefined) {
             let path = this.path
-            if (path.indexOf(".") == -1) {
+            if (path.indexOf(".mp4") == -1) {
                 path += "/playlist.m3u8"
             }
             Model.eventHub.publish("__play_video__", { path: path, file_explorer_id: this._file_explorer_.id }, true)
