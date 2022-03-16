@@ -158,7 +158,7 @@ function _readDir(path, callback, errorCallback) {
 }
 
 function getHiddenFiles(path, callback) {
-  
+
     let thumbnailPath = path.replace("/playlist.m3u8", "")
     if (thumbnailPath.lastIndexOf(".mp4") != -1) {
         thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("."))
@@ -1503,10 +1503,15 @@ export class FilesIconView extends FilesView {
 
             }
 
-            .file-path-name {
+            .file-path {
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
+                text-decoration: underline;
+            }
+
+            .file-path:hover {
+                cursor: pointer;
             }
 
             .file-icon-div.active{
@@ -2996,6 +3001,7 @@ export class FileExplorer extends HTMLElement {
 
         // The file uploader
         this.filesUploader = this.shadowRoot.querySelector("globular-files-uploader")
+        this.filesUploader._file_explorer_ = this
 
 
         // The file reader
@@ -4100,6 +4106,8 @@ export class FilesUploader extends HTMLElement {
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
 
+        this._file_explorer_ = null;
+
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
@@ -4108,11 +4116,20 @@ export class FilesUploader extends HTMLElement {
                 position: relative;
             }
 
-            iron-collapse {
+            #collapse-panel{
                 display: none;
                 position: absolute;
                 bottom: 40px;
                 right: -80px;
+            }
+
+            .collapse-torrent-panel{
+                display: flex;
+                flex-direction: column;
+                width: 100%;
+                max-height: 200px;
+                max-width: 600px;
+                overflow: auto;
             }
 
             paper-icon-button .active{
@@ -4144,6 +4161,7 @@ export class FilesUploader extends HTMLElement {
                 white-space: nowrap;
                 padding: 0px 5px 0px 5px;
             }
+
             .file-name {
                
                 overflow: hidden;
@@ -4153,6 +4171,7 @@ export class FilesUploader extends HTMLElement {
                 display:inline-block;
                 background-color:var(--palette-background-default);
             }
+
             .file-path {
                 overflow: hidden;
                 white-space:nowrap;
@@ -4160,7 +4179,13 @@ export class FilesUploader extends HTMLElement {
                 max-width:300px;
                 display:inline-block;
                 background-color:var(--palette-background-default);
+                text-decoration: underline;
             }
+
+            .file-path:hover {
+                cursor: pointer;
+            }
+
             .speedometer-div {
                 min-width: 60px;
                 text-align: right;
@@ -4458,30 +4483,40 @@ export class FilesUploader extends HTMLElement {
             let cellSource = document.createElement("td")
             cellSource.style.textAlign = "left"
             cellSource.style.paddingLeft = "5px"
+
             cellSource.innerHTML = `
             <div style="display: flex; flex-direction: column;">
-                <div style="display: flex;">
+                <div style="display: flex; align-items: center; ">
                     <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
-                        <iron-icon  id="collapse-btn"  icon="unfold-less" --iron-icon-fill-color:var(--palette-text-primary);"></iron-icon>
+                        <iron-icon  id="_${uuid}-collapse-btn"  icon="unfold-less" --iron-icon-fill-color:var(--palette-text-primary);"></iron-icon>
                         <paper-ripple class="circle" recenters=""></paper-ripple>
                     </div>
-                    <span id="${id}_title" class="file-name" style="flex-grow: 1;">${torrent.getName()}</span>
+                    <span id="${id}_title" class="file-name" style="flex-grow: 1;  max-width: 600px;">${torrent.getName()}</span>
                     <span class="speedometer-div"></span>
                 </div>
-                <iron-collapse id="collapse-panel" style="display: flex; flex-direction: column; width: 90%;">
-                    <div id="file-list-div" style="display: flex; flex-direction: column;">
+   
+                <iron-collapse id="_${uuid}-collapse-torrent-panel" class="collapse-torrent-panel">
+                    <div id="_${uuid}-file-list-div" style="display: flex; flex-direction: column;">
                     </div>
                 </iron-collapse>
-                <paper-progress  id="${id}_progress_bar"  style="width: 100%;"></paper-progress>
+
+                <paper-progress  id="${id}_progress_bar"  style="width: 100%; margin-top: 5px;"></paper-progress>
             </div>`;
             let cellDest = document.createElement("td")
             cellDest.style.textAlign = "left"
             cellDest.style.paddingLeft = "5px"
-            cellDest.innerHTML = `<span class="file-path">${torrent.getDestination()}</span>`;
+            cellDest.innerHTML = `<span title="${torrent.getDestination()}" class="file-path">${torrent.getDestination().split("/")[torrent.getDestination().split("/").length - 1]}</span>`;
 
             row.appendChild(cancelCell)
             row.appendChild(cellSource);
             row.appendChild(cellDest);
+
+            row.querySelector(".file-path").onclick = () => {
+                _readDir(torrent.getDestination(), dir => {
+                    Model.eventHub.publish("__set_dir_event__", { path: dir, file_explorer_id: this._file_explorer_.id }, true)
+                }, err => ApplicationView.displayMessage(err, 3000))
+
+            }
 
             cancelBtn.onclick = () => {
                 // So here I will remove the torrent from the list...
@@ -4511,8 +4546,8 @@ export class FilesUploader extends HTMLElement {
 
             }
 
-            let collapse_btn = row.querySelector("#collapse-btn")
-            let collapse_panel = row.querySelector("#collapse-panel")
+            let collapse_btn = row.querySelector(`#_${uuid}-collapse-btn`)
+            let collapse_panel = row.querySelector(`#_${uuid}-collapse-torrent-panel`)
             collapse_btn.onclick = () => {
                 if (!collapse_panel.opened) {
                     collapse_btn.icon = "unfold-more"
@@ -4522,29 +4557,30 @@ export class FilesUploader extends HTMLElement {
                 collapse_panel.toggle();
             }
 
-            let filesDiv = row.querySelector("#file-list-div")
+            let filesDiv = row.querySelector(`#_${uuid}-file-list-div`)
             let range = document.createRange()
-            /*
-                        // So here I will display the list of files contain in the torrent.
-                        torrent.getFilesList().forEach(f => {
-                            // So here I will create the file list...
-                            let id = "_"+getUuid(f.getPath())
-                            let fileRow = filesDiv.querySelector(`#_${id}`)
-                            if(fileRow == undefined){
-                                let html=`
-                                <div id="${id}" style="display: flex; flex-direction: column;"> 
-                                    <div style="display: flex;">
-                                        <span>${f.getPath()}</span>
-                                    </div>
-                                    <paper-progress id="${id}_progress_bar" style="width: 100%;"></paper-progress>
-                                </div>
-                                `
-                                filesDiv.appendChild(range.createContextualFragment(html))
-                                fileRow = filesDiv.querySelector(`#${id}`)
-                            }
-                            let progressBar_ = fileRow.querySelector(`#${id}_progress_bar`)
-                            progressBar_.value = f.getPercent()
-                        })*/
+
+            // So here I will display the list of files contain in the torrent.
+            torrent.getFilesList().forEach(f => {
+                // So here I will create the file list...
+                let id = "_" + getUuid(f.getPath())
+                let fileRow = filesDiv.querySelector(`#${id}`)
+                if (fileRow == undefined) {
+                    let html = `
+                        <div id="${id}" style="display: flex; flex-direction: column;"> 
+                            <div style="display: flex;">
+                                <span>${f.getPath().split("/")[f.getPath().split("/").length - 1]}</span>
+                            </div>
+                            <paper-progress id="${id}_progress_bar" style="width: 100%;"></paper-progress>
+                        </div>
+                    `
+                    filesDiv.appendChild(range.createContextualFragment(html))
+                    fileRow = filesDiv.querySelector(`#${id}`)
+                }
+
+                let progressBar_ = fileRow.querySelector(`#${id}_progress_bar`)
+                progressBar_.value = f.getPercent()
+            })
         }
 
     }
