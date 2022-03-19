@@ -752,10 +752,25 @@ export class SearchTitleDetail extends HTMLElement {
                 box-shadow: rgba(0, 0, 0, 0.19) 0px 10px 20px, rgba(0, 0, 0, 0.23) 0px 6px 6px;
             }
 
-            .video-div img{
+            .preview{
                 max-width: 256px;
-                max-height: 150px;
+                max-height: 130px;
                 background-color: black;
+            }
+
+            .season-episodes-lst{
+                display: flex;
+                flex-direction: column;
+                width: 100%;
+            }
+
+            #episodes-select-div {
+                align-items: center;
+            }
+
+            #episodes-select-div select {
+                heigth: 24px;
+                margin-left: 5px;
             }
 
         </style>
@@ -764,10 +779,10 @@ export class SearchTitleDetail extends HTMLElement {
         <div class="search-title-detail">
             <div class="video-div">
                 <div class="title-title-div"></div>
-                <img id="title-preview"></img>
+                <img class="preview" id="title-preview"></img>
             </div>
 
-            <div style="display: flex;">
+            <div class="title-interaction-div" style="display: flex;">
                 <paper-icon-button id="play-video-button" icon="av:play-circle-filled"></paper-icon-button>
                 <paper-icon-button icon="av:icons:add-circle"></paper-icon-button>
                 <span style="flex-grow: 1;"></span>
@@ -776,43 +791,152 @@ export class SearchTitleDetail extends HTMLElement {
             <div>
                 <globular-informations-manager short></globular-informations-manager>
             </div>
+            <div class="season-episodes-lst">
+                <div id="loading-episodes-infos" style="diplay:flex; flex-direction: column; width: 100%;">
+                    <span id="progress-message">loading episodes infos wait...</span>
+                    <paper-progress indeterminate style="width: 100%;"></paper-progress>
+                </div>
+                <div id="episodes-select-div" style="display:none;">
+                    <select id="season-select"></select>
+                    <select id="episode-select"></select>
+                    <span style="flex-grow: 1;"></span>
+                    <paper-icon-button id="play-episode-video-button" icon="av:play-circle-filled"></paper-icon-button>
+                    <paper-icon-button id="episode-info-button" icon="icons:arrow-drop-down-circle"></paper-icon-button>
+                </div>
+                <img class="preview" id="epsiode-preview"></img>
+            </div>
         </div>
         `
 
         // test create offer...
         this.titlePreview = this.shadowRoot.querySelector("#title-preview")
+        this.episodePreview = this.shadowRoot.querySelector("#epsiode-preview")
     }
 
 
     setTitle(title) {
+        // Display the episode informations.
+        title.onLoadEpisodes = (episodes) => {
+            if (this.shadowRoot.querySelector("#loading-episodes-infos").style.display == "none") {
+                return // already loaded
+            }
+
+            this.shadowRoot.querySelector("#loading-episodes-infos").style.display = "none"
+
+
+            this.shadowRoot.querySelector("#episodes-select-div").style.display = "flex"
+            let infos = {}
+            episodes.forEach(e => {
+                if (!infos[e.getSeason()]) {
+                    infos[e.getSeason()] = []
+                }
+                infos[e.getSeason()].push(e)
+            })
+
+            let seasonSelect = this.shadowRoot.querySelector("#season-select")
+            let episodeSelect = this.shadowRoot.querySelector("#episode-select")
+
+
+            let setEpisodeOption = (episode) => {
+                let rqst = new GetTitleFilesRequest
+                rqst.setTitleid(episode.getId())
+                let indexPath = Application.globular.config.DataPath + "/search/titles"
+                rqst.setIndexpath(indexPath)
+
+                Model.globular.titleService.getTitleFiles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+                    .then(rsp => {
+                        if (rsp.getFilepathsList().length > 0) {
+                            let path = rsp.getFilepathsList().pop()
+                            let url = window.location.protocol + "//" + window.location.hostname + ":"
+                            if (Application.globular.config.Protocol == "https") {
+                                url += Application.globular.config.PortHttps
+                            } else {
+                                url += Application.globular.config.PortHttp
+                            }
+                            let thumbnailPath = path
+                            if (thumbnailPath.lastIndexOf(".mp4") != -1) {
+                                thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("."))
+                            }
+                            thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/preview.gif"
+
+                            thumbnailPath.split("/").forEach(item => {
+                                item = item.trim()
+                                if (item.length > 0) {
+                                    url += "/" + encodeURIComponent(item)
+                                }
+                            })
+                            this.episodePreview.src = url
+                            this.shadowRoot.querySelector("#play-episode-video-button").onclick = () => {
+                                playVideo(path, null, null)
+                            }
+
+                            this.shadowRoot.querySelector("#episode-info-button").onclick = () => {
+                                this.showTitleInfo(episode)
+                            }
+
+                        }
+                    })
+
+            }
+
+
+            let setEpisodeOptions = (episodes) => {
+                // remove previous choice...
+                episodeSelect.innerHTML = ""
+                let index = 0
+                episodes.forEach(e => {
+                    let episodeOpt = document.createElement("option")
+                    e.value = e.getEpisode()
+                    episodeOpt.innerHTML = "Episode " + e.getEpisode()
+                    episodeSelect.appendChild(episodeOpt)
+                    episodeOpt.episode = e
+                    if (index == 0) {
+                        setEpisodeOption(e)
+                    }
+                    index++
+                })
+            }
+
+            let index = 0;
+            for (var season_number in infos) {
+                let seasonOpt = document.createElement("option")
+                seasonOpt.value = season_number
+                seasonOpt.innerHTML = "Season " + season_number
+                seasonSelect.appendChild(seasonOpt)
+
+                if (index == 0) {
+                    setEpisodeOptions(infos[season_number])
+                }
+
+                // keep in the option itself
+                seasonOpt.episodes = infos[season_number]
+                index++
+
+            }
+
+            seasonSelect.onchange = () => {
+                var opt = seasonSelect.options[seasonSelect.selectedIndex];
+                setEpisodeOptions(opt.episodes)
+            }
+
+            episodeSelect.onchange = () => {
+                var opt = episodeSelect.options[episodeSelect.selectedIndex];
+                setEpisodeOption(opt.episode)
+            }
+        }
+
         this.shadowRoot.querySelector("globular-informations-manager").setTitlesInformation([title])
         this.title_ = title;
 
-        this.shadowRoot.querySelector("#title-info-button").onclick = () => {
-            //let uuid = randomUUID()
-            let html = `
-            <style>
-             ${theme}
-             paper-card {
-                 background-color: var(--palette-background-paper);
-             }
-            </style>
+        if (this.title_.getType() == "TVSeries") {
+            this.shadowRoot.querySelector("#title-preview").style.display = "none"
+            this.shadowRoot.querySelector("#play-video-button").style.display = "none"
+        } else {
+            this.shadowRoot.querySelector("#loading-episodes-infos").style.display = "none"
+        }
 
-            <paper-card>
-                <globular-informations-manager id="title-info-box"></globular-informations-manager>
-            </paper-card>
-            `
-            let titleInfoBox = document.getElementById("title-info-box")
-            if (titleInfoBox == undefined) {
-                let range = document.createRange()
-                document.body.appendChild(range.createContextualFragment(html))
-                titleInfoBox = document.getElementById("title-info-box")
-                titleInfoBox.parentNode.style.position = "fixed"
-                titleInfoBox.parentNode.style.top = "50%"
-                titleInfoBox.parentNode.style.left = "50%"
-                titleInfoBox.parentNode.style.transform = "translate(-50%, -50%)"
-            }
-            titleInfoBox.setTitlesInformation([title])
+        this.shadowRoot.querySelector("#title-info-button").onclick = () => {
+            this.showTitleInfo(title)
         }
 
         let url = window.location.protocol + "//" + window.location.hostname + ":"
@@ -823,7 +947,7 @@ export class SearchTitleDetail extends HTMLElement {
         }
 
 
-    
+
         // paly only the first file...
         let rqst = new GetTitleFilesRequest
         rqst.setTitleid(title.getId())
@@ -840,7 +964,7 @@ export class SearchTitleDetail extends HTMLElement {
                         thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("."))
                     }
                     thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/preview.gif"
-            
+
                     thumbnailPath.split("/").forEach(item => {
                         item = item.trim()
                         if (item.length > 0) {
@@ -848,7 +972,6 @@ export class SearchTitleDetail extends HTMLElement {
                         }
                     })
 
-                    console.log(url)
                     this.titlePreview.src = url
 
                     this.shadowRoot.querySelector("#play-video-button").onclick = () => {
@@ -857,6 +980,33 @@ export class SearchTitleDetail extends HTMLElement {
                 }
             })
 
+    }
+
+    showTitleInfo(title) {
+        //let uuid = randomUUID()
+        let html = `
+        <style>
+            ${theme}
+            paper-card {
+                background-color: var(--palette-background-paper);
+            }
+        </style>
+
+        <paper-card>
+            <globular-informations-manager id="title-info-box"></globular-informations-manager>
+        </paper-card>
+        `
+        let titleInfoBox = document.getElementById("title-info-box")
+        if (titleInfoBox == undefined) {
+            let range = document.createRange()
+            document.body.appendChild(range.createContextualFragment(html))
+            titleInfoBox = document.getElementById("title-info-box")
+            titleInfoBox.parentNode.style.position = "fixed"
+            titleInfoBox.parentNode.style.top = "50%"
+            titleInfoBox.parentNode.style.left = "50%"
+            titleInfoBox.parentNode.style.transform = "translate(-50%, -50%)"
+        }
+        titleInfoBox.setTitlesInformation([title])
     }
 
     setVideo(video) {

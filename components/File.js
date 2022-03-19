@@ -1041,9 +1041,10 @@ export class FilesView extends HTMLElement {
 
                     stream.on("status", (status) => {
                         if (status.code === 0) {
-                            Model.eventHub.publish("refresh_dir_evt", this.__dir__.path, false);
+                            
                             Model.eventHub.publish("__upload_link_event__", { pid: pid, path: this.__dir__.path, infos: "", done: true, lnk: lnk }, true);
-
+                            Model.eventHub.publish("generate_video_preview_event",  this.__dir__.path + "/" + fileName, false);
+                            
                             // Now I will index the file...
                             var xmlhttp = new XMLHttpRequest();
 
@@ -1960,7 +1961,6 @@ export class FilesIconView extends FilesView {
 
     // Set imdb title info.
     setImdbTitleInfo(url, file) {
-
 
         let matchs = url.match(/tt\d{5,8}/);
         if (matchs.length == 0) {
@@ -4431,12 +4431,17 @@ export class FilesUploader extends HTMLElement {
             let cellDest = document.createElement("td")
             cellDest.style.textAlign = "left"
             cellDest.style.paddingLeft = "5px"
-            cellDest.innerHTML = `<span style="background-color:var(--palette-background-default);">${path}</span>`;
+            cellDest.innerHTML = `<span class="file-path" style="background-color:var(--palette-background-default);">${path.split("/")[path.split("/").length - 1]}</span>`;
 
             row.appendChild(cancelCell)
             row.appendChild(cellSource);
             row.appendChild(cellDest);
+            row.querySelector(".file-path").onclick = () => {
+                _readDir(torrent.getDestination(), dir => {
+                    Model.eventHub.publish("__set_dir_event__", { path: dir, file_explorer_id: this._file_explorer_.id }, true)
+                }, err => ApplicationView.displayMessage(err, 3000))
 
+            }
             cancelBtn.onclick = () => {
                 row.style.display = "none";
             }
@@ -4619,7 +4624,7 @@ export class FilesUploader extends HTMLElement {
             let cellDest = document.createElement("td")
             cellDest.style.textAlign = "left"
             cellDest.style.paddingLeft = "5px"
-            cellDest.innerHTML = `<span style="background-color:var(--palette-background-default);">${path}</span>`;
+            cellDest.innerHTML = `<span class="file-path" style="background-color:var(--palette-background-default);">${path.split("/")[path.split("/").length - 1]}</span>`;
             let cellSize = document.createElement("td")
             cellSize.innerHTML = size;
             row.appendChild(cancelCell)
@@ -4629,6 +4634,13 @@ export class FilesUploader extends HTMLElement {
 
             cancelBtn.onclick = () => {
                 row.style.display = "none";
+            }
+
+            row.querySelector(".file-path").onclick = () => {
+                _readDir(torrent.getDestination(), dir => {
+                    Model.eventHub.publish("__set_dir_event__", { path: dir, file_explorer_id: this._file_explorer_.id }, true)
+                }, err => ApplicationView.displayMessage(err, 3000))
+
             }
 
             // Append to files panels.

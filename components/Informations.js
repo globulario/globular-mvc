@@ -290,6 +290,12 @@ function GetTitleFiles(indexPath, title, parent, callback) {
  * @param {*} callback The callback with the list of episodes.
  */
 export function GetEpisodes(indexPath, title, callback) {
+    if (title.__episodes__ != undefined) {
+
+        callback(title.__episodes__)
+        return
+    }
+
     let rqst = new GetTitleFilesRequest
     rqst.setTitleid(title.getId())
     rqst.setIndexpath(indexPath)
@@ -305,15 +311,22 @@ export function GetEpisodes(indexPath, title, callback) {
                     rqst_.setIndexpath(indexPath)
                     Model.globular.titleService.getFileTitles(rqst_, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
                         .then(rsp => {
-                            episodes = episodes.concat(rsp.getTitles().getTitlesList())
+
+                            rsp.getTitles().getTitlesList().forEach(e => {
+                                if (e.getSeason() > 0 && e.getEpisode() > 0) {
+                                    episodes.push(e)
+                                }
+                            })
 
                             if (rsp.getFilepathsList().length == 0) {
+                                title.__episodes__ = episodes
                                 callback(episodes)
                                 return
                             }
                             getAssociatedTitlte()
                         }).catch((err) => {
                             if (rsp.getFilepathsList().length == 0) {
+                                title.__episodes__ = episodes
                                 callback(episodes)
                                 return
                             }
@@ -586,13 +599,28 @@ export class InformationsManager extends HTMLElement {
      * @param {*} titles 
      */
     setTitlesInformation(titles) {
+
         let isShort = this.hasAttribute("short")
         if (titles.length == 0) {
             /** nothinh to display... */
             return;
         }
 
-        let title = titles[titles.length - 1]
+        let title = null;
+        if (titles.length == 1) {
+            title = titles[0]
+        } else {
+            titles.forEach(t => {
+                if (t.getType() == "TVSeries") {
+                    title = t;
+                }
+            })
+        }
+
+        if (title == null) {
+            title = titles[titles.length - 1]
+        }
+
 
         // Set the title div.
         this.shadowRoot.querySelector(".title-div").innerHTML = `
@@ -720,10 +748,15 @@ export class InformationsManager extends HTMLElement {
             if (titles.length == 1) {
                 // So here I will 
                 let indexPath = Application.globular.config.DataPath + "/search/titles"
+
                 GetEpisodes(indexPath, title, (episodes) => {
+                    if (title.onLoadEpisodes != null) {
+                        title.onLoadEpisodes(episodes)
+                    }
                     this.displayEpisodes(episodes, filesDiv)
                     filesDiv.querySelector("paper-progress").style.display = "none"
                 })
+
             }
         }
 
@@ -937,7 +970,9 @@ export class InformationsManager extends HTMLElement {
 
                             playVideo(path, () => {
                                 if (titleInfoBox) {
-                                    titleInfoBox.parentNode.removeChild(titleInfoBox)
+                                    if (titleInfoBox.parentNode) {
+                                        titleInfoBox.parentNode.removeChild(titleInfoBox)
+                                    }
                                 }
                             }, () => {
                                 if (parentNode != null) {
@@ -953,9 +988,6 @@ export class InformationsManager extends HTMLElement {
             })
             index++
         }
-
-
-        console.log(seasons)
 
     }
 }
