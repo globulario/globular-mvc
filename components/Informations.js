@@ -57,6 +57,7 @@ const __style__ = `
     padding: 5px;
     display: flex;
     flex-wrap: wrap;
+    font-size: .9rem;
 }
 
 #rating-span{
@@ -478,6 +479,10 @@ export class InformationsManager extends HTMLElement {
             .action-div{
                 display: flex;
                 justify-content: end;
+            }
+
+            .title-rating-div{
+                font-size: .8rem;
             }
         </style>
         <div id="${video.getId()}-div" class="title-div">

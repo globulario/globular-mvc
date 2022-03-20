@@ -39,6 +39,7 @@ import { IndexJsonObjectRequest, SearchDocumentsRequest, SearchResult, SearchRes
 import { AssociateFileWithTitleRequest, CreateTitleRequest, GetFileTitlesRequest, GetFileVideosRequest, GetVideoByIdRequest, Person, Poster, Title } from 'globular-web-client/title/title_pb';
 import { DownloadTorrentRequest, DropTorrentRequest, GetTorrentInfosRequest } from 'globular-web-client/torrent/torrent_pb';
 import { SetEmailResponse } from 'globular-web-client/resource/resource_pb';
+import { getImdbInfo } from './Search';
 
 
 // keep track of shared directory
@@ -1918,6 +1919,7 @@ export class FilesIconView extends FilesView {
         if (info.Type == "TVEpisode") {
             title.setSeason(info.Season)
             title.setEpisode(info.Episode)
+            title.setSerie(info.Serie)
         }
 
         title.setUrl(info.URL)
@@ -1965,39 +1967,6 @@ export class FilesIconView extends FilesView {
         let matchs = url.match(/tt\d{5,8}/);
         if (matchs.length == 0) {
             return // nothing to todo...
-        }
-
-        // That function will be use to asscociate file with imdb information.
-        let getImdbInfo = (id, callback, errorcallback) => {
-            let query = window.location.protocol + "//" + window.location.hostname + ":"
-            if (Application.globular.config.Protocol == "https") {
-                query += Application.globular.config.PortHttps
-            } else {
-                query += Application.globular.config.PortHttp
-            }
-
-            query += "/imdb_title?id=" + id
-
-            var xmlhttp = new XMLHttpRequest();
-
-            xmlhttp.onreadystatechange = function () {
-                if (this.readyState == 4 && (this.status == 201 || this.status == 200)) {
-                    var obj = JSON.parse(this.responseText);
-                    callback(obj);
-                } else if (this.readyState == 4) {
-                    errorcallback("fail to get info from query " + query + " status " + this.status)
-                }
-            };
-            /* TODO see if we protected it...
-              query += "?domain=" + Model.domain // application is not know at this time...
-              if (localStorage.getItem("user_token") != undefined) {
-                  query += "&token=" + localStorage.getItem("user_token")
-              }
-            */
-            xmlhttp.open("GET", query, true);
-            xmlhttp.setRequestHeader("domain", Model.domain);
-
-            xmlhttp.send();
         }
 
         getImdbInfo(matchs[0], (info) => {

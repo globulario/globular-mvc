@@ -2,14 +2,70 @@ import '@polymer/iron-icons/iron-icons.js';
 import '@polymer/iron-icons/av-icons'
 import '@polymer/paper-icon-button/paper-icon-button.js';
 import { Application } from '../Application';
-import { GetTitleFilesRequest, SearchTitlesRequest } from 'globular-web-client/title/title_pb';
+import { GetFileTitlesRequest, GetTitleByIdRequest, GetTitleFilesRequest, Person, SearchTitlesRequest } from 'globular-web-client/title/title_pb';
 
 import { Model } from '../Model';
 import { theme } from "./Theme";
 import * as getUuid from 'uuid-by-string'
 import { InformationsManager } from './Informations';
 import { playVideo } from './Video';
+import { ApplicationView } from '../ApplicationView';
 
+// keep values in memorie to speedup...
+var titles = {}
+
+// That function will be use to asscociate file with imdb information.
+export function getImdbInfo(id, callback, errorcallback) {
+    if (titles[id]) {
+        if (titles[id].ID) {
+            callback(titles[id])
+        }else{
+            titles[id].callbacks.push(callback)
+        }
+        return
+    }
+
+    titles[id] = {}
+    titles[id].callbacks = []
+    titles[id].callbacks.push(callback)
+
+    let query = window.location.protocol + "//" + window.location.hostname + ":"
+    if (Application.globular.config.Protocol == "https") {
+        query += Application.globular.config.PortHttps
+    } else {
+        query += Application.globular.config.PortHttp
+    }
+
+    query += "/imdb_title?id=" + id
+
+    var xmlhttp = new XMLHttpRequest();
+
+    xmlhttp.onreadystatechange = function () {
+        if (this.readyState == 4 && (this.status == 201 || this.status == 200)) {
+            var obj = JSON.parse(this.responseText);
+            while( titles[obj.ID].callbacks.length > 0){
+                let callback =  titles[obj.ID].callbacks.pop()
+                callback(obj)
+            }
+
+            titles[obj.ID] = obj
+            // Now I will 
+
+        } else if (this.readyState == 4) {
+            errorcallback("fail to get info from query " + query + " status " + this.status)
+        }
+    };
+    /* TODO see if we protected it...
+      query += "?domain=" + Model.domain // application is not know at this time...
+      if (localStorage.getItem("user_token") != undefined) {
+          query += "&token=" + localStorage.getItem("user_token")
+      }
+    */
+    xmlhttp.open("GET", query, true);
+    xmlhttp.setRequestHeader("domain", Model.domain);
+
+    xmlhttp.send();
+}
 
 function searchTitles(query, indexPath) {
 
@@ -530,15 +586,7 @@ export class SearchResultsPage extends HTMLElement {
                 width: 256px;
             }
 
-            .title-card img{
-                box-shadow: rgba(0, 0, 0, 0.16) 0px 3px 6px, rgba(0, 0, 0, 0.23) 0px 3px 6px;
-                border: 1px solid var(--palette-action-disabled);
-                border-radius: 3.5px;
-            }
-
-            .title-card img:hover{
-                box-shadow: rgba(0, 0, 0, 0.19) 0px 10px 20px, rgba(0, 0, 0, 0.23) 0px 6px 6px;
-             }
+            
 
             /* entire container, keeps perspective */
             .flip-container {
@@ -569,7 +617,12 @@ export class SearchResultsPage extends HTMLElement {
                 top: 0;
                 left: 0;
                 text-align: center;
-                
+
+                max-width: 256px;
+                max-height: 380px;
+
+                border-radius: 3.5px;
+                box-shadow: rgba(0, 0, 0, 0.16) 0px 3px 6px, rgba(0, 0, 0, 0.23) 0px 3px 6px;
             }
 
             /* front pane, placed above back */
@@ -577,19 +630,23 @@ export class SearchResultsPage extends HTMLElement {
                 z-index: 2;
                 /* for firefox 31 */
                 transform: rotateY(0deg);
+                background-size: cover;
             }
-
-            .front img {
-                max-width: 256px;
-                max-height: 380px;
-                object-fit: cover;
-             }
-
-  
 
             /* back, initially hidden pane */
             .back {
                 transform: rotateY(180deg);
+            }
+
+            .series-info{
+                display: flex;
+                flex-direction: column;
+                background-color: rgba(0, 0, 0, 0.75);
+            }
+
+            .series-poster{
+                max-width: 256px;
+                top: 0px;
             }
 
         </style>
@@ -597,9 +654,15 @@ export class SearchResultsPage extends HTMLElement {
         <div class="title-card" slot="mosaic" id="hit-div-mosaic-${hit.getIndex()}">
             <div class="flip-container" ontouchstart="this.classList.toggle('hover');">
                 <div class="flipper">
-                    <div class="front">
+                    <div id="hit-div-mosaic-front-${hit.getIndex()}" class="front">
                         <!-- front content -->
-                        <img src="${posterUrl}"></img>
+                        <div class="series-info">
+                            <span style="font-size: 1.3em; font-weight: bold;" id="hit-div-mosaic-series-name-${hit.getIndex()}"></span>
+                            <div>
+                                <span style="font-weight: bold;" id="hit-div-mosaic-episode-name-${hit.getIndex()}">
+                                </span>
+                            </div>
+                        </div>
                     </div>
                     <div id="back-container" class="back">
                      <globular-search-title-detail id="search-title-${hit.getIndex()}"></globular-search-title-detail>   
@@ -615,6 +678,23 @@ export class SearchResultsPage extends HTMLElement {
 
         if (hit.hasTitle()) {
             detailView.setTitle(hit.getTitle())
+
+            if (hit.getTitle().getType() == "TVEpisode") {
+                // So here I will get the series info If I can found it...
+                let seriesInfos = this.querySelector(`#hit-div-mosaic-episode-name-${hit.getIndex()}`)
+                if (hit.getTitle().getSerie().length > 0) {
+                    let serieName = this.querySelector(`#hit-div-mosaic-series-name-${hit.getIndex()}`)
+                    getImdbInfo(hit.getTitle().getSerie(), serie => {
+                        this.querySelector(`#hit-div-mosaic-front-${hit.getIndex()}`).style.backgroundImage = `url(${serie.Poster.ContentURL})`
+                        serieName.innerHTML = serie.Name
+                    }, err => ApplicationView.displayMessage(err, 3000))
+
+                }
+
+                seriesInfos.innerHTML = hit.getTitle().getName() + " S" + hit.getTitle().getSeason() + "E" + hit.getTitle().getEpisode()
+            }else{
+                this.querySelector(`#hit-div-mosaic-front-${hit.getIndex()}`).style.backgroundImage = `url(${posterUrl})`
+            }
         } else {
             detailView.setVideo(hit.getVideo())
         }
@@ -822,9 +902,8 @@ export class SearchTitleDetail extends HTMLElement {
             }
 
             this.shadowRoot.querySelector("#loading-episodes-infos").style.display = "none"
-
-
             this.shadowRoot.querySelector("#episodes-select-div").style.display = "flex"
+
             let infos = {}
             episodes.forEach(e => {
                 if (!infos[e.getSeason()]) {
