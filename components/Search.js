@@ -10,6 +10,7 @@ import * as getUuid from 'uuid-by-string'
 import { InformationsManager } from './Informations';
 import { playVideo } from './Video';
 import { ApplicationView } from '../ApplicationView';
+import * as getUuidByString from 'uuid-by-string';
 
 // keep values in memorie to speedup...
 var titles = {}
@@ -19,7 +20,7 @@ export function getImdbInfo(id, callback, errorcallback) {
     if (titles[id]) {
         if (titles[id].ID) {
             callback(titles[id])
-        }else{
+        } else {
             titles[id].callbacks.push(callback)
         }
         return
@@ -43,8 +44,8 @@ export function getImdbInfo(id, callback, errorcallback) {
     xmlhttp.onreadystatechange = function () {
         if (this.readyState == 4 && (this.status == 201 || this.status == 200)) {
             var obj = JSON.parse(this.responseText);
-            while( titles[obj.ID].callbacks.length > 0){
-                let callback =  titles[obj.ID].callbacks.pop()
+            while (titles[obj.ID].callbacks.length > 0) {
+                let callback = titles[obj.ID].callbacks.pop()
                 callback(obj)
             }
 
@@ -543,170 +544,18 @@ export class SearchResultsPage extends HTMLElement {
     }
 
     displayMosaicHit(hit) {
-        if (this.querySelector(`#hit-div-mosaic-${hit.getIndex()}`) != null) {
-            return;
-        }
-
-        let posterUrl = ""
-        if (hit.hasTitle()) {
-            if (hit.getTitle().getPoster() != undefined) {
-                // must be getContentUrl here... 
-                if (hit.getTitle().getPoster().getContenturl().length > 0) {
-                    posterUrl = hit.getTitle().getPoster().getContenturl()
-                } else {
-                    posterUrl = hit.getTitle().getPoster().getUrl()
-                }
-            }
-        } else {
-            if (hit.getVideo().getPoster() != undefined) {
-                // must be getContentUrl here... 
-                if (hit.getVideo().getPoster().getContenturl().length > 0) {
-                    posterUrl = hit.getVideo().getPoster().getContenturl()
-                } else {
-                    posterUrl = hit.getVideo().getPoster().getUrl()
-                }
-
-            }
-        }
-
-        let html = `
-        <style>
-            @media only screen and (min-width: 1800px){
-                globular-search-results {
-                    grid-row-start: 1;
-                    grid-column-start: 1;
-                    grid-column-end: 18;
-                }
-            }
-
-            .title-card{
-                margin: 7.5px; 
-                display: flex; 
-                height: 380px; 
-                width: 256px;
-            }
-
-            
-
-            /* entire container, keeps perspective */
-            .flip-container {
-                perspective: 1000;
-            }
-            
-            /* flip the pane when hovered */
-            .flip-container:hover .flipper, .flip-container.hover .flipper {
-                transform: rotateY(180deg);
-            }
-
-            .flip-container, .front, .back {
-                width: 256px;
-                height: 380px;
-            }
-
-            /* flip speed goes here */
-            .flipper {
-                transition: 0.6s;
-                transform-style: preserve-3d;
-                position: relative;
-            }
-
-            /* hide back of pane during swap */
-            .front, .back {
-                backface-visibility: hidden;
-                position: absolute;
-                top: 0;
-                left: 0;
-                text-align: center;
-
-                max-width: 256px;
-                max-height: 380px;
-
-                border-radius: 3.5px;
-                box-shadow: rgba(0, 0, 0, 0.16) 0px 3px 6px, rgba(0, 0, 0, 0.23) 0px 3px 6px;
-            }
-
-            /* front pane, placed above back */
-            .front {
-                z-index: 2;
-                /* for firefox 31 */
-                transform: rotateY(0deg);
-                background-size: cover;
-            }
-
-            /* back, initially hidden pane */
-            .back {
-                transform: rotateY(180deg);
-            }
-
-            .series-info{
-                display: flex;
-                flex-direction: column;
-                background-color: rgba(0, 0, 0, 0.75);
-            }
-
-            .series-poster{
-                max-width: 256px;
-                top: 0px;
-            }
-
-        </style>
-
-        <div class="title-card" slot="mosaic" id="hit-div-mosaic-${hit.getIndex()}">
-            <div class="flip-container" ontouchstart="this.classList.toggle('hover');">
-                <div class="flipper">
-                    <div id="hit-div-mosaic-front-${hit.getIndex()}" class="front">
-                        <!-- front content -->
-                        <div class="series-info">
-                            <span style="font-size: 1.3em; font-weight: bold;" id="hit-div-mosaic-series-name-${hit.getIndex()}"></span>
-                            <div>
-                                <span style="font-weight: bold;" id="hit-div-mosaic-episode-name-${hit.getIndex()}">
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                    <div id="back-container" class="back">
-                     <globular-search-title-detail id="search-title-${hit.getIndex()}"></globular-search-title-detail>   
-                    </div>
-                </div>
-            </div>
-        </div>
-        `
-
-        let range = document.createRange()
-        this.appendChild(range.createContextualFragment(html))
-        let detailView = this.querySelector(`#search-title-${hit.getIndex()}`)
 
         if (hit.hasTitle()) {
-            detailView.setTitle(hit.getTitle())
-
-            if (hit.getTitle().getType() == "TVEpisode") {
-                // So here I will get the series info If I can found it...
-                let seriesInfos = this.querySelector(`#hit-div-mosaic-episode-name-${hit.getIndex()}`)
-                if (hit.getTitle().getSerie().length > 0) {
-                    let serieName = this.querySelector(`#hit-div-mosaic-series-name-${hit.getIndex()}`)
-                    getImdbInfo(hit.getTitle().getSerie(), serie => {
-                        this.querySelector(`#hit-div-mosaic-front-${hit.getIndex()}`).style.backgroundImage = `url(${serie.Poster.ContentURL})`
-                        serieName.innerHTML = serie.Name
-                    }, err => ApplicationView.displayMessage(err, 3000))
-
-                }
-
-                seriesInfos.innerHTML = hit.getTitle().getName() + " S" + hit.getTitle().getSeason() + "E" + hit.getTitle().getEpisode()
-            }else{
-                this.querySelector(`#hit-div-mosaic-front-${hit.getIndex()}`).style.backgroundImage = `url(${posterUrl})`
+            let id = "_flip_card_" + getUuidByString(hit.getTitle().getName())
+            if (this.querySelector("#" + id) == null) {
+                let flipCard = new SearchFlipCard();
+                flipCard.id = id
+                flipCard.slot = "mosaic"
+                flipCard.setTitle(hit.getTitle())
+                this.appendChild(flipCard)
             }
         } else {
-            detailView.setVideo(hit.getVideo())
-        }
 
-        this.querySelector(`#hit-div-mosaic-${hit.getIndex()}`).onmouseover = (evt) => {
-            evt.stopPropagation()
-            //detailView.playPreview()
-        }
-
-        this.querySelector(`#hit-div-mosaic-${hit.getIndex()}`).onmouseout = (evt) => {
-            evt.stopPropagation()
-            //detailView.pausePreview()
         }
 
     }
@@ -791,6 +640,150 @@ export class SearchResultsPage extends HTMLElement {
 }
 
 customElements.define('globular-search-results-page', SearchResultsPage)
+
+
+/**
+ * Display title with a flip card.
+ */
+export class SearchFlipCard extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor() {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+            ${theme}
+            @media only screen and (min-width: 1800px){
+                globular-search-results {
+                    grid-row-start: 1;
+                    grid-column-start: 1;
+                    grid-column-end: 18;
+                }
+            }
+
+            .title-card{
+                margin: 7.5px; 
+                display: flex; 
+                height: 380px; 
+                width: 256px;
+            }
+
+            
+
+            /* entire container, keeps perspective */
+            .flip-container {
+                perspective: 1000;
+            }
+            
+            /* flip the pane when hovered */
+            .flip-container:hover .flipper, .flip-container.hover .flipper {
+                transform: rotateY(180deg);
+            }
+
+            .flip-container, .front, .back {
+                width: 256px;
+                height: 380px;
+            }
+
+            /* flip speed goes here */
+            .flipper {
+                transition: 0.6s;
+                transform-style: preserve-3d;
+                position: relative;
+            }
+
+            /* hide back of pane during swap */
+            .front, .back {
+                backface-visibility: hidden;
+                position: absolute;
+                top: 0;
+                left: 0;
+                text-align: center;
+
+                max-width: 256px;
+                max-height: 380px;
+
+                border-radius: 3.5px;
+                box-shadow: rgba(0, 0, 0, 0.16) 0px 3px 6px, rgba(0, 0, 0, 0.23) 0px 3px 6px;
+            }
+
+            /* front pane, placed above back */
+            .front {
+                z-index: 2;
+                /* for firefox 31 */
+                transform: rotateY(0deg);
+                background-size: cover;
+            }
+
+            /* back, initially hidden pane */
+            .back {
+                transform: rotateY(180deg);
+            }
+
+            .series-info{
+                display: flex;
+                flex-direction: column;
+                background-color: rgba(0, 0, 0, 0.65);
+            }
+
+            .series-poster{
+                max-width: 256px;
+                top: 0px;
+            }
+
+        </style>
+
+        <div class="title-card" slot="mosaic" id="hit-div-mosaic">
+            <div class="flip-container" ontouchstart="this.classList.toggle('hover');">
+                <div class="flipper">
+                    <div id="hit-div-mosaic-front" class="front">
+                        <!-- front content -->
+                        <div class="series-info">
+                            <span style="font-size: 1.4em; font-weight: bold;" id="hit-div-mosaic-series-name"></span>
+                            <div>
+                                <span style="font-size: 1.1em; font-weight: bold;" id="hit-div-mosaic-episode-name">
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="back-container" class="back">
+                     <globular-search-title-detail id="search-title"></globular-search-title-detail>   
+                    </div>
+                </div>
+            </div>
+        </div>
+        `
+    }
+
+    setTitle(title) {
+        // test create offer...
+        this.shadowRoot.querySelector(`#search-title`).setTitle(title)
+        if (title.getType() == "TVEpisode") {
+            // So here I will get the series info If I can found it...
+            let seriesInfos = this.shadowRoot.querySelector(`#hit-div-mosaic-episode-name`)
+            if (title.getSerie().length > 0) {
+                let serieName = this.shadowRoot.querySelector(`#hit-div-mosaic-series-name`)
+                getImdbInfo(title.getSerie(), serie => {
+                    this.shadowRoot.querySelector(`#hit-div-mosaic-front`).style.backgroundImage = `url(${serie.Poster.ContentURL})`
+                    serieName.innerHTML = serie.Name
+                }, err => ApplicationView.displayMessage(err, 3000))
+
+            }
+            seriesInfos.innerHTML = title.getName() + " S" + title.getSeason() + "E" + title.getEpisode()
+        } else {
+            this.shadowRoot.querySelector(`#hit-div-mosaic-front`).style.backgroundImage = `url(${title.getPoster().getContenturl()})`
+        }
+
+    }
+
+}
+
+customElements.define('globular-search-flip-card', SearchFlipCard)
 
 /**
  * Search Detail Title 
