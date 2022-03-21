@@ -1015,7 +1015,7 @@ export class FilesView extends HTMLElement {
                     // The path will be set at the command level, not at file level.
                     rqst.setPath(path)
 
-                    let dest = `%(title)s.%(ext)s`
+                    let dest = `%(id)s.%(ext)s`
 
                     if (mp3Radio.checked) {
                         rqst.setArgsList(["-f", "bestaudio", "--extract-audio", "--audio-format", "mp3", "--audio-quality", "0", "-o", dest, url]);

@@ -471,6 +471,10 @@ export class SearchResultsPage extends HTMLElement {
                 --iron-icon-fill-color: var(--palette-action-disabled);
             }
 
+            globular-search-video-card{
+                margin: 5px;
+            }
+
         </style>
         <div class="container">
             <div id="summary">
@@ -543,6 +547,8 @@ export class SearchResultsPage extends HTMLElement {
         this.hits = []
     }
 
+    // Display a mosaic vue of the result. If the result is a title I will use a flit card
+    // if is a video well a video card.
     displayMosaicHit(hit) {
 
         if (hit.hasTitle()) {
@@ -554,8 +560,15 @@ export class SearchResultsPage extends HTMLElement {
                 flipCard.setTitle(hit.getTitle())
                 this.appendChild(flipCard)
             }
-        } else {
-
+        } else if (hit.hasVideo()) {
+            let id = "_video_card_" + getUuidByString(hit.getVideo().getId())
+            if (this.querySelector("#" + id) == null) {
+                let videoCard = new SearchVideoCard();
+                videoCard.id = id
+                videoCard.slot = "mosaic"
+                videoCard.setVideo(hit.getVideo())
+                this.appendChild(videoCard)
+            }
         }
 
     }
@@ -641,6 +654,192 @@ export class SearchResultsPage extends HTMLElement {
 
 customElements.define('globular-search-results-page', SearchResultsPage)
 
+/**
+ * Search Box
+ */
+export class SearchVideoCard extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor() {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+            ${theme}
+
+            .video-card{
+                border-radius: 3.5px;
+                border: 1px solid var(--palette-primary-accent);
+                height: 100%;
+                max-width: 320px;
+                margin: 10px;
+                
+            }
+
+            .video-card:hover{
+                box-shadow: rgba(0, 0, 0, 0.16) 0px 3px 6px, rgba(0, 0, 0, 0.23) 0px 3px 6px;
+            }
+
+            .video-card img{
+                max-width: 320px;
+                min-width: 320px;
+                max-height: 180px;
+                border-top-left-radius: 3.5px;
+                border-top-right-radius: 3.5px;
+            }
+
+            .video-card img:hover{
+                cursor: pointer;
+            }
+
+            .video-card p{
+                font-size: 1.1rem;
+                margin: 5px;
+                margin-left: 10px;
+                overflow: hidden;
+                max-width: 75ch;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .rating-star{
+                --iron-icon-fill-color: rgb(245 197 24);
+                padding: 10px;
+                height: 20px;
+                width: 20px;
+            }
+            
+            .title-rating-div{
+                display: flex;
+                flex-grow: 1;
+                align-items: center;
+                color: var(--palette-text-secondery);
+                font-size: 1rem;
+            }
+            
+        </style>
+        <div class="video-card">
+            <img id="thumbnail-image"></img>
+            <img id="preview-image" style="display: none;"></img>
+            <p id="description"></p>
+            <div style="display: flex;">
+                <div class="title-rating-div">
+                    <iron-icon class="rating-star" icon="icons:star"></iron-icon>
+                    <div style="display: flex; flex-direction: column;">
+                        <div><span id="rating-span"></span>/10</div>
+                    </div>
+                </div>
+                <paper-icon-button id="video-info-button" icon="icons:arrow-drop-down-circle"></paper-icon-button>
+            </div>
+        </div>
+        `
+
+        // test create offer...
+    }
+
+    
+    showVideoInfo(video) {
+        //let uuid = randomUUID()
+        let html = `
+        <style>
+            ${theme}
+            paper-card {
+                background-color: var(--palette-background-paper);
+            }
+        </style>
+
+        <paper-card>
+            <globular-informations-manager id="video-info-box"></globular-informations-manager>
+        </paper-card>
+        `
+        let videoInfoBox = document.getElementById("video-info-box")
+        if (videoInfoBox == undefined) {
+            let range = document.createRange()
+            document.body.appendChild(range.createContextualFragment(html))
+            videoInfoBox = document.getElementById("video-info-box")
+            videoInfoBox.parentNode.style.position = "fixed"
+            videoInfoBox.parentNode.style.top = "50%"
+            videoInfoBox.parentNode.style.left = "50%"
+            videoInfoBox.parentNode.style.transform = "translate(-50%, -50%)"
+        }
+        videoInfoBox.setVideosInformation([video])
+    }
+
+    setVideo(video) {
+
+        // Set the default thumbnail.
+        let thumbnail = this.shadowRoot.querySelector("#thumbnail-image")
+        let preview = this.shadowRoot.querySelector("#preview-image")
+        let card = this.shadowRoot.querySelector(".video-card")
+        thumbnail.src = video.getPoster().getContenturl()
+
+        this.shadowRoot.querySelector("#video-info-button").onclick = () => {
+            this.showVideoInfo(video)
+        }
+
+        card.onmouseover = ()=>{
+            preview.style.display = "block"
+            thumbnail.style.display = "none"
+        }
+
+        card.onmouseleave = ()=>{
+            preview.style.display = "none"
+            thumbnail.style.display = "block"
+        }
+
+        // Here I will get the file asscociated with the video...
+        this.shadowRoot.querySelector("#description").innerHTML = video.getDescription()
+        this.shadowRoot.querySelector("#rating-span").innerHTML = video.getRating().toFixed(1)
+
+        // paly only the first file...
+        let rqst = new GetTitleFilesRequest
+        rqst.setTitleid(video.getId())
+        let indexPath = Application.globular.config.DataPath + "/search/videos"
+        rqst.setIndexpath(indexPath)
+
+        Model.globular.titleService.getTitleFiles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+            .then(rsp => {
+                if (rsp.getFilepathsList().length > 0) {
+                    let path = rsp.getFilepathsList().pop()
+
+                    let thumbnailPath = path
+                    if (thumbnailPath.lastIndexOf(".mp4") != -1) {
+                        thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("."))
+                    }
+                    thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/preview.gif"
+                    
+                    let url = window.location.protocol + "//" + window.location.hostname + ":"
+                    if (Application.globular.config.Protocol == "https") {
+                        url += Application.globular.config.PortHttps
+                    } else {
+                        url += Application.globular.config.PortHttp
+                    }
+            
+            
+                    thumbnailPath.split("/").forEach(item => {
+                        item = item.trim()
+                        if (item.length > 0) {
+                            url += "/" + encodeURIComponent(item)
+                        }
+                    })
+
+                  
+                    preview.src = url
+                    preview.onclick = () => {
+                        playVideo(path, null, null)
+                    }
+                }
+            }).catch(err=>ApplicationView.displayMessage(err, 3000))
+
+        console.log(video)
+    }
+}
+
+customElements.define('globular-search-video-card', SearchVideoCard)
 
 /**
  * Display title with a flip card.
@@ -672,8 +871,6 @@ export class SearchFlipCard extends HTMLElement {
                 height: 380px; 
                 width: 256px;
             }
-
-            
 
             /* entire container, keeps perspective */
             .flip-container {
@@ -896,6 +1093,8 @@ export class SearchTitleDetail extends HTMLElement {
 
             this.shadowRoot.querySelector("#loading-episodes-infos").style.display = "none"
             this.shadowRoot.querySelector("#episodes-select-div").style.display = "flex"
+
+
 
             let infos = {}
             episodes.forEach(e => {
