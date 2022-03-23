@@ -36,7 +36,7 @@ import { TimeScale } from 'chart.js';
 import { ImageViewer } from './Image';
 import { ConversationServicePromiseClient } from 'globular-web-client/conversation/conversation_grpc_web_pb';
 import { IndexJsonObjectRequest, SearchDocumentsRequest, SearchResult, SearchResults } from 'globular-web-client/search/search_pb';
-import { AssociateFileWithTitleRequest, CreateTitleRequest, GetFileTitlesRequest, GetFileVideosRequest, GetVideoByIdRequest, Person, Poster, Title } from 'globular-web-client/title/title_pb';
+import { AssociateFileWithTitleRequest, CreateTitleRequest, GetFileTitlesRequest, GetFileVideosRequest, Person, Poster, Title } from 'globular-web-client/title/title_pb';
 import { DownloadTorrentRequest, DropTorrentRequest, GetTorrentInfosRequest } from 'globular-web-client/torrent/torrent_pb';
 import { SetEmailResponse } from 'globular-web-client/resource/resource_pb';
 import { getImdbInfo } from './Search';
@@ -517,6 +517,7 @@ export class FilesView extends HTMLElement {
 
                 Model.globular.titleService.getFileVideos(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
                     .then(rsp => {
+                        console.log(rsp.getVideos().getVideosList())
                         callback(rsp.getVideos().getVideosList())
                     })
                     .catch(err => {
@@ -1696,16 +1697,11 @@ export class FilesIconView extends FilesView {
                     /** In that case I will display the vieo preview. */
                     getHiddenFiles(file.path, previewDir => {
                         let h = 72;
-                        let w = 128;
                         if (previewDir) {
                             let path = file.path
                             let preview = new VideoPreview(path, previewDir._files, h, () => {
-                                if (preview.width > 0 && preview.height > 0) {
-                                    w = (preview.width / preview.height) * h
-                                }
                                 fileNameSpan.style.wordBreak = "break-all"
                                 fileNameSpan.style.fontSize = ".85rem"
-                                fileNameSpan.style.maxWidth = w + "px";
                             })
 
                             // keep the explorer link...
@@ -3912,7 +3908,6 @@ export class VideoPreview extends HTMLElement {
                     this.firstImage.onload = () => {
                         this.width = this.firstImage.width;
                         this.height = this.firstImage.height;
-                        this.container.style.maxWidth = this.width + "px"
                         this.playBtn.style.top = this.height / 2 + "px"
                         this.playBtn.style.left = this.width / 2 + "px"
                         if (this.onresize != undefined) {

@@ -1078,7 +1078,6 @@ export class ImageSetting extends Setting {
 
         img {
           padding: 5px;
-          max-width: 128px;
           max-height: 128px;
         }
 

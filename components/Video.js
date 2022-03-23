@@ -6,6 +6,7 @@ import Plyr from 'plyr';
 import "./plyr.css"
 import Hls, { ElementaryStreamTypes } from "hls.js";
 import { ApplicationView } from "../ApplicationView";
+import { GetFileTitlesRequest, GetFileVideosRequest } from "globular-web-client/title/title_pb";
 
 
 Object.defineProperty(HTMLMediaElement.prototype, 'playing', {
@@ -120,7 +121,6 @@ export class VideoPlayer extends HTMLElement {
         this.onclose = null
         this.onplay = null
 
-
         this.appendChild(this.video)
 
         // Plyr give a nice visual to the video player.
@@ -146,7 +146,14 @@ export class VideoPlayer extends HTMLElement {
         // HLS for streamming...
         this.hls = null;
         if (Hls.isSupported()) {
-            this.hls = new Hls();
+            this.hls = new Hls(
+                {
+                    xhrSetup: xhr => {
+                        xhr.setRequestHeader('application', Model.application)
+                        xhr.setRequestHeader('token', localStorage.getItem("user_token"))
+                    }
+                }
+            );
         }
     }
 
@@ -160,7 +167,56 @@ export class VideoPlayer extends HTMLElement {
         let thumbnailPath = path.replace("/playlist.m3u8", "")
 
         this.shadowRoot.querySelector("#title-span").innerHTML = thumbnailPath.substring(thumbnailPath.lastIndexOf("/") + 1)
+
         this.shadowRoot.querySelector("#container").style.display = ""
+
+        // So Here I will try to get the title or the video info...
+
+        // Now I will test if imdb info are allready asscociated.
+        let getTitleInfo = (path, callback) => {
+            let rqst = new GetFileTitlesRequest
+            rqst.setIndexpath(Model.globular.config.DataPath + "/search/titles")
+            rqst.setFilepath(path)
+
+            Model.globular.titleService.getFileTitles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+                .then(rsp => {
+                    console.log(rsp.getTitles().getTitlesList())
+                    callback(rsp.getTitles().getTitlesList())
+                })
+        }
+
+
+        let getVideoInfo = (path, callback) => {
+            let rqst = new GetFileVideosRequest
+            rqst.setIndexpath(Model.globular.config.DataPath + "/search/videos")
+            rqst.setFilepath(path)
+
+            Model.globular.titleService.getFileVideos(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+                .then(rsp => {
+                    console.log(rsp.getVideos().getVideosList())
+                    callback(rsp.getVideos().getVideosList())
+                })
+        }
+
+        getVideoInfo(path, videos => {
+            if (videos.length > 0) {
+                let video = videos.pop()
+                this.shadowRoot.querySelector("#title-span").innerHTML = video.getDescription()
+            }
+        })
+
+        getTitleInfo(path, tittles => {
+            if (tittles.length > 0) {
+                let title = tittles.pop()
+                this.shadowRoot.querySelector("#title-span").innerHTML = title.getName()
+                if(title.getYear()){
+                    this.shadowRoot.querySelector("#title-span").innerHTML += " (" + title.getYear() + ") "
+                }
+                if (title.getType() == "TVEpisode") {
+                    this.shadowRoot.querySelector("#title-span").innerHTML += " S" + title.getSeason() + "E" + title.getEpisode()
+                }
+            }
+        })
 
         // Only HLS and MP4 are allow by the video player so if is not one it's the other...
         if (thumbnailPath.lastIndexOf(".mp4") != -1) {
@@ -245,11 +301,11 @@ export class VideoPlayer extends HTMLElement {
         this.shadowRoot.querySelector(".header").style.display = "";
     }
 
-    setHeight(h){
+    setHeight(h) {
         this.querySelector("video").style.maxHeight = h + "px"
     }
 
-    resetHeight(){
+    resetHeight() {
         this.querySelector("video").style.maxHeight = ""
     }
 }
