@@ -89,6 +89,8 @@ export class VideoPlayer extends HTMLElement {
             .header span{
                 flex-grow: 1;
                 text-align: center;
+                font-size: 1.1rem;
+                font-weight: 500;
             }
 
             video{

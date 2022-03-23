@@ -676,3 +676,10 @@ globular-file-explorer{
    padding-left: 15px;
    font-size: 1.20rem;
 }
+
+
+globular-search-video-card{
+   margin: 5px;
+   
+   height: 100%;
+}

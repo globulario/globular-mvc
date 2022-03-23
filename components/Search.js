@@ -471,10 +471,6 @@ export class SearchResultsPage extends HTMLElement {
                 --iron-icon-fill-color: var(--palette-action-disabled);
             }
 
-            globular-search-video-card{
-                margin: 5px;
-            }
-
         </style>
         <div class="container">
             <div id="summary">
