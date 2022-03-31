@@ -143,8 +143,6 @@ function getHiddenFiles(path, callback) {
         thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("."))
     }
     thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/__preview__"
-    console.log("---------------> path: ", path)
-    console.log("---------------> thumbnailPath: ", thumbnailPath)
     _readDir(thumbnailPath, callback, err => { console.log(err); callback(null); })
 }
 
@@ -802,7 +800,7 @@ export class InformationsManager extends HTMLElement {
             okBtn.onclick = () => {
                 let rqst = new DeleteTitleRequest()
                 rqst.setTitleid(title.getId())
-                rqst.setIndexpath(Model.globular.config.DataPath + "/search/videos")
+                rqst.setIndexpath(Model.globular.config.DataPath + "/search/titles")
                 Model.globular.titleService.deleteTitle(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
                     .then(() => {
                         ApplicationView.displayMessage(`file indexation was deleted`, 3000)

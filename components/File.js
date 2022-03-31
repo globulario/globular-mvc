@@ -1043,10 +1043,10 @@ export class FilesView extends HTMLElement {
 
                     stream.on("status", (status) => {
                         if (status.code === 0) {
-                            
+
                             Model.eventHub.publish("__upload_link_event__", { pid: pid, path: this.__dir__.path, infos: "", done: true, lnk: lnk }, true);
-                            Model.eventHub.publish("generate_video_preview_event",  this.__dir__.path + "/" + fileName, false);
-                            
+                            Model.eventHub.publish("generate_video_preview_event", this.__dir__.path + "/" + fileName, false);
+
                             // Now I will index the file...
                             var xmlhttp = new XMLHttpRequest();
 
@@ -2344,6 +2344,12 @@ export class FileNavigator extends HTMLElement {
                 }
                 // reload the div...
                 this.initTreeView(dir, parent, level)
+
+                // Init shared...
+                this.initShared()
+
+                // Init public list of directories
+                this.initPublic()
             }
         }
     }
@@ -2536,18 +2542,17 @@ export class FileNavigator extends HTMLElement {
         // The public directory will contain a list of directories readable by 
         // any use, permission can also be set on file and directories, but all is 
         // accessible by default.
-        if (this.public_ == undefined) {
-            this.public_ = new File("public", "/public", true)
-            this.public_.isDir = true;
-            this.public_.files = [];
-            this.public_.mime = "";
-            this.public_.modTime = new Date()
-            Model.eventHub.subscribe("public_change_permission_event", uuid => { },
-                evt => {
-                    // refresh the shared...
-                    this.initPublic()
-                }, false, this)
-        }
+        this.public_ = new File("public", "/public", true)
+        this.public_.isDir = true;
+        this.public_.files = [];
+        this.public_.mime = "";
+        this.public_.modTime = new Date()
+        Model.eventHub.subscribe("public_change_permission_event", uuid => { },
+            evt => {
+                // refresh the shared...
+                this.initPublic()
+            }, false, this)
+
 
         let index = 0;
         let initPublicDir = (callback, errorCallback) => {
@@ -3203,6 +3208,7 @@ export class FileExplorer extends HTMLElement {
                     .then(() => {
                         // The new directory was created.
                         delete dirs[getUuidByString(this.path)]
+
                         Model.eventHub.publish("reload_dir_event", this.path, false);
                     })
                     .catch((err) => {

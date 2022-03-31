@@ -510,7 +510,7 @@ export class SearchResultsPage extends HTMLElement {
         Model.eventHub.subscribe(`${uuid}_search_facets_event__`, listner_uuid => { },
             evt => {
                 console.log(evt.facets)
-
+                
             }, true)
 
         // Append it to the results.
