@@ -114,11 +114,13 @@ function playTitleListener(player, title, indexPath) {
                 index = i;
             }
         });
-        index += 1
-        if (index < episodes.length) {
+       
+        if (index < episodes.length && index != -1) {
+            index += 1
             let nextEpisode = episodes[index]
             let video = document.getElementsByTagName('video')[0];
-            video.onended = function (e) {
+            video.onended = () =>{  
+                
                 // exit full screen...
                 if (document.exitFullscreen) {
                     document.exitFullscreen();
@@ -131,6 +133,10 @@ function playTitleListener(player, title, indexPath) {
                 }
 
                 document.getElementsByTagName('globular-video-player')[0].close();
+
+                if(index == episodes.length){
+                    return
+                }
 
                 // So here I will ask to display the next episode...
                 let toast = ApplicationView.displayMessage(`

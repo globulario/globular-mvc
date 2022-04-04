@@ -2913,7 +2913,7 @@ export class FileExplorer extends HTMLElement {
         </style>
         <div style="padding: 7px">
 
-        <paper-card id="file-explorer-box" class="file-explorer" style="flex-direction: column; display: none; width: 760px; height: 600px; border-left: 1px solid var(--palette-divider);">
+        <paper-card id="file-explorer-box" class="file-explorer" style="flex-direction: column; display: none; width: 760px; height: 600px; border-left: 1px solid var(--palette-divider); border-right: 1px solid var(--palette-divider);">
             <div class="card-header">
                 <paper-icon-button icon="icons:close" id="file-explorer-box-close-btn"></paper-icon-button>
                 <span id="move-handle" class="title">File Explorer</span>
