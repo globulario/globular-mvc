@@ -14,6 +14,7 @@ import * as getUuidByString from 'uuid-by-string';
 
 // keep values in memorie to speedup...
 var titles = {}
+var current_title = null
 
 // That function will be use to asscociate file with imdb information.
 export function getImdbInfo(id, callback, errorcallback) {
@@ -66,6 +67,128 @@ export function getImdbInfo(id, callback, errorcallback) {
     xmlhttp.setRequestHeader("domain", Model.domain);
 
     xmlhttp.send();
+}
+
+function searchEpisodes(serie, indexPath, callback) {
+
+    // This is a simple test...
+    let rqst = new SearchTitlesRequest
+    rqst.setIndexpath(indexPath)
+    rqst.setQuery(serie)
+    rqst.setOffset(0)
+    rqst.setSize(1000)
+    let episodes = []
+    let stream = Model.globular.titleService.searchTitles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+    stream.on("data", (rsp) => {
+        if (rsp.hasHit()) {
+            let hit = rsp.getHit()
+            // display the value in the console...
+            hit.getSnippetsList().forEach(val => {
+                if (hit.getTitle().getType() == "TVEpisode") {
+                    episodes.push(hit.getTitle())
+                }
+            })
+        }
+    });
+
+    stream.on("status", (status) => {
+        if (status.code == 0) {
+            // Here I will sort the episodes by seasons and episodes.
+            callback(episodes.sort((a, b) => {
+                if (a.getSeason() === b.getSeason()) {
+                    // Price is only important when cities are the same
+                    return a.getEpisode() - b.getEpisode();
+                }
+                return a.getSeason() - b.getSeason();
+            }))
+        }
+    });
+}
+
+function playTitleListener(player, title, indexPath) {
+
+    searchEpisodes(title.getSerie(), indexPath, (episodes) => {
+        let index = -1;
+        episodes.forEach((e, i) => {
+            if (e.getId() == title.getId()) {
+                index = i;
+            }
+        });
+        index += 1
+        if (index < episodes.length) {
+            let nextEpisode = episodes[index]
+            let video = document.getElementsByTagName('video')[0];
+            video.onended = function (e) {
+                // exit full screen...
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                } else if (document.mozCancelFullScreen) {
+                    document.mozCancelFullScreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                }
+
+                document.getElementsByTagName('globular-video-player')[0].close();
+
+                // So here I will ask to display the next episode...
+                let toast = ApplicationView.displayMessage(`
+                <style>
+                    ${theme}
+                </style>
+                <div style="display: flex; flex-direction: column;">
+                    <div>Play the next episode?</div>
+                    <h3 style="font-size: 1.17em; font-weight: bold;">${nextEpisode.getName()}</h3>
+                    <div>Season ${nextEpisode.getSeason()} Episode ${nextEpisode.getEpisode()}</div>
+                    <img style="width: 400px;" src="${nextEpisode.getPoster().getContenturl()}"></img>
+                    <p style="max-width: 400px;">${nextEpisode.getDescription()}</p>
+                    <div style="display: flex; justify-content: flex-end;">
+                        <paper-button id="imdb-lnk-ok-button">Yes</paper-button>
+                        <paper-button id="imdb-lnk-cancel-button">No</paper-button>
+                    </div>
+                </div>
+                `)
+
+                let cancelBtn = toast.el.querySelector("#imdb-lnk-cancel-button")
+                cancelBtn.onclick = () => {
+                    toast.dismiss();
+                }
+
+                let okBtn = toast.el.querySelector("#imdb-lnk-ok-button")
+                okBtn.onclick = () => {
+                    current_title = nextEpisode // use indermediare variable...
+                    let rqst = new GetTitleFilesRequest
+                    rqst.setTitleid(current_title.getId())
+                    rqst.setIndexpath(indexPath)
+                    Model.globular.titleService.getTitleFiles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+                        .then(rsp => {
+                            if (rsp.getFilepathsList().length > 0) {
+                                let path = rsp.getFilepathsList().pop()
+                                playVideo(path, (player) => {
+                                    playTitleListener(player, current_title, indexPath)
+                                }, null)
+                            }
+                        })
+                    toast.dismiss();
+                }
+            };
+        }
+    })
+
+
+    if (!player.media) {
+        return
+    }
+
+    var type = player.media.tagName.toLowerCase(),
+        toggle = document.querySelector("[data-plyr='fullscreen']");
+
+    if (type === "video" && toggle) {
+        toggle.addEventListener("click", player.toggleFullscreen, false);
+    }
+    toggle.click()
+
 }
 
 function searchTitles(query, indexPath) {
@@ -510,7 +633,7 @@ export class SearchResultsPage extends HTMLElement {
         Model.eventHub.subscribe(`${uuid}_search_facets_event__`, listner_uuid => { },
             evt => {
                 console.log(evt.facets)
-                
+
             }, true)
 
         // Append it to the results.
@@ -737,7 +860,7 @@ export class SearchVideoCard extends HTMLElement {
         // test create offer...
     }
 
-    
+
     showVideoInfo(video) {
         //let uuid = randomUUID()
         let html = `
@@ -777,12 +900,12 @@ export class SearchVideoCard extends HTMLElement {
             this.showVideoInfo(video)
         }
 
-        card.onmouseover = ()=>{
+        card.onmouseover = () => {
             preview.style.display = "block"
             thumbnail.style.display = "none"
         }
 
-        card.onmouseleave = ()=>{
+        card.onmouseleave = () => {
             preview.style.display = "none"
             thumbnail.style.display = "block"
         }
@@ -807,15 +930,15 @@ export class SearchVideoCard extends HTMLElement {
                         thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("."))
                     }
                     thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/preview.gif"
-                    
+
                     let url = window.location.protocol + "//" + window.location.hostname + ":"
                     if (Application.globular.config.Protocol == "https") {
                         url += Application.globular.config.PortHttps
                     } else {
                         url += Application.globular.config.PortHttp
                     }
-            
-            
+
+
                     thumbnailPath.split("/").forEach(item => {
                         item = item.trim()
                         if (item.length > 0) {
@@ -823,15 +946,13 @@ export class SearchVideoCard extends HTMLElement {
                         }
                     })
 
-                  
+
                     preview.src = url
                     preview.onclick = () => {
                         playVideo(path, null, null)
                     }
                 }
-            }).catch(err=>ApplicationView.displayMessage(err, 3000))
-
-        console.log(video)
+            }).catch(err => ApplicationView.displayMessage(err, 3000))
     }
 }
 
@@ -1063,8 +1184,8 @@ export class SearchTitleDetail extends HTMLElement {
                     <paper-progress indeterminate style="width: 100%;"></paper-progress>
                 </div>
                 <div id="episodes-select-div" style="display:none;">
-                    <select id="season-select"></select>
-                    <select id="episode-select"></select>
+                    <select id="season-select" style="max-width: 80px;"></select>
+                    <select id="episode-select" style="max-width: 82px;"></select>
                     <span style="flex-grow: 1;"></span>
                     <paper-icon-button id="play-episode-video-button" icon="av:play-circle-filled"></paper-icon-button>
                     <paper-icon-button id="episode-info-button" icon="icons:arrow-drop-down-circle"></paper-icon-button>
@@ -1133,8 +1254,11 @@ export class SearchTitleDetail extends HTMLElement {
                                 }
                             })
                             this.episodePreview.src = url
-                            this.shadowRoot.querySelector("#play-episode-video-button").onclick = () => {
-                                playVideo(path, null, null)
+                            this.shadowRoot.querySelector("#epsiode-preview").onclick = this.shadowRoot.querySelector("#play-episode-video-button").onclick = () => {
+                                current_title = title // use indermediare variable...
+                                playVideo(path, (player) => {
+                                    playTitleListener(player, current_title, indexPath)
+                                }, null)
                             }
 
                             this.shadowRoot.querySelector("#episode-info-button").onclick = () => {
@@ -1213,8 +1337,6 @@ export class SearchTitleDetail extends HTMLElement {
             url += Application.globular.config.PortHttp
         }
 
-
-
         // paly only the first file...
         let rqst = new GetTitleFilesRequest
         rqst.setTitleid(title.getId())
@@ -1241,8 +1363,11 @@ export class SearchTitleDetail extends HTMLElement {
 
                     this.titlePreview.src = url
 
-                    this.shadowRoot.querySelector("#play-video-button").onclick = () => {
-                        playVideo(path, null, null)
+                    this.shadowRoot.querySelector("#title-preview").onclick = this.shadowRoot.querySelector("#play-video-button").onclick = () => {
+                        current_title = title // use indermediare variable...
+                        playVideo(path, (player) => {
+                            playTitleListener(player, current_title, indexPath)
+                        }, null)
                     }
                 }
             })

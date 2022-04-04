@@ -4,10 +4,11 @@ import { Model } from '../Model';
 import { Application } from "../Application";
 import Plyr from 'plyr';
 import "./plyr.css"
-import Hls, { ElementaryStreamTypes } from "hls.js";
+import Hls from "hls.js";
 import { ApplicationView } from "../ApplicationView";
 import { GetFileTitlesRequest, GetFileVideosRequest } from "globular-web-client/title/title_pb";
-
+import { setMoveable } from './moveable'
+import { setResizeable } from './rezieable'
 
 Object.defineProperty(HTMLMediaElement.prototype, 'playing', {
     get: function () {
@@ -34,22 +35,13 @@ export function playVideo(path, onplay, onclose, parent) {
 
     if (parent == undefined) {
         parent = document.body
-        videoPlayer.style.position = "fixed"
-        videoPlayer.style.top = "50%"
-        videoPlayer.style.left = "50%"
-        videoPlayer.style.transform = "translate(-50%, -50%)"
-    } else {
-        // reset it...
-        videoPlayer.style.position = ""
-        videoPlayer.style.top = ""
-        videoPlayer.style.left = ""
-        videoPlayer.style.transform = ""
     }
 
     parent.appendChild(videoPlayer)
     if (onplay && !videoPlayer.onplay) {
         videoPlayer.onplay = onplay
     }
+
     if (onclose && !videoPlayer.onclose) {
         videoPlayer.onclose = onclose
     }
@@ -77,8 +69,8 @@ export class VideoPlayer extends HTMLElement {
         <style>
             ${theme}
             #container{
-                max-width: 1080px;
-                margin: 10px;
+                width: 720px;
+                position: fixed;
             }
 
             .header{
@@ -96,7 +88,6 @@ export class VideoPlayer extends HTMLElement {
             video{
                 display: block;
                 width:auto;
-                height: auto;
             }
 
             paper-card {
@@ -105,7 +96,7 @@ export class VideoPlayer extends HTMLElement {
                 border-left: 1px solid var(--palette-background-paper);
             }
         </style>
-        <paper-card id="container">
+        <paper-card id="container" class="no-select">
             <div class="header" style="${hideheader ? "display:none;" : ""}">
                 <paper-icon-button id="video-close-btn" icon="icons:close"></paper-icon-button>
                 <span id="title-span"></span>
@@ -113,10 +104,11 @@ export class VideoPlayer extends HTMLElement {
             <slot></slot>
         </paper-card>
         `
-        // <!--video id="player" controls autoplay></video-->
+
+        let container = this.shadowRoot.querySelector("#container")
 
         // give the focus to the input.
-        this.video = document.createElement("video")// this.shadowRoot.querySelector("video")
+        this.video = document.createElement("video")
         this.video.id = "player"
         this.video.autoplay = true
         this.video.controls = true
@@ -124,25 +116,41 @@ export class VideoPlayer extends HTMLElement {
         this.onplay = null
 
         this.appendChild(this.video)
+        if (localStorage.getItem("__video_player_position__")) {
+            let position = JSON.parse(localStorage.getItem("__video_player_position__"))
+            container.style.top = position.top + "px"
+            container.style.left = position.left + "px"
+        } else {
+            this.shadowRoot.querySelector("#container").style.left = ((document.body.offsetWidth - 720) / 2) + "px"
+            this.shadowRoot.querySelector("#container").style.top = "80px"
+        }
+
+        if (localStorage.getItem("__video_player_dimension__")) {
+            let dimension = JSON.parse(localStorage.getItem("__video_player_dimension__"))
+            container.style.width = dimension.width + "px"
+            container.style.height = "auto"
+        }
+
+        setResizeable(container, (width, height) => {
+            localStorage.setItem("__video_player_dimension__", JSON.stringify({ width: width, height: height }))
+            if(this.video > 0){
+                container.style.height =  this.video.offsetHeight + "px"
+            }else{
+                container.style.height = "auto"
+            }
+        })
+        container.resizeHeightDiv.style.display = "none"
+
+        setMoveable(this.shadowRoot.querySelector(".header"), container, (left, top) => {
+            localStorage.setItem("__video_player_position__", JSON.stringify({ top: top, left: left }))
+        })
 
         // Plyr give a nice visual to the video player.
         // TODO set the preview and maybe quality bitrate if possible...
         // So here I will get the vtt file if one exist...
         this.player = new Plyr(this.video);
-
-        // Get the parent size and set the max width of te
-        window.addEventListener("resize", () => {
-            if (this.parentElement.offsetWidth > 0) {
-                this.video.style.maxWidth = this.parentNode.offsetWidth + "px"
-            }
-        });
-
         this.shadowRoot.querySelector("#video-close-btn").onclick = () => {
-            this.stop()
-            this.shadowRoot.querySelector("#container").style.display = "none"
-            if (this.onclose) {
-                this.onclose()
-            }
+            this.close()
         }
 
         // HLS for streamming...
@@ -167,9 +175,7 @@ export class VideoPlayer extends HTMLElement {
 
         // Set the title...
         let thumbnailPath = path.replace("/playlist.m3u8", "")
-
         this.shadowRoot.querySelector("#title-span").innerHTML = thumbnailPath.substring(thumbnailPath.lastIndexOf("/") + 1)
-
         this.shadowRoot.querySelector("#container").style.display = ""
 
         // So Here I will try to get the title or the video info...
@@ -182,7 +188,6 @@ export class VideoPlayer extends HTMLElement {
 
             Model.globular.titleService.getFileTitles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
                 .then(rsp => {
-                    console.log(rsp.getTitles().getTitlesList())
                     callback(rsp.getTitles().getTitlesList())
                 })
         }
@@ -195,7 +200,6 @@ export class VideoPlayer extends HTMLElement {
 
             Model.globular.titleService.getFileVideos(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
                 .then(rsp => {
-                    console.log(rsp.getVideos().getVideosList())
                     callback(rsp.getVideos().getVideosList())
                 })
         }
@@ -211,7 +215,7 @@ export class VideoPlayer extends HTMLElement {
             if (tittles.length > 0) {
                 let title = tittles.pop()
                 this.shadowRoot.querySelector("#title-span").innerHTML = title.getName()
-                if(title.getYear()){
+                if (title.getYear()) {
                     this.shadowRoot.querySelector("#title-span").innerHTML += " (" + title.getYear() + ") "
                 }
                 if (title.getType() == "TVEpisode") {
@@ -283,9 +287,20 @@ export class VideoPlayer extends HTMLElement {
         }
 
         if (this.onplay != null) {
-            this.onplay()
+            this.onplay(this.player)
         }
 
+    }
+
+    /**
+     * Close the player...
+     */
+    close(){
+        this.stop()
+        this.shadowRoot.querySelector("#container").style.display = "none"
+        if (this.onclose) {
+            this.onclose()
+        }
     }
 
     /**

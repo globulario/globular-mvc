@@ -643,6 +643,9 @@ globular-file-explorer{
    }
 }
 
+.no-select {
+   user-select: none;
+ }
 
 .hit-div{
    display: flex; 
@@ -677,9 +680,7 @@ globular-file-explorer{
    font-size: 1.20rem;
 }
 
-
 globular-search-video-card{
    margin: 5px;
-   
    height: 100%;
 }

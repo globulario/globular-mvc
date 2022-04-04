@@ -154,7 +154,8 @@ export let theme = `
   paper-card {
     background-color: transparent;
     font-size: 1rem;
-    text-align: left;F
+    text-align: left;
+    border-radius: 2px;
   }
 
   paper-button {
@@ -214,7 +215,8 @@ export let theme = `
     justify-content: flex-end;
     align-items: center;
     font-size: 1rem;
-    background-color: var(--palette-background-paper);;
+    border-color: var(--palette-divider);
+    background-color: var(--palette-background-paper);
   }
 
   .card-subtitle {
@@ -334,5 +336,9 @@ export let theme = `
   .blog-post-editor-div, .blog-post-reader-div{
     background-color: var(--palette-background-paper);
     color: var(--palette-text-primary);
+  }
+
+  .no-select {
+    user-select: none;
   }
 `

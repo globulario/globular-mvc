@@ -40,7 +40,8 @@ import { AssociateFileWithTitleRequest, CreateTitleRequest, GetFileTitlesRequest
 import { DownloadTorrentRequest, DropTorrentRequest, GetTorrentInfosRequest } from 'globular-web-client/torrent/torrent_pb';
 import { SetEmailResponse } from 'globular-web-client/resource/resource_pb';
 import { getImdbInfo } from './Search';
-
+import {setMoveable} from './moveable'
+import {setResizeable} from './rezieable'
 
 // keep track of shared directory
 var shared = {}
@@ -642,7 +643,7 @@ export class FilesView extends HTMLElement {
 
           </style>
 
-          <div class="files-view-div" /*oncontextmenu="return false;"*/ id="${id}">
+          <div class="files-view-div no-select" /*oncontextmenu="return false;"*/ id="${id}">
           </div>
           `
         // get the div.
@@ -1419,7 +1420,7 @@ export class FilesIconView extends FilesView {
                 display: flex;
                 flex-direction: column;
                 padding: 8px;
-                min-height: 400px;
+                /*min-height: 400px;*/
             }
 
             /** The file section */
@@ -1458,9 +1459,10 @@ export class FilesIconView extends FilesView {
                 margin: 5px;
                 padding: 5px;
                 padding-top:25px;
-                border-radius: 5px;
+                border-radius: 2.5px;
+                border: 1px solid var(--palette-background-paper);
                 transition: background 0.2s ease,padding 0.8s linear;
-                background-color: var(--palette-background-paper);
+                background-color: var(--palette-background-default);
                 height: ${h}px;
                 min-width: ${w}px;
                 justify-content: center;
@@ -1534,7 +1536,7 @@ export class FilesIconView extends FilesView {
             }
 
         </style>
-        <div id="container">
+        <div id="container" class="no-select">
         
         </div>
         `
@@ -1637,6 +1639,7 @@ export class FilesIconView extends FilesView {
                     <div class="file-icon-div" id="${id}">
                         <paper-checkbox></paper-checkbox>
                         <div class="menu-div"></div>
+                        <paper-ripple recenters></<paper-ripple>
                     </div>
                 </div>
                 `
@@ -2810,7 +2813,7 @@ export class FileExplorer extends HTMLElement {
             }
 
             #file-selection-panel{
-                margin-left: 15px;
+                margin-left: 8px;
                 flex-grow: 1;
                 background-color: var(--palette-background-default);
                 color: var(--palette-text-primary);
@@ -2819,26 +2822,34 @@ export class FileExplorer extends HTMLElement {
 
             #file-explorer-content{
                 display: flex;
+                padding: 0px;
                 flex-direction: column;
-                min-width: 735px;
                 position: relative;
                 height: 100%;
             }
 
             paper-card{
                 font-size: 1.0rem;
+                overflow: hidden;
             }
 
-            .card-actions{
+            .card-header, .card-actions{
                 display: flex;
+                align-items: center;
+                border-color: var(--palette-divider);
                 background-color: var(--palette-background-paper);
+            }
+
+            .card-header .title {
+                flex-grow: 1;
+                text-align: center;
+                user-select: none;
             }
 
             #file-explorer-layout{
                 display: flex; 
                 flex-grow: 1;
                 overflow: hidden;
-                min-height: 55vh;
             }
 
             @media only screen and (max-width: 800px) {
@@ -2893,11 +2904,25 @@ export class FileExplorer extends HTMLElement {
                 cursor: pointer;
             }
 
+            #move-handle:hover{
+                cursor: move; /* fallback if grab cursor is unsupported */
+                cursor: grab;
+                cursor: -moz-grab;
+                cursor: -webkit-grab;
+            }
         </style>
         <div style="padding: 7px">
-        <paper-card id="file-explorer-box" class="file-explorer" style="flex-direction: column; display: none;">
-            <div id="file-explorer-content" class="card-content">
-                <div style="display: flex; align-items: center;">
+
+        <paper-card id="file-explorer-box" class="file-explorer" style="flex-direction: column; display: none; width: 760px; height: 600px; border-left: 1px solid var(--palette-divider);">
+            <div class="card-header">
+                <paper-icon-button icon="icons:close" id="file-explorer-box-close-btn"></paper-icon-button>
+                <span id="move-handle" class="title">File Explorer</span>
+                <div class="card-actions">
+                    <paper-icon-button icon="icons:fullscreen" id="enter-full-screen-btn"></paper-icon-button>
+                </div>
+            </div>
+            <div id="file-explorer-content" class="card-content no-select">
+                <div style="display: flex; align-items: center; border-bottom: 1px solid var(--palette-divider);">
                     <paper-icon-button id="navigation-back-btn" icon="icons:icons:arrow-back"></paper-icon-button>
                     <paper-icon-button id="navigation-foward-btn" icon="icons:arrow-forward"></paper-icon-button>
                     <div style="position: relative;">
@@ -2905,9 +2930,11 @@ export class FileExplorer extends HTMLElement {
                     </div>
                     <paper-icon-button id="navigation-upward-btn" icon="icons:arrow-upward"></paper-icon-button>
                     <globular-path-navigator id="globular-path-navigator" style="flex-grow: 1;"></globular-path-navigator>
-                    <paper-icon-button id="navigation-cloud-upload-btn" icon="icons:cloud-upload"></paper-icon-button>
-                    <paper-icon-button id="navigation-create-dir-btn" icon="icons:create-new-folder"></paper-icon-button>
-                    <paper-icon-button id="navigation-refresh-btn" icon="icons:refresh"></paper-icon-button>
+                    <div style="width: 120px; display: flex;">
+                        <paper-icon-button id="navigation-cloud-upload-btn" icon="icons:cloud-upload"></paper-icon-button>
+                        <paper-icon-button id="navigation-create-dir-btn" icon="icons:create-new-folder"></paper-icon-button>
+                        <paper-icon-button id="navigation-refresh-btn" icon="icons:refresh"></paper-icon-button>
+                    </div>
                 </div>
                 <div id="file-explorer-layout">
                     <div id="file-navigation-panel">
@@ -2919,6 +2946,8 @@ export class FileExplorer extends HTMLElement {
                 </div>
             </div>
             <div class="card-actions">
+                <paper-icon-button icon="icons:fullscreen-exit" id="exit-full-screen-btn" style="display: none;"></paper-icon-button>
+                <span style="flex-grow: 1;"></span>
                 <div id="progress-div" style="display: none; flex-grow: 1; margin-right: 20px;">
                     <div style="diplay:flex; flex-direction: column;">
                         <span id="progress-message">wait...</span>
@@ -2928,9 +2957,6 @@ export class FileExplorer extends HTMLElement {
                 <paper-icon-button id="files-icon-btn" class="active" icon="icons:view-module" style="--iron-icon-fill-color: var(--palette-action-active);"></paper-icon-button>
                 <paper-icon-button id="files-list-btn" icon="icons:view-list" style="--iron-icon-fill-color: var(--palette-action-disabled);"></paper-icon-button>
                 <globular-files-uploader></globular-files-uploader>
-                <paper-icon-button icon="icons:fullscreen" id="enter-full-screen-btn"></paper-icon-button>
-                <paper-icon-button icon="icons:fullscreen-exit" id="exit-full-screen-btn" style="display: none;"></paper-icon-button>
-                <paper-icon-button icon="icons:close" id="file-explorer-box-close-btn"></paper-icon-button>
             </div>
         </paper-card>
         </div>
@@ -2946,6 +2972,26 @@ export class FileExplorer extends HTMLElement {
         // The main explorer button
         this.fileExplorerBox = this.shadowRoot.querySelector("#file-explorer-box")
         this.fileExplererCloseBtn = this.shadowRoot.querySelector("#file-explorer-box-close-btn")
+
+        if(localStorage.getItem("__file_explorer_position__")){
+            let position = JSON.parse(localStorage.getItem("__file_explorer_position__"))
+            this.fileExplorerBox.style.top = position.top + "px"
+            this.fileExplorerBox.style.left = position.left + "px"
+        }
+
+        setMoveable(this.shadowRoot.querySelector(".card-header"), this.fileExplorerBox, (left, top)=>{
+            localStorage.setItem("__file_explorer_position__", JSON.stringify({top:top, left:left}))
+        })
+
+        if(localStorage.getItem("__file_explorer_dimension__")){
+            let dimension = JSON.parse(localStorage.getItem("__file_explorer_dimension__"))
+            this.fileExplorerBox.style.width = dimension.width + "px"
+            this.fileExplorerBox.style.height = dimension.height + "px"
+        }
+
+        setResizeable(this.fileExplorerBox, (width, height)=>{
+            localStorage.setItem("__file_explorer_dimension__", JSON.stringify({width:width, height:height}))
+        })
 
         // The file view.
         //this.shadowRoot.querySelector("#globular-files-list-view")
@@ -3033,25 +3079,28 @@ export class FileExplorer extends HTMLElement {
             this.style.top = ""
             this.style.bottom = ""
             this.style.right = ""
-
-            this.fileExplorerBox.style.position = "";
+            this.fileExplorerBox.style.marginTop = "0px";
             this.fileExplorerBox.style.top = "";
             this.fileExplorerBox.style.bottom = "";
             this.fileExplorerBox.style.right = "";
             this.fileExplorerBox.style.left = "";
+            this.fileExplorerBox.style.width = this.fileExplorerBox.width_;
+            this.fileExplorerBox.style.height = this.fileExplorerBox.height_;
         }
 
         this.enterFullScreenBtn.onclick = () => {
             this.style.top = "60px"
             this.style.bottom = "0px"
             this.style.right = "0px"
-
-            this.fileExplorerBox.style.position = "absolute";
+            this.fileExplorerBox.style.marginTop = "24px";
             this.fileExplorerBox.style.top = "0px";
             this.fileExplorerBox.style.bottom = "0px";
             this.fileExplorerBox.style.right = "0px";
             this.fileExplorerBox.style.left = "0px";
-
+            this.fileExplorerBox.width_ = this.fileExplorerBox.style.width
+            this.fileExplorerBox.style.width = "";
+            this.fileExplorerBox.height_ = this.fileExplorerBox.style.height
+            this.fileExplorerBox.style.height = "";
             // set buttons.
             this.enterFullScreenBtn.style.display = "none"
             this.exitFullScreenBtn.style.display = "block"
@@ -3509,9 +3558,8 @@ export class FileExplorer extends HTMLElement {
 
     playVideo(path) {
         playVideo(path, null, () => {
-            this.open()
+            console.log("------> video ", path, "is now playing")
         })
-        this.close()
     }
 
     playAudio(path) {
@@ -4090,7 +4138,7 @@ export class FilesUploader extends HTMLElement {
                 display: none;
                 position: absolute;
                 bottom: 40px;
-                right: -80px;
+                right: -16px;
             }
 
             .collapse-torrent-panel{
@@ -4177,7 +4225,7 @@ export class FilesUploader extends HTMLElement {
 
             paper-tabs{
                 background: var(--palette-background-default); 
-                border-top: 1px solid var(--palette-background-paper);
+                border-top: 1px solid var(--palette-divider);
                 width: 100%;
             }
         </style>

@@ -2,15 +2,13 @@
 import { PolymerElement, html } from '@polymer/polymer';
 import '@polymer/iron-icons/iron-icons.js';
 import '@polymer/paper-icon-button/paper-icon-button.js';
-
-import { createElement } from "../element.js";
-import { randomUUID } from "../utility.js";
-import { setResizeable } from "../rezieable.js";
+import { theme } from './Theme';
+import { setResizeable } from "./rezieable.js";
 /*
  * Menu item represent element contain inside a menu.
  */
 
-export class DialogElement extends PolymerElement {
+export class Dialog extends PolymerElement {
   // Constructor.
   constructor() {
     super();
@@ -47,31 +45,18 @@ export class DialogElement extends PolymerElement {
   static get template() {
     return html`
             <style>
+            ${theme}
+            
             /** Dialog style **/
             .dialog{
                 position: absolute;
                 display: flex;
-                flex-direction: column;
-                background-color: white;
                 top: 0px;
                 left: 0px;
-                min-width: 200px;
-                box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
-                border-radius: 5px;
                 z-index: 1;
-                font-family: 'Open Sans', sans-serif;
-                font-weight: 100;
-                font-size: 1em;
-                color: #606060;
             }
             
-            .dialog_header{
-                width: 100%;
-                display: flex;
-                align-items: center;
-                color: #212121;
-            }
-            
+
             /** The title **/
             .dialog_title{
                 width: 100%;
@@ -132,8 +117,8 @@ export class DialogElement extends PolymerElement {
             }
             </style>
 
-            <div id="dialog_div" class="dialog modal-content">
-                <div class="dialog_header modal-header">
+            <paper-card id="dialog_div" class="dialog modal-content">
+                <div class="card-title modal-header">
                   <div id="title" class="dialog_title modal-title unselectable">
                 </div>
                 <paper-icon-button id="close_btn" icon="clear" class="dialog_delete_button close"></paper-icon-button>
@@ -141,13 +126,13 @@ export class DialogElement extends PolymerElement {
                 
                 <slot></slot>
    
-                <div class="dialog_footer modal-footer unselectable">
+                <div class="card-actions modal-footer unselectable">
                     <div id="dialog_buttons_div" class="dialog_buttons">
                         <paper-button id="ok_btn"  class="dialog_buttons">Ok</paper-button>
                         <paper-button id="cancel_btn" class="dialog_buttons">Cancel</paper-button>
                     </div>
                 </div>
-            </div>
+            </paper-card>
     `;
   }
   /**
@@ -399,4 +384,4 @@ export class DialogElement extends PolymerElement {
   }
 
 }
-customElements.define('dialog-element', DialogElement);
+customElements.define('globular-dialog', Dialog);

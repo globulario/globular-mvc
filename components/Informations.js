@@ -222,11 +222,12 @@ function getVideoPreview(parent, path, name, callback) {
         preview.showPlayBtn()
 
         preview.onplay = (path) => {
-            playVideo(path, () => {
+            playVideo(path, (video) => {
                 let titleInfoBox = document.getElementById("title-info-box")
                 if (titleInfoBox) {
                     titleInfoBox.parentNode.removeChild(titleInfoBox)
                 }
+                video.toggleFullscreen();
             }, null)
         }
 
@@ -973,11 +974,12 @@ export class InformationsManager extends HTMLElement {
                                 parentNode = titleInfoBox.parentNode
                             }
 
-                            playVideo(path, () => {
+                            playVideo(path, (video) => {
                                 if (titleInfoBox) {
                                     if (titleInfoBox.parentNode) {
                                         titleInfoBox.parentNode.removeChild(titleInfoBox)
                                     }
+                                    video.toggleFullscreen();
                                 }
                             }, () => {
                                 if (parentNode != null) {
