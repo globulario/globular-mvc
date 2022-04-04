@@ -392,10 +392,6 @@ globular-processes-manager .table-item-value{
    text-align: center;
 }
 
-globular-file-explorer{
-   z-index: 100;
-}
-
 /**************************** Layout **************************/
 
 
@@ -437,13 +433,6 @@ globular-file-explorer{
    }
    globular-settings-panel{
       grid-row-start: 1;
-   }
-   globular-file-explorer{
-      grid-column-start: 1;
-      grid-column-end: 17;
-      position: fixed;
-      width: 100%;
-      right: 0px;
    }
 
    globular-messenger{
@@ -493,16 +482,6 @@ globular-file-explorer{
       grid-column-end: 15;
    }
 
-   globular-file-explorer{
-      grid-row-start: 1;
-      grid-row-end: 3;
-      grid-column-start: 1;
-      grid-column-end: 3;
-
-      position: fixed;
-      left: 0px;
-   }
-
    globular-messenger{
       position: fixed;
       right: 0px;
@@ -549,15 +528,6 @@ globular-file-explorer{
       grid-row-start: 1;
    }
 
-   globular-file-explorer{
-      grid-row-start: 1;
-      grid-row-end: 3;
-      grid-column-start: 1;
-      grid-column-end: 5;
-      
-      position: fixed;
-      left: 0px;
-   }
 
    globular-messenger{
       grid-row-start: 1;
@@ -612,17 +582,6 @@ globular-file-explorer{
 
    globular-settings-panel{
       grid-row-start: 1;
-   }
-
-   globular-file-explorer{
-      grid-row-start: 1;
-      grid-row-end: 3;
-      grid-column-start: 1;
-      grid-column-end: 6;
-      /** The z-index */
-      position: fixed;
-      left: 0px;
-      z-index: 100;
    }
 
    globular-messenger{

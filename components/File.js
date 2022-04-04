@@ -2981,7 +2981,7 @@ export class FileExplorer extends HTMLElement {
 
         setMoveable(this.shadowRoot.querySelector(".card-header"), this.fileExplorerBox, (left, top)=>{
             localStorage.setItem("__file_explorer_position__", JSON.stringify({top:top, left:left}))
-        })
+        }, this)
 
         if(localStorage.getItem("__file_explorer_dimension__")){
             let dimension = JSON.parse(localStorage.getItem("__file_explorer_dimension__"))

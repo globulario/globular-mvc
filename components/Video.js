@@ -34,7 +34,7 @@ export function playVideo(path, onplay, onclose, parent) {
     }
 
     if (parent == undefined) {
-        parent = document.body
+        parent = document.getElementsByTagName("globular-workspace")[0];//document.body
     }
 
     parent.appendChild(videoPlayer)
@@ -121,8 +121,8 @@ export class VideoPlayer extends HTMLElement {
             container.style.top = position.top + "px"
             container.style.left = position.left + "px"
         } else {
-            this.shadowRoot.querySelector("#container").style.left = ((document.body.offsetWidth - 720) / 2) + "px"
-            this.shadowRoot.querySelector("#container").style.top = "80px"
+            this.shadowRoot.style.left = ((document.body.offsetWidth - 720) / 2) + "px"
+            container.style.top = "80px"
         }
 
         if (localStorage.getItem("__video_player_dimension__")) {
@@ -143,7 +143,7 @@ export class VideoPlayer extends HTMLElement {
 
         setMoveable(this.shadowRoot.querySelector(".header"), container, (left, top) => {
             localStorage.setItem("__video_player_position__", JSON.stringify({ top: top, left: left }))
-        })
+        }, this)
 
         // Plyr give a nice visual to the video player.
         // TODO set the preview and maybe quality bitrate if possible...
