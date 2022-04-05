@@ -7,7 +7,7 @@ import { GetFileTitlesRequest, GetTitleByIdRequest, GetTitleFilesRequest, Person
 import { Model } from '../Model';
 import { theme } from "./Theme";
 import * as getUuid from 'uuid-by-string'
-import { InformationsManager } from './Informations';
+import { InformationsManager, searchEpisodes } from './Informations';
 import { playVideo } from './Video';
 import { ApplicationView } from '../ApplicationView';
 import * as getUuidByString from 'uuid-by-string';
@@ -67,42 +67,6 @@ export function getImdbInfo(id, callback, errorcallback) {
     xmlhttp.setRequestHeader("domain", Model.domain);
 
     xmlhttp.send();
-}
-
-function searchEpisodes(serie, indexPath, callback) {
-
-    // This is a simple test...
-    let rqst = new SearchTitlesRequest
-    rqst.setIndexpath(indexPath)
-    rqst.setQuery(serie)
-    rqst.setOffset(0)
-    rqst.setSize(1000)
-    let episodes = []
-    let stream = Model.globular.titleService.searchTitles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
-    stream.on("data", (rsp) => {
-        if (rsp.hasHit()) {
-            let hit = rsp.getHit()
-            // display the value in the console...
-            hit.getSnippetsList().forEach(val => {
-                if (hit.getTitle().getType() == "TVEpisode") {
-                    episodes.push(hit.getTitle())
-                }
-            })
-        }
-    });
-
-    stream.on("status", (status) => {
-        if (status.code == 0) {
-            // Here I will sort the episodes by seasons and episodes.
-            callback(episodes.sort((a, b) => {
-                if (a.getSeason() === b.getSeason()) {
-                    // Price is only important when cities are the same
-                    return a.getEpisode() - b.getEpisode();
-                }
-                return a.getSeason() - b.getSeason();
-            }))
-        }
-    });
 }
 
 function playTitleListener(player, title, indexPath) {

@@ -1,7 +1,7 @@
 import { theme } from "./Theme";
 import { Model } from '../Model';
 import { Application } from "../Application";
-import { DeleteTitleRequest, DeleteVideoRequest, DissociateFileWithTitleRequest, GetFileTitlesRequest, GetTitleFilesRequest, Person } from "globular-web-client/title/title_pb";
+import { DeleteTitleRequest, DeleteVideoRequest, DissociateFileWithTitleRequest, GetFileTitlesRequest, GetTitleFilesRequest, Person, SearchTitlesRequest } from "globular-web-client/title/title_pb";
 import { File } from "../File";
 import { VideoPreview } from "./File";
 import { ApplicationView } from "../ApplicationView";
@@ -285,6 +285,42 @@ function GetTitleFiles(indexPath, title, parent, callback) {
         .catch(err => { callback([]); console.log(err); })
 }
 
+export function searchEpisodes(serie, indexPath, callback) {
+
+    // This is a simple test...
+    let rqst = new SearchTitlesRequest
+    rqst.setIndexpath(indexPath)
+    rqst.setQuery(serie)
+    rqst.setOffset(0)
+    rqst.setSize(1000)
+    let episodes = []
+    let stream = Model.globular.titleService.searchTitles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+    stream.on("data", (rsp) => {
+        if (rsp.hasHit()) {
+            let hit = rsp.getHit()
+            // display the value in the console...
+            hit.getSnippetsList().forEach(val => {
+                if (hit.getTitle().getType() == "TVEpisode") {
+                    episodes.push(hit.getTitle())
+                }
+            })
+        }
+    });
+
+    stream.on("status", (status) => {
+        if (status.code == 0) {
+            // Here I will sort the episodes by seasons and episodes.
+            callback(episodes.sort((a, b) => {
+                if (a.getSeason() === b.getSeason()) {
+                    // Price is only important when cities are the same
+                    return a.getEpisode() - b.getEpisode();
+                }
+                return a.getSeason() - b.getSeason();
+            }))
+        }
+    });
+}
+
 /**
  * Here I will return the list of asscociated episode for a given series...
  * @param {*} indexPath  The path to the search engine 
@@ -297,48 +333,10 @@ export function GetEpisodes(indexPath, title, callback) {
         callback(title.__episodes__)
         return
     }
-
-    let rqst = new GetTitleFilesRequest
-    rqst.setTitleid(title.getId())
-    rqst.setIndexpath(indexPath)
-    Model.globular.titleService.getTitleFiles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
-        .then(rsp => {
-            // So here I will get
-            if (rsp.getFilepathsList().length > 0) {
-                let episodes = []
-                let getAssociatedTitlte = () => {
-                    let rqst_ = new GetFileTitlesRequest
-                    let path = rsp.getFilepathsList().pop()
-                    rqst_.setFilepath(path)
-                    rqst_.setIndexpath(indexPath)
-                    Model.globular.titleService.getFileTitles(rqst_, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
-                        .then(rsp => {
-
-                            rsp.getTitles().getTitlesList().forEach(e => {
-                                if (e.getSeason() > 0 && e.getEpisode() > 0) {
-                                    episodes.push(e)
-                                }
-                            })
-
-                            if (rsp.getFilepathsList().length == 0) {
-                                title.__episodes__ = episodes
-                                callback(episodes)
-                                return
-                            }
-                            getAssociatedTitlte()
-                        }).catch((err) => {
-                            if (rsp.getFilepathsList().length == 0) {
-                                title.__episodes__ = episodes
-                                callback(episodes)
-                                return
-                            }
-                            getAssociatedTitlte()
-                        })
-                }
-                // start recursion...
-                getAssociatedTitlte()
-            }
-        }).catch(err => { })
+    searchEpisodes(title.getId(), indexPath, episodes=>{
+        title.__episodes__ = episodes
+        callback(title.__episodes__)
+    })
 }
 
 /**

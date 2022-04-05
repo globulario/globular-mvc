@@ -108,7 +108,7 @@ export class Countdown extends HTMLElement {
     this.div.style.display = ""
     var countdownNumberEl = this.shadowRoot.getElementById('countdown-number');
     let countdown = this.countdown;
-    countdownNumberEl.textContent = countdown;
+    countdownNumberEl.innerHTML = countdown;
     if (this.interval != null) {
       clearInterval(this.interval);
     }
@@ -121,7 +121,7 @@ export class Countdown extends HTMLElement {
           this.oncountdone();
         }
       } else {
-        countdownNumberEl.textContent = countdown
+        countdownNumberEl.textContent = countdown + ""
       }
     }, 1000);
   }

@@ -121,7 +121,7 @@ export class VideoPlayer extends HTMLElement {
             container.style.top = position.top + "px"
             container.style.left = position.left + "px"
         } else {
-            this.shadowRoot.style.left = ((document.body.offsetWidth - 720) / 2) + "px"
+            container.style.left = ((document.body.offsetWidth - 720) / 2) + "px"
             container.style.top = "80px"
         }
 
