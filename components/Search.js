@@ -70,7 +70,7 @@ export function getImdbInfo(id, callback, errorcallback) {
 }
 
 function playTitleListener(player, title, indexPath) {
-
+    console.log("------------->", title)
     searchEpisodes(title.getSerie(), indexPath, (episodes) => {
         let index = -1;
         episodes.forEach((e, i) => {
@@ -127,16 +127,15 @@ function playTitleListener(player, title, indexPath) {
 
                 let okBtn = toast.el.querySelector("#imdb-lnk-ok-button")
                 okBtn.onclick = () => {
-                    current_title = nextEpisode // use indermediare variable...
                     let rqst = new GetTitleFilesRequest
-                    rqst.setTitleid(current_title.getId())
+                    rqst.setTitleid(nextEpisode.getId())
                     rqst.setIndexpath(indexPath)
                     Model.globular.titleService.getTitleFiles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
                         .then(rsp => {
                             if (rsp.getFilepathsList().length > 0) {
                                 let path = rsp.getFilepathsList().pop()
-                                playVideo(path, (player) => {
-                                    playTitleListener(player, current_title, indexPath)
+                                playVideo(path, (player, title) => {
+                                    playTitleListener(player, title, indexPath)
                                 }, null)
                             }
                         })
@@ -1225,9 +1224,8 @@ export class SearchTitleDetail extends HTMLElement {
                             })
                             this.episodePreview.src = url
                             this.shadowRoot.querySelector("#epsiode-preview").onclick = this.shadowRoot.querySelector("#play-episode-video-button").onclick = () => {
-                                current_title = title // use indermediare variable...
-                                playVideo(path, (player) => {
-                                    playTitleListener(player, current_title, indexPath)
+                                playVideo(path, (player, title) => {
+                                    playTitleListener(player, title, indexPath)
                                 }, null)
                             }
 
@@ -1334,9 +1332,8 @@ export class SearchTitleDetail extends HTMLElement {
                     this.titlePreview.src = url
 
                     this.shadowRoot.querySelector("#title-preview").onclick = this.shadowRoot.querySelector("#play-video-button").onclick = () => {
-                        current_title = title // use indermediare variable...
-                        playVideo(path, (player) => {
-                            playTitleListener(player, current_title, indexPath)
+                        playVideo(path, (player, title) => {
+                            playTitleListener(player, title, indexPath)
                         }, null)
                     }
                 }

@@ -26,21 +26,22 @@ String.prototype.endsWith = function (suffix) {
  * @param {*} onplay 
  * @param {*} onclose 
  */
-export function playVideo(path, onplay, onclose, parent) {
+export function playVideo(path, onplay, onclose, title) {
     let videoPlayer = document.getElementById("video-player-x")
     if (videoPlayer == null) {
         videoPlayer = new VideoPlayer()
         videoPlayer.id = "video-player-x"
     }
 
-    if (parent == undefined) {
-        parent = document.getElementsByTagName("globular-workspace")[0];//document.body
-    }
-
+    parent = document.getElementsByTagName("globular-workspace")[0];//document.body
     parent.appendChild(videoPlayer)
+
     if (onplay && !videoPlayer.onplay) {
         videoPlayer.onplay = onplay
     }
+
+    // keep the title
+    videoPlayer.title = title;
 
     if (onclose && !videoPlayer.onclose) {
         videoPlayer.onclose = onclose
@@ -133,9 +134,9 @@ export class VideoPlayer extends HTMLElement {
 
         setResizeable(container, (width, height) => {
             localStorage.setItem("__video_player_dimension__", JSON.stringify({ width: width, height: height }))
-            if(this.video > 0){
-                container.style.height =  this.video.offsetHeight + "px"
-            }else{
+            if (this.video > 0) {
+                container.style.height = this.video.offsetHeight + "px"
+            } else {
                 container.style.height = "auto"
             }
         })
@@ -221,6 +222,10 @@ export class VideoPlayer extends HTMLElement {
                 if (title.getType() == "TVEpisode") {
                     this.shadowRoot.querySelector("#title-span").innerHTML += " S" + title.getSeason() + "E" + title.getEpisode()
                 }
+
+                if (this.onplay != null) {
+                    this.onplay(this.player, title)
+                }
             }
         })
 
@@ -285,17 +290,12 @@ export class VideoPlayer extends HTMLElement {
         if (this.parentNode.offsetWidth > 0) {
             this.video.style.maxWidth = this.parentNode.offsetWidth + "px"
         }
-
-        if (this.onplay != null) {
-            this.onplay(this.player)
-        }
-
     }
 
     /**
      * Close the player...
      */
-    close(){
+    close() {
         this.stop()
         this.shadowRoot.querySelector("#container").style.display = "none"
         if (this.onclose) {
