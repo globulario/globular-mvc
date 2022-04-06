@@ -70,7 +70,12 @@ export function getImdbInfo(id, callback, errorcallback) {
 }
 
 function playTitleListener(player, title, indexPath) {
-    console.log("------------->", title)
+    if (!title) {
+        return
+    }
+
+
+
     searchEpisodes(title.getSerie(), indexPath, (episodes) => {
         let index = -1;
         episodes.forEach((e, i) => {
@@ -78,32 +83,44 @@ function playTitleListener(player, title, indexPath) {
                 index = i;
             }
         });
-       
-        if (index < episodes.length && index != -1) {
-            index += 1
-            let nextEpisode = episodes[index]
-            let video = document.getElementsByTagName('video')[0];
-            video.onended = () =>{  
-                
-                // exit full screen...
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                } else if (document.msExitFullscreen) {
-                    document.msExitFullscreen();
-                } else if (document.mozCancelFullScreen) {
-                    document.mozCancelFullScreen();
-                } else if (document.webkitExitFullscreen) {
-                    document.webkitExitFullscreen();
-                }
 
-                document.getElementsByTagName('globular-video-player')[0].close();
 
-                if(index == episodes.length){
-                    return
-                }
+        index += 1
+        let nextEpisode = episodes[index]
+        let video = document.getElementsByTagName('video')[0];
 
-                // So here I will ask to display the next episode...
-                let toast = ApplicationView.displayMessage(`
+        // Start where the video was stop last time... TODO 
+        if (localStorage.getItem(title.getId())) {
+            video.currentTime = parseFloat(localStorage.getItem(title.getId()))
+        }
+
+        video.onended = () => {
+
+  
+
+            // exit full screen...
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.msExitFullscreen) {
+                document.msExitFullscreen();
+            } else if (document.mozCancelFullScreen) {
+                document.mozCancelFullScreen();
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            }
+
+            document.getElementsByTagName('globular-video-player')[0].close();
+
+            if (localStorage.getItem(title.getId())) {
+                localStorage.removeItem(title.getId())
+            }
+            
+            if (index == episodes.length) {
+                return
+            }
+
+            // So here I will ask to display the next episode...
+            let toast = ApplicationView.displayMessage(`
                 <style>
                     ${theme}
                 </style>
@@ -120,29 +137,30 @@ function playTitleListener(player, title, indexPath) {
                 </div>
                 `)
 
-                let cancelBtn = toast.el.querySelector("#imdb-lnk-cancel-button")
-                cancelBtn.onclick = () => {
-                    toast.dismiss();
-                }
+            let cancelBtn = toast.el.querySelector("#imdb-lnk-cancel-button")
+            cancelBtn.onclick = () => {
+                toast.dismiss();
+            }
 
-                let okBtn = toast.el.querySelector("#imdb-lnk-ok-button")
-                okBtn.onclick = () => {
-                    let rqst = new GetTitleFilesRequest
-                    rqst.setTitleid(nextEpisode.getId())
-                    rqst.setIndexpath(indexPath)
-                    Model.globular.titleService.getTitleFiles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
-                        .then(rsp => {
-                            if (rsp.getFilepathsList().length > 0) {
-                                let path = rsp.getFilepathsList().pop()
-                                playVideo(path, (player, title) => {
-                                    playTitleListener(player, title, indexPath)
-                                }, null)
-                            }
-                        })
-                    toast.dismiss();
-                }
-            };
-        }
+            let okBtn = toast.el.querySelector("#imdb-lnk-ok-button")
+            okBtn.onclick = () => {
+                let rqst = new GetTitleFilesRequest
+                rqst.setTitleid(nextEpisode.getId())
+                rqst.setIndexpath(indexPath)
+                Model.globular.titleService.getTitleFiles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+                    .then(rsp => {
+                        if (rsp.getFilepathsList().length > 0) {
+                            let path = rsp.getFilepathsList().pop()
+                            playVideo(path, (player, title) => {
+                                playTitleListener(player, title, indexPath)
+                            }, null)
+                        }
+                    })
+                toast.dismiss();
+            }
+        };
+
+
     })
 
 

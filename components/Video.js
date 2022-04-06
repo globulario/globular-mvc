@@ -64,6 +64,7 @@ export class VideoPlayer extends HTMLElement {
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
         let hideheader = this.getAttribute("hideheader") != undefined
+        this.titleInfo = null;
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -208,6 +209,7 @@ export class VideoPlayer extends HTMLElement {
         getVideoInfo(path, videos => {
             if (videos.length > 0) {
                 let video = videos.pop()
+                this.titleInfo = video
                 this.shadowRoot.querySelector("#title-span").innerHTML = video.getDescription()
             }
         })
@@ -215,6 +217,7 @@ export class VideoPlayer extends HTMLElement {
         getTitleInfo(path, tittles => {
             if (tittles.length > 0) {
                 let title = tittles.pop()
+                this.titleInfo = title
                 this.shadowRoot.querySelector("#title-span").innerHTML = title.getName()
                 if (title.getYear()) {
                     this.shadowRoot.querySelector("#title-span").innerHTML += " (" + title.getYear() + ") "
@@ -308,6 +311,8 @@ export class VideoPlayer extends HTMLElement {
      */
     stop() {
         this.video.pause();
+        // keep the current video location
+        localStorage.setItem(this.titleInfo.getId(), this.video.currentTime)
     }
 
     hideHeader() {
