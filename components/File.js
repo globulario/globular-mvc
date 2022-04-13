@@ -3557,7 +3557,9 @@ export class FileExplorer extends HTMLElement {
     }
 
     playVideo(path) {
+        this.style.zIndex = 0;
         playVideo(path, null, () => {
+            
             console.log("------> video ", path, "is now playing")
         })
     }

@@ -28,6 +28,7 @@ String.prototype.endsWith = function (suffix) {
  */
 export function playVideo(path, onplay, onclose, title) {
     let videoPlayer = document.getElementById("video-player-x")
+   
     if (videoPlayer == null) {
         videoPlayer = new VideoPlayer()
         videoPlayer.id = "video-player-x"
@@ -174,7 +175,7 @@ export class VideoPlayer extends HTMLElement {
     }
 
     play(path) {
-
+        this.style.zIndex = 100
         // Set the title...
         let thumbnailPath = path.replace("/playlist.m3u8", "")
         this.shadowRoot.querySelector("#title-span").innerHTML = thumbnailPath.substring(thumbnailPath.lastIndexOf("/") + 1)
@@ -312,7 +313,9 @@ export class VideoPlayer extends HTMLElement {
     stop() {
         this.video.pause();
         // keep the current video location
-        localStorage.setItem(this.titleInfo.getId(), this.video.currentTime)
+        if(this.titleInfo != null){
+            localStorage.setItem(this.titleInfo.getId(), this.video.currentTime)
+        }
     }
 
     hideHeader() {

@@ -11,6 +11,7 @@ import { InformationsManager, searchEpisodes } from './Informations';
 import { playVideo } from './Video';
 import { ApplicationView } from '../ApplicationView';
 import * as getUuidByString from 'uuid-by-string';
+import { randomUUID } from './utility';
 
 // keep values in memorie to speedup...
 var titles = {}
@@ -96,7 +97,7 @@ function playTitleListener(player, title, indexPath) {
 
         video.onended = () => {
 
-  
+
 
             // exit full screen...
             if (document.exitFullscreen) {
@@ -114,7 +115,7 @@ function playTitleListener(player, title, indexPath) {
             if (localStorage.getItem(title.getId())) {
                 localStorage.removeItem(title.getId())
             }
-            
+
             if (index == episodes.length) {
                 return
             }
@@ -433,6 +434,13 @@ export class SearchResults extends HTMLElement {
         this.closeAllBtn = this.shadowRoot.querySelector("#close-all-btn")
         this.closeAllBtn.onclick = () => {
             Model.eventHub.publish("_hide_search_results_", {}, true)
+
+            // Hide the search results...
+            let facetFilters = document.getElementsByTagName("globular-facet-search-filter")
+            for (var i = 0; i < facetFilters.length; i++) {
+                let f = facetFilters[i]
+                f.style.display = "none"
+            }
         }
 
         // So here I will create a new Search Result page if none exist...
@@ -469,6 +477,16 @@ export class SearchResults extends HTMLElement {
 
                         this.tabs.selected = index;
                         page.style.display = ""
+
+                        // Hide previous facets...
+                        let facetFilters = document.getElementsByTagName("globular-facet-search-filter")
+                        for (var i = 0; i < facetFilters.length; i++) {
+                            let f = facetFilters[i]
+                            f.style.display = "none"
+                        }
+
+                        // display the filters...
+                        page.facetFilter.style.display = ""
                     }
 
 
@@ -489,6 +507,14 @@ export class SearchResults extends HTMLElement {
                     tab.click()
                 }
 
+                // Hide previous facets...
+                let facetFilters = document.getElementsByTagName("globular-facet-search-filter")
+                for (var i = 0; i < facetFilters.length; i++) {
+                    let f = facetFilters[i]
+                    f.style.display = "none"
+                }
+
+
                 // Create a new page...
                 let resultsPage = this.querySelector(`#${uuid}-results-page`)
                 if (resultsPage == null) {
@@ -497,11 +523,22 @@ export class SearchResults extends HTMLElement {
                         this.children[i].style.display = "none";
                     }
                     this.appendChild(resultsPage)
+                    if (this.parentNode) {
+                        this.parentNode.appendChild(resultsPage.facetFilter)
+                    }
+
                 } else {
                     resultsPage.innerHTML = ""
                 }
 
             }, true)
+    }
+
+    connectedCallback() {
+        let pages = this.querySelectorAll("globular-search-results-page")
+        pages.forEach(page => {
+            this.parentNode.appendChild(page.facetFilter)
+        })
     }
 
     isEmpty() {
@@ -519,6 +556,7 @@ export class SearchResults extends HTMLElement {
 
         let page = this.querySelector(`#${uuid}-results-page`)
         page.parentNode.removeChild(page)
+        page.facetFilter.parentNode.removeChild(page.facetFilter)
         let tab = this.tabs.querySelector(`#${uuid}-tab`)
         tab.parentNode.removeChild(tab)
 
@@ -595,6 +633,9 @@ export class SearchResultsPage extends HTMLElement {
         </div>
         `
 
+        // left or right side filter...
+        this.facetFilter = new FacetSearchFilter()
+
         // Get the tow button...
         this.searchReusltLstViewBtn = this.shadowRoot.querySelector("#search-result-lst-view-btn")
         this.searchReusltIconViewBtn = this.shadowRoot.querySelector("#search-result-icon-view-btn")
@@ -619,8 +660,7 @@ export class SearchResultsPage extends HTMLElement {
         // Display facets
         Model.eventHub.subscribe(`${uuid}_search_facets_event__`, listner_uuid => { },
             evt => {
-                console.log(evt.facets)
-
+                this.facetFilter.setFacets(evt.facets)
             }, true)
 
         // Append it to the results.
@@ -723,15 +763,45 @@ export class SearchResultsPage extends HTMLElement {
 
         let range = document.createRange()
         this.appendChild(range.createContextualFragment(html))
+
         let snippetDiv = this.children[this.children.length - 1].children[1]
 
         let titleInfoDiv = this.children[this.children.length - 1].children[2]
 
         let infoDisplay = new InformationsManager()
+        let hitDiv = this.querySelector(`#hit-div-${hit.getIndex()}`)
+
         if (hit.hasTitle()) {
             infoDisplay.setTitlesInformation([hit.getTitle()])
+            hitDiv.classList.add("filterable")
+            let title = hit.getTitle()
+            title.getGenresList().forEach(g => hitDiv.classList.add(getUuidByString(g.toLowerCase())))
+            hitDiv.classList.add(getUuidByString(title.getType().toLowerCase()))
+
+            // now the term..
+            if (title.getRating() < 3.5) {
+                hitDiv.classList.add(getUuidByString("low"))
+            } else if (title.getRating() < 7.0) {
+                hitDiv.classList.add(getUuidByString("medium"))
+            } else {
+                hitDiv.classList.add(getUuidByString("high"))
+            }
+
         } else {
             infoDisplay.setVideosInformation([hit.getVideo()])
+            hitDiv.classList.add("filterable")
+            let video = hit.getVideo()
+            video.getGenresList().forEach(g => hitDiv.classList.add(getUuidByString(g.toLowerCase())))
+            video.getTagsList().forEach(tag => hitDiv.classList.add(getUuidByString(tag.toLowerCase())))
+
+            // now the term..
+            if (video.getRating() < 3.5) {
+                hitDiv.classList.add(getUuidByString("low"))
+            } else if (video.getRating() < 7.0) {
+                hitDiv.classList.add(getUuidByString("medium"))
+            } else {
+                hitDiv.classList.add(getUuidByString("high"))
+            }
         }
 
         infoDisplay.hideHeader()
@@ -877,11 +947,28 @@ export class SearchVideoCard extends HTMLElement {
 
     setVideo(video) {
 
+        this.classList.add("filterable")
+        video.getGenresList().forEach(g => this.classList.add(getUuidByString(g.toLowerCase())))
+        video.getTagsList().forEach(tag => this.classList.add(getUuidByString(tag.toLowerCase())))
+
+        // now the term..
+        if (video.getRating() < 3.5) {
+            this.classList.add(getUuidByString("low"))
+        } else if (video.getRating() < 7.0) {
+            this.classList.add(getUuidByString("medium"))
+        } else {
+            this.classList.add(getUuidByString("high"))
+        }
+
         // Set the default thumbnail.
         let thumbnail = this.shadowRoot.querySelector("#thumbnail-image")
         let preview = this.shadowRoot.querySelector("#preview-image")
         let card = this.shadowRoot.querySelector(".video-card")
+
+
         thumbnail.src = video.getPoster().getContenturl()
+
+        // Here the image was not set properly...
 
         this.shadowRoot.querySelector("#video-info-button").onclick = () => {
             this.showVideoInfo(video)
@@ -938,6 +1025,10 @@ export class SearchVideoCard extends HTMLElement {
                     preview.onclick = () => {
                         playVideo(path, null, null)
                     }
+
+                    // Now I will index the file...
+
+                    
                 }
             }).catch(err => ApplicationView.displayMessage(err, 3000))
     }
@@ -1062,6 +1153,21 @@ export class SearchFlipCard extends HTMLElement {
     }
 
     setTitle(title) {
+
+        // so here i will use the class list to set genre and type...
+        this.classList.add("filterable")
+        title.getGenresList().forEach(g => this.classList.add(getUuidByString(g.toLowerCase())))
+        this.classList.add(getUuidByString(title.getType().toLowerCase()))
+
+        // now the term..
+        if (title.getRating() < 3.5) {
+            this.classList.add(getUuidByString("low"))
+        } else if (title.getRating() < 7.0) {
+            this.classList.add(getUuidByString("medium"))
+        } else {
+            this.classList.add(getUuidByString("high"))
+        }
+
         // test create offer...
         this.shadowRoot.querySelector(`#search-title`).setTitle(title)
         if (title.getType() == "TVEpisode") {
@@ -1198,8 +1304,6 @@ export class SearchTitleDetail extends HTMLElement {
             this.shadowRoot.querySelector("#loading-episodes-infos").style.display = "none"
             this.shadowRoot.querySelector("#episodes-select-div").style.display = "flex"
 
-
-
             let infos = {}
             episodes.forEach(e => {
                 if (!infos[e.getSeason()]) {
@@ -1253,7 +1357,6 @@ export class SearchTitleDetail extends HTMLElement {
 
                         }
                     })
-
             }
 
 
@@ -1393,3 +1496,173 @@ export class SearchTitleDetail extends HTMLElement {
 }
 
 customElements.define('globular-search-title-detail', SearchTitleDetail)
+
+export class FacetSearchFilter extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor() {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+            ${theme}
+
+            #container{
+                font-size: 1.17rem;
+                padding: 10px;
+            }
+            
+        </style>
+        <div id="container">
+           <slot name="facets"></slot>
+        </div>
+        `
+
+        // test create offer...
+    }
+
+    // Set the facets...
+    setFacets(facets) {
+        console.log(facets)
+        // globular-workspace
+
+        facets.getFacetsList().forEach(facet => {
+            let p = new SearchFacetPanel(facet)
+            if (facet.getTotal() > 0) {
+                p.slot = "facets"
+                this.appendChild(p)
+            }
+        })
+    }
+}
+
+customElements.define('globular-facet-search-filter', FacetSearchFilter)
+
+/**
+ * This facet informations...
+ */
+export class SearchFacetPanel extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor(facet) {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+            ${theme}
+
+            .facet-list{
+                padding-bottom: 20px;
+                font-size: 1rem;
+            }
+
+            span{
+                font-style: italic;
+                font-size: 1rem;
+                margin-left: 10px;
+            }
+
+        </style>
+
+        <div style="display: flex; flex-direction: column;">
+            <div class="facet-label">
+                <paper-checkbox checked> ${facet.getField() + "<span>(" + facet.getTotal() + ")</span>"}</paper-checkbox checked>
+            </div>
+            <div class="facet-list">
+
+            </div>
+        </div>
+        `
+
+        // test create offer...
+        let facetList = this.shadowRoot.querySelector(".facet-list")
+        let checkbox_ = this.shadowRoot.querySelector("paper-checkbox")
+
+        let range = document.createRange()
+        let terms = facet.getTermsList().sort((a, b) => {
+            if (a.getTerm() < b.getTerm()) { return -1; }
+            if (a.getTerm() > b.getTerm()) { return 1; }
+            return 0;
+        })
+
+        terms.forEach(t => {
+            let term = t.getTerm()
+            let className = t.getTerm()
+            if (term.startsWith("{")) {
+                let obj = JSON.parse(term)
+                term = obj.name + "  " + obj.min + "-" + obj.max
+                className = obj.name
+            }
+            let count = document.getElementsByClassName(getUuidByString(term)).length
+            if (count > 0) {
+
+                let uuid = "_" + randomUUID()
+                let html = `
+                <div style="margin-left: 25px;">
+                    <paper-checkbox class=${className} id=${uuid} checked> <div  class="facet-label"> ${term + "<span>(" + count + ")</span>"} </div></paper-checkbox> 
+                <div>
+                `
+                // The facet list.
+                facetList.appendChild(range.createContextualFragment(html))
+                let filterables = document.querySelectorAll(".filterable")
+
+                let checkbox = this.shadowRoot.querySelector("#" + uuid)
+                checkbox.onclick = () => {
+                    filterables.forEach(f => f.style.display = "none") // hide all
+                    let checkboxs = facetList.querySelectorAll("paper-checkbox")
+
+                    for (var i = 0; i < checkboxs.length; i++) {
+                        let checkbox = checkboxs[i]
+                        if (checkbox.checked) {
+                            filterables.forEach(f => {
+                                if (f.classList.contains(getUuidByString(checkbox.className))) {
+                                    f.style.display = ""
+                                }
+                            })
+                        }
+                    }
+                }
+
+                checkbox.onchange = () => {
+                    if (checkbox.checked) {
+                        checkbox_.checked = true
+                    }
+                }
+            }
+
+        })
+
+        checkbox_.onclick = () => {
+            let filterables = document.querySelectorAll(".filterable")
+            filterables.forEach(f => f.style.display = "none") // hide all
+            let checkboxs = facetList.querySelectorAll("paper-checkbox")
+            for (var i = 0; i < checkboxs.length; i++) {
+                let checkbox = checkboxs[i]
+                if (!checkbox_.checked) {
+                    if (checkbox.checked) {
+                        checkbox.checked = false
+                        checkbox.onclick()
+
+                    }
+                } else {
+                    if (!checkbox.checked) {
+                        checkbox.checked = true
+                        checkbox.onclick()
+
+                    }
+                }
+            }
+        }
+    }
+
+}
+
+customElements.define('globular-facet', SearchFacetPanel)

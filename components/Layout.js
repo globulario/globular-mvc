@@ -48,6 +48,7 @@ export class Layout extends HTMLElement {
             
             app-drawer app-toolbar{ 
                 background-color: var(--palette-background-default);
+                
                 color: var(--palette-text-primary);
                 height: 100vh;
                 display: flex;
@@ -62,7 +63,7 @@ export class Layout extends HTMLElement {
             ::slotted(#header-toolbar){
               height: var(--toolbar-height);
             }
-            
+           
             #main-title {
               display: flex;
               width: 100%;
@@ -144,6 +145,7 @@ export class Layout extends HTMLElement {
     this.content = this.shadowRoot.getElementById("content");
     this.sideMenuSlot = this.shadowRoot.getElementById("side-menu");
     this.header = this.shadowRoot.querySelector("app-header")
+    //this.header.shadowRoot.querySelector("#contentContainer").style.borderBottom = "1px solid var(--palette-background-default)"
 
     this.hideSideBar();
 

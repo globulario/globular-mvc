@@ -580,6 +580,8 @@ globular-processes-manager .table-item-value{
       grid-column-end: 14;
    }
 
+
+
    globular-settings-panel{
       grid-row-start: 1;
    }
@@ -600,6 +602,12 @@ globular-processes-manager .table-item-value{
       grid-column-start: 1;
       grid-column-end: 6;
    }
+}
+
+globular-facet-search-filter{
+   grid-row-start: 1;
+   grid-column-start: 1;
+   grid-column-end: 3;
 }
 
 .no-select {
