@@ -967,6 +967,7 @@ export class SearchVideoCard extends HTMLElement {
 
 
         thumbnail.src = video.getPoster().getContenturl()
+        
 
         // Here the image was not set properly...
 
@@ -1026,8 +1027,10 @@ export class SearchVideoCard extends HTMLElement {
                         playVideo(path, null, null)
                     }
 
-                    // Now I will index the file...
-
+                    if(!thumbnail.src.startsWith("data:image")){
+                        console.log("----> need data url for video: ", video.getUrl(), path)    
+                    }
+            
                     
                 }
             }).catch(err => ApplicationView.displayMessage(err, 3000))

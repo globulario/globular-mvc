@@ -227,7 +227,7 @@ function getVideoPreview(parent, path, name, callback) {
                 if (titleInfoBox) {
                     titleInfoBox.parentNode.removeChild(titleInfoBox)
                 }
-                video.toggleFullscreen();
+                //video.toggleFullscreen();
             }, null)
         }
 
@@ -977,7 +977,7 @@ export class InformationsManager extends HTMLElement {
                                     if (titleInfoBox.parentNode) {
                                         titleInfoBox.parentNode.removeChild(titleInfoBox)
                                     }
-                                    video.toggleFullscreen();
+                                   // video.toggleFullscreen();
                                 }
                             }, () => {
                                 if (parentNode != null) {
