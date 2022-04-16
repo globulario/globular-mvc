@@ -1659,14 +1659,15 @@ export class SearchFacetPanel extends HTMLElement {
         terms.forEach(t => {
             let term = t.getTerm()
             let className = t.getTerm()
+            let count = document.getElementsByClassName(getUuidByString(term)).length
             if (term.startsWith("{")) {
                 let obj = JSON.parse(term)
                 term = obj.name + "  " + obj.min + "-" + obj.max
                 className = obj.name
+                count = 1;
             }
-            let count = document.getElementsByClassName(getUuidByString(term)).length
+          
             if (count > 0) {
-
                 let uuid = "_" + randomUUID()
                 let html = `
                 <div style="margin-left: 25px;">
