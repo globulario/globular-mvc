@@ -1664,7 +1664,7 @@ export class SearchFacetPanel extends HTMLElement {
                 term = obj.name + "  " + obj.min + "-" + obj.max
                 className = obj.name
             }
-            count = document.getElementsByClassName(getUuidByString(className)).length
+            let count = document.getElementsByClassName(getUuidByString(className)).length
             if (count > 0) {
                 let uuid = "_" + randomUUID()
                 let html = `
