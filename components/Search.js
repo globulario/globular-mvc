@@ -2,7 +2,7 @@ import '@polymer/iron-icons/iron-icons.js';
 import '@polymer/iron-icons/av-icons'
 import '@polymer/paper-icon-button/paper-icon-button.js';
 import { Application } from '../Application';
-import { GetFileTitlesRequest, GetTitleByIdRequest, GetTitleFilesRequest, Person, SearchTitlesRequest } from 'globular-web-client/title/title_pb';
+import { CreateVideoRequest, GetFileTitlesRequest, GetTitleByIdRequest, GetTitleFilesRequest, Person, SearchTitlesRequest } from 'globular-web-client/title/title_pb';
 
 import { Model } from '../Model';
 import { theme } from "./Theme";
@@ -12,10 +12,56 @@ import { playVideo } from './Video';
 import { ApplicationView } from '../ApplicationView';
 import * as getUuidByString from 'uuid-by-string';
 import { randomUUID } from './utility';
+import { CreateVideoPreviewRequest } from 'globular-web-client/file/file_pb';
 
 // keep values in memorie to speedup...
 var titles = {}
 var current_title = null
+
+
+export function getCoverDataUrl(callback, videoId, videoUrl, videoPath ) {
+
+    // set the url for the image.
+    let url = window.location.protocol + "//" + window.location.hostname + ":"
+    if (Application.globular.config.Protocol == "https") {
+        url += Application.globular.config.PortHttps
+    } else {
+        url += Application.globular.config.PortHttp
+    }
+
+    // set the api call
+    url += "/get_video_cover_data_url"
+
+    // Set url query parameter.
+    url += "?domain=" + Model.domain
+    url += "&application=" + Model.application
+    if (localStorage.getItem("user_token") != undefined) {
+        url += "&token=" + localStorage.getItem("user_token")
+    }
+
+    url += "&id=" + videoId
+    url += "&url=" + videoUrl
+    url += "&path=" + videoPath
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.setRequestHeader("token", localStorage.getItem("user_token"));
+    xhr.setRequestHeader("application", Model.application);
+    xhr.setRequestHeader("domain", Model.domain);
+
+    // Set responseType to 'arraybuffer', we want raw binary data buffer
+    xhr.responseType = 'text';
+    xhr.onload = (rsp) => {
+        if (rsp.currentTarget.status == 200) {
+            callback(rsp.currentTarget.response)
+        }else{
+            console.log(rsp.status)
+            console.log("fail to create thumbnail ", videoId, videoUrl, videoPath)
+        }
+    };
+
+    xhr.send();
+}
 
 // That function will be use to asscociate file with imdb information.
 export function getImdbInfo(id, callback, errorcallback) {
@@ -1028,7 +1074,21 @@ export class SearchVideoCard extends HTMLElement {
                     }
 
                     if(!thumbnail.src.startsWith("data:image")){
-                        console.log("----> need data url for video: ", video.getUrl(), path)    
+                        console.log("----> need data url for video: ", video.getId(), video.getUrl(), path)   
+                        getCoverDataUrl(dataUrl=> {
+                            thumbnail.src = dataUrl
+                            video.getPoster().setContenturl(thumbnail.src )
+                            let rqst = new CreateVideoRequest
+                            let indexPath = Application.globular.config.DataPath + "/search/videos"
+                            rqst.setIndexpath(indexPath)
+                            rqst.setVideo(video)
+                            Model.globular.titleService.createVideo(rqst).then(
+                                ()=>{
+                                    console.log("video was saved!", video)
+                                }
+                            )
+                        }, video.getId(), video.getUrl(), path)
+                       
                     }
             
                     
