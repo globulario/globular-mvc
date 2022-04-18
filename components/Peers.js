@@ -386,7 +386,8 @@ export class PeerPanel extends HTMLElement {
 
             }
 
-            // Here I will set the button state.ff,
+            // Here I will set the button
+            
             if (remote_state == -1) {
                 deleteBtn.style.display = "none"
                 rejectBtn.style.display = "none"

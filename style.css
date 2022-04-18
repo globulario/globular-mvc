@@ -430,6 +430,9 @@ globular-processes-manager .table-item-value{
       grid-row-start: 2;
       grid-column-start: 1;
       grid-column-end: 17;
+      display: flex;
+      justify-content: center;
+      display: flex;
    }
    globular-settings-panel{
       grid-row-start: 1;
@@ -480,6 +483,8 @@ globular-processes-manager .table-item-value{
       grid-row-end: 3;
       grid-column-start: 3;
       grid-column-end: 15;
+      display: flex;
+      justify-content: center;
    }
 
    globular-messenger{
@@ -522,6 +527,8 @@ globular-processes-manager .table-item-value{
       grid-row-start: 2;
       grid-column-start: 5;
       grid-column-end: 13;
+      display: flex;
+      justify-content: center;
    }
 
    globular-settings-panel{
@@ -578,6 +585,8 @@ globular-processes-manager .table-item-value{
       grid-row-start: 2;
       grid-column-start: 4;
       grid-column-end: 14;
+      display: flex;
+      justify-content: center;
    }
 
 
