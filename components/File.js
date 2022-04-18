@@ -1421,6 +1421,7 @@ export class FilesIconView extends FilesView {
                 flex-direction: column;
                 padding: 8px;
                 /*min-height: 400px;*/
+                height: 100%;
             }
 
             /** The file section */

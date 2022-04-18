@@ -243,6 +243,7 @@ export class VideoPlayer extends HTMLElement {
             return
         }
         thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/__timeline__/thumbnails.vtt"
+        console.log("thumbnail path ", thumbnailPath)
 
         this.player.setPreviewThumbnails({ enabled: "true", src: thumbnailPath })
 
