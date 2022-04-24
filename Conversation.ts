@@ -85,7 +85,8 @@ export class ConversationManager {
     }).then((rsp: GetConversationsResponse) => {
       succesCallback(rsp.getConversations())
     }).catch((err: any) => {
-      console.log(err)
+      // return an empty conversation array...
+      succesCallback(new  Conversations)
     })
   }
 
@@ -271,7 +272,6 @@ export class ConversationManager {
       successCallback(rsp.getInvitations().getInvitationsList())
 
     }).catch((err: any) => {
-      console.log(err)
       successCallback([])
     })
   }
@@ -293,9 +293,7 @@ export class ConversationManager {
     }).then((rsp: GetSentInvitationsResponse) => {
       /** Nothing to do here... */
       successCallback(rsp.getInvitations().getInvitationsList())
-
     }).catch((err: any) => {
-      console.log(err)
       successCallback([])
     })
   }

@@ -1,13 +1,13 @@
 import { Model } from "./Model";
 import { ApplicationView } from "./ApplicationView";
-import {Account} from "./Account"
+import { Account } from "./Account"
 import * as resource from "globular-web-client/resource/resource_pb";
 
 /**
  * The session object will keep information about the
  * the account.
  */
- export enum SessionState {
+export enum SessionState {
     Online,
     Offline,
     Away
@@ -73,10 +73,9 @@ export class Session extends Model {
                 /** nothing special here... */
             },
             (obj: any) => {
-                console.log("session state was change...")
                 // Set the object state from the object and save it...
                 this.state_ = obj.state;
-                this.lastStateTime =  obj.lastStateTime; // already a date
+                this.lastStateTime = obj.lastStateTime; // already a date
 
                 this.save(() => {
                     /* nothing here*/
@@ -107,8 +106,8 @@ export class Session extends Model {
                 this._id = obj.getAccountid();
                 this.state_ = obj.getState().valueOf();
                 this.lastStateTime = new Date(obj.getLastStateTime() * 1000);
-                Account.getAccount(this._id , 
-                    (account: Account)=>{
+                Account.getAccount(this._id,
+                    (account: Account) => {
                         // Here I will connect local event to react with interface element...
                         this.account = account;
                         initCallback()
@@ -125,14 +124,18 @@ export class Session extends Model {
 
     toString(): string {
         // return the basic infomration to be store in the database.
-        return `{"_id":"${this._id}", "state":${this.state.toString()}, "lastStateTime":"${ Math.floor(this.lastStateTime.getTime()/1000)}"}`
+        let lastTime = 0
+        if(this.lastStateTime){
+            lastTime = Math.floor(this.lastStateTime.getTime() / 1000)
+        }
+        return `{"_id":"${this._id}", "state":${this.state.toString()}, "lastStateTime":"${0}"}`
     }
 
     // Init from the db...
     fromObject(obj: any) {
 
         this._id = obj._id;
-        Account.getAccount(this._id, (account:Account)=>{this.account = account}, (err:any)=>{console.log(err)})
+        Account.getAccount(this._id, (account: Account) => { this.account = account }, (err: any) => { console.log(err) })
 
         if (obj.state == 0) {
             this.state = SessionState.Online;
@@ -151,17 +154,22 @@ export class Session extends Model {
 
         // save the actual session informations.
         session.setAccountid(this.account.id)
-        session.setLastStateTime(Math.floor(this.lastStateTime.getTime()/1000))
-        if(this.state == SessionState.Away){
-            session.setState( resource.SessionState.AWAY)
-        }else if(this.state == SessionState.Online){
-            session.setState( resource.SessionState.ONLINE)
-        }else if(this.state == SessionState.Offline){
-            session.setState( resource.SessionState.OFFLINE)
+        let lastStateTime = 0
+        if (this.lastStateTime) {
+            lastStateTime = Math.floor(this.lastStateTime.getTime() / 1000)
         }
-        
+        session.setLastStateTime(lastStateTime)
+
+        if (this.state == SessionState.Away) {
+            session.setState(resource.SessionState.AWAY)
+        } else if (this.state == SessionState.Online) {
+            session.setState(resource.SessionState.ONLINE)
+        } else if (this.state == SessionState.Offline) {
+            session.setState(resource.SessionState.OFFLINE)
+        }
+
         session.setExpireAt(parseInt(localStorage.getItem("token_expired")))
-        
+
         rqst.setSession(session)
         // call persist data
         Model.globular.resourceService

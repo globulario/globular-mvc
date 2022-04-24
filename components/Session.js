@@ -133,7 +133,6 @@ export class SessionState extends HTMLElement {
                 this.account = val;
             }, (err) => {
                 ApplicationView.displayMessage(err, 3000)
-                console.log(err)
             })
         }
     }
@@ -142,8 +141,8 @@ export class SessionState extends HTMLElement {
      * Initialyse the session panel values.
      */
     init() {
+        // if no account was define simply return without init session...
         if (this.account == undefined)  {
-            console.log("account is not define!!!")
             return
         }
 
@@ -190,7 +189,7 @@ export class SessionState extends HTMLElement {
         } else {
             this.stateName.innerHTML = "Away"
         }
-
+        
         let delay = Math.floor((Date.now() - lastStateTime.getTime()) / 1000);
 
         if (delay < 60) {

@@ -63,7 +63,6 @@ export class PermissionManager {
         // first of all I will get the resource permissions
         PermissionManager.getResourcePermissions(resource,
             (permissions: rbac.Permissions) => {
-                console.log(permissions)
                 successCallback();
             },
             (err: any) => {

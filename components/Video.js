@@ -28,7 +28,7 @@ String.prototype.endsWith = function (suffix) {
  */
 export function playVideo(path, onplay, onclose, title) {
     let videoPlayer = document.getElementById("video-player-x")
-   
+
     if (videoPlayer == null) {
         videoPlayer = new VideoPlayer()
         videoPlayer.id = "video-player-x"
@@ -65,7 +65,7 @@ export class VideoPlayer extends HTMLElement {
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
         let hideheader = this.getAttribute("hideheader") != undefined
-        this.titleInfo = null;
+        this.titleInfo = null; // movie, serie title, video
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -86,6 +86,11 @@ export class VideoPlayer extends HTMLElement {
                 text-align: center;
                 font-size: 1.1rem;
                 font-weight: 500;
+                display: inline-block;
+                max-width: 250px;
+                white-space: nowrap;
+                overflow: hidden !important;
+                text-overflow: ellipsis;
             }
 
             video{
@@ -175,6 +180,10 @@ export class VideoPlayer extends HTMLElement {
     }
 
     play(path) {
+        this.video.addEventListener("ended", ()=>{
+            console.log("----------> video ended...")
+        });
+        
         this.style.zIndex = 100
         // Set the title...
         let thumbnailPath = path.replace("/playlist.m3u8", "")
@@ -211,7 +220,22 @@ export class VideoPlayer extends HTMLElement {
             if (videos.length > 0) {
                 let video = videos.pop()
                 this.titleInfo = video
-                this.shadowRoot.querySelector("#title-span").innerHTML = video.getDescription()
+                this.titleInfo.isVideo = true
+                this.shadowRoot.querySelector("#title-span").innerHTML = video.getDescription().replace("</br>", " ")
+                // Start where the video was stop last time... TODO 
+                if (this.titleInfo) {
+                    if (localStorage.getItem(this.titleInfo.getId())) {
+                        let currentTime = parseFloat(localStorage.getItem(this.titleInfo.getId()))
+                        this.video.currentTime = currentTime
+                    }
+
+                    this.video.onended = () => {
+                        console.log("the video is ended....")
+                    }
+
+                    Model.eventHub.publish("play_video_player_evt_", { _id: this.titleInfo.getId(), isVideo: this.titleInfo.isVideo, currentTime: this.video.currentTime, date: new Date() }, true)
+                }
+
             }
         })
 
@@ -219,6 +243,7 @@ export class VideoPlayer extends HTMLElement {
             if (tittles.length > 0) {
                 let title = tittles.pop()
                 this.titleInfo = title
+                this.titleInfo.isVideo = false
                 this.shadowRoot.querySelector("#title-span").innerHTML = title.getName()
                 if (title.getYear()) {
                     this.shadowRoot.querySelector("#title-span").innerHTML += " (" + title.getYear() + ") "
@@ -229,6 +254,15 @@ export class VideoPlayer extends HTMLElement {
 
                 if (this.onplay != null) {
                     this.onplay(this.player, title)
+                }
+
+                // Start where the video was stop last time... TODO 
+                if (this.titleInfo) {
+                    if (localStorage.getItem(this.titleInfo.getId())) {
+                        let currentTime = parseFloat(localStorage.getItem(this.titleInfo.getId()))
+                        this.video.currentTime = currentTime
+                    }
+                    Model.eventHub.publish("play_video_player_evt_", { _id: this.titleInfo.getId(), isVideo: this.titleInfo.isVideo, currentTime: this.video.currentTime, duration: this.video.duration, date: new Date() }, true)
                 }
             }
         })
@@ -243,9 +277,9 @@ export class VideoPlayer extends HTMLElement {
             return
         }
         thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/__timeline__/thumbnails.vtt"
-        console.log("thumbnail path ", thumbnailPath)
 
         this.player.setPreviewThumbnails({ enabled: "true", src: thumbnailPath })
+
 
         if (!this.video.paused && this.video.currentSrc.endsWith(path)) {
             // Do nothing...
@@ -281,12 +315,8 @@ export class VideoPlayer extends HTMLElement {
         if (path.endsWith(".m3u8")) {
             this.hls.attachMedia(this.video);
             this.hls.on(Hls.Events.MEDIA_ATTACHED, () => {
-                console.log('video and hls.js are now bound together !');
                 this.hls.loadSource(url);
                 this.hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
-                    console.log(
-                        'manifest loaded, found ' + data.levels.length + ' quality level'
-                    );
                     this.video.play();
                 });
             });
@@ -295,6 +325,8 @@ export class VideoPlayer extends HTMLElement {
         if (this.parentNode.offsetWidth > 0) {
             this.video.style.maxWidth = this.parentNode.offsetWidth + "px"
         }
+
+ 
     }
 
     /**
@@ -314,7 +346,12 @@ export class VideoPlayer extends HTMLElement {
     stop() {
         this.video.pause();
         // keep the current video location
-        if(this.titleInfo != null){
+        if (this.titleInfo != null) {
+
+            // Stop the video
+            Model.eventHub.publish("stop_video_player_evt_", { _id: this.titleInfo.getId(), isVideo: this.titleInfo.isVideo, currentTime: this.video.currentTime, date: new Date() }, true)
+
+            // keep video info in the local storage...
             localStorage.setItem(this.titleInfo.getId(), this.video.currentTime)
         }
     }

@@ -202,12 +202,10 @@ export class ApplicationView extends View {
     // Now the save funciton..
     this._camera.onsaveimage = (picture: any) => {
       // save image from the picture.
-      console.log("save picture:", picture);
     };
 
     this._camera.onsavevideo = (video: any) => {
       // save image from the picture.
-      console.log("save video:", video);
     };
 
     // The file explorer object.

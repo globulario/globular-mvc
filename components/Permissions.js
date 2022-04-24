@@ -257,7 +257,6 @@ export class PermissionsManager extends HTMLElement {
             let buttonGroup = parent.parentNode.querySelector("paper-radio-group")
             this.permissionsNames.sort()
             this.permissionsNames.forEach(p => {
-                console.log(p)
                 let radioBtn = document.createElement("paper-radio-button")
                 radioBtn.name = p
                 radioBtn.innerHTML = p
@@ -279,7 +278,6 @@ export class PermissionsManager extends HTMLElement {
 
     // Create the permission.
     createPermission(name, type) {
-        console.log("Create permission " + name + " " + type)
         // So here I will try to find if the permission already exist in the interface.
         let id = "permission_" + name + "_" + type + "_panel"
         let panel = null
@@ -343,7 +341,6 @@ export class PermissionsManager extends HTMLElement {
                         domain: Model.domain,
                         address: Model.address
                     }).then(rsp => {
-                        console.log("succed to save permissions for path ", this.path)
                         ApplicationView.displayMessage("Permissions for path " + this.path + " was changed", 3000)
                         this.setPath(this.path)
                         Model.eventHub.publish(Application.account.id + "_change_permission_event", {},false)
@@ -1012,7 +1009,6 @@ export class PermissionsViewer extends HTMLElement {
                     subjectCell.appendChild(accountDiv)
                 }, e =>{
                     ApplicationView.displayMessage(e, 3000)
-                    console.log(err)
                 })
             } else if (subject.type == "application") {
                 // Set application div.

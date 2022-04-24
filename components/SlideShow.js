@@ -354,8 +354,6 @@ export class SlideShow extends HTMLElement {
 
         this.isRunning = false
         this.startBtn.style.display = "block";
-
-        console.log("the side show is now stopped!")
     }
 
 

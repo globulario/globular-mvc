@@ -2,7 +2,7 @@ import '@polymer/iron-icons/iron-icons.js';
 import '@polymer/iron-icons/av-icons'
 import '@polymer/paper-icon-button/paper-icon-button.js';
 import { Application } from '../Application';
-import { CreateVideoRequest, GetFileTitlesRequest, GetTitleByIdRequest, GetTitleFilesRequest, Person, SearchTitlesRequest } from 'globular-web-client/title/title_pb';
+import { CreateVideoRequest, GetTitleFilesRequest, SearchTitlesRequest } from 'globular-web-client/title/title_pb';
 
 import { Model } from '../Model';
 import { theme } from "./Theme";
@@ -55,7 +55,6 @@ export function getCoverDataUrl(callback, videoId, videoUrl, videoPath ) {
         if (rsp.currentTarget.status == 200) {
             callback(rsp.currentTarget.response)
         }else{
-            console.log(rsp.status)
             console.log("fail to create thumbnail ", videoId, videoUrl, videoPath)
         }
     };
@@ -136,15 +135,8 @@ function playTitleListener(player, title, indexPath) {
         let nextEpisode = episodes[index]
         let video = document.getElementsByTagName('video')[0];
 
-        // Start where the video was stop last time... TODO 
-        if (localStorage.getItem(title.getId())) {
-            video.currentTime = parseFloat(localStorage.getItem(title.getId()))
-        }
-
         video.onended = () => {
-
-
-
+ 
             // exit full screen...
             if (document.exitFullscreen) {
                 document.exitFullscreen();
@@ -1074,7 +1066,6 @@ export class SearchVideoCard extends HTMLElement {
                     }
 
                     if(!thumbnail.src.startsWith("data:image")){
-                        console.log("----> need data url for video: ", video.getId(), video.getUrl(), path)   
                         getCoverDataUrl(dataUrl=> {
                             thumbnail.src = dataUrl
                             video.getPoster().setContenturl(thumbnail.src )
@@ -1590,9 +1581,7 @@ export class FacetSearchFilter extends HTMLElement {
 
     // Set the facets...
     setFacets(facets) {
-        console.log(facets)
         // globular-workspace
-
         facets.getFacetsList().forEach(facet => {
             let p = new SearchFacetPanel(facet)
             if (facet.getTotal() > 0) {

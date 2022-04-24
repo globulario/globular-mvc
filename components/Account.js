@@ -444,7 +444,6 @@ export class AccountManager extends HTMLElement {
               panel.parentNode.removeChild(panel)
               displayAccounts()
             }).catch(err => {
-              console.log(err)
               ApplicationView.displayMessage(err, 3000)
               setTimeout(() => {
                 input.focus()

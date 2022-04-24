@@ -342,7 +342,6 @@ export class MessengerMenu extends Menu {
         this.conversationsLst.appendChild(conversationInfos)
         this.conversationsTab.innerHTML = `<span id="conversation_label">Conversations</span> <paper-badge for="conversation_label" label="${this.conversationsLst.children.length}"></paper-badge>`
         window.dispatchEvent(new Event('resize'));
-        console.log("append conversation " + conversationUuid);
 
         Model.eventHub.subscribe(`delete_conversation_${conversationUuid}_evt`,
             (uuid) => {
@@ -1739,7 +1738,6 @@ export class MessagesList extends HTMLElement {
                 this.listener = uuid;
             },
             (msg) => {
-                console.log(msg)
                 this.appendMessage(msg)
             }, true)
 
@@ -1761,11 +1759,10 @@ export class MessagesList extends HTMLElement {
     }
 
     refresh() {
-        console.log(this.children)
         if (this.children.length == 0) {
             return
         }
-        console.log(this.children[0])
+
         let messageDiv = this.children[0].getMessageDiv()
 
         // hide the actions inside previous message div.
@@ -2375,7 +2372,6 @@ export class LikeDisLikeBtn extends HTMLElement {
                     this.card.appendChild(div)
                 }, err => {
                     ApplicationView.displayMessage(err, 3000)
-                    console.log(err)
                 })
             })
         } else {

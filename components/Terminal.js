@@ -350,7 +350,6 @@ export class Terminal extends HTMLElement {
             }
             // Publish local event.
             this.appendResult(cmd, pid, rsp.getResult())
-            console.log({ pid: pid, infos: rsp.getResult(), done: false });
         });
 
         stream.on("status", (status) => {
@@ -365,7 +364,6 @@ export class Terminal extends HTMLElement {
 
     // Try to autocomplete the commande line...
     autocomplete(cmd_line) {
-        console.log("try to autocomplete the command: ", cmd_line)
         if (cmd_line.startsWith("cd ") || cmd_line.startsWith("rm ")) {
             // Here I will try to autocomple from the actual list of file contain in dir..
             // remove the command...

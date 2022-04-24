@@ -344,7 +344,6 @@ export class FilesView extends HTMLElement {
                     createArchive(Application.globular, [path], name,
                         path_ => {
                             // Download the file...
-                            console.log("dowload file: ", path_)
                             downloadFileHttp(path_, name + ".tgz",
                                 () => {
                                     // Now I will remove the file from the server....
@@ -357,7 +356,6 @@ export class FilesView extends HTMLElement {
                         }, err => { ApplicationView.displayMessage(err, 3000) })
                 } else {
                     // simply download the file.
-                    console.log("dowload file: ", path)
                     downloadFileHttp(path, name,
                         () => {
                             // Now I will remove the file from the server....
@@ -502,7 +500,6 @@ export class FilesView extends HTMLElement {
 
                 Model.globular.titleService.getFileTitles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
                     .then(rsp => {
-                        console.log(rsp.getTitles().getTitlesList())
                         callback(rsp.getTitles().getTitlesList())
                     })
                     .catch(err => {
@@ -518,7 +515,6 @@ export class FilesView extends HTMLElement {
 
                 Model.globular.titleService.getFileVideos(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
                     .then(rsp => {
-                        console.log(rsp.getVideos().getVideosList())
                         callback(rsp.getVideos().getVideosList())
                     })
                     .catch(err => {
@@ -546,7 +542,6 @@ export class FilesView extends HTMLElement {
         }
 
         this.mananageAccessMenuItem.action = () => {
-            console.log("manage access menu click", this.menu.file.path)
             // So here I will create a new permission manager object and display it for the given file.
             Model.eventHub.publish("display_permission_manager_event", this.menu.file.path, true)
 
@@ -1882,8 +1877,6 @@ export class FilesIconView extends FilesView {
      * Set file info, this will made use of the search engine...
      */
     setFileInfo(info, file) {
-        console.log("set file info: ", info, file)
-
         let rqst = new CreateTitleRequest
         let title = new Title
 
@@ -1943,10 +1936,8 @@ export class FilesIconView extends FilesView {
         // Now I will create the title info...
         Model.globular.titleService.createTitle(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
             .then(rsp => {
-                console.log("title was created!")
                 // Now I will asscociated the file and the title.
                 let rqst_ = new AssociateFileWithTitleRequest
-                console.log(file)
                 rqst_.setFilepath(file.path)
                 rqst_.setTitleid(title.getId())
                 rqst_.setIndexpath(indexPath)
@@ -1957,7 +1948,6 @@ export class FilesIconView extends FilesView {
                     }).catch(err => ApplicationView.displayMessage(err, 3000))
 
             }).catch(err => ApplicationView.displayMessage(err, 3000))
-        console.log(title)
     }
 
 
@@ -2090,7 +2080,6 @@ export class PathNavigator extends HTMLElement {
             return;
         }
 
-        console.log("----------> dir ", dir)
         if (dir._mime == "stream.hls") {
             // Here I will simply return...
             return
@@ -2523,7 +2512,6 @@ export class FileNavigator extends HTMLElement {
 
     // Set the directory.
     setDir(dir) {
-        console.log("set file navigation to dir: ", dir)
         if (this.dir == dir || !(dir.path.startsWith("/public") || public_[dir.path] != undefined || dir.path.startsWith("/shared") || shared[dir.path] != undefined || shared[dir.path] != undefined || dir.path.startsWith("/applications/" + Application.application) || dir.path.startsWith("/users/" + Application.account.id))) {
             return;
         }
@@ -2540,7 +2528,6 @@ export class FileNavigator extends HTMLElement {
 
     // Init the public folder...
     initPublic() {
-        console.log(Model.globular.config.Public)
         this.publicDiv.innerHTML = ""
 
         // The public directory will contain a list of directories readable by 
@@ -3239,7 +3226,6 @@ export class FileExplorer extends HTMLElement {
                 evt.stopPropagation();
                 let dialog = this.fileExplorerContent.querySelector("#new-dir-dialog")
                 dialog.parentNode.removeChild(dialog)
-                console.log("create directory: ", input.value)
 
                 // Here I will create a new folder...
                 // Set the request.
@@ -4700,7 +4686,6 @@ export class FilesUploader extends HTMLElement {
                         }
                     },
                     event => {
-                        console.log(event)
                         ApplicationView.displayMessage("Upload failed!", 3000)
                     },
                     event => {

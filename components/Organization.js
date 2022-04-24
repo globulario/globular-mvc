@@ -200,7 +200,6 @@ export class OrganizationManager extends HTMLElement {
                             panel.parentNode.removeChild(panel)
                             displayOrganizations()
                         }).catch(err => {
-                            console.log(err)
                             ApplicationView.displayMessage(err, 3000)
                             setTimeout(() => {
                                 input.focus()

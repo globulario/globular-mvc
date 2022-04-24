@@ -178,7 +178,6 @@ export class Application extends Model {
       // This error will be available in the setting -> error(s)
       window.onerror = (message, source, lineno, colno, error) => {
         let info = new LogInfo
-        console.log(error)
         info.setLevel(LogLevel.ERROR_MESSAGE)
 
         let occurence = new Occurence
@@ -229,9 +228,6 @@ export class Application extends Model {
             evt.pwd,
             (account: Account) => {
               // Here I will send a login success.
-              console.log("login_event")
-              // TODO the login will be publish later when the user data will be init
-
               Model.eventHub.publish("login_event", account, true);
             },
             (err: any) => {
@@ -579,7 +575,6 @@ export class Application extends Model {
 
     stream.on("status", (status) => {
       if (status.code === 0) {
-        console.log("applications info received!")
         Application.infos = new Map<string, resource.Application>();
         for (var i = 0; i < applications.length; i++) {
           // Keep application info up to date.
@@ -599,7 +594,6 @@ export class Application extends Model {
 
         callback(applications);
       } else {
-        console.log("applications info error!")
         errorCallback({ message: status.details });
       }
     });
@@ -927,7 +921,6 @@ export class Application extends Model {
           domain: domain,
           address: address
         }).then(() => {
-          console.log("connection was created! ", id)
           Application.account = new Account(id, email, userName, domain);
           Account.getAccount(id, (account: Account) => {
             Application.account = account;

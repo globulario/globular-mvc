@@ -762,7 +762,6 @@ export class ProcessesManager extends HTMLElement {
                     // Now I will connect the kill proecess button.
                     processRow = tableBody.querySelector(`#process-row-${info.getPid()}`)
                     processRow.children[6].onclick = () => {
-                        console.log("kill process ", info.getPid())
                         let rqst = new KillProcessRequest
                         rqst.setPid(info.getPid())
                         Model.globular.adminService.killProcess(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })

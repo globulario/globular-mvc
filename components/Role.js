@@ -164,7 +164,6 @@ export class RoleManager extends HTMLElement {
                         panel.parentNode.removeChild(panel)
                         displayRoles()
                     }).catch(err => {
-                        console.log(err)
                         ApplicationView.displayMessage(err, 3000)
                         setTimeout(() => {
                             input.focus()
@@ -292,7 +291,6 @@ export class RolePanel extends HTMLElement {
                         actionsList.removeItem(action)
                         ApplicationView.displayMessage("Action " + action + " was removed from role " + role.getId(), 3000)
                     }).catch(err => {
-                        console.log(err)
                         ApplicationView.displayMessage(err, 3000)
                     })
 
@@ -306,7 +304,6 @@ export class RolePanel extends HTMLElement {
                 let getAllActionsRqst = new GetAllActionsRequest
                 Model.globular.servicesManagerService.getAllActions(getAllActionsRqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
                     .then(rsp => {
-                        console.log(rsp.getActionsList())
                         let actions_ = rsp.getActionsList()
                         actions.forEach(a => {
                             actions_.splice(actions_.indexOf(a), 1);
@@ -392,7 +389,6 @@ export class RolePanel extends HTMLElement {
 
 
                     }).catch(err => {
-                        console.log(err)
                         ApplicationView.displayMessage(err, 3000)
                     })
             })

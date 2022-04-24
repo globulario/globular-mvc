@@ -213,7 +213,6 @@ function getVideoPreview(parent, path, name, callback) {
                 }
                 Model.globular.titleService.dissociateFileWithTitle(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
                     .then(rsp => {
-                        console.log("unlink ", path, name)
                     }).catch(err => ApplicationView.displayMessage(err, 3000))
             }
 

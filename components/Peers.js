@@ -95,7 +95,6 @@ export class PeersManager extends HTMLElement {
 
                     })
                 }, err => {
-                    console.log("no peers found")
                     ApplicationView.displayMessage(err, 3000)
                 })
         }
@@ -166,7 +165,6 @@ export class PeersManager extends HTMLElement {
         }, false)
 
         Model.globular.eventHub.subscribe("delete_peer_evt", uuid => { }, evt => {
-            console.log("peer ", evt, "was deleted")
             displayPeers()
         }, false)
 
@@ -425,7 +423,6 @@ export class PeerPanel extends HTMLElement {
                         actionsList.removeItem(action)
                         ApplicationView.displayMessage("Action " + action + " was removed from peer " + peer.getId(), 3000)
                     }).catch(err => {
-                        console.log(err)
                         ApplicationView.displayMessage(err, 3000)
                     })
 
@@ -439,7 +436,6 @@ export class PeerPanel extends HTMLElement {
                 let getAllActionsRqst = new GetAllActionsRequest
                 Model.globular.servicesManagerService.getAllActions(getAllActionsRqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
                     .then(rsp => {
-                        console.log(rsp.getActionsList())
                         let actions_ = rsp.getActionsList()
                         actions.forEach(a => {
                             actions_.splice(actions_.indexOf(a), 1);
@@ -517,7 +513,6 @@ export class PeerPanel extends HTMLElement {
 
 
                     }).catch(err => {
-                        console.log(err)
                         ApplicationView.displayMessage(err, 3000)
                     })
             })
@@ -541,7 +536,6 @@ export class PeerPanel extends HTMLElement {
     getRemoteState(callback) {
         let rqst = new GetPeerApprovalStateRqst
         rqst.setRemotePeerAddress(this.peer.getAddress())
-        console.log ("--------------> try to get remote peer approval state: ", this.peer.getAddress())
         Model.globular.resourceService.getPeerApprovalState(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
             .then(rsp => {
                 callback(rsp.getState())

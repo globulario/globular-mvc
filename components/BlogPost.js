@@ -93,10 +93,7 @@ export class BlogPostElement extends HTMLElement {
     constructor(blog) {
         super()
 
-        console.log(blog)
-
         this.blog = blog
-
         if (blog != undefined) {
             this.id = "_" + blog.getUuid()
         }
@@ -497,7 +494,6 @@ export class BlogPostElement extends HTMLElement {
             .then(() => {
                 /** Do anything you need after editor initialization */
                 this.editorDiv.querySelector(".codex-editor__redactor").style.paddingBottom = "0px";
-                console.log("editor is ready")
                 /** done with the editor initialisation */
                 callback()
 
@@ -691,7 +687,6 @@ export class BlogPosts extends HTMLElement {
             let globule = connections.pop()
             if(connections.length == 0){
                 this._getBlogs( globule, authors, (blogs)=>{
-                    console.log(blogs)
                     blogs_ = blogs_.concat(blogs)
                     callback(blogs_)
                 })
@@ -1058,7 +1053,6 @@ export class BlogCommentEditor extends HTMLElement {
 
         let emojiPicker = this.shadowRoot.querySelector("emoji-picker")
         emojiPicker.addEventListener('emoji-click', event => {
-            console.log(event.detail); // will log something like the above
             this.collapse_btn.icon = "editor:insert-emoticon"
             this.collapse_panel.toggle();
             let rqst = new AddEmojiRequest

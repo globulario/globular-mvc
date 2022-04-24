@@ -163,7 +163,6 @@ export class GroupManager extends HTMLElement {
                         panel.parentNode.removeChild(panel)
                         displayGroups()
                     }).catch(err => {
-                        console.log(err)
                         ApplicationView.displayMessage(err, 3000)
                         setTimeout(() => {
                             input.focus()

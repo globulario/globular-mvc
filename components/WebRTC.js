@@ -321,7 +321,6 @@ export class VideoConversation extends HTMLElement {
                     case "disconnected":
                     case "failed":
                     case "closed":
-                        console.log("close event!")
                         // The connection has been closed
                         this.closeConnection(connectionId)
 

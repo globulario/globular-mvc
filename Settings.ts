@@ -144,11 +144,10 @@ export class UserSettings extends Settings {
 
                     account.save(
                         () => {
-                            console.log("account was saved!")
                             imageCropperSettings.setValue(account.profilPicture)
                         },
                         (err: any) => {
-                            console.log("------>", err)
+                            console.log( err)
                         })
                 } else {
                     // revert the change.
@@ -348,7 +347,7 @@ export class ApplicationsSettings extends Settings {
         // Install application
         installApplicationBtn.onclick = () => {
             // So here I will get the list of availble package from the pacakage manager.
-            console.log("----------> look for applications at ", Model.globular.config.Discoveries)
+            console.log("look for applications at ", Model.globular.config.Discoveries)
             // Get all package infos from that localisation.
         }
 
@@ -700,7 +699,6 @@ export class LogSettings extends Settings {
                         div.style.justifySelf = "flex-start"
                         div.style.display = "flex"
                         div.style.alignItems = "center"
-                        console.log(occurences)
                         div.parentNode.style.position = "relative"
                         // Display the list of occurrences as needed..
                         div.innerHTML = `

@@ -205,7 +205,6 @@ export class Model {
                                 initCallback();
                             }
                         }, (err: any) => {
-                            console.log(err, "fail to connect with globule at address ", peer.getAddress())
                             if (index < peers.length) {
                                 connectToPeers()
                             } else {
