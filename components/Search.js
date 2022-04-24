@@ -370,7 +370,6 @@ export class SearchBar extends HTMLElement {
             evt.stopPropagation();
             div.style.boxShadow = "var(--dark-mode-shadow)"
             contextSearchSelector.style.display = "none"
-            Model.eventHub.publish("_display_search_results_", {}, true)
         }
 
         // Change the search context, this will search over other indexations...
@@ -1585,7 +1584,6 @@ export class FacetSearchFilter extends HTMLElement {
 
     // Set the facets...
     setFacets(facets) {
-        // globular-workspace
         facets.getFacetsList().forEach(facet => {
             let p = new SearchFacetPanel(facet)
             if (facet.getTotal() > 0) {

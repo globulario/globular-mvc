@@ -218,6 +218,9 @@ export class ApplicationView extends View {
     applicationView = this;
 
     this.getWorkspace()
+
+    this._sidemenu_childnodes = new Array<any>();
+    this._workspace_childnodes = new Array<any>();
   }
 
   // Must be call by the model when after it initialisation was done.
@@ -456,25 +459,26 @@ export class ApplicationView extends View {
           }
         }
 
-        this._sidemenu_childnodes = new Array<any>();
-        this._workspace_childnodes = new Array<any>();
 
-        // Keep the content of the workspace.
-        while (this.getWorkspace().childNodes.length > 0) {
-          let node = this.getWorkspace().childNodes[this.getWorkspace().childNodes.length - 1]
-          this._workspace_childnodes.push(node)
-          this.getWorkspace().removeChild(node)
+        if (this._workspace_childnodes.length == 0) {
+          // Keep the content of the workspace.
+          while (this.getWorkspace().childNodes.length > 0) {
+            let node = this.getWorkspace().childNodes[this.getWorkspace().childNodes.length - 1]
+            this._workspace_childnodes.push(node)
+            this.getWorkspace().removeChild(node)
+          }
         }
+
 
         // The search result panel where the result will be displayed.
         if (this._searchResults == null) {
           this._searchResults = new SearchResults()
         }
-        
+
         if (this._searchResults.isEmpty()) {
           return // the search result is already visible.
         }
-        
+
         this.getWorkspace().appendChild(this._searchResults);
 
       }, true)
@@ -482,7 +486,7 @@ export class ApplicationView extends View {
     Model.eventHub.subscribe("_hide_search_results_",
       uuid => { },
       evt => {
-
+        console.log("----------------> set back nodes...", this._workspace_childnodes)
         // The search results
         if (this._searchBar != undefined) {
           if (this._searchResults.parentNode != undefined) {
