@@ -87,7 +87,6 @@ export class VideoPlayer extends HTMLElement {
                 font-size: 1.1rem;
                 font-weight: 500;
                 display: inline-block;
-                max-width: 250px;
                 white-space: nowrap;
                 overflow: hidden !important;
                 text-overflow: ellipsis;
@@ -183,7 +182,7 @@ export class VideoPlayer extends HTMLElement {
         this.video.addEventListener("ended", ()=>{
             console.log("----------> video ended...")
         });
-        
+
         this.style.zIndex = 100
         // Set the title...
         let thumbnailPath = path.replace("/playlist.m3u8", "")

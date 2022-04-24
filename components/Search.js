@@ -891,7 +891,11 @@ export class SearchVideoCard extends HTMLElement {
                 height: 100%;
                 max-width: 320px;
                 margin: 10px;
-                
+                max-width: 320px;
+                max-height: 285px;
+                min-height: 285px;
+                margin: 10px;
+                overflow: hidden;
             }
 
             .video-card:hover{
