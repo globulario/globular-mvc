@@ -454,7 +454,7 @@ export class ApplicationView extends View {
       uuid => { },
       evt => {
         if (this._searchResults != undefined) {
-          if (this._searchResults.parentNode != undefined || this._searchResults.isEmpty()) {
+          if (this._searchResults.parentNode != undefined) {
             return // the search result is already visible.
           }
         }
@@ -475,10 +475,6 @@ export class ApplicationView extends View {
           this._searchResults = new SearchResults()
         }
 
-        if (this._searchResults.isEmpty()) {
-          return // the search result is already visible.
-        }
-
         this.getWorkspace().appendChild(this._searchResults);
 
       }, true)
@@ -486,7 +482,6 @@ export class ApplicationView extends View {
     Model.eventHub.subscribe("_hide_search_results_",
       uuid => { },
       evt => {
-        console.log("----------------> set back nodes...", this._workspace_childnodes)
         // The search results
         if (this._searchBar != undefined) {
           if (this._searchResults.parentNode != undefined) {
@@ -500,6 +495,9 @@ export class ApplicationView extends View {
           this.getWorkspace().appendChild(node)
         }
 
+        // be sure nothing is keeping...
+        this._sidemenu_childnodes = new Array<any>();
+        this._workspace_childnodes = new Array<any>();
 
       }, true)
 
