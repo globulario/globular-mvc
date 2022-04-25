@@ -179,9 +179,6 @@ export class VideoPlayer extends HTMLElement {
     }
 
     play(path) {
-        this.video.addEventListener("ended", ()=>{
-            console.log("----------> video ended...")
-        });
 
         this.style.zIndex = 100
         // Set the title...
@@ -348,8 +345,9 @@ export class VideoPlayer extends HTMLElement {
         if (this.titleInfo != null) {
 
             // Stop the video
-            Model.eventHub.publish("stop_video_player_evt_", { _id: this.titleInfo.getId(), isVideo: this.titleInfo.isVideo, currentTime: this.video.currentTime, date: new Date() }, true)
-
+            if( this.video.duration != this.video.currentTime){
+                Model.eventHub.publish("stop_video_player_evt_", { _id: this.titleInfo.getId(), isVideo: this.titleInfo.isVideo, currentTime: this.video.currentTime, date: new Date() }, true)
+            }
             // keep video info in the local storage...
             localStorage.setItem(this.titleInfo.getId(), this.video.currentTime)
         }

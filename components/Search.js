@@ -136,7 +136,7 @@ function playTitleListener(player, title, indexPath) {
         let video = document.getElementsByTagName('video')[0];
 
         video.onended = () => {
- 
+            Model.eventHub.publish("remove_video_player_evt_", { _id: title.getId(), isVideo: false, currentTime: video.currentTime, date: new Date() }, true)
             // exit full screen...
             if (document.exitFullscreen) {
                 document.exitFullscreen();
