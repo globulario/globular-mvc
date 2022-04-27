@@ -347,6 +347,8 @@ export class VideoPlayer extends HTMLElement {
             // Stop the video
             if( this.video.duration != this.video.currentTime){
                 Model.eventHub.publish("stop_video_player_evt_", { _id: this.titleInfo.getId(), isVideo: this.titleInfo.isVideo, currentTime: this.video.currentTime, date: new Date() }, true)
+            }else{
+                Model.eventHub.publish("remove_video_player_evt_", { _id: this.titleInfo.getId(), isVideo: this.titleInfo.isVideo, currentTime: this.video.currentTime, date: new Date() }, true)
             }
             // keep video info in the local storage...
             localStorage.setItem(this.titleInfo.getId(), this.video.currentTime)
