@@ -360,8 +360,11 @@ export class SearchBar extends HTMLElement {
 
                 searchTitles(searchInput.value, indexPath)
                 searchInput.value = ""
-            }
+                Model.eventHub.publish("_display_search_results_", {}, true)
 
+            }else if (evt.key == "Escape") {
+                Model.eventHub.publish("_hide_search_results_", {}, true)
+            }
         }
 
 
@@ -425,7 +428,7 @@ export class SearchResults extends HTMLElement {
             #container{
                 width: 100%;
                 height: 100%;
-                display: flex;
+                display: none;
                 flex-direction: column;
                 margin-top: 15px;
             }
@@ -468,10 +471,14 @@ export class SearchResults extends HTMLElement {
 
         this.tabs = this.shadowRoot.querySelector("#search-results")
 
+        Model.eventHub.subscribe("_hide_search_results_", uuid=>{}, evt=>{
+            this.shadowRoot.querySelector("#container").style.display = "none"
+        }, true)
+
         this.closeAllBtn = this.shadowRoot.querySelector("#close-all-btn")
         this.closeAllBtn.onclick = () => {
             Model.eventHub.publish("_hide_search_results_", {}, true)
-
+   
             // Hide the search results...
             let facetFilters = document.getElementsByTagName("globular-facet-search-filter")
             for (var i = 0; i < facetFilters.length; i++) {
@@ -483,6 +490,8 @@ export class SearchResults extends HTMLElement {
         // So here I will create a new Search Result page if none exist...
         Model.eventHub.subscribe("__new_search_event__", uuid => { },
             evt => {
+                this.shadowRoot.querySelector("#container").style.display = "flex"
+
                 let uuid = "_" + getUuid(evt.query)
                 let tab = this.tabs.querySelector(`#${uuid}-tab`)
 
