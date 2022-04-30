@@ -11,7 +11,6 @@ import Checklist from '@editorjs/checklist';
 import Paragraph from 'editorjs-paragraph-with-alignment'
 import CodeTool from '@editorjs/code'
 import Underline from '@editorjs/underline';
-import LinkTool from '@editorjs/link'
 import { theme } from "./Theme";
 import { ApplicationView } from '../ApplicationView';
 import { CreateBlogPostRequest, GetBlogPostsByAuthorsRequest, SaveBlogPostRequest, BlogPost, DeleteBlogPostRequest, AddEmojiRequest, Emoji, AddCommentRequest, Comment } from 'globular-web-client/blog/blog_pb';
@@ -21,12 +20,7 @@ import * as edjsHTML from 'editorjs-html'
 import { Account } from '../Account';
 import { v4 as uuidv4 } from "uuid";
 import '@polymer/iron-icons/communication-icons'
-import { Database, Picker } from 'emoji-picker-element'
-import { GetThumbnailsResponse } from 'globular-web-client/file/file_pb';
 import * as getUuidByString from 'uuid-by-string';
-import { localToGlobal } from './utility';
-import { GetApplicationVersionRqst } from 'globular-web-client/resource/resource_pb';
-import { LogarithmicScale } from 'chart.js';
 
 const intervals = [
     { label: 'year', seconds: 31536000 },
@@ -35,14 +29,14 @@ const intervals = [
     { label: 'hour', seconds: 3600 },
     { label: 'minute', seconds: 60 },
     { label: 'second', seconds: 1 }
-  ];
-  
-  function timeSince(date) {
+];
+
+function timeSince(date) {
     const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
     const interval = intervals.find(i => i.seconds < seconds);
     const count = Math.floor(seconds / interval.seconds);
     return `${count} ${interval.label}${count !== 1 ? 's' : ''} ago`;
-  }
+}
 
 // Get the image default size...
 function getMeta(url, callback) {
@@ -683,15 +677,15 @@ export class BlogPosts extends HTMLElement {
         let connections = Array.from(Model.globules.values())
         let blogs_ = []
 
-        let _getBlogs_ = ()=>{
+        let _getBlogs_ = () => {
             let globule = connections.pop()
-            if(connections.length == 0){
-                this._getBlogs( globule, authors, (blogs)=>{
+            if (connections.length == 0) {
+                this._getBlogs(globule, authors, (blogs) => {
                     blogs_ = blogs_.concat(blogs)
                     callback(blogs_)
                 })
-            }else{
-                this._getBlogs( globule, authors, (blogs)=>{
+            } else {
+                this._getBlogs(globule, authors, (blogs) => {
                     blogs_ = blogs_.concat(blogs)
                     _getBlogs_() // get the account from the next globule.
                 })
@@ -854,7 +848,7 @@ export class BlogComments extends HTMLElement {
     // Append a new comment into the list of comment.
     appendComment(comment, blog) {
 
-        if(this.comment!=null){
+        if (this.comment != null) {
             this.shadowRoot.querySelector("#container").style.borderLeft = "1px solid var(--palette-action-disabled)"
         }
 
@@ -955,10 +949,10 @@ export class BlogComment extends HTMLElement {
         }, e => {
             console.log(e)
         })
-        
-        let timeDiv =  this.shadowRoot.querySelector("#blog-comment-time"); 
-        let commentCreationTime = new Date(comment.getCreationtime()*1000)
-        setInterval(()=>{
+
+        let timeDiv = this.shadowRoot.querySelector("#blog-comment-time");
+        let commentCreationTime = new Date(comment.getCreationtime() * 1000)
+        setInterval(() => {
             timeDiv.innerHTML = timeSince(commentCreationTime)
         }, 1000)
 

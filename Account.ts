@@ -658,8 +658,6 @@ export class Account extends Model {
            
             if (connections.length == 0) {
                 Account._getAccounts(globule, query, (accounts: Array<Account>) => {
-                    //console.log(accounts_)
-                    //accounts_ = accounts_.concat(accounts)
                     for (var i = 0; i < accounts.length; i++) {
                         let a = accounts[i]
                         if (accounts_.filter(a_ => { return a.id == a_.id && a.domain == a_.domain; }).length == 0) {

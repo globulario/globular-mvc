@@ -12,14 +12,11 @@ import { playVideo } from './Video';
 import { ApplicationView } from '../ApplicationView';
 import * as getUuidByString from 'uuid-by-string';
 import { randomUUID } from './utility';
-import { CreateVideoPreviewRequest } from 'globular-web-client/file/file_pb';
 
 // keep values in memorie to speedup...
 var titles = {}
-var current_title = null
 
-
-export function getCoverDataUrl(callback, videoId, videoUrl, videoPath ) {
+export function getCoverDataUrl(callback, videoId, videoUrl, videoPath) {
 
     // set the url for the image.
     let url = window.location.protocol + "//" + window.location.hostname + ":"
@@ -54,7 +51,7 @@ export function getCoverDataUrl(callback, videoId, videoUrl, videoPath ) {
     xhr.onload = (rsp) => {
         if (rsp.currentTarget.status == 200) {
             callback(rsp.currentTarget.response)
-        }else{
+        } else {
             console.log("fail to create thumbnail ", videoId, videoUrl, videoPath)
         }
     };
@@ -119,8 +116,6 @@ function playTitleListener(player, title, indexPath) {
     if (!title) {
         return
     }
-
-
 
     searchEpisodes(title.getSerie(), indexPath, (episodes) => {
         let index = -1;
@@ -197,8 +192,6 @@ function playTitleListener(player, title, indexPath) {
                 toast.dismiss();
             }
         };
-
-
     })
 
 
@@ -216,7 +209,18 @@ function playTitleListener(player, title, indexPath) {
 
 }
 
+// Search over multiple peers...
 function searchTitles(query, indexPath) {
+
+    // Connections can contain many time the same address....
+    let globules = Model.getGlobules()
+
+    globules.forEach(g => {
+        _searchTitles(g, query, indexPath)
+    })
+}
+
+function _searchTitles(globule, query, indexPath) {
 
     // This is a simple test...
     let rqst = new SearchTitlesRequest
@@ -225,13 +229,13 @@ function searchTitles(query, indexPath) {
     rqst.setOffset(0)
     rqst.setSize(100)
 
-    let stream = Model.globular.titleService.searchTitles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+    let stream = globule.titleService.searchTitles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
     stream.on("data", (rsp) => {
 
         if (rsp.hasSummary()) {
             Model.eventHub.publish("_display_search_results_", {}, true)
             Model.eventHub.publish("__new_search_event__", { query: query, summary: rsp.getSummary() }, true)
-
+            console.log("--------------> ", rsp.getSummary())
         } else if (rsp.hasFacets()) {
             let uuid = "_" + getUuid(query)
             Model.eventHub.publish(`${uuid}_search_facets_event__`, { facets: rsp.getFacets() }, true)
@@ -241,6 +245,7 @@ function searchTitles(query, indexPath) {
             hit.getSnippetsList().forEach(val => {
                 let uuid = "_" + getUuid(query)
                 Model.eventHub.publish(`${uuid}_search_hit_event__`, { hit: hit }, true)
+                console.log("--------------> ", hit)
             })
         }
     });
@@ -362,7 +367,7 @@ export class SearchBar extends HTMLElement {
                 searchInput.value = ""
                 Model.eventHub.publish("_display_search_results_", {}, true)
 
-            }else if (evt.key == "Escape") {
+            } else if (evt.key == "Escape") {
                 Model.eventHub.publish("_hide_search_results_", {}, true)
             }
         }
@@ -471,14 +476,14 @@ export class SearchResults extends HTMLElement {
 
         this.tabs = this.shadowRoot.querySelector("#search-results")
 
-        Model.eventHub.subscribe("_hide_search_results_", uuid=>{}, evt=>{
+        Model.eventHub.subscribe("_hide_search_results_", uuid => { }, evt => {
             this.shadowRoot.querySelector("#container").style.display = "none"
         }, true)
 
         this.closeAllBtn = this.shadowRoot.querySelector("#close-all-btn")
         this.closeAllBtn.onclick = () => {
             Model.eventHub.publish("_hide_search_results_", {}, true)
-   
+
             // Hide the search results...
             let facetFilters = document.getElementsByTagName("globular-facet-search-filter")
             for (var i = 0; i < facetFilters.length; i++) {
@@ -1017,7 +1022,7 @@ export class SearchVideoCard extends HTMLElement {
 
 
         thumbnail.src = video.getPoster().getContenturl()
-        
+
 
         // Here the image was not set properly...
 
@@ -1077,24 +1082,24 @@ export class SearchVideoCard extends HTMLElement {
                         playVideo(path, null, null)
                     }
 
-                    if(!thumbnail.src.startsWith("data:image")){
-                        getCoverDataUrl(dataUrl=> {
+                    if (!thumbnail.src.startsWith("data:image")) {
+                        getCoverDataUrl(dataUrl => {
                             thumbnail.src = dataUrl
-                            video.getPoster().setContenturl(thumbnail.src )
+                            video.getPoster().setContenturl(thumbnail.src)
                             let rqst = new CreateVideoRequest
                             let indexPath = Application.globular.config.DataPath + "/search/videos"
                             rqst.setIndexpath(indexPath)
                             rqst.setVideo(video)
                             Model.globular.titleService.createVideo(rqst).then(
-                                ()=>{
+                                () => {
                                     console.log("video was saved!", video)
                                 }
                             )
                         }, video.getId(), video.getUrl(), path)
-                       
+
                     }
-            
-                    
+
+
                 }
             }).catch(err => ApplicationView.displayMessage(err, 3000))
     }

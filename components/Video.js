@@ -273,8 +273,18 @@ export class VideoPlayer extends HTMLElement {
             return
         }
         thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/__timeline__/thumbnails.vtt"
+        thumbnailPath = encodeURIComponent(thumbnailPath).replace('%20', '+');
 
-        this.player.setPreviewThumbnails({ enabled: "true", src: thumbnailPath })
+        // set the complete url.
+        let url = window.location.protocol + "//" + window.location.hostname + ":"
+        if (Application.globular.config.Protocol == "https") {
+            url += Application.globular.config.PortHttps
+        } else {
+            url += Application.globular.config.PortHttp
+        }
+
+
+        this.player.setPreviewThumbnails({ enabled: "true", src: url+ "/" + thumbnailPath })
 
 
         if (!this.video.paused && this.video.currentSrc.endsWith(path)) {
@@ -286,13 +296,6 @@ export class VideoPlayer extends HTMLElement {
             return
         }
 
-        // set the complete url.
-        let url = window.location.protocol + "//" + window.location.hostname + ":"
-        if (Application.globular.config.Protocol == "https") {
-            url += Application.globular.config.PortHttps
-        } else {
-            url += Application.globular.config.PortHttp
-        }
 
         path.split("/").forEach(item => {
             item = item.trim()
@@ -322,7 +325,7 @@ export class VideoPlayer extends HTMLElement {
             this.video.style.maxWidth = this.parentNode.offsetWidth + "px"
         }
 
- 
+
     }
 
     /**
@@ -345,9 +348,9 @@ export class VideoPlayer extends HTMLElement {
         if (this.titleInfo != null) {
 
             // Stop the video
-            if( this.video.duration != this.video.currentTime){
+            if (this.video.duration != this.video.currentTime) {
                 Model.eventHub.publish("stop_video_player_evt_", { _id: this.titleInfo.getId(), isVideo: this.titleInfo.isVideo, currentTime: this.video.currentTime, date: new Date() }, true)
-            }else{
+            } else {
                 Model.eventHub.publish("remove_video_player_evt_", { _id: this.titleInfo.getId(), isVideo: this.titleInfo.isVideo, currentTime: this.video.currentTime, date: new Date() }, true)
             }
             // keep video info in the local storage...
