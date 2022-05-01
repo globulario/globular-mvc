@@ -1,12 +1,12 @@
 import { theme } from "./Theme";
 import { Model } from '../Model';
 import { Application } from "../Application";
-import { DeleteTitleRequest, DeleteVideoRequest, DissociateFileWithTitleRequest, GetFileTitlesRequest, GetTitleFilesRequest, Person, SearchTitlesRequest } from "globular-web-client/title/title_pb";
+import { DeleteTitleRequest, DeleteVideoRequest, DissociateFileWithTitleRequest, GetTitleFilesRequest, SearchTitlesRequest } from "globular-web-client/title/title_pb";
 import { File } from "../File";
 import { VideoPreview } from "./File";
 import { ApplicationView } from "../ApplicationView";
 import { randomUUID } from "./utility";
-import { playVideo, VideoPlayer } from "./Video";
+import { playVideo } from "./Video";
 
 //#tt1375666-div > div.title-informations-div
 
@@ -128,26 +128,28 @@ const __style__ = `
 `
 
 // Read dir content.
-function _readDir(path, callback, errorCallback) {
+function _readDir(path, callback, errorCallback, globule) {
     // Here I will keep the dir info in the cache...
     File.readDir(path, false, (dir) => {
         callback(dir)
-    }, errorCallback)
+    }, errorCallback, globule)
 }
 
 // Return the content of video preview div.
-function getHiddenFiles(path, callback) {
+function getHiddenFiles(path, callback, globule) {
     // Set the title...
     let thumbnailPath = path.replace("/playlist.m3u8", "")
     if (thumbnailPath.lastIndexOf(".mp4") != -1) {
         thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("."))
     }
+
     thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/__preview__"
-    _readDir(thumbnailPath, callback, err => { console.log(err); callback(null); })
+
+    _readDir(thumbnailPath, callback, err => { callback(null); console.log(err) }, globule)
 }
 
 // Create the video preview...
-function getVideoPreview(parent, path, name, callback) {
+function getVideoPreview(parent, path, name, callback, globule) {
     getHiddenFiles(path, previewDir => {
         let h = 85;
         let w = 128;
@@ -168,7 +170,7 @@ function getVideoPreview(parent, path, name, callback) {
             fileNameSpan.style.fontSize = ".85rem"
             fileNameSpan.style.maxWidth = w + "px";
             fileNameSpan.innerHTML = path.substring(path.lastIndexOf("/") + 1)
-        })
+        }, globule)
 
         let range = document.createRange()
         let uuid = randomUUID()
@@ -207,11 +209,11 @@ function getVideoPreview(parent, path, name, callback) {
                 rqst.setFilepath(path)
                 rqst.setTitleid(name)
                 if (name.startsWith("tt")) {
-                    rqst.setIndexpath(Application.globular.config.DataPath + "/search/titles")
+                    rqst.setIndexpath(globule.config.DataPath + "/search/titles")
                 } else {
-                    rqst.setIndexpath(Application.globular.config.DataPath + "/search/video")
+                    rqst.setIndexpath(globule.config.DataPath + "/search/video")
                 }
-                Model.globular.titleService.dissociateFileWithTitle(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+                globule.titleService.dissociateFileWithTitle(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
                     .then(rsp => {
                     }).catch(err => ApplicationView.displayMessage(err, 3000))
             }
@@ -227,7 +229,7 @@ function getVideoPreview(parent, path, name, callback) {
                     titleInfoBox.parentNode.removeChild(titleInfoBox)
                 }
                 //video.toggleFullscreen();
-            }, null)
+            }, null, null, globule)
         }
 
         // keep the explorer link...
@@ -249,7 +251,30 @@ function getVideoPreview(parent, path, name, callback) {
         previewDiv.appendChild(preview)
         previewDiv.appendChild(fileNameSpan)
         callback(previewDiv)
-    })
+
+    }, globule)
+}
+
+function GetTitleFiles(indexPath, title, parent, callback) {
+    let globules = Model.getGlobules()
+    let previews = []
+    let index = 0
+
+    let titleFiles = () => {
+        let globule = globules[index]
+        index += 1
+        __getTitleFiles__(globule, globule.config.DataPath + indexPath, title, parent, previews_ => {
+            previews = previews.concat(previews_)
+            if (index < globules.length) {
+                titleFiles()
+            } else {
+                callback(previews)
+            }
+        })
+    }
+
+    titleFiles() // call once
+
 }
 
 /**
@@ -257,12 +282,12 @@ function getVideoPreview(parent, path, name, callback) {
  * @param {*} title The title 
  * @param {*} callback 
  */
-function GetTitleFiles(indexPath, title, parent, callback) {
+function __getTitleFiles__(globule, indexPath, title, parent, callback) {
     let rqst = new GetTitleFilesRequest
     rqst.setTitleid(title.getId())
     rqst.setIndexpath(indexPath)
 
-    Model.globular.titleService.getTitleFiles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+    globule.titleService.getTitleFiles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
         .then(rsp => {
             let previews = []
             let _getVideoPreview_ = () => {
@@ -273,15 +298,14 @@ function GetTitleFiles(indexPath, title, parent, callback) {
 
                         parent.appendChild(p)
                         _getVideoPreview_() // call again...
-                    })
+                    }, globule)
                 } else {
                     callback(previews)
                 }
             }
-
             _getVideoPreview_() // call once...
         })
-        .catch(err => { callback([]); console.log(err); })
+        .catch(err => { callback([]) })
 }
 
 export function searchEpisodes(serie, indexPath, callback) {
@@ -332,7 +356,7 @@ export function GetEpisodes(indexPath, title, callback) {
         callback(title.__episodes__)
         return
     }
-    searchEpisodes(title.getId(), indexPath, episodes=>{
+    searchEpisodes(title.getId(), indexPath, episodes => {
         title.__episodes__ = episodes
         callback(title.__episodes__)
     })
@@ -542,7 +566,7 @@ export class InformationsManager extends HTMLElement {
         }
 
         let filesDiv = this.querySelector(".title-files-div")
-        GetTitleFiles(Model.globular.config.DataPath + "/search/videos", video, filesDiv, (previews) => {
+        GetTitleFiles("/search/videos", video, filesDiv, (previews) => {
 
         })
 
@@ -601,7 +625,11 @@ export class InformationsManager extends HTMLElement {
      * Display title informations.
      * @param {*} titles 
      */
-    setTitlesInformation(titles) {
+    setTitlesInformation(titles, globule) {
+
+        if (!globule) {
+            globule = Model.globular
+        }
 
         let isShort = this.hasAttribute("short")
         if (titles.length == 0) {
@@ -743,7 +771,7 @@ export class InformationsManager extends HTMLElement {
         if (title.getType() != "TVSeries") {
             filesDiv.style.paddingTop = "35px"
             filesDiv.style.paddingLeft = "15px"
-            GetTitleFiles(Model.globular.config.DataPath + "/search/titles", title, filesDiv, (previews) => {
+            GetTitleFiles("/search/titles", title, filesDiv, (previews) => {
                 filesDiv.querySelector("paper-progress").style.display = "none"
             })
         } else {
@@ -798,8 +826,8 @@ export class InformationsManager extends HTMLElement {
             okBtn.onclick = () => {
                 let rqst = new DeleteTitleRequest()
                 rqst.setTitleid(title.getId())
-                rqst.setIndexpath(Model.globular.config.DataPath + "/search/titles")
-                Model.globular.titleService.deleteTitle(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+                rqst.setIndexpath(globule.config.DataPath + "/search/titles")
+                globule.titleService.deleteTitle(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
                     .then(() => {
                         ApplicationView.displayMessage(`file indexation was deleted`, 3000)
                         this.parentNode.removeChild(this)
@@ -958,11 +986,11 @@ export class InformationsManager extends HTMLElement {
                 page.appendChild(range.createContextualFragment(html))
                 let playBtn = page.querySelector(`#_${uuid}`)
                 playBtn.onclick = () => {
-                    let indexPath = Application.globular.config.DataPath + "/search/titles"
+                    let indexPath = globule.config.DataPath + "/search/titles"
                     let rqst = new GetTitleFilesRequest
                     rqst.setTitleid(e.getId())
                     rqst.setIndexpath(indexPath)
-                    Model.globular.titleService.getTitleFiles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+                    globule.titleService.getTitleFiles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
                         .then(rsp => {
                             let path = rsp.getFilepathsList().pop()
                             let titleInfoBox = document.getElementById("title-info-box")
@@ -971,22 +999,22 @@ export class InformationsManager extends HTMLElement {
                                 parentNode = titleInfoBox.parentNode
                             }
 
-                            playVideo(path, (video) => {
-                                if (titleInfoBox) {
-                                    if (titleInfoBox.parentNode) {
-                                        titleInfoBox.parentNode.removeChild(titleInfoBox)
+                            playVideo(path,
+                                (video) => {
+                                    if (titleInfoBox) {
+                                        if (titleInfoBox.parentNode) {
+                                            titleInfoBox.parentNode.removeChild(titleInfoBox)
+                                        }
+                                        // video.toggleFullscreen();
                                     }
-                                   // video.toggleFullscreen();
-                                }
-                            }, () => {
-                                if (parentNode != null) {
-                                    parentNode.appendChild(titleInfoBox)
-                                }
-                            })
+                                },
+                                () => {
+                                    if (parentNode != null) {
+                                        parentNode.appendChild(titleInfoBox)
+                                    }
+                                }, null, globule)
 
                         }).catch(err => ApplicationView.displayMessage(err, 3000))
-
-
                 }
 
             })

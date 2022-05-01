@@ -26,7 +26,7 @@ String.prototype.endsWith = function (suffix) {
  * @param {*} onplay 
  * @param {*} onclose 
  */
-export function playVideo(path, onplay, onclose, title) {
+export function playVideo(path, onplay, onclose, title, globule) {
     let videoPlayer = document.getElementById("video-player-x")
 
     if (videoPlayer == null) {
@@ -48,7 +48,7 @@ export function playVideo(path, onplay, onclose, title) {
         videoPlayer.onclose = onclose
     }
 
-    videoPlayer.play(path)
+    videoPlayer.play(path, globule)
     return videoPlayer
 }
 
@@ -178,7 +178,7 @@ export class VideoPlayer extends HTMLElement {
 
     }
 
-    play(path) {
+    play(path, globule) {
 
         this.style.zIndex = 100
         // Set the title...
@@ -187,14 +187,17 @@ export class VideoPlayer extends HTMLElement {
         this.shadowRoot.querySelector("#container").style.display = ""
 
         // So Here I will try to get the title or the video info...
+        if(!globule){
+            globule = Model.globular
+        }
 
         // Now I will test if imdb info are allready asscociated.
         let getTitleInfo = (path, callback) => {
             let rqst = new GetFileTitlesRequest
-            rqst.setIndexpath(Model.globular.config.DataPath + "/search/titles")
+            rqst.setIndexpath(globule.config.DataPath + "/search/titles")
             rqst.setFilepath(path)
 
-            Model.globular.titleService.getFileTitles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+            globule.titleService.getFileTitles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
                 .then(rsp => {
                     callback(rsp.getTitles().getTitlesList())
                 })
@@ -203,10 +206,10 @@ export class VideoPlayer extends HTMLElement {
 
         let getVideoInfo = (path, callback) => {
             let rqst = new GetFileVideosRequest
-            rqst.setIndexpath(Model.globular.config.DataPath + "/search/videos")
+            rqst.setIndexpath(globule.config.DataPath + "/search/videos")
             rqst.setFilepath(path)
 
-            Model.globular.titleService.getFileVideos(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+            globule.titleService.getFileVideos(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
                 .then(rsp => {
                     callback(rsp.getVideos().getVideosList())
                 })
@@ -276,16 +279,17 @@ export class VideoPlayer extends HTMLElement {
         thumbnailPath = encodeURIComponent(thumbnailPath).replace('%20', '+');
 
         // set the complete url.
-        let url = window.location.protocol + "//" + window.location.hostname + ":"
-        if (Application.globular.config.Protocol == "https") {
-            url += Application.globular.config.PortHttps
+        // Get image from the globule.
+        let url = globule.config.Protocol + "://" + globule.config.Domain
+        if (globule.config.Protocol == "https") {
+            if(globule.config.PortHttps!=443)
+                url += ":" + globule.config.PortHttps
         } else {
-            url += Application.globular.config.PortHttp
+            if(globule.config.PortHttps!=80)
+                url +=  ":" + globule.config.PortHttp
         }
 
-
         this.player.setPreviewThumbnails({ enabled: "true", src: url+ "/" + thumbnailPath })
-
 
         if (!this.video.paused && this.video.currentSrc.endsWith(path)) {
             // Do nothing...

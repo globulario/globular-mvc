@@ -16,14 +16,19 @@ import { randomUUID } from './utility';
 // keep values in memorie to speedup...
 var titles = {}
 
-export function getCoverDataUrl(callback, videoId, videoUrl, videoPath) {
+export function getCoverDataUrl(callback, videoId, videoUrl, videoPath, globule) {
+    if(!globule){
+        globule = Application.globular
+    }
 
     // set the url for the image.
-    let url = window.location.protocol + "//" + window.location.hostname + ":"
-    if (Application.globular.config.Protocol == "https") {
-        url += Application.globular.config.PortHttps
+    let url = globule.config.Protocol + "://" + globule.config.Domain
+    if (globule.config.Protocol == "https") {
+        if(globule.config.PortHttps!=443)
+            url += ":" + globule.config.PortHttps
     } else {
-        url += Application.globular.config.PortHttp
+        if(globule.config.PortHttps!=80)
+            url +=  ":" + globule.config.PortHttp
     }
 
     // set the api call
@@ -112,7 +117,7 @@ export function getImdbInfo(id, callback, errorcallback) {
     xmlhttp.send();
 }
 
-function playTitleListener(player, title, indexPath) {
+function playTitleListener(player, title, indexPath, globule) {
     if (!title) {
         return
     }
@@ -180,13 +185,13 @@ function playTitleListener(player, title, indexPath) {
                 let rqst = new GetTitleFilesRequest
                 rqst.setTitleid(nextEpisode.getId())
                 rqst.setIndexpath(indexPath)
-                Model.globular.titleService.getTitleFiles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+                globule.titleService.getTitleFiles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
                     .then(rsp => {
                         if (rsp.getFilepathsList().length > 0) {
                             let path = rsp.getFilepathsList().pop()
                             playVideo(path, (player, title) => {
-                                playTitleListener(player, title, indexPath)
-                            }, null)
+                                playTitleListener(player, title, indexPath, globule)
+                            }, null, globule)
                         }
                     })
                 toast.dismiss();
@@ -210,12 +215,14 @@ function playTitleListener(player, title, indexPath) {
 }
 
 // Search over multiple peers...
-function searchTitles(query, indexPath) {
+function searchTitles(query, searchContext) {
 
     // Connections can contain many time the same address....
     let globules = Model.getGlobules()
 
     globules.forEach(g => {
+        // TODO search with givin context ex titles, blogs etc...
+        let indexPath = g.config.DataPath + "/search/" + searchContext
         _searchTitles(g, query, indexPath)
     })
 }
@@ -241,6 +248,7 @@ function _searchTitles(globule, query, indexPath) {
             Model.eventHub.publish(`${uuid}_search_facets_event__`, { facets: rsp.getFacets() }, true)
         } else if (rsp.hasHit()) {
             let hit = rsp.getHit()
+            hit.globule = globule // keep track where the hit was found...
             // display the value in the console...
             hit.getSnippetsList().forEach(val => {
                 let uuid = "_" + getUuid(query)
@@ -360,10 +368,8 @@ export class SearchBar extends HTMLElement {
 
         searchInput.onkeydown = (evt) => {
             if (evt.key == "Enter") {
-                // TODO search with givin context ex titles, blogs etc...
-                let indexPath = Model.globular.config.DataPath + "/search/" + this.searchContext
 
-                searchTitles(searchInput.value, indexPath)
+                searchTitles(searchInput.value, this.searchContext)
                 searchInput.value = ""
                 Model.eventHub.publish("_display_search_results_", {}, true)
 
@@ -754,7 +760,7 @@ export class SearchResultsPage extends HTMLElement {
                 let flipCard = new SearchFlipCard();
                 flipCard.id = id
                 flipCard.slot = "mosaic"
-                flipCard.setTitle(hit.getTitle())
+                flipCard.setTitle(hit.getTitle(), hit.globule)
                 this.appendChild(flipCard)
             }
         } else if (hit.hasVideo()) {
@@ -763,7 +769,7 @@ export class SearchResultsPage extends HTMLElement {
                 let videoCard = new SearchVideoCard();
                 videoCard.id = id
                 videoCard.slot = "mosaic"
-                videoCard.setVideo(hit.getVideo())
+                videoCard.setVideo(hit.getVideo(), hit.globule)
                 this.appendChild(videoCard)
             }
         }
@@ -823,7 +829,7 @@ export class SearchResultsPage extends HTMLElement {
         let hitDiv = this.querySelector(`#hit-div-${hit.getIndex()}`)
 
         if (hit.hasTitle()) {
-            infoDisplay.setTitlesInformation([hit.getTitle()])
+            infoDisplay.setTitlesInformation([hit.getTitle()], hit.globule)
             hitDiv.classList.add("filterable")
             let title = hit.getTitle()
             title.getGenresList().forEach(g => hitDiv.classList.add(getUuidByString(g.toLowerCase())))
@@ -1000,7 +1006,12 @@ export class SearchVideoCard extends HTMLElement {
         videoInfoBox.setVideosInformation([video])
     }
 
-    setVideo(video) {
+    setVideo(video, globule) {
+
+        console.log("--------------> set Globule ", globule)
+        if(!globule){
+            globule = Application.globular
+        }
 
         this.classList.add("filterable")
         video.getGenresList().forEach(g => this.classList.add(getUuidByString(g.toLowerCase())))
@@ -1047,10 +1058,10 @@ export class SearchVideoCard extends HTMLElement {
         // paly only the first file...
         let rqst = new GetTitleFilesRequest
         rqst.setTitleid(video.getId())
-        let indexPath = Application.globular.config.DataPath + "/search/videos"
+        let indexPath = globule.config.DataPath + "/search/videos"
         rqst.setIndexpath(indexPath)
 
-        Model.globular.titleService.getTitleFiles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+        globule.titleService.getTitleFiles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
             .then(rsp => {
                 if (rsp.getFilepathsList().length > 0) {
                     let path = rsp.getFilepathsList().pop()
@@ -1061,13 +1072,15 @@ export class SearchVideoCard extends HTMLElement {
                     }
                     thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/preview.gif"
 
-                    let url = window.location.protocol + "//" + window.location.hostname + ":"
-                    if (Application.globular.config.Protocol == "https") {
-                        url += Application.globular.config.PortHttps
+                    let url = globule.config.Protocol + "://" + globule.config.Domain
+                    if (globule.config.Protocol == "https") {
+                        if(globule.config.PortHttps!=443)
+                            url += ":" + globule.config.PortHttps
                     } else {
-                        url += Application.globular.config.PortHttp
+                        if(globule.config.PortHttps!=80)
+                            url +=  ":" + globule.config.PortHttp
                     }
-
+            
 
                     thumbnailPath.split("/").forEach(item => {
                         item = item.trim()
@@ -1079,7 +1092,7 @@ export class SearchVideoCard extends HTMLElement {
 
                     preview.src = url
                     preview.onclick = () => {
-                        playVideo(path, null, null)
+                        playVideo(path, null, null, null, globule)
                     }
 
                     if (!thumbnail.src.startsWith("data:image")) {
@@ -1087,10 +1100,10 @@ export class SearchVideoCard extends HTMLElement {
                             thumbnail.src = dataUrl
                             video.getPoster().setContenturl(thumbnail.src)
                             let rqst = new CreateVideoRequest
-                            let indexPath = Application.globular.config.DataPath + "/search/videos"
+                            let indexPath = globule.config.DataPath + "/search/videos"
                             rqst.setIndexpath(indexPath)
                             rqst.setVideo(video)
-                            Model.globular.titleService.createVideo(rqst).then(
+                            globule.titleService.createVideo(rqst).then(
                                 () => {
                                     console.log("video was saved!", video)
                                 }
@@ -1223,7 +1236,7 @@ export class SearchFlipCard extends HTMLElement {
         `
     }
 
-    setTitle(title) {
+    setTitle(title, globule) {
 
         // so here i will use the class list to set genre and type...
         this.classList.add("filterable")
@@ -1365,7 +1378,11 @@ export class SearchTitleDetail extends HTMLElement {
     }
 
 
-    setTitle(title) {
+    setTitle(title, globule) {
+        if(!globule){
+            globule = Model.globular
+        }
+
         // Display the episode informations.
         title.onLoadEpisodes = (episodes) => {
             if (this.shadowRoot.querySelector("#loading-episodes-infos").style.display == "none") {
@@ -1390,19 +1407,22 @@ export class SearchTitleDetail extends HTMLElement {
             let setEpisodeOption = (episode) => {
                 let rqst = new GetTitleFilesRequest
                 rqst.setTitleid(episode.getId())
-                let indexPath = Application.globular.config.DataPath + "/search/titles"
+                let indexPath = globule.config.DataPath + "/search/titles"
                 rqst.setIndexpath(indexPath)
 
-                Model.globular.titleService.getTitleFiles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+                globule.titleService.getTitleFiles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
                     .then(rsp => {
                         if (rsp.getFilepathsList().length > 0) {
                             let path = rsp.getFilepathsList().pop()
-                            let url = window.location.protocol + "//" + window.location.hostname + ":"
-                            if (Application.globular.config.Protocol == "https") {
-                                url += Application.globular.config.PortHttps
+                            let url = globule.config.Protocol + "://" + globule.config.Domain
+                            if (globule.config.Protocol == "https") {
+                                if(globule.config.PortHttps!=443)
+                                    url += ":" + globule.config.PortHttps
                             } else {
-                                url += Application.globular.config.PortHttp
+                                if(globule.config.PortHttps!=80)
+                                    url +=  ":" + globule.config.PortHttp
                             }
+
                             let thumbnailPath = path
                             if (thumbnailPath.lastIndexOf(".mp4") != -1) {
                                 thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("."))
@@ -1416,10 +1436,11 @@ export class SearchTitleDetail extends HTMLElement {
                                 }
                             })
                             this.episodePreview.src = url
+
                             this.shadowRoot.querySelector("#epsiode-preview").onclick = this.shadowRoot.querySelector("#play-episode-video-button").onclick = () => {
                                 playVideo(path, (player, title) => {
-                                    playTitleListener(player, title, indexPath)
-                                }, null)
+                                    playTitleListener(player, title, indexPath, globule)
+                                }, null, globule)
                             }
 
                             this.shadowRoot.querySelector("#episode-info-button").onclick = () => {
@@ -1490,20 +1511,22 @@ export class SearchTitleDetail extends HTMLElement {
             this.showTitleInfo(title)
         }
 
-        let url = window.location.protocol + "//" + window.location.hostname + ":"
-        if (Application.globular.config.Protocol == "https") {
-            url += Application.globular.config.PortHttps
+        let url = globule.config.Protocol + "://" + globule.config.Domain
+        if (globule.config.Protocol == "https") {
+            if(globule.config.PortHttps!=443)
+                url += ":" + globule.config.PortHttps
         } else {
-            url += Application.globular.config.PortHttp
+            if(globule.config.PortHttps!=80)
+                url +=  ":" + globule.config.PortHttp
         }
 
         // paly only the first file...
         let rqst = new GetTitleFilesRequest
         rqst.setTitleid(title.getId())
-        let indexPath = Application.globular.config.DataPath + "/search/titles"
+        let indexPath = globule.config.DataPath + "/search/titles"
         rqst.setIndexpath(indexPath)
 
-        Model.globular.titleService.getTitleFiles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+        globule.titleService.getTitleFiles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
             .then(rsp => {
                 if (rsp.getFilepathsList().length > 0) {
                     let path = rsp.getFilepathsList().pop()
@@ -1525,8 +1548,8 @@ export class SearchTitleDetail extends HTMLElement {
 
                     this.shadowRoot.querySelector("#title-preview").onclick = this.shadowRoot.querySelector("#play-video-button").onclick = () => {
                         playVideo(path, (player, title) => {
-                            playTitleListener(player, title, indexPath)
-                        }, null)
+                            playTitleListener(player, title, indexPath, globule)
+                        }, null, globule)
                     }
                 }
             })

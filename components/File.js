@@ -40,8 +40,9 @@ import { AssociateFileWithTitleRequest, CreateTitleRequest, GetFileTitlesRequest
 import { DownloadTorrentRequest, DropTorrentRequest, GetTorrentInfosRequest } from 'globular-web-client/torrent/torrent_pb';
 import { SetEmailResponse } from 'globular-web-client/resource/resource_pb';
 import { getImdbInfo } from './Search';
-import {setMoveable} from './moveable'
-import {setResizeable} from './rezieable'
+import { setMoveable } from './moveable'
+import { setResizeable } from './rezieable'
+import { ElementaryStreamTypes } from 'hls.js';
 
 // keep track of shared directory
 var shared = {}
@@ -81,21 +82,38 @@ function getElementIndex(element) {
     return Array.from(element.parentNode.children).indexOf(element);
 }
 
-export function getImage(callback, images, files, index) {
+export function getImage(callback, images, files, index, globule) {
     let f = files[index];
     index++
 
     // set the url for the image.
-    let url = window.location.protocol + "//" + window.location.hostname + ":"
-    if (Application.globular.config.Protocol == "https") {
-        url += Application.globular.config.PortHttps
+    let url = ""
+    if (!globule) {
+        // Here I will use the default globule...
+        url = window.location.protocol + "//" + window.location.hostname + ":"
+        if (Application.globular.config.Protocol == "https") {
+            url += Application.globular.config.PortHttps
+        } else {
+            url += Application.globular.config.PortHttp
+        }
+
     } else {
-        url += Application.globular.config.PortHttp
+        // Get image from the globule.
+        url = globule.config.Protocol + "://" + globule.config.Domain
+        if (globule.config.Protocol == "https") {
+            if(globule.config.PortHttps!=443)
+                url += ":" + globule.config.PortHttps
+        } else {
+            if(globule.config.PortHttps!=80)
+                url +=  ":" + globule.config.PortHttp
+        }
     }
 
     let path = f.path.split("/")
     path.forEach(item => {
-        url += "/" + encodeURIComponent(item.trim())
+        item = item.trim()
+        if(item.length > 0)
+            url += "/" + encodeURIComponent(item)
     })
 
     // Set url query parameter.
@@ -104,6 +122,7 @@ export function getImage(callback, images, files, index) {
     if (localStorage.getItem("user_token") != undefined) {
         url += "&token=" + localStorage.getItem("user_token")
     }
+
     var xhr = new XMLHttpRequest();
     xhr.open('GET', url, true);
     xhr.setRequestHeader("token", localStorage.getItem("user_token"));
@@ -121,7 +140,7 @@ export function getImage(callback, images, files, index) {
                 img.src = e.target.result
                 images.push(img)
                 if (index < files.length) {
-                    getImage(callback, images, files, index)
+                    getImage(callback, images, files, index, globule)
                 } else if (callback != undefined) {
                     callback(images)
                 }
@@ -144,7 +163,7 @@ let dirs = {}
  * @param {*} errorCallback The error callback
  * @param {*} force If set the dir will be read from the server.
  */
-function _readDir(path, callback, errorCallback) {
+function _readDir(path, callback, errorCallback, globule) {
     let key = getUuidByString(path)
     if (dirs[key] != null) {
         callback(dirs[key])
@@ -155,11 +174,11 @@ function _readDir(path, callback, errorCallback) {
     File.readDir(path, false, (dir) => {
         callback(dir)
         dirs[key] = dir
-    }, errorCallback)
+    }, errorCallback, globule)
 
 }
 
-function getHiddenFiles(path, callback) {
+function getHiddenFiles(path, callback, globule) {
 
     let thumbnailPath = path.replace("/playlist.m3u8", "")
     if (thumbnailPath.lastIndexOf(".mp4") != -1) {
@@ -167,7 +186,7 @@ function getHiddenFiles(path, callback) {
     }
     thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/__preview__"
 
-    _readDir(thumbnailPath, callback, err => { console.log(err); callback(null); })
+    _readDir(thumbnailPath, callback, err => { console.log(err); callback(null); }, globule)
 }
 
 function _publishSetDirEvent(path, file_explorer_) {
@@ -2961,24 +2980,24 @@ export class FileExplorer extends HTMLElement {
         this.fileExplorerBox = this.shadowRoot.querySelector("#file-explorer-box")
         this.fileExplererCloseBtn = this.shadowRoot.querySelector("#file-explorer-box-close-btn")
 
-        if(localStorage.getItem("__file_explorer_position__")){
+        if (localStorage.getItem("__file_explorer_position__")) {
             let position = JSON.parse(localStorage.getItem("__file_explorer_position__"))
             this.fileExplorerBox.style.top = position.top + "px"
             this.fileExplorerBox.style.left = position.left + "px"
         }
 
-        setMoveable(this.shadowRoot.querySelector(".card-header"), this.fileExplorerBox, (left, top)=>{
-            localStorage.setItem("__file_explorer_position__", JSON.stringify({top:top, left:left}))
+        setMoveable(this.shadowRoot.querySelector(".card-header"), this.fileExplorerBox, (left, top) => {
+            localStorage.setItem("__file_explorer_position__", JSON.stringify({ top: top, left: left }))
         }, this)
 
-        if(localStorage.getItem("__file_explorer_dimension__")){
+        if (localStorage.getItem("__file_explorer_dimension__")) {
             let dimension = JSON.parse(localStorage.getItem("__file_explorer_dimension__"))
             this.fileExplorerBox.style.width = dimension.width + "px"
             this.fileExplorerBox.style.height = dimension.height + "px"
         }
 
-        setResizeable(this.fileExplorerBox, (width, height)=>{
-            localStorage.setItem("__file_explorer_dimension__", JSON.stringify({width:width, height:height}))
+        setResizeable(this.fileExplorerBox, (width, height) => {
+            localStorage.setItem("__file_explorer_dimension__", JSON.stringify({ width: width, height: height }))
         })
 
         // The file view.
@@ -3446,7 +3465,7 @@ export class FileExplorer extends HTMLElement {
                 this.listeners["__play_video__"] = uuid
             }, (evt) => {
                 if (this.id == evt.file_explorer_id) {
-                    this.playVideo(evt.path)
+                    this.playVideo(evt.path, evt.globule)
                 }
             }, true)
         }
@@ -3546,7 +3565,7 @@ export class FileExplorer extends HTMLElement {
     playVideo(path) {
         this.style.zIndex = 0;
         playVideo(path, null, () => {
-            
+
             console.log("------> video ", path, "is now playing")
         })
     }
@@ -3872,7 +3891,7 @@ export class VideoPreview extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor(path, previews, height, onresize) {
+    constructor(path, previews, height, onresize, globule) {
         super()
 
         this.path = path;
@@ -3959,13 +3978,13 @@ export class VideoPreview extends HTMLElement {
                     }
                     this.container.appendChild(this.firstImage)
                 }
-            }, this.images, [previews[0]], index) // Download the first image only...
+            }, this.images, [previews[0]], index, globule) // Download the first image only...
         }
 
         // Play the video
         this.playBtn.onclick = this.container.onclick = (evt) => {
             evt.stopPropagation()
-            this.play()
+            this.play(globule)
         }
 
         // the next image timeout...
@@ -4002,7 +4021,7 @@ export class VideoPreview extends HTMLElement {
                         }
 
                     }
-                }, this.images, previews, index) // Download the first image only...
+                }, this.images, previews, index, globule) // Download the first image only...
             } else if (this.images.length > 1) {
                 this.playBtn.style.display = "block";
                 if (this.interval == null && !is_over_play_btn) {
@@ -4086,10 +4105,10 @@ export class VideoPreview extends HTMLElement {
     /**
      * Play video
      */
-    play() {
+    play(globule) {
         if (this._file_explorer_ != undefined) {
             let path = this.path
-            Model.eventHub.publish("__play_video__", { path: path, file_explorer_id: this._file_explorer_.id }, true)
+            Model.eventHub.publish("__play_video__", { path: path, file_explorer_id: this._file_explorer_.id, globule:globule}, true)
         }
 
         if (this.onplay != undefined) {

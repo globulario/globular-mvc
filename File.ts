@@ -1,6 +1,7 @@
 import { Model } from './Model';
 import { readDir } from "globular-web-client/api";
 import * as jwt from "jwt-decode";
+import { Globular } from 'globular-web-client';
 
 /**
  * Server side file accessor. That 
@@ -181,7 +182,7 @@ export class File extends Model {
     /**
      * Static function's
      */
-    static readDir(path: string, recursive:boolean, callback: (dir: File) => void, errorCallback: (err: any) => void) {
+    static readDir(path: string, recursive:boolean, callback: (dir: File) => void, errorCallback: (err: any) => void, globule?:Globular) {
         if(File._local_files[path] != undefined){
             callback(File._local_files[path])
             return
@@ -191,7 +192,9 @@ export class File extends Model {
         let token = localStorage.getItem("user_token")
         let decoded = jwt(token);
         let address =  (<any>decoded).address;
-        let globule = Model.getGlobule(address)
+        if(!globule){
+            globule = Model.getGlobule(address)
+        }
 
         readDir(globule,path, recursive, (data: any) => {
             callback(File.fromObject(data))
