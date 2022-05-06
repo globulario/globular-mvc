@@ -34,6 +34,9 @@ export function playVideo(path, onplay, onclose, title, globule) {
         videoPlayer.id = "video-player-x"
     }
 
+    videoPlayer.style.height = "0px"
+    videoPlayer.style.width = "0px"
+
     parent = document.getElementsByTagName("globular-workspace")[0];//document.body
     parent.appendChild(videoPlayer)
 
