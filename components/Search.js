@@ -252,7 +252,6 @@ function _searchTitles(globule, query, indexPath) {
             hit.getSnippetsList().forEach(val => {
                 let uuid = "_" + getUuid(query)
                 Model.eventHub.publish(`${uuid}_search_hit_event__`, { hit: hit }, true)
-                console.log("--------------> ", hit)
             })
         }
     });
@@ -535,7 +534,7 @@ export class SearchResults extends HTMLElement {
                         page.style.display = ""
 
                         // Hide previous facets...
-                        let facetFilters = /*document.*/ApplicationView.layout.sideMenu().getElementsByTagName("globular-facet-search-filter")
+                        let facetFilters = ApplicationView.layout.sideMenu().getElementsByTagName("globular-facet-search-filter")
                         for (var i = 0; i < facetFilters.length; i++) {
                             let f = facetFilters[i]
                             f.style.display = "none"
@@ -574,9 +573,6 @@ export class SearchResults extends HTMLElement {
                         this.children[i].style.display = "none";
                     }
                     this.appendChild(resultsPage)
-                    /*if (this.parentNode) {
-                        this.parentNode.appendChild(resultsPage.facetFilter)
-                    }*/
                     ApplicationView.layout.sideMenu().appendChild(resultsPage.facetFilter)
                 }
 
@@ -586,7 +582,6 @@ export class SearchResults extends HTMLElement {
     connectedCallback() {
         let pages = this.querySelectorAll("globular-search-results-page")
         pages.forEach(page => {
-            // this.parentNode.appendChild(page.facetFilter)
             ApplicationView.layout.sideMenu().appendChild(page.facetFilter)
         })
     }
