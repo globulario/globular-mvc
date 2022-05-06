@@ -682,7 +682,7 @@ export class SearchResultsPage extends HTMLElement {
         `
 
         // left or right side filter...
-        this.facetFilter = new FacetSearchFilter()
+        this.facetFilter = new FacetSearchFilter(this)
 
         // Get the tow button...
         this.searchReusltLstViewBtn = this.shadowRoot.querySelector("#search-result-lst-view-btn")
@@ -1586,8 +1586,11 @@ export class FacetSearchFilter extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor() {
+    constructor(page) {
         super()
+
+        this.page = page
+
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
 
@@ -1616,7 +1619,7 @@ export class FacetSearchFilter extends HTMLElement {
         facets.getFacetsList().forEach(facet => {
             let p = this.querySelector("#_" + getUuidByString(facet.getField()))
             if (!p) {
-                p = new SearchFacetPanel(facet)
+                p = new SearchFacetPanel(this.page)
 
             }
             if (facet.getTotal() > 0) {
@@ -1638,11 +1641,12 @@ export class SearchFacetPanel extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor() {
+    constructor(page) {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
         this.total = 0
+        this.page = page
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -1677,7 +1681,7 @@ export class SearchFacetPanel extends HTMLElement {
         let checkbox_ = this.shadowRoot.querySelector("paper-checkbox")
 
         checkbox_.onclick = () => {
-            let filterables = document.querySelectorAll(".filterable")
+            let filterables = page.querySelectorAll(".filterable")
             filterables.forEach(f => f.style.display = "none") // hide all
             let checkboxs = facetList.querySelectorAll("paper-checkbox")
             for (var i = 0; i < checkboxs.length; i++) {
@@ -1728,7 +1732,7 @@ export class SearchFacetPanel extends HTMLElement {
                 className = obj.name
             }
 
-            let count = document.getElementsByClassName(getUuidByString(className)).length
+            let count = this.page.getElementsByClassName(getUuidByString(className)).length
             if (count > 0) {
                 let uuid = "_" + getUuidByString(className)
                 if (!facetList.querySelector("#" + uuid)) {
@@ -1744,7 +1748,7 @@ export class SearchFacetPanel extends HTMLElement {
                     countDiv.innerHTML = "(" + count + ")"
                 }
 
-                let filterables = document.querySelectorAll(".filterable")
+                let filterables = this.page.querySelectorAll(".filterable")
 
                 let checkbox = this.shadowRoot.querySelector("#" + uuid)
                 checkbox.onclick = () => {
