@@ -1,9 +1,9 @@
 import '@polymer/iron-icons/iron-icons.js';
 import '@polymer/iron-icons/av-icons'
 import '@polymer/paper-icon-button/paper-icon-button.js';
+
 import { Application } from '../Application';
 import { CreateVideoRequest, GetTitleFilesRequest, SearchTitlesRequest } from 'globular-web-client/title/title_pb';
-
 import { Model } from '../Model';
 import { theme } from "./Theme";
 import * as getUuid from 'uuid-by-string'
@@ -11,7 +11,6 @@ import { InformationsManager, searchEpisodes } from './Informations';
 import { playVideo } from './Video';
 import { ApplicationView } from '../ApplicationView';
 import * as getUuidByString from 'uuid-by-string';
-import { randomUUID } from './utility';
 
 // keep values in memorie to speedup...
 var titles = {}
@@ -1079,7 +1078,7 @@ export class SearchVideoCard extends HTMLElement {
                         }
                     })
 
-
+                    console.log("--------> preview url is ", url)
                     preview.src = url
                     preview.onclick = () => {
                         playVideo(path, null, null, null, globule)
@@ -1243,7 +1242,8 @@ export class SearchFlipCard extends HTMLElement {
         }
 
         // test create offer...
-        this.shadowRoot.querySelector(`#search-title`).setTitle(title)
+        title.globule = globule
+        this.shadowRoot.querySelector(`#search-title`).setTitle(title, globule)
         if (title.getType() == "TVEpisode") {
             // So here I will get the series info If I can found it...
             let seriesInfos = this.shadowRoot.querySelector(`#hit-div-mosaic-episode-name`)
@@ -1533,15 +1533,17 @@ export class SearchTitleDetail extends HTMLElement {
                             url += "/" + encodeURIComponent(item)
                         }
                     })
-
+                    console.log("----------> ", url)
                     this.titlePreview.src = url
 
                     this.shadowRoot.querySelector("#title-preview").onclick = this.shadowRoot.querySelector("#play-video-button").onclick = () => {
                         playVideo(path, (player, title) => {
                             playTitleListener(player, title, indexPath, globule)
-                        }, null, globule)
+                        }, null, null, globule)
                     }
                 }
+            }).catch(err=>{
+                console.log("---------->", err, globule)
             })
 
     }
