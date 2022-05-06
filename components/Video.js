@@ -105,7 +105,7 @@ export class VideoPlayer extends HTMLElement {
         </style>
         <paper-card id="container" class="no-select">
             <div class="header" style="${hideheader ? "display:none;" : ""}">
-                <paper-icon-button id="video-close-btn" icon="icons:close" style="min-width: 24px;"></paper-icon-button>
+                <paper-icon-button id="video-close-btn" icon="icons:close" style="min-width: 40px;"></paper-icon-button>
                 <span id="title-span"></span>
             </div>
             <slot></slot>
