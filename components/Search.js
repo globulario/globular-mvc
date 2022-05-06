@@ -490,7 +490,7 @@ export class SearchResults extends HTMLElement {
             Model.eventHub.publish("_hide_search_results_", {}, true)
 
             // Hide the search results...
-            let facetFilters = document.getElementsByTagName("globular-facet-search-filter")
+            let facetFilters = /*document*/ApplicationView.layout.sideMenu().getElementsByTagName("globular-facet-search-filter")
             for (var i = 0; i < facetFilters.length; i++) {
                 let f = facetFilters[i]
                 f.style.display = "none"
@@ -535,7 +535,7 @@ export class SearchResults extends HTMLElement {
                         page.style.display = ""
 
                         // Hide previous facets...
-                        let facetFilters = document.getElementsByTagName("globular-facet-search-filter")
+                        let facetFilters = /*document.*/ApplicationView.layout.sideMenu().getElementsByTagName("globular-facet-search-filter")
                         for (var i = 0; i < facetFilters.length; i++) {
                             let f = facetFilters[i]
                             f.style.display = "none"
@@ -574,9 +574,10 @@ export class SearchResults extends HTMLElement {
                         this.children[i].style.display = "none";
                     }
                     this.appendChild(resultsPage)
-                    if (this.parentNode) {
+                    /*if (this.parentNode) {
                         this.parentNode.appendChild(resultsPage.facetFilter)
-                    }
+                    }*/
+                    ApplicationView.layout.sideMenu().appendChild(resultsPage.facetFilter)
                 }
 
             }, true)
@@ -585,7 +586,8 @@ export class SearchResults extends HTMLElement {
     connectedCallback() {
         let pages = this.querySelectorAll("globular-search-results-page")
         pages.forEach(page => {
-            this.parentNode.appendChild(page.facetFilter)
+            // this.parentNode.appendChild(page.facetFilter)
+            ApplicationView.layout.sideMenu().appendChild(page.facetFilter)
         })
     }
 
@@ -604,7 +606,9 @@ export class SearchResults extends HTMLElement {
 
         let page = this.querySelector(`#${uuid}-results-page`)
         page.parentNode.removeChild(page)
-        page.facetFilter.parentNode.removeChild(page.facetFilter)
+        // page.facetFilter.parentNode.removeChild(page.facetFilter)
+        ApplicationView.layout.sideMenu().removeChild(page.facetFilter)
+        
         let tab = this.tabs.querySelector(`#${uuid}-tab`)
         tab.parentNode.removeChild(tab)
 
@@ -1615,7 +1619,6 @@ export class FacetSearchFilter extends HTMLElement {
 
     // Set the facets...
     setFacets(facets) {
-        // globular-workspace
         facets.getFacetsList().forEach(facet => {
             let p = this.querySelector("#_" + getUuidByString(facet.getField()))
             if (!p) {

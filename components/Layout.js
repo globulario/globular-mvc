@@ -75,6 +75,7 @@ export class Layout extends HTMLElement {
             }
 
             #menu-btn{
+              min-width: 40px;
               --iron-icon-fill-color: var(--palette-text-accent);
             }
 
