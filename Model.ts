@@ -4,6 +4,7 @@ import { getAllPeersInfo } from "globular-web-client/api";
 import { Application, GetPeersRqst, GetPeersRsp, Peer, SetEmailResponse } from "globular-web-client/resource/resource_pb";
 import { View } from "./View";
 
+
 export class Model {
 
     protected listeners: Array<any>;
@@ -180,8 +181,10 @@ export class Model {
                     let peer = peers[index]
                     if (index < peers.length) {
                         index++
-                        let address = peer.getAddress().split(":")[0]
                         let port = 80
+                        if(location.protocol == "https:"){
+                            port = 443
+                        }
                         if(peer.getAddress().split(":").length == 2) {
                             port = parseInt(peer.getAddress().split(":")[1])
                             if(location.protocol == "https:" && port != 80 && port!=443){
@@ -193,12 +196,13 @@ export class Model {
                                 port = 443
                             }
                         }
+                       
 
-                        let url = location.protocol + "//" + address + ":" + port  + "/config"
+                        let url = location.protocol + "//" + peer.getDomain() + ":" + port  + "/config"
 
                         let globule = new GlobularWebClient.Globular(url, () => {
                             // append the globule to the list.
-                            Model.globules.set(peer.getAddress(), globule)
+                            Model.globules.set(location.protocol + "//" + peer.getDomain() + ":" + port, globule)
                             if (index < peers.length) {
                                 connectToPeers()
                             } else {

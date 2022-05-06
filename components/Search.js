@@ -17,18 +17,18 @@ import { randomUUID } from './utility';
 var titles = {}
 
 export function getCoverDataUrl(callback, videoId, videoUrl, videoPath, globule) {
-    if(!globule){
+    if (!globule) {
         globule = Application.globular
     }
 
     // set the url for the image.
     let url = globule.config.Protocol + "://" + globule.config.Domain
     if (globule.config.Protocol == "https") {
-        if(globule.config.PortHttps!=443)
+        if (globule.config.PortHttps != 443)
             url += ":" + globule.config.PortHttps
     } else {
-        if(globule.config.PortHttps!=80)
-            url +=  ":" + globule.config.PortHttp
+        if (globule.config.PortHttps != 80)
+            url += ":" + globule.config.PortHttp
     }
 
     // set the api call
@@ -242,7 +242,6 @@ function _searchTitles(globule, query, indexPath) {
         if (rsp.hasSummary()) {
             Model.eventHub.publish("_display_search_results_", {}, true)
             Model.eventHub.publish("__new_search_event__", { query: query, summary: rsp.getSummary() }, true)
-            console.log("--------------> ", rsp.getSummary())
         } else if (rsp.hasFacets()) {
             let uuid = "_" + getUuid(query)
             Model.eventHub.publish(`${uuid}_search_facets_event__`, { facets: rsp.getFacets() }, true)
@@ -510,7 +509,7 @@ export class SearchResults extends HTMLElement {
                     let html = `
                     <paper-tab id="${uuid}-tab">
                         <paper-icon-button id="${uuid}-refresh-btn" icon="icons:refresh" style="display:none;"></paper-icon-button>
-                        <span >${evt.query} (${evt.summary.getTotal()})</span>
+                        <span>${evt.query} (<span id="${uuid}-total-span">${evt.summary.getTotal()}</span>)</span>
                         <paper-icon-button id="${uuid}-close-btn" icon="icons:close"></paper-icon-button>
                     </paper-tab>
                     `
@@ -562,15 +561,10 @@ export class SearchResults extends HTMLElement {
 
                 } else {
                     tab.click()
+                    let totalSpan = tab.querySelector(`#${uuid}-total-span`)
+                    let total = parseInt(totalSpan.innerHTML) + evt.summary.getTotal()
+                    totalSpan.innerHTML = total
                 }
-
-                // Hide previous facets...
-                let facetFilters = document.getElementsByTagName("globular-facet-search-filter")
-                for (var i = 0; i < facetFilters.length; i++) {
-                    let f = facetFilters[i]
-                    f.style.display = "none"
-                }
-
 
                 // Create a new page...
                 let resultsPage = this.querySelector(`#${uuid}-results-page`)
@@ -583,9 +577,6 @@ export class SearchResults extends HTMLElement {
                     if (this.parentNode) {
                         this.parentNode.appendChild(resultsPage.facetFilter)
                     }
-
-                } else {
-                    resultsPage.innerHTML = ""
                 }
 
             }, true)
@@ -1009,7 +1000,7 @@ export class SearchVideoCard extends HTMLElement {
     setVideo(video, globule) {
 
         console.log("--------------> set Globule ", globule)
-        if(!globule){
+        if (!globule) {
             globule = Application.globular
         }
 
@@ -1074,13 +1065,13 @@ export class SearchVideoCard extends HTMLElement {
 
                     let url = globule.config.Protocol + "://" + globule.config.Domain
                     if (globule.config.Protocol == "https") {
-                        if(globule.config.PortHttps!=443)
+                        if (globule.config.PortHttps != 443)
                             url += ":" + globule.config.PortHttps
                     } else {
-                        if(globule.config.PortHttps!=80)
-                            url +=  ":" + globule.config.PortHttp
+                        if (globule.config.PortHttps != 80)
+                            url += ":" + globule.config.PortHttp
                     }
-            
+
 
                     thumbnailPath.split("/").forEach(item => {
                         item = item.trim()
@@ -1379,7 +1370,7 @@ export class SearchTitleDetail extends HTMLElement {
 
 
     setTitle(title, globule) {
-        if(!globule){
+        if (!globule) {
             globule = Model.globular
         }
 
@@ -1416,11 +1407,11 @@ export class SearchTitleDetail extends HTMLElement {
                             let path = rsp.getFilepathsList().pop()
                             let url = globule.config.Protocol + "://" + globule.config.Domain
                             if (globule.config.Protocol == "https") {
-                                if(globule.config.PortHttps!=443)
+                                if (globule.config.PortHttps != 443)
                                     url += ":" + globule.config.PortHttps
                             } else {
-                                if(globule.config.PortHttps!=80)
-                                    url +=  ":" + globule.config.PortHttp
+                                if (globule.config.PortHttps != 80)
+                                    url += ":" + globule.config.PortHttp
                             }
 
                             let thumbnailPath = path
@@ -1513,11 +1504,11 @@ export class SearchTitleDetail extends HTMLElement {
 
         let url = globule.config.Protocol + "://" + globule.config.Domain
         if (globule.config.Protocol == "https") {
-            if(globule.config.PortHttps!=443)
+            if (globule.config.PortHttps != 443)
                 url += ":" + globule.config.PortHttps
         } else {
-            if(globule.config.PortHttps!=80)
-                url +=  ":" + globule.config.PortHttp
+            if (globule.config.PortHttps != 80)
+                url += ":" + globule.config.PortHttp
         }
 
         // paly only the first file...
@@ -1623,10 +1614,16 @@ export class FacetSearchFilter extends HTMLElement {
     setFacets(facets) {
         // globular-workspace
         facets.getFacetsList().forEach(facet => {
-            let p = new SearchFacetPanel(facet)
+            let p = this.querySelector("#_" + getUuidByString(facet.getField()))
+            if (!p) {
+                p = new SearchFacetPanel(facet)
+
+            }
             if (facet.getTotal() > 0) {
                 p.slot = "facets"
+                p.setFacet(facet)
                 this.appendChild(p)
+
             }
         })
     }
@@ -1641,10 +1638,11 @@ export class SearchFacetPanel extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor(facet) {
+    constructor() {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
+        this.total = 0
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -1666,7 +1664,7 @@ export class SearchFacetPanel extends HTMLElement {
 
         <div style="display: flex; flex-direction: column;">
             <div class="facet-label">
-                <paper-checkbox checked> ${facet.getField() + "<span>(" + facet.getTotal() + ")</span>"}</paper-checkbox checked>
+                <paper-checkbox checked> <span id='field_span'></span> <span id='total_span'></span></paper-checkbox checked>
             </div>
             <div class="facet-list">
 
@@ -1678,6 +1676,38 @@ export class SearchFacetPanel extends HTMLElement {
         let facetList = this.shadowRoot.querySelector(".facet-list")
         let checkbox_ = this.shadowRoot.querySelector("paper-checkbox")
 
+        checkbox_.onclick = () => {
+            let filterables = document.querySelectorAll(".filterable")
+            filterables.forEach(f => f.style.display = "none") // hide all
+            let checkboxs = facetList.querySelectorAll("paper-checkbox")
+            for (var i = 0; i < checkboxs.length; i++) {
+                let checkbox = checkboxs[i]
+                if (!checkbox_.checked) {
+                    if (checkbox.checked) {
+                        checkbox.checked = false
+                        checkbox.onclick()
+
+                    }
+                } else {
+                    if (!checkbox.checked) {
+                        checkbox.checked = true
+                        checkbox.onclick()
+
+                    }
+                }
+            }
+        }
+
+    }
+
+    setFacet(facet) {
+        this.id = "_" + getUuidByString(facet.getField())
+        this.total += facet.getTotal()
+
+        this.shadowRoot.querySelector("#total_span").innerHTML = "(" + this.total + ")"
+        this.shadowRoot.querySelector("#field_span").innerHTML = facet.getField()
+
+
         let range = document.createRange()
         let terms = facet.getTermsList().sort((a, b) => {
             if (a.getTerm() < b.getTerm()) { return -1; }
@@ -1685,7 +1715,11 @@ export class SearchFacetPanel extends HTMLElement {
             return 0;
         })
 
+        let facetList = this.shadowRoot.querySelector(".facet-list")
+        let checkbox_ = this.shadowRoot.querySelector("paper-checkbox")
+
         terms.forEach(t => {
+
             let term = t.getTerm()
             let className = t.getTerm()
             if (term.startsWith("{")) {
@@ -1693,16 +1727,23 @@ export class SearchFacetPanel extends HTMLElement {
                 term = obj.name + "  " + obj.min + "-" + obj.max
                 className = obj.name
             }
+
             let count = document.getElementsByClassName(getUuidByString(className)).length
             if (count > 0) {
-                let uuid = "_" + randomUUID()
-                let html = `
-                <div style="margin-left: 25px;">
-                    <paper-checkbox class=${className} id=${uuid} checked> <div  class="facet-label"> ${term + "<span>(" + count + ")</span>"} </div></paper-checkbox> 
-                <div>
+                let uuid = "_" + getUuidByString(className)
+                if (!facetList.querySelector("#" + uuid)) {
+                    let html = `
+                    <div style="margin-left: 25px;">
+                        <paper-checkbox class=${className} id=${uuid} checked> <div  class="facet-label"> ${term + "<span id='" + uuid + "_total'>(" + count + ")</span>"} </div></paper-checkbox> 
+                    <div>
                 `
-                // The facet list.
-                facetList.appendChild(range.createContextualFragment(html))
+                    // The facet list.
+                    facetList.appendChild(range.createContextualFragment(html))
+                } else {
+                    let countDiv = facetList.querySelector("#" + uuid + "_total")
+                    countDiv.innerHTML = "(" + count + ")"
+                }
+
                 let filterables = document.querySelectorAll(".filterable")
 
                 let checkbox = this.shadowRoot.querySelector("#" + uuid)
@@ -1730,28 +1771,6 @@ export class SearchFacetPanel extends HTMLElement {
             }
 
         })
-
-        checkbox_.onclick = () => {
-            let filterables = document.querySelectorAll(".filterable")
-            filterables.forEach(f => f.style.display = "none") // hide all
-            let checkboxs = facetList.querySelectorAll("paper-checkbox")
-            for (var i = 0; i < checkboxs.length; i++) {
-                let checkbox = checkboxs[i]
-                if (!checkbox_.checked) {
-                    if (checkbox.checked) {
-                        checkbox.checked = false
-                        checkbox.onclick()
-
-                    }
-                } else {
-                    if (!checkbox.checked) {
-                        checkbox.checked = true
-                        checkbox.onclick()
-
-                    }
-                }
-            }
-        }
     }
 
 }

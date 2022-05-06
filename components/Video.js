@@ -105,7 +105,7 @@ export class VideoPlayer extends HTMLElement {
         </style>
         <paper-card id="container" class="no-select">
             <div class="header" style="${hideheader ? "display:none;" : ""}">
-                <paper-icon-button id="video-close-btn" icon="icons:close"></paper-icon-button>
+                <paper-icon-button id="video-close-btn" icon="icons:close" style="min-width: 24px;"></paper-icon-button>
                 <span id="title-span"></span>
             </div>
             <slot></slot>
@@ -275,8 +275,9 @@ export class VideoPlayer extends HTMLElement {
             ApplicationView.displayMessage("the file cannot be play by the video player", 3000)
             return
         }
+
         thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/__timeline__/thumbnails.vtt"
-        thumbnailPath = encodeURIComponent(thumbnailPath).replace('%20', '+');
+        //thumbnailPath = encodeURIComponent(thumbnailPath);
 
         // set the complete url.
         // Get image from the globule.
@@ -289,7 +290,15 @@ export class VideoPlayer extends HTMLElement {
                 url +=  ":" + globule.config.PortHttp
         }
 
-        this.player.setPreviewThumbnails({ enabled: "true", src: url+ "/" + thumbnailPath })
+      
+        if(thumbnailPath.startsWith("/")){
+            thumbnailPath = url  + thumbnailPath
+        }else{
+            thumbnailPath = url + "/" + thumbnailPath
+        }
+
+        console.log(thumbnailPath)
+        this.player.setPreviewThumbnails({ enabled: "true", src: thumbnailPath })
 
         if (!this.video.paused && this.video.currentSrc.endsWith(path)) {
             // Do nothing...
