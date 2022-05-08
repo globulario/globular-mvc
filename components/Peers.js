@@ -1,14 +1,13 @@
 import { theme } from './Theme';
 import '@polymer/iron-icons/iron-icons.js';
 import "@polymer/iron-icons/hardware-icons";
-
+import * as GlobularWebClient from "globular-web-client";
 import { Model } from '../Model';
 import { AcceptPeerRqst, AddPeerActionsRqst, DeletePeerRqst, GetPeerApprovalStateRqst, Peer, RegisterPeerRqst, RemovePeerActionRqst } from 'globular-web-client/resource/resource_pb';
 import { getAllPeersInfo } from 'globular-web-client/api';
 import { ApplicationView } from '../ApplicationView';
 import { SearchableList } from './List.js'
 import { GetAllActionsRequest } from 'globular-web-client/services_manager/services_manager_pb';
-import { ResourceServicePromiseClient } from 'globular-web-client/resource/resource_grpc_web_pb';
 
 export class PeersManager extends HTMLElement {
     // attributes.
@@ -136,18 +135,38 @@ export class PeersManager extends HTMLElement {
 
             let createPeerConnectionBtn = panel.querySelector("#create-peer-connection-btn")
             createPeerConnectionBtn.onclick = () => {
-                let peer = new Peer
+
                 // the hostname.domain:port
                 let address = panel.querySelector("#peer-address-input").value
-                peer.setAddress(address)
-                let rqst = new RegisterPeerRqst
-                rqst.setPeer(peer)
 
-                Model.globular.resourceService.registerPeer(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
-                    .then(() => {
-                        panel.parentNode.removeChild(panel)
-                    })
-                    .catch(err => ApplicationView.displayMessage(err))
+                let url = location.protocol + "//" + address + "/config"
+                let globule = new GlobularWebClient.Globular(url, () => {
+                    // append the globule to the list.
+                    if(location.protocol == "https:"){
+                        Model.globules.set(location.protocol + "//" + globule.config.Domain + ":" + globule.config.PortHttps, globule)
+                    }else{
+                        Model.globules.set(location.protocol + "//" + globule.config.Domain + ":" + globule.config.PortHttp, globule)
+                    }
+                    
+                    let peer = new Peer
+                    peer.setDomain(globule.config.Domain)
+                    peer.setProtocol(globule.config.Protocol)
+                    peer.setPorthttp(globule.config.PortHttp)
+                    peer.setPorthttps(globule.config.PortHttps)
+                    
+                    let rqst = new RegisterPeerRqst
+                    rqst.setPeer(peer)
+
+                    Model.globular.resourceService.registerPeer(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
+                        .then(() => {
+                            panel.parentNode.removeChild(panel)
+                        })
+                        .catch(err => ApplicationView.displayMessage(err))
+
+                }, (err) => {
+                    ApplicationView.displayMessage(err, 3000)
+                })
+
             }
 
             let input = panel.querySelector("paper-input")
@@ -330,14 +349,14 @@ export class PeerPanel extends HTMLElement {
         `
 
         let lnk = this.shadowRoot.querySelector(".title")
-        if(address.endsWith(":443")){
+        if (address.endsWith(":443")) {
             lnk.href = 'https://' + address.split(":")[0] + "/console"
-        }else if(address.endsWith(":80")){
+        } else if (address.endsWith(":80")) {
             lnk.href = 'http://' + address.split(":")[0] + "/console"
-        }else{
+        } else {
             lnk.href = 'http://' + address + "/console"
         }
-        
+
         lnk.target = "_blank"
 
         let content = this.shadowRoot.querySelector("#collapse-panel")
@@ -385,9 +404,9 @@ export class PeerPanel extends HTMLElement {
             }
 
             // Here I will set the button
-            
+
             if (remote_state == -1) {
-                deleteBtn.style.display = "none"
+                deleteBtn.style.display = "block"
                 rejectBtn.style.display = "none"
                 acceptBtn.style.display = "none"
             } else if (this.peer.getState() == 0) {
@@ -540,7 +559,7 @@ export class PeerPanel extends HTMLElement {
             .then(rsp => {
                 callback(rsp.getState())
             })
-            .catch((err)=>{
+            .catch((err) => {
                 ApplicationView.displayMessage(err, 3000)
                 callback(-1)
             })

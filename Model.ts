@@ -17,11 +17,11 @@ export class Model {
         return Model.globules.get(address);
     }
 
-    public static getGlobules():Array<GlobularWebClient.Globular>{
+    public static getGlobules(): Array<GlobularWebClient.Globular> {
         let connections_ = Array.from(Model.globules.values())
         let connections = new Array<GlobularWebClient.Globular>()
         // Remove duplicat
-        connections_.forEach(c=>{
+        connections_.forEach(c => {
             if (connections.filter(c_ => { return c.config.Name == c_.config.Name && c_.config.Domain == c_.config.Domain; }).length == 0) {
                 connections.push(c)
             }
@@ -144,8 +144,8 @@ export class Model {
 
             // Use when globular is not the http server.
             let domain = Model._globular.config.Name
-            if(domain.length > 0){
-                if( Model._globular.config.Domain.length > 0){
+            if (domain.length > 0) {
+                if (Model._globular.config.Domain.length > 0) {
                     domain += "." + Model._globular.config.Domain;
                 }
             } else {
@@ -153,10 +153,10 @@ export class Model {
             }
 
             Model.globules.set(domain, Model._globular)
-            Model.globules.set(domain + ":" + Model._globular.config.PortHttp , Model._globular)
-            Model.globules.set(domain + ":" + Model._globular.config.PortHttps , Model._globular)
-            Model.globules.set(Model._globular.config.Domain + ":" + Model._globular.config.PortHttp , Model._globular)
-            Model.globules.set(Model._globular.config.Domain + ":" + Model._globular.config.PortHttps , Model._globular)
+            Model.globules.set(domain + ":" + Model._globular.config.PortHttp, Model._globular)
+            Model.globules.set(domain + ":" + Model._globular.config.PortHttps, Model._globular)
+            Model.globules.set(Model._globular.config.Domain + ":" + Model._globular.config.PortHttp, Model._globular)
+            Model.globules.set(Model._globular.config.Domain + ":" + Model._globular.config.PortHttps, Model._globular)
             Model.globules.set(Model.address, Model._globular)
 
             // I will also set the globule to other address...
@@ -182,27 +182,23 @@ export class Model {
                     if (index < peers.length) {
                         index++
                         let port = 80
-                        if(location.protocol == "https:"){
+                        if (location.protocol == "https:") {
                             port = 443
-                        }
-                        if(peer.getAddress().split(":").length == 2) {
-                            port = parseInt(peer.getAddress().split(":")[1])
-                            if(location.protocol == "https:" && port != 80 && port!=443){
-                                if(port % 2 != 0){
-                                    port += 1
-                                }
-                               
-                            }else if(location.protocol == "https:" && port == 80){
-                                port = 443
+                            if (peer.getProtocol() == "https") {
+                                port = peer.getPorthttps()
                             }
+                        } else {
+                            port = peer.getPorthttps()
                         }
-                       
 
-                        let url = location.protocol + "//" + peer.getDomain() + ":" + port  + "/config"
+
+                        let url = location.protocol + "//" + peer.getDomain() + ":" + port + "/config"
 
                         let globule = new GlobularWebClient.Globular(url, () => {
                             // append the globule to the list.
                             Model.globules.set(location.protocol + "//" + peer.getDomain() + ":" + port, globule)
+                            Model.globules.set(url, globule)
+
                             if (index < peers.length) {
                                 connectToPeers()
                             } else {

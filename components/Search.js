@@ -1533,7 +1533,6 @@ export class SearchTitleDetail extends HTMLElement {
                             url += "/" + encodeURIComponent(item)
                         }
                     })
-                    console.log("----------> ", url)
                     this.titlePreview.src = url
 
                     this.shadowRoot.querySelector("#title-preview").onclick = this.shadowRoot.querySelector("#play-video-button").onclick = () => {
