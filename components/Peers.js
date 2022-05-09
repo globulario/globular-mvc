@@ -147,7 +147,7 @@ export class PeersManager extends HTMLElement {
                     }else{
                         Model.globules.set(location.protocol + "//" + globule.config.Domain + ":" + globule.config.PortHttp, globule)
                     }
-                    
+
                     let peer = new Peer
                     peer.setDomain(globule.config.Domain)
                     peer.setProtocol(globule.config.Protocol)
@@ -161,7 +161,10 @@ export class PeersManager extends HTMLElement {
                         .then(() => {
                             panel.parentNode.removeChild(panel)
                         })
-                        .catch(err => ApplicationView.displayMessage(err))
+                        .catch(err => {
+                            console.log(err)
+                            ApplicationView.displayMessage(err, 3000)
+                        })
 
                 }, (err) => {
                     ApplicationView.displayMessage(err, 3000)
@@ -212,7 +215,12 @@ export class PeerPanel extends HTMLElement {
         // Keep group informations.
         this.peer = peer;
 
-        let address = peer.getAddress()
+        let address = peer.getDomain()
+        if(peer.getProtocol() == "https"){
+            address +=":" + peer.getPorthttps()
+        }else{
+            address +=":" + peer.getPorthttp()
+        }
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -315,7 +323,7 @@ export class PeerPanel extends HTMLElement {
                         </div>
                         <div class="row">
                             <div class="cell label">address</div>
-                            <div class="cell value">${this.peer.getAddress()}</div>
+                            <div class="cell value">${address}</div>
                         </div>
                         <div class="row">
                             <div class="cell label">domain</div>
@@ -349,12 +357,19 @@ export class PeerPanel extends HTMLElement {
         `
 
         let lnk = this.shadowRoot.querySelector(".title")
-        if (address.endsWith(":443")) {
-            lnk.href = 'https://' + address.split(":")[0] + "/console"
-        } else if (address.endsWith(":80")) {
-            lnk.href = 'http://' + address.split(":")[0] + "/console"
-        } else {
-            lnk.href = 'http://' + address + "/console"
+        if(peer.getProtocol() == "https"){
+            if(peer.getPorthttps() != 443){
+                lnk.href = peer.getProtocol() + '://' + peer.getDomain() + ":" + peer.getPorthttps()  + "/console"
+            }else{
+                lnk.href = peer.getProtocol() + '://' + peer.getDomain()  + "/console"
+            }
+            
+        }else{
+            if(peer.getPorthttp() != 80){
+                lnk.href = peer.getProtocol() + '://' + peer.getDomain() + ":" + peer.getPorthttp()  + "/console"
+            }else{
+                lnk.href = peer.getProtocol() + '://' + peer.getDomain()  + "/console"
+            }
         }
 
         lnk.target = "_blank"
@@ -379,11 +394,10 @@ export class PeerPanel extends HTMLElement {
 
         // get the remote state for this peers.
         this.getRemoteState((remote_state) => {
-
             let state = 0
             let stateSpan = this.shadowRoot.querySelector("#approval-state-span")
 
-            if (this.peer.getState() != 0 && remote_state != 0) {
+            if (remote_state != 0) {
                 if (remote_state == -1) {
                     state = "unreachable"
                     stateSpan.innerHTML = "unreachable"
@@ -395,13 +409,21 @@ export class PeerPanel extends HTMLElement {
                     if (this.peer.getState() == 2 || remote_state == 2) {
                         state = 2
                     }
+
                     stateSpan.innerHTML = this.getState(state)
 
-                    stateSpan.className = "state state-" + this.getState(state)
+                    if (this.peer.getState() == 0) {
+                        stateSpan.innerHTML += " require your approbation"
+                    }
+                   
 
                 }
 
+            }else{
+                stateSpan.innerHTML += " wait for approbation"
             }
+
+            stateSpan.className = "state state-" + this.getState(state)
 
             // Here I will set the button
 
@@ -554,7 +576,14 @@ export class PeerPanel extends HTMLElement {
 
     getRemoteState(callback) {
         let rqst = new GetPeerApprovalStateRqst
-        rqst.setRemotePeerAddress(this.peer.getAddress())
+        let address = this.peer.getDomain()
+        if(this.peer.getProtocol() == "https"){
+            address +=":" + this.peer.getPorthttps()
+        }else{
+            address +=":" + this.peer.getPorthttp()
+        }
+
+        rqst.setRemotePeerAddress(address)
         Model.globular.resourceService.getPeerApprovalState(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
             .then(rsp => {
                 callback(rsp.getState())
