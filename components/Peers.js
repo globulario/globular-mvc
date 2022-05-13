@@ -153,6 +153,17 @@ export class PeersManager extends HTMLElement {
 
                     Model.globular.resourceService.registerPeer(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
                         .then(() => {
+                            let port = 80
+                            if (location.protocol == "https:") {
+                                port = 443
+                                if (peer.getProtocol() == "https") {
+                                    port = peer.getPorthttps()
+                                }
+                            } else {
+                                port = peer.getPorthttps()
+                            }
+                            Model.globules.set(location.protocol + "//" + peer.getDomain() + ":" + port, globule)
+                            Model.globules.set(url, globule)
                             panel.parentNode.removeChild(panel)
                         })
                         .catch(err => {
