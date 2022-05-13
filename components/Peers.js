@@ -141,13 +141,7 @@ export class PeersManager extends HTMLElement {
 
                 let url = location.protocol + "//" + address + "/config"
                 let globule = new GlobularWebClient.Globular(url, () => {
-                    // append the globule to the list.
-                    if(location.protocol == "https:"){
-                        Model.globules.set(location.protocol + "//" + globule.config.Domain + ":" + globule.config.PortHttps, globule)
-                    }else{
-                        Model.globules.set(location.protocol + "//" + globule.config.Domain + ":" + globule.config.PortHttp, globule)
-                    }
-
+ 
                     let peer = new Peer
                     peer.setDomain(globule.config.Domain)
                     peer.setProtocol(globule.config.Protocol)
