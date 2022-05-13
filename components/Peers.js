@@ -138,7 +138,7 @@ export class PeersManager extends HTMLElement {
 
                 // the hostname.domain:port
                 let address = panel.querySelector("#peer-address-input").value
-
+                // Here The peers must be both https or the peer at url must be https
                 let url = location.protocol + "//" + address + "/config"
                 let globule = new GlobularWebClient.Globular(url, () => {
  
@@ -153,17 +153,21 @@ export class PeersManager extends HTMLElement {
 
                     Model.globular.resourceService.registerPeer(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
                         .then(() => {
-                            let port = 80
+                    
                             if (location.protocol == "https:") {
-                                port = 443
-                                if (peer.getProtocol() == "https") {
-                                    port = peer.getPorthttps()
+                                if(peer.getProtocol()=="https"){
+                                    Model.globules.set("https://" + peer.getDomain() + ":" + peer.getPorthttps(), globule)
+                                }else{
+                                    ApplicationView.displayMessage("fail to access peer with http protocol from https " + peer.getDomain(), 3000)
                                 }
                             } else {
-                                port = peer.getPorthttps()
+                                // Set http address
+                                Model.globules.set("http://" + peer.getDomain() + ":" + peer.getPorthttp(), globule)
                             }
-                            Model.globules.set(location.protocol + "//" + peer.getDomain() + ":" + port, globule)
+
+                            // Also keep the given address from the input.
                             Model.globules.set(url, globule)
+
                             panel.parentNode.removeChild(panel)
                         })
                         .catch(err => {
