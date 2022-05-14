@@ -190,7 +190,8 @@ export class ServerGeneralSettings extends Settings {
 
         // Set the name of the server.
         let domainSetting = new StringSetting("Domain", "The server domain name. If a Name is set the domain will be Name.Domaim")
-        domainSetting.setValue(this.config.Domain)
+        let domain = this.config.Domain.replace(this.config.Name + ".", "")
+        domainSetting.setValue(domain)
         domainSetting.onchange = () => {
             this.config.Domain = domainSetting.getValue()
             this.needSave = true
@@ -310,7 +311,9 @@ export class ServerGeneralSettings extends Settings {
         }
         
         let saveRqst = new SaveConfigRequest
-        saveRqst.setConfig(JSON.stringify(this.config))
+        let config = JSON.parse(JSON.stringify(this.config))
+        config.Domain = config.Domain.replace(config.Name + ".", "")
+        saveRqst.setConfig(JSON.stringify(config))
         Model.globular.adminService.saveConfig(saveRqst, {
             token: localStorage.getItem("user_token"),
             application: Model.application,
