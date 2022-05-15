@@ -3440,7 +3440,7 @@ export class FileExplorer extends HTMLElement {
                             Model.eventHub.publish("__set_dir_event__", { path: dir, file_explorer_id: this.id }, true)
                         }
                         this.fileNavigator.reload(dir)
-                    }, () => { }, true)
+                    }, () => { })
                 }, false)
         }
 
