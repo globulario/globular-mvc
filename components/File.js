@@ -124,6 +124,7 @@ export function getImage(callback, images, files, index, globule) {
     }
 
     var xhr = new XMLHttpRequest();
+    xhr.timeout = 1500
     xhr.open('GET', url, true);
     xhr.setRequestHeader("token", localStorage.getItem("user_token"));
     xhr.setRequestHeader("application", Model.application);
@@ -956,6 +957,7 @@ export class FilesView extends HTMLElement {
                 // I will get the file from the url and save it on the server in the current directory.
                 var getFileBlob = (url, cb) => {
                     var xhr = new XMLHttpRequest();
+                    xhr.timeout = 1500
                     xhr.open("GET", url);
                     xhr.responseType = "blob";
                     xhr.addEventListener('load', () => {
@@ -1064,7 +1066,7 @@ export class FilesView extends HTMLElement {
 
                             // Now I will index the file...
                             var xmlhttp = new XMLHttpRequest();
-
+                            xmlhttp.timeout = 1500
                             xmlhttp.onreadystatechange = () => {
                                 if (this.readyState == 4 && (this.status == 201 || this.status == 200)) {
                                     console.log("file" + this.__dir__.path + "/" + fileName + "was indexed!")

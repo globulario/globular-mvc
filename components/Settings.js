@@ -15,6 +15,7 @@ import { Camera } from "./Camera";
 import { FileExplorer } from "./File"
 
 import { Model } from "../Model";
+import { ApplicationView } from "../ApplicationView";
 
 /**
  * This is the side menu that will be set on left when the user wants to change it settings
@@ -394,11 +395,19 @@ export class Settings extends HTMLElement {
           display: none;
         }
 
+        #add-button {
+          position: absolute;
+          top: -40px;
+          right: 0px;
+          font-size: 1.25rem;
+        }
+
     </style>
     <div id="container">
        <paper-card id="${this.id}">
             <h2 class="card-title">${this.title}</h2>
-            <div style="display: flex;">
+            <paper-icon-button id="add-button" icon="icons:add" style="display: none;"></paper-icon-button>
+            <div style="display: flex; align-items: center;">
               <paper-icon-button id="back-btn"  icon="arrow-back"></paper-icon-button>
               <div class="card-subtitle">${this.subtitle}</div>
               <paper-icon-button id="hide-btn"  icon="unfold-more"></paper-icon-button>
@@ -420,6 +429,15 @@ export class Settings extends HTMLElement {
     } else {
       this.container.style.marginTop = "45px";
     }
+  }
+
+  showAddButton() {
+    this.shadowRoot.querySelector("#add-button").style.display = "block"
+    return this.shadowRoot.querySelector("#add-button");
+  }
+
+  hideAddButton() {
+    this.shadowRoot.querySelector("#add-button").style.display = "none"
   }
 
   hideSettings() {
@@ -452,8 +470,6 @@ customElements.define("globular-settings", Settings);
 export class Setting extends HTMLElement {
   constructor(name, description, icon) {
     super();
-
-
 
     this.container = null;
 
@@ -601,6 +617,347 @@ export class Setting extends HTMLElement {
 
 customElements.define("globular-setting", Setting);
 
+
+export class ConnectionsSetting extends HTMLElement {
+  constructor(connections) {
+    super();
+
+    // That function is call when a new connection button is click.
+    this.onCreateConnection = null
+
+    // Set the shadow dom.
+    this.attachShadow({ mode: "open" });
+    this.shadowRoot.innerHTML = `
+    <style>
+        ${theme}
+        #container {
+            display: flex;
+            flex-direction: column;
+        }
+
+        globular-settings-side-menu-item.active{
+          color: var(--palette-warning-dark);
+        }
+
+
+
+    </style>
+    <div id="container">
+        <slot></slot>
+    </div>
+    `;
+
+    for (var name in connections) {
+      this.addConnectionSetting(name, connections[name])
+    }
+  }
+
+  // call when the element is insert in it parent.
+  connectedCallback() {
+    let addButton = this.parentNode.showAddButton()
+    addButton.onclick = () => {
+      if (this.onCreateConnection != null) {
+        this.onCreateConnection()
+      }
+    }
+  }
+
+  addConnectionSetting(name, connection) {
+    let connections = this.querySelectorAll("globular-connection-setting")
+    for (var i = 0; i < connections.length; i++) {
+      connections[i].hide()
+    }
+
+    let connectionSetting = new ConnectionSetting(name, connection)
+    this.appendChild(connectionSetting)
+    connectionSetting.show()
+  }
+
+  getElement() {
+    return this.shadowRoot.querySelector("#container")
+  }
+
+
+}
+
+customElements.define("globular-connections-setting", ConnectionsSetting);
+
+/**
+ * Generic connection setting...
+ */
+export class ConnectionSetting extends HTMLElement {
+
+  constructor(name, connection) {
+    super();
+
+    // Set the connection.
+    this.onDeleteConnection = null;
+
+    // Set the shadow dom.
+    this.attachShadow({ mode: "open" });
+    this.shadowRoot.innerHTML = `
+    <style>
+        ${theme}
+        #container{
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border-bottom: 1px solid var(--palette-background-default);
+        }
+
+        #content{
+            padding-top: 15px;
+        }
+
+        .header{
+            display: flex;
+            align-items: center;
+            width: 100%;
+            transition: background 0.2s ease,padding 0.8s linear;
+            background-color: var(--palette-background-paper);
+        }
+
+        .header:hover{
+            -webkit-filter: invert(10%);
+            filter: invert(10%);
+        }
+
+        .title{
+            flex-grow: 1;
+            margin: 8px;
+        }
+        
+        img, iron-icon{
+            margin: 8px;
+        }
+
+        #collapse-panel{
+            display: flex;
+            flex-direction: column;
+            width: 90%;
+        }
+
+        #delete-btn {
+            font-size: .85rem;
+            max-height: 32px;
+        }
+
+        .table{
+          display: table;
+        }
+
+        .row{
+          display: table-row;
+        }
+
+        .cell{
+          display: table-cell;
+          vertical-align: middle;
+        }
+
+      </style>
+      <div id="container">
+          <div class="header">
+              <span class="title">${name}</span>
+              <paper-button id="delete-btn" icon="delete">DELETE</paper-button>
+              <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
+                  <iron-icon  id="hide-btn"  icon="unfold-less" style="flex-grow: 1; --iron-icon-fill-color:var(--palette-text-primary);" icon="add"></iron-icon>
+                  <paper-ripple class="circle" recenters=""></paper-ripple>
+              </div>
+              
+          </div>
+          <iron-collapse id="collapse-panel"  style="width: 90%;" >
+              <div id="content" class="table">
+           
+              </div>
+          </iron-collapse>
+      </div>
+    `;
+
+    let togglePanel = this.shadowRoot.querySelector("#collapse-panel")
+    this.hideBtn = this.shadowRoot.querySelector("#hide-btn")
+
+    let deleteBtn = this.shadowRoot.querySelector("#delete-btn")
+    deleteBtn.onclick = () => {
+
+      let toast = ApplicationView.displayMessage(
+        `
+            <style>
+              #yes-no-contact-delete-box{
+                display: flex;
+                flex-direction: column;
+              }
+      
+              #yes-no-contact-delete-box globular-contact-card{
+                padding-bottom: 10px;
+              }
+      
+              #yes-no-contact-delete-box div{
+                display: flex;
+                font-size: 1rem;
+                padding-bottom: 10px;
+              }
+      
+              paper-button{
+                font-size: .85rem;
+                height: 32px;
+              }
+      
+            </style>
+            <div id="yes-no-connection-delete-box">
+              <div>Your about to delete connection <span style="font-style: italic;">${connection.Id}</span></div>
+              <div>Is it what you want to do? </div>
+              <div style="justify-content: flex-end;">
+                <paper-button id="yes-delete-connection">Yes</paper-button>
+                <paper-button id="no-delete-connection">No</paper-button>
+              </div>
+            </div>
+            `,
+        15000 // 15 sec...
+      );
+
+      let yesBtn = document.querySelector("#yes-delete-connection")
+      let noBtn = document.querySelector("#no-delete-connection")
+
+      // On yes
+      yesBtn.onclick = () => {
+        this.parentNode.removeChild(this)
+        if (this.onDeleteConnection) {
+
+          this.onDeleteConnection()
+        }
+
+      }
+
+      noBtn.onclick = () => {
+        toast.dismiss();
+      }
+    }
+
+    // give the focus to the input.
+    this.hideBtn.onclick = () => {
+      let button = this.shadowRoot.querySelector("#hide-btn")
+      if (button && togglePanel) {
+        if (!togglePanel.opened) {
+          button.icon = "unfold-more"
+        } else {
+          button.icon = "unfold-less"
+        }
+        togglePanel.toggle();
+      }
+    }
+
+
+    // console.log("---------> connection ", connection)
+    this.appendConnectionBody(connection)
+  }
+
+  show() {
+    let togglePanel = this.shadowRoot.querySelector("#collapse-panel")
+    let button = this.shadowRoot.querySelector("#hide-btn")
+    if (button && togglePanel) {
+      if (!togglePanel.opened) {
+        button.icon = "unfold-more"
+        togglePanel.toggle();
+      }
+    }
+  }
+
+  hide() {
+    let togglePanel = this.shadowRoot.querySelector("#collapse-panel")
+    let button = this.shadowRoot.querySelector("#hide-btn")
+    if (button && togglePanel) {
+      if (togglePanel.opened) {
+        button.icon = "unfold-less"
+        togglePanel.toggle();
+      }
+    }
+  }
+
+  appendConnectionBody(connection) {
+    let html = `
+      <div class="row">
+        <div class="cell">id</div>
+        <paper-input id="id-input" class="cell"></paper-input>
+      </div>
+      <div class="row">
+        <div class="cell">host</div>
+        <paper-input id="host-input" class="cell"></paper-input>
+      </div>
+      <div class="row">
+        <div class="cell">user</div>
+        <paper-input id="user-input" class="cell"></paper-input>
+      </div>
+      <div class="row">
+        <div class="cell">password</div>
+        <paper-input id="password-input" type="password" class="cell"></paper-input>
+      </div>
+      <div class="row">
+        <div class="cell">port</div>
+        <paper-input id="port-input" type="number" min="1" step="1"  class="cell"></paper-input>
+      </div>
+    `
+    let content = this.shadowRoot.querySelector("#content")
+    let range = document.createRange()
+    content.appendChild(range.createContextualFragment(html))
+
+    // Set the values.
+    this.id_input = content.querySelector("#id-input");
+    this.id_input.value = connection.Id
+    this.id_input.onchange = () => {
+      connection.Id = this.id_input.value
+      if (this.onchange) {
+        this.onchange()
+      }
+    }
+
+    this.id_input.onkeyup = () => {
+      this.shadowRoot.querySelector(".title").innerHTML = this.id_input.value
+    }
+
+    this.host_input = content.querySelector("#host-input");
+    this.host_input.value = connection.Host
+    this.host_input.onchange = () => {
+      connection.Host = this.host_input.value
+      if (this.onchange) {
+        this.onchange()
+      }
+    }
+
+    this.user_input = content.querySelector("#user-input");
+    this.user_input.value = connection.User
+    this.user_input.onchange = () => {
+      connection.User = this.user_input.value
+      if (this.onchange) {
+        this.onchange()
+      }
+    }
+
+    this.password_input = content.querySelector("#password-input");
+    this.password_input.value = connection.Password
+    this.password_input.onchange = () => {
+      connection.Password = this.password_input.value
+      if (this.onchange) {
+        this.onchange()
+      }
+    }
+
+    this.port_input = content.querySelector("#port-input");
+    this.port_input.value = connection.Port
+    this.port_input.onchange = () => {
+      connection.Port = this.port_input.value
+      if (this.onchange) {
+        this.onchange()
+      }
+    }
+
+
+
+  }
+
+}
+
+customElements.define("globular-connection-setting", ConnectionSetting);
 
 /**
  * That class must be use for setting that need more informations.
@@ -893,7 +1250,7 @@ export class RadioGroupSetting extends Setting {
     return this.input.value
   }
 
-  setValue(value) {   
+  setValue(value) {
     this.radioBtnGrp.setAttribute("selected", value)
     this.shadowRoot.querySelector(`#${value}-radio-btn`).click()
   }
@@ -1078,6 +1435,7 @@ export class ImageSetting extends Setting {
 
         img {
           padding: 5px;
+          max-width: 128px;
           max-height: 128px;
         }
 

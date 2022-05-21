@@ -822,7 +822,9 @@ export class ApplicationView extends View {
     }
 
     // set back the title.
-    this._searchBar.parentNode.removeChild(this._searchBar)
+    if (this._searchBar.parentNode != null) {
+      this._searchBar.parentNode.removeChild(this._searchBar)
+    }
     ApplicationView.layout.title().innerHTML = this._title_
 
     window.dispatchEvent(new Event("resize"));

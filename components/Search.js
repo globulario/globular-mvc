@@ -45,6 +45,7 @@ export function getCoverDataUrl(callback, videoId, videoUrl, videoPath, globule)
     url += "&path=" + videoPath
 
     var xhr = new XMLHttpRequest();
+    xhr.timeout = 1500
     xhr.open('GET', url, true);
     xhr.setRequestHeader("token", localStorage.getItem("user_token"));
     xhr.setRequestHeader("application", Model.application);
@@ -88,7 +89,7 @@ export function getImdbInfo(id, callback, errorcallback) {
     query += "/imdb_title?id=" + id
 
     var xmlhttp = new XMLHttpRequest();
-
+    xmlhttp.timeout = 1500
     xmlhttp.onreadystatechange = function () {
         if (this.readyState == 4 && (this.status == 201 || this.status == 200)) {
             var obj = JSON.parse(this.responseText);

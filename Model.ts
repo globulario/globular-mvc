@@ -1,7 +1,7 @@
 // Globular conneciton.
 import * as GlobularWebClient from "globular-web-client";
 import { getAllPeersInfo } from "globular-web-client/api";
-import { Application, GetPeersRqst, GetPeersRsp, Peer, SetEmailResponse } from "globular-web-client/resource/resource_pb";
+import { Peer } from "globular-web-client/resource/resource_pb";
 import { View } from "./View";
 
 

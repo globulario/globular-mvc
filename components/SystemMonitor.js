@@ -187,7 +187,8 @@ function getStats(callback, errorcallback) {
     let url = window.location.protocol + "//" + window.location.host + "/stats"
 
     var xmlhttp = new XMLHttpRequest();
-
+    xmlhttp.timeout = 1500
+    
     xmlhttp.onreadystatechange = function () {
         if (this.readyState == 4 && (this.status == 201 || this.status == 200)) {
             var obj = JSON.parse(this.responseText);

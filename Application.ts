@@ -24,7 +24,8 @@ import { Session, SessionState } from "./Session";
 // Get the configuration from url
 function getFileConfig(url: string, callback: (obj: any) => void, errorcallback: (err: any) => void) {
   var xmlhttp = new XMLHttpRequest();
-
+  xmlhttp.timeout = 1500
+  
   xmlhttp.onreadystatechange = function () {
     if (this.readyState == 4 && (this.status == 201 || this.status == 200)) {
       var obj = JSON.parse(this.responseText);

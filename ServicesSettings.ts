@@ -1,5 +1,5 @@
 import { Settings } from "./Settings"
-import { SettingsMenu, SettingsPanel, ComplexSetting, ActionSetting, OnOffSetting, ReadOnlyStringSetting, StringListSetting, NumberSetting } from "./components/Settings"
+import { SettingsMenu, SettingsPanel, ComplexSetting, ActionSetting, OnOffSetting, ReadOnlyStringSetting, StringListSetting, NumberSetting, ConnectionsSetting } from "./components/Settings"
 import { ApplicationView } from "./ApplicationView";
 import * as servicesManager from "globular-web-client/services_manager/services_manager_pb"
 import { Model } from "./Model";
@@ -79,7 +79,7 @@ export class ServicesSettings extends Settings {
 
         // Create installed services ...
         let servicesSettings = serverSettingsPage.appendSettings("", `Installed gRPC service instances( ${Object.keys(services).length})`);
-
+        
         for (var s in services) {
             let service = services[s]
             if (service.Name != undefined) {
@@ -422,16 +422,29 @@ export class ServiceSetting {
     }
 }
 
+
 // Now specific settings...
 // LDAP
 export class LdapServiceSetting extends ServiceSetting {
 
     constructor(service: any, serviceSetting: any) {
         super(service, serviceSetting)
+        
+        // The connection settings.
+        let connectionsSettings_ = new ComplexSetting("Connections", `LDAP connections (${Object.keys(service.Connections).length})`)
+
+        let connectionsSetting = new ConnectionsSetting(service.Connections)
+        connectionsSetting.onCreateConnection = ()=>{
+            // Create a new connection setting...
+            console.log("create a new LDAP connection here...")
+            connectionsSetting.addConnectionSetting("new_connection", {Id: "new_connection", Name:"new_connection", Host:"localhost", User:"", Password:"", Port:389})
+        }
+
+        connectionsSettings_.addSetting(connectionsSetting)
+        serviceSetting.addSetting(connectionsSettings_)
 
         let syncLdap = new ActionSetting("Sync", "synchronize ldap and globular account and groups", () => {
             // Application.globular.ldapService.
-            console.log("sync ldap")
             let rqst = new SynchronizeRequest
             Application.globular.ldapService.synchronize(rqst, {
                 token: localStorage.getItem("user_token"),
@@ -449,9 +462,6 @@ export class LdapServiceSetting extends ServiceSetting {
         // Append the synch button
         serviceSetting.addSetting(syncLdap)
     }
-
-
-
 }
 
 // SQL
