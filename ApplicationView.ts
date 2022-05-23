@@ -14,7 +14,7 @@ import { NotificationMenu } from "./components/Notification";
 import { OverflowMenu } from "./components/Menu";
 import { ApplicationsMenu } from "./components/Applications";
 import { Camera } from "./components/Camera";
-import { FileExplorer, FilesMenu } from "./components/File";
+import { FilesMenu } from "./components/File";
 import { SearchBar, SearchResults } from "./components/Search";
 import { ContactCard, ContactsMenu } from "./components/Contact";
 import { MessengerMenu, Messenger } from "./components/Messenger";
@@ -114,13 +114,6 @@ export class ApplicationView extends View {
     return this._camera;
   }
 
-  /** The file explorer */
-  private static _fileExplorer: FileExplorer;
-
-  public get fileExplorer(): FileExplorer {
-    return ApplicationView._fileExplorer;
-  }
-
   /** The search bar */
   private _searchBar: SearchBar;
   public get searchBar(): SearchBar {
@@ -208,11 +201,9 @@ export class ApplicationView extends View {
       // save image from the picture.
     };
 
-    // The file explorer object.
-    ApplicationView._fileExplorer = new FileExplorer();
 
     // The file menu
-    this.filesMenu = new FilesMenu(ApplicationView._fileExplorer);
+    this.filesMenu = new FilesMenu();
 
     // set the global varialbe...
     applicationView = this;
@@ -725,9 +716,6 @@ export class ApplicationView extends View {
       return
     }
 
-    // Set the file explorer...
-    ApplicationView._fileExplorer.setRoot("/users/" + account.id)
-    ApplicationView._fileExplorer.init();
 
 
     /** implement it as needed */
@@ -787,10 +775,7 @@ export class ApplicationView extends View {
     ApplicationView.layout.title().appendChild(this._searchBar)
 
 
-    // Set the onerror callback for the component.
-    ApplicationView._fileExplorer.onerror = (err: any) => {
-      ApplicationView.displayMessage(err, 4000)
-    };
+    
 
     this.isLogin = true;
 
@@ -913,31 +898,7 @@ export class ApplicationView extends View {
     this.camera.open();
   }
 
-  static showFilebrowser(path: string, onclose: () => void) {
 
-    /*let fileExplorer = ApplicationView._fileExplorer
-    if(ApplicationView._fileExplorer == undefined){
-      fileExplorer = new FileExplorer
-      ApplicationView._fileExplorer = fileExplorer
-    }*/
-
-    let fileExplorer = new FileExplorer
-    fileExplorer.setRoot(path)
-    fileExplorer.init()
-    fileExplorer.open()
-
-    fileExplorer.onclose = () => {
-      // Remove the file explorer.
-      if (fileExplorer.parentNode != undefined) {
-        return
-      }
-      fileExplorer.parentNode.removeChild(ApplicationView._fileExplorer)
-      fileExplorer.delete() // remove all listeners.
-      fileExplorer = null;
-    }
-
-    return fileExplorer
-  }
 
   ///////////////////////////////////////////////////////////////////////////////////////////
   // Conversations

@@ -1,5 +1,6 @@
 import { theme } from "./Theme";
 import { Model } from '../Model';
+import { Application } from "../Application";
 
 
 /**
@@ -27,6 +28,7 @@ export class AudioPlayer extends HTMLElement {
 
             audio{
                 display: block;
+                min-width: 400px;
                 width:auto;
                 height: auto;
                 height: 50px;
@@ -53,11 +55,13 @@ export class AudioPlayer extends HTMLElement {
 
         // Get the parent size and set the max width of te
         window.addEventListener("resize", ()=>{
-            this.audio.style.maxWidth = this.parentNode.offsetWidth + "px"
+            //this.audio.style.maxWidth = this.parentNode.offsetWidth + "px"
         });
     }
 
-    play(path) {
+    play(path, globule) {
+        console.log("play path ", globule,  path)
+
         if(!this.audio.paused && this.audio.currentSrc.endsWith(path)){
             // Do nothing...
             return
@@ -67,26 +71,33 @@ export class AudioPlayer extends HTMLElement {
             return
         }
 
-        let url = window.location.protocol + "//" + window.location.hostname + ":"
-        if (Application.globular.config.Protocol == "https") {
-            url += Application.globular.config.PortHttps
+        let url = globule.config.Protocol + "://" +  globule.config.Domain
+        if (globule.config.Protocol == "https") {
+            if(globule.config.PortHttps!=443)
+                url += ":" + globule.config.PortHttps
         } else {
-            url += Application.globular.config.PortHttp
+            if(globule.config.PortHttps!=80)
+                url +=  ":" + globule.config.PortHttp
         }
 
-        path.split("/").forEach(item=>{
-            url += "/" +  encodeURIComponent(item.trim())
+        path.split("/").forEach(item => {
+            item = item.trim()
+            if (item.length > 0) {
+                url += "/" + encodeURIComponent(item)
+            }
         })
+
+        url += "?application=" + Model.application
+        if (localStorage.getItem("user_token") != undefined) {
+            url += "&token=" + localStorage.getItem("user_token")
+        }
 
         // Set the path and play.
         this.audio.src = url
-        this.audio.src += "?application=" + Model.application
-        if(localStorage.getItem("user_token")!=undefined){
-            this.audio.src += "&token=" + localStorage.getItem("user_token")
-        } 
-        this.currentTrackTitle.innerHTML = path
-   
-        this.audio.style.maxWidth = this.parentNode.offsetWidth + "px"
+
+        let values = path.split("/")
+        this.currentTrackTitle.innerHTML = values[values.length - 1]
+        //this.audio.style.maxWidth = this.parentNode.offsetWidth + "px"
     }
 
     stop(){

@@ -65,7 +65,7 @@ export function getCoverDataUrl(callback, videoId, videoUrl, videoPath, globule)
 }
 
 // That function will be use to asscociate file with imdb information.
-export function getImdbInfo(id, callback, errorcallback) {
+export function getImdbInfo(id, callback, errorcallback, globule) {
     if (titles[id]) {
         if (titles[id].ID) {
             callback(titles[id])
@@ -79,17 +79,19 @@ export function getImdbInfo(id, callback, errorcallback) {
     titles[id].callbacks = []
     titles[id].callbacks.push(callback)
 
-    let query = window.location.protocol + "//" + window.location.hostname + ":"
-    if (Application.globular.config.Protocol == "https") {
-        query += Application.globular.config.PortHttps
+    let url = globule.config.Protocol + "://" + globule.config.Domain
+    if (globule.config.Protocol == "https") {
+        if (globule.config.PortHttps != 443)
+            url += ":" + globule.config.PortHttps
     } else {
-        query += Application.globular.config.PortHttp
+        if (globule.config.PortHttps != 80)
+            url += ":" + globule.config.PortHttp
     }
 
-    query += "/imdb_title?id=" + id
+    url += "/imdb_title?id=" + id
 
     var xmlhttp = new XMLHttpRequest();
-    xmlhttp.timeout = 1500
+    xmlhttp.timeout = 3000
     xmlhttp.onreadystatechange = function () {
         if (this.readyState == 4 && (this.status == 201 || this.status == 200)) {
             var obj = JSON.parse(this.responseText);
@@ -102,7 +104,7 @@ export function getImdbInfo(id, callback, errorcallback) {
             // Now I will 
 
         } else if (this.readyState == 4) {
-            errorcallback("fail to get info from query " + query + " status " + this.status)
+            errorcallback("fail to get info from query " + url + " status " + this.status)
         }
     };
     /* TODO see if we protected it...
@@ -111,8 +113,8 @@ export function getImdbInfo(id, callback, errorcallback) {
           query += "&token=" + localStorage.getItem("user_token")
       }
     */
-    xmlhttp.open("GET", query, true);
-    xmlhttp.setRequestHeader("domain", Model.domain);
+    xmlhttp.open("GET", url, true);
+    xmlhttp.setRequestHeader("domain", globule.config.Domain);
 
     xmlhttp.send();
 }
@@ -1253,8 +1255,7 @@ export class SearchFlipCard extends HTMLElement {
                 getImdbInfo(title.getSerie(), serie => {
                     this.shadowRoot.querySelector(`#hit-div-mosaic-front`).style.backgroundImage = `url(${serie.Poster.ContentURL})`
                     serieName.innerHTML = serie.Name
-                }, err => ApplicationView.displayMessage(err, 3000))
-
+                }, err => ApplicationView.displayMessage(err, 3000), globule)
             }
             seriesInfos.innerHTML = title.getName() + " S" + title.getSeason() + "E" + title.getEpisode()
         } else {

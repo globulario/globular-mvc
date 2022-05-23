@@ -284,7 +284,7 @@ export class VideoPlayer extends HTMLElement {
 
         // set the complete url.
         // Get image from the globule.
-        let url = globule.config.Protocol + "://" + globule.config.Domain
+        let url = globule.config.Protocol + "://" +  globule.config.Domain
         if (globule.config.Protocol == "https") {
             if(globule.config.PortHttps!=443)
                 url += ":" + globule.config.PortHttps
@@ -300,7 +300,6 @@ export class VideoPlayer extends HTMLElement {
             thumbnailPath = url + "/" + thumbnailPath
         }
 
-        console.log(thumbnailPath)
         this.player.setPreviewThumbnails({ enabled: "true", src: thumbnailPath })
 
         if (!this.video.paused && this.video.currentSrc.endsWith(path)) {
@@ -311,7 +310,6 @@ export class VideoPlayer extends HTMLElement {
             this.video.play()
             return
         }
-
 
         path.split("/").forEach(item => {
             item = item.trim()

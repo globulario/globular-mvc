@@ -8,7 +8,7 @@ import { Globular } from 'globular-web-client';
  */
 export class File extends Model {
     // If the file does not really exist on the server It can be keep in that map.
-    private static _local_files:any = {}
+    private static _local_files: any = {}
 
     /** A file image preview */
     private _thumbnail: string
@@ -92,7 +92,7 @@ export class File extends Model {
 
 
     /** The file  */
-    constructor(name: string, path: string, local: boolean = false) {
+    constructor(name: string, path: string, local: boolean = false, globule = Model.globular) {
         super();
 
         this._name = name;
@@ -101,8 +101,9 @@ export class File extends Model {
         /** Here I will initialyse the resource. */
         this.files = new Array<File>();
 
-        if(local){
-            File._local_files[this.path] = this
+        if (local) {
+            let id = globule.config.Domain + "@" + this.path
+            File._local_files[id] = this
         }
 
     }
@@ -155,8 +156,8 @@ export class File extends Model {
             Thumbnail: this.thumbnail,
             Files: new Array<any>()
         }
-        
-        for(let f of this.files){
+
+        for (let f of this.files) {
             obj.Files.push(f.toObject())
         }
     }
@@ -182,21 +183,22 @@ export class File extends Model {
     /**
      * Static function's
      */
-    static readDir(path: string, recursive:boolean, callback: (dir: File) => void, errorCallback: (err: any) => void, globule?:Globular) {
-        if(File._local_files[path] != undefined){
-            callback(File._local_files[path])
-            return
-        }
-
+    static readDir(path: string, recursive: boolean, callback: (dir: File) => void, errorCallback: (err: any) => void, globule?: Globular) {
         // So here I will get the dir of the current user...
         let token = localStorage.getItem("user_token")
         let decoded = jwt(token);
-        let address =  (<any>decoded).address;
-        if(!globule){
+        let address = (<any>decoded).address;
+        if (!globule) {
             globule = Model.getGlobule(address)
         }
 
-        readDir(globule,path, recursive, (data: any) => {
+        let id = globule.config.Domain + "@" + path
+        if (File._local_files[id] != undefined) {
+            callback(File._local_files[id])
+            return
+        }
+
+        readDir(globule, path, recursive, (data: any) => {
             callback(File.fromObject(data))
         }, errorCallback)
     }
