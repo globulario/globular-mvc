@@ -314,6 +314,12 @@ export class FilesView extends HTMLElement {
         this.openInNewTabItem.action = () => {
             let globule = this._file_explorer_.globule
             let url = globule.config.Protocol + "//" + globule.config.Domain + ":"
+            if(window.location != globule.config.Domain){
+                if(globule.config.AlternateDomains.indexOf(window.location.host)!=-1){
+                    url = globule.config.Protocol + "://" +  window.location.host
+                } 
+            }
+
             if (globule.config.Protocol == "https") {
                 url += globule.config.PortHttps
             } else {

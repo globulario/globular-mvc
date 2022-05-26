@@ -285,6 +285,12 @@ export class VideoPlayer extends HTMLElement {
         // set the complete url.
         // Get image from the globule.
         let url = globule.config.Protocol + "://" +  globule.config.Domain
+        if(window.location != globule.config.Domain){
+            if(globule.config.AlternateDomains.indexOf(window.location.host)!=-1){
+                url = globule.config.Protocol + "://" +  window.location.host
+            } 
+        }
+
         if (globule.config.Protocol == "https") {
             if(globule.config.PortHttps!=443)
                 url += ":" + globule.config.PortHttps

@@ -22,6 +22,12 @@ export function getCoverDataUrl(callback, videoId, videoUrl, videoPath, globule)
 
     // set the url for the image.
     let url = globule.config.Protocol + "://" + globule.config.Domain
+    if(window.location != globule.config.Domain){
+        if(globule.config.AlternateDomains.indexOf(window.location.host)!=-1){
+            url = globule.config.Protocol + "://" +  window.location.host
+        } 
+    }
+
     if (globule.config.Protocol == "https") {
         if (globule.config.PortHttps != 443)
             url += ":" + globule.config.PortHttps
@@ -80,6 +86,12 @@ export function getImdbInfo(id, callback, errorcallback, globule) {
     titles[id].callbacks.push(callback)
 
     let url = globule.config.Protocol + "://" + globule.config.Domain
+    if(window.location != globule.config.Domain){
+        if(globule.config.AlternateDomains.indexOf(window.location.host)!=-1){
+            url = globule.config.Protocol + "://" +  window.location.host
+        } 
+    }
+
     if (globule.config.Protocol == "https") {
         if (globule.config.PortHttps != 443)
             url += ":" + globule.config.PortHttps
@@ -1065,6 +1077,12 @@ export class SearchVideoCard extends HTMLElement {
                     thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/preview.gif"
 
                     let url = globule.config.Protocol + "://" + globule.config.Domain
+                    if(window.location != globule.config.Domain){
+                        if(globule.config.AlternateDomains.indexOf(window.location.host)!=-1){
+                            url = globule.config.Protocol + "://" +  window.location.host
+                        } 
+                    }
+
                     if (globule.config.Protocol == "https") {
                         if (globule.config.PortHttps != 443)
                             url += ":" + globule.config.PortHttps
@@ -1407,6 +1425,12 @@ export class SearchTitleDetail extends HTMLElement {
                         if (rsp.getFilepathsList().length > 0) {
                             let path = rsp.getFilepathsList().pop()
                             let url = globule.config.Protocol + "://" + globule.config.Domain
+                            if(window.location != globule.config.Domain!=-1){
+                                if(globule.config.AlternateDomains.indexOf(window.location.host)){
+                                    url = globule.config.Protocol + "://" +  window.location.host
+                                } 
+                            }
+
                             if (globule.config.Protocol == "https") {
                                 if (globule.config.PortHttps != 443)
                                     url += ":" + globule.config.PortHttps
@@ -1504,6 +1528,12 @@ export class SearchTitleDetail extends HTMLElement {
         }
 
         let url = globule.config.Protocol + "://" + globule.config.Domain
+        if(window.location != globule.config.Domain){
+            if(globule.config.AlternateDomains.indexOf(window.location.host)!=-1){
+                url = globule.config.Protocol + "://" +  window.location.host
+            } 
+        }
+
         if (globule.config.Protocol == "https") {
             if (globule.config.PortHttps != 443)
                 url += ":" + globule.config.PortHttps
