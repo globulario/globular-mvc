@@ -103,7 +103,7 @@ export function getImdbInfo(id, callback, errorcallback, globule) {
     url += "/imdb_title?id=" + id
 
     var xmlhttp = new XMLHttpRequest();
-    xmlhttp.timeout = 3000
+    xmlhttp.timeout = 10000
     xmlhttp.onreadystatechange = function () {
         if (this.readyState == 4 && (this.status == 201 || this.status == 200)) {
             var obj = JSON.parse(this.responseText);
