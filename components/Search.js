@@ -1012,7 +1012,6 @@ export class SearchVideoCard extends HTMLElement {
 
     setVideo(video, globule) {
 
-        console.log("--------------> set Globule ", globule)
         if (!globule) {
             globule = Application.globular
         }
@@ -1099,7 +1098,6 @@ export class SearchVideoCard extends HTMLElement {
                         }
                     })
 
-                    console.log("--------> preview url is ", url)
                     preview.src = url
                     preview.onclick = () => {
                         playVideo(path, null, null, null, globule)
@@ -1574,7 +1572,7 @@ export class SearchTitleDetail extends HTMLElement {
                     }
                 }
             }).catch(err=>{
-                console.log("---------->", err, globule)
+                console.log(err, globule)
             })
 
     }

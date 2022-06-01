@@ -5,7 +5,7 @@ import { Application } from "../Application";
 import Plyr from 'plyr';
 import "./plyr.css"
 import Hls from "hls.js";
-import { ApplicationView } from "../ApplicationView";
+import { applicationView, ApplicationView } from "../ApplicationView";
 import { GetFileTitlesRequest, GetFileVideosRequest } from "globular-web-client/title/title_pb";
 import { setMoveable } from './moveable'
 import { setResizeable } from './rezieable'
@@ -181,7 +181,54 @@ export class VideoPlayer extends HTMLElement {
 
     }
 
-    play(path, globule) {
+    play(path, globule){
+
+        let url = globule.config.Protocol + "://" + globule.config.Domain
+        if (window.location != globule.config.Domain) {
+            if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
+                url = globule.config.Protocol + "://" + window.location.host
+            }
+        }
+
+        if (globule.config.Protocol == "https") {
+            if (globule.config.PortHttps != 443)
+                url += ":" + globule.config.PortHttps
+        } else {
+            if (globule.config.PortHttps != 80)
+                url += ":" + globule.config.PortHttp
+        }
+        
+        path.split("/").forEach(item => {
+            item = item.trim()
+            if (item.length > 0) {
+                url += "/" + encodeURIComponent(item)
+            }
+        })
+
+        url += "?application=" + Model.application
+        if (localStorage.getItem("user_token") != undefined) {
+            url += "&token=" + localStorage.getItem("user_token")
+        }
+
+        // validate url access.
+        fetch(url,  { method: "HEAD" })
+            .then( (response) => {
+                if (response.status !== 200) {
+                    throw new Error(response.status)
+
+                } else {
+                    this.play_(path, globule)
+                }
+            })
+            .catch((error)=> {
+                ApplicationView.displayMessage("You are not authorize to read that media file", 4000)
+                this.close()
+                document.exitFullscreen()
+            });
+
+    }
+
+    play_(path, globule) {
 
         this.style.zIndex = 100
         // Set the title...
@@ -190,7 +237,7 @@ export class VideoPlayer extends HTMLElement {
         this.shadowRoot.querySelector("#container").style.display = ""
 
         // So Here I will try to get the title or the video info...
-        if(!globule){
+        if (!globule) {
             globule = Model.globular
         }
 
@@ -284,25 +331,25 @@ export class VideoPlayer extends HTMLElement {
 
         // set the complete url.
         // Get image from the globule.
-        let url = globule.config.Protocol + "://" +  globule.config.Domain
-        if(window.location != globule.config.Domain){
-            if(globule.config.AlternateDomains.indexOf(window.location.host)!=-1){
-                url = globule.config.Protocol + "://" +  window.location.host
-            } 
+        let url = globule.config.Protocol + "://" + globule.config.Domain
+        if (window.location != globule.config.Domain) {
+            if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
+                url = globule.config.Protocol + "://" + window.location.host
+            }
         }
 
         if (globule.config.Protocol == "https") {
-            if(globule.config.PortHttps!=443)
+            if (globule.config.PortHttps != 443)
                 url += ":" + globule.config.PortHttps
         } else {
-            if(globule.config.PortHttps!=80)
-                url +=  ":" + globule.config.PortHttp
+            if (globule.config.PortHttps != 80)
+                url += ":" + globule.config.PortHttp
         }
 
-      
-        if(thumbnailPath.startsWith("/")){
-            thumbnailPath = url  + thumbnailPath
-        }else{
+
+        if (thumbnailPath.startsWith("/")) {
+            thumbnailPath = url + thumbnailPath
+        } else {
             thumbnailPath = url + "/" + thumbnailPath
         }
 

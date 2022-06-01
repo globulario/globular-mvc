@@ -847,8 +847,6 @@ export class ConnectionSetting extends HTMLElement {
       }
     }
 
-
-    // console.log("---------> connection ", connection)
     this.appendConnectionBody(connection)
   }
 

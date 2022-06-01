@@ -2658,6 +2658,15 @@ export class FileNavigator extends HTMLElement {
         // keep track of all sub-dir...
         shared = {}
 
+        // The public directory will contain a list of directories readable by 
+        // any use, permission can also be set on file and directories, but all is 
+        // accessible by default.
+        this.shared_ = new File("shared", "/shared", true, this._file_explorer_.globule)
+        this.shared_.isDir = true;
+        this.shared_.files = [];
+        this.shared_.mime = "";
+        this.shared_.modTime = new Date()
+
         // Init the share info
         let initShared = (share, callback) => {
 
@@ -2673,13 +2682,15 @@ export class FileNavigator extends HTMLElement {
                 this.shared[userId].files = [];
                 this.shared[userId].mime = "";
                 this.shared[userId].modTime = new Date()
+                this.shared_.files.push(this.shared[userId])
+
                 Model.eventHub.subscribe(userId + "_change_permission_event", uuid => { },
                     evt => {
                         // refresh the shared...
                         this.initShared()
                     }, false, this)
             }
-            console.log("----------> load " + share.getPath())
+
             this._file_explorer_.displayWaitMessage("load " + share.getPath())
             _readDir(share.getPath(), dir => {
                 this._file_explorer_.resume()
@@ -2698,7 +2709,6 @@ export class FileNavigator extends HTMLElement {
                 if (err.message.indexOf("is a directory") != -1) {
                     this.getFileInfo(share.getPath(),
                         (f) => {
-                            console.log("--------------->", f)
                             if (f.path.indexOf(".hidden") != -1) {
                                 // In that case I need to append the file in a local dir named hidden.
                                 let hiddenDir = null;
@@ -2733,6 +2743,7 @@ export class FileNavigator extends HTMLElement {
             }, this._file_explorer_.globule)
         }
 
+
         if (Application.account == undefined) {
             return // nothing to do here...
         }
@@ -2753,7 +2764,8 @@ export class FileNavigator extends HTMLElement {
                     } else {
                         for (const id in this.shared) {
                             let shared = this.shared[id]
-                            this.initTreeView(shared, this.sharedDiv, 0)
+                            // this.initTreeView(shared, this.sharedDiv, 0)
+                            this.initTreeView(this.shared_, this.sharedDiv, 0)
                             delete dirs[getUuidByString(this._file_explorer_.globule.config.Domain + "@" + shared.path)]
                             Model.eventHub.publish("reload_dir_event", shared.path, false);
                         }
