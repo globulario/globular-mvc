@@ -2411,12 +2411,6 @@ export class FileNavigator extends HTMLElement {
                 }
                 // reload the div...
                 this.initTreeView(dir, parent, level)
-
-                // Init shared...
-                this.initShared()
-
-                // Init public list of directories
-                this.initPublic()
             }
         }
     }
@@ -2672,7 +2666,7 @@ export class FileNavigator extends HTMLElement {
                 callback()
                 return // I will not display it...
             }
-
+           
             if (this.shared[userId] == undefined) {
                 this.shared[userId] = new File(userId, "/shared/" + userId, true, this._file_explorer_.globule)
                 this.shared[userId].isDir = true;
@@ -2685,6 +2679,7 @@ export class FileNavigator extends HTMLElement {
                         this.initShared()
                     }, false, this)
             }
+            console.log("----------> load " + share.getPath())
             this._file_explorer_.displayWaitMessage("load " + share.getPath())
             _readDir(share.getPath(), dir => {
                 this._file_explorer_.resume()
@@ -2698,10 +2693,12 @@ export class FileNavigator extends HTMLElement {
                     callback()
                 }
             }, err => {
+                console.log(err)
                 // The file is not a directory so the file will simply put in the share.
-                if (err.message.endsWith("is a directory")) {
+                if (err.message.indexOf("is a directory") != -1) {
                     this.getFileInfo(share.getPath(),
-                        f => {
+                        (f) => {
+                            console.log("--------------->", f)
                             if (f.path.indexOf(".hidden") != -1) {
                                 // In that case I need to append the file in a local dir named hidden.
                                 let hiddenDir = null;
@@ -2748,9 +2745,7 @@ export class FileNavigator extends HTMLElement {
         let globule = this._file_explorer_.globule
         globule.rbacService.getSharedResource(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
             .then(rsp => {
-                // rsp.getSharedresourceList().forEach(s => initShared(s))
                 // Here I need to sync the funtion and init the tree view once all is done...
-
                 let callback = () => {
                     let s = rsp.getSharedresourceList().pop()
                     if (s != undefined) {
@@ -2777,6 +2772,7 @@ export class FileNavigator extends HTMLElement {
         let globule = this._file_explorer_.globule
         globule.fileService.getFileInfo(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
             .then(rsp => {
+                let f = File.fromString(rsp.getData())
                 callback(f);
 
             })
