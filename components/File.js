@@ -4850,7 +4850,7 @@ export class FilesUploader extends HTMLElement {
 
         stream.on("status", (status) => {
             if (status.code != 0) {
-                console.log(err)
+                console.log(status.details)
             }
         });
 
