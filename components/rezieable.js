@@ -14,8 +14,8 @@ export function setResizeable(div, onresize) {
     resizeWidthDiv.id = "resize-with-div"
     resizeWidthDiv.style.position = "absolute"
     resizeWidthDiv.style.top = "0px"
-    resizeWidthDiv.style.bottom = "10px"
-    resizeWidthDiv.style.width = "10px"
+    resizeWidthDiv.style.bottom = "5px"
+    resizeWidthDiv.style.width = "5px"
     resizeWidthDiv.style.right = "-1px"
     div.appendChild(resizeWidthDiv)
     div.resizeWidthDiv = resizeWidthDiv
@@ -33,10 +33,10 @@ export function setResizeable(div, onresize) {
     var resizeHeightDiv = document.createElement("div")
     resizeHeightDiv.id = "resize-height-div"
     resizeHeightDiv.style.position = "absolute"
-    resizeHeightDiv.style.height = "10px"
+    resizeHeightDiv.style.height = "5px"
     resizeHeightDiv.style.bottom = "-1px"
     resizeHeightDiv.style.left = "0px"
-    resizeHeightDiv.style.right = "10px"
+    resizeHeightDiv.style.right = "5px"
     div.appendChild(resizeHeightDiv)
     div.resizeHeightDiv = resizeHeightDiv
 
@@ -55,8 +55,8 @@ export function setResizeable(div, onresize) {
     resizeDiv.style.position = "absolute"
     resizeDiv.style.bottom = "-1px"
     resizeDiv.style.right = "-1px"
-    resizeDiv.style.height = "10px"
-    resizeDiv.style.width = "10px"
+    resizeDiv.style.height = "5px"
+    resizeDiv.style.width = "5px"
     div.appendChild(resizeDiv)
 
     resizeDiv.onmouseover = function () {
@@ -137,15 +137,36 @@ export function setResizeable(div, onresize) {
         }
     }(div))
 
+    function getOffsetLeft(elem) {
+        var offsetLeft = 0;
+        do {
+            if (!isNaN(elem.offsetLeft)) {
+                offsetLeft += elem.offsetLeft;
+            }
+        } while (elem = elem.offsetParent);
+        return offsetLeft;
+    }
+
+    function getOffsetTop(elem) {
+        var offsetTop = 0;
+        do {
+            if (!isNaN(elem.offsetTop)) {
+                offsetTop += elem.offsetTop;
+            }
+        } while (elem = elem.offsetParent);
+        return offsetTop;
+    }
+
+
     // Here I will resize the div as needed.
     document.body.addEventListener("mousemove", (e) => {
-        var w = e.clientX - div.offsetLeft;
-        var h = e.clientY - div.offsetTop;
+        var w = e.clientX - getOffsetLeft(div);
+        var h = e.clientY - getOffsetTop(div);
 
         if (div.isResizeWidth && div.isResizeHeigth) {
             div.style.width = w + "px"
             div.style.height = h + "px"
-            if(onresize){
+            if (onresize) {
                 onresize(div.offsetWidth, div.offsetHeight)
             }
         } else if (div.isResizeWidth) {
@@ -157,7 +178,7 @@ export function setResizeable(div, onresize) {
                 document.body.style.cursor = "ew-resize"
             }
             div.style.width = w + "px"
-            if(onresize){
+            if (onresize) {
                 onresize(div.offsetWidth, div.offsetHeight)
             }
         } else if (div.isResizeHeigth) {
@@ -169,7 +190,7 @@ export function setResizeable(div, onresize) {
                 document.body.style.cursor = "ns-resize"
             }
             div.style.height = h + "px"
-            if(onresize){
+            if (onresize) {
                 onresize(div.offsetWidth, div.offsetHeight)
             }
         }

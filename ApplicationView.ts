@@ -2,7 +2,7 @@ import { View } from "./View";
 import * as M from "materialize-css";
 import "materialize-css/sass/materialize.scss";
 import { Account } from "./Account";
-import { ApplicationsSettings, GroupSettings, LogSettings, OrganizationSettings, PeersSettings, RoleSettings, UserSettings, UsersSettings } from "./Settings"
+import { ApplicationsSettings, GroupSettings, LogSettings, OrganizationSettings, PeersSettings, RoleSettings, UserSettings, UsersSettings, VideoSettings } from "./Settings"
 import { Model } from "./Model";
 import { DockerNames } from "./components/RandomName"
 
@@ -752,6 +752,9 @@ export class ApplicationView extends View {
     // Manage services settings.
     let servicesSettings = new ServicesSettings(this.settingsMenu, this.settingsPanel);
 
+    // Manage services settings.
+    let videoSettings = new VideoSettings(this.settingsMenu, this.settingsPanel);
+
     // The accounts settings
     let usersSettings = new UsersSettings(this.settingsMenu, this.settingsPanel);
 
@@ -775,7 +778,7 @@ export class ApplicationView extends View {
     ApplicationView.layout.title().appendChild(this._searchBar)
 
 
-    
+
 
     this.isLogin = true;
 

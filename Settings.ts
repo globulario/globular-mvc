@@ -6,8 +6,9 @@ import { ApplicationView } from "./ApplicationView";
 import { FileExplorer } from "./components/File";
 import { RoleManager } from "./components/Role"
 import { GroupManager } from "./components/Group"
-import { ImageCropperSetting, SettingsMenu, SettingsPanel, ComplexSetting, EmailSetting, StringSetting, RadioGroupSetting } from "./components/Settings";
+import { ImageCropperSetting, SettingsMenu, SettingsPanel, ComplexSetting, EmailSetting, StringSetting, RadioGroupSetting, OnOffSetting, NumberSetting, ActionSetting } from "./components/Settings";
 import { Model } from "./Model";
+import "@polymer/iron-icons/maps-icons";
 import "@polymer/iron-icons/social-icons";
 import "@polymer/iron-icons/hardware-icons";
 import "@polymer/iron-icons/notification-icons";
@@ -100,7 +101,7 @@ export class UserSettings extends Settings {
                 let theme = localStorage.getItem(account.id + "_theme")
                 let html = document.querySelector("html")
                 if (theme != null) {
-                    if(theme!=value){
+                    if (theme != value) {
                         displayModeSelector.setValue(value)
                         localStorage.setItem(account.id + "_theme", value)
                         localStorage.setItem("globular_theme", value)
@@ -111,7 +112,7 @@ export class UserSettings extends Settings {
                     localStorage.setItem("globular_theme", value)
                     html.setAttribute("theme", value)
                 }
-            }else{
+            } else {
                 localStorage.setItem(account.id + "_theme", value)
                 localStorage.setItem("globular_theme", value)
                 html.setAttribute("theme", value)
@@ -122,9 +123,9 @@ export class UserSettings extends Settings {
         if (theme != null) {
             displayModeSelector.setValue(theme)
             html.setAttribute("theme", theme)
-        }else if(html.getAttribute("theme")!=null){
+        } else if (html.getAttribute("theme") != null) {
             displayModeSelector.setValue(html.getAttribute("theme"))
-        }else{
+        } else {
             displayModeSelector.setValue("light")
         }
         generalSettings.addSetting(displayModeSelector)
@@ -147,7 +148,7 @@ export class UserSettings extends Settings {
                             imageCropperSettings.setValue(account.profilPicture)
                         },
                         (err: any) => {
-                            console.log( err)
+                            console.log(err)
                         })
                 } else {
                     // revert the change.
@@ -401,6 +402,76 @@ export class PeersSettings extends Settings {
         peersSettingPage.appendChild(this.peersManager)
 
     }
+}
+
+/**
+ * Model to manage users account settings.
+ */
+export class VideoSettings extends Settings {
+    private needSave: boolean;
+
+    // The application.
+    constructor(settingsMenu: SettingsMenu, settingsPanel: SettingsPanel) {
+        super(settingsMenu, settingsPanel);
+
+        settingsMenu.appendSettingsMenuItem("maps:local-movies", "Video");
+
+        let viedoSettingPage = <any>settingsPanel.appendSettingsPage("Video");
+
+        // Create general user settings ...
+        let conversionSettings = viedoSettingPage.appendSettings("Conversion", "Video Conversion settings");
+
+        // Enable/Disable video conversion.
+        let enableConversionSetting = new OnOffSetting("convert to MP4", "enable/disable automatic video conversion")
+        enableConversionSetting.setValue(true)
+        conversionSettings.addSetting(enableConversionSetting)
+
+        let enableStreamConversionSetting = new OnOffSetting("convert MP4 to HLS", "enable/disable automatic video stream conversion")
+        enableStreamConversionSetting.setValue(true)
+        conversionSettings.addSetting(enableStreamConversionSetting)
+
+        let startConversionHour = new NumberSetting("start convertion hour", "The convertion will begin at this hour")
+        startConversionHour.setValue(0)
+        startConversionHour.getElement().setAttribute("max", "23")
+        startConversionHour.getElement().setAttribute("min", "0")
+        conversionSettings.addSetting(startConversionHour)
+
+        let maxConvertionDelay = new NumberSetting("maximum convertion delay", "Maximum convertion runing time, stop processing new file past this delay (in hours)")
+        maxConvertionDelay.setValue(8)
+        maxConvertionDelay.getElement().setAttribute("max", "24")
+        maxConvertionDelay.getElement().setAttribute("min", "0")
+        conversionSettings.addSetting(maxConvertionDelay)
+
+        enableConversionSetting.onchange = () => {
+            // this.conversionSettings.KeepAlive = keepAlive.getValue()
+            let conversion = enableConversionSetting.getValue()
+            if(conversion){
+                console.log("the automatic conversion is on")
+                enableStreamConversionSetting.style.display = "flex"
+                startConversionHour.style.display = "flex"
+                maxConvertionDelay.style.display = "flex"
+            }else{
+                console.log("the automatic conversion is off")
+                enableStreamConversionSetting.style.display = "none"
+                startConversionHour.style.display = "none"
+                maxConvertionDelay.style.display = "none"
+            }
+
+            console.log("--------> video conversion setting has change!!!")
+            this.needSave = true
+        }
+
+
+        // The convert button will start video processing...
+        let convertVideoAction = new ActionSetting("Start Convert", "Convert video to MP4 or HLS")
+        conversionSettings.addSetting(convertVideoAction)
+        
+
+
+    }
+
+
+
 }
 
 /**

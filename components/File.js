@@ -314,10 +314,10 @@ export class FilesView extends HTMLElement {
         this.openInNewTabItem.action = () => {
             let globule = this._file_explorer_.globule
             let url = globule.config.Protocol + "//" + globule.config.Domain + ":"
-            if(window.location != globule.config.Domain){
-                if(globule.config.AlternateDomains.indexOf(window.location.host)!=-1){
-                    url = globule.config.Protocol + "://" +  window.location.host
-                } 
+            if (window.location != globule.config.Domain) {
+                if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
+                    url = globule.config.Protocol + "://" + window.location.host
+                }
             }
 
             if (globule.config.Protocol == "https") {
@@ -661,7 +661,7 @@ export class FilesView extends HTMLElement {
                   left: 0px;
                   bottom: 0px;
                   padding-bottom: 40px;
-                  right: 0px;
+                  right: 5px;
                   overflow: auto;
               }
 
@@ -2401,10 +2401,10 @@ export class FileNavigator extends HTMLElement {
     // remove div and reload it from it content...
     reload(dir) {
         if (this.dirs[this._file_explorer_.globule.config.Domain + "@" + dir.path] != undefined) {
-            let div = this.div.querySelector(`#${this.dirs[this._file_explorer_.globule.config.Domain + "@" +dir.path].id}`)
+            let div = this.div.querySelector(`#${this.dirs[this._file_explorer_.globule.config.Domain + "@" + dir.path].id}`)
             if (div != null) {
                 let parent = div.parentNode
-                let level = this.dirs[ this._file_explorer_.globule.config.Domain + "@" + dir.path].level
+                let level = this.dirs[this._file_explorer_.globule.config.Domain + "@" + dir.path].level
                 if (div != null) {
                     parent.removeChild(div)
                     delete this.dirs[this._file_explorer_.globule.config.Domain + "@" + dir.path]
@@ -2675,7 +2675,7 @@ export class FileNavigator extends HTMLElement {
                 callback()
                 return // I will not display it...
             }
-           
+
             if (this.shared[userId] == undefined) {
                 this.shared[userId] = new File(userId, "/shared/" + userId, true, this._file_explorer_.globule)
                 this.shared[userId].isDir = true;
@@ -2905,7 +2905,7 @@ export class FileExplorer extends HTMLElement {
                 padding: 0px;
                 flex-direction: column;
                 position: relative;
-                height: 100%;
+                height: calc(100% - 90px);
             }
 
             paper-card{
@@ -2991,8 +2991,7 @@ export class FileExplorer extends HTMLElement {
                 cursor: -webkit-grab;
             }
         </style>
-        <div style="padding: 7px">
-        <paper-card id="file-explorer-box" class="file-explorer" style="flex-direction: column; display: none; width: 760px; height: 600px; border-left: 1px solid var(--palette-divider); border-right: 1px solid var(--palette-divider);">
+        <paper-card id="file-explorer-box" class="file-explorer" style="position: relative; flex-direction: column; border-left: 1px solid var(--palette-divider); border-right: 1px solid var(--palette-divider);">
             <div class="card-header">
                 <paper-icon-button icon="icons:close" id="file-explorer-box-close-btn"></paper-icon-button>
                 <span id="move-handle" class="title">File Explorer</span>
@@ -3038,7 +3037,6 @@ export class FileExplorer extends HTMLElement {
                 <globular-files-uploader></globular-files-uploader>
             </div>
         </paper-card>
-        </div>
         `
 
         // Give information about loading data...
@@ -3054,21 +3052,21 @@ export class FileExplorer extends HTMLElement {
 
         if (localStorage.getItem("__file_explorer_position__")) {
             let position = JSON.parse(localStorage.getItem("__file_explorer_position__"))
-            this._file_explorer_Box.style.top = position.top + "px"
-            this._file_explorer_Box.style.left = position.left + "px"
+            this.style.top = position.top + "px"
+            this.style.left = position.left + "px"
         }
 
-        setMoveable(this.shadowRoot.querySelector(".card-header"), this._file_explorer_Box, (left, top) => {
+        setMoveable(this.shadowRoot.querySelector(".card-header"), this, (left, top) => {
             localStorage.setItem("__file_explorer_position__", JSON.stringify({ top: top, left: left }))
-        }, this)
+        }, this, 60)
 
         if (localStorage.getItem("__file_explorer_dimension__")) {
             let dimension = JSON.parse(localStorage.getItem("__file_explorer_dimension__"))
-            this._file_explorer_Box.style.width = dimension.width + "px"
-            this._file_explorer_Box.style.height = dimension.height + "px"
+            this.shadowRoot.querySelector("#file-explorer-box").style.width = dimension.width + "px"
+            this.shadowRoot.querySelector("#file-explorer-box").style.height = dimension.height + "px"
         }
 
-        setResizeable(this._file_explorer_Box, (width, height) => {
+        setResizeable(this.shadowRoot.querySelector("#file-explorer-box"), (width, height) => {
             localStorage.setItem("__file_explorer_dimension__", JSON.stringify({ width: width, height: height }))
         })
 
@@ -3153,33 +3151,38 @@ export class FileExplorer extends HTMLElement {
 
         // I will use the resize event to set the size of the file explorer.
         this.exitFullScreenBtn.onclick = () => {
+            
+            let position = JSON.parse(localStorage.getItem("__file_explorer_position__"))
+            this.style.top = position.top + "px"
+            this.style.left = position.left + "px"
+
             this.enterFullScreenBtn.style.display = "block"
             this.exitFullScreenBtn.style.display = "none"
-            this.style.top = ""
             this.style.bottom = ""
             this.style.right = ""
-            this._file_explorer_Box.style.marginTop = "0px";
-            this._file_explorer_Box.style.top = "";
-            this._file_explorer_Box.style.bottom = "";
-            this._file_explorer_Box.style.right = "";
-            this._file_explorer_Box.style.left = "";
-            this._file_explorer_Box.style.width = this._file_explorer_Box.width_;
-            this._file_explorer_Box.style.height = this._file_explorer_Box.height_;
+            this.style.marginTop = "0px";
+            this.style.bottom = "";
+            this.style.right = "";
+            let box = this.shadowRoot.querySelector("#file-explorer-box")
+            box.style.width = box.width_;
+            box.style.height = box.height_;
         }
 
         this.enterFullScreenBtn.onclick = () => {
             this.style.top = "60px"
             this.style.bottom = "0px"
             this.style.right = "0px"
-            this._file_explorer_Box.style.marginTop = "24px";
-            this._file_explorer_Box.style.top = "0px";
-            this._file_explorer_Box.style.bottom = "0px";
-            this._file_explorer_Box.style.right = "0px";
-            this._file_explorer_Box.style.left = "0px";
-            this._file_explorer_Box.width_ = this._file_explorer_Box.style.width
-            this._file_explorer_Box.style.width = "";
-            this._file_explorer_Box.height_ = this._file_explorer_Box.style.height
-            this._file_explorer_Box.style.height = "";
+            this.style.marginTop = "24px";
+            this.style.top = "0px";
+            this.style.bottom = "0px";
+            this.style.right = "0px";
+            this.style.left = "0px";
+            let box = this.shadowRoot.querySelector("#file-explorer-box")
+            box.width_ = box.style.width
+            box.style.width = "100%";
+            box.height_ = box.style.height
+            box.style.height = "100%";
+            
             // set buttons.
             this.enterFullScreenBtn.style.display = "none"
             this.exitFullScreenBtn.style.display = "block"
@@ -3353,7 +3356,7 @@ export class FileExplorer extends HTMLElement {
             this.displayWaitMessage("load " + this.root)
 
             // force reload the current dir with the content from the server.
-            delete dirs[getUuidByString(this.globule.config.Domain + "@" +this.path)]
+            delete dirs[getUuidByString(this.globule.config.Domain + "@" + this.path)]
 
             _readDir(this.root, (dir) => {
                 this.resume()
@@ -3887,7 +3890,7 @@ export class FileExplorer extends HTMLElement {
 
     open() {
 
-        this._file_explorer_Box.style.display = "flex"
+        this.style.display = "flex"
 
         if (this.onopen != undefined) {
             this.onopen();
@@ -3901,7 +3904,7 @@ export class FileExplorer extends HTMLElement {
     }
 
     close() {
-        this._file_explorer_Box.style.display = "none"
+        this.style.display = "none"
 
         if (this.onclose != undefined) {
             this.onclose();
@@ -4827,7 +4830,7 @@ export class FilesUploader extends HTMLElement {
         // Start file upload!
         uploadFile(0, () => {
             ApplicationView.displayMessage("All files are now uploaded!", 2000)
-            delete dirs[getUuidByString(this._file_explorer_.globule.config.Domain + "@" +path)]
+            delete dirs[getUuidByString(this._file_explorer_.globule.config.Domain + "@" + path)]
             Model.eventHub.publish("reload_dir_event", path, false)
         })
 

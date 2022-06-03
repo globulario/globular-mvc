@@ -4,7 +4,7 @@
  * @param {*} handle The handle to grab the div
  * @param {*} draggable The div (or any other html-element) to be move.
  */
-export function setMoveable(handle, draggable, onmove, element) {
+export function setMoveable(handle, draggable, onmove, element, offsetTop = 0) {
   draggable.style.position = "fixed"
   element.classList.add("draggable")
   var isMouseDown, initX, initY, height = draggable.offsetHeight, width = draggable.offsetWidth;
