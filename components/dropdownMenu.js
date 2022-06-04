@@ -26,10 +26,6 @@ export class DropdownMenuItem extends HTMLElement {
     this.shadowRoot.innerHTML = `
       <style>
           ${theme}
-          .subitems{
-            display: flex;
-            flex-direction: column;
-          }
 
           #container{
             display: flex;
@@ -76,10 +72,6 @@ export class DropdownMenuItem extends HTMLElement {
             padding-top:2px;
           }
 
-          #chevron{
-            display: none;
-          }
-
       </style>
       
       <div id="container">
@@ -88,11 +80,7 @@ export class DropdownMenuItem extends HTMLElement {
           <paper-ripple recenters></paper-ripple>
           <iron-icon id="icon" icon="${this.icon}"> </iron-icon>
           <span>${this.text}</span>
-          <iron-icon id="chevron" icon="icons:chevron-right"></iron-icon>
-          <paper-card>
-            <slot><slot>
-          </paper-card>
-          <slot class="subitems" name="subitems"><slot>
+          <slot><slot>
         </div>
       </div>
 
@@ -121,29 +109,7 @@ export class DropdownMenuItem extends HTMLElement {
   }
 
   connectedCallback() {
-    if (this.slot == "subitems") {
-      this.parentNode.hideIcon()
-    }
-
-    let container = this.shadowRoot.querySelector("#container")
-    // Now the submenu...
-    if (this.children.length > 0) {
-      if (this.children[0].slot != "subitems") {
-        this.shadowRoot.querySelector("#chevron").style.display = "block";
-        container.onmouseover = () => {
-          let submenu = this.shadowRoot.querySelector("paper-card")
-          submenu.style.display = "flex";
-          submenu.style.left = container.offsetWidth + "px";
-        }
-
-        container.onmouseout = () => {
-          let submenu = this.shadowRoot.querySelector("paper-card")
-          submenu.style.display = "none";
-        }
-      } else {
-        this.hideIcon();
-      }
-    }
+    
   }
 }
 
@@ -169,6 +135,8 @@ export class DropdownMenu extends HTMLElement {
 
     if (this.hasAttribute("icon")) {
       this.icon = this.getAttribute("icon")
+    }else if(!this.icon){
+      this.icon = "icons:chevron-right"
     }
 
     // Innitialisation of the layout.
@@ -212,11 +180,10 @@ export class DropdownMenu extends HTMLElement {
         `
 
     // give the focus to the input.
-    let container = this.shadowRoot.querySelector("#container")
-
-    let btn = this.shadowRoot.querySelector("paper-icon-button")
+    this.menuBtn = this.shadowRoot.querySelector("paper-icon-button")
     let menuItems = this.shadowRoot.querySelector("paper-card")
-    btn.onclick = () => {
+    this.menuBtn.onclick = (evt) => {
+      evt.stopPropagation()
 
       if (menuItems.style.display == "none") {
         menuItems.style.display = "block"
@@ -233,13 +200,15 @@ export class DropdownMenu extends HTMLElement {
   }
 
   hideBtn() {
-    let btn = this.shadowRoot.querySelector("paper-icon-button")
-    btn.style.display = "none"
+    if(this.menuBtn){
+      this.menuBtn.style.display = "none"
+    }
   }
 
   showBtn() {
-    let btn = this.shadowRoot.querySelector("paper-icon-button")
-    btn.style.display = "block"
+    if(this.menuBtn){
+      this.menuBtn.style.display = "block"
+    }
   }
 
   close() {

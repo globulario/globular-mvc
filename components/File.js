@@ -234,7 +234,7 @@ export class FilesView extends HTMLElement {
         let menuItemsHTML = `
         <globular-dropdown-menu-item  id="infos-menu-item" icon="icons:info" text="Infos" action=""> </globular-dropdown-menu-item>
         <globular-dropdown-menu-item separator="true" id="manage-acess-menu-item" icon="folder-shared" text="Manage access"action=""></globular-dropdown-menu-item>
-        <globular-dropdown-menu-item separator="true" id="video-menu-item" icon="maps:local-movies" text="Movies" action=""> 
+        <globular-dropdown-menu-item separator="true" id="video-menu-item" icon="maps:local-movies" text="Movies" action="" style="display: none;"> 
             <globular-dropdown-menu>
                 <globular-dropdown-menu-item id="generate-timeline-menu-item" icon="icons:open-in-new" text="generate timeline" action=""> </globular-dropdown-menu-item>
                 <globular-dropdown-menu-item id="generate-preview-menu-item" icon="icons:open-in-new" text="generate preview" action=""> </globular-dropdown-menu-item>
@@ -248,7 +248,7 @@ export class FilesView extends HTMLElement {
         <globular-dropdown-menu-item separator="true"  id="rename-menu-item" text="Rename" icon="icons:create" action=""> </globular-dropdown-menu-item>
         <globular-dropdown-menu-item id="delete-menu-item" icon="icons:delete" action="" text="Delete"> </globular-dropdown-menu-item>
         <globular-dropdown-menu-item separator="true"  id="download-menu-item" icon="icons:cloud-download" text="Download" action=""> </globular-dropdown-menu-item>
-        <globular-dropdown-menu-item id="open-in-new-tab-menu-item" icon="icons:open-in-new" text="Open in new tab" action=""> </globular-dropdown-menu-item>
+        <globular-dropdown-menu-item id="open-in-new-tab-menu-item" icon="icons:open-in-new" text="Open in new tab" action="" style="display: none;"> </globular-dropdown-menu-item>
         `
 
         this.menu = new DropdownMenu("icons:more-vert")
@@ -261,10 +261,34 @@ export class FilesView extends HTMLElement {
         this.downloadMenuItem = this.menu.querySelector("#download-menu-item")
         this.openInNewTabItem = this.menu.querySelector("#open-in-new-tab-menu-item")
 
+        // video convertion menu
+        this.videMenuItem = this.menu.querySelector("#video-menu-item")
+        this.generateTimeLineItem = this.menu.querySelector("#generate-timeline-menu-item")
+        this.generatePreviewItem = this.menu.querySelector("#generate-preview-menu-item")
+        this.toMp4MenuItem = this.menu.querySelector("#to-mp4-menu-item")
+        this.toHlsMenuItem = this.menu.querySelector("#to-hls-menu-item")
+
         // Now the cut copy and paste menu...
         this.cutMenuItem = this.menu.querySelector("#cut-menu-item")
         this.copyMenuItem = this.menu.querySelector("#copy-menu-item")
         this.pasteMenuItem = this.menu.querySelector("#paste-menu-item")
+
+        
+        this.videMenuItem.action = ()=>{
+
+        }
+
+        // Action to do when file is set
+        this.menu.setFile = (f)=>{
+            this.menu.file = f;
+            if(this.menu.file.mime.startsWith("video")){
+                this.videMenuItem.style.display = "block"
+                this.openInNewTabItem.style.display = "block"
+            }else{
+                this.videMenuItem.style.display = "none"
+                this.openInNewTabItem.style.display = "none"
+            }
+        }
 
         this.cutMenuItem.action = () => {
             this.edit = "cut"
@@ -589,6 +613,21 @@ export class FilesView extends HTMLElement {
             Model.eventHub.publish("display_permission_manager_event", this.menu.file.path, true)
 
             this.menu.parentNode.removeChild(this.menu)
+        }
+
+        this.videMenuItem.action = () => {
+        }
+
+        this.generateTimeLineItem.action = () => {
+        }
+
+        this.generatePreviewItem.action = () => {
+        }
+
+        this.toMp4MenuItem.action = () => {
+        }
+
+        this.toHlsMenuItem.action = () => {
         }
 
         this.shadowRoot.innerHTML = `
@@ -1356,7 +1395,8 @@ export class FilesListView extends FilesView {
                     this.div.querySelector(`tbody`).appendChild(this.menu)
                     this.menu.style.top = row.offsetTop + "px";
                     this.menu.style.left = row.children[0].offsetWidth - this.menu.offsetWidth + "px";
-                    this.menu.file = f
+
+                    this.menu.setFile(f)
 
                     this.menu.onmouseover = (evt) => {
                         evt.stopPropagation();
@@ -1580,7 +1620,7 @@ export class FilesIconView extends FilesView {
             }
 
             globular-dropdown-menu globular-dropdown-menu {
-                top: -10.5px;
+                top: -3.5px;
                 right: -10.5px;
             }
 
@@ -1919,7 +1959,7 @@ export class FilesIconView extends FilesView {
                             fileIconDiv.classList.remove("active")
                         }
 
-                        this.menu.file = file;
+                        this.menu.setFile(file)
 
                         // set the rename function.
                         this.menu.rename = () => {
