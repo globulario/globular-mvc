@@ -34,7 +34,6 @@ export class GlobularFileReader extends HTMLElement {
 
         // Get the parent size and set the max width of te
         window.addEventListener("resize", () => {
-            console.log(this.parentNode)
             this.frame.style.height = this.parentNode.offsetHeight + "px"
         });
     }

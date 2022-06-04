@@ -8,6 +8,7 @@ import '@polymer/paper-checkbox/paper-checkbox.js';
 import '@polymer/iron-icons/editor-icons.js'
 import "@polymer/iron-icons/social-icons";
 import "@polymer/iron-icons/av-icons";
+import "@polymer/iron-icons/maps-icons";
 import "@polymer/paper-progress/paper-progress.js"
 import '@polymer/paper-dropdown-menu/paper-dropdown-menu.js'
 import '@polymer/paper-listbox/paper-listbox.js'
@@ -232,7 +233,15 @@ export class FilesView extends HTMLElement {
 
         let menuItemsHTML = `
         <globular-dropdown-menu-item  id="infos-menu-item" icon="icons:info" text="Infos" action=""> </globular-dropdown-menu-item>
-        <globular-dropdown-menu-item  separator="true" id="manage-acess-menu-item" icon="folder-shared" text="Manage access"action=""></globular-dropdown-menu-item>
+        <globular-dropdown-menu-item separator="true" id="manage-acess-menu-item" icon="folder-shared" text="Manage access"action=""></globular-dropdown-menu-item>
+        <globular-dropdown-menu-item separator="true" id="video-menu-item" icon="maps:local-movies" text="Movies" action=""> 
+            <globular-dropdown-menu>
+                <globular-dropdown-menu-item id="generate-timeline-menu-item" icon="icons:open-in-new" text="generate timeline" action=""> </globular-dropdown-menu-item>
+                <globular-dropdown-menu-item id="generate-preview-menu-item" icon="icons:open-in-new" text="generate preview" action=""> </globular-dropdown-menu-item>
+                <globular-dropdown-menu-item separator="true" id="to-mp4-menu-item" icon="icons:open-in-new" text="convert to mp4" action=""> </globular-dropdown-menu-item>
+                <globular-dropdown-menu-item id="to-hls-menu-item" icon="icons:open-in-new" text="convert to hls" action=""> </globular-dropdown-menu-item>
+            </globular-dropdown-menu>
+        </globular-dropdown-menu-item>
         <globular-dropdown-menu-item separator="true"  id="cut-menu-item"  icon="icons:content-cut" text="Cut" action=""></globular-dropdown-menu-item>
         <globular-dropdown-menu-item id="copy-menu-item" icon="content-copy" text="Copy" action=""></globular-dropdown-menu-item>
         <globular-dropdown-menu-item id="paste-menu-item" icon="icons:content-paste" action="" text="Paste"></globular-dropdown-menu-item>
@@ -1565,9 +1574,14 @@ export class FilesIconView extends FilesView {
 
             globular-dropdown-menu {
                 position: absolute;
-                top: -1px;
+                top: -1.5px;
                 right: 0px;
                 z-index: 100;
+            }
+
+            globular-dropdown-menu globular-dropdown-menu {
+                top: -10.5px;
+                right: -10.5px;
             }
 
             iron-icon {

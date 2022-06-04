@@ -16,6 +16,7 @@ import { FileExplorer } from "./File"
 
 import { Model } from "../Model";
 import { ApplicationView } from "../ApplicationView";
+import * as getUuidByString from "uuid-by-string";
 
 /**
  * This is the side menu that will be set on left when the user wants to change it settings
@@ -1868,6 +1869,8 @@ export class ActionSetting extends Setting {
   constructor(name, description, onclick) {
     super(name, description)
 
+    let uuid = getUuidByString(name + description)
+
     let html = `
     <style>
     ${theme}
@@ -1886,17 +1889,12 @@ export class ActionSetting extends Setting {
 
     </style>
     <div id="bnt-div">
-      <paper-button class=" " id="btn" raised>${name}</paper-button>
+      <paper-button class=" " id="_${uuid}" raised>${name}</paper-button>
     </div>
   `
     let range = document.createRange();
     this.shadowRoot.appendChild(range.createContextualFragment(html))
-    this.onclick = onclick
-    this.shadowRoot.getElementById("btn").onclick = () => {
-      if (this.onclick != null) {
-        this.onclick()
-      }
-    }
+    this.shadowRoot.querySelector(`#_${uuid}`).onclick = onclick
   }
 }
 

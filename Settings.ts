@@ -16,6 +16,9 @@ import { ApplicationManager } from "./components/Applications";
 import { PeersManager } from "./components/Peers";
 import { OrganizationManager } from "./components/Organization";
 import { AccountManager } from "./components/Account";
+import { StartProcessVideoRequest, StopProcessVideoRequest, IsProcessVideoRequest, SetVideoConvertionRequest } from "globular-web-client/file/file_pb";
+import { FileServicePromiseClient } from "globular-web-client/file/file_grpc_web_pb";
+import { Globular } from "globular-web-client";
 
 export class Settings {
 
@@ -414,6 +417,7 @@ export class VideoSettings extends Settings {
     constructor(settingsMenu: SettingsMenu, settingsPanel: SettingsPanel) {
         super(settingsMenu, settingsPanel);
 
+
         settingsMenu.appendSettingsMenuItem("maps:local-movies", "Video");
 
         let viedoSettingPage = <any>settingsPanel.appendSettingsPage("Video");
@@ -431,43 +435,120 @@ export class VideoSettings extends Settings {
         conversionSettings.addSetting(enableStreamConversionSetting)
 
         let startConversionHour = new NumberSetting("start convertion hour", "The convertion will begin at this hour")
-        startConversionHour.setValue(0)
-        startConversionHour.getElement().setAttribute("max", "23")
-        startConversionHour.getElement().setAttribute("min", "0")
+        startConversionHour.setValue("00:00")
+        startConversionHour.getElement().setAttribute("type", "time")
+        startConversionHour.getElement().setAttribute("max", "24:00")
+        startConversionHour.getElement().setAttribute("min", "00:00")
         conversionSettings.addSetting(startConversionHour)
 
         let maxConvertionDelay = new NumberSetting("maximum convertion delay", "Maximum convertion runing time, stop processing new file past this delay (in hours)")
-        maxConvertionDelay.setValue(8)
-        maxConvertionDelay.getElement().setAttribute("max", "24")
-        maxConvertionDelay.getElement().setAttribute("min", "0")
+        maxConvertionDelay.setValue("08:00")
+        maxConvertionDelay.getElement().setAttribute("type", "time")
+        maxConvertionDelay.getElement().setAttribute("max", "24:00")
+        maxConvertionDelay.getElement().setAttribute("min", "00:00")
         conversionSettings.addSetting(maxConvertionDelay)
 
         enableConversionSetting.onchange = () => {
             // this.conversionSettings.KeepAlive = keepAlive.getValue()
             let conversion = enableConversionSetting.getValue()
-            if(conversion){
+            if (conversion) {
                 console.log("the automatic conversion is on")
                 enableStreamConversionSetting.style.display = "flex"
                 startConversionHour.style.display = "flex"
                 maxConvertionDelay.style.display = "flex"
-            }else{
+            } else {
                 console.log("the automatic conversion is off")
                 enableStreamConversionSetting.style.display = "none"
                 startConversionHour.style.display = "none"
                 maxConvertionDelay.style.display = "none"
             }
 
-            console.log("--------> video conversion setting has change!!!")
+
             this.needSave = true
         }
 
+        // The convert button will start video processing...
+        let startConvertVideoAction = new ActionSetting("Start Convert", "Convert video to MP4 or HLS", () => {
+            // Application.globular.ldapService.
+            let rqst = new StartProcessVideoRequest
+            Model.globular.fileService.startProcessVideo(rqst, {
+                token: localStorage.getItem("user_token"),
+                application: Model.application,
+                domain: Model.domain,
+                address: Model.address
+            }).then(rsp => {
+                stopConvertVideoAction.style.display = "flex"
+                startConvertVideoAction.style.display = "none"
+                ApplicationView.displayMessage("video convertion is running...", 3500)
+            }).catch(err => {
+                ApplicationView.displayMessage(err, 3000)
+            })
+        })
+
+        conversionSettings.addSetting(startConvertVideoAction)
+
 
         // The convert button will start video processing...
-        let convertVideoAction = new ActionSetting("Start Convert", "Convert video to MP4 or HLS")
-        conversionSettings.addSetting(convertVideoAction)
-        
+        let stopConvertVideoAction = new ActionSetting("Stop Convert", "Stop video convertion...", () => {
+            // Application.globular.ldapService.
+            let rqst = new StopProcessVideoRequest
+            Model.globular.fileService.stopProcessVideo(rqst, {
+                token: localStorage.getItem("user_token"),
+                application: Model.application,
+                domain: Model.domain,
+                address: Model.address
+            }).then(rsp => {
+                stopConvertVideoAction.style.display = "none"
+                startConvertVideoAction.style.display = "flex"
+                ApplicationView.displayMessage("video convertion is stopped...", 3500)
+            }).catch(err => {
+                ApplicationView.displayMessage(err, 3000)
+            })
+        })
+
+        conversionSettings.addSetting(stopConvertVideoAction)
+
+        let rqst = new IsProcessVideoRequest
+        Model.globular.fileService.isProcessVideo(rqst, {
+            token: localStorage.getItem("user_token"),
+            application: Model.application,
+            domain: Model.domain,
+            address: Model.address
+        }).then(rsp => {
+            if(rsp.getIsprocessvideo()){
+                stopConvertVideoAction.style.display = "flex"
+                startConvertVideoAction.style.display = "none"
+            }else{
+                stopConvertVideoAction.style.display = "none"
+                startConvertVideoAction.style.display = "flex"
+            }
+            
+        }).catch(err => {
+            ApplicationView.displayMessage(err, 3000)
+        })
 
 
+        // Need save...
+        Application.eventHub.subscribe("save_settings_evt",
+            (uuid: string) => {
+
+            },
+            (needSave: boolean) => {
+                if (needSave) {
+                    let rqst = new SetVideoConvertionRequest;
+                    rqst.setValue(enableConversionSetting.getValue());
+                    Model.globular.fileService.setVideoConvertion(rqst, {
+                        token: localStorage.getItem("user_token"),
+                        application: Model.application,
+                        domain: Model.domain,
+                        address: Model.address
+                    }).then(() => {
+                        console.log("file service was saved!")
+                    }).catch(err => {
+                        ApplicationView.displayMessage(err, 3000)
+                    })
+                }
+            })
     }
 
 

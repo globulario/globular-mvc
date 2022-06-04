@@ -165,6 +165,12 @@ dropdown-menu-element{
    overflow: auto;
 }
 
+
+globular-dropdown-menu globular-dropdown-menu {
+   top: -10.5px;
+   right: -10.5px;
+}
+
 /** The process manager */
 globular-processes-manager .table-item{
    text-align: left;
