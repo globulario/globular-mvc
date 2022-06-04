@@ -29,7 +29,7 @@ import { v4 as uuidv4 } from "uuid";
 
 // Menu to set action on files.
 import { DropdownMenu } from './dropdownMenu.js';
-import { CopyRequest, CreateDirRequest, GetFileInfoRequest, MoveRequest } from 'globular-web-client/file/file_pb';
+import { CopyRequest, CreateDirRequest, CreateVideoPreviewRequest, CreateVideoTimeLineRequest, GetFileInfoRequest, MoveRequest } from 'globular-web-client/file/file_pb';
 import { createArchive, deleteDir, deleteFile, downloadFileHttp, renameFile, uploadFiles } from 'globular-web-client/api';
 import { ApplicationView } from '../ApplicationView';
 import { Application } from '../Application';
@@ -232,14 +232,14 @@ export class FilesView extends HTMLElement {
         let id = "_" + uuidv4().split("-").join("_").split("@").join("_");
 
         let menuItemsHTML = `
-        <globular-dropdown-menu-item  id="infos-menu-item" icon="icons:info" text="Infos" action=""> </globular-dropdown-menu-item>
         <globular-dropdown-menu-item separator="true" id="manage-acess-menu-item" icon="folder-shared" text="Manage access"action=""></globular-dropdown-menu-item>
-        <globular-dropdown-menu-item separator="true" id="video-menu-item" icon="maps:local-movies" text="Movies" action="" style="display: none;"> 
+        <globular-dropdown-menu-item  id="infos-menu-item" icon="icons:info" text="Title Infos" action="" style="display: none;"> </globular-dropdown-menu-item>
+         <globular-dropdown-menu-item separator="true" id="video-menu-item" icon="maps:local-movies" text="Movies" action="" style="display: none;"> 
             <globular-dropdown-menu>
-                <globular-dropdown-menu-item id="generate-timeline-menu-item" icon="icons:open-in-new" text="generate timeline" action=""> </globular-dropdown-menu-item>
-                <globular-dropdown-menu-item id="generate-preview-menu-item" icon="icons:open-in-new" text="generate preview" action=""> </globular-dropdown-menu-item>
-                <globular-dropdown-menu-item separator="true" id="to-mp4-menu-item" icon="icons:open-in-new" text="convert to mp4" action=""> </globular-dropdown-menu-item>
-                <globular-dropdown-menu-item id="to-hls-menu-item" icon="icons:open-in-new" text="convert to hls" action=""> </globular-dropdown-menu-item>
+                <globular-dropdown-menu-item id="generate-timeline-menu-item" icon="maps:local-movies" text="generate timeline" action=""> </globular-dropdown-menu-item>
+                <globular-dropdown-menu-item id="generate-preview-menu-item" icon="maps:local-movies" text="generate preview" action=""> </globular-dropdown-menu-item>
+                <globular-dropdown-menu-item separator="true" id="to-mp4-menu-item" icon="maps:local-movies" text="convert to mp4" action="" style="display: none;"> </globular-dropdown-menu-item>
+                <globular-dropdown-menu-item separator="true" id="to-hls-menu-item" icon="maps:local-movies" text="convert to hls" action="" style="display: none;"> </globular-dropdown-menu-item>
             </globular-dropdown-menu>
         </globular-dropdown-menu-item>
         <globular-dropdown-menu-item separator="true"  id="cut-menu-item"  icon="icons:content-cut" text="Cut" action=""></globular-dropdown-menu-item>
@@ -273,18 +273,30 @@ export class FilesView extends HTMLElement {
         this.copyMenuItem = this.menu.querySelector("#copy-menu-item")
         this.pasteMenuItem = this.menu.querySelector("#paste-menu-item")
 
-        
-        this.videMenuItem.action = ()=>{
+
+        this.videMenuItem.action = () => {
 
         }
 
         // Action to do when file is set
-        this.menu.setFile = (f)=>{
+        this.menu.setFile = (f) => {
             this.menu.file = f;
-            if(this.menu.file.mime.startsWith("video")){
+            if (this.menu.file.mime.startsWith("video")) {
+                this.infosMenuItem.style.display = "block"
                 this.videMenuItem.style.display = "block"
                 this.openInNewTabItem.style.display = "block"
-            }else{
+                if (this.menu.file.name.endsWith(".mp4")) {
+                    this.toHlsMenuItem.style.display = "block"
+                    this.toMp4MenuItem.style.display = "none"
+                } else if (this.menu.file.mime == "video/hls-stream") {
+                    this.toHlsMenuItem.style.display = "none"
+                    this.toMp4MenuItem.style.display = "none"
+                } else {
+                    this.toHlsMenuItem.style.display = "none"
+                    this.toMp4MenuItem.style.display = "block"
+                }
+            } else {
+                this.infosMenuItem.style.display = "none"
                 this.videMenuItem.style.display = "none"
                 this.openInNewTabItem.style.display = "none"
             }
@@ -615,13 +627,58 @@ export class FilesView extends HTMLElement {
             this.menu.parentNode.removeChild(this.menu)
         }
 
-        this.videMenuItem.action = () => {
-        }
-
         this.generateTimeLineItem.action = () => {
+            // Generate the video time line...
+            let rqst = new CreateVideoTimeLineRequest
+            rqst.setWidth(180)
+            rqst.setFps(0.2)
+            let globule = this._file_explorer_.globule
+            let path = this.menu.file.path
+
+            // Set the users files/applications
+            if (this.menu.file.path.startsWith("/users") || this.menu.file.path.startsWith("/applications")) {
+                path = globule.config.DataPath + "/files" + this.menu.file.path
+            }
+
+            rqst.setPath(path)
+            ApplicationView.displayMessage("Create timeline for file at path </br>" + path, 3500)
+            globule.fileService.createVideoTimeLine(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
+                .then(rsp => {
+                    ApplicationView.displayMessage("Timeline is created </br>" + path, 3500)
+                })
+                .catch(err => {
+                    ApplicationView.displayMessage(err, 3000)
+                })
+
+            this.menu.close()
+
         }
 
         this.generatePreviewItem.action = () => {
+            // Generate the video preview...
+            let rqst = new CreateVideoPreviewRequest
+            rqst.setHeight(128)
+            rqst.setNb(20)
+            let globule = this._file_explorer_.globule
+            let path = this.menu.file.path
+
+            // Set the users files/applications
+            if (this.menu.file.path.startsWith("/users") || this.menu.file.path.startsWith("/applications")) {
+                path = globule.config.DataPath + "/files" + this.menu.file.path
+            }
+
+            rqst.setPath(path)
+            ApplicationView.displayMessage("Create preview for file at path </br>" + path, 3500)
+            globule.fileService.createVideoPreview(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
+                .then(rsp => {
+                    ApplicationView.displayMessage("Preview are created </br>" + path, 3500)
+                    Model.eventHub.publish("refresh_dir_evt", this.menu.file.path, false);
+                })
+                .catch(err => {
+                    ApplicationView.displayMessage(err, 3000)
+                })
+
+            this.menu.close()
         }
 
         this.toMp4MenuItem.action = () => {
@@ -1556,6 +1613,7 @@ export class FilesIconView extends FilesView {
                 min-width: ${w}px;
                 justify-content: center;
                 align-items: center;
+                position: relative;
             }
 
             .file-icon-div paper-checkbox{
@@ -1573,7 +1631,7 @@ export class FilesIconView extends FilesView {
 
             .file-icon-div img {
                 display: block;
-                width:auto;
+                min-width: 80px;
                 height: 100%;
             }
 
@@ -1594,7 +1652,9 @@ export class FilesIconView extends FilesView {
                text-align: center;
                max-height: 200px;
                overflow-y: hidden;
-
+               word-break: break-all;
+               font-size: 0.85rem;
+               padding: 5px;
             }
 
             .file-path {
@@ -1637,31 +1697,32 @@ export class FilesIconView extends FilesView {
 
         // Create the header.
         this.div.innerHTML = html
+        this.container = this.div.querySelector(`#container`);
 
-        this.div.querySelector(`#container`).onmouseleave = (evt) => {
+        this.container.onmouseleave = (evt) => {
             evt.stopPropagation()
         }
 
-        this.div.querySelector(`#container`).onclick = (evt) => {
+        this.container.onclick = (evt) => {
             evt.stopPropagation()
         }
 
-        this.div.querySelector(`#container`).ondrop = (evt) => {
+        this.container.ondrop = (evt) => {
             evt.preventDefault()
             this.ondrop(evt)
         }
 
-        this.div.querySelector(`#container`).ondragover = (evt) => {
+        this.container.ondragover = (evt) => {
             evt.preventDefault()
         }
 
         let filesByType = {};
+        let size = ""
+        let mime = "Dossier de fichiers"
+        let icon = "icons:folder"
+
         // get the info div that will contain the information.
         for (let f of dir.files) {
-            let size = ""
-            let mime = "Dossier de fichiers"
-            let icon = "icons:folder"
-
             if (!f.isDir) {
                 icon = "editor:insert-drive-file";
                 if (f.size > 1024) {
@@ -1743,6 +1804,7 @@ export class FilesIconView extends FilesView {
 
                 // Now I will append the file name span...
                 let fileNameSpan = document.createElement("span")
+                fileNameSpan.style.maxWidth = "100px"
 
                 let checkbox = fileIconDiv.querySelector("paper-checkbox")
 
@@ -1782,13 +1844,6 @@ export class FilesIconView extends FilesView {
                     }
                 }
 
-                // The parent path
-                let parentPath = ""
-                if (file.isDir) {
-                    parentPath = file.path.substring(0, file.path.lastIndexOf("/"))
-                } else {
-                    parentPath = file.path.substring(0, file.path.lastIndexOf("."))
-                }
 
                 if (fileType == "video") {
                     /** In that case I will display the vieo preview. */
@@ -1799,6 +1854,7 @@ export class FilesIconView extends FilesView {
                             let preview = new VideoPreview(path, previewDir._files, h, () => {
                                 fileNameSpan.style.wordBreak = "break-all"
                                 fileNameSpan.style.fontSize = ".85rem"
+                                fileNameSpan.style.maxWidth = preview.width + "px"
                             }, this._file_explorer_.globule)
 
                             // keep the explorer link...
@@ -1850,17 +1906,31 @@ export class FilesIconView extends FilesView {
                     img.src = file.thumbnail
                     img.draggable = false
 
-                    fileIconDiv.insertBefore(img, fileIconDiv.firstChild)
-                    if (img.width > 0 && img.height > 0) {
-                        w = (img.width / img.height) * h
+                    // The size of the span will be calculated in respect of the image size.
+                    let getMeta = (url) => {
+                        var img = new Image();
+                        img.onload = function () {
+                            if (img.width > 0 && img.height > 0) {
+                                w = (img.width / img.height) * h
+                                fileNameSpan.style.maxWidth = w + "px"
+                                fileNameSpan.style.wordBreak = "break-all"
+                                fileNameSpan.style.fontSize = ".85rem"
+                            }
+                        };
+                        img.src = url;
                     }
+
+                    getMeta(file.thumbnail)
+
+                    fileIconDiv.insertBefore(img, fileIconDiv.firstChild)
+
                     if (fileType == "image") {
                         img.onclick = (evt) => {
                             evt.stopPropagation();
                             Model.eventHub.publish("__show_image__", { path: file.path, file_explorer_id: this._file_explorer_.id }, true)
                         }
                     } else if (fileType == "audio") {
-
+                        console.log(fileType, file.path)
                         img.onclick = (evt) => {
                             evt.stopPropagation();
                             Model.eventHub.publish("__play_audio__", { path: file.path, file_explorer_id: this._file_explorer_.id }, true)
@@ -1873,10 +1943,9 @@ export class FilesIconView extends FilesView {
                             Model.eventHub.publish("__read_file__", { path: file.path, file_explorer_id: this._file_explorer_.id }, true)
                         }
                     }
-                } else
+                }
 
-                    fileIconDiv.draggable = true
-
+                fileIconDiv.draggable = true;
                 fileIconDiv.ondragstart = (evt) => {
                     evt.dataTransfer.setData('file', file.path);
                     evt.dataTransfer.setData('id', fileIconDiv.id)
@@ -1923,7 +1992,6 @@ export class FilesIconView extends FilesView {
                 }
 
                 fileNameSpan.innerHTML = file.name;
-                fileNameSpan.style.maxWidth = w + "px";
                 fileIconDiv.parentNode.appendChild(fileNameSpan);
 
                 fileIconDiv.onmouseenter = (evt) => {
@@ -1948,6 +2016,9 @@ export class FilesIconView extends FilesView {
                     if (!this.menu.isOpen()) {
                         this.menu.showBtn()
                         fileIconDiv.parentNode.appendChild(this.menu)
+                        this.menu.style.top = "0px"
+                        this.menu.style.right = "-5px"
+                        this.menu.style.zIndex = 1000
 
                         this.menu.onmouseover = (evt) => {
                             evt.stopPropagation();
@@ -3205,7 +3276,7 @@ export class FileExplorer extends HTMLElement {
 
         // I will use the resize event to set the size of the file explorer.
         this.exitFullScreenBtn.onclick = () => {
-            
+
             let position = JSON.parse(localStorage.getItem("__file_explorer_position__"))
             this.style.top = position.top + "px"
             this.style.left = position.left + "px"
@@ -3236,7 +3307,7 @@ export class FileExplorer extends HTMLElement {
             box.style.width = "100%";
             box.height_ = box.style.height
             box.style.height = "100%";
-            
+
             // set buttons.
             this.enterFullScreenBtn.style.display = "none"
             this.exitFullScreenBtn.style.display = "block"
@@ -3755,6 +3826,9 @@ export class FileExplorer extends HTMLElement {
         this.filesListView.__dir__ = dir
         this.filesIconView.__dir__ = dir
 
+        this.filesIconView.menu.close()
+        this.filesListView.menu.close()
+
         if (this.filesListBtn.classList.contains("active")) {
             this.filesListView.style.display = ""
             this.filesIconView.style.display = "none"
@@ -3813,6 +3887,7 @@ export class FileExplorer extends HTMLElement {
 
         // Set back the list and icon view
         this.displayView(dir)
+
 
         this.audioPlayer.style.display = "none"
         this.audioPlayer.stop();

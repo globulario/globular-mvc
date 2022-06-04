@@ -87,7 +87,7 @@ export class DropdownMenuItem extends HTMLElement {
       `
     // give the focus to the input.
     let container = this.shadowRoot.querySelector("#container")
-    container.onclick = () => {
+    container.onclick = (evt) => {
       if (this.action != undefined) {
         this.action()
         // close it parent.
