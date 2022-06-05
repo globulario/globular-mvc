@@ -16,8 +16,9 @@ import { ApplicationManager } from "./components/Applications";
 import { PeersManager } from "./components/Peers";
 import { OrganizationManager } from "./components/Organization";
 import { AccountManager } from "./components/Account";
-import { StartProcessVideoRequest, StopProcessVideoRequest, IsProcessVideoRequest, SetVideoConvertionRequest, SetVideoStreamConvertionRequest, SetStartVideoConvertionHourRequest, SetMaximumVideoConvertionDelayRequest } from "globular-web-client/file/file_pb";
+import { StartProcessVideoRequest, StopProcessVideoRequest, IsProcessVideoRequest, SetVideoConversionRequest, SetVideoStreamConversionRequest, SetStartVideoConversionHourRequest, SetMaximumVideoConversionDelayRequest, VideoConversionError, GetVideoConversionErrorsRequest, GetVideoConversionErrorsResponse } from "globular-web-client/file/file_pb";
 import { GetServiceConfigurationByIdRequest } from "globular-web-client/config_manager/config_pb";
+import { GetServicesConfigurationResponse } from "globular-web-client/services_manager/services_manager_pb";
 
 export class Settings {
 
@@ -433,19 +434,19 @@ export class VideoSettings extends Settings {
         enableStreamConversionSetting.setValue(true)
         conversionSettings.addSetting(enableStreamConversionSetting)
 
-        let startConversionHour = new NumberSetting("start convertion hour", "The convertion will begin at this hour")
+        let startConversionHour = new NumberSetting("start conversion hour", "The conversion will begin at this hour")
         startConversionHour.setValue("00:00")
         startConversionHour.getElement().setAttribute("type", "time")
         startConversionHour.getElement().setAttribute("max", "24:00")
         startConversionHour.getElement().setAttribute("min", "00:00")
         conversionSettings.addSetting(startConversionHour)
 
-        let maxConvertionDelay = new NumberSetting("maximum convertion delay", "Maximum convertion runing time, stop processing new file past this delay (in hours)")
-        maxConvertionDelay.setValue("08:00")
-        maxConvertionDelay.getElement().setAttribute("type", "time")
-        maxConvertionDelay.getElement().setAttribute("max", "24:00")
-        maxConvertionDelay.getElement().setAttribute("min", "00:00")
-        conversionSettings.addSetting(maxConvertionDelay)
+        let maxConversionDelay = new NumberSetting("maximum conversion delay", "Maximum conversion runing time, stop processing new file past this delay (in hours)")
+        maxConversionDelay.setValue("08:00")
+        maxConversionDelay.getElement().setAttribute("type", "time")
+        maxConversionDelay.getElement().setAttribute("max", "24:00")
+        maxConversionDelay.getElement().setAttribute("min", "00:00")
+        conversionSettings.addSetting(maxConversionDelay)
 
         let fileServerConfig = Model.globular.getConfigs("file.FileService")[0]
         let rqst_ = new GetServiceConfigurationByIdRequest
@@ -460,9 +461,9 @@ export class VideoSettings extends Settings {
             let configStr = rsp.getConfig()
             this.config = JSON.parse(configStr)
             enableConversionSetting.setValue(this.config.AutomaticVideoConversion)
-            enableStreamConversionSetting.setValue(this.config.AutomaticStreamConvertion)
-            startConversionHour.setValue(this.config.StartVideoConvertionHour)
-            maxConvertionDelay.setValue(this.config.MaximumVideoConvertionDelay)
+            enableStreamConversionSetting.setValue(this.config.AutomaticStreamConversion)
+            startConversionHour.setValue(this.config.StartVideoConversionHour)
+            maxConversionDelay.setValue(this.config.MaximumVideoConversionDelay)
 
         }).catch(err => {
             ApplicationView.displayMessage(err, 3000)
@@ -476,12 +477,12 @@ export class VideoSettings extends Settings {
                 console.log("the automatic conversion is on")
                 enableStreamConversionSetting.style.display = "flex"
                 startConversionHour.style.display = "flex"
-                maxConvertionDelay.style.display = "flex"
+                maxConversionDelay.style.display = "flex"
             } else {
                 console.log("the automatic conversion is off")
                 enableStreamConversionSetting.style.display = "none"
                 startConversionHour.style.display = "none"
-                maxConvertionDelay.style.display = "none"
+                maxConversionDelay.style.display = "none"
             }
 
             // keep in local value
@@ -496,7 +497,7 @@ export class VideoSettings extends Settings {
             let conversion = enableStreamConversionSetting.getValue()
 
             // keep in local value
-            this.config.AutomaticStreamConvertion = conversion
+            this.config.AutomaticStreamConversion = conversion
 
             this.needSave = true
         }
@@ -506,17 +507,17 @@ export class VideoSettings extends Settings {
             let value = startConversionHour.getValue()
 
             // keep in local value
-            this.config.StartVideoConvertionHour = value
+            this.config.StartVideoConversionHour = value
 
             this.needSave = true
         }
 
-        maxConvertionDelay.onchange = () => {
+        maxConversionDelay.onchange = () => {
             // this.conversionSettings.KeepAlive = keepAlive.getValue()
-            let value = maxConvertionDelay.getValue()
+            let value = maxConversionDelay.getValue()
 
             // keep in local value
-            this.config.MaximumVideoConvertionDelay = value
+            this.config.MaximumVideoConversionDelay = value
 
             this.needSave = true
         }
@@ -533,7 +534,7 @@ export class VideoSettings extends Settings {
             }).then(rsp => {
                 stopConvertVideoAction.style.display = "flex"
                 startConvertVideoAction.style.display = "none"
-                ApplicationView.displayMessage("video convertion is running...", 3500)
+                ApplicationView.displayMessage("video conversion is running...", 3500)
             }).catch(err => {
                 ApplicationView.displayMessage(err, 3000)
             })
@@ -543,7 +544,7 @@ export class VideoSettings extends Settings {
 
 
         // The convert button will start video processing...
-        let stopConvertVideoAction = new ActionSetting("Stop Convert", "Stop video convertion...", () => {
+        let stopConvertVideoAction = new ActionSetting("Stop Convert", "Stop video conversion...", () => {
             // Application.globular.ldapService.
             let rqst = new StopProcessVideoRequest
             Model.globular.fileService.stopProcessVideo(rqst, {
@@ -554,7 +555,7 @@ export class VideoSettings extends Settings {
             }).then(rsp => {
                 stopConvertVideoAction.style.display = "none"
                 startConvertVideoAction.style.display = "flex"
-                ApplicationView.displayMessage("video convertion is stopped...", 3500)
+                ApplicationView.displayMessage("video conversion is stopped...", 3500)
             }).catch(err => {
                 ApplicationView.displayMessage(err, 3000)
             })
@@ -587,22 +588,48 @@ export class VideoSettings extends Settings {
             (uuid: string) => {
 
             },
-            (needSave: boolean) => {
-                if (needSave) {
+            () => {
+                if (this.needSave) {
                     this.saveSetConversion(enableConversionSetting.getValue())
                     this.saveSetStreamConversion(enableStreamConversionSetting.getValue())
-                    this.saveMaxConvertionDelay(maxConvertionDelay.getValue())
+                    this.saveMaxConversionDelay(maxConversionDelay.getValue())
                     this.saveStartConversionHour(startConversionHour.getValue())
                 }
             })
+
+        //////////////////// Now the conversion error //////////////////
+        // Create general user settings ...
+        let conversionErrorsSettings = viedoSettingPage.appendSettings("Errors", "List of converstion errors");
+
+        // Here I will create the interface to display the list of errors and remove error from the list to.
+        this.getConversionErrors(errors=>{
+            console.log(errors)
+        })
     }
 
-    // Set|Reset automatic convertion.
+    // Return the list of conversion errors
+    getConversionErrors(callback:(errors:Array<VideoConversionError>)=>void){
+
+        let rqst = new GetVideoConversionErrorsRequest
+        Model.globular.fileService.getVideoConversionErrors(rqst, {
+            token: localStorage.getItem("user_token"),
+            application: Model.application,
+            domain: Model.domain,
+            address: Model.address
+        }).then((rsp: GetVideoConversionErrorsResponse) => {
+            callback(rsp.getErrorsList())
+        }).catch(err => {
+            ApplicationView.displayMessage(err, 3000)
+        })
+        
+    }
+
+    // Set|Reset automatic conversion.
     saveSetConversion(value: boolean) {
-        // Set video Convertion parameter...
-        let rqst = new SetVideoConvertionRequest;
+        // Set video Conversion parameter...
+        let rqst = new SetVideoConversionRequest;
         rqst.setValue(value);
-        Model.globular.fileService.setVideoConvertion(rqst, {
+        Model.globular.fileService.setVideoConversion(rqst, {
             token: localStorage.getItem("user_token"),
             application: Model.application,
             domain: Model.domain,
@@ -614,12 +641,12 @@ export class VideoSettings extends Settings {
         })
     }
 
-    // Set|Reset automatic steam convertion.
+    // Set|Reset automatic steam conversion.
     saveSetStreamConversion(value: boolean) {
-        // Set video Convertion parameter...
-        let rqst = new SetVideoStreamConvertionRequest;
+        // Set video Conversion parameter...
+        let rqst = new SetVideoStreamConversionRequest;
         rqst.setValue(value);
-        Model.globular.fileService.setVideoStreamConvertion(rqst, {
+        Model.globular.fileService.setVideoStreamConversion(rqst, {
             token: localStorage.getItem("user_token"),
             application: Model.application,
             domain: Model.domain,
@@ -631,12 +658,12 @@ export class VideoSettings extends Settings {
         })
     }
 
-    // Set|Reset start convertion time.
+    // Set|Reset start conversion time.
     saveStartConversionHour(value: string) {
-        // Set video Convertion parameter...
-        let rqst = new SetStartVideoConvertionHourRequest;
+        // Set video Conversion parameter...
+        let rqst = new SetStartVideoConversionHourRequest;
         rqst.setValue(value);
-        Model.globular.fileService.setStartVideoConvertionHour(rqst, {
+        Model.globular.fileService.setStartVideoConversionHour(rqst, {
             token: localStorage.getItem("user_token"),
             application: Model.application,
             domain: Model.domain,
@@ -649,12 +676,12 @@ export class VideoSettings extends Settings {
     }
 
 
-    // Set|Reset maximum convertion delay.
-    saveMaxConvertionDelay(value: string) {
-        // Set video Convertion parameter...
-        let rqst = new SetMaximumVideoConvertionDelayRequest;
+    // Set|Reset maximum conversion delay.
+    saveMaxConversionDelay(value: string) {
+        // Set video Conversion parameter...
+        let rqst = new SetMaximumVideoConversionDelayRequest;
         rqst.setValue(value);
-        Model.globular.fileService.setMaximumVideoConvertionDelay(rqst, {
+        Model.globular.fileService.setMaximumVideoConversionDelay(rqst, {
             token: localStorage.getItem("user_token"),
             application: Model.application,
             domain: Model.domain,

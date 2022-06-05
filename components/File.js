@@ -261,7 +261,7 @@ export class FilesView extends HTMLElement {
         this.downloadMenuItem = this.menu.querySelector("#download-menu-item")
         this.openInNewTabItem = this.menu.querySelector("#open-in-new-tab-menu-item")
 
-        // video convertion menu
+        // video conversion menu
         this.videMenuItem = this.menu.querySelector("#video-menu-item")
         this.generateTimeLineItem = this.menu.querySelector("#generate-timeline-menu-item")
         this.generatePreviewItem = this.menu.querySelector("#generate-preview-menu-item")
@@ -694,7 +694,7 @@ export class FilesView extends HTMLElement {
             ApplicationView.displayMessage("Convert file at path </br>" + path, 3500)
             globule.fileService.convertVideoToMpeg4H264(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
                 .then(rsp => {
-                    ApplicationView.displayMessage("Convertion done </br>" + path, 3500)
+                    ApplicationView.displayMessage("Conversion done </br>" + path, 3500)
                     Model.eventHub.publish("refresh_dir_evt", this.menu.file.path, false);
                 })
                 .catch(err => {
@@ -718,7 +718,7 @@ export class FilesView extends HTMLElement {
             ApplicationView.displayMessage("Convert file at path </br>" + path, 3500)
             globule.fileService.convertVideoToHls(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
                 .then(rsp => {
-                    ApplicationView.displayMessage("Convertion done </br>" + path, 3500)
+                    ApplicationView.displayMessage("Conversion done </br>" + path, 3500)
                     Model.eventHub.publish("refresh_dir_evt", this.menu.file.path, false);
                 })
                 .catch(err => {
@@ -1721,8 +1721,8 @@ export class FilesIconView extends FilesView {
             }
 
             globular-dropdown-menu globular-dropdown-menu {
-                top: -3.5px;
-                right: -10.5px;
+                top: -5px;
+                right: 0px;
             }
 
             iron-icon {

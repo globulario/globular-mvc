@@ -799,7 +799,7 @@ export function ab2str(buffer) {
   return String.fromCharCode.apply(null, new Uint8Array(buffer));
 }
 /**
- * Convertion of a string to an Array Buffer.
+ * Conversion of a string to an Array Buffer.
  * @param {string} str The string to convert.
  * @returns the resulting Array Buffer.
  */
@@ -816,7 +816,7 @@ export function str2ab(str) {
   return buf;
 }
 /**
- * Convertion fo an height unsigned bytes integer array to base 64 string. 
+ * Conversion fo an height unsigned bytes integer array to base 64 string. 
  * @param array The array to convert.
  * @returns {string} the base 64 string representation of the input array.
  */
