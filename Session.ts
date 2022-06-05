@@ -31,6 +31,10 @@ export class Session extends Model {
         return this.state_;
     }
 
+    public get domain(): string {
+        return this.account.domain;
+    }
+
     // Set the session state.
     public set state(value: SessionState) {
         this.state_ = value;
@@ -40,6 +44,7 @@ export class Session extends Model {
     // The link to the account.
     constructor(account: Account, state: number = 1, lastStateTime?: number) {
         super();
+
         this.account = account;
         this._id = this.account.id;
 
@@ -102,10 +107,12 @@ export class Session extends Model {
                 address: Model.address
             })
             .then((rsp: resource.GetSessionResponse) => {
+                
                 let obj = rsp.getSession()
                 this._id = obj.getAccountid();
                 this.state_ = obj.getState().valueOf();
                 this.lastStateTime = new Date(obj.getLastStateTime() * 1000);
+                console.log("session ", obj)
                 Account.getAccount(this._id,
                     (account: Account) => {
                         // Here I will connect local event to react with interface element...
@@ -115,6 +122,7 @@ export class Session extends Model {
 
             })
             .catch((err: any) => {
+                console.log("fail to get session ", err)
                 // In that case I will save defaut session values...
                 this.save(() => {
                     initCallback()
@@ -128,7 +136,7 @@ export class Session extends Model {
         if(this.lastStateTime){
             lastTime = Math.floor(this.lastStateTime.getTime() / 1000)
         }
-        return `{"_id":"${this._id}", "state":${this.state.toString()}, "lastStateTime":"${0}"}`
+        return `{"_id":"${this._id}", "state":${this.state.toString()}, "lastStateTime":"${lastTime}"}`
     }
 
     // Init from the db...
@@ -169,8 +177,8 @@ export class Session extends Model {
         }
 
         session.setExpireAt(parseInt(localStorage.getItem("token_expired")))
-
         rqst.setSession(session)
+
         // call persist data
         Model.globular.resourceService
             .updateSession(rqst, {
@@ -181,6 +189,7 @@ export class Session extends Model {
             })
             .then((rsp: resource.UpdateSessionResponse) => {
                 // Here I will return the value with it
+                console.log("-------------------> session change ", this)
                 Model.eventHub.publish(`session_state_${this._id}_change_event`, this.toString(), false)
                 onSave();
             })

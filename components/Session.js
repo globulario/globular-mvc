@@ -5,10 +5,8 @@ import { Model } from "../Model"
 import "@polymer/iron-icons/device-icons";
 import "@polymer/iron-icon/iron-icon.js";
 import '@polymer/paper-toggle-button/paper-toggle-button.js';
-import { Session } from '../Session'
 import { ApplicationView } from "../ApplicationView";
 import { v4 as uuidv4 } from "uuid";
-import { LogInfo } from "globular-web-client/log/log_pb";
 
 // This variables are for the active user.
 let accountId = ""
@@ -131,6 +129,7 @@ export class SessionState extends HTMLElement {
 
             Account.getAccount(this.getAttribute("account"), (val) => {
                 this.account = val;
+                this.init();
             }, (err) => {
                 ApplicationView.displayMessage(err, 3000)
             })
@@ -156,6 +155,7 @@ export class SessionState extends HTMLElement {
                 this.sessionChangeListener = uuid;
             },
             (evt) => {
+                
                 // Set the value here...
                 let obj = JSON.parse(evt)
                 this.account.session.lastStateTime_ = new Date(obj.lastStateTime * 1000)

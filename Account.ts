@@ -123,9 +123,6 @@ export class Account extends Model {
         this.firstName_ = "";
         this.lastName_ = "";
         this.middleName_ = "";
-
-        // Set empty session...
-        this.session = new Session(this)
     }
 
     /**
@@ -146,14 +143,14 @@ export class Account extends Model {
 
         let rqst = new ResourceService.GetAccountsRqst
         rqst.setQuery(`{"$or":[{"_id":"${id}"},{"name":"${id}"} ]}`); // search by name and not id... the id will be retreived.
-        rqst.setOptions(`[{"Projection":{"_id":1, "email":1, "name":1, "groups":1, "organizations":1, "roles":1}}]`);
+        rqst.setOptions(`[{"Projection":{"_id":1, "email":1, "name":1, "groups":1, "organizations":1, "roles":1, "domain":1}}]`);
 
         let token = localStorage.getItem("user_token")
         let decoded = jwt(token);
-        let address = (<any>decoded).address;
         let domain = (<any>decoded).domain;
+        let address = (<any>decoded).address;
 
-        if (Account.accounts[id] != null) {
+        if (Account.accounts[id + "@" + domain] != null) {
             successCallback(Account.accounts[id + "@" + domain]);
             return
         }
@@ -174,22 +171,29 @@ export class Account extends Model {
 
 
                 let data = accounts_[0]
-
                 // so here I will get the session for the account...
                 if (Account.accounts[data.getId() + "@" + data.getDomain()] != null) {
                     successCallback(Account.accounts[data.getId() + "@" + data.getDomain()]);
                     return
                 }
 
+                console.log("receive account data: ", data)
+
+
                 let account = new Account(data.getId(), data.getEmail(), data.getName(), data.getDomain())
                 account.session = new Session(account)
-                Account.accounts[data.getId() + "@" + data.getDomain()] = account;
-                account.initData(() => {
 
-                    // here I will initialyse groups...
-                    account.groups_ = data.getGroupsList();
-                    successCallback(account)
+                Account.accounts[data.getId() + "@" + data.getDomain()] = account;
+                account.session.initData(()=>{
+                    console.log("--------> session for ", account.name, " is ", account.session)
+                    account.initData(() => {
+
+                        // here I will initialyse groups...
+                        account.groups_ = data.getGroupsList();
+                        successCallback(account)
+                    }, errorCallback)
                 }, errorCallback)
+
             } else {
                 errorCallback(status.details);
             }

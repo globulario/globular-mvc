@@ -462,7 +462,6 @@ export class Application extends Model {
               false, this)
 
             account.session.state = SessionState.Online
-
             Model.eventHub.publish(`__session_state_${account.id}_change_event__`, account.session, true)
 
             Model.eventHub.subscribe("deleted_" + account.id + "_evt",
