@@ -1899,3 +1899,143 @@ export class ActionSetting extends Setting {
 }
 
 customElements.define("globular-action-setting", ActionSetting);
+
+
+/**
+ * display a video convertion error
+ */
+ export class VideoConversionError extends HTMLElement {
+  // attributes.
+
+  // Create the applicaiton view.
+  constructor(err) {
+      super()
+      // Set the shadow dom.
+      this.attachShadow({ mode: 'open' });
+
+      let uuid = "_" + getUuidByString(err.getPath())
+
+      // Innitialisation of the layout.
+      this.shadowRoot.innerHTML = `
+      <style>
+          ${theme}
+      </style>
+
+      <div id="${uuid}" style="display: flex; align-items: center; padding-bottom: 10px; padding-top: 10px; border-bottom: 1px solid var(--palette-divider)">
+        <div style="padding-right: 10px;">
+          <paper-icon-button id="${uuid}_delete_btn" icon="delete"></paper-icon-button>
+        </div>
+        <div style="flex-grow: 1; display: flex; flex-direction: column;">
+          <div style="padding-bottom: 5px; padding-top: 5px;">${err.getPath()}</div>
+          <span style="width: 100%;  border-bottom: 1px solid var(--palette-divider)"></span>
+          <div style="padding-bottom: 5px; padding-top: 5px;">${err.getError()}</div>
+        </div>
+      </div>
+      `
+
+      // test create offer...
+      this.deleteBtn = this.shadowRoot.querySelector(`#${uuid}_delete_btn`)
+  }
+
+}
+
+customElements.define('globular-video-conversion-error', VideoConversionError)
+
+/**
+ * Video Convertion error
+ */
+ export class VideoConversionErrorsManager extends HTMLElement {
+  // attributes.
+
+  // Create the applicaiton view.
+  constructor(ondeleteerror, onclear, onrefresh) {
+      super()
+      // Set the shadow dom.
+      this.attachShadow({ mode: 'open' });
+
+      // Innitialisation of the layout.
+      this.shadowRoot.innerHTML = `
+      <style>
+          ${theme}
+
+          #container{
+            padding: 15px 16px 16px;
+            display: flex;
+            flex-direction: column;
+          }
+
+          #errors{
+            display: flex;
+            flex-direction: column;
+          }
+
+      </style>
+
+      <div id="container">
+         <div style="display: flex; justify-content: flex-end;">
+          <paper-icon-button id="refresh-btn" icon="icons:refresh"></paper-icon-button>
+          <paper-icon-button id="clear-btn" icon="icons:clear"></paper-icon-button>
+         </div>
+         <div id="errors">
+            <slot></slot>
+         </div>
+      </div>
+      `
+
+      // List of handler.
+      this.ondeleteerror = ondeleteerror
+      this.onclear = onclear
+      this.onrefresh = onrefresh
+
+      // Clear the content.
+      this.shadowRoot.querySelector("#clear-btn").onclick = ()=>{
+        if(this.onclear != undefined){
+          this.innerHTML = "" // reset the content...
+          this.onclear()
+        }
+      }
+
+      // Refresh the the content
+      this.shadowRoot.querySelector("#refresh-btn").onclick = ()=>{
+        if(this.onrefresh != null){
+          this.onrefresh(errors=>{
+            this.innerHTML = "" // reset the content...
+            this.setErrors(errors)
+          })
+        }
+      }
+  }
+
+  // Use by addSetting...
+  getElement(){
+    return null
+  }
+
+  setError(err){
+    let videoConversionError = new VideoConversionError(err)
+    this.appendChild(videoConversionError)
+    if(videoConversionError.deleteBtn){
+      videoConversionError.deleteBtn.onclick = ()=>{this.deleteError(err, videoConversionError)}
+    }
+  }
+
+  setErrors(errors){
+    errors.forEach(err=>{
+      this.setError(err)
+    })
+  }
+
+  // Delete error...
+  deleteError(err, videoConversionError){
+    if(videoConversionError){
+      if(videoConversionError.parentNode!=undefined){
+        videoConversionError.parentNode.removeChild(videoConversionError)
+      }
+    }
+    if(this.ondeleteerror){
+      this.ondeleteerror(err)
+    }
+  }
+}
+
+customElements.define('globular-video-conversion-errors-manager', VideoConversionErrorsManager)

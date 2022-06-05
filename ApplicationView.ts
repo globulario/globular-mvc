@@ -996,7 +996,7 @@ export class ApplicationView extends View {
 
   /**
    * Invite to conversation.
-   * @param converstion 
+   * @param conversation 
    */
   onInviteToConversaiton(conversation: Conversation) {
     let toast = ApplicationView.displayMessage(

@@ -153,7 +153,7 @@ export class MessengerMenu extends Menu {
             <div id="Messages-div">
                 <div style="display: flex; align-items: center;">
                     <paper-input type="text" label="Search" id="search-conversation-box" width="${this.width}" style="flex-grow: 1;"></paper-input>
-                    <div id="new-converstion-btn" class="btn" style="position: relative;">
+                    <div id="new-conversation-btn" class="btn" style="position: relative;">
                         <iron-icon style="flex-grow: 1; --iron-icon-fill-color:var(--palette-text-primary);" icon="add"></iron-icon>
                         <paper-ripple class="circle" recenters=""></paper-ripple>
                     </div>
@@ -236,9 +236,9 @@ export class MessengerMenu extends Menu {
         // Find a conversation...
         let searchBox = this.shadowRoot.querySelector("#search-conversation-box");
         searchBox.onkeyup = (evt) => {
-            let searchConverstionResults = this.shadowRoot.querySelector("#search-conversation-results")
-            if (searchConverstionResults != undefined) {
-                searchConverstionResults.innerHTML = ""
+            let searchconversationResults = this.shadowRoot.querySelector("#search-conversation-results")
+            if (searchconversationResults != undefined) {
+                searchconversationResults.innerHTML = ""
             }
 
             if (evt.code == "Enter") {
@@ -264,11 +264,11 @@ export class MessengerMenu extends Menu {
 
                         this.shadowRoot.querySelector("#conversation-search-results").appendChild(document.createRange().createContextualFragment(html))
 
-                        searchConverstionResults = this.shadowRoot.querySelector("#search-conversation-results")
+                        searchconversationResults = this.shadowRoot.querySelector("#search-conversation-results")
                         for (var i = 0; i < conversations.length; i++) {
                             let conversationInfos = new ConversationInfos(null, this.account)
                             conversationInfos.init(conversations[i])
-                            searchConverstionResults.appendChild(conversationInfos)
+                            searchconversationResults.appendChild(conversationInfos)
                         }
                     },
                     (err) => {
@@ -280,7 +280,7 @@ export class MessengerMenu extends Menu {
         }
 
 
-        this.newconversationBtn = this.shadowRoot.querySelector("#new-converstion-btn")
+        this.newconversationBtn = this.shadowRoot.querySelector("#new-conversation-btn")
 
         this.newconversationBtn.onclick = () => {
             // simply publish create new conversation...
@@ -819,7 +819,7 @@ export class Messenger extends HTMLElement {
         // The list of listener's
         this.listeners = {}
 
-        // Here I will keep the opened converstion infos...
+        // Here I will keep the opened conversation infos...
         this.conversations = {}
 
         this.shadowRoot.innerHTML = `
@@ -1053,7 +1053,7 @@ export class Messenger extends HTMLElement {
         let messages = this.conversations[conversationUuid].messages
         this.shadowRoot.querySelector("#leave_conversation_btn").style.display = ""
 
-        // Set the leave converstion button.
+        // Set the leave conversation button.
         this.shadowRoot.querySelector("#leave_conversation_btn").onclick = () => {
             this.shadowRoot.querySelector("#leave_conversation_btn").style.display = "none"
             ConversationManager.leaveConversation(conversationUuid,
@@ -1079,7 +1079,7 @@ export class Messenger extends HTMLElement {
 
     }
 
-    // Here I will open the converstion.
+    // Here I will open the conversation.
     openConversation(conversation, messages) {
 
         let videoConversation = new VideoConversation(conversation.getUuid())
@@ -1099,7 +1099,7 @@ export class Messenger extends HTMLElement {
         // Connect the conversation event's
         this.shadowRoot.querySelector("#leave_conversation_btn").style.display = ""
 
-        // Set the leave converstion button.
+        // Set the leave conversation button.
         this.shadowRoot.querySelector("#leave_conversation_btn").onclick = () => {
             // block multiple click.
             this.shadowRoot.querySelector("#leave_conversation_btn").style.display = "none"

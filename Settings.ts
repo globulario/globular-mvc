@@ -6,7 +6,7 @@ import { ApplicationView } from "./ApplicationView";
 import { FileExplorer } from "./components/File";
 import { RoleManager } from "./components/Role"
 import { GroupManager } from "./components/Group"
-import { ImageCropperSetting, SettingsMenu, SettingsPanel, ComplexSetting, EmailSetting, StringSetting, RadioGroupSetting, OnOffSetting, NumberSetting, ActionSetting } from "./components/Settings";
+import { ImageCropperSetting, SettingsMenu, SettingsPanel, ComplexSetting, EmailSetting, StringSetting, RadioGroupSetting, OnOffSetting, NumberSetting, ActionSetting, VideoConversionErrorsManager } from "./components/Settings";
 import { Model } from "./Model";
 import "@polymer/iron-icons/maps-icons";
 import "@polymer/iron-icons/social-icons";
@@ -16,9 +16,8 @@ import { ApplicationManager } from "./components/Applications";
 import { PeersManager } from "./components/Peers";
 import { OrganizationManager } from "./components/Organization";
 import { AccountManager } from "./components/Account";
-import { StartProcessVideoRequest, StopProcessVideoRequest, IsProcessVideoRequest, SetVideoConversionRequest, SetVideoStreamConversionRequest, SetStartVideoConversionHourRequest, SetMaximumVideoConversionDelayRequest, VideoConversionError, GetVideoConversionErrorsRequest, GetVideoConversionErrorsResponse } from "globular-web-client/file/file_pb";
+import { StartProcessVideoRequest, StopProcessVideoRequest, IsProcessVideoRequest, SetVideoConversionRequest, SetVideoStreamConversionRequest, SetStartVideoConversionHourRequest, SetMaximumVideoConversionDelayRequest, VideoConversionError, GetVideoConversionErrorsRequest, GetVideoConversionErrorsResponse, ClearVideoConversionErrorRequest, ClearVideoConversionErrorsRequest } from "globular-web-client/file/file_pb";
 import { GetServiceConfigurationByIdRequest } from "globular-web-client/config_manager/config_pb";
-import { GetServicesConfigurationResponse } from "globular-web-client/services_manager/services_manager_pb";
 
 export class Settings {
 
@@ -407,6 +406,22 @@ export class PeersSettings extends Settings {
     }
 }
 
+// Return the list of conversion errors
+function getConversionErrors(callback: (errors: Array<VideoConversionError>) => void) {
+
+    let rqst = new GetVideoConversionErrorsRequest
+    Model.globular.fileService.getVideoConversionErrors(rqst, {
+        token: localStorage.getItem("user_token"),
+        application: Model.application,
+        domain: Model.domain,
+        address: Model.address
+    }).then((rsp: GetVideoConversionErrorsResponse) => {
+        callback(rsp.getErrorsList())
+    }).catch(err => {
+        ApplicationView.displayMessage(err, 3000)
+    })
+}
+
 /**
  * Model to manage users account settings.
  */
@@ -599,29 +614,54 @@ export class VideoSettings extends Settings {
 
         //////////////////// Now the conversion error //////////////////
         // Create general user settings ...
-        let conversionErrorsSettings = viedoSettingPage.appendSettings("Errors", "List of converstion errors");
+        let conversionErrorsSettings = viedoSettingPage.appendSettings("Errors", "List of conversion errors");
 
         // Here I will create the interface to display the list of errors and remove error from the list to.
-        this.getConversionErrors(errors=>{
-            console.log(errors)
+        let videoConversionErrorsManager = new VideoConversionErrorsManager(this.deletVideoConversionError, this.clearVideoConversionErrors, this.refreshVideoConversionErrors)
+
+        conversionErrorsSettings.addSetting(videoConversionErrorsManager)
+
+        getConversionErrors(errors => {
+
+            videoConversionErrorsManager.setErrors(errors)
         })
     }
 
-    // Return the list of conversion errors
-    getConversionErrors(callback:(errors:Array<VideoConversionError>)=>void){
 
-        let rqst = new GetVideoConversionErrorsRequest
-        Model.globular.fileService.getVideoConversionErrors(rqst, {
+
+    deletVideoConversionError(err: VideoConversionError) {
+        let rqst = new ClearVideoConversionErrorRequest
+        rqst.setPath(err.getPath())
+        Model.globular.fileService.clearVideoConversionError(rqst, {
             token: localStorage.getItem("user_token"),
             application: Model.application,
             domain: Model.domain,
             address: Model.address
         }).then((rsp: GetVideoConversionErrorsResponse) => {
-            callback(rsp.getErrorsList())
+            ApplicationView.displayMessage("error was deleted, you can try to convert the video again", 3000)
         }).catch(err => {
             ApplicationView.displayMessage(err, 3000)
         })
-        
+    }
+
+    refreshVideoConversionErrors(callback: (errors: Array<VideoConversionError>) => void) {
+        getConversionErrors(errors => {
+            callback(errors)
+        })
+    }
+
+    clearVideoConversionErrors() {
+        let rqst = new ClearVideoConversionErrorsRequest
+        Model.globular.fileService.clearVideoConversionErrors(rqst, {
+            token: localStorage.getItem("user_token"),
+            application: Model.application,
+            domain: Model.domain,
+            address: Model.address
+        }).then((rsp: GetVideoConversionErrorsResponse) => {
+            ApplicationView.displayMessage("all video convesion are deleted, file in that list will not be convert", 3000)
+        }).catch(err => {
+            ApplicationView.displayMessage(err, 3000)
+        })
     }
 
     // Set|Reset automatic conversion.
@@ -1162,3 +1202,4 @@ export class LogSettings extends Settings {
 
     }
 }
+
