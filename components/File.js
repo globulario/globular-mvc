@@ -29,7 +29,7 @@ import { v4 as uuidv4 } from "uuid";
 
 // Menu to set action on files.
 import { DropdownMenu } from './dropdownMenu.js';
-import { CopyRequest, CreateDirRequest, CreateVideoPreviewRequest, CreateVideoTimeLineRequest, GetFileInfoRequest, MoveRequest } from 'globular-web-client/file/file_pb';
+import { ConvertVideoToHlsRequest, ConvertVideoToMpeg4H264Request, CopyRequest, CreateDirRequest, CreateVideoPreviewRequest, CreateVideoTimeLineRequest, GetFileInfoRequest, MoveRequest } from 'globular-web-client/file/file_pb';
 import { createArchive, deleteDir, deleteFile, downloadFileHttp, renameFile, uploadFiles } from 'globular-web-client/api';
 import { ApplicationView } from '../ApplicationView';
 import { Application } from '../Application';
@@ -183,7 +183,7 @@ function _readDir(path, callback, errorCallback, globule) {
 function getHiddenFiles(path, callback, globule) {
 
     let thumbnailPath = path.replace("/playlist.m3u8", "")
-    if (thumbnailPath.lastIndexOf(".mp4") != -1) {
+    if (thumbnailPath.lastIndexOf(".mp4") != -1 || thumbnailPath.lastIndexOf(".mkv") != -1  || thumbnailPath.lastIndexOf(".avi") != -1) {
         thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("."))
     }
     thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/__preview__"
@@ -232,8 +232,8 @@ export class FilesView extends HTMLElement {
         let id = "_" + uuidv4().split("-").join("_").split("@").join("_");
 
         let menuItemsHTML = `
-        <globular-dropdown-menu-item separator="true" id="manage-acess-menu-item" icon="folder-shared" text="Manage access"action=""></globular-dropdown-menu-item>
         <globular-dropdown-menu-item  id="infos-menu-item" icon="icons:info" text="Title Infos" action="" style="display: none;"> </globular-dropdown-menu-item>
+        <globular-dropdown-menu-item  id="manage-acess-menu-item" icon="folder-shared" text="Manage access"action=""></globular-dropdown-menu-item>
          <globular-dropdown-menu-item separator="true" id="video-menu-item" icon="maps:local-movies" text="Movies" action="" style="display: none;"> 
             <globular-dropdown-menu>
                 <globular-dropdown-menu-item id="generate-timeline-menu-item" icon="maps:local-movies" text="generate timeline" action=""> </globular-dropdown-menu-item>
@@ -682,9 +682,50 @@ export class FilesView extends HTMLElement {
         }
 
         this.toMp4MenuItem.action = () => {
+            let rqst = new ConvertVideoToMpeg4H264Request
+            let path = this.menu.file.path
+            let globule = this._file_explorer_.globule
+            // Set the users files/applications
+            if (this.menu.file.path.startsWith("/users") || this.menu.file.path.startsWith("/applications")) {
+                path = globule.config.DataPath + "/files" + this.menu.file.path
+            }
+            rqst.setPath(path)
+
+            ApplicationView.displayMessage("Convert file at path </br>" + path, 3500)
+            globule.fileService.convertVideoToMpeg4H264(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
+                .then(rsp => {
+                    ApplicationView.displayMessage("Convertion done </br>" + path, 3500)
+                    Model.eventHub.publish("refresh_dir_evt", this.menu.file.path, false);
+                })
+                .catch(err => {
+                    ApplicationView.displayMessage(err, 3000)
+                })
+
+            this.menu.close()
+
         }
 
         this.toHlsMenuItem.action = () => {
+            let rqst = new ConvertVideoToHlsRequest
+            let path = this.menu.file.path
+            let globule = this._file_explorer_.globule
+            // Set the users files/applications
+            if (this.menu.file.path.startsWith("/users") || this.menu.file.path.startsWith("/applications")) {
+                path = globule.config.DataPath + "/files" + this.menu.file.path
+            }
+            rqst.setPath(path)
+
+            ApplicationView.displayMessage("Convert file at path </br>" + path, 3500)
+            globule.fileService.convertVideoToHls(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
+                .then(rsp => {
+                    ApplicationView.displayMessage("Convertion done </br>" + path, 3500)
+                    Model.eventHub.publish("refresh_dir_evt", this.menu.file.path, false);
+                })
+                .catch(err => {
+                    ApplicationView.displayMessage(err, 3000)
+                })
+
+            this.menu.close()
         }
 
         this.shadowRoot.innerHTML = `
