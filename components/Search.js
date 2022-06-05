@@ -15,6 +15,28 @@ import * as getUuidByString from 'uuid-by-string';
 // keep values in memorie to speedup...
 var titles = {}
 
+// Keep in memory to speed up....
+var images = {}
+function toDataURL(url, callback) {
+    if(images[url]!=null){
+        callback(images[url])
+        return
+    }
+
+    var xhr = new XMLHttpRequest();
+    xhr.onload = function () {
+        var reader = new FileReader();
+        reader.onloadend = function () {
+            images[url] = reader.result
+            callback(reader.result);
+        }
+        reader.readAsDataURL(xhr.response);
+    };
+    xhr.open('GET', url);
+    xhr.responseType = 'blob';
+    xhr.send();
+}
+
 export function getCoverDataUrl(callback, videoId, videoUrl, videoPath, globule) {
     if (!globule) {
         globule = Application.globular
@@ -22,10 +44,10 @@ export function getCoverDataUrl(callback, videoId, videoUrl, videoPath, globule)
 
     // set the url for the image.
     let url = globule.config.Protocol + "://" + globule.config.Domain
-    if(window.location != globule.config.Domain){
-        if(globule.config.AlternateDomains.indexOf(window.location.host)!=-1){
-            url = globule.config.Protocol + "://" +  window.location.host
-        } 
+    if (window.location != globule.config.Domain) {
+        if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
+            url = globule.config.Protocol + "://" + window.location.host
+        }
     }
 
     if (globule.config.Protocol == "https") {
@@ -50,6 +72,11 @@ export function getCoverDataUrl(callback, videoId, videoUrl, videoPath, globule)
     url += "&url=" + videoUrl
     url += "&path=" + videoPath
 
+    if(images[url]!=null){
+        callback(images[url])
+        return
+    }
+
     var xhr = new XMLHttpRequest();
     xhr.timeout = 1500
     xhr.open('GET', url, true);
@@ -58,9 +85,11 @@ export function getCoverDataUrl(callback, videoId, videoUrl, videoPath, globule)
     xhr.setRequestHeader("domain", Model.domain);
 
     // Set responseType to 'arraybuffer', we want raw binary data buffer
+    console.log("try to get video cover ",  url)
     xhr.responseType = 'text';
     xhr.onload = (rsp) => {
         if (rsp.currentTarget.status == 200) {
+            images[url] = rsp.currentTarget.response
             callback(rsp.currentTarget.response)
         } else {
             console.log("fail to create thumbnail ", videoId, videoUrl, videoPath)
@@ -86,10 +115,10 @@ export function getImdbInfo(id, callback, errorcallback, globule) {
     titles[id].callbacks.push(callback)
 
     let url = globule.config.Protocol + "://" + globule.config.Domain
-    if(window.location != globule.config.Domain){
-        if(globule.config.AlternateDomains.indexOf(window.location.host)!=-1){
-            url = globule.config.Protocol + "://" +  window.location.host
-        } 
+    if (window.location != globule.config.Domain) {
+        if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
+            url = globule.config.Protocol + "://" + window.location.host
+        }
     }
 
     if (globule.config.Protocol == "https") {
@@ -617,7 +646,7 @@ export class SearchResults extends HTMLElement {
         page.parentNode.removeChild(page)
         // page.facetFilter.parentNode.removeChild(page.facetFilter)
         ApplicationView.layout.sideMenu().removeChild(page.facetFilter)
-        
+
         let tab = this.tabs.querySelector(`#${uuid}-tab`)
         tab.parentNode.removeChild(tab)
 
@@ -1076,10 +1105,10 @@ export class SearchVideoCard extends HTMLElement {
                     thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/preview.gif"
 
                     let url = globule.config.Protocol + "://" + globule.config.Domain
-                    if(window.location != globule.config.Domain){
-                        if(globule.config.AlternateDomains.indexOf(window.location.host)!=-1){
-                            url = globule.config.Protocol + "://" +  window.location.host
-                        } 
+                    if (window.location != globule.config.Domain) {
+                        if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
+                            url = globule.config.Protocol + "://" + window.location.host
+                        }
                     }
 
                     if (globule.config.Protocol == "https") {
@@ -1269,13 +1298,19 @@ export class SearchFlipCard extends HTMLElement {
             if (title.getSerie().length > 0) {
                 let serieName = this.shadowRoot.querySelector(`#hit-div-mosaic-series-name`)
                 getImdbInfo(title.getSerie(), serie => {
-                    this.shadowRoot.querySelector(`#hit-div-mosaic-front`).style.backgroundImage = `url(${serie.Poster.ContentURL})`
-                    serieName.innerHTML = serie.Name
+                    let url = serie.Poster.ContentURL
+                    toDataURL(url, (dataUrl)=>{
+                        this.shadowRoot.querySelector(`#hit-div-mosaic-front`).style.backgroundImage = `url(${dataUrl})`
+                        serieName.innerHTML = serie.Name
+                    })
                 }, err => ApplicationView.displayMessage(err, 3000), globule)
             }
             seriesInfos.innerHTML = title.getName() + " S" + title.getSeason() + "E" + title.getEpisode()
         } else {
-            this.shadowRoot.querySelector(`#hit-div-mosaic-front`).style.backgroundImage = `url(${title.getPoster().getContenturl()})`
+            let url = title.getPoster().getContenturl()
+            toDataURL(url, (dataUrl)=>{
+                this.shadowRoot.querySelector(`#hit-div-mosaic-front`).style.backgroundImage = `url(${dataUrl})`
+            })
         }
 
     }
@@ -1423,10 +1458,10 @@ export class SearchTitleDetail extends HTMLElement {
                         if (rsp.getFilepathsList().length > 0) {
                             let path = rsp.getFilepathsList().pop()
                             let url = globule.config.Protocol + "://" + globule.config.Domain
-                            if(window.location != globule.config.Domain!=-1){
-                                if(globule.config.AlternateDomains.indexOf(window.location.host)){
-                                    url = globule.config.Protocol + "://" +  window.location.host
-                                } 
+                            if (window.location != globule.config.Domain != -1) {
+                                if (globule.config.AlternateDomains.indexOf(window.location.host)) {
+                                    url = globule.config.Protocol + "://" + window.location.host
+                                }
                             }
 
                             if (globule.config.Protocol == "https") {
@@ -1526,10 +1561,10 @@ export class SearchTitleDetail extends HTMLElement {
         }
 
         let url = globule.config.Protocol + "://" + globule.config.Domain
-        if(window.location != globule.config.Domain){
-            if(globule.config.AlternateDomains.indexOf(window.location.host)!=-1){
-                url = globule.config.Protocol + "://" +  window.location.host
-            } 
+        if (window.location != globule.config.Domain) {
+            if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
+                url = globule.config.Protocol + "://" + window.location.host
+            }
         }
 
         if (globule.config.Protocol == "https") {
@@ -1571,7 +1606,7 @@ export class SearchTitleDetail extends HTMLElement {
                         }, null, null, globule)
                     }
                 }
-            }).catch(err=>{
+            }).catch(err => {
                 console.log(err, globule)
             })
 

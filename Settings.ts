@@ -16,9 +16,8 @@ import { ApplicationManager } from "./components/Applications";
 import { PeersManager } from "./components/Peers";
 import { OrganizationManager } from "./components/Organization";
 import { AccountManager } from "./components/Account";
-import { StartProcessVideoRequest, StopProcessVideoRequest, IsProcessVideoRequest, SetVideoConvertionRequest } from "globular-web-client/file/file_pb";
-import { FileServicePromiseClient } from "globular-web-client/file/file_grpc_web_pb";
-import { Globular } from "globular-web-client";
+import { StartProcessVideoRequest, StopProcessVideoRequest, IsProcessVideoRequest, SetVideoConvertionRequest, SetVideoStreamConvertionRequest, SetStartVideoConvertionHourRequest, SetMaximumVideoConvertionDelayRequest } from "globular-web-client/file/file_pb";
+import { GetServiceConfigurationByIdRequest } from "globular-web-client/config_manager/config_pb";
 
 export class Settings {
 
@@ -412,11 +411,11 @@ export class PeersSettings extends Settings {
  */
 export class VideoSettings extends Settings {
     private needSave: boolean;
+    private config: any;
 
     // The application.
     constructor(settingsMenu: SettingsMenu, settingsPanel: SettingsPanel) {
         super(settingsMenu, settingsPanel);
-
 
         settingsMenu.appendSettingsMenuItem("maps:local-movies", "Video");
 
@@ -448,6 +447,28 @@ export class VideoSettings extends Settings {
         maxConvertionDelay.getElement().setAttribute("min", "00:00")
         conversionSettings.addSetting(maxConvertionDelay)
 
+        let fileServerConfig = Model.globular.getConfigs("file.FileService")[0]
+        let rqst_ = new GetServiceConfigurationByIdRequest
+        rqst_.setId(fileServerConfig.Id)
+
+        Model.globular.configurationService.getServiceConfigurationById(rqst_, {
+            token: localStorage.getItem("user_token"),
+            application: Model.application,
+            domain: Model.domain,
+            address: Model.address
+        }).then(rsp => {
+            let configStr = rsp.getConfig()
+            this.config = JSON.parse(configStr)
+            enableConversionSetting.setValue(this.config.AutomaticVideoConversion)
+            enableStreamConversionSetting.setValue(this.config.AutomaticStreamConvertion)
+            startConversionHour.setValue(this.config.StartVideoConvertionHour)
+            maxConvertionDelay.setValue(this.config.MaximumVideoConvertionDelay)
+
+        }).catch(err => {
+            ApplicationView.displayMessage(err, 3000)
+        })
+
+
         enableConversionSetting.onchange = () => {
             // this.conversionSettings.KeepAlive = keepAlive.getValue()
             let conversion = enableConversionSetting.getValue()
@@ -463,6 +484,39 @@ export class VideoSettings extends Settings {
                 maxConvertionDelay.style.display = "none"
             }
 
+            // keep in local value
+            this.config.AutomaticVideoConversion = conversion
+
+            this.needSave = true
+        }
+
+        // The stream conversion setting.
+        enableStreamConversionSetting.onchange = () => {
+            // this.conversionSettings.KeepAlive = keepAlive.getValue()
+            let conversion = enableStreamConversionSetting.getValue()
+
+            // keep in local value
+            this.config.AutomaticStreamConvertion = conversion
+
+            this.needSave = true
+        }
+
+        startConversionHour.onchange = () => {
+            // this.conversionSettings.KeepAlive = keepAlive.getValue()
+            let value = startConversionHour.getValue()
+
+            // keep in local value
+            this.config.StartVideoConvertionHour = value
+
+            this.needSave = true
+        }
+
+        maxConvertionDelay.onchange = () => {
+            // this.conversionSettings.KeepAlive = keepAlive.getValue()
+            let value = maxConvertionDelay.getValue()
+
+            // keep in local value
+            this.config.MaximumVideoConvertionDelay = value
 
             this.needSave = true
         }
@@ -515,14 +569,14 @@ export class VideoSettings extends Settings {
             domain: Model.domain,
             address: Model.address
         }).then(rsp => {
-            if(rsp.getIsprocessvideo()){
+            if (rsp.getIsprocessvideo()) {
                 stopConvertVideoAction.style.display = "flex"
                 startConvertVideoAction.style.display = "none"
-            }else{
+            } else {
                 stopConvertVideoAction.style.display = "none"
                 startConvertVideoAction.style.display = "flex"
             }
-            
+
         }).catch(err => {
             ApplicationView.displayMessage(err, 3000)
         })
@@ -535,24 +589,82 @@ export class VideoSettings extends Settings {
             },
             (needSave: boolean) => {
                 if (needSave) {
-                    let rqst = new SetVideoConvertionRequest;
-                    rqst.setValue(enableConversionSetting.getValue());
-                    Model.globular.fileService.setVideoConvertion(rqst, {
-                        token: localStorage.getItem("user_token"),
-                        application: Model.application,
-                        domain: Model.domain,
-                        address: Model.address
-                    }).then(() => {
-                        console.log("file service was saved!")
-                    }).catch(err => {
-                        ApplicationView.displayMessage(err, 3000)
-                    })
+                    this.saveSetConversion(enableConversionSetting.getValue())
+                    this.saveSetStreamConversion(enableStreamConversionSetting.getValue())
+                    this.saveMaxConvertionDelay(maxConvertionDelay.getValue())
+                    this.saveStartConversionHour(startConversionHour.getValue())
                 }
             })
     }
 
+    // Set|Reset automatic convertion.
+    saveSetConversion(value: boolean) {
+        // Set video Convertion parameter...
+        let rqst = new SetVideoConvertionRequest;
+        rqst.setValue(value);
+        Model.globular.fileService.setVideoConvertion(rqst, {
+            token: localStorage.getItem("user_token"),
+            application: Model.application,
+            domain: Model.domain,
+            address: Model.address
+        }).then(() => {
+
+        }).catch(err => {
+            ApplicationView.displayMessage(err, 3000)
+        })
+    }
+
+    // Set|Reset automatic steam convertion.
+    saveSetStreamConversion(value: boolean) {
+        // Set video Convertion parameter...
+        let rqst = new SetVideoStreamConvertionRequest;
+        rqst.setValue(value);
+        Model.globular.fileService.setVideoStreamConvertion(rqst, {
+            token: localStorage.getItem("user_token"),
+            application: Model.application,
+            domain: Model.domain,
+            address: Model.address
+        }).then(() => {
+
+        }).catch(err => {
+            ApplicationView.displayMessage(err, 3000)
+        })
+    }
+
+    // Set|Reset start convertion time.
+    saveStartConversionHour(value: string) {
+        // Set video Convertion parameter...
+        let rqst = new SetStartVideoConvertionHourRequest;
+        rqst.setValue(value);
+        Model.globular.fileService.setStartVideoConvertionHour(rqst, {
+            token: localStorage.getItem("user_token"),
+            application: Model.application,
+            domain: Model.domain,
+            address: Model.address
+        }).then(() => {
+
+        }).catch(err => {
+            ApplicationView.displayMessage(err, 3000)
+        })
+    }
 
 
+    // Set|Reset maximum convertion delay.
+    saveMaxConvertionDelay(value: string) {
+        // Set video Convertion parameter...
+        let rqst = new SetMaximumVideoConvertionDelayRequest;
+        rqst.setValue(value);
+        Model.globular.fileService.setMaximumVideoConvertionDelay(rqst, {
+            token: localStorage.getItem("user_token"),
+            application: Model.application,
+            domain: Model.domain,
+            address: Model.address
+        }).then(() => {
+
+        }).catch(err => {
+            ApplicationView.displayMessage(err, 3000)
+        })
+    }
 }
 
 /**
