@@ -3360,8 +3360,6 @@ export class FileExplorer extends HTMLElement {
             this.style.marginTop = "0px";
             this.style.bottom = "";
             this.style.right = "";
-            this.style.width = this.width_ + "px";
-            this.style.height = this.height_ + "px";
             let box = this.shadowRoot.querySelector("#file-explorer-box")
             box.style.width = this.width_ + "px";
             box.style.height = this.height_ + "px";
@@ -3370,9 +3368,6 @@ export class FileExplorer extends HTMLElement {
 
         this.enterFullScreenBtn.onclick = () => {
             this.isFullScreen = true
-            this.width_ = this.offsetWidth
-            this.height_ = this.offsetHeight
-
             this.style.top = "60px"
             this.style.bottom = "0px"
             this.style.right = "0px"
@@ -3386,6 +3381,8 @@ export class FileExplorer extends HTMLElement {
             this.style.height = "calc(100% - 24px)";
 
             let box = this.shadowRoot.querySelector("#file-explorer-box")
+            this.width_ = box.offsetWidth
+            this.height_ = box.offsetHeight
             box.style.width = "100%";;
             box.style.height = "100%";;
 

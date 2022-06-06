@@ -169,10 +169,12 @@ export class Layout extends HTMLElement {
          sideMenu_.style.top = "70px";
          sideMenu_.style.position = "fixed";
          sideMenu_.style.left = "10px";
+         sideMenu_.style.bottom = "0px"
+         sideMenu_.style.overflow = "auto"
          sideMenu_.style.marginTop = "0px";
          sideMenu_.style.width = "auto";
          sideMenu_.style.display = "block";
- 
+         sideMenu_.style.overflow = "auto";
        } else {
          // Set the menu in the toolbar.
          this.appToolbar.appendChild(this.sideMenuSlot);
@@ -180,6 +182,7 @@ export class Layout extends HTMLElement {
          sideMenu_.style.top = "0px";
          sideMenu_.style.position = "";
          sideMenu_.style.display = "flex";
+         sideMenu_.style.overflow = "auto";
          sideMenu_.style.flexDirection = "column";
          sideMenu_.style.width = "100%";
          sideMenu_.style.marginTop = "24px";
@@ -300,7 +303,7 @@ export class Layout extends HTMLElement {
         </style>
         <div id="waiting_div" style="position: fixed; background-color: rgba(0, 0, 0, 0.6); top:0px; left: 0px; right: 0px; bottom:0px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
           <paper-spinner style="width: 4.5rem; height: 4.5rem;" active></paper-spinner>
-          <span id="waiting_div_text" style="margin-top: 4.5rem; font-size: 1.2rem; display: flex; flex-direction: column; justify-content: center; align-items: center;">${msg}</span>
+          <span id="waiting_div_text" style="font-size: 1.6rem; margin-top: 4.5rem; display: flex; flex-direction: column; justify-content: center; align-items: center;">${msg}</span>
         </div>
       `;
       this.shadowRoot.appendChild(
