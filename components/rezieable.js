@@ -17,6 +17,7 @@ export function setResizeable(div, onresize) {
     resizeWidthDiv.style.bottom = "5px"
     resizeWidthDiv.style.width = "5px"
     resizeWidthDiv.style.right = "-1px"
+    resizeWidthDiv.style.zIndex = 1000
     div.appendChild(resizeWidthDiv)
     div.resizeWidthDiv = resizeWidthDiv
 
@@ -37,6 +38,8 @@ export function setResizeable(div, onresize) {
     resizeHeightDiv.style.bottom = "-1px"
     resizeHeightDiv.style.left = "0px"
     resizeHeightDiv.style.right = "5px"
+    resizeHeightDiv.style.zIndex = 1000
+
     div.appendChild(resizeHeightDiv)
     div.resizeHeightDiv = resizeHeightDiv
 
@@ -55,8 +58,9 @@ export function setResizeable(div, onresize) {
     resizeDiv.style.position = "absolute"
     resizeDiv.style.bottom = "-1px"
     resizeDiv.style.right = "-1px"
-    resizeDiv.style.height = "5px"
-    resizeDiv.style.width = "5px"
+    resizeDiv.style.height = "10px"
+    resizeDiv.style.width = "10px"
+    resizeDiv.style.zIndex = 1000
     div.appendChild(resizeDiv)
 
     resizeDiv.onmouseover = function () {

@@ -43,6 +43,7 @@ import { DownloadTorrentRequest, DropTorrentRequest, GetTorrentInfosRequest } fr
 import { getImdbInfo } from './Search';
 import { setMoveable } from './moveable'
 import { setResizeable } from './rezieable'
+import { SplitView } from './Splitter'
 
 // keep track of shared directory
 var shared = {}
@@ -183,7 +184,7 @@ function _readDir(path, callback, errorCallback, globule) {
 function getHiddenFiles(path, callback, globule) {
 
     let thumbnailPath = path.replace("/playlist.m3u8", "")
-    if (thumbnailPath.lastIndexOf(".mp4") != -1 || thumbnailPath.lastIndexOf(".mkv") != -1  || thumbnailPath.lastIndexOf(".avi") != -1) {
+    if (thumbnailPath.lastIndexOf(".mp4") != -1 || thumbnailPath.lastIndexOf(".mkv") != -1 || thumbnailPath.lastIndexOf(".avi") != -1) {
         thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("."))
     }
     thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/__preview__"
@@ -582,7 +583,7 @@ export class FilesView extends HTMLElement {
                     })
                     .catch(err => {
                         // so here no title was found...
-                        
+
                         callback([])
                     })
             }
@@ -849,7 +850,7 @@ export class FilesView extends HTMLElement {
             let checkboxs = this.div.querySelectorAll("paper-checkbox")
             for (var i = 0; i < checkboxs.length; i++) {
                 if (!checkboxs[i].checked) {
-                    checkboxs[i].style.display = "none"
+                    checkboxs[i].style.visibility = "hidden"
                 }
             }
 
@@ -1332,6 +1333,7 @@ export class FilesListView extends FilesView {
                 display: flex;
                 align-items: center;
                 position: relative;
+
             }
 
             .first-cell span{
@@ -1339,6 +1341,10 @@ export class FilesListView extends FilesView {
                 padding-top: 4px;
                 padding-left: 4px;
                 padding-right: 40px;
+                margin-left: 5px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
 
             .first-cell span:hover{
@@ -1450,6 +1456,13 @@ export class FilesListView extends FilesView {
             let rowId = "_" + uuidv4().split("-").join("_").split("@").join("_");
             row.id = rowId;
 
+            if (f.mime.startsWith("video")) {
+                row.querySelector(`#${id}_icon`).icon = "av:movie"
+            }else if (f.mime.startsWith("audio")) {
+                row.querySelector(`#${id}_icon`).icon = "av:music-video"
+            }
+
+
             let checkbox = row.querySelector("paper-checkbox")
             // Connect interface from various point...
             checkbox.onclick = (evt) => {
@@ -1474,11 +1487,10 @@ export class FilesListView extends FilesView {
                 evt.stopPropagation();
                 if (f.mime.startsWith("video")) {
                     let path = f.path
-                    if (f.mime == "video/hls-stream") {
-                        path += "/playlist.m3u8"
-                    }
-
                     Model.eventHub.publish("__play_video__", { path: path, file_explorer_id: this._file_explorer_.id }, true)
+                }else if (f.mime.startsWith("audio")) {
+                    let path = f.path
+                    Model.eventHub.publish("__play_audio__", { path: path, file_explorer_id: this._file_explorer_.id }, true)
                 } else if (f.isDir) {
                     _publishSetDirEvent(f._path, this._file_explorer_)
                 } else if (f.mime.startsWith("image")) {
@@ -2586,8 +2598,7 @@ export class FileNavigator extends HTMLElement {
     // Init the tree view.
     initTreeView(dir, div, level) {
 
-        // I will not display hidden directory...
-        if (dir.name.startsWith(".")) {
+        if (dir.name.startsWith(".") || dir.mime == "video/hls-stream") {
             return;
         }
 
@@ -2607,7 +2618,13 @@ export class FileNavigator extends HTMLElement {
                     #${id}:hover{
                         cursor: pointer;
                     }
-                    #folder-name-span{
+
+                    .directory-lnk{
+                        display: flex;
+                        align-items: center;
+                    }
+
+                    .folder-name-span{
                         max-width: 200px;
                         margin-left: 5px;
                         white-space: nowrap;
@@ -2633,6 +2650,7 @@ export class FileNavigator extends HTMLElement {
             `
             let range = document.createRange()
             div.appendChild(range.createContextualFragment(html));
+
 
         }
 
@@ -2680,11 +2698,12 @@ export class FileNavigator extends HTMLElement {
 
         let hasSubdir = false;
         let fileDiv = this.shadowRoot.getElementById(id + "_files_div")
-
-        for (var f of dir._files) {
-            if (f._isDir) {
-                this.initTreeView(f, fileDiv, level + 1);
-                hasSubdir = true;
+        if (dir.mime != "video/hls-stream") {
+            for (var f of dir._files) {
+                if (f._isDir) {
+                    this.initTreeView(f, fileDiv, level + 1);
+                    hasSubdir = true;
+                }
             }
         }
 
@@ -3060,7 +3079,6 @@ export class FileExplorer extends HTMLElement {
             }
 
             #file-selection-panel{
-                margin-left: 8px;
                 flex-grow: 1;
                 background-color: var(--palette-background-default);
                 color: var(--palette-text-primary);
@@ -3181,14 +3199,14 @@ export class FileExplorer extends HTMLElement {
                         <paper-icon-button id="navigation-refresh-btn" icon="icons:refresh"></paper-icon-button>
                     </div>
                 </div>
-                <div id="file-explorer-layout">
-                    <div id="file-navigation-panel">
+                <globular-split-view id="file-explorer-layout">
+                    <globular-split-pane id="file-navigation-panel">
                         <globular-file-navigator id="globular-file-navigator"></globular-file-navigator>
-                    </div>
-                    <div  id="file-selection-panel" style="position: relative;">
+                    </globular-split-pane>
+                    <globular-split-pane id="file-selection-panel">
                         <slot></slot>
-                    </div>
-                </div>
+                    </globular-split-pane>
+                </globular-split-view>
             </div>
             <div class="card-actions">
                 <paper-icon-button icon="icons:fullscreen-exit" id="exit-full-screen-btn" style="display: none;"></paper-icon-button>
@@ -3218,18 +3236,18 @@ export class FileExplorer extends HTMLElement {
         this.fileExplererCloseBtn = this.shadowRoot.querySelector("#file-explorer-box-close-btn")
 
         let offsetTop = this.shadowRoot.querySelector(".card-header").offsetHeight
-        if(offsetTop == 0){
+        if (offsetTop == 0) {
             offsetTop = 60
         }
 
         if (localStorage.getItem("__file_explorer_position__")) {
             let position = JSON.parse(localStorage.getItem("__file_explorer_position__"))
-            if(position.top < offsetTop){
+            if (position.top < offsetTop) {
                 position.top = offsetTop
             }
             this.style.top = position.top + "px"
             this.style.left = position.left + "px"
-        }else{
+        } else {
             this.style.top = offsetTop + "px"
         }
 
@@ -3327,7 +3345,7 @@ export class FileExplorer extends HTMLElement {
         this.actionsCard = this.shadowRoot.querySelector("#card-actions")
 
         this.isFullScreen = false;
-        
+
         // I will use the resize event to set the size of the file explorer.
         this.exitFullScreenBtn.onclick = () => {
 
@@ -3366,7 +3384,7 @@ export class FileExplorer extends HTMLElement {
             // also take all the space...
             this.style.width = "100%";
             this.style.height = "calc(100% - 24px)";
-            
+
             let box = this.shadowRoot.querySelector("#file-explorer-box")
             box.style.width = "100%";;
             box.style.height = "100%";;
@@ -3377,10 +3395,10 @@ export class FileExplorer extends HTMLElement {
         }
 
         // set reset full screen...
-        this.ondblclick = ()=>{
-            if(this.isFullScreen){
+        this.ondblclick = () => {
+            if (this.isFullScreen) {
                 this.exitFullScreenBtn.click()
-            }else{
+            } else {
                 this.enterFullScreenBtn.click()
             }
         }

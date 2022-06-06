@@ -1406,7 +1406,7 @@ export class TableFilterElement extends PolymerElement {
               background-color: var(--palette-background-paper);
               color: var(--palette-text-primary);
 
-              box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
+              box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.6);
           }
           #filter-btn{
             --iron-icon-fill-color: var(--palette-text-accent);

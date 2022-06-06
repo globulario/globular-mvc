@@ -298,7 +298,7 @@ export class Layout extends HTMLElement {
             color: var(--palette-text-primary);
           }
         </style>
-        <div id="waiting_div" style="position: fixed; background-color: rgba(0, 0, 0, 0.2); top:0px; left: 0px; right: 0px; bottom:0px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+        <div id="waiting_div" style="position: fixed; background-color: rgba(0, 0, 0, 0.6); top:0px; left: 0px; right: 0px; bottom:0px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
           <paper-spinner style="width: 4.5rem; height: 4.5rem;" active></paper-spinner>
           <span id="waiting_div_text" style="margin-top: 4.5rem; font-size: 1.2rem; display: flex; flex-direction: column; justify-content: center; align-items: center;">${msg}</span>
         </div>
