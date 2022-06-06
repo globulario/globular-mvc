@@ -48,15 +48,22 @@ export function setMoveable(handle, draggable, onmove, element, offsetTop = 0) {
         cy = window.innerHeight - height;
       }
       draggable.style.left = cx + 'px';
-      draggable.style.top = cy + 'px';
+      
+      // limit the moveable range to be sure the handle stay reachable.
+      if (cy > offsetTop && cy < window.innerHeight - handle.offsetHeight){
+        draggable.style.top = cy + 'px';
+      }
+
       if (onmove) {
         onmove(cx, cy)
       }
     }
   })
 
-  document.addEventListener('mouseup', () => {
+  document.addEventListener('mouseup', (e) => {
+
     isMouseDown = false;
+
     document.body.classList.remove('no-select');
   })
 }

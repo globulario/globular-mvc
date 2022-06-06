@@ -211,10 +211,14 @@ function getVideoPreview(parent, path, name, callback, globule) {
                 if (name.startsWith("tt")) {
                     rqst.setIndexpath(globule.config.DataPath + "/search/titles")
                 } else {
-                    rqst.setIndexpath(globule.config.DataPath + "/search/video")
+                    rqst.setIndexpath(globule.config.DataPath + "/search/videos")
                 }
+
                 globule.titleService.dissociateFileWithTitle(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
                     .then(rsp => {
+                        preview.parentNode.removeChild(preview)
+                        ApplicationView.displayMessage("association was delete", 3000)
+                        toast.dismiss();
                     }).catch(err => ApplicationView.displayMessage(err, 3000))
             }
 

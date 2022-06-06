@@ -124,10 +124,16 @@ export class VideoPlayer extends HTMLElement {
         this.video.controls = true
         this.onclose = null
         this.onplay = null
-
+        let offsetTop = this.shadowRoot.querySelector(".header").offsetHeight
+        if (offsetTop == 0) {
+            offsetTop = 60
+        }
         this.appendChild(this.video)
         if (localStorage.getItem("__video_player_position__")) {
             let position = JSON.parse(localStorage.getItem("__video_player_position__"))
+            if(position.top < offsetTop){
+                position.top = offsetTop
+            }
             container.style.top = position.top + "px"
             container.style.left = position.left + "px"
         } else {
@@ -151,9 +157,21 @@ export class VideoPlayer extends HTMLElement {
         })
         container.resizeHeightDiv.style.display = "none"
 
+
+        // toggle full screen when the user double click on the header.
+        this.shadowRoot.querySelector(".header").ondblclick = () => {
+            var type = this.player.media.tagName.toLowerCase(),
+                toggle = document.querySelector("[data-plyr='fullscreen']");
+
+            if (type === "video" && toggle) {
+                toggle.addEventListener("click", this.player.toggleFullscreen, false);
+            }
+            toggle.click()
+        }
+
         setMoveable(this.shadowRoot.querySelector(".header"), container, (left, top) => {
             localStorage.setItem("__video_player_position__", JSON.stringify({ top: top, left: left }))
-        }, this)
+        }, this, offsetTop)
 
         // Plyr give a nice visual to the video player.
         // TODO set the preview and maybe quality bitrate if possible...
@@ -181,7 +199,7 @@ export class VideoPlayer extends HTMLElement {
 
     }
 
-    play(path, globule){
+    play(path, globule) {
 
         let url = globule.config.Protocol + "://" + globule.config.Domain
         if (window.location != globule.config.Domain) {
@@ -197,7 +215,7 @@ export class VideoPlayer extends HTMLElement {
             if (globule.config.PortHttps != 80)
                 url += ":" + globule.config.PortHttp
         }
-        
+
         path.split("/").forEach(item => {
             item = item.trim()
             if (item.length > 0) {
@@ -211,8 +229,8 @@ export class VideoPlayer extends HTMLElement {
         }
 
         // validate url access.
-        fetch(url,  { method: "HEAD" })
-            .then( (response) => {
+        fetch(url, { method: "HEAD" })
+            .then((response) => {
                 if (response.status !== 200) {
                     throw new Error(response.status)
 
@@ -220,7 +238,7 @@ export class VideoPlayer extends HTMLElement {
                     this.play_(path, globule)
                 }
             })
-            .catch((error)=> {
+            .catch((error) => {
                 ApplicationView.displayMessage("You are not authorize to read that media file", 4000)
                 this.close()
                 document.exitFullscreen()

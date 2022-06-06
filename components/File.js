@@ -581,6 +581,8 @@ export class FilesView extends HTMLElement {
                         callback(rsp.getTitles().getTitlesList())
                     })
                     .catch(err => {
+                        // so here no title was found...
+                        
                         callback([])
                     })
             }
@@ -2059,7 +2061,6 @@ export class FilesIconView extends FilesView {
                         fileIconDiv.parentNode.appendChild(this.menu)
                         this.menu.style.top = "0px"
                         this.menu.style.right = "-5px"
-                        this.menu.style.zIndex = 1000
 
                         this.menu.onmouseover = (evt) => {
                             evt.stopPropagation();
@@ -2352,7 +2353,7 @@ export class PathNavigator extends HTMLElement {
                     directoriesDiv.style.flexDirection = "column"
                     directoriesDiv.style.position = "absolute"
                     directoriesDiv.style.padding = "5px"
-                    directoriesDiv.style.zIndex = "10000";
+                    directoriesDiv.style.zIndex = "1000";
                     directoriesDiv.style.top = title.offsetHeight + "px"
                     directoriesDiv.style.right = "0px"
                     directoriesDiv.style.backgroundColor = "var(--palette-background-paper)"
@@ -3216,15 +3217,25 @@ export class FileExplorer extends HTMLElement {
         this._file_explorer_Box = this.shadowRoot.querySelector("#file-explorer-box")
         this.fileExplererCloseBtn = this.shadowRoot.querySelector("#file-explorer-box-close-btn")
 
+        let offsetTop = this.shadowRoot.querySelector(".card-header").offsetHeight
+        if(offsetTop == 0){
+            offsetTop = 60
+        }
+
         if (localStorage.getItem("__file_explorer_position__")) {
             let position = JSON.parse(localStorage.getItem("__file_explorer_position__"))
+            if(position.top < offsetTop){
+                position.top = offsetTop
+            }
             this.style.top = position.top + "px"
             this.style.left = position.left + "px"
+        }else{
+            this.style.top = offsetTop + "px"
         }
 
         setMoveable(this.shadowRoot.querySelector(".card-header"), this, (left, top) => {
             localStorage.setItem("__file_explorer_position__", JSON.stringify({ top: top, left: left }))
-        }, this, 60)
+        }, this, offsetTop)
 
         if (localStorage.getItem("__file_explorer_dimension__")) {
             let dimension = JSON.parse(localStorage.getItem("__file_explorer_dimension__"))
@@ -3315,6 +3326,8 @@ export class FileExplorer extends HTMLElement {
         this._file_explorer_Content = this.shadowRoot.querySelector("#file-explorer-content")
         this.actionsCard = this.shadowRoot.querySelector("#card-actions")
 
+        this.isFullScreen = false;
+        
         // I will use the resize event to set the size of the file explorer.
         this.exitFullScreenBtn.onclick = () => {
 
@@ -3329,12 +3342,19 @@ export class FileExplorer extends HTMLElement {
             this.style.marginTop = "0px";
             this.style.bottom = "";
             this.style.right = "";
+            this.style.width = this.width_ + "px";
+            this.style.height = this.height_ + "px";
             let box = this.shadowRoot.querySelector("#file-explorer-box")
-            box.style.width = box.width_;
-            box.style.height = box.height_;
+            box.style.width = this.width_ + "px";
+            box.style.height = this.height_ + "px";
+            this.isFullScreen = false
         }
 
         this.enterFullScreenBtn.onclick = () => {
+            this.isFullScreen = true
+            this.width_ = this.offsetWidth
+            this.height_ = this.offsetHeight
+
             this.style.top = "60px"
             this.style.bottom = "0px"
             this.style.right = "0px"
@@ -3343,17 +3363,27 @@ export class FileExplorer extends HTMLElement {
             this.style.bottom = "0px";
             this.style.right = "0px";
             this.style.left = "0px";
+            // also take all the space...
+            this.style.width = "100%";
+            this.style.height = "calc(100% - 24px)";
+            
             let box = this.shadowRoot.querySelector("#file-explorer-box")
-            box.width_ = box.style.width
-            box.style.width = "100%";
-            box.height_ = box.style.height
-            box.style.height = "100%";
+            box.style.width = "100%";;
+            box.style.height = "100%";;
 
             // set buttons.
             this.enterFullScreenBtn.style.display = "none"
             this.exitFullScreenBtn.style.display = "block"
         }
 
+        // set reset full screen...
+        this.ondblclick = ()=>{
+            if(this.isFullScreen){
+                this.exitFullScreenBtn.click()
+            }else{
+                this.enterFullScreenBtn.click()
+            }
+        }
 
         // Here I will connect the windows resize event...
         this.backNavigationBtn.onclick = (evt) => {
