@@ -788,7 +788,7 @@ export class InformationsManager extends HTMLElement {
                     if (title.onLoadEpisodes != null) {
                         title.onLoadEpisodes(episodes)
                     }
-                    this.displayEpisodes(episodes, filesDiv)
+                    this.displayEpisodes(episodes, filesDiv, globule)
                     filesDiv.querySelector("paper-progress").style.display = "none"
                 })
 
@@ -844,7 +844,7 @@ export class InformationsManager extends HTMLElement {
     }
 
     // Here I will display the list of each episodes from the list...
-    displayEpisodes(episodes, filesDiv) {
+    displayEpisodes(episodes, filesDiv, globule) {
         let seasons = {}
 
         episodes.forEach(e => {
