@@ -809,7 +809,7 @@ export class FilesView extends HTMLElement {
                   top: 0px;
                   left: 0px;
                   bottom: 0px;
-                  padding-bottom: 40px;
+                  padding-bottom: 0px;
                   right: 5px;
                   overflow: auto;
               }
@@ -2502,8 +2502,7 @@ export class FileNavigator extends HTMLElement {
             ${theme}
 
             #file-navigator-div{
-                min-width: ${this.width}px; 
-                overflow: auto;
+                min-width: ${this.width}px;
             }
 
             /** On smaller display **/
@@ -3157,7 +3156,6 @@ export class FileExplorer extends HTMLElement {
                 left: 0px;
                 right: 0px;
                 bottom: 0px;
-                z-index: 100;
                 overflow: auto;
             }
 

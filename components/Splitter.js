@@ -38,7 +38,17 @@ export class SplitView extends HTMLElement {
 
     // The connection callback.
     connectedCallback() {
-        this.children[0].hideSlider()
+       let panes = this.querySelectorAll("globular-split-pane")
+       for(var i=0; i < panes.length; i++){
+          // test only...
+          if(i==0){
+            panes[i].setWidth(250)
+          }
+
+          if(i<panes.length){
+              this.insertBefore(new SplitSlider(), panes[i + 1])
+          }
+       }
 
     }
 
@@ -49,6 +59,38 @@ export class SplitView extends HTMLElement {
 }
 
 customElements.define('globular-split-view', SplitView)
+
+/**
+ * Search Box
+ */
+ export class SplitSlider extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor() {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+            ${theme}
+            .splitter__slider {
+                display: block;
+                height: 100%;
+                width: 0.3rem;
+                z-index: 1000;
+                cursor: col-resize;
+                background-color: var(--palette-background-paper);
+            }
+        </style>
+        <div class="splitter__slider"></div>
+        `
+    }
+}
+
+customElements.define('globular-split-slider', SplitSlider)
 
 /**
  * Search Box
@@ -66,35 +108,38 @@ export class SplitPane extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
             ${theme}
+            ::slotted(globular-file-reader){
+                height: 100%;
+                overflow: hidden;
+            }
+
             .splitter__pane {
-                overflow: auto;
                 flex: 1 1 auto;
-                padding: 10px;
+                position: relative;
+                height: 100%;
+            }
+
+            #content{
+                position: absolute;
+                top: 0px;
+                left: 0px;
+                bottom: 0px;
+                right: 0px;
+                overflow: auto;
             }
             
-            .splitter__slider {
-                display: block;
-                position: absolute;
-                height: 100%;
-                width: 0.3rem;
-                z-index: 1000;
-                top: 0;
-                cursor: col-resize;
-                left: 0;
-                background-color: var(--palette-background-paper);
-                
-            }
         </style>
         <div class="splitter__pane">
-            <slot>
-            </slot>
-            <div class="splitter__slider"></div>
+            <div id="content">
+                <slot>
+                </slot>
+            </div>
         </div>
         `
     }
 
-    hideSlider() {
-        this.shadowRoot.querySelector(".splitter__slider").style.display = "none";
+    setWidth(w){
+        this.shadowRoot.querySelector(".splitter__pane").style.width = w + "px"
     }
 
 }

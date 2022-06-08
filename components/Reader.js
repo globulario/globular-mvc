@@ -18,24 +18,12 @@ export class GlobularFileReader extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
             ${theme}
-            #container{
-                display: flex;
-            }
-
-
         </style>
-        <div id="container">
-            <iframe id="frame" style="width: 100%;"></iframe>
-        </div>
+        
+        <iframe id="frame" style="width: 100%; height: 100%; border: none;"></iframe>
         `
         // give the focus to the input.
-        let container = this.shadowRoot.querySelector("#container")
         this.frame = this.shadowRoot.querySelector("#frame")
-
-        // Get the parent size and set the max width of te
-        window.addEventListener("resize", () => {
-            this.frame.style.height = this.parentNode.offsetHeight + "px"
-        });
     }
 
     read(path) {
@@ -59,7 +47,6 @@ export class GlobularFileReader extends HTMLElement {
             this.frame.src += "&token=" + localStorage.getItem("user_token")
         }
         
-        this.frame.style.height = this.parentNode.offsetHeight + "px"
         // must be white...
         this.frame.style.background = "white";
         this.frame.contentWindow.document.body.style.backgroundColor = "white";
