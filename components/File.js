@@ -29,7 +29,7 @@ import { v4 as uuidv4 } from "uuid";
 
 // Menu to set action on files.
 import { DropdownMenu } from './dropdownMenu.js';
-import { ConvertVideoToHlsRequest, ConvertVideoToMpeg4H264Request, CopyRequest, CreateDirRequest, CreateVideoPreviewRequest, CreateVideoTimeLineRequest, GetFileInfoRequest, MoveRequest } from 'globular-web-client/file/file_pb';
+import { AddPublicDirRequest, ConvertVideoToHlsRequest, ConvertVideoToMpeg4H264Request, CopyRequest, CreateDirRequest, CreateVideoPreviewRequest, CreateVideoTimeLineRequest, GetFileInfoRequest, MoveRequest, RemovePublicDirRequest } from 'globular-web-client/file/file_pb';
 import { createArchive, deleteDir, deleteFile, downloadFileHttp, renameFile, uploadFiles } from 'globular-web-client/api';
 import { ApplicationView } from '../ApplicationView';
 import { Application } from '../Application';
@@ -523,17 +523,28 @@ export class FilesView extends HTMLElement {
                     index++
                     let globule = this._file_explorer_.globule
                     if (f.isDir) {
-                        deleteDir(globule, f.path,
-                            () => {
+                        if (f.path == "/public") {
+                            const rqst = new RemovePublicDirRequest
+                            rqst.setPath(f.path)
+                            globule.fileService.removePublicDir(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
+                            .then(rsp => {
                                 delete dirs[getUuidByString(this._file_explorer_.globule.config.Domain + "@" + path)]
                                 Model.eventHub.publish("reload_dir_event", path, false);
-                                if (index < Object.keys(this.selected).length) {
-                                    deleteFile_()
-                                } else {
-                                    success()
-                                }
-                            },
-                            err => { ApplicationView.displayMessage(err, 3000) })
+                            })
+                            .catch(err => { ApplicationView.displayMessage(err, 3000) })
+                        } else {
+                            deleteDir(globule, f.path,
+                                () => {
+                                    delete dirs[getUuidByString(this._file_explorer_.globule.config.Domain + "@" + path)]
+                                    Model.eventHub.publish("reload_dir_event", path, false);
+                                    if (index < Object.keys(this.selected).length) {
+                                        deleteFile_()
+                                    } else {
+                                        success()
+                                    }
+                                },
+                                err => { ApplicationView.displayMessage(err, 3000) })
+                        }
                     } else {
                         deleteFile(globule, f.path,
                             () => {
@@ -1220,6 +1231,7 @@ export class FilesView extends HTMLElement {
                         if (rsp.getPid() != null) {
                             pid = rsp.getPid()
                         }
+                        console.log("1234 -------------> ", rsp.getResult())
                         if (rsp.getResult().startsWith("[download] Destination:") && fileName.length == 0) {
                             fileName = rsp.getResult().split(":")[1].trim()
                         }
@@ -1239,6 +1251,7 @@ export class FilesView extends HTMLElement {
                             xmlhttp.onreadystatechange = () => {
                                 if (this.readyState == 4 && (this.status == 201 || this.status == 200)) {
                                     console.log("file" + this.__dir__.path + "/" + fileName + "was indexed!")
+                                    
                                 } else if (this.readyState == 4) {
                                     console.log("fail to index file " + this.__dir__.path + "/" + fileName + " with infos from" + url + " with error status " + this.status)
                                 }
@@ -1458,7 +1471,7 @@ export class FilesListView extends FilesView {
 
             if (f.mime.startsWith("video")) {
                 row.querySelector(`#${id}_icon`).icon = "av:movie"
-            }else if (f.mime.startsWith("audio")) {
+            } else if (f.mime.startsWith("audio")) {
                 row.querySelector(`#${id}_icon`).icon = "av:music-video"
             }
 
@@ -1488,7 +1501,7 @@ export class FilesListView extends FilesView {
                 if (f.mime.startsWith("video")) {
                     let path = f.path
                     Model.eventHub.publish("__play_video__", { path: path, file_explorer_id: this._file_explorer_.id }, true)
-                }else if (f.mime.startsWith("audio")) {
+                } else if (f.mime.startsWith("audio")) {
                     let path = f.path
                     Model.eventHub.publish("__play_audio__", { path: path, file_explorer_id: this._file_explorer_.id }, true)
                 } else if (f.isDir) {
@@ -2589,6 +2602,8 @@ export class FileNavigator extends HTMLElement {
                 }
                 // reload the div...
                 this.initTreeView(dir, parent, level)
+                this.initPublic()
+                //this.initShared()
             }
         }
     }
@@ -3358,6 +3373,7 @@ export class FileExplorer extends HTMLElement {
             this.style.marginTop = "0px";
             this.style.bottom = "";
             this.style.right = "";
+            this.style.width = "";
             let box = this.shadowRoot.querySelector("#file-explorer-box")
             box.style.width = this.width_ + "px";
             box.style.height = this.height_ + "px";
@@ -3463,6 +3479,7 @@ export class FileExplorer extends HTMLElement {
         // Create a new directory here...
         this.createDirectoryBtn.onclick = (evt) => {
             evt.stopPropagation();
+
             // Here I will use a simple paper-card with a paper input...
             let html = `
                 <style>
@@ -3530,29 +3547,55 @@ export class FileExplorer extends HTMLElement {
                 let dialog = this._file_explorer_Content.querySelector("#new-dir-dialog")
                 dialog.parentNode.removeChild(dialog)
 
-                // Here I will create a new folder...
-                // Set the request.
-                const rqst = new CreateDirRequest();
-                rqst.setPath(this.path);
-                rqst.setName(input.value);
-                let token = localStorage.getItem("user_token");
+                // if the current directory is the public dir...
+                if (this.path == "/public") {
+                    // Here I will add public directory...
+                    const rqst = new AddPublicDirRequest
+                    rqst.setPath(input.value)
+                    let token = localStorage.getItem("user_token");
 
-                // Create a directory at the given path.
-                this.globule.fileService
-                    .createDir(rqst, {
-                        token: token,
-                        application: Application.application,
-                        domain: this.globule.config.Domain
-                    })
-                    .then(() => {
-                        // The new directory was created.
-                        delete dirs[getUuidByString(this.globule.config.Domain + "@" + this.path)]
+                    // Create a directory at the given path.
+                    this.globule.fileService
+                        .addPublicDir(rqst, {
+                            token: token,
+                            application: Application.application,
+                            domain: this.globule.config.Domain
+                        })
+                        .then(() => {
+                            // The new directory was created.
+                            delete dirs[getUuidByString(this.globule.config.Domain + "@" + this.path)]
 
-                        Model.eventHub.publish("reload_dir_event", this.path, false);
-                    })
-                    .catch((err) => {
-                        ApplicationView.displayMessage(err, 3000)
-                    });
+                            Model.eventHub.publish("reload_dir_event", this.path, false);
+                        })
+                        .catch((err) => {
+                            ApplicationView.displayMessage(err, 3000)
+                        });
+
+                } else {
+                    // Here I will create a new folder...
+                    // Set the request.
+                    const rqst = new CreateDirRequest();
+                    rqst.setPath(this.path);
+                    rqst.setName(input.value);
+                    let token = localStorage.getItem("user_token");
+
+                    // Create a directory at the given path.
+                    this.globule.fileService
+                        .createDir(rqst, {
+                            token: token,
+                            application: Application.application,
+                            domain: this.globule.config.Domain
+                        })
+                        .then(() => {
+                            // The new directory was created.
+                            delete dirs[getUuidByString(this.globule.config.Domain + "@" + this.path)]
+
+                            Model.eventHub.publish("reload_dir_event", this.path, false);
+                        })
+                        .catch((err) => {
+                            ApplicationView.displayMessage(err, 3000)
+                        });
+                }
             }
 
         }
@@ -3725,8 +3768,10 @@ export class FileExplorer extends HTMLElement {
                 (uuid) => {
                     this.listeners["reload_dir_event"] = uuid
                 }, (path) => {
+
+                    console.log("reload dir ", path)
                     // remove existing...
-                    delete dirs[getUuidByString(this.globule.Domain + "@" + path)]
+                    delete dirs[getUuidByString(this.globule.config.Domain + "@" + path)]
                     this.displayWaitMessage("load " + path)
 
                     _readDir(path, (dir) => {
@@ -3747,7 +3792,7 @@ export class FileExplorer extends HTMLElement {
                 evt => {
                     if (evt == this.path) {
                         // refresh the interface.
-                        delete dirs[getUuidByString(this.globule.Domain + "@" + this.path)]
+                        delete dirs[getUuidByString(this.globule.config.Domain + "@" + this.path)]
                         this.refreshBtn.click();
                     }
                 }, false)

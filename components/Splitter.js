@@ -115,11 +115,10 @@ export class SplitSlider extends HTMLElement {
         `
 
         // Connect the resize event of it parent...
-        new ResizeObserver(() => {
+        /*new ResizeObserver(() => {
             let w = this.view.offsetWidth
             let h = this.view.offsetHeight
-            console.log(w, h)
-        }).observe(view)
+        }).observe(view)*/
 
         this.slider = this.shadowRoot.querySelector(".splitter__slider")
 
