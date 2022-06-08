@@ -2265,6 +2265,10 @@ export class PathNavigator extends HTMLElement {
 
                 .path-navigator-box-span{
                     display: inherit;
+                    max-width: 350px;
+                    white-space: nowrap;
+                    text-overflow: ellipsis;
+                    overflow: hidden;
                 }
 
 
@@ -2620,7 +2624,7 @@ export class FileNavigator extends HTMLElement {
                     }
 
                     .folder-name-span{
-                        max-width: 200px;
+                        max-width: 350px;
                         margin-left: 5px;
                         white-space: nowrap;
                         overflow: hidden;
@@ -3194,7 +3198,7 @@ export class FileExplorer extends HTMLElement {
                     </div>
                 </div>
                 <globular-split-view id="file-explorer-layout">
-                    <globular-split-pane id="file-navigation-panel" style="width: 250px;">
+                    <globular-split-pane id="file-navigation-panel" style="width: 250px">
                         <globular-file-navigator id="globular-file-navigator"></globular-file-navigator>
                     </globular-split-pane>
                     <globular-split-pane id="file-selection-panel">
