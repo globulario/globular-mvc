@@ -40,6 +40,8 @@ html{
   /** Background **/
    --palette-background-default: #fafafa;
    --palette-background-paper: #fff;
+   --viewer-pdf-toolbar-background-color: #fafafa;
+   
   /** Divider **/
    --palette-divider: rgba(0, 0, 0, 0.12);
   /** webcomponents colors **/
@@ -76,6 +78,7 @@ html[theme="dark"]{
   /** Background **/
    --palette-background-default: #303030;
    --palette-background-paper: #424242;
+   --viewer-pdf-toolbar-background-color: #424242;
   /** Divider **/
    --palette-divider: rgba(255, 255, 255, 0.12);
 }
