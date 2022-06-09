@@ -70,11 +70,13 @@ function markAsShare(dir) {
     })
 }
 
-function markAsPublic(dir) {
+function markAsPublic(dir, parent) {
     public_[dir.path] = {};
+    dir.__parent__ = parent // keep track of the original directory on the disck
+
     dir._files.forEach(f => {
         if (f._isDir) {
-            markAsPublic(f)
+            markAsPublic(f, parent)
         }
     })
 }
@@ -2323,16 +2325,21 @@ export class PathNavigator extends HTMLElement {
         }
 
         let values = dir._path.split("/")
-        values.splice(0, 1)
+        // remove empty array...
+        values = values.filter(element => {
+            return element !== '';
+        });
 
         // Clear actual values.
         this.div.innerHTML = "";
         this.path = dir._path;
 
         let index = 0;
-        let path = ""
+
+        let path_ = ""
 
         for (const dir of values) {
+
             let titleDiv = document.createElement("div")
             titleDiv.style.display = "flex"
             titleDiv.style.position = "relative"
@@ -2344,8 +2351,21 @@ export class PathNavigator extends HTMLElement {
                 title.title = dir
             }
             title.innerHTML = dir
-            let path_ = path += "/" + dir
+
+            // if the directory path sart with / ...
+            if (index == 0) {
+                if (this.path.startsWith("/")) {
+                    path_ = "/" + dir
+                } else {
+                    path_ = dir
+                }
+            } else {
+                path_ += "/" + dir
+            }
+
+
             titleDiv.appendChild(title)
+            let path__ = path_
 
             let directoriesDiv = null
             if (index < values.length - 1) {
@@ -2384,8 +2404,9 @@ export class PathNavigator extends HTMLElement {
                     directoriesDiv.style.right = "0px"
                     directoriesDiv.style.backgroundColor = "var(--palette-background-paper)"
                     directoriesDiv.style.color = "var(--palette-text-primary)"
-                    this._file_explorer_.displayWaitMessage("load " + path_)
-                    _readDir(path_, (dir) => {
+
+                    this._file_explorer_.displayWaitMessage("load " + path__)
+                    _readDir(path__, (dir) => {
 
                         this._file_explorer_.resume()
 
@@ -2431,7 +2452,7 @@ export class PathNavigator extends HTMLElement {
                                 btn.icon = "icons:chevron-right"
                             }
                         }
-                    }, this.onerror, this._file_explorer_.globule)
+                    }, err => { console.log(err); }, this._file_explorer_.globule)
                 }
 
                 btn.onmouseover = () => {
@@ -2461,16 +2482,18 @@ export class PathNavigator extends HTMLElement {
             // Set the current directory to the clicked one.
             title.onclick = (evt) => {
                 evt.stopPropagation();
-                this._file_explorer_.displayWaitMessage("load " + path_)
-                _readDir(path_, (dir) => {
+                this._file_explorer_.displayWaitMessage("load " + path__)
+                console.log(path__)
+                _readDir(path__, (dir) => {
                     this._file_explorer_.resume()
                     // Send read dir event.
                     _publishSetDirEvent(dir._path, this._file_explorer_)
-                }, this.onerror, this._file_explorer_.globule)
+                }, err => { this._file_explorer_.resume(); console.log(err); }, this._file_explorer_.globule)
             }
 
             this.div.appendChild(titleDiv)
         }
+
     }
 
 }
@@ -2673,23 +2696,28 @@ export class FileNavigator extends HTMLElement {
         }
 
         /** Now i will get the */
+
+
         let shrinkBtn = this.shadowRoot.getElementById(id + "_shrink_btn")
+        if (shrinkBtn) {
+            shrinkBtn.onmouseover = () => {
+                shrinkBtn.style.cursor = "pointer"
+            }
+
+            shrinkBtn.onmouseleave = () => {
+                shrinkBtn.style.cursor = "default"
+            }
+        }
+
         let expandBtn = this.shadowRoot.getElementById(id + "_expand_btn")
+        if (expandBtn) {
+            expandBtn.onmouseover = () => {
+                expandBtn.style.cursor = "pointer"
+            }
 
-        shrinkBtn.onmouseover = () => {
-            shrinkBtn.style.cursor = "pointer"
-        }
-
-        shrinkBtn.onmouseleave = () => {
-            shrinkBtn.style.cursor = "default"
-        }
-
-        expandBtn.onmouseover = () => {
-            expandBtn.style.cursor = "pointer"
-        }
-
-        expandBtn.onmouseleave = () => {
-            expandBtn.style.cursor = "default"
+            expandBtn.onmouseleave = () => {
+                expandBtn.style.cursor = "default"
+            }
         }
 
         let dirLnk = this.shadowRoot.getElementById(id + "_directory_lnk")
@@ -2828,11 +2856,11 @@ export class FileNavigator extends HTMLElement {
                         if (index < publicDirs.length) {
                             let path = publicDirs[index]
                             // Read the dir content (files and directory informations.)
-                            this._file_explorer_.displayWaitMessage("load " + path)
                             _readDir(path, dir => {
                                 this._file_explorer_.resume()
                                 // used by set dir...
-                                markAsPublic(dir)
+                                markAsPublic(dir, path)
+
                                 this.public_.files.push(dir)
                                 index++
                                 initPublicDir(callback, errorCallback)
