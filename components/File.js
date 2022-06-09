@@ -29,7 +29,7 @@ import { v4 as uuidv4 } from "uuid";
 
 // Menu to set action on files.
 import { DropdownMenu } from './dropdownMenu.js';
-import { AddPublicDirRequest, ConvertVideoToHlsRequest, ConvertVideoToMpeg4H264Request, CopyRequest, CreateDirRequest, CreateVideoPreviewRequest, CreateVideoTimeLineRequest, GetFileInfoRequest, MoveRequest, RemovePublicDirRequest } from 'globular-web-client/file/file_pb';
+import { AddPublicDirRequest, ConvertVideoToHlsRequest, ConvertVideoToMpeg4H264Request, CopyRequest, CreateDirRequest, CreateVideoPreviewRequest, CreateVideoTimeLineRequest, GetFileInfoRequest, GetPublicDirsRequest, MoveRequest, RemovePublicDirRequest } from 'globular-web-client/file/file_pb';
 import { createArchive, deleteDir, deleteFile, downloadFileHttp, renameFile, uploadFiles } from 'globular-web-client/api';
 import { ApplicationView } from '../ApplicationView';
 import { Application } from '../Application';
@@ -165,12 +165,13 @@ let dirs = {}
  * @param {*} errorCallback The error callback
  * @param {*} force If set the dir will be read from the server.
  */
-function _readDir(path, callback, errorCallback, globule) {
-
+function _readDir(path, callback, errorCallback, globule, force = false) {
     let key = getUuidByString(globule.config.Domain + "@" + path)
-    if (dirs[key] != null) {
-        callback(dirs[key])
-        return
+    if (!force) {
+        if (dirs[key] != null) {
+            callback(dirs[key])
+            return
+        }
     }
 
     // Here I will keep the dir info in the cache...
@@ -195,7 +196,6 @@ function getHiddenFiles(path, callback, globule) {
 function _publishSetDirEvent(path, file_explorer_) {
     file_explorer_.displayWaitMessage("load " + path)
     _readDir(path, (dir) => {
-
         Model.eventHub.publish("__set_dir_event__", { path: dir, file_explorer_id: file_explorer_.id }, true)
         file_explorer_.resume()
     }, err => { console.log(err) }, file_explorer_.globule)
@@ -523,15 +523,16 @@ export class FilesView extends HTMLElement {
                     index++
                     let globule = this._file_explorer_.globule
                     if (f.isDir) {
+                        console.log("remove file -----> ", this.firstElementChild)
                         if (f.path == "/public") {
                             const rqst = new RemovePublicDirRequest
                             rqst.setPath(f.path)
                             globule.fileService.removePublicDir(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
-                            .then(rsp => {
-                                delete dirs[getUuidByString(this._file_explorer_.globule.config.Domain + "@" + path)]
-                                Model.eventHub.publish("reload_dir_event", path, false);
-                            })
-                            .catch(err => { ApplicationView.displayMessage(err, 3000) })
+                                .then(rsp => {
+                                    delete dirs[getUuidByString(this._file_explorer_.globule.config.Domain + "@" + path)]
+                                    Model.eventHub.publish("reload_dir_event", path, false);
+                                })
+                                .catch(err => { ApplicationView.displayMessage(err, 3000) })
                         } else {
                             deleteDir(globule, f.path,
                                 () => {
@@ -1251,7 +1252,7 @@ export class FilesView extends HTMLElement {
                             xmlhttp.onreadystatechange = () => {
                                 if (this.readyState == 4 && (this.status == 201 || this.status == 200)) {
                                     console.log("file" + this.__dir__.path + "/" + fileName + "was indexed!")
-                                    
+
                                 } else if (this.readyState == 4) {
                                     console.log("fail to index file " + this.__dir__.path + "/" + fileName + " with infos from" + url + " with error status " + this.status)
                                 }
@@ -2590,9 +2591,12 @@ export class FileNavigator extends HTMLElement {
     }
 
     // remove div and reload it from it content...
-    reload(dir) {
+    reload(dir, callback) {
         if (this.dirs[this._file_explorer_.globule.config.Domain + "@" + dir.path] != undefined) {
             let div = this.div.querySelector(`#${this.dirs[this._file_explorer_.globule.config.Domain + "@" + dir.path].id}`)
+            // force reading from the server...
+            delete dirs[getUuidByString(this._file_explorer_.globule.config.Domain + "@" + dir.path)]
+
             if (div != null) {
                 let parent = div.parentNode
                 let level = this.dirs[this._file_explorer_.globule.config.Domain + "@" + dir.path].level
@@ -2601,9 +2605,9 @@ export class FileNavigator extends HTMLElement {
                     delete this.dirs[this._file_explorer_.globule.config.Domain + "@" + dir.path]
                 }
                 // reload the div...
+                this.initPublic(callback)
                 this.initTreeView(dir, parent, level)
-                this.initPublic()
-                //this.initShared()
+
             }
         }
     }
@@ -2795,9 +2799,8 @@ export class FileNavigator extends HTMLElement {
     }
 
     // Init the public folder...
-    initPublic() {
+    initPublic(initCallback) {
 
-        console.log("public dir")
         this.publicDiv.innerHTML = ""
 
         // The public directory will contain a list of directories readable by 
@@ -2816,36 +2819,43 @@ export class FileNavigator extends HTMLElement {
             }, false, this)
 
 
-        let index = 0;
-        let initPublicDir = (callback, errorCallback) => {
+        this._file_explorer_.globule.fileService.getPublicDirs(new GetPublicDirsRequest, { application: Application.application, domain: this._file_explorer_.globule.config.Domain, token: localStorage.getItem("user_token") })
+            .then(rsp => {
+                let index = 0;
+                let publicDirs = rsp.getDirsList()
+                let initPublicDir = (callback, errorCallback) => {
+                    if (publicDirs.length > 0) {
+                        if (index < publicDirs.length) {
+                            let path = publicDirs[index]
+                            // Read the dir content (files and directory informations.)
+                            this._file_explorer_.displayWaitMessage("load " + path)
+                            _readDir(path, dir => {
+                                this._file_explorer_.resume()
+                                // used by set dir...
+                                markAsPublic(dir)
+                                this.public_.files.push(dir)
+                                index++
+                                initPublicDir(callback, errorCallback)
+                            }, errorCallback, this._file_explorer_.globule, true)
 
-            if (this._file_explorer_.globule.config.Public != undefined) {
-                if (index < this._file_explorer_.globule.config.Public.length) {
-                    let path = this._file_explorer_.globule.config.Public[index]
-                    // Read the dir content (files and directory informations.)
-                    this._file_explorer_.displayWaitMessage("load " + path)
-                    _readDir(path, dir => {
-                        this._file_explorer_.resume()
-                        // used by set dir...
-                        markAsPublic(dir)
-                        this.public_.files.push(dir)
-                        index++
-                        initPublicDir(callback, errorCallback)
-                    }, errorCallback, this._file_explorer_.globule)
-
-                } else {
-                    callback()
+                        } else {
+                            callback()
+                        }
+                    } else {
+                        callback()
+                    }
                 }
-            } else {
-                callback()
-            }
-        }
 
-        // Init
-        initPublicDir(() => {
-            this.initTreeView(this.public_, this.publicDiv, 0)
-        })
-
+                // Init
+                initPublicDir(() => {
+                    let key = getUuidByString(this._file_explorer_.globule.config.Domain + "@" + "/public")
+                    dirs[key] = this.public_
+                    this.initTreeView(this.public_, this.publicDiv, 0)
+                    if (initCallback) {
+                        initCallback()
+                    }
+                })
+            })
     }
 
 
@@ -3563,8 +3573,6 @@ export class FileExplorer extends HTMLElement {
                         })
                         .then(() => {
                             // The new directory was created.
-                            delete dirs[getUuidByString(this.globule.config.Domain + "@" + this.path)]
-
                             Model.eventHub.publish("reload_dir_event", this.path, false);
                         })
                         .catch((err) => {
@@ -3588,8 +3596,6 @@ export class FileExplorer extends HTMLElement {
                         })
                         .then(() => {
                             // The new directory was created.
-                            delete dirs[getUuidByString(this.globule.config.Domain + "@" + this.path)]
-
                             Model.eventHub.publish("reload_dir_event", this.path, false);
                         })
                         .catch((err) => {
@@ -3603,24 +3609,7 @@ export class FileExplorer extends HTMLElement {
         // Refresh the root directory and send event to
         // refresh all the interface.
         this.refreshBtn.onclick = () => {
-            // set the root...
-            this.setRoot(this.root)
-            this.displayWaitMessage("load " + this.root)
-
-            // force reload the current dir with the content from the server.
-            delete dirs[getUuidByString(this.globule.config.Domain + "@" + this.path)]
-
-            _readDir(this.root, (dir) => {
-                this.resume()
-                _publishSetDirEvent(this.path, this)
-
-                // Clear selection.
-                this.filesListView.clearSelection()
-                this.filesIconView.clearSelection()
-
-                // set back the view mode.
-                this.displayView()
-            }, this.onerror, this.globule)
+            Model.eventHub.publish("reload_dir_event", this.path, false);
         }
 
 
@@ -3715,6 +3704,21 @@ export class FileExplorer extends HTMLElement {
             )
         }
 
+        // Service configuration change event...
+
+        if (this.listeners["update_globular_service_configuration_evt"] == undefined) {
+            Model.eventHub.subscribe("update_globular_service_configuration_evt",
+                (uuid) => {
+                    this.listeners["update_globular_service_configuration_evt"] = uuid;
+                }, (event) => {
+                    let config = JSON.parse(event)
+                    if (config.Name == "file.FileService") {
+
+                    }
+
+                }, false, this)
+        }
+
         // File rename event.
         if (this.listeners["file_rename_event"] == undefined) {
             Model.eventHub.subscribe("file_rename_event",
@@ -3769,18 +3773,22 @@ export class FileExplorer extends HTMLElement {
                     this.listeners["reload_dir_event"] = uuid
                 }, (path) => {
 
-                    console.log("reload dir ", path)
                     // remove existing...
-                    delete dirs[getUuidByString(this.globule.config.Domain + "@" + path)]
                     this.displayWaitMessage("load " + path)
-
                     _readDir(path, (dir) => {
-                        this.resume()
-                        if (dir.path == this.path) {
-                            Model.eventHub.publish("__set_dir_event__", { path: dir, file_explorer_id: this.id }, true)
-                        }
-                        this.fileNavigator.reload(dir)
-                    }, (err) => { console.log(err) }, this.globule)
+                        this.fileNavigator.reload(dir, () => {
+                            // reload dir to be sure if it's public that change will be applied.
+                            _readDir(path, (dir) => {
+                                console.log("-----> path ", this.path, path, dir.path)
+                                if (dir.path == this.path) {
+                                    Model.eventHub.publish("__set_dir_event__", { path: dir, file_explorer_id: this.id }, true)
+
+                                }
+                                this.resume()
+                            }, err => ApplicationView.displayMessage(err, 3000), this.globule)
+                        })
+                    }, err => ApplicationView.displayMessage(err, 3000), this.globule, true)
+
                 }, false)
         }
 
