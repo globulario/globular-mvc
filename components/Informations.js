@@ -458,8 +458,11 @@ export class InformationsManager extends HTMLElement {
      * @param {*} videos 
      */
     setVideosInformation(videos) {
-        let isShort = this.hasAttribute("short")
+
+        this.innerHTML = "" // remove previous content.
+
         let video = videos[0]
+        let isShort = this.hasAttribute("short")
 
         let genres = ""
         video.getGenresList().forEach((genre, index) => {
@@ -487,20 +490,99 @@ export class InformationsManager extends HTMLElement {
             </span>
         </h3>
         `
+
+        let videoInfo = new VideoInfo(video, isShort)
+        this.appendChild(videoInfo)
+
+    }
+
+    /**
+     * Display title informations.
+     * @param {*} titles 
+     */
+    setTitlesInformation(titles, globule) {
+        this.innerHTML = "" // remove previous content.
+
+        if (!globule) {
+            globule = Model.globular
+        }
+
+        let isShort = this.hasAttribute("short")
+        if (titles.length == 0) {
+            /** nothinh to display... */
+            return;
+        }
+
+        let title = null;
+        if (titles.length == 1) {
+            title = titles[0]
+        } else {
+            titles.forEach(t => {
+                if (t.getType() == "TVSeries") {
+                    title = t;
+                }
+            })
+        }
+
+        if (title == null) {
+            title = titles[titles.length - 1]
+        }
+
+        // Set the title div.
+        this.shadowRoot.querySelector(".title-div").innerHTML = `
+        <h1 id="title-name" class="title" style="${isShort ? "font-size: 1.2rem;text-align: left;" : ""}"> </h1>
+        <h3 class="title-sub-title-div">             
+            <span id="title-type"></span>
+            <span id="title-year"></span>
+            <span id="title-duration"></span>
+        </h3>
+        `
+        this.shadowRoot.querySelector("#title-name").innerHTML = title.getName();
+        this.shadowRoot.querySelector("#title-type").innerHTML = title.getType();
+        this.shadowRoot.querySelector("#title-year").innerHTML = title.getYear();
+        if (title.getType() == "TVEpisode") {
+            if (title.getSeason() > 0 && title.getEpisode() > 0) {
+                this.shadowRoot.querySelector("#title-year").innerHTML = `<span>${title.getYear()}</span>&middot<span>S${title.getSeason()}</span>&middot<span>E${title.getEpisode()}</span>`
+            }
+        }
+
+        this.shadowRoot.querySelector("#title-duration").innerHTML = title.getDuration();
+
+        let titleInfo = new TitleInfo(title, isShort, globule)
+        this.appendChild(titleInfo)
+    }
+
+
+}
+
+customElements.define('globular-informations-manager', InformationsManager)
+
+
+
+/**
+ * Video information
+ */
+export class VideoInfo extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor(video, isShort) {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+
+        let score = video.getRating()
+
         let posterUrl = ""
         if (video.getPoster() != undefined) {
             // must be getContentUrl here... 
             posterUrl = video.getPoster().getContenturl()
         }
 
-        this.innerHTML = "" // remove previous content.
-
-        let score = video.getRating()
-
-
-        // So here I will create the display for the title.
-        let html = `
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
         <style>
+            ${theme}
             ${__style__}
             .action-div{
                 display: flex;
@@ -511,40 +593,38 @@ export class InformationsManager extends HTMLElement {
                 font-size: .8rem;
             }
         </style>
-        <div id="${video.getId()}-div" class="title-div">
-            <div class="title-poster-div" >
-                <img src="${posterUrl}"></img>
-                <div class="title-files-div">
-                </div>
-            </div>
-            <div class="title-informations-div">
-                <div class="title-genres-div"></div>
-                <p class="title-synopsis-div">${video.getDescription()}</p>
-                <div class="title-rating-div">
-                    <iron-icon class="rating-star" icon="icons:star"></iron-icon>
-                    <div style="display: flex; flex-direction: column;">
-                        <div><span id="rating-span">${score.toFixed(1)}</span>/10</div>
+        <div>
+            <div id="${video.getId()}-div" class="title-div">
+                <div class="title-poster-div" >
+                    <img src="${posterUrl}"></img>
+                    <div class="title-files-div">
                     </div>
                 </div>
-                <div class="title-top-credit">
-                    <div class="title-credit">
-                        <div id="title-actors-title" class="title-credit-title">Star</div>
-                        <div id="title-actors-lst" class="title-credit-lst"></div>
+                <div class="title-informations-div">
+                    <div class="title-genres-div"></div>
+                    <p class="title-synopsis-div">${video.getDescription()}</p>
+                    <div class="title-rating-div">
+                        <iron-icon class="rating-star" icon="icons:star"></iron-icon>
+                        <div style="display: flex; flex-direction: column;">
+                            <div><span id="rating-span">${score.toFixed(1)}</span>/10</div>
+                        </div>
+                    </div>
+                    <div class="title-top-credit">
+                        <div class="title-credit">
+                            <div id="title-actors-title" class="title-credit-title">Star</div>
+                            <div id="title-actors-lst" class="title-credit-lst"></div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-        <div class="action-div" style="${isShort ? "display: none;" : ""}">
-            <paper-button id="delete-indexation-btn">Delete</paper-button>
+            <div class="action-div" style="${isShort ? "display: none;" : ""}">
+                <paper-button id="delete-indexation-btn">Delete</paper-button>
+            </div>
         </div>
         `
 
-
-        let range = document.createRange()
-        this.appendChild(range.createContextualFragment(html))
-
         // Here I will display the list of categories.
-        let genresDiv = this.querySelector(".title-genres-div")
+        let genresDiv = this.shadowRoot.querySelector(".title-genres-div")
         video.getTagsList().forEach(g => {
             let genreSpan = document.createElement("span")
             genreSpan.classList.add("title-genre-span")
@@ -564,17 +644,17 @@ export class InformationsManager extends HTMLElement {
             })
         }
 
-        displayPersons(this.querySelector("#title-actors-lst"), video.getCastingList())
+        displayPersons(this.shadowRoot.querySelector("#title-actors-lst"), video.getCastingList())
         if (video.getCastingList().length > 0) {
             this.querySelector("#title-actors-title").innerHTML = "Actors"
         }
 
-        let filesDiv = this.querySelector(".title-files-div")
+        let filesDiv = this.shadowRoot.querySelector(".title-files-div")
         GetTitleFiles("/search/videos", video, filesDiv, (previews) => {
 
         })
 
-        let deleteIndexationBtn = this.querySelector("#delete-indexation-btn")
+        let deleteIndexationBtn = this.shadowRoot.querySelector("#delete-indexation-btn")
 
         // Delete the indexation from the database.
         deleteIndexationBtn.onclick = () => {
@@ -618,75 +698,63 @@ export class InformationsManager extends HTMLElement {
 
                 toast.dismiss();
             }
-
-
         }
-
-
     }
 
-    /**
-     * Display title informations.
-     * @param {*} titles 
-     */
-    setTitlesInformation(titles, globule) {
+}
 
-        if (!globule) {
-            globule = Model.globular
-        }
-
-        let isShort = this.hasAttribute("short")
-        if (titles.length == 0) {
-            /** nothinh to display... */
-            return;
-        }
-
-        let title = null;
-        if (titles.length == 1) {
-            title = titles[0]
-        } else {
-            titles.forEach(t => {
-                if (t.getType() == "TVSeries") {
-                    title = t;
-                }
-            })
-        }
-
-        if (title == null) {
-            title = titles[titles.length - 1]
-        }
+customElements.define('globular-video-info', VideoInfo)
 
 
-        // Set the title div.
-        this.shadowRoot.querySelector(".title-div").innerHTML = `
-        <h1 id="title-name" class="title" style="${isShort ? "font-size: 1.2rem;text-align: left;" : ""}"> </h1>
-        <h3 class="title-sub-title-div">             
-            <span id="title-type"></span>
-            <span id="title-year"></span>
-            <span id="title-duration"></span>
-        </h3>
+/**
+ * Globular episode information panel.
+ */
+export class EpisodeInfo extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor() {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+            ${theme}
+        </style>
+
         `
 
-        this.shadowRoot.querySelector("#title-name").innerHTML = title.getName();
-        this.shadowRoot.querySelector("#title-type").innerHTML = title.getType();
-        this.shadowRoot.querySelector("#title-year").innerHTML = title.getYear();
-        if (title.getType() == "TVEpisode") {
-            if (title.getSeason() > 0 && title.getEpisode() > 0) {
-                this.shadowRoot.querySelector("#title-year").innerHTML = `<span>${title.getYear()}</span>&middot<span>S${title.getSeason()}</span>&middot<span>E${title.getEpisode()}</span>`
-            }
-        }
-        this.shadowRoot.querySelector("#title-duration").innerHTML = title.getDuration();
+        // test create offer...
+    }
+
+}
+
+customElements.define('globular-episode-info', EpisodeInfo)
+
+/**
+ * Globular title information panel.
+ */
+export class TitleInfo extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor(title, isShort, globule) {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+
 
         let posterUrl = ""
         if (title.getPoster() != undefined) {
             posterUrl = title.getPoster().getContenturl()
         }
 
-        this.innerHTML = "" // remove previous content.
-
-        // So here I will create the display for the title.
-        let html = `
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
         <style>
+            ${theme}
             ${__style__}
             .action-div{
                 display: flex;
@@ -730,11 +798,8 @@ export class InformationsManager extends HTMLElement {
             <paper-button id="delete-indexation-btn">Delete</paper-button>
         </div>
         `
-        let range = document.createRange()
 
-        this.appendChild(range.createContextualFragment(html))
-
-        let genresDiv = this.querySelector(".title-genres-div")
+        let genresDiv = this.shadowRoot.querySelector(".title-genres-div")
         title.getGenresList().forEach(g => {
             let genreSpan = document.createElement("span")
             genreSpan.classList.add("title-genre-span")
@@ -754,24 +819,24 @@ export class InformationsManager extends HTMLElement {
         }
 
         // display directors
-        displayPersons(this.querySelector("#title-directors-lst"), title.getDirectorsList())
+        displayPersons(this.shadowRoot.querySelector("#title-directors-lst"), title.getDirectorsList())
         if (title.getDirectorsList().length > 0) {
-            this.querySelector("#title-directors-title").innerHTML = "Directors"
+            this.shadowRoot.querySelector("#title-directors-title").innerHTML = "Directors"
         }
 
         // display writers
-        displayPersons(this.querySelector("#title-writers-lst"), title.getWritersList())
+        displayPersons(this.shadowRoot.querySelector("#title-writers-lst"), title.getWritersList())
         if (title.getWritersList().length > 0) {
-            this.querySelector("#title-writers-title").innerHTML = "Writers"
+            this.shadowRoot.querySelector("#title-writers-title").innerHTML = "Writers"
         }
 
         // display actors
-        displayPersons(this.querySelector("#title-actors-lst"), title.getActorsList())
+        displayPersons(this.shadowRoot.querySelector("#title-actors-lst"), title.getActorsList())
         if (title.getActorsList().length > 0) {
-            this.querySelector("#title-actors-title").innerHTML = "Actors"
+            this.shadowRoot.querySelector("#title-actors-title").innerHTML = "Actors"
         }
 
-        let filesDiv = this.querySelector(".title-files-div")
+        let filesDiv = this.shadowRoot.querySelector(".title-files-div")
         if (title.getType() != "TVSeries") {
             filesDiv.style.paddingTop = "35px"
             filesDiv.style.paddingLeft = "15px"
@@ -780,23 +845,17 @@ export class InformationsManager extends HTMLElement {
             })
         } else {
             // Here the title is a series...
-            if (titles.length == 1) {
-                // So here I will 
-                let indexPath = Application.globular.config.DataPath + "/search/titles"
-
-                GetEpisodes(indexPath, title, (episodes) => {
-                    if (title.onLoadEpisodes != null) {
-                        title.onLoadEpisodes(episodes)
-                    }
-                    this.displayEpisodes(episodes, filesDiv, globule)
-                    filesDiv.querySelector("paper-progress").style.display = "none"
-                })
-
-            }
+            let indexPath = Application.globular.config.DataPath + "/search/titles"
+            GetEpisodes(indexPath, title, (episodes) => {
+                if (title.onLoadEpisodes != null) {
+                    title.onLoadEpisodes(episodes)
+                }
+                this.displayEpisodes(episodes, filesDiv, globule)
+                filesDiv.querySelector("paper-progress").style.display = "none"
+            })
         }
 
-
-        let deleteIndexationBtn = this.querySelector("#delete-indexation-btn")
+        let deleteIndexationBtn = this.shadowRoot.querySelector("#delete-indexation-btn")
 
         // Delete the indexation from the database.
         deleteIndexationBtn.onclick = () => {
@@ -841,6 +900,8 @@ export class InformationsManager extends HTMLElement {
                 toast.dismiss();
             }
         }
+
+        // test create offer...
     }
 
     // Here I will display the list of each episodes from the list...
@@ -1028,4 +1089,4 @@ export class InformationsManager extends HTMLElement {
     }
 }
 
-customElements.define('globular-informations-manager', InformationsManager)
+customElements.define('globular-title-info', TitleInfo)

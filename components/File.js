@@ -49,6 +49,19 @@ import { SplitView } from './Splitter'
 var shared = {}
 var public_ = {}
 
+function copyToClipboard(text) {
+    var dummy = document.createElement("textarea");
+    // to avoid breaking orgain page when copying more words
+    // cant copy when adding below this code
+    // dummy.style.display = 'none'
+    document.body.appendChild(dummy);
+    //Be careful if you use texarea. setAttribute('value', value), which works with "input" does not work with "textarea". – Eduard
+    dummy.value = text;
+    dummy.select();
+    document.execCommand("copy");
+    document.body.removeChild(dummy);
+}
+
 function formatBytes(bytes, decimals = 2) {
     if (bytes === 0) return '0 Bytes';
 
@@ -169,7 +182,7 @@ let dirs = {}
  */
 function _readDir(path, callback, errorCallback, globule, force = false) {
     let key = getUuidByString(globule.config.Domain + "@" + path)
-    if (!force) {
+    if (!force || path == "/public" || path == "/shared") {
         if (dirs[key] != null) {
             callback(dirs[key])
             return
@@ -207,8 +220,12 @@ function _publishSetDirEvent(path, file_explorer_) {
  * That class is the base class of FilesListView and FilesIconView
  */
 export class FilesView extends HTMLElement {
+
     constructor() {
         super()
+
+        // must icon or list view one is active at time.
+        this._active_ = false
 
         // The parent file explorer
         this._file_explorer_ = null;
@@ -252,6 +269,7 @@ export class FilesView extends HTMLElement {
         <globular-dropdown-menu-item id="delete-menu-item" icon="icons:delete" action="" text="Delete"> </globular-dropdown-menu-item>
         <globular-dropdown-menu-item separator="true"  id="download-menu-item" icon="icons:cloud-download" text="Download" action=""> </globular-dropdown-menu-item>
         <globular-dropdown-menu-item id="open-in-new-tab-menu-item" icon="icons:open-in-new" text="Open in new tab" action="" style="display: none;"> </globular-dropdown-menu-item>
+        <globular-dropdown-menu-item id="copy-url-menu-item" icon="icons:link" text="Copy url" action=""> </globular-dropdown-menu-item>
         `
 
         this.menu = new DropdownMenu("icons:more-vert")
@@ -263,6 +281,7 @@ export class FilesView extends HTMLElement {
         this.deleteMenuItem = this.menu.querySelector("#delete-menu-item")
         this.downloadMenuItem = this.menu.querySelector("#download-menu-item")
         this.openInNewTabItem = this.menu.querySelector("#open-in-new-tab-menu-item")
+        this.copyUrlItem = this.menu.querySelector("#copy-url-menu-item")
 
         // video conversion menu
         this.videMenuItem = this.menu.querySelector("#video-menu-item")
@@ -361,12 +380,8 @@ export class FilesView extends HTMLElement {
 
         this.openInNewTabItem.action = () => {
             let globule = this._file_explorer_.globule
-            let url = globule.config.Protocol + "//" + globule.config.Domain + ":"
-            if (window.location != globule.config.Domain) {
-                if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
-                    url = globule.config.Protocol + "://" + window.location.host
-                }
-            }
+            let url = globule.config.Protocol + "://" + globule.config.Domain + ":"
+            
 
             if (globule.config.Protocol == "https") {
                 url += globule.config.PortHttps
@@ -375,7 +390,11 @@ export class FilesView extends HTMLElement {
             }
 
             this.menu.file.path.split("/").forEach(item => {
-                url += "/" + encodeURIComponent(item.trim())
+                let component = encodeURIComponent(item.trim())
+                if(component.length > 0){
+                    url += "/" + component
+                }
+                
             })
 
             if (this.menu.file.mime == "video/hls-stream") {
@@ -387,6 +406,39 @@ export class FilesView extends HTMLElement {
                 url += "&token=" + localStorage.getItem("user_token");
             }
             window.open(url, '_blank', "fullscreen=yes");
+        }
+
+        this.copyUrlItem.action = () => {
+            let globule = this._file_explorer_.globule
+            let url = globule.config.Protocol + "://" + globule.config.Domain + ":"
+            
+
+            if (globule.config.Protocol == "https") {
+                url += globule.config.PortHttps
+            } else {
+                url += globule.config.PortHttp
+            }
+
+            this.menu.file.path.split("/").forEach(item => {
+                let component = encodeURIComponent(item.trim())
+                if(component.length > 0){
+                    url += "/" + component
+                }
+                
+            })
+
+            if (this.menu.file.mime == "video/hls-stream") {
+                url += "/playlist.m3u8"
+            }
+
+            url += "?application=" + Model.application;
+            if (localStorage.getItem("user_token") != undefined) {
+                url += "&token=" + localStorage.getItem("user_token");
+            }
+            
+            copyToClipboard(url)
+
+            ApplicationView.displayMessage("url was copy to clipboard...", 3000)
         }
 
         this.downloadMenuItem.action = () => {
@@ -525,29 +577,35 @@ export class FilesView extends HTMLElement {
                     index++
                     let globule = this._file_explorer_.globule
                     if (f.isDir) {
-                        console.log("remove file -----> ", this.firstElementChild)
-                        if (f.path == "/public") {
-                            const rqst = new RemovePublicDirRequest
-                            rqst.setPath(f.path)
-                            globule.fileService.removePublicDir(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
-                                .then(rsp => {
-                                    delete dirs[getUuidByString(this._file_explorer_.globule.config.Domain + "@" + path)]
-                                    Model.eventHub.publish("reload_dir_event", path, false);
-                                })
-                                .catch(err => { ApplicationView.displayMessage(err, 3000) })
-                        } else {
-                            deleteDir(globule, f.path,
-                                () => {
-                                    delete dirs[getUuidByString(this._file_explorer_.globule.config.Domain + "@" + path)]
-                                    Model.eventHub.publish("reload_dir_event", path, false);
-                                    if (index < Object.keys(this.selected).length) {
-                                        deleteFile_()
-                                    } else {
-                                        success()
-                                    }
-                                },
-                                err => { ApplicationView.displayMessage(err, 3000) })
-                        }
+
+                        this._file_explorer_.globule.fileService.getPublicDirs(new GetPublicDirsRequest, { application: Application.application, domain: this._file_explorer_.globule.config.Domain, token: localStorage.getItem("user_token") })
+                            .then(rsp => {
+                                // if the dir is public I will remove it entry from the list and keep the directory...
+                                let dirs = rsp.getDirsList()
+                                if (dirs.includes(f.path)) {
+                                    const rqst = new RemovePublicDirRequest
+                                    rqst.setPath(f.path)
+                                    globule.fileService.removePublicDir(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
+                                        .then(rsp => {
+                                            delete dirs[getUuidByString(this._file_explorer_.globule.config.Domain + "@/public")]
+                                            Model.eventHub.publish("reload_dir_event", "/public", false);
+                                        })
+                                        .catch(err => { ApplicationView.displayMessage(err, 3000) })
+                                } else {
+                                    deleteDir(globule, f.path,
+                                        () => {
+                                            delete dirs[getUuidByString(this._file_explorer_.globule.config.Domain + "@" + path)]
+                                            Model.eventHub.publish("reload_dir_event", path, false);
+                                            if (index < Object.keys(this.selected).length) {
+                                                deleteFile_()
+                                            } else {
+                                                success()
+                                            }
+                                        },
+                                        err => { ApplicationView.displayMessage(err, 3000) })
+                                }
+                            })
+
                     } else {
                         deleteFile(globule, f.path,
                             () => {
@@ -861,13 +919,6 @@ export class FilesView extends HTMLElement {
                 }
             }
 
-            let checkboxs = this.div.querySelectorAll("paper-checkbox")
-            for (var i = 0; i < checkboxs.length; i++) {
-                if (!checkboxs[i].checked) {
-                    checkboxs[i].style.visibility = "hidden"
-                }
-            }
-
             let fileIconDivs = this.div.querySelectorAll(".file-icon-div")
             for (var i = 0; i < fileIconDivs.length; i++) {
                 fileIconDivs[i].classList.remove("active")
@@ -957,6 +1008,7 @@ export class FilesView extends HTMLElement {
     }
 
     init() {
+
         // The the path
         Model.eventHub.subscribe("__set_dir_event__",
             (uuid) => {
@@ -972,6 +1024,9 @@ export class FilesView extends HTMLElement {
 
         // The drop file event.
         Model.eventHub.subscribe("drop_file_event", (uuid) => { }, infos => {
+            if (!this._active_) {
+                return
+            }
 
             // Hide the icon parent div.
             let div = this.div.querySelector("#" + infos.id)
@@ -1229,37 +1284,37 @@ export class FilesView extends HTMLElement {
                     let pid = -1;
                     let fileName = ""
 
+
                     // Here I will create a local event to be catch by the file uploader...
                     stream.on("data", (rsp) => {
                         if (rsp.getPid() != null) {
                             pid = rsp.getPid()
                         }
-                        console.log("1234 -------------> ", rsp.getResult())
-                        if (rsp.getResult().startsWith("[download] Destination:") && fileName.length == 0) {
-                            fileName = rsp.getResult().split(":")[1].trim()
-                        }
-                        // Publish local event.
-                        Model.eventHub.publish("__upload_link_event__", { pid: pid, path: this.__dir__.path, infos: rsp.getResult(), done: false, lnk: lnk }, true);
-                    });
+                        console.log(rsp.getResult())
+                        if (rsp.getResult().startsWith("[download] Destination:")) {
+                            let fileName_ = rsp.getResult().split(":")[1].trim()
+                            if (fileName.length > 0) {
+                                url = url.replace(fileName.split(".")[0], fileName_.split(".")[0])
 
-                    stream.on("status", (status) => {
-                        if (status.code === 0) {
+                            }
+                            console.log("start processing file: ", fileName_)
+                            // generate preview for the previous file...
 
-                            Model.eventHub.publish("__upload_link_event__", { pid: pid, path: this.__dir__.path, infos: "", done: true, lnk: lnk }, true);
-                            Model.eventHub.publish("generate_video_preview_event", this.__dir__.path + "/" + fileName, false);
+                            fileName = fileName_
+
+                        } else if (rsp.getResult().startsWith("[download] 100% of ") && rsp.getResult().indexOf(" in ") != -1) {
 
                             // Now I will index the file...
                             var xmlhttp = new XMLHttpRequest();
                             xmlhttp.timeout = 1500
+                            let fileName_ = fileName
                             xmlhttp.onreadystatechange = () => {
-                                if (this.readyState == 4 && (this.status == 201 || this.status == 200)) {
-                                    console.log("file" + this.__dir__.path + "/" + fileName + "was indexed!")
-
-                                } else if (this.readyState == 4) {
-                                    console.log("fail to index file " + this.__dir__.path + "/" + fileName + " with infos from" + url + " with error status " + this.status)
+                                if (xmlhttp.status == 0) {
+                                    // give time to finish write the file on the server...
+                                    Model.eventHub.publish("__upload_link_event__", { pid: pid, path: this.__dir__.path, infos: "", done: true, lnk: lnk }, true);
+                                    Model.eventHub.publish("generate_video_preview_event", this.__dir__.path + "/" + fileName_, false);
                                 }
                             };
-
 
                             let globule = this._file_explorer_.globule
                             let url_ = globule.config.Protocol + "://" + globule.config.Domain + ":"
@@ -1276,16 +1331,23 @@ export class FilesView extends HTMLElement {
                             }
 
                             // The file path to index.
-                            url_ += "&video-path=" + this.__dir__.path + "/" + fileName
+                            url_ += "&video-path=" + this.__dir__.path + "/" + fileName_
                             url_ += "&video-url=" + url;
                             url_ += "&index-path=" + globule.config.DataPath + "/search/videos"
 
                             xmlhttp.open("GET", url_, true);
                             xmlhttp.setRequestHeader("domain", globule.config.Domain);
                             xmlhttp.send();
-                        } else {
-                            // error here...
-                            ApplicationView.displayMessage(status.details, 3000)
+                        }
+
+                        // Publish local event.
+                        Model.eventHub.publish("__upload_link_event__", { pid: pid, path: this.__dir__.path, infos: rsp.getResult(), done: false, lnk: lnk }, true);
+                    });
+
+                    stream.on("status", (status) => {
+                        if (status.code === 0) {
+
+
                         }
                     });
 
@@ -1329,6 +1391,15 @@ export class FilesListView extends FilesView {
         }
 
         this.div.innerHTML = "";
+
+        
+        let checkboxs = this.div.querySelectorAll("paper-checkbox")
+        for (var i = 0; i < checkboxs.length; i++) {
+            if (!checkboxs[i].checked) {
+                checkboxs[i].style.visibility = "hidden"
+            }
+        }
+
         let id = "_" + uuidv4().split("-").join("_").split("@").join("_");
         let html = `
         <style>
@@ -2629,8 +2700,9 @@ export class FileNavigator extends HTMLElement {
                 }
                 // reload the div...
                 this.initPublic(callback)
-                this.initTreeView(dir, parent, level)
-
+                if (dir.path != "/public") {
+                    this.initTreeView(dir, parent, level)
+                }
             }
         }
     }
@@ -2722,23 +2794,25 @@ export class FileNavigator extends HTMLElement {
 
         let dirLnk = this.shadowRoot.getElementById(id + "_directory_lnk")
         let dirIco = this.shadowRoot.getElementById(id + "_directory_icon")
+        if (dirLnk) {
+            dirLnk.ondragover = (evt) => {
+                evt.preventDefault()
+                dirIco.icon = "icons:folder-open"
+            }
 
-        dirLnk.ondragover = (evt) => {
-            evt.preventDefault()
-            dirIco.icon = "icons:folder-open"
-        }
 
-        dirLnk.ondragleave = () => {
-            dirIco.icon = "icons:folder"
-        }
+            dirLnk.ondragleave = () => {
+                dirIco.icon = "icons:folder"
+            }
 
-        dirLnk.ondrop = (evt) => {
-            evt.stopPropagation();
-            let f = evt.dataTransfer.getData('file')
-            let id = evt.dataTransfer.getData('id')
-            dirIco.icon = "icons:folder"
-            if (f != undefined && id.length > 0) {
-                Model.eventHub.publish("drop_file_event", { file: f, dir: dir.path, id: id }, true)
+            dirLnk.ondrop = (evt) => {
+                evt.stopPropagation();
+                let f = evt.dataTransfer.getData('file')
+                let id = evt.dataTransfer.getData('id')
+                dirIco.icon = "icons:folder"
+                if (f != undefined && id.length > 0) {
+                    Model.eventHub.publish("drop_file_event", { file: f, dir: dir.path, id: id }, true)
+                }
             }
         }
 
@@ -2754,58 +2828,63 @@ export class FileNavigator extends HTMLElement {
         }
 
         // hide the button if no sub-document exist.
-        if (!hasSubdir) {
-            expandBtn.style.visibility = "hidden"
-        } else {
-            expandBtn.style.visibility = "visible"
+        if (expandBtn) {
+            if (!hasSubdir) {
+                expandBtn.style.visibility = "hidden"
+            } else {
+                expandBtn.style.visibility = "visible"
+            }
+            expandBtn.onclick = (evt) => {
+                evt.stopPropagation();
+                shrinkBtn.style.display = "block"
+                fileDiv.style.display = "block"
+                dirIco.icon = "icons:folder-open"
+
+                if (dir._files.length > 0) {
+                    expandBtn.style.display = "none";
+                } else {
+                    expandBtn.style.visibility = "hidden";
+                }
+            }
+
         }
 
         // Now actions.
-        shrinkBtn.onmouseover = () => {
-            shrinkBtn.style.cursor = "pointer"
-        }
+        if (shrinkBtn) {
+            shrinkBtn.onmouseover = () => {
+                shrinkBtn.style.cursor = "pointer"
+            }
 
-        shrinkBtn.onmouseleave = () => {
-            shrinkBtn.style.cursor = "default"
-        }
+            shrinkBtn.onmouseleave = () => {
+                shrinkBtn.style.cursor = "default"
+            }
 
-        shrinkBtn.onclick = (evt) => {
-            evt.stopPropagation();
-            shrinkBtn.style.display = "none";
-            fileDiv.style.display = "none"
-            dirIco.icon = "icons:folder"
+            shrinkBtn.onclick = (evt) => {
+                evt.stopPropagation();
+                shrinkBtn.style.display = "none";
+                fileDiv.style.display = "none"
+                dirIco.icon = "icons:folder"
 
-            if (dir._files.length > 0) {
-                expandBtn.style.display = "block";
-            } else {
-                expandBtn.style.visibility = "visible";
+                if (dir._files.length > 0) {
+                    expandBtn.style.display = "block";
+                } else {
+                    expandBtn.style.visibility = "visible";
+                }
             }
         }
-
-        expandBtn.onclick = (evt) => {
-            evt.stopPropagation();
-            shrinkBtn.style.display = "block"
-            fileDiv.style.display = "block"
-            dirIco.icon = "icons:folder-open"
-
-            if (dir._files.length > 0) {
-                expandBtn.style.display = "none";
-            } else {
-                expandBtn.style.visibility = "hidden";
+        if (dirLnk) {
+            dirLnk.onclick = (evt) => {
+                evt.stopPropagation();
+                _publishSetDirEvent(dir._path, this._file_explorer_)
             }
-        }
 
-        dirLnk.onclick = (evt) => {
-            evt.stopPropagation();
-            _publishSetDirEvent(dir._path, this._file_explorer_)
-        }
+            dirLnk.onmouseover = () => {
+                dirLnk.style.cursor = "pointer"
+            }
 
-        dirLnk.onmouseover = () => {
-            dirLnk.style.cursor = "pointer"
-        }
-
-        dirLnk.onmouseleave = () => {
-            dirLnk.style.cursor = "default"
+            dirLnk.onmouseleave = () => {
+                dirLnk.style.cursor = "default"
+            }
         }
 
     }
@@ -3325,6 +3404,7 @@ export class FileExplorer extends HTMLElement {
 
         // this.shadowRoot.querySelector("#globular-files-icon-view")
         this.filesIconView = new FilesIconView()
+        this.filesIconView._active_ = true // true be default...
         this.filesIconView.id = "globular-files-icon-view"
         this.filesIconView.style.display = "none"
         this.appendChild(this.filesIconView)
@@ -3486,6 +3566,8 @@ export class FileExplorer extends HTMLElement {
             this.imageViewer.style.display = "none"
             this.filesListView.style.display = ""
             this.filesIconView.style.display = "none"
+            this.filesIconView._active_ = false
+            this.filesListView._active_ = true
             this.audioPlayer.stop();
             this.audioPlayer.style.display = "none"
             this.fileReader.style.display = "none"
@@ -3500,6 +3582,8 @@ export class FileExplorer extends HTMLElement {
             this.imageViewer.style.display = "none"
             this.filesListBtn.classList.remove("active")
             this.fileIconBtn.classList.add("active")
+            this.filesIconView._active_ = true
+            this.filesListView._active_ = false
             this.filesListView.style.display = "none"
             this.filesIconView.style.display = ""
             this.audioPlayer.stop();
@@ -3939,7 +4023,7 @@ export class FileExplorer extends HTMLElement {
     }
 
     playVideo(path) {
-        this.style.zIndex = 0;
+        this.style.zIndex = 1;
         playVideo(path, null, () => {
 
             console.log("------> video ", path, "is now playing")
@@ -4823,8 +4907,10 @@ export class FilesUploader extends HTMLElement {
 
         if (done) {
             let span_title = this.links_download_table.querySelector("#" + id + "_title")
-            ApplicationView.displayMessage("File " + span_title.innerHTML + " was now uploaded!", 3000)
-            row.parentNode.removeChild(row)
+            if (span_title) {
+                ApplicationView.displayMessage("File " + span_title.innerHTML + " was now uploaded!", 3000)
+                row.parentNode.removeChild(row)
+            }
             return
         }
 

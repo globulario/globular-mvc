@@ -1927,7 +1927,7 @@ customElements.define("globular-action-setting", ActionSetting);
         </div>
         <div style="flex-grow: 1; display: flex; flex-direction: column;">
           <div style="padding-bottom: 5px; padding-top: 5px;">${err.getPath()}</div>
-          <span style="width: 100%;  border-bottom: 1px solid var(--palette-divider)"></span>
+          <span style="width: 90%;  border-bottom: 1px solid var(--palette-divider)"></span>
           <div style="padding-bottom: 5px; padding-top: 5px;">${err.getError()}</div>
         </div>
       </div>
@@ -2039,3 +2039,134 @@ customElements.define('globular-video-conversion-error', VideoConversionError)
 }
 
 customElements.define('globular-video-conversion-errors-manager', VideoConversionErrorsManager)
+
+
+/**
+ * display a video convertion error
+ */
+ export class VideoConversionLog extends HTMLElement {
+  // attributes.
+
+  // Create the applicaiton view.
+  constructor(log) {
+      super()
+      // Set the shadow dom.
+      this.attachShadow({ mode: 'open' });
+
+      let uuid = "_" + getUuidByString(log.getLogTime().toString())
+      let date = new Date(log.getLogTime() * 1000)
+      // Innitialisation of the layout.
+      this.shadowRoot.innerHTML = `
+      <style>
+          ${theme}
+      </style>
+
+      <div id="${uuid}" style="display: flex; align-items: center; padding-bottom: 10px; padding-top: 10px; border-bottom: 1px solid var(--palette-divider)">
+        <div style="flex-grow: 1; display: flex; flex-direction: column;">
+          <div style="padding-bottom: 5px; padding-top: 5px;">${log.getMsg() + " " + log.getPath()}</div>
+          <span style="width: 90%;  border-bottom: 1px solid var(--palette-divider); align-self: flex-end;"></span>
+          <div style="padding-bottom: 5px; padding-top: 5px; align-self: flex-end;">${date.toLocaleDateString() + " " + date.toLocaleTimeString()} <span id="status_span"  style="margin-left: 20px;  text-transform: capitalize; font-weight: bold;">${log.getStatus()}</span></div>
+        </div>
+      </div>
+      `
+  }
+
+  setStatus(value){
+    this.shadowRoot.querySelector(`#status_span`).innerHTML = value
+  }
+}
+
+customElements.define('globular-video-conversion-log', VideoConversionLog)
+
+
+/**
+ * Video Convertion error
+ */
+ export class VideoConversionLogsManager extends HTMLElement {
+  // attributes.
+
+  // Create the applicaiton view.
+  constructor(onclear, onrefresh) {
+      super()
+      // Set the shadow dom.
+      this.attachShadow({ mode: 'open' });
+
+      // Innitialisation of the layout.
+      this.shadowRoot.innerHTML = `
+      <style>
+          ${theme}
+
+          #container{
+            padding: 15px 16px 16px;
+            display: flex;
+            flex-direction: column;
+          }
+
+          #logs{
+            display: flex;
+            flex-direction: column;
+          }
+
+      </style>
+
+      <div id="container">
+         <div style="display: flex; justify-content: flex-end;">
+          <paper-icon-button id="refresh-btn" icon="icons:refresh"></paper-icon-button>
+          <paper-icon-button id="clear-btn" icon="icons:clear"></paper-icon-button>
+         </div>
+         <div id="logs">
+            <slot></slot>
+         </div>
+      </div>
+      `
+
+      // List of handler.
+      this.onclear = onclear
+      this.onrefresh = onrefresh
+
+      // Clear the content.
+      this.shadowRoot.querySelector("#clear-btn").onclick = ()=>{
+        if(this.onclear != undefined){
+          this.innerHTML = "" // reset the content...
+          this.onclear()
+        }
+      }
+
+      // Refresh the the content
+      this.shadowRoot.querySelector("#refresh-btn").onclick = ()=>{
+        if(this.onrefresh != null){
+          this.onrefresh(logs=>{
+            this.innerHTML = "" // reset the content...
+            this.setLogs(logs)
+          })
+        }
+      }
+  }
+
+  // Use by addSetting...
+  getElement(){
+    return null
+  }
+
+  setLog(log){
+    let uuid = "_" + getUuidByString(log.getLogTime().toString())
+    let videoConversionLog = this.querySelector("#" + uuid)
+    if(videoConversionLog){
+      videoConversionLog.setStatus(log.getStatus())
+    }else{
+      videoConversionLog = new VideoConversionLog(log)
+      videoConversionLog.id = uuid
+      this.appendChild(videoConversionLog)
+    }
+
+  }
+
+  setLogs(logs){
+    logs.forEach(l=>{
+      this.setLog(l)
+    })
+  }
+
+}
+
+customElements.define('globular-video-conversion-logs-manager', VideoConversionLogsManager)

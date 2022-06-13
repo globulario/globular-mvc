@@ -3,7 +3,7 @@ import '@polymer/iron-icons/av-icons'
 import '@polymer/paper-icon-button/paper-icon-button.js';
 
 import { Application } from '../Application';
-import { CreateVideoRequest, GetTitleFilesRequest, SearchTitlesRequest } from 'globular-web-client/title/title_pb';
+import { CreateVideoRequest, DeleteVideoRequest, GetTitleFilesRequest, SearchTitlesRequest } from 'globular-web-client/title/title_pb';
 import { Model } from '../Model';
 import { theme } from "./Theme";
 import * as getUuid from 'uuid-by-string'
@@ -18,7 +18,7 @@ var titles = {}
 // Keep in memory to speed up....
 var images = {}
 function toDataURL(url, callback) {
-    if(images[url]!=null){
+    if (images[url] != null) {
         callback(images[url])
         return
     }
@@ -72,7 +72,7 @@ export function getCoverDataUrl(callback, videoId, videoUrl, videoPath, globule)
     url += "&url=" + videoUrl
     url += "&path=" + videoPath
 
-    if(images[url]!=null){
+    if (images[url] != null) {
         callback(images[url])
         return
     }
@@ -85,7 +85,7 @@ export function getCoverDataUrl(callback, videoId, videoUrl, videoPath, globule)
     xhr.setRequestHeader("domain", Model.domain);
 
     // Set responseType to 'arraybuffer', we want raw binary data buffer
-    console.log("try to get video cover ",  url)
+    console.log("try to get video cover ", url)
     xhr.responseType = 'text';
     xhr.onload = (rsp) => {
         if (rsp.currentTarget.status == 200) {
@@ -1062,13 +1062,9 @@ export class SearchVideoCard extends HTMLElement {
         let thumbnail = this.shadowRoot.querySelector("#thumbnail-image")
         let preview = this.shadowRoot.querySelector("#preview-image")
         let card = this.shadowRoot.querySelector(".video-card")
-
-
         thumbnail.src = video.getPoster().getContenturl()
 
-
         // Here the image was not set properly...
-
         this.shadowRoot.querySelector("#video-info-button").onclick = () => {
             this.showVideoInfo(video)
         }
@@ -1149,9 +1145,18 @@ export class SearchVideoCard extends HTMLElement {
 
                     }
 
-
                 }
-            }).catch(err => ApplicationView.displayMessage(err, 3000))
+            }).catch(err => {
+                // TODO append broken link image and propose the user to delete the file.
+                console.log("no video file found", err)
+                let rqst = new DeleteVideoRequest
+                rqst.setVideoid(video.getId())
+                rqst.setIndexpath(indexPath)
+                globule.titleService.deleteVideo(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+                    .then(()=>{
+                        console.log("video ", video.getId(), " was deleted")
+                    })
+            })
     }
 }
 
@@ -1299,7 +1304,7 @@ export class SearchFlipCard extends HTMLElement {
                 let serieName = this.shadowRoot.querySelector(`#hit-div-mosaic-series-name`)
                 getImdbInfo(title.getSerie(), serie => {
                     let url = serie.Poster.ContentURL
-                    toDataURL(url, (dataUrl)=>{
+                    toDataURL(url, (dataUrl) => {
                         this.shadowRoot.querySelector(`#hit-div-mosaic-front`).style.backgroundImage = `url(${dataUrl})`
                         serieName.innerHTML = serie.Name
                     })
@@ -1308,7 +1313,7 @@ export class SearchFlipCard extends HTMLElement {
             seriesInfos.innerHTML = title.getName() + " S" + title.getSeason() + "E" + title.getEpisode()
         } else {
             let url = title.getPoster().getContenturl()
-            toDataURL(url, (dataUrl)=>{
+            toDataURL(url, (dataUrl) => {
                 this.shadowRoot.querySelector(`#hit-div-mosaic-front`).style.backgroundImage = `url(${dataUrl})`
             })
         }
@@ -1497,6 +1502,8 @@ export class SearchTitleDetail extends HTMLElement {
                             }
 
                         }
+                    }).catch(err=>{
+                        console.log("No file found with title ", title.getId(), title.getDescription(), err)
                     })
             }
 

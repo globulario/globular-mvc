@@ -3,10 +3,9 @@ import { ClearAllLogRqst, DeleteLogRqst, DeleteLogRsp, GetLogRqst, GetLogRsp, Lo
 import { Account } from "./Account";
 import { Application } from "./Application";
 import { ApplicationView } from "./ApplicationView";
-import { FileExplorer } from "./components/File";
 import { RoleManager } from "./components/Role"
 import { GroupManager } from "./components/Group"
-import { ImageCropperSetting, SettingsMenu, SettingsPanel, ComplexSetting, EmailSetting, StringSetting, RadioGroupSetting, OnOffSetting, NumberSetting, ActionSetting, VideoConversionErrorsManager } from "./components/Settings";
+import { ImageCropperSetting, SettingsMenu, SettingsPanel, ComplexSetting, EmailSetting, StringSetting, RadioGroupSetting, OnOffSetting, NumberSetting, ActionSetting, VideoConversionErrorsManager, VideoConversionLogsManager } from "./components/Settings";
 import { Model } from "./Model";
 import "@polymer/iron-icons/maps-icons";
 import "@polymer/iron-icons/social-icons";
@@ -16,7 +15,7 @@ import { ApplicationManager } from "./components/Applications";
 import { PeersManager } from "./components/Peers";
 import { OrganizationManager } from "./components/Organization";
 import { AccountManager } from "./components/Account";
-import { StartProcessVideoRequest, StopProcessVideoRequest, IsProcessVideoRequest, SetVideoConversionRequest, SetVideoStreamConversionRequest, SetStartVideoConversionHourRequest, SetMaximumVideoConversionDelayRequest, VideoConversionError, GetVideoConversionErrorsRequest, GetVideoConversionErrorsResponse, ClearVideoConversionErrorRequest, ClearVideoConversionErrorsRequest } from "globular-web-client/file/file_pb";
+import { StartProcessVideoRequest, StopProcessVideoRequest, IsProcessVideoRequest, SetVideoConversionRequest, SetVideoStreamConversionRequest, SetStartVideoConversionHourRequest, SetMaximumVideoConversionDelayRequest, VideoConversionError, GetVideoConversionErrorsRequest, GetVideoConversionErrorsResponse, ClearVideoConversionErrorRequest, ClearVideoConversionErrorsRequest, VideoConversionLog, ClearVideoConversionLogsRequest, ClearVideoConversionLogsResponse, ClearVideoConversionErrorResponse, ClearVideoConversionErrorsResponse, GetVideoConversionLogsRequest, GetVideoConversionLogsResponse } from "globular-web-client/file/file_pb";
 import { GetServiceConfigurationByIdRequest } from "globular-web-client/config_manager/config_pb";
 
 export class Settings {
@@ -422,6 +421,20 @@ function getConversionErrors(callback: (errors: Array<VideoConversionError>) => 
     })
 }
 
+function getConversionLogs(callback: (errors: Array<VideoConversionLog>) => void) {
+    let rqst = new GetVideoConversionLogsRequest
+    Model.globular.fileService.getVideoConversionLogs(rqst, {
+        token: localStorage.getItem("user_token"),
+        application: Model.application,
+        domain: Model.domain,
+        address: Model.address
+    }).then((rsp: GetVideoConversionLogsResponse) => {
+        callback(rsp.getLogsList())
+    }).catch(err => {
+        ApplicationView.displayMessage(err, 3000)
+    })
+}
+
 /**
  * Model to manage users account settings.
  */
@@ -612,6 +625,26 @@ export class VideoSettings extends Settings {
                 }
             })
 
+        //////////////////// Now the convertion log's info to make it interface interactive.
+        let conversionLogsSettings = viedoSettingPage.appendSettings("Logs", "Convertion activity summary")
+
+        let videoConversionLogsManager = new VideoConversionLogsManager(this.clearVideoConversionLogs, this.refreshVideoConversionLogs)
+        conversionLogsSettings.addSetting(videoConversionLogsManager)
+        getConversionLogs(logs => {
+            videoConversionLogsManager.setLogs(logs)
+
+            // I will now listen for conversion event...
+            Model.eventHub.subscribe("conversion_log_event", uuid => { }, evt => {
+                let obj = JSON.parse(evt)
+                let log = new VideoConversionLog()
+                log.setLogTime(obj.logTime)
+                log.setPath(obj.path)
+                log.setStatus(obj.status)
+                log.setMsg(obj.msg)
+                videoConversionLogsManager.setLog(log)
+            }, false)
+        })
+
         //////////////////// Now the conversion error //////////////////
         // Create general user settings ...
         let conversionErrorsSettings = viedoSettingPage.appendSettings("Errors", "List of conversion errors");
@@ -624,10 +657,36 @@ export class VideoSettings extends Settings {
         getConversionErrors(errors => {
 
             videoConversionErrorsManager.setErrors(errors)
+            // I will now listen for conversion event...
+            Model.eventHub.subscribe("conversion_log_error", uuid => { }, evt => {
+                let obj = JSON.parse(evt)
+                let err = new VideoConversionError
+                err.setError(obj.error)
+                err.setPath(obj.path)
+                videoConversionErrorsManager.setError(err)
+            }, false)
         })
     }
 
+    refreshVideoConversionLogs(callback: (logs: Array<VideoConversionLog>) => void) {
+        getConversionLogs(logs => {
+            callback(logs)
+        })
+    }
 
+    clearVideoConversionLogs() {
+        let rqst = new ClearVideoConversionLogsRequest
+        Model.globular.fileService.clearVideoConversionLogs(rqst, {
+            token: localStorage.getItem("user_token"),
+            application: Model.application,
+            domain: Model.domain,
+            address: Model.address
+        }).then((rsp: ClearVideoConversionLogsResponse) => {
+            ApplicationView.displayMessage("log clear", 3000)
+        }).catch(err => {
+            ApplicationView.displayMessage(err, 3000)
+        })
+    }
 
     deletVideoConversionError(err: VideoConversionError) {
         let rqst = new ClearVideoConversionErrorRequest
@@ -637,7 +696,7 @@ export class VideoSettings extends Settings {
             application: Model.application,
             domain: Model.domain,
             address: Model.address
-        }).then((rsp: GetVideoConversionErrorsResponse) => {
+        }).then((rsp: ClearVideoConversionErrorResponse) => {
             ApplicationView.displayMessage("error was deleted, you can try to convert the video again", 3000)
         }).catch(err => {
             ApplicationView.displayMessage(err, 3000)
@@ -657,7 +716,7 @@ export class VideoSettings extends Settings {
             application: Model.application,
             domain: Model.domain,
             address: Model.address
-        }).then((rsp: GetVideoConversionErrorsResponse) => {
+        }).then((rsp: ClearVideoConversionErrorsResponse) => {
             ApplicationView.displayMessage("all video convesion are deleted, file in that list will not be convert", 3000)
         }).catch(err => {
             ApplicationView.displayMessage(err, 3000)

@@ -669,3 +669,7 @@ globular-search-video-card{
    margin: 5px;
    height: 100%;
 }
+
+globular-file-explorer{
+   z-index: 1;
+}
