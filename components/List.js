@@ -1,4 +1,4 @@
-import { theme } from "./Theme";
+import { getTheme } from "./Theme";
 import { v4 as uuidv4 } from "uuid";
 import { Account } from "../Account";
 import { Application } from "../Application";
@@ -28,7 +28,7 @@ export class SearchableList extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
             .header{
                 position: relative;
                 width: 100%;
@@ -203,7 +203,7 @@ export class SearchableAccountList extends SearchableList {
                 // Now I will display the list of available account to add to the role...
                 let html = `
                 <style>
-                    ${theme}
+                    ${getTheme()}
                     #add-list-user-panel{
                         position: absolute;
                         left: 0px;
@@ -389,7 +389,7 @@ export class SearchableApplicationList extends SearchableList {
                 // Now I will display the list of available account to add to the role...
                 let html = `
                 <style>
-                    ${theme}
+                    ${getTheme()}
                     #add-list-application-panel{
                         position: absolute;
                         left: 0px;
@@ -571,7 +571,7 @@ export class SearchableRoleList extends SearchableList {
                 // Now I will display the list of available account to add to the role...
                 let html = `
                 <style>
-                    ${theme}
+                    ${getTheme()}
                     #add-list-role-panel{
                         position: absolute;
                         left: 0px;
@@ -749,7 +749,7 @@ customElements.define('globular-searchable-role-list', SearchableRoleList)
 
                 let html = `
                 <style>
-                    ${theme}
+                    ${getTheme()}
                     #add-list-group-panel{
                         position: absolute;
                         left: 0px;
@@ -930,7 +930,7 @@ customElements.define('globular-searchable-group-list', SearchableGroupList)
 
                 let html = `
                 <style>
-                    ${theme}
+                    ${getTheme()}
                     #add-list-organization-panel{
                         position: absolute;
                         left: 0px;
@@ -1110,7 +1110,7 @@ customElements.define('globular-searchable-organization-list', SearchableOrganiz
 
                 let html = `
                 <style>
-                    ${theme}
+                    ${getTheme()}
                     #add-list-peer-panel{
                         position: absolute;
                         left: 0px;

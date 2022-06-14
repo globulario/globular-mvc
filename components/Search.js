@@ -5,7 +5,7 @@ import '@polymer/paper-icon-button/paper-icon-button.js';
 import { Application } from '../Application';
 import { CreateVideoRequest, DeleteVideoRequest, GetTitleFilesRequest, SearchTitlesRequest } from 'globular-web-client/title/title_pb';
 import { Model } from '../Model';
-import { theme } from "./Theme";
+import { getTheme } from "./Theme";
 import * as getUuid from 'uuid-by-string'
 import { InformationsManager, searchEpisodes } from './Informations';
 import { playVideo } from './Video';
@@ -203,7 +203,7 @@ function playTitleListener(player, title, indexPath, globule) {
             // So here I will ask to display the next episode...
             let toast = ApplicationView.displayMessage(`
                 <style>
-                    ${theme}
+                    ${getTheme()}
                 </style>
                 <div style="display: flex; flex-direction: column;">
                     <div>Play the next episode?</div>
@@ -328,16 +328,21 @@ export class SearchBar extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
 
-            ${theme}
+            ${getTheme()}
 
             input {
                 width: 100%;
                 border: none;
-                margin-right: 11px;
-                color: var(--cr-primary-text-color);
-                background-color: var(--palette-background-paper);
+                margin-right: 11px;   
+                background: transparent;
+                color: var(--palette-text-accent);
                 box-sizing: border-box;
                 font-size: 1.2rem;
+            }
+
+            ::placeholder { /* Chrome, Firefox, Opera, Safari 10.1+ */
+                color: var(--palette-text-accent);
+                opacity: 1; /* Firefox */
             }
 
 
@@ -360,8 +365,8 @@ export class SearchBar extends HTMLElement {
                 right: 0px;
                 left: 0px;
                 border-radius: 5px;
-
                 background-color: var(--palette-background-paper);
+                color:var(--palette-text-primary);
 
             }
 
@@ -375,17 +380,17 @@ export class SearchBar extends HTMLElement {
                 height: var(--searchbox-height);
                 opacity: 1;
                 transition: none;
-                color: var(--cr-primary-text-color);
-                background-color: var(--palette-background-paper);
-                border: 1px solid var(--palette-action-disabled);
+                background: transparent;
+                color: var(--palette-text-accent);
+                border: 1px solid var(--palette-divider);
                 position: relative;
             }
 
         </style>
         <div id="search-bar">
-            <iron-icon icon="search" style="--iron-icon-fill-color: var(--palette-action-active);" ></iron-icon>
+            <iron-icon icon="search" style="--iron-icon-fill-color: var(--palette-text-accent);" ></iron-icon>
             <input id='search_input' placeholder="Search Movies"></input>
-            <paper-icon-button id="change-search-context" icon="icons:expand-more" style="--iron-icon-fill-color: var(--palette-action-active); margin-right: 2px; height: 36px;" ></paper-icon-button>
+            <paper-icon-button id="change-search-context" icon="icons:expand-more" style="--iron-icon-fill-color: var(--palette-text-accent); margin-right: 2px; height: 36px;" ></paper-icon-button>
             <paper-card id="context-search-selector">
                 <paper-button id="context-search-selector-movies">Movies</paper-button>
                 <paper-button id="context-search-selector-videos" style="color: var(--palette-text-disabled)">Videos</paper-button>
@@ -475,7 +480,7 @@ export class SearchResults extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
 
             #container{
                 width: 100%;
@@ -689,7 +694,7 @@ export class SearchResultsPage extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
 
             #container {
                 display: flex;
@@ -935,7 +940,7 @@ export class SearchVideoCard extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
 
             .video-card{
                 border-radius: 3.5px;
@@ -1016,7 +1021,7 @@ export class SearchVideoCard extends HTMLElement {
         //let uuid = randomUUID()
         let html = `
         <style>
-            ${theme}
+            ${getTheme()}
             paper-card {
                 background-color: var(--palette-background-paper);
             }
@@ -1153,7 +1158,7 @@ export class SearchVideoCard extends HTMLElement {
                 rqst.setVideoid(video.getId())
                 rqst.setIndexpath(indexPath)
                 globule.titleService.deleteVideo(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
-                    .then(()=>{
+                    .then(() => {
                         console.log("video ", video.getId(), " was deleted")
                     })
             })
@@ -1177,7 +1182,7 @@ export class SearchFlipCard extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
             @media only screen and (min-width: 1800px){
                 globular-search-results {
                     grid-row-start: 1;
@@ -1340,7 +1345,7 @@ export class SearchTitleDetail extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
            
             .search-title-detail{
                 position: absolute;               
@@ -1502,7 +1507,7 @@ export class SearchTitleDetail extends HTMLElement {
                             }
 
                         }
-                    }).catch(err=>{
+                    }).catch(err => {
                         console.log("No file found with title ", title.getId(), title.getDescription(), err)
                     })
             }
@@ -1623,7 +1628,7 @@ export class SearchTitleDetail extends HTMLElement {
         //let uuid = randomUUID()
         let html = `
         <style>
-            ${theme}
+            ${getTheme()}
             paper-card {
                 background-color: var(--palette-background-paper);
             }
@@ -1669,7 +1674,7 @@ export class FacetSearchFilter extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
 
             #container{
                 font-size: 1.17rem;
@@ -1722,7 +1727,7 @@ export class SearchFacetPanel extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
 
             .facet-list{
                 padding-bottom: 20px;

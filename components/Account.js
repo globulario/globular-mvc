@@ -13,7 +13,7 @@ import "./Session"
 
 import { Menu } from "./Menu";
 import { Model } from "../Model";
-import { theme } from "./Theme";
+import { getTheme } from "./Theme";
 import { AccountExistRsp, AddAccountRoleRqst, AddGroupMemberAccountRqst, AddOrganizationAccountRqst, DeleteAccountRqst, GetAccountsRqst, RegisterAccountRqst, RemoveAccountRoleRqst, RemoveGroupMemberAccountRqst, RemoveOrganizationAccountRqst } from "globular-web-client/resource/resource_pb";
 import { getAllGroups, getAllRoles } from 'globular-web-client/api';
 import { getAllOrganizations } from "./Organization";
@@ -105,7 +105,7 @@ export class AccountMenu extends Menu {
 
     let html = `
             <style>
-                ${theme}
+                ${getTheme()}
 
                 #accout-menu-header{
                     display: flex;
@@ -297,7 +297,7 @@ export class AccountManager extends HTMLElement {
     // Innitialisation of the layout.
     this.shadowRoot.innerHTML = `
              <style>
-                 ${theme}
+                 ${getTheme()}
 
                 #create-account-btn{
                     top: -42px;
@@ -370,7 +370,7 @@ export class AccountManager extends HTMLElement {
     createAccountBtn.onclick = () => {
       let html = `
             <style>
-                ${theme}
+                ${getTheme()}
                 #create-account-panel{
                     position: absolute;
                     right: 0px;
@@ -489,7 +489,7 @@ export class AccountPanel extends HTMLElement {
     // Innitialisation of the layout.
     this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
             #container{
                 display: flex;
                 flex-direction: column;

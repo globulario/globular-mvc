@@ -1,4 +1,4 @@
-import { theme } from './Theme';
+import { getTheme } from "./Theme";
 import '@polymer/iron-icons/iron-icons.js';
 
 import { Model } from '../Model';
@@ -23,7 +23,7 @@ export class RoleManager extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
              <style>
-                 ${theme}
+                 ${getTheme()}
 
                 #create-role-btn{
                     top: -42px;
@@ -97,7 +97,7 @@ export class RoleManager extends HTMLElement {
         createRoleBtn.onclick = () => {
             let html = `
             <style>
-                ${theme}
+                ${getTheme()}
                 #create-role-panel{
                     position: absolute;
                     right: 0px;
@@ -208,7 +208,7 @@ export class RolePanel extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
             #container{
                 display: flex;
                 flex-direction: column;
@@ -314,7 +314,7 @@ export class RolePanel extends HTMLElement {
 
                         let html = `
                         <style>
-                            ${theme}
+                            ${getTheme()}
                             #add-role-action-panel{
                                 position: absolute;
                                 right: 0px;

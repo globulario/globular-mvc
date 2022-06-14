@@ -9,7 +9,7 @@ import '@polymer/paper-card/paper-card.js';
 import '@polymer/paper-button/paper-button.js';
 import '@polymer/paper-checkbox/paper-checkbox.js';
 import '@polymer/paper-tooltip/paper-tooltip.js';
-import { theme } from "./Theme";
+import { getTheme } from "./Theme";
 import { Model } from '../Model';
 
 /**
@@ -31,7 +31,7 @@ export class Menu extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
 
             #${this.id}_div {
                 display: flex;

@@ -1,5 +1,5 @@
 import { Model } from "../Model";
-import { theme } from "./Theme";
+import { getTheme } from "./Theme";
 import '@polymer/paper-input/paper-input.js';
 import '@polymer/paper-dropdown-menu/paper-dropdown-menu.js'
 import '@polymer/paper-listbox/paper-listbox.js'
@@ -35,7 +35,7 @@ export class Form extends HTMLElement {
         // Setup basic HTML
         this.shadowRoot.innerHTML = `
             <style>
-                ${theme}
+                ${getTheme()}
                 #container {
                     display: flex;
                     flex-direction: column;
@@ -156,7 +156,7 @@ export class FormSection extends HTMLElement {
         // Setup basic HTML
         this.shadowRoot.innerHTML = `
             <style>
-                ${theme}
+                ${getTheme()}
                 #container {
                     display: grid;
                     grid-template-columns: repeat(${sectionWidth}, 1fr);
@@ -274,7 +274,7 @@ export class Field extends HTMLElement {
         // Setup basic HTML
         this.shadowRoot.innerHTML = `
             <style>
-                ${theme}
+                ${getTheme()}
 
                 .field-label {
                    line-height: 1rem;

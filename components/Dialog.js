@@ -2,7 +2,7 @@
 import { PolymerElement, html } from '@polymer/polymer';
 import '@polymer/iron-icons/iron-icons.js';
 import '@polymer/paper-icon-button/paper-icon-button.js';
-import { theme } from './Theme';
+import { getTheme } from "./Theme";
 import { setResizeable } from "./rezieable.js";
 /*
  * Menu item represent element contain inside a menu.
@@ -45,7 +45,7 @@ export class Dialog extends PolymerElement {
   static get template() {
     return html`
             <style>
-            ${theme}
+            ${getTheme()}
             
             /** Dialog style **/
             .dialog{

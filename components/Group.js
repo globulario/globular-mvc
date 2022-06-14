@@ -1,4 +1,4 @@
-import { theme } from './Theme';
+import { getTheme } from "./Theme";
 import '@polymer/iron-icons/iron-icons.js';
 
 import { Model } from '../Model';
@@ -22,7 +22,7 @@ export class GroupManager extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
              <style>
-                 ${theme}
+                 ${getTheme()}
 
                 #create-group-btn{
                     top: -42px;
@@ -96,7 +96,7 @@ export class GroupManager extends HTMLElement {
         createGroupBtn.onclick = () => {
             let html = `
             <style>
-                ${theme}
+                ${getTheme()}
                 #create-group-panel{
                     position: absolute;
                     right: 0px;
@@ -207,7 +207,7 @@ export class GroupPanel extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
             #container{
                 display: flex;
                 flex-direction: column;

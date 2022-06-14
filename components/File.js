@@ -24,7 +24,7 @@ import { InformationsManager } from './Informations'
 import { playVideo } from './Video'
 import { AudioPlayer } from './Audio'
 import { GlobularFileReader } from './Reader'
-import { theme } from './Theme';
+import { getTheme } from "./Theme";
 import { v4 as uuidv4 } from "uuid";
 
 // Menu to set action on files.
@@ -747,7 +747,7 @@ export class FilesView extends HTMLElement {
             globule.fileService.createVideoPreview(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
                 .then(rsp => {
                     ApplicationView.displayMessage("Preview are created </br>" + path, 3500)
-                    Model.eventHub.publish("refresh_dir_evt", this.menu.file.path, false);
+                    Model.eventHub.publish("refresh_dir_evt", this.menu.file.path.substring(0, this.menu.file.path.lastIndexOf("/")), false);
                 })
                 .catch(err => {
                     ApplicationView.displayMessage(err, 3000)
@@ -770,7 +770,7 @@ export class FilesView extends HTMLElement {
             globule.fileService.convertVideoToMpeg4H264(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
                 .then(rsp => {
                     ApplicationView.displayMessage("Conversion done </br>" + path, 3500)
-                    Model.eventHub.publish("refresh_dir_evt", this.menu.file.path, false);
+                    Model.eventHub.publish("refresh_dir_evt", this.menu.file.path.substring(0, this.menu.file.path.lastIndexOf("/")), false);
                 })
                 .catch(err => {
                     ApplicationView.displayMessage(err, 3000)
@@ -794,7 +794,7 @@ export class FilesView extends HTMLElement {
             globule.fileService.convertVideoToHls(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
                 .then(rsp => {
                     ApplicationView.displayMessage("Conversion done </br>" + path, 3500)
-                    Model.eventHub.publish("refresh_dir_evt", this.menu.file.path, false);
+                    Model.eventHub.publish("refresh_dir_evt", this.menu.file.path.substring(0, this.menu.file.path.lastIndexOf("/")), false);
                 })
                 .catch(err => {
                     ApplicationView.displayMessage(err, 3000)
@@ -805,7 +805,7 @@ export class FilesView extends HTMLElement {
 
         this.shadowRoot.innerHTML = `
           <style>
-              ${theme}
+              ${getTheme()}
 
               table {
                   text-align: left;
@@ -1230,7 +1230,7 @@ export class FilesView extends HTMLElement {
                 // In that case I will made use of the fabulous youtube-dl command line.
                 let toast = ApplicationView.displayMessage(`
                 <style>
-                    ${theme}
+                    ${getTheme()}
                 </style>
                 <div id="select-media-dialog">
                     <span>What kind of file to you want to create?</span>
@@ -2273,7 +2273,7 @@ export class FilesIconView extends FilesView {
             // So here I will get the information from imdb and propose to assciate it with the file.
             let toast = ApplicationView.displayMessage(`
                     <style>
-                        ${theme}
+                        ${getTheme()}
                     </style>
                     <div id="select-media-dialog">
                         <div>Your about to associate <span id="title-type" style="max-width: 300px;"></span> <a id="title-name" target="_blank"></a></div>
@@ -2340,7 +2340,7 @@ export class PathNavigator extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
             <style>
-                ${theme}
+                ${getTheme()}
 
                 #path-navigator-box{
                     flex-grow: 1;
@@ -2607,7 +2607,7 @@ export class FileNavigator extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
 
             #file-navigator-div{
                 min-width: ${this.width}px;
@@ -3198,7 +3198,7 @@ export class FileExplorer extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
             
             paper-icon-button:hover{
                 cursor: pointer;
@@ -3232,8 +3232,16 @@ export class FileExplorer extends HTMLElement {
             .card-header, .card-actions{
                 display: flex;
                 align-items: center;
+            }
+
+            .card-actions{
                 border-color: var(--palette-divider);
                 background-color: var(--palette-background-paper);
+            }
+
+            .card-header{
+                color: var(--palette-text-accent);
+                background-color: var(--palette-primary-accent);
             }
 
             .card-header .title {
@@ -3308,10 +3316,10 @@ export class FileExplorer extends HTMLElement {
         </style>
         <paper-card id="file-explorer-box" class="file-explorer" style="position: relative; flex-direction: column; border-left: 1px solid var(--palette-divider); border-right: 1px solid var(--palette-divider);">
             <div class="card-header">
-                <paper-icon-button icon="icons:close" id="file-explorer-box-close-btn"></paper-icon-button>
+                <paper-icon-button icon="icons:close" id="file-explorer-box-close-btn" style="--iron-icon-fill-color: var(--palette-text-accent);"></paper-icon-button>
                 <span id="move-handle" class="title">File Explorer</span>
                 <div class="card-actions">
-                    <paper-icon-button icon="icons:fullscreen" id="enter-full-screen-btn"></paper-icon-button>
+                    <paper-icon-button icon="icons:fullscreen" style="--iron-icon-fill-color: var(--palette-text-accent);background-color: var(--palette-primary-accent);" id="enter-full-screen-btn"></paper-icon-button>
                 </div>
             </div>
             <div id="file-explorer-content" class="card-content no-select">
@@ -4385,7 +4393,7 @@ export class VideoPreview extends HTMLElement {
 
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
 
             #container{
                 height: ${height}px;
@@ -4614,7 +4622,7 @@ export class FilesUploader extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
             #container{
                 position: relative;
             }

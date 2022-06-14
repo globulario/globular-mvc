@@ -5,7 +5,7 @@ import '@polymer/iron-icons/iron-icons.js';
 
 import { createElement } from "../element.js";
 import { randomUUID, fireResize, getCoords } from "../utility.js";
-import { theme } from "../Theme.js"
+import { getTheme } from "../Theme";
 
 class TableSorterElement extends PolymerElement {
   constructor() {
@@ -37,7 +37,7 @@ class TableSorterElement extends PolymerElement {
     let template = document.createElement("template")
     template.innerHTML = `
       <style>
-          ${theme}
+          ${getTheme()}
 
           #div-selector {
             display: flex; 

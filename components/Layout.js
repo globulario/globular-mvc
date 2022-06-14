@@ -14,7 +14,7 @@ import "@polymer/paper-spinner/paper-spinner.js";
 import "@polymer/iron-selector/iron-selector.js";
 
 import { Model } from "../Model";
-import { theme } from "./Theme";
+import { getTheme } from "./Theme";
 
 /**
  * This is a web-component.
@@ -32,7 +32,7 @@ export class Layout extends HTMLElement {
     // Innitialisation of the layout.
     this.shadowRoot.innerHTML = `
           <style>
-            ${theme}
+            ${getTheme()}
 
             app-header {
               background-color: var(--palette-primary-accent);
@@ -146,7 +146,6 @@ export class Layout extends HTMLElement {
     this.content = this.shadowRoot.getElementById("content");
     this.sideMenuSlot = this.shadowRoot.getElementById("side-menu");
     this.header = this.shadowRoot.querySelector("app-header")
-    //this.header.shadowRoot.querySelector("#contentContainer").style.borderBottom = "1px solid var(--palette-background-default)"
 
     this.hideSideBar();
 
@@ -154,39 +153,39 @@ export class Layout extends HTMLElement {
       if (this.workspace() == null) {
         return;
       }
-       // Set side menu div style.
-       let sideMenu_ = document.getElementById("side-menu");
-      
-       let sticky_side_menu = false
-       if(sideMenu_.getAttribute("sticky")!=undefined){
-         sticky_side_menu = true
-       }
- 
-       if (this.layout.offsetWidth > 1024 && !sticky_side_menu) {
-         // Here I will take the content of the
-         this.hamburger.style.display = "none";
-         this.content.insertBefore(this.sideMenuSlot, this.content.firstChild);
-         sideMenu_.style.top = "70px";
-         sideMenu_.style.position = "fixed";
-         sideMenu_.style.left = "10px";
-         sideMenu_.style.bottom = "0px"
-         sideMenu_.style.overflow = "auto"
-         sideMenu_.style.marginTop = "0px";
-         sideMenu_.style.width = "auto";
-         sideMenu_.style.display = "block";
-         sideMenu_.style.overflow = "auto";
-       } else {
-         // Set the menu in the toolbar.
-         this.appToolbar.appendChild(this.sideMenuSlot);
-         this.hamburger.style.display = "";
-         sideMenu_.style.top = "0px";
-         sideMenu_.style.position = "";
-         sideMenu_.style.display = "flex";
-         sideMenu_.style.overflow = "auto";
-         sideMenu_.style.flexDirection = "column";
-         sideMenu_.style.width = "100%";
-         sideMenu_.style.marginTop = "24px";
-       }
+      // Set side menu div style.
+      let sideMenu_ = document.getElementById("side-menu");
+
+      let sticky_side_menu = false
+      if (sideMenu_.getAttribute("sticky") != undefined) {
+        sticky_side_menu = true
+      }
+
+      if (this.layout.offsetWidth > 1024 && !sticky_side_menu) {
+        // Here I will take the content of the
+        this.hamburger.style.display = "none";
+        this.content.insertBefore(this.sideMenuSlot, this.content.firstChild);
+        sideMenu_.style.top = "70px";
+        sideMenu_.style.position = "fixed";
+        sideMenu_.style.left = "10px";
+        sideMenu_.style.bottom = "0px"
+        sideMenu_.style.overflow = "auto"
+        sideMenu_.style.marginTop = "0px";
+        sideMenu_.style.width = "auto";
+        sideMenu_.style.display = "block";
+        sideMenu_.style.overflow = "auto";
+      } else {
+        // Set the menu in the toolbar.
+        this.appToolbar.appendChild(this.sideMenuSlot);
+        this.hamburger.style.display = "";
+        sideMenu_.style.top = "0px";
+        sideMenu_.style.position = "";
+        sideMenu_.style.display = "flex";
+        sideMenu_.style.overflow = "auto";
+        sideMenu_.style.flexDirection = "column";
+        sideMenu_.style.width = "100%";
+        sideMenu_.style.marginTop = "24px";
+      }
     });
 
     window.dispatchEvent(new Event("resize"));
@@ -204,11 +203,11 @@ export class Layout extends HTMLElement {
     this.appDrawer.parentNode.removeChild(this.appDrawer);
   }
 
-  hideHeader(){
+  hideHeader() {
     this.header.style.display = "none"
   }
 
-  showHeader(){
+  showHeader() {
     this.header.style.display = ""
   }
 

@@ -1,4 +1,4 @@
-import { theme } from "./Theme";
+import { getTheme } from "./Theme";
 import '@polymer/paper-button/paper-button.js';
 import '@polymer/paper-slider/paper-slider.js';
 import { Model } from "../Model";
@@ -149,7 +149,7 @@ export class ImageCropper extends HTMLElement {
 
     this.shadowRoot.innerHTML = `
         <style>
-          ${theme}
+          ${getTheme()}
           .slidecontainer {
             width: 100%;
             display:none;

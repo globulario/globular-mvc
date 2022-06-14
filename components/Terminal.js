@@ -6,7 +6,7 @@ import { ReadDirRequest } from "globular-web-client/file/file_pb";
 import { TargetsRequest } from "globular-web-client/monitoring/monitoring_pb";
 import { Application } from "../Application";
 import { File } from "../File";
-import { theme } from "./Theme";
+import { getTheme } from "./Theme";
 
 
 /**
@@ -28,7 +28,7 @@ export class Terminal extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
 
             paper-card{
                 position: relative;

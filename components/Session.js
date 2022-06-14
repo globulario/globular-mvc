@@ -1,4 +1,4 @@
-import { theme } from "./Theme";
+import { getTheme } from "./Theme";
 import { Account } from "../Account"
 import { Model } from "../Model"
 
@@ -56,7 +56,7 @@ export class SessionState extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
             .session-state-panel{
                 display: flex;
                 flex-direction: row;

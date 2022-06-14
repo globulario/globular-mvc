@@ -8,7 +8,7 @@ import "@polymer/iron-icons/iron-icons.js"; // List of imported functionality.
 import { createElement } from "../element.js";
 import { attachAutoComplete } from "./autocomplete.js";
 import { fireResize, isNumeric, intersectSafe, isString, isBoolean, getCoords } from "../utility.js"; // Expression contain operator and field to be test.
-import {theme} from "../Theme.js"
+import { getTheme } from "../Theme";
 
 export class Expression {
   constructor(parent) {
@@ -1393,7 +1393,7 @@ export class TableFilterElement extends PolymerElement {
     let template = document.createElement('template');
     template.innerHTML= `
       <style>
-      ${theme}
+      ${getTheme()}
           .filter-panel {
               /** display empty filter **/
               max-height: 350px;

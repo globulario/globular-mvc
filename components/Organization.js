@@ -1,4 +1,4 @@
-import { theme } from './Theme';
+import { getTheme } from "./Theme";
 import '@polymer/iron-icons/iron-icons.js';
 
 import { Model } from '../Model';
@@ -60,7 +60,7 @@ export class OrganizationManager extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
              <style>
-                 ${theme}
+                 ${getTheme()}
 
                 #create-organization-btn{
                     top: -42px;
@@ -134,7 +134,7 @@ export class OrganizationManager extends HTMLElement {
         createOrganizationBtn.onclick = () => {
             let html = `
             <style>
-                ${theme}
+                ${getTheme()}
                 #create-organization-panel{
                     position: absolute;
                     right: 0px;
@@ -243,7 +243,7 @@ export class OrganizationPanel extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
             #container{
                 display: flex;
                 flex-direction: column;

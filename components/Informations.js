@@ -1,4 +1,4 @@
-import { theme } from "./Theme";
+import { getTheme } from "./Theme";
 import { Model } from '../Model';
 import { Application } from "../Application";
 import { DeleteTitleRequest, DeleteVideoRequest, DissociateFileWithTitleRequest, GetTitleFilesRequest, SearchTitlesRequest } from "globular-web-client/title/title_pb";
@@ -183,7 +183,7 @@ function getVideoPreview(parent, path, name, callback, globule) {
 
             let toast = ApplicationView.displayMessage(`
             <style>
-                ${theme}
+                ${getTheme()}
             </style>
             <div id="select-media-dialog">
                 <div>Your about to delete file association</div>
@@ -382,7 +382,7 @@ export class InformationsManager extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
             #container{
                 display: flex;
                 flex-direction: column;
@@ -458,42 +458,11 @@ export class InformationsManager extends HTMLElement {
      * @param {*} videos 
      */
     setVideosInformation(videos) {
-
         this.innerHTML = "" // remove previous content.
-
         let video = videos[0]
-        let isShort = this.hasAttribute("short")
-
-        let genres = ""
-        video.getGenresList().forEach((genre, index) => {
-            genres += genre
-            if (index < video.getGenresList().length - 1) {
-                genres += ", "
-            }
-        })
-
-        let publisherName = ""
-        if (video.getPublisherid() != undefined) {
-            publisherName = video.getPublisherid().getName()
-
-        }
-
-        // Set the header section.
-        this.shadowRoot.querySelector(".title-div").innerHTML = `
-        <h3 class="title-sub-title-div"> 
-            <h1 id="title-name" class="title" style="${isShort ? "font-size: 1rem;" : ""}"> ${publisherName} </h1>
-            <div style="display: flex; align-items: baseline;">
-                <h3 class="title-sub-title-div">          
-                    <span id="title-type"><span>Genre: </span>${genres}</span>
-                </h3>    
-                <span id="title-duration" style="padding-left: 10px;"><span>Duration: </span> ${video.getDuration()}</span>
-            </span>
-        </h3>
-        `
-
-        let videoInfo = new VideoInfo(video, isShort)
+        let videoInfo = new VideoInfo(this.shadowRoot.querySelector(".title-div"),  this.hasAttribute("short"))
+        videoInfo.setVideo(video)
         this.appendChild(videoInfo)
-
     }
 
     /**
@@ -502,12 +471,6 @@ export class InformationsManager extends HTMLElement {
      */
     setTitlesInformation(titles, globule) {
         this.innerHTML = "" // remove previous content.
-
-        if (!globule) {
-            globule = Model.globular
-        }
-
-        let isShort = this.hasAttribute("short")
         if (titles.length == 0) {
             /** nothinh to display... */
             return;
@@ -528,27 +491,8 @@ export class InformationsManager extends HTMLElement {
             title = titles[titles.length - 1]
         }
 
-        // Set the title div.
-        this.shadowRoot.querySelector(".title-div").innerHTML = `
-        <h1 id="title-name" class="title" style="${isShort ? "font-size: 1.2rem;text-align: left;" : ""}"> </h1>
-        <h3 class="title-sub-title-div">             
-            <span id="title-type"></span>
-            <span id="title-year"></span>
-            <span id="title-duration"></span>
-        </h3>
-        `
-        this.shadowRoot.querySelector("#title-name").innerHTML = title.getName();
-        this.shadowRoot.querySelector("#title-type").innerHTML = title.getType();
-        this.shadowRoot.querySelector("#title-year").innerHTML = title.getYear();
-        if (title.getType() == "TVEpisode") {
-            if (title.getSeason() > 0 && title.getEpisode() > 0) {
-                this.shadowRoot.querySelector("#title-year").innerHTML = `<span>${title.getYear()}</span>&middot<span>S${title.getSeason()}</span>&middot<span>E${title.getEpisode()}</span>`
-            }
-        }
-
-        this.shadowRoot.querySelector("#title-duration").innerHTML = title.getDuration();
-
-        let titleInfo = new TitleInfo(title, isShort, globule)
+        let titleInfo = new TitleInfo(this.shadowRoot.querySelector(".title-div"), this.hasAttribute("short"), globule)
+        titleInfo.setTitle(title)
         this.appendChild(titleInfo)
     }
 
@@ -566,23 +510,19 @@ export class VideoInfo extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor(video, isShort) {
+    constructor(titleDiv, isShort) {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
 
-        let score = video.getRating()
 
-        let posterUrl = ""
-        if (video.getPoster() != undefined) {
-            // must be getContentUrl here... 
-            posterUrl = video.getPoster().getContenturl()
-        }
+        this.titleDiv = titleDiv
+        this.isShort = isShort
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
             ${__style__}
             .action-div{
                 display: flex;
@@ -594,19 +534,19 @@ export class VideoInfo extends HTMLElement {
             }
         </style>
         <div>
-            <div id="${video.getId()}-div" class="title-div">
+            <div class="title-div">
                 <div class="title-poster-div" >
-                    <img src="${posterUrl}"></img>
+                    <img id="title-poster-img" style="${this.isShort ? "display: none;" : ""}"></img>
                     <div class="title-files-div">
                     </div>
                 </div>
                 <div class="title-informations-div">
                     <div class="title-genres-div"></div>
-                    <p class="title-synopsis-div">${video.getDescription()}</p>
+                    <p class="title-synopsis-div"></p>
                     <div class="title-rating-div">
                         <iron-icon class="rating-star" icon="icons:star"></iron-icon>
                         <div style="display: flex; flex-direction: column;">
-                            <div><span id="rating-span">${score.toFixed(1)}</span>/10</div>
+                            <div><span id="rating-span"></span>/10</div>
                         </div>
                     </div>
                     <div class="title-top-credit">
@@ -617,10 +557,55 @@ export class VideoInfo extends HTMLElement {
                     </div>
                 </div>
             </div>
-            <div class="action-div" style="${isShort ? "display: none;" : ""}">
+            <div class="action-div" style="${this.isShort ? "display: none;" : ""}">
+                <paper-button id="edit-indexation-btn">Edit</paper-button>
                 <paper-button id="delete-indexation-btn">Delete</paper-button>
             </div>
         </div>
+        `
+
+    }
+
+    /** Set video information... */
+    setVideo(video) {
+
+        let score = video.getRating()
+
+        let posterUrl = ""
+        if (video.getPoster() != undefined) {
+            // must be getContentUrl here... 
+            posterUrl = video.getPoster().getContenturl()
+            this.shadowRoot.querySelector("#title-poster-img").src = posterUrl
+        }
+
+        this.shadowRoot.querySelector(".title-synopsis-div").innerHTML = video.getDescription()
+        this.shadowRoot.querySelector("#rating-span").innerHTML = score.toFixed(1)
+
+        let genres = ""
+        video.getGenresList().forEach((genre, index) => {
+            genres += genre
+            if (index < video.getGenresList().length - 1) {
+                genres += ", "
+            }
+        })
+
+        let publisherName = ""
+        if (video.getPublisherid() != undefined) {
+            publisherName = video.getPublisherid().getName()
+
+        }
+
+        // Set the header section.
+        this.titleDiv.innerHTML = `
+        <h3 class="title-sub-title-div"> 
+            <h1 id="title-name" class="title" style="${this.isShort ? "font-size: 1rem;" : ""}"> ${publisherName} </h1>
+            <div style="display: flex; align-items: baseline;">
+                <h3 class="title-sub-title-div">          
+                    <span id="title-type"><span>Genre: </span>${genres}</span>
+                </h3>    
+                <span id="title-duration" style="padding-left: 10px;"><span>Duration: </span> ${video.getDuration()}</span>
+            </span>
+        </h3>
         `
 
         // Here I will display the list of categories.
@@ -646,7 +631,7 @@ export class VideoInfo extends HTMLElement {
 
         displayPersons(this.shadowRoot.querySelector("#title-actors-lst"), video.getCastingList())
         if (video.getCastingList().length > 0) {
-            this.querySelector("#title-actors-title").innerHTML = "Actors"
+            this.shadowRoot.querySelector("#title-actors-title").innerHTML = "Actors"
         }
 
         let filesDiv = this.shadowRoot.querySelector(".title-files-div")
@@ -654,13 +639,23 @@ export class VideoInfo extends HTMLElement {
 
         })
 
+        let editor = new VideoInfoEditor(video)
+
+        let editIndexationBtn = this.shadowRoot.querySelector("#edit-indexation-btn")
+        editIndexationBtn.onclick = () => {
+            // So here I will display the editor...
+            let parent = this.parentNode
+            parent.removeChild(this)
+            parent.appendChild(editor)
+        }
+
         let deleteIndexationBtn = this.shadowRoot.querySelector("#delete-indexation-btn")
 
         // Delete the indexation from the database.
         deleteIndexationBtn.onclick = () => {
             let toast = ApplicationView.displayMessage(`
             <style>
-                ${theme}
+                ${getTheme()}
             </style>
             <div id="select-media-dialog">
                 <div>Your about to delete indexation</div>
@@ -700,20 +695,18 @@ export class VideoInfo extends HTMLElement {
             }
         }
     }
-
 }
 
 customElements.define('globular-video-info', VideoInfo)
 
-
 /**
- * Globular episode information panel.
+ * Search Box
  */
-export class EpisodeInfo extends HTMLElement {
+export class VideoInfoEditor extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor() {
+    constructor(video) {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
@@ -721,17 +714,21 @@ export class EpisodeInfo extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
         </style>
-
+        <div>
+            edit the video information here...
+        </div>
         `
 
         // test create offer...
     }
 
+
 }
 
-customElements.define('globular-episode-info', EpisodeInfo)
+customElements.define('globular-video-editor', VideoInfoEditor)
+
 
 /**
  * Globular title information panel.
@@ -740,42 +737,45 @@ export class TitleInfo extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor(title, isShort, globule) {
+    constructor(titleDiv, isShort, globule) {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
 
 
-        let posterUrl = ""
-        if (title.getPoster() != undefined) {
-            posterUrl = title.getPoster().getContenturl()
+        if (!globule) {
+            this.globule = Model.globular
         }
+
+        this.isShort = isShort
+        this.titleDiv = titleDiv
+        this.globule = globule
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
             ${__style__}
             .action-div{
                 display: flex;
                 justify-content: end;
             }
         </style>
-        <div id="${title.getId()}-div" class="title-div" >
-            <div class="title-poster-div" style="${isShort ? "display: none;" : ""}">
-                <img src="${posterUrl}"></img>
+        <div class="title-div" >
+            <div class="title-poster-div" style="${this.isShort ? "display: none;" : ""}">
+                <img id="title-poster-img"></img>
             </div>
             <div class="title-informations-div">
                 <div class="title-genres-div"></div>
-                <p class="title-synopsis-div" style="${isShort ? "display: none;" : ""}">${title.getDescription()}</p>
+                <p class="title-synopsis-div" style="${this.isShort ? "display: none;" : ""}"></p>
                 <div class="title-rating-div">
                     <iron-icon class="rating-star" icon="icons:star"></iron-icon>
                     <div style="display: flex; flex-direction: column;">
-                        <div><span id="rating-span">${title.getRating().toFixed(1)}</span>/10</div>
-                        <div>${title.getRatingcount()}</div>
+                        <div><span id="rating-span"></span>/10</div>
+                        <div id="rating-total-div"></div>
                     </div>
                 </div>
-                <div class="title-top-credit" style="${isShort ? "display: none;" : ""}">
+                <div class="title-top-credit" style="${this.isShort ? "display: none;" : ""}">
                     <div class="title-credit">
                         <div id="title-directors-title" class="title-credit-title">Director</div>
                         <div  id="title-directors-lst" class="title-credit-lst"></div>
@@ -790,14 +790,50 @@ export class TitleInfo extends HTMLElement {
                     </div>
                 </div>
             </div>
-            <div class="title-files-div" style="${isShort ? "display: none;" : ""}">
+            <div class="title-files-div" style="${this.isShort ? "display: none;" : ""}">
                 <paper-progress indeterminate></paper-progress>
             </div>
         </div>
-        <div class="action-div" style="${isShort ? "display: none;" : ""}">
+        <div class="action-div" style="${this.isShort ? "display: none;" : ""}">
             <paper-button id="delete-indexation-btn">Delete</paper-button>
         </div>
         `
+
+    }
+
+    setTitle(title) {
+
+        let posterUrl = ""
+        if (title.getPoster() != undefined) {
+            posterUrl = title.getPoster().getContenturl()
+        }
+
+        // set title values.
+        this.shadowRoot.querySelector(".title-synopsis-div").innerHTML = title.getDescription()
+        this.shadowRoot.querySelector("#rating-span").innerHTML = title.getRating().toFixed(1)
+        this.shadowRoot.querySelector("#rating-total-div").innerHTML = title.getRatingcount()
+        this.shadowRoot.querySelector("#title-poster-img").src = posterUrl
+        
+
+        // Set the title div.
+        this.titleDiv.innerHTML = `
+           <h1 id="title-name" class="title" style="${this.isShort ? "font-size: 1.2rem;text-align: left;" : ""}"> </h1>
+           <h3 class="title-sub-title-div">             
+               <span id="title-type"></span>
+               <span id="title-year"></span>
+               <span id="title-duration"></span>
+           </h3>
+           `
+        this.titleDiv.querySelector("#title-name").innerHTML = title.getName();
+        this.titleDiv.querySelector("#title-type").innerHTML = title.getType();
+        this.titleDiv.querySelector("#title-year").innerHTML = title.getYear();
+        if (title.getType() == "TVEpisode") {
+            if (title.getSeason() > 0 && title.getEpisode() > 0) {
+                this.titleDiv.querySelector("#title-year").innerHTML = `<span>${title.getYear()}</span>&middot<span>S${title.getSeason()}</span>&middot<span>E${title.getEpisode()}</span>`
+            }
+        }
+
+        this.titleDiv.querySelector("#title-duration").innerHTML = title.getDuration();
 
         let genresDiv = this.shadowRoot.querySelector(".title-genres-div")
         title.getGenresList().forEach(g => {
@@ -850,7 +886,7 @@ export class TitleInfo extends HTMLElement {
                 if (title.onLoadEpisodes != null) {
                     title.onLoadEpisodes(episodes)
                 }
-                this.displayEpisodes(episodes, filesDiv, globule)
+                this.displayEpisodes(episodes, filesDiv, this.globule)
                 filesDiv.querySelector("paper-progress").style.display = "none"
             })
         }
@@ -860,27 +896,28 @@ export class TitleInfo extends HTMLElement {
         // Delete the indexation from the database.
         deleteIndexationBtn.onclick = () => {
             let toast = ApplicationView.displayMessage(`
-            <style>
-                ${theme}
-            </style>
-            <div id="select-media-dialog">
-                <div>Your about to delete indexation</div>
-                <p style="font-style: italic;  max-width: 300px;" id="title-type"></p>
-                <div style="display: flex; flex-direction: column; justify-content: center;">
-                    <img style="width: 185.31px; align-self: center; padding-top: 10px; padding-bottom: 15px;" id="title-poster"> </img>
-                </div>
-                <div>Is that what you want to do? </div>
-                <div style="display: flex; justify-content: flex-end;">
-                    <paper-button id="imdb-lnk-ok-button">Ok</paper-button>
-                    <paper-button id="imdb-lnk-cancel-button">Cancel</paper-button>
-                </div>
-            </div>
-            `, 60 * 1000)
+               <style>
+                   ${getTheme()}
+               </style>
+               <div id="select-media-dialog">
+                   <div>Your about to delete indexation</div>
+                   <p style="font-style: italic;  max-width: 300px;" id="title-type"></p>
+                   <div style="display: flex; flex-direction: column; justify-content: center;">
+                       <img style="width: 185.31px; align-self: center; padding-top: 10px; padding-bottom: 15px;" id="title-poster"> </img>
+                   </div>
+                   <div>Is that what you want to do? </div>
+                   <div style="display: flex; justify-content: flex-end;">
+                       <paper-button id="imdb-lnk-ok-button">Ok</paper-button>
+                       <paper-button id="imdb-lnk-cancel-button">Cancel</paper-button>
+                   </div>
+               </div>
+               `, 60 * 1000)
 
             let cancelBtn = toast.el.querySelector("#imdb-lnk-cancel-button")
             cancelBtn.onclick = () => {
                 toast.dismiss();
             }
+
 
             toast.el.querySelector("#title-type").innerHTML = title.getName()
             toast.el.querySelector("#title-poster").src = posterUrl
@@ -901,7 +938,6 @@ export class TitleInfo extends HTMLElement {
             }
         }
 
-        // test create offer...
     }
 
     // Here I will display the list of each episodes from the list...

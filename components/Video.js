@@ -1,5 +1,5 @@
 
-import { theme } from "./Theme";
+import { getTheme } from "./Theme";
 import { Model } from '../Model';
 import { Application } from "../Application";
 import Plyr from 'plyr';
@@ -73,7 +73,7 @@ export class VideoPlayer extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
             #container{
                 width: 720px;
                 position: fixed;
@@ -82,6 +82,8 @@ export class VideoPlayer extends HTMLElement {
             .header{
                 display: flex;
                 align-items: center;
+                color: var(--palette-text-accent);
+                background-color: var(--palette-primary-accent);
             }
 
             .header span{
@@ -108,7 +110,7 @@ export class VideoPlayer extends HTMLElement {
         </style>
         <paper-card id="container" class="no-select">
             <div class="header" style="${hideheader ? "display:none;" : ""}">
-                <paper-icon-button id="video-close-btn" icon="icons:close" style="min-width: 40px;"></paper-icon-button>
+                <paper-icon-button id="video-close-btn" icon="icons:close" style="min-width: 40px; --iron-icon-fill-color: var(--palette-text-accent);"></paper-icon-button>
                 <span id="title-span"></span>
             </div>
             <slot></slot>

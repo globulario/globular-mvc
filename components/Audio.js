@@ -1,4 +1,4 @@
-import { theme } from "./Theme";
+import { getTheme } from "./Theme";
 import { Model } from '../Model';
 import { Application } from "../Application";
 
@@ -18,7 +18,7 @@ export class AudioPlayer extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
             #container{
                 max-width: 500px;
                 padding: 15px;

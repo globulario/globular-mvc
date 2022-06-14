@@ -1,4 +1,4 @@
-import { theme } from "./Theme";
+import { getTheme } from "./Theme";
 import { Model } from '../Model';
 import { Application } from "../Application";
 
@@ -17,7 +17,7 @@ export class GlobularFileReader extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
         </style>
         
         <iframe id="frame" style="width: 100%; height: 100%; border: none;"></iframe>

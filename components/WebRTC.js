@@ -4,7 +4,7 @@ import { LogInfo, LogRqst } from 'globular-web-client/log/log_pb';
 import { Application } from '../Application';
 import { applicationView, ApplicationView } from '../ApplicationView';
 import { Model } from '../Model';
-import { theme } from "./Theme";
+import { getTheme } from "./Theme";
 import '@polymer/iron-icons/communication-icons'
 
 // Contains the stun server URL we will be using.
@@ -47,7 +47,7 @@ export class VideoConversation extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
 
             #video-chat-room{
                 display: flex;

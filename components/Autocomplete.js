@@ -1,7 +1,7 @@
 import '@polymer/iron-icons/iron-icons.js';
 import '@polymer/paper-icon-button/paper-icon-button.js';
 
-import { theme } from "./Theme";
+import { getTheme } from "./Theme";
 /**
  * Autocomplete
  */
@@ -34,7 +34,7 @@ export class Autocomplete extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
 
-            ${theme}
+            ${getTheme()}
 
         </style>
 

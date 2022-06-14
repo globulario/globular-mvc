@@ -1,4 +1,4 @@
-import { theme } from "./Theme.js";
+import { getTheme } from "./Theme";
 
 export class DropdownMenuItem extends HTMLElement {
   // attributes.
@@ -25,7 +25,7 @@ export class DropdownMenuItem extends HTMLElement {
     // Innitialisation of the layout.
     this.shadowRoot.innerHTML = `
       <style>
-          ${theme}
+          ${getTheme()}
 
           #container{
             display: flex;
@@ -142,7 +142,7 @@ export class DropdownMenu extends HTMLElement {
     // Innitialisation of the layout.
     this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
             #container{
               display: flex;
               flex-direction: column;

@@ -1,5 +1,5 @@
 import { ConversationServicePromiseClient } from "globular-web-client/conversation/conversation_grpc_web_pb";
-import { theme } from "./Theme";
+import { getTheme } from "./Theme";
 
 function getExtraWidth(pane) {
     const paddingLeft = extractComputedStyleValue(pane, 'paddingLeft');
@@ -41,7 +41,7 @@ export class SplitView extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
             .splitter {
                 display: flex;
                 width: 100%;
@@ -101,7 +101,7 @@ export class SplitSlider extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
             .splitter__slider {
                 display: block;
                 height: 100%;
@@ -156,7 +156,7 @@ export class SplitPane extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
             ::slotted(globular-file-reader){
                 height: 100%;
                 overflow: hidden;

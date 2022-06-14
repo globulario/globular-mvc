@@ -15,7 +15,7 @@ import '@polymer/paper-tabs/paper-tabs.js';
 import '@polymer/paper-tabs/paper-tab.js';
 
 import { Menu } from './Menu';
-import { theme } from "./Theme";
+import { getTheme } from "./Theme";
 import { Account } from "../Account"
 import { Model } from "../Model"
 import { ApplicationView } from '../ApplicationView';
@@ -67,7 +67,7 @@ export class ContactsMenu extends Menu {
 
         let html = `
             <style>
-                ${theme}
+                ${getTheme()}
                 #Contacts-div {
                     display: flex;
                     flex-wrap: wrap;
@@ -314,7 +314,7 @@ export class SentContactInvitations extends HTMLElement {
 
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
 
             .contact-invitations-list{
                 display: flex;
@@ -511,7 +511,7 @@ export class ReceivedContactInvitations extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
             .contact-invitations-list{
                 display: flex;
                 flex-direction: column;
@@ -632,7 +632,7 @@ export class ContactList extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
             .contact-invitations-list{
                 display: flex;
                 flex-direction: column;
@@ -723,7 +723,7 @@ export class AcceptDeclineContactBtns extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
         </style>
 
         <div style="display: flex;">
@@ -794,7 +794,7 @@ export class ContactCard extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
             .contact-invitation-div{
                 transition: background 0.2s ease,padding 0.8s linear;
                 background-color: var(--palette-background-paper);

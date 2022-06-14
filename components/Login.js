@@ -9,7 +9,7 @@ import '@polymer/paper-button/paper-button.js';
 import '@polymer/paper-checkbox/paper-checkbox.js';
 
 import { Model } from '../Model';
-import { theme } from "./Theme";
+import { getTheme } from "./Theme";
 /**
  * Login/Register functionality.
  */
@@ -110,7 +110,7 @@ export class LoginBox extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
 
-            ${theme}
+            ${getTheme()}
 
             paper-input iron-icon{
                 margin-right: 10px;
@@ -243,7 +243,7 @@ export class RegisterBox extends HTMLElement {
         this.shadowRoot.innerHTML = `
             <style>
 
-                ${theme}
+                ${getTheme()}
 
                 paper-input iron-icon{
                     margin-right: 10px;

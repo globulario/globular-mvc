@@ -1,5 +1,5 @@
 import { Model } from "../Model";
-import { theme } from "./Theme";
+import { getTheme } from "./Theme";
 import { v4 as uuidv4 } from "uuid";
 import { GetActionResourceInfosRqst, GetResourcePermissionsRqst, Permission, SetResourcePermissionsRqst } from "globular-web-client/rbac/rbac_pb";
 import { Account } from "../Account";
@@ -75,7 +75,7 @@ export class PermissionsManager extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
             #container{
                 display: flex;
                 flex-direction: column;
@@ -223,7 +223,7 @@ export class PermissionsManager extends HTMLElement {
         if (addPermissionPanel == null && this.permissionsNames.length > 0) {
             let html = `
             <style>
-                ${theme}
+                ${getTheme()}
                 #add-permission-panel{
                     position: absolute;
                     right: 20px;
@@ -425,7 +425,7 @@ export class PermissionPanel extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
 
             .title{
                 flex-grow: 1;
@@ -724,7 +724,7 @@ export class PermissionsViewer extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
             #subjects-div{
                 vertical-align: middle;
                 text-aling: center;

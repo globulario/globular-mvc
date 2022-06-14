@@ -16,7 +16,7 @@ import '@polymer/paper-tabs/paper-tabs.js';
 import '@polymer/paper-tabs/paper-tab.js';
 import '@polymer/iron-autogrow-textarea/iron-autogrow-textarea.js';
 import { Menu } from './Menu';
-import { theme } from "./Theme";
+import { getTheme } from "./Theme";
 import { Account } from "../Account"
 import { Model } from "../Model"
 import { PermissionManager } from '../Permission';
@@ -107,7 +107,7 @@ export class MessengerMenu extends Menu {
 
         let html = `
             <style>
-            ${theme}
+            ${getTheme()}
             #Messages-div {
                 display: flex;
                 flex-wrap: wrap;
@@ -495,7 +495,7 @@ export class ConversationInfos extends HTMLElement {
 
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
 
             .conversation-infos{
                 transition: background 0.2s ease,padding 0.8s linear;
@@ -824,7 +824,7 @@ export class Messenger extends HTMLElement {
 
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
 
             #layout-div-1{
                 display: flex;
@@ -1251,7 +1251,7 @@ export class ConversationsList extends HTMLElement {
 
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
 
             .container{
                 min-height: 140px;
@@ -1365,7 +1365,7 @@ export class ParticipantsList extends HTMLElement {
 
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
 
             .container{
                 
@@ -1650,7 +1650,7 @@ export class AttachedFilesList extends HTMLElement {
 
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
 
             .container{
                 
@@ -1693,7 +1693,7 @@ export class MessagesList extends HTMLElement {
 
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
 
             .container{
                 padding-left: 40px;
@@ -1848,7 +1848,7 @@ export class MessageEditor extends HTMLElement {
 
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
 
             .container{
                 display:flex;
@@ -2063,7 +2063,7 @@ export class InvitationCard extends HTMLElement {
 
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
 
             .container{
                 position: relative;
@@ -2288,7 +2288,7 @@ export class LikeDisLikeBtn extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
 
             .like-dislike-btn{
                 --iron-icon-fill-color:var(--palette-text-primary);
@@ -2406,7 +2406,7 @@ export class GlobularMessagePanel extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
             .btn{
                 display: flex; 
                 width: 32px; 

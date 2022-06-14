@@ -1,4 +1,4 @@
-import { theme } from "./Theme";
+import { getTheme } from "./Theme";
 import '@polymer/iron-icon/iron-icon.js';
 import '@polymer/iron-icons/iron-icons.js';
 import '@polymer/paper-button/paper-button.js';
@@ -9,6 +9,7 @@ import '@polymer/paper-input/paper-textarea.js';
 import '@polymer/paper-dropdown-menu/paper-dropdown-menu.js'
 import '@polymer/iron-collapse/iron-collapse.js';
 import "@polymer/iron-icons/image-icons";
+
 import { v4 as uuidv4 } from "uuid";
 import { ImageCropper } from "./Image";
 import { Camera } from "./Camera";
@@ -33,7 +34,7 @@ export class SettingsMenu extends HTMLElement {
     this.attachShadow({ mode: "open" });
     this.shadowRoot.innerHTML = `
     <style>
-       ${theme}
+       ${getTheme()}
        #container {
            display: flex;
            flex-direction: column;
@@ -111,7 +112,7 @@ export class SettingsSideMenuItem extends HTMLElement {
 
     this.shadowRoot.innerHTML = `
     <style>
-       ${theme}
+       ${getTheme()}
        #container {
            display: flex;
            align-items: center;
@@ -189,7 +190,7 @@ export class SettingsPanel extends HTMLElement {
     // Connect to event.
     this.shadowRoot.innerHTML = `
     <style>
-       ${theme}
+       ${getTheme()}
        #container {
            display: inline-flex;
            flex-direction: column;
@@ -250,7 +251,7 @@ export class SettingsPage extends HTMLElement {
     // Connect to event.
     this.shadowRoot.innerHTML = `
     <style>
-       ${theme}
+       ${getTheme()}
        #container {
            display: none;
            flex-direction: column;
@@ -319,7 +320,7 @@ export class Settings extends HTMLElement {
     // Connect to event.
     this.shadowRoot.innerHTML = `
     <style>
-       ${theme}
+       ${getTheme()}
 
        #container {
            display: flex;
@@ -494,7 +495,7 @@ export class Setting extends HTMLElement {
     // Connect to event.
     this.shadowRoot.innerHTML = `
     <style>
-       ${theme}
+       ${getTheme()}
 
       .setting-name{
          line-height: 1rem;
@@ -630,7 +631,7 @@ export class ConnectionsSetting extends HTMLElement {
     this.attachShadow({ mode: "open" });
     this.shadowRoot.innerHTML = `
     <style>
-        ${theme}
+        ${getTheme()}
         #container {
             display: flex;
             flex-direction: column;
@@ -698,7 +699,7 @@ export class ConnectionSetting extends HTMLElement {
     this.attachShadow({ mode: "open" });
     this.shadowRoot.innerHTML = `
     <style>
-        ${theme}
+        ${getTheme()}
         #container{
             display: flex;
             flex-direction: column;
@@ -967,7 +968,7 @@ export class ComplexSetting extends Setting {
     let range = document.createRange()
     let html = `
       <style>
-      ${theme}
+      ${getTheme()}
         #icon-right:hover{
           cursor: pointer;
         }
@@ -1069,7 +1070,7 @@ export class ReadOnlyStringSetting extends Setting {
 
     let html = `
       <style>
-      ${theme}
+      ${getTheme()}
       #setting-span{
          flex-grow: 1;
         }
@@ -1121,7 +1122,7 @@ export class LinkSetting extends Setting {
 
     let html = `
       <style>
-      ${theme}
+      ${getTheme()}
       #setting-span{
          flex-grow: 1;
          color: var(--cr-primary-text-color);
@@ -1172,7 +1173,7 @@ export class StringSetting extends Setting {
 
     let html = `
       <style>
-      ${theme}
+      ${getTheme()}
       #setting-input{
          flex-grow: 1;
         }
@@ -1227,7 +1228,7 @@ export class RadioGroupSetting extends Setting {
 
     let html = `
       <style>
-      ${theme}
+      ${getTheme()}
 
       </style>
 
@@ -1286,7 +1287,7 @@ export class TextAreaSetting extends Setting {
 
     let html = `
       <style>
-      ${theme}
+      ${getTheme()}
       #setting-input{
          flex-grow: 1;
         }
@@ -1332,7 +1333,7 @@ export class OnOffSetting extends Setting {
 
     let html = `
       <style>
-      ${theme}
+      ${getTheme()}
       #setting-input{
          flex-grow: 1;
         }
@@ -1395,7 +1396,7 @@ export class ImageSetting extends Setting {
 
     let html = `
       <style>
-      ${theme}
+      ${getTheme()}
         #custom-file-upload{
            display: flex;
            flex-grow: 1;
@@ -1555,7 +1556,7 @@ export class ImageCropperSetting extends Setting {
 
     let html = `
       <style>
-      ${theme}
+      ${getTheme()}
       #setting-input{
          
       }
@@ -1621,7 +1622,7 @@ export class DropdownSetting extends Setting {
 
     let html = `
       <style>
-      ${theme}
+      ${getTheme()}
       #setting-input{
          flex-grow: 1;
         }
@@ -1684,7 +1685,7 @@ export class StringListSetting extends Setting {
 
     let html = `
       <style>
-      ${theme}
+      ${getTheme()}
       #setting-input{
          flex-grow: 1;
         }
@@ -1831,7 +1832,7 @@ export class YesNoSetting extends Setting {
 
     let html = `
     <style>
-    ${theme}
+    ${getTheme()}
       #yes-no-div{
        display: flex;
       }
@@ -1873,7 +1874,7 @@ export class ActionSetting extends Setting {
 
     let html = `
     <style>
-    ${theme}
+    ${getTheme()}
       #bnt-div{
        display: flex;
       }
@@ -1918,7 +1919,7 @@ customElements.define("globular-action-setting", ActionSetting);
       // Innitialisation of the layout.
       this.shadowRoot.innerHTML = `
       <style>
-          ${theme}
+          ${getTheme()}
       </style>
 
       <div id="${uuid}" style="display: flex; align-items: center; padding-bottom: 10px; padding-top: 10px; border-bottom: 1px solid var(--palette-divider)">
@@ -1956,7 +1957,7 @@ customElements.define('globular-video-conversion-error', VideoConversionError)
       // Innitialisation of the layout.
       this.shadowRoot.innerHTML = `
       <style>
-          ${theme}
+          ${getTheme()}
 
           #container{
             padding: 15px 16px 16px;
@@ -2058,7 +2059,7 @@ customElements.define('globular-video-conversion-errors-manager', VideoConversio
       // Innitialisation of the layout.
       this.shadowRoot.innerHTML = `
       <style>
-          ${theme}
+          ${getTheme()}
       </style>
 
       <div id="${uuid}" style="display: flex; align-items: center; padding-bottom: 10px; padding-top: 10px; border-bottom: 1px solid var(--palette-divider)">
@@ -2094,7 +2095,7 @@ customElements.define('globular-video-conversion-log', VideoConversionLog)
       // Innitialisation of the layout.
       this.shadowRoot.innerHTML = `
       <style>
-          ${theme}
+          ${getTheme()}
 
           #container{
             padding: 15px 16px 16px;

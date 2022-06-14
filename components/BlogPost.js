@@ -11,7 +11,7 @@ import Checklist from '@editorjs/checklist';
 import Paragraph from 'editorjs-paragraph-with-alignment'
 import CodeTool from '@editorjs/code'
 import Underline from '@editorjs/underline';
-import { theme } from "./Theme";
+import { getTheme } from "./Theme";
 import { ApplicationView } from '../ApplicationView';
 import { CreateBlogPostRequest, GetBlogPostsByAuthorsRequest, SaveBlogPostRequest, BlogPost, DeleteBlogPostRequest, AddEmojiRequest, Emoji, AddCommentRequest, Comment } from 'globular-web-client/blog/blog_pb';
 import { Application } from '../Application';
@@ -98,7 +98,7 @@ export class BlogPostElement extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
 
             #container {
                 padding-top: 10px;
@@ -618,7 +618,7 @@ export class BlogPosts extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
         </style>
         <div id="container">
             <div id="blog-lst-div">
@@ -768,7 +768,7 @@ export class BlogComments extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
         </style>
         <div id="container" style="padding-left: 10px;">
             <slot name="blog-emotions"> </slot>
@@ -887,7 +887,7 @@ export class BlogComment extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
 
             .container{
                 display: flex;
@@ -992,7 +992,7 @@ export class BlogCommentEditor extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
 
             .add-comment-btn{
                 transition: all 1s ease,padding 0.8s linear;
@@ -1212,7 +1212,7 @@ export class BlogEmotions extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
             #container{
                 display: flex;
             }

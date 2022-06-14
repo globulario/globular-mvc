@@ -1,4 +1,4 @@
-import { theme } from './Theme';
+import { getTheme } from './Theme';
 import '@polymer/iron-icons/iron-icons.js';
 import "@polymer/iron-icons/hardware-icons";
 import * as GlobularWebClient from "globular-web-client";
@@ -22,7 +22,7 @@ export class PeersManager extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
              <style>
-                 ${theme}
+                 ${getTheme()}
 
                 #create-peer-btn{
                     top: -42px;
@@ -30,14 +30,14 @@ export class PeersManager extends HTMLElement {
                     position: absolute;
                  }
 
-                 #container{
+                #container{
                     display: flex;
                     flex-direction: column;
                     position: relative;
                     min-width: 500px;
-                 }
+                }
 
-                 .card-content {
+                .card-content {
                     min-width: 680px;
                     max-width: 680px;
                     padding: 0px;
@@ -141,23 +141,23 @@ export class PeersManager extends HTMLElement {
                 // Here The peers must be both https or the peer at url must be https
                 let url = location.protocol + "//" + address + "/config"
                 let globule = new GlobularWebClient.Globular(url, () => {
- 
+
                     let peer = new Peer
                     peer.setDomain(globule.config.Domain)
                     peer.setProtocol(globule.config.Protocol)
                     peer.setPorthttp(globule.config.PortHttp)
                     peer.setPorthttps(globule.config.PortHttps)
-                    
+
                     let rqst = new RegisterPeerRqst
                     rqst.setPeer(peer)
 
                     Model.globular.resourceService.registerPeer(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
                         .then(() => {
-                    
+
                             if (location.protocol == "https:") {
-                                if(peer.getProtocol()=="https"){
+                                if (peer.getProtocol() == "https") {
                                     Model.globules.set("https://" + peer.getDomain() + ":" + peer.getPorthttps(), globule)
-                                }else{
+                                } else {
                                     ApplicationView.displayMessage("fail to access peer with http protocol from https " + peer.getDomain(), 3000)
                                 }
                             } else {
@@ -225,16 +225,16 @@ export class PeerPanel extends HTMLElement {
         this.peer = peer;
 
         let address = peer.getDomain()
-        if(peer.getProtocol() == "https"){
-            address +=":" + peer.getPorthttps()
-        }else{
-            address +=":" + peer.getPorthttp()
+        if (peer.getProtocol() == "https") {
+            address += ":" + peer.getPorthttps()
+        } else {
+            address += ":" + peer.getPorthttp()
         }
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${theme}
+            ${getTheme()}
             #container{
                 display: flex;
                 flex-direction: column;
@@ -366,18 +366,18 @@ export class PeerPanel extends HTMLElement {
         `
 
         let lnk = this.shadowRoot.querySelector(".title")
-        if(peer.getProtocol() == "https"){
-            if(peer.getPorthttps() != 443){
-                lnk.href = peer.getProtocol() + '://' + peer.getDomain() + ":" + peer.getPorthttps()  + "/console"
-            }else{
-                lnk.href = peer.getProtocol() + '://' + peer.getDomain()  + "/console"
+        if (peer.getProtocol() == "https") {
+            if (peer.getPorthttps() != 443) {
+                lnk.href = peer.getProtocol() + '://' + peer.getDomain() + ":" + peer.getPorthttps() + "/console"
+            } else {
+                lnk.href = peer.getProtocol() + '://' + peer.getDomain() + "/console"
             }
-            
-        }else{
-            if(peer.getPorthttp() != 80){
-                lnk.href = peer.getProtocol() + '://' + peer.getDomain() + ":" + peer.getPorthttp()  + "/console"
-            }else{
-                lnk.href = peer.getProtocol() + '://' + peer.getDomain()  + "/console"
+
+        } else {
+            if (peer.getPorthttp() != 80) {
+                lnk.href = peer.getProtocol() + '://' + peer.getDomain() + ":" + peer.getPorthttp() + "/console"
+            } else {
+                lnk.href = peer.getProtocol() + '://' + peer.getDomain() + "/console"
             }
         }
 
@@ -424,11 +424,11 @@ export class PeerPanel extends HTMLElement {
                     if (this.peer.getState() == 0) {
                         stateSpan.innerHTML += " require your approbation"
                     }
-                   
+
 
                 }
 
-            }else{
+            } else {
                 stateSpan.innerHTML += " wait for approbation"
             }
 
@@ -496,7 +496,7 @@ export class PeerPanel extends HTMLElement {
 
                         let html = `
                         <style>
-                            ${theme}
+                            ${getTheme()}
                             #add-peer-action-panel{
                                 position: absolute;
                                 right: 0px;
@@ -586,10 +586,10 @@ export class PeerPanel extends HTMLElement {
     getRemoteState(callback) {
         let rqst = new GetPeerApprovalStateRqst
         let address = this.peer.getDomain()
-        if(this.peer.getProtocol() == "https"){
-            address +=":" + this.peer.getPorthttps()
-        }else{
-            address +=":" + this.peer.getPorthttp()
+        if (this.peer.getProtocol() == "https") {
+            address += ":" + this.peer.getPorthttps()
+        } else {
+            address += ":" + this.peer.getPorthttp()
         }
 
         rqst.setRemotePeerAddress(address)
