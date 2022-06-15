@@ -39,17 +39,11 @@ export class Menu extends HTMLElement {
                 background: transparent;
             }
 
-            #${this.id}_div paper-button {
-                font-size: 1rem;
-            }
-
             .menu-btn{
-                margin: 0px 5px 0px 5px;
+                margin: 0px 10px 0px 10px;
             }
 
             .btn{
-                height: 40px;
-                width: 40px;
                 display: flex;
                 justify-content: center;
                 align-items: center;

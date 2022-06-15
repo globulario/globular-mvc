@@ -35,7 +35,7 @@ export class Login extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-
+            ${getTheme()}
  
             #login_div span:hover{
                 cursor:pointer;
@@ -47,10 +47,6 @@ export class Login extends HTMLElement {
 
             #login_div:hover{
                 cursor: pointer;
-            }
-
-            #login_div paper-button {
-                font-size: 1rem;
             }
 
         </style>

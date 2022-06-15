@@ -126,8 +126,6 @@ export class AccountMenu extends Menu {
                 }
 
                 #icon-div iron-icon{
-                    height: 40px;
-                    width: 40px;
                     padding-right: 10px;
                 }
 
@@ -772,7 +770,6 @@ export class AccountPanel extends HTMLElement {
     
             #yes-no-contact-delete-box div{
               display: flex;
-              font-size: 1rem;
               padding-bottom: 10px;
             }
     

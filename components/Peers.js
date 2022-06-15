@@ -645,15 +645,9 @@ export class PeerPanel extends HTMLElement {
     
             #yes-no-contact-delete-box div{
               display: flex;
-              font-size: 1rem;
               padding-bottom: 10px;
             }
-    
-            paper-button{
-              font-size: .85rem;
-              height: 32px;
-            }
-    
+            
           </style>
           <div id="yes-no-contact-delete-box">
             <div>Your about to delete the peer ${peer.getHostname()}</div>

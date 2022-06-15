@@ -325,13 +325,7 @@ export class ApplicationView extends View {
 
               #yes-no-contact-delete-box div{
                 display: flex;
-                font-size: 1rem;
                 padding-bottom: 10px;
-              }
-
-              paper-button{
-                font-size: 1rem;
-                height: 32px;
               }
 
             </style>
@@ -619,21 +613,10 @@ export class ApplicationView extends View {
 
   setIcon(imgUrl: string) {
     let icon = document.createElement("img");
-    icon.id = "application_icon";
-
     icon.src = imgUrl;
-    icon.style.height = "24px";
-    icon.style.width = "24px";
-    icon.style.marginRight = "10px";
-    icon.style.marginLeft = "10px";
-
-
     let title = <any>ApplicationView.layout.title();
     title.style.display = "flex";
-
     title.insertBefore(icon, title.firstChild);
-
-    this.icon = icon;
   }
 
   /**
@@ -1013,7 +996,6 @@ export class ApplicationView extends View {
 
         #invite-conversation-participants div{
           display: flex;
-          font-size: 1rem;
           padding-bottom: 10px;
         }
 
@@ -1103,7 +1085,6 @@ export class ApplicationView extends View {
 
         #yes-no-contact-delete-box div{
           display: flex;
-          font-size: 1rem;
           padding-bottom: 10px;
         }
 
@@ -1213,7 +1194,6 @@ export class ApplicationView extends View {
                 position: relative;
                 align-items: center;
                 font-family: Roboto,RobotoDraft,Helvetica,Arial,sans-serif;
-                font-size: 1rem;
                 letter-spacing: .2px;
                 color: #202124;
                 text-shadow: none;

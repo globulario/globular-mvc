@@ -796,15 +796,9 @@ export class ConnectionSetting extends HTMLElement {
       
               #yes-no-contact-delete-box div{
                 display: flex;
-                font-size: 1rem;
                 padding-bottom: 10px;
               }
-      
-              paper-button{
-                font-size: .85rem;
-                height: 32px;
-              }
-      
+
             </style>
             <div id="yes-no-connection-delete-box">
               <div>Your about to delete connection <span style="font-style: italic;">${connection.Id}</span></div>

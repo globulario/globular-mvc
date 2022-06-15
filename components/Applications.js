@@ -36,17 +36,18 @@ export class ApplicationsMenu extends Menu {
         super("applications", "apps", "Applications")
         let html = `
             <style>
-                                
+                ${getTheme()}        
                 #applications_menu_div{
                     background-color: var(--palette-background-paper);
                 }
 
                 #applications-div {
                     display: none;
+                    height: 100%;
                     flex-wrap: wrap;
                     padding: 10px;
                     width: 300px;
-                    height: 100%;
+
                 }
 
             </style>
@@ -110,12 +111,6 @@ export class ApplicationsPanel extends HTMLElement {
                 flex-flow: wrap;
             }
 
-            paper-tooltip {
-                --paper-tooltip: {
-                  font-size: 1rem;
-                }
-            }
-
             .application-div {
                 display: flex;
                 position: relative;
@@ -127,9 +122,6 @@ export class ApplicationsPanel extends HTMLElement {
                 border-radius: 5px;
                 transition: background 0.2s ease,padding 0.8s linear;
                 background-color: var(--palette-background-paper);
-                --paper-tooltip: {
-                    font-size: 1rem;
-                  }
             }
 
             .application-div img{
@@ -660,7 +652,6 @@ export class ApplicationPanel extends HTMLElement {
     
             #yes-no-contact-delete-box div{
               display: flex;
-              font-size: 1rem;
               padding-bottom: 10px;
             }
     
@@ -726,7 +717,6 @@ export class ApplicationPanel extends HTMLElement {
     
             #yes-no-contact-delete-box div{
               display: flex;
-              font-size: 1rem;
               padding-bottom: 10px;
             }
     

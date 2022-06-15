@@ -349,8 +349,6 @@ export class SearchBar extends HTMLElement {
             iron-icon{
                 padding-left: 11px;
                 padding-right: 11px;
-                height: 36px;
-                width: 36px;
             }
 
             input:focus{

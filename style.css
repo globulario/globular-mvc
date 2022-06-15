@@ -673,3 +673,34 @@ globular-search-video-card{
 globular-file-explorer{
    z-index: 1;
 }
+
+globular-applications-menu{
+   display: flex;
+   align-items: center;
+}
+
+#title img {
+   height: 24px;
+   margin-right: 10px;
+   margin-left: 10px;
+}
+
+#title span {
+   font-size: 1.0rem;
+}
+
+@media only screen and (hover: none) and (pointer: coarse){
+   iron-icon, paper-icon-button, paper-button, .menu-btn, .side_menu_btn, .application_icon{
+      width: 48px;
+      height: 48px;
+   }
+  
+   /* Regular CSS rules here*/
+   #title img {
+      height: 48px;
+   }
+
+   #title span {
+      font-size: 1.8rem;
+   }
+}

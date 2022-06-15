@@ -528,13 +528,7 @@ export class FilesView extends HTMLElement {
 
               #yes-no-files-delete-box div{
                 display: flex;
-                font-size: 1rem;
                 padding-bottom: 10px;
-              }
-
-              paper-button{
-                font-size: 1rem;
-                height: 32px;
               }
 
             </style>

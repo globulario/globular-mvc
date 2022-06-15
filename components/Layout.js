@@ -79,6 +79,11 @@ export class Layout extends HTMLElement {
               --iron-icon-fill-color: var(--palette-text-accent);
             }
 
+            ::slotted(.application_icon) {
+              width: 24px;
+              height: 24px;
+            }
+
             ::slotted(#toolbar) {
               display: flex;
               flex-grow: 1;
@@ -90,8 +95,8 @@ export class Layout extends HTMLElement {
             
             ::slotted(#title) {
               display: flex;
+              align-items: center;
               font-family: var(--font-familly);
-              font-size: 1rem;
               font-weight: 400;
               line-height: 1.5;
               text-transform: uppercase;

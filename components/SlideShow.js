@@ -91,8 +91,6 @@ export class SlideShow extends HTMLElement {
                     
                     footer > span {
                         position: relative;
-                        height: 40px;
-                        width: 40px;
                         border-radius: 2rem;
                         border: solid white;
                         border-width: 3px;
