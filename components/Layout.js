@@ -53,6 +53,7 @@ export class Layout extends HTMLElement {
                 color: var(--palette-text-primary);
                 height: 100vh;
                 display: flex;
+                align-items: center;
                 flex-direction: column;
                 overflow-y: auto;
             }

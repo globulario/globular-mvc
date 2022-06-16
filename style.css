@@ -347,33 +347,56 @@ globular-processes-manager .table-item-value{
    }
 }
 
+body, html {
+   font-weight: 400;
+   letter-spacing: 0em;
+   line-height: 1.74;
+}
+
 /** Blog read mode css */
 .blog-read-div{
-   display: flex;
-   flex-direction: column;
-   align-items: center;
-   justify-content: center;
    background-color: transparent;
+   text-align: left;
+   font-family: Playfair Display;
+   margin: 20px;
 }
 
 .blog-read-div iframe{
-   margin: 10px;
-   max-height: 100%;
-   max-width: 100%;
-  
+   border: none; 
+   width: 100%; 
+   height: 320px;
+}
+
+.blog-read-div {
+   color: #214a50 !important;
+   font-size: 17px!important;
+}
+
+.blog-read-div h1, h2, h3, h4, h5{
+   max-width: 780px;
+}
+
+.blog-read-div h2 {
+   font-weight: 700;
+   letter-spacing: 0em;
+   line-height: 1.3;
 }
 
 .blog-read-div img{
    width: auto;
    height : auto;
-   max-height: 100%;
-   max-width: 100%;
-
+   max-width: 780px;
 }
 
 .blog-read-div p{
-   text-align: left;
-   padding-left: 10px;
+   margin-bottom: 1.5em;
+   margin-top: 0;
+   display: block;
+   margin-block-start: 1em;
+   margin-block-end: 1em;
+   margin-inline-start: 0px;
+   margin-inline-end: 0px;
+   max-width: 780px;
 }
 
 .blog-emitions{
@@ -564,6 +587,8 @@ globular-processes-manager .table-item-value{
       grid-row-start: 1;
       grid-column-start: 4;
       grid-column-end: 14;
+      display: flex;
+      justify-content: center;
    }
 
 
@@ -687,6 +712,10 @@ globular-applications-menu{
 
 #title span {
    font-size: 1.0rem;
+}
+
+#toolbar {
+   align-items: center;
 }
 
 /*@media only screen and (hover: none) and (pointer: coarse){

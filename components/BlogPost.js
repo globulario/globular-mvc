@@ -401,7 +401,7 @@ export class BlogPostElement extends HTMLElement {
         this.editorDiv = document.createElement("div")
         this.editorDiv.id = "_" + uuidv4() + "editorjs"
         this.editorDiv.slot = "edit-blog-content"
-        this.editorDiv.style = "margin: 10px; min-height: 230px;"
+        this.editorDiv.style = "margin: 10px; min-height: 230px; width: 800px;"
         this.appendChild(this.editorDiv)
 
         let data = {}

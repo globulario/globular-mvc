@@ -3400,6 +3400,9 @@ export class FileExplorer extends HTMLElement {
 
         if (localStorage.getItem("__file_explorer_dimension__")) {
             let dimension = JSON.parse(localStorage.getItem("__file_explorer_dimension__"))
+            if(!dimension){
+                dimension = {with:600, height:400}
+            }
             this.shadowRoot.querySelector("#file-explorer-box").style.width = dimension.width + "px"
             this.shadowRoot.querySelector("#file-explorer-box").style.height = dimension.height + "px"
         }
