@@ -689,13 +689,12 @@ globular-applications-menu{
    font-size: 1.0rem;
 }
 
-@media only screen and (hover: none) and (pointer: coarse){
+/*@media only screen and (hover: none) and (pointer: coarse){
    iron-icon, paper-icon-button, paper-button, .menu-btn, .side_menu_btn, .application_icon{
       width: 48px;
       height: 48px;
    }
   
-   /* Regular CSS rules here*/
    #title img {
       height: 48px;
    }
@@ -703,4 +702,4 @@ globular-applications-menu{
    #title span {
       font-size: 1.8rem;
    }
-}
+}*/

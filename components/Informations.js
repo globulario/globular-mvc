@@ -886,7 +886,7 @@ export class TitleInfo extends HTMLElement {
                 if (title.onLoadEpisodes != null) {
                     title.onLoadEpisodes(episodes)
                 }
-                this.displayEpisodes(episodes, filesDiv, this.globule)
+                this.displayEpisodes(episodes, filesDiv, title.globule)
                 filesDiv.querySelector("paper-progress").style.display = "none"
             })
         }

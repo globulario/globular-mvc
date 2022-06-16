@@ -37,6 +37,7 @@ export class Layout extends HTMLElement {
             app-header {
               background-color: var(--palette-primary-accent);
               color: var(--palette-text-accent);
+              border-bottom: 1px solid var(--palette-divider);
             }
 
             #content{

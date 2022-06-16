@@ -3307,6 +3307,14 @@ export class FileExplorer extends HTMLElement {
                 cursor: -moz-grab;
                 cursor: -webkit-grab;
             }
+
+            #file-navigation-header{
+                color: var(--palette-text-accent);
+                background-color: var(--palette-primary-accent);
+                display: flex; 
+                align-items: center; 
+                border-bottom: 1px solid var(--palette-divider);
+            }
         </style>
         <paper-card id="file-explorer-box" class="file-explorer" style="position: relative; flex-direction: column; border-left: 1px solid var(--palette-divider); border-right: 1px solid var(--palette-divider);">
             <div class="card-header">
@@ -3317,7 +3325,7 @@ export class FileExplorer extends HTMLElement {
                 </div>
             </div>
             <div id="file-explorer-content" class="card-content no-select">
-                <div style="display: flex; align-items: center; border-bottom: 1px solid var(--palette-divider);">
+                <div id="file-navigation-header">
                     <paper-icon-button id="navigation-back-btn" icon="icons:icons:arrow-back"></paper-icon-button>
                     <paper-icon-button id="navigation-foward-btn" icon="icons:arrow-forward"></paper-icon-button>
                     <div style="position: relative;">
@@ -3374,6 +3382,9 @@ export class FileExplorer extends HTMLElement {
 
         if (localStorage.getItem("__file_explorer_position__")) {
             let position = JSON.parse(localStorage.getItem("__file_explorer_position__"))
+            if(!position){
+                position = {top:0, left:0}
+            }
             if (position.top < offsetTop) {
                 position.top = offsetTop
             }
@@ -3483,6 +3494,10 @@ export class FileExplorer extends HTMLElement {
         this.exitFullScreenBtn.onclick = () => {
 
             let position = JSON.parse(localStorage.getItem("__file_explorer_position__"))
+            if(!position){
+                position = {top:0, left:0}
+            }
+
             this.style.top = position.top + "px"
             this.style.left = position.left + "px"
 

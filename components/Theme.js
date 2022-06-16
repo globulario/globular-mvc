@@ -5,7 +5,7 @@ let theme = `
     --searchbox-height: 44px;
     /** Material design (default theme is light)  */
     /** colors **/
-    --palette-primary-accent: #00b3ff;
+    --palette-primary-accent: #fff;
     /** Primary **/
     --palette-primary-light: #4791db;
     --palette-primary-main: #1976d2;
@@ -34,7 +34,7 @@ let theme = `
     --palette-text-primary: rgba(0, 0, 0, 0.87);
     --palette-text-secondary: rgba(0, 0, 0, 0.54);
     --palette-text-disabled: rgba(0, 0, 0, 0.38);
-    --palette-text-accent: #fff;
+    --palette-text-accent: rgba(0, 0, 0, 1);
     /** Buttons **/
     --palette-action-active: rgba(0, 0, 0, 0.54);
     --palette-action-disabled: rgba(0, 0, 0, 0.26);

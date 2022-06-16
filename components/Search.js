@@ -1250,6 +1250,7 @@ export class SearchFlipCard extends HTMLElement {
                 display: flex;
                 flex-direction: column;
                 background-color: rgba(0, 0, 0, 0.65);
+                color: #fff;
             }
 
             .series-poster{
