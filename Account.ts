@@ -150,8 +150,15 @@ export class Account extends Model {
         let domain = (<any>decoded).domain;
         let address = (<any>decoded).address;
 
-        if (Account.accounts[id + "@" + domain] != null) {
-            successCallback(Account.accounts[id + "@" + domain]);
+        let accountId = id
+        if(accountId.indexOf("@") == -1){
+            accountId = id + "@" + domain
+        }else{
+            address = accountId.split("@")[1]
+        }
+
+        if (Account.accounts[accountId] != null) {
+            successCallback(Account.accounts[accountId]);
             return
         }
 
@@ -165,7 +172,7 @@ export class Account extends Model {
         stream.on("status", (status) => {
             if (status.code == 0) {
                 if (accounts_.length == 0) {
-                    errorCallback("no account found with id " + id)
+                    errorCallback("no account found with id " + accountId)
                     return
                 }
 

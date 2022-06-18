@@ -101,13 +101,14 @@ export class BlogPostElement extends HTMLElement {
             ${getTheme()}
 
             #container {
-                padding-top: 10px;
-                padding-bottom: 10px;
+                display: flex;
+                justify-content: center;
             }
 
             .blog-post-editor-div{
                 display: flex;
                 flex-direction: column;
+                width: 800px;
             }
 
             .blog-post-title-div {
@@ -132,10 +133,6 @@ export class BlogPostElement extends HTMLElement {
                 padding: 8px;
             }
             
-            .blog-read-div p{
-                text-align: left;
-            }
-
             .blog-options-panel{
                 position: absolute;
                 right: 0px;
@@ -164,7 +161,7 @@ export class BlogPostElement extends HTMLElement {
 
             .blog-post-reader-div{
                 position: relative;
-                width: 100%;
+                width: 800px;
                 text-align: center;
             }
 
@@ -401,7 +398,7 @@ export class BlogPostElement extends HTMLElement {
         this.editorDiv = document.createElement("div")
         this.editorDiv.id = "_" + uuidv4() + "editorjs"
         this.editorDiv.slot = "edit-blog-content"
-        this.editorDiv.style = "margin: 10px; min-height: 230px; width: 800px;"
+        this.editorDiv.style = "min-height: 230px;"
         this.appendChild(this.editorDiv)
 
         let data = {}
@@ -619,6 +616,11 @@ export class BlogPosts extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
             ${getTheme()}
+            #blog-lst-div{
+                display: flex;
+                justify-content: center;
+                flex-direction: column;
+            }
         </style>
         <div id="container">
             <div id="blog-lst-div">
@@ -770,7 +772,7 @@ export class BlogComments extends HTMLElement {
         <style>
             ${getTheme()}
         </style>
-        <div id="container" style="padding-left: 10px;">
+        <div id="container" style="padding-left: 20px; border-top: 1px solid var(--palette-divider);">
             <slot name="blog-emotions"> </slot>
             <slot name="blog-comment-editor"></slot>
             <slot name="blog-comments"></slot>
@@ -905,9 +907,7 @@ export class BlogComment extends HTMLElement {
                 padding-right: 10px;
             }
 
-            .blog-read-div p{
-                text-align: left;
-            }
+
         </style>
         <div class="container" id="_${comment.getUuid()}">
             <div style="display: flex;">

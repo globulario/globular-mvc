@@ -148,7 +148,7 @@ let theme = `
   }
 
   paper-radio-button[checked]{
-    /*--paper-radio-button-label-color: var(--palette-text-accent);*/
+    --paper-radio-button-label-color: var(--palette-text-accent);
   }
 
   paper-card {

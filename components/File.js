@@ -205,7 +205,7 @@ function getHiddenFiles(path, callback, globule) {
     }
     thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/__preview__"
 
-    _readDir(thumbnailPath, callback, err => { console.log(err); callback(null); }, globule)
+    _readDir(thumbnailPath, callback, err => { console.log("------------->", err); callback(null); }, globule)
 }
 
 function _publishSetDirEvent(path, file_explorer_) {
@@ -2594,7 +2594,7 @@ export class FileNavigator extends HTMLElement {
         this.div = null
 
         // The control width
-        this.width = 200
+        this.width = 360
 
         this._file_explorer_ = null
 
@@ -2982,7 +2982,7 @@ export class FileNavigator extends HTMLElement {
         let initShared = (share, callback) => {
 
             let userId = share.getPath().split("/")[2];
-            if (userId == Application.account.id) {
+            if (userId == Application.account.id || userId == Application.account.id + "@" + Application.account.domain) {
                 callback()
                 return // I will not display it...
             }
@@ -3340,7 +3340,7 @@ export class FileExplorer extends HTMLElement {
                     </div>
                 </div>
                 <globular-split-view id="file-explorer-layout">
-                    <globular-split-pane id="file-navigation-panel" style="width: 250px">
+                    <globular-split-pane id="file-navigation-panel" style="width: 360px">
                         <globular-file-navigator id="globular-file-navigator"></globular-file-navigator>
                     </globular-split-pane>
                     <globular-split-pane id="file-selection-panel">
@@ -4349,9 +4349,9 @@ export class FilesMenu extends Menu {
             // The file explorer object.
             let fileExplorer = new FileExplorer();
             let userId = localStorage.getItem("user_id")
-
+            let userDomain = localStorage.getItem("user_domain")
             // Set the file explorer...
-            fileExplorer.setRoot("/users/" + userId)
+            fileExplorer.setRoot("/users/" + userId + "@" + userDomain)
             fileExplorer.init();
 
             // Set the onerror callback for the component.

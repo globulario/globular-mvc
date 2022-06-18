@@ -91,7 +91,7 @@ export class ContactsMenu extends Menu {
                 }
 
                 paper-tab paper-badge {
-                    --paper-badge-background: var(--palette-primary-accent);
+                    --paper-badge-background: var(--palette-warning-main);
                     --paper-badge-width: 16px;
                     --paper-badge-height: 16px;
                     --paper-badge-margin-left: 10px;

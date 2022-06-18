@@ -12,6 +12,7 @@ import { GetAllActionsRequest } from "globular-web-client/services_manager/servi
 import { Application } from "../Application";
 import { Group } from "../Group";
 import '@polymer/iron-icons/av-icons'
+import { RejectPeerRqst } from "globular-web-client/resource/resource_pb";
 
 // This function return the list of all possible permission name from the server... it a little bit slow...
 // so for the moment I will simply use static values read, write and delete.
@@ -94,7 +95,6 @@ export class PermissionsManager extends HTMLElement {
                 color: var(--palette-text-secondary);
                 border-bottom: 2px solid;
                 border-color: var(--palette-divider);
-                width: 66.66%;
             }
 
             .permissions{
@@ -108,8 +108,8 @@ export class PermissionsManager extends HTMLElement {
                 <paper-icon-button icon="close"></paper-icon-button>
                 
             </div>
-            <globular-permissions-viewer style="padding-bottom: 20px;"></globular-permissions-viewer>
-            <div>
+            <globular-permissions-viewer style="padding-bottom: 20px; padding-right: 40px;"></globular-permissions-viewer>
+            <div style="padding-right: 40px;">
                 <div  class="title">
                 <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
                     <iron-icon  id="owner-collapse-btn"  icon="unfold-less" --iron-icon-fill-color:var(--palette-text-primary);"></iron-icon>
@@ -161,6 +161,7 @@ export class PermissionsManager extends HTMLElement {
 
         // The tree sections.
         this.owners = this.shadowRoot.querySelector("#owner")
+
         this.alloweds = this.shadowRoot.querySelector("#allowed")
         this.denieds = this.shadowRoot.querySelector("#denied")
 
@@ -335,6 +336,7 @@ export class PermissionsManager extends HTMLElement {
                     let rqst = new SetResourcePermissionsRqst
                     rqst.setPermissions(this.permissions)
                     rqst.setPath(this.path)
+                    rqst.setResourcetype("file")
                     Model.globular.rbacService.setResourcePermissions(rqst, {
                         token: localStorage.getItem("user_token"),
                         application: Model.application,
@@ -433,7 +435,6 @@ export class PermissionPanel extends HTMLElement {
                 font-weight: 400;
                 color: var(--palette-text-secondary);
                 border-color: var(--palette-divider);
-                width: 66.66%;
             }
 
             .members{
@@ -543,6 +544,9 @@ export class PermissionPanel extends HTMLElement {
                 let list = []
                 this.permission.getOrganizationsList().forEach(organisationId => {
                     let o_ = organisations.find(o => o.getId() === organisationId);
+                    if(o_ == undefined){
+                        o_ = organisations.find(o => o.getId() + "@" + o.getDomain() === organisationId);
+                    }
                     if (o_ != undefined) {
                         list.push(o_)
                     }
@@ -551,6 +555,9 @@ export class PermissionPanel extends HTMLElement {
                 let organizationList = new SearchableOrganizationList("Organizations", list,
                     o => {
                         let index = this.permission.getOrganizationsList().indexOf(o.getId())
+                        if(index == -1){
+                            index = this.permission.getGroupsList().indexOf(o.getId() + "@" + o.getDomain())
+                        }
                         if (index != -1) {
                             this.permission.getOrganizationsList().splice(index, 1)
                             Model.eventHub.publish("save_permission_event", this.permission, true)
@@ -559,6 +566,9 @@ export class PermissionPanel extends HTMLElement {
                     },
                     o => {
                         let index = this.permission.getOrganizationsList().indexOf(o.getId())
+                        if(index == -1){
+                            index = this.permission.getGroupsList().indexOf(o.getId() + "@" + o.getDomain())
+                        }
                         if (index == -1) {
                             this.permission.getOrganizationsList().push(o.getId())
                             Model.eventHub.publish("save_permission_event", this.permission, true)
@@ -582,7 +592,10 @@ export class PermissionPanel extends HTMLElement {
                 let list = []
 
                 this.permission.getApplicationsList().forEach(applicationId => {
-                    let a_ = applications.find(a => a.getId() === applicationId);
+                    let a_ = applications.find(a => a.getId() + "@" + a.getDomain() === applicationId);
+                    if(a_ == undefined){
+                        a_ = applications.find(a => a.getId() === applicationId);
+                    }
                     if (a_ != undefined) {
                         list.push(a_)
                     }
@@ -591,6 +604,9 @@ export class PermissionPanel extends HTMLElement {
                 let applicationList = new SearchableApplicationList("Applications", list,
                     a => {
                         let index = this.permission.getApplicationsList().indexOf(a.getId())
+                        if(index == -1){
+                            index = this.permission.getGroupsList().indexOf(a.getId() + "@" + a.getDomain())
+                        }
                         if (index != -1) {
                             this.permission.getApplicationsList().splice(index, 1)
                             Model.eventHub.publish("save_permission_event", this.permission, true)
@@ -599,6 +615,9 @@ export class PermissionPanel extends HTMLElement {
                     },
                     a => {
                         let index = this.permission.getApplicationsList().indexOf(a.getId())
+                        if(index == -1){
+                            index = this.permission.getGroupsList().indexOf(a.getId() + "@" + a.getDomain())
+                        }
                         if (index == -1) {
                             this.permission.getApplicationsList().push(a.getId())
                             Model.eventHub.publish("save_permission_event", this.permission, true)
@@ -626,6 +645,10 @@ export class PermissionPanel extends HTMLElement {
                 this.permission.getGroupsList().forEach(groupId => {
 
                     let g_ = groups.find(g => g.getId() === groupId);
+                    if(g_==undefined){
+                        g_ = groups.find(g => g.getId() + "@" + g.getDomain() === groupId);
+                    }
+
                     if (g_ != undefined) {
                         list.push(g_)
                     }
@@ -635,6 +658,9 @@ export class PermissionPanel extends HTMLElement {
                 let groupsList = new SearchableGroupList("Groups", list,
                     g => {
                         let index = this.permission.getGroupsList().indexOf(g.getId())
+                        if(index == -1){
+                            index = this.permission.getGroupsList().indexOf(g.getId() + "@" + g.getDomain())
+                        }
                         if (index != -1) {
                             this.permission.getGroupsList().splice(index, 1)
                             Model.eventHub.publish("save_permission_event", this.permission, true)
@@ -643,6 +669,9 @@ export class PermissionPanel extends HTMLElement {
                     },
                     g => {
                         let index = this.permission.getGroupsList().indexOf(g.getId())
+                        if(index == -1){
+                            index = this.permission.getGroupsList().indexOf(g.getId() + "@" + g.getDomain())
+                        }
                         if (index == -1) {
                             this.permission.getGroupsList().push(g.getId())
                             Model.eventHub.publish("save_permission_event", this.permission, true)
@@ -670,7 +699,11 @@ export class PermissionPanel extends HTMLElement {
                 // I will get the account object whit the given id.
                 let list = []
                 accounts_.forEach(accountId => {
-                    let a_ = accounts.find(a => a._id === accountId);
+                    let a_ = accounts.find(a => a._id + "@" + a.domain === accountId);
+                    if (a_ == undefined) {
+                        a_ = accounts.find(a => a._id === accountId);
+                    }
+
                     if (a_ != undefined) {
                         list.push(a_)
                     }
@@ -679,6 +712,9 @@ export class PermissionPanel extends HTMLElement {
                 let accountsList = new SearchableAccountList("Accounts", list,
                     a => {
                         let index = this.permission.getAccountsList().indexOf(a._id)
+                        if(index == -1){
+                            index = this.permission.getGroupsList().indexOf(a._id + "@" + a.domain)
+                        }
                         if (index != -1) {
                             this.permission.getAccountsList().splice(index, 1)
                             Model.eventHub.publish("save_permission_event", this.permission, true)
@@ -687,6 +723,9 @@ export class PermissionPanel extends HTMLElement {
                     },
                     a => {
                         let index = this.permission.getAccountsList().indexOf(a._id)
+                        if(index == -1){
+                            index = this.permission.getGroupsList().indexOf(a._id + "@" + a.domain)
+                        }
                         if (index == -1) {
                             this.permission.getAccountsList().push(a._id)
                             Model.eventHub.publish("save_permission_event", this.permission, true)
