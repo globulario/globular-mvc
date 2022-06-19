@@ -3,7 +3,7 @@ import { Model } from '../Model';
 import { Application } from "../Application";
 import { DeleteTitleRequest, DeleteVideoRequest, DissociateFileWithTitleRequest, GetTitleFilesRequest, SearchTitlesRequest } from "globular-web-client/title/title_pb";
 import { File } from "../File";
-import { VideoPreview } from "./File";
+import { VideoPreview, getFileSizeString } from "./File";
 import { ApplicationView } from "../ApplicationView";
 import { randomUUID } from "./utility";
 import { playVideo } from "./Video";
@@ -459,6 +459,7 @@ export class InformationsManager extends HTMLElement {
      */
     setVideosInformation(videos) {
         this.innerHTML = "" // remove previous content.
+        this.shadowRoot.querySelector(".title-div").innerHTML = ""
         let video = videos[0]
         let videoInfo = new VideoInfo(this.shadowRoot.querySelector(".title-div"),  this.hasAttribute("short"))
         videoInfo.setVideo(video)
@@ -471,6 +472,7 @@ export class InformationsManager extends HTMLElement {
      */
     setTitlesInformation(titles, globule) {
         this.innerHTML = "" // remove previous content.
+        this.shadowRoot.querySelector(".title-div").innerHTML = ""
         if (titles.length == 0) {
             /** nothinh to display... */
             return;
@@ -496,6 +498,16 @@ export class InformationsManager extends HTMLElement {
         this.appendChild(titleInfo)
     }
 
+    setFileInformation(file){
+        this.innerHTML = "" // remove previous content.
+        this.shadowRoot.querySelector(".title-div").innerHTML = `
+        <div style="display: flex; align-items: center;">
+            <iron-icon id="icon" icon="icons:info"> </iron-icon> 
+            <span style="flex-grow: 1; padding-left: 20px; font-size: 20px;">${file.name} <span style="color: var(--palette-text-secondary);  margin-left: 16px;">Properties</span></span>
+        </div>`
+        let fileInfo = new FileInfo(file)
+        this.appendChild(fileInfo)
+    }
 
 }
 
@@ -1126,3 +1138,120 @@ export class TitleInfo extends HTMLElement {
 }
 
 customElements.define('globular-title-info', TitleInfo)
+
+/**
+ * Display basic file informations.
+ */
+ export class FileInfo extends HTMLElement {
+
+    // Create the applicaiton view.
+    constructor(file) {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+        let mime = file.mime
+        if(file.isDir){
+            mime = "Folder (inode/directory)"
+        }
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+            ${getTheme()}
+
+            #container {
+                display: flex;
+            }
+
+        </style>
+        <div id="container">
+            <div>
+                <img src="${file.thumbnail}"></img>
+            </div>
+            <div style="display: table; flex-grow: 1; padding-left: 20px;">
+                <div style="display: table-row;">
+                    <div style="display: table-cell; font-weight: 450;">Name:</div>
+                    <div style="display: table-cell;">${file.name}</div>
+                </div>
+                <div style="display: table-row;">
+                    <div style="display: table-cell; font-weight: 450;">Type:</div>
+                    <div style="display: table-cell;">${mime}</div>
+                </div>
+                <div style="display: table-row;">
+                    <div style="display: table-cell; font-weight: 450;">Location:</div>
+                    <div style="display: table-cell;">${file.path}</div>
+                </div>
+                <div style="display: table-row;">
+                    <div style="display: table-cell; font-weight: 450;">Modified:</div>
+                    <div style="display: table-cell;">${file.modTime}</div>
+                </div>
+                <div style="display: table-row;">
+                    <div style="display: table-cell; font-weight: 450;">Size:</div>
+                    <div style="display: table-cell;">${getFileSizeString(file.size)}</div>
+                </div>
+            </div>
+        </div>
+        `
+
+        console.log("display file informations ", file)
+    }
+
+}
+
+customElements.define('globular-file-info', FileInfo)
+
+
+/**
+ * Display basic blog informations.
+ */
+ export class BlogInfo extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor() {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+            ${getTheme()}
+        </style>
+
+        <div id="container">
+        </div>
+        `
+    }
+
+}
+
+customElements.define('globular-blog-info', BlogInfo)
+
+
+/**
+ * Display basic blog informations.
+ */
+ export class ConversationInfo extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor() {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+            ${getTheme()}
+        </style>
+        
+        <div id="container">
+        </div>
+        `
+    }
+
+}
+
+customElements.define('globular-conversation-info', ConversationInfo)

@@ -2,7 +2,7 @@ import { View } from "./View";
 import * as M from "materialize-css";
 import "materialize-css/sass/materialize.scss";
 import { Account } from "./Account";
-import { ApplicationsSettings, GroupSettings, LogSettings, OrganizationSettings, PeersSettings, RoleSettings, UserSettings, UsersSettings, VideoSettings } from "./Settings"
+import { ApplicationsSettings, GroupSettings, LogSettings, OrganizationSettings, PeersSettings, ResourcesPermissionsSettings, RoleSettings, UserSettings, UsersSettings, VideoSettings } from "./Settings"
 import { Model } from "./Model";
 import { DockerNames } from "./components/RandomName"
 
@@ -753,15 +753,15 @@ export class ApplicationView extends View {
     // Manage groups
     let groupSettings = new GroupSettings(this.settingsMenu, this.settingsPanel)
 
+    // Manage resources permissions
+    let resourcesPermissions = new ResourcesPermissionsSettings(this.settingsMenu, this.settingsPanel)
+
     // The logs
     let logs = new LogSettings(this.settingsMenu, this.settingsPanel);
 
     this._title_ = ApplicationView.layout.title().innerHTML;
     ApplicationView.layout.title().innerHTML = ""
     ApplicationView.layout.title().appendChild(this._searchBar)
-
-
-
 
     this.isLogin = true;
 

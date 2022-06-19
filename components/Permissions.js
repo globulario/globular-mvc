@@ -1,7 +1,7 @@
 import { Model } from "../Model";
 import { getTheme } from "./Theme";
 import { v4 as uuidv4 } from "uuid";
-import { GetActionResourceInfosRqst, GetResourcePermissionsRqst, Permission, SetResourcePermissionsRqst } from "globular-web-client/rbac/rbac_pb";
+import { GetActionResourceInfosRqst, GetResourcePermissionsByResourceTypeRqst, GetResourcePermissionsRqst, Permission, SetResourcePermissionsRqst } from "globular-web-client/rbac/rbac_pb";
 import { Account } from "../Account";
 import { ApplicationView } from "../ApplicationView";
 import { SearchableAccountList, SearchableApplicationList, SearchableGroupList, SearchableOrganizationList } from "./List.js";
@@ -345,7 +345,7 @@ export class PermissionsManager extends HTMLElement {
                     }).then(rsp => {
                         ApplicationView.displayMessage("Permissions for path " + this.path + " was changed", 3000)
                         this.setPath(this.path)
-                        Model.eventHub.publish(Application.account.id + "_change_permission_event", {},false)
+                        Model.eventHub.publish(Application.account.id + "_change_permission_event", {}, false)
                     }).catch(err => ApplicationView.displayMessage(err, 3000))
                 }, true, this)
         }
@@ -544,7 +544,7 @@ export class PermissionPanel extends HTMLElement {
                 let list = []
                 this.permission.getOrganizationsList().forEach(organisationId => {
                     let o_ = organisations.find(o => o.getId() === organisationId);
-                    if(o_ == undefined){
+                    if (o_ == undefined) {
                         o_ = organisations.find(o => o.getId() + "@" + o.getDomain() === organisationId);
                     }
                     if (o_ != undefined) {
@@ -555,7 +555,7 @@ export class PermissionPanel extends HTMLElement {
                 let organizationList = new SearchableOrganizationList("Organizations", list,
                     o => {
                         let index = this.permission.getOrganizationsList().indexOf(o.getId())
-                        if(index == -1){
+                        if (index == -1) {
                             index = this.permission.getGroupsList().indexOf(o.getId() + "@" + o.getDomain())
                         }
                         if (index != -1) {
@@ -566,7 +566,7 @@ export class PermissionPanel extends HTMLElement {
                     },
                     o => {
                         let index = this.permission.getOrganizationsList().indexOf(o.getId())
-                        if(index == -1){
+                        if (index == -1) {
                             index = this.permission.getGroupsList().indexOf(o.getId() + "@" + o.getDomain())
                         }
                         if (index == -1) {
@@ -593,7 +593,7 @@ export class PermissionPanel extends HTMLElement {
 
                 this.permission.getApplicationsList().forEach(applicationId => {
                     let a_ = applications.find(a => a.getId() + "@" + a.getDomain() === applicationId);
-                    if(a_ == undefined){
+                    if (a_ == undefined) {
                         a_ = applications.find(a => a.getId() === applicationId);
                     }
                     if (a_ != undefined) {
@@ -604,7 +604,7 @@ export class PermissionPanel extends HTMLElement {
                 let applicationList = new SearchableApplicationList("Applications", list,
                     a => {
                         let index = this.permission.getApplicationsList().indexOf(a.getId())
-                        if(index == -1){
+                        if (index == -1) {
                             index = this.permission.getGroupsList().indexOf(a.getId() + "@" + a.getDomain())
                         }
                         if (index != -1) {
@@ -615,7 +615,7 @@ export class PermissionPanel extends HTMLElement {
                     },
                     a => {
                         let index = this.permission.getApplicationsList().indexOf(a.getId())
-                        if(index == -1){
+                        if (index == -1) {
                             index = this.permission.getGroupsList().indexOf(a.getId() + "@" + a.getDomain())
                         }
                         if (index == -1) {
@@ -645,7 +645,7 @@ export class PermissionPanel extends HTMLElement {
                 this.permission.getGroupsList().forEach(groupId => {
 
                     let g_ = groups.find(g => g.getId() === groupId);
-                    if(g_==undefined){
+                    if (g_ == undefined) {
                         g_ = groups.find(g => g.getId() + "@" + g.getDomain() === groupId);
                     }
 
@@ -658,7 +658,7 @@ export class PermissionPanel extends HTMLElement {
                 let groupsList = new SearchableGroupList("Groups", list,
                     g => {
                         let index = this.permission.getGroupsList().indexOf(g.getId())
-                        if(index == -1){
+                        if (index == -1) {
                             index = this.permission.getGroupsList().indexOf(g.getId() + "@" + g.getDomain())
                         }
                         if (index != -1) {
@@ -669,7 +669,7 @@ export class PermissionPanel extends HTMLElement {
                     },
                     g => {
                         let index = this.permission.getGroupsList().indexOf(g.getId())
-                        if(index == -1){
+                        if (index == -1) {
                             index = this.permission.getGroupsList().indexOf(g.getId() + "@" + g.getDomain())
                         }
                         if (index == -1) {
@@ -712,7 +712,7 @@ export class PermissionPanel extends HTMLElement {
                 let accountsList = new SearchableAccountList("Accounts", list,
                     a => {
                         let index = this.permission.getAccountsList().indexOf(a._id)
-                        if(index == -1){
+                        if (index == -1) {
                             index = this.permission.getGroupsList().indexOf(a._id + "@" + a.domain)
                         }
                         if (index != -1) {
@@ -723,7 +723,7 @@ export class PermissionPanel extends HTMLElement {
                     },
                     a => {
                         let index = this.permission.getAccountsList().indexOf(a._id)
-                        if(index == -1){
+                        if (index == -1) {
                             index = this.permission.getGroupsList().indexOf(a._id + "@" + a.domain)
                         }
                         if (index == -1) {
@@ -843,7 +843,7 @@ export class PermissionsViewer extends HTMLElement {
         permission.getGroupsList().forEach(g => {
             let id = g + "_group"
             let subject = subjects[id]
-           
+
             if (subject == null) {
                 subject = {}
                 subject.type = "group"
@@ -872,7 +872,7 @@ export class PermissionsViewer extends HTMLElement {
 
         // Organizations
         permission.getOrganizationsList().forEach(o => {
-            let id =  o + "_organization"
+            let id = o + "_organization"
             let subject = subjects[id]
             if (subject == null) {
                 subject = {}
@@ -1046,7 +1046,7 @@ export class PermissionsViewer extends HTMLElement {
                     let accountDiv = this.createAccountDiv(a)
                     subjectCell.innerHTML = ""
                     subjectCell.appendChild(accountDiv)
-                }, e =>{
+                }, e => {
                     ApplicationView.displayMessage(e, 3000)
                 })
             } else if (subject.type == "application") {
@@ -1082,3 +1082,188 @@ export class PermissionsViewer extends HTMLElement {
 }
 
 customElements.define('globular-permissions-viewer', PermissionsViewer)
+
+
+/**
+ * Manage resource 
+ */
+export class ResourcesPermissionsManager extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor() {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+            ${getTheme()}
+        </style>
+
+        <div>
+            <slot></slot>
+        </div>
+        `
+
+        // append list of different resources by type.
+        this.appendChild(new ResourcesPermissionsType("application"))
+        this.appendChild(new ResourcesPermissionsType("blog"))
+        this.appendChild(new ResourcesPermissionsType("domain"))
+        this.appendChild(new ResourcesPermissionsType("conversation"))
+        this.appendChild(new ResourcesPermissionsType("file"))
+        this.appendChild(new ResourcesPermissionsType("group"))
+        this.appendChild(new ResourcesPermissionsType("organization"))
+        this.appendChild(new ResourcesPermissionsType("pacakage"))
+        this.appendChild(new ResourcesPermissionsType("role"))
+
+
+    }
+
+}
+
+customElements.define('globular-resources-permissions-manager', ResourcesPermissionsManager)
+
+
+/**
+ * Display the list of resource for a given type.
+ */
+export class ResourcesPermissionsType extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor(resource_type) {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+
+        // Set the resource type
+        this.resource_type = resource_type;
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+            ${getTheme()}
+            paper-card {
+                background-color: transparent;
+                font-size: 1rem;
+                text-align: left;
+                border-radius: 2px;
+            }
+
+            .card-content {
+                min-width: 680px;
+                max-width: 680px;
+                padding: 0px;
+            }
+
+            #container {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                border-bottom: 1px solid var(--palette-background-default);
+            }
+
+            .title {
+                flex-grow: 1;
+                padding: 10px;
+            }
+
+            .title::first-letter {
+                text-transform: uppercase;
+            }
+
+            .header:hover {
+                -webkit-filter: invert(10%);
+                filter: invert(10%);
+            }
+            
+            .header {
+                display: flex;
+                align-items: center;
+                width: 100%;
+                transition: background 0.2s ease,padding 0.8s linear;
+                background-color: var(--palette-background-paper);
+            }
+
+        </style>
+       
+        <div id="container">
+            <paper-card>
+                <div class="card-content">
+                    <div class="header">
+                        <span class="title" style="flex-grow: 1;">
+                            ${resource_type + "(s)"}
+                        </span>
+                        <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
+                            <iron-icon id="hide-btn" icon="unfold-less" style="flex-grow: 1; --iron-icon-fill-color:var(--palette-text-primary);"></iron-icon>
+                            <paper-ripple class="circle" recenters=""></paper-ripple>
+                        </div>
+                    </div>
+                    <iron-collapse id="collapse-panel" style="width: 100%; transition-property: max-height; max-height: 0px; transition-duration: 0s;" role="group" aria-hidden="true" class="iron-collapse-closed">
+                        <div id="content" style="display: flex; flex-direction: column;">
+                            content here...
+                        </div>
+                    </iron-collapse>
+                </div>
+            </paper-card>
+        </div>
+        
+        `
+
+        let togglePanel = this.shadowRoot.querySelector("#collapse-panel")
+        let content = this.shadowRoot.querySelector("#content")
+        this.hideBtn = this.shadowRoot.querySelector("#hide-btn")
+
+
+        // give the focus to the input.
+        this.hideBtn.onclick = () => {
+            let button = this.shadowRoot.querySelector("#hide-btn")
+            if (button && togglePanel) {
+                if (!togglePanel.opened) {
+                    button.icon = "unfold-more"
+                } else {
+                    button.icon = "unfold-less"
+                }
+                togglePanel.toggle();
+            }
+        }
+
+        this.getResourcePermissionsByResourceType(permissions=>{
+            console.log(permissions)
+        })
+    }
+
+    // Get the list of permission by type...
+    getResourcePermissionsByResourceType(callback) {
+        let rqst = new GetResourcePermissionsByResourceTypeRqst
+        rqst.setResourcetype(this.resource_type)
+        let permissions = [];
+
+        let stream = Model.globular.rbacService.getResourcePermissionsByResourceType(rqst,
+            {
+                domain: Model.domain,
+                address: Model.address,
+                application: Model.application,
+                token: localStorage.getItem("user_token")
+            });
+
+        // Get the stream and set event on it...
+        stream.on("data", (rsp) => {
+            permissions = permissions.concat(rsp.getPermissionsList())
+        });
+
+        stream.on("status", (status) => {
+            if (status.code == 0) {
+                callback(permissions)
+            } else {
+                console.log(status.details)
+                callback([])
+            }
+        });
+    }
+
+}
+
+customElements.define('globular-resources-permissions-type', ResourcesPermissionsType)

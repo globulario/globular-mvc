@@ -17,6 +17,7 @@ import { OrganizationManager } from "./components/Organization";
 import { AccountManager } from "./components/Account";
 import { StartProcessVideoRequest, StopProcessVideoRequest, IsProcessVideoRequest, SetVideoConversionRequest, SetVideoStreamConversionRequest, SetStartVideoConversionHourRequest, SetMaximumVideoConversionDelayRequest, VideoConversionError, GetVideoConversionErrorsRequest, GetVideoConversionErrorsResponse, ClearVideoConversionErrorRequest, ClearVideoConversionErrorsRequest, VideoConversionLog, ClearVideoConversionLogsRequest, ClearVideoConversionLogsResponse, ClearVideoConversionErrorResponse, ClearVideoConversionErrorsResponse, GetVideoConversionLogsRequest, GetVideoConversionLogsResponse } from "globular-web-client/file/file_pb";
 import { GetServiceConfigurationByIdRequest } from "globular-web-client/config_manager/config_pb";
+import { PermissionsManager, ResourcesPermissionsManager } from "./components/Permissions";
 
 export class Settings {
 
@@ -401,6 +402,55 @@ export class PeersSettings extends Settings {
         peersSettingPage.appendChild(document.createRange().createContextualFragment(html));
         this.peersManager = new PeersManager()
         peersSettingPage.appendChild(this.peersManager)
+
+    }
+}
+
+/**
+ * Model to save application settings.
+ */
+ export class ResourcesPermissionsSettings extends Settings {
+
+    // The application.
+    constructor(settingsMenu: SettingsMenu, settingsPanel: SettingsPanel) {
+        super(settingsMenu, settingsPanel);
+
+        settingsMenu.appendSettingsMenuItem("icons:lock", "Permissions");
+        let groupSettingPage = <any>settingsPanel.appendSettingsPage("Permissions");
+
+        // Append a title.
+        let html = `
+            <style>
+            .title {
+                font-size: 1.25rem;
+                text-transform: uppercase;
+                color: var(--cr-primary-text-color);
+                font-weight: 400;
+                letter-spacing: .25px;
+                margin-bottom: 12px;
+                margin-top: var(--cr-section-vertical-margin);
+                outline: none;
+                padding-bottom: 4px;
+                padding-left: 8px;
+                padding-top: 16px;
+            }
+
+            .subtitle{
+                font-size: 1rem;
+                text-align: left;
+                padding-bottom: 15px;
+            }
+
+            </style>
+            <div class="title">
+                Resources Permissions 
+            </div>
+            <span class="subtitle" style="font-size: 1rem;">Manage resources permissions ex: blog, group, file, application...</span>
+        `
+        // Display the file explorer...
+        groupSettingPage.appendChild(document.createRange().createContextualFragment(html));
+        
+        groupSettingPage.appendChild(new ResourcesPermissionsManager())
 
     }
 }

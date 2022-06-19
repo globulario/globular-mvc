@@ -49,6 +49,40 @@ import { SplitView } from './Splitter'
 var shared = {}
 var public_ = {}
 
+/**
+ * Format file size from bytes to Gb, Mb or Kb...
+ * @param {*} f_size 
+ * @returns 
+ */
+export function getFileSizeString(f_size) {
+
+    // In case of already converted values...
+    if (typeof f_size === 'string' || f_size instanceof String) {
+        return f_size
+    }
+
+    let size = ""
+
+    if (f_size > 1024) {
+        if (f_size > 1024 * 1024) {
+            if (f_size > 1024 * 1024 * 1024) {
+                let fileSize = f_size / (1024 * 1024 * 1024);
+                size = fileSize.toFixed(2) + " Gb";
+            } else {
+                let fileSize = f_size / (1024 * 1024);
+                size = fileSize.toFixed(2) + " Mb";
+            }
+        } else {
+            let fileSize = f_size / 1024;
+            size = fileSize.toFixed(2) + " Kb";
+        }
+    } else {
+        size = f_size + " bytes";
+    }
+
+    return size
+}
+
 function copyToClipboard(text) {
     var dummy = document.createElement("textarea");
     // to avoid breaking orgain page when copying more words
@@ -252,7 +286,8 @@ export class FilesView extends HTMLElement {
         let id = "_" + uuidv4().split("-").join("_").split("@").join("_");
 
         let menuItemsHTML = `
-        <globular-dropdown-menu-item  id="infos-menu-item" icon="icons:info" text="Title Infos" action="" style="display: none;"> </globular-dropdown-menu-item>
+        <globular-dropdown-menu-item  id="file-infos-menu-item" icon="icons:info" text="File Infos" action=""> </globular-dropdown-menu-item>
+        <globular-dropdown-menu-item  id="title-infos-menu-item" icon="icons:info" text="Title Infos" action="" style="display: none;"> </globular-dropdown-menu-item>
         <globular-dropdown-menu-item  id="manage-acess-menu-item" icon="folder-shared" text="Manage access"action=""></globular-dropdown-menu-item>
          <globular-dropdown-menu-item separator="true" id="video-menu-item" icon="maps:local-movies" text="Movies" action="" style="display: none;"> 
             <globular-dropdown-menu>
@@ -275,7 +310,8 @@ export class FilesView extends HTMLElement {
         this.menu = new DropdownMenu("icons:more-vert")
         this.menu.innerHTML = menuItemsHTML
 
-        this.infosMenuItem = this.menu.querySelector("#infos-menu-item")
+        this.fileInfosMenuItem = this.menu.querySelector("#file-infos-menu-item")
+        this.titleInfosMenuItem = this.menu.querySelector("#title-infos-menu-item")
         this.mananageAccessMenuItem = this.menu.querySelector("#manage-acess-menu-item")
         this.renameMenuItem = this.menu.querySelector("#rename-menu-item")
         this.deleteMenuItem = this.menu.querySelector("#delete-menu-item")
@@ -304,7 +340,7 @@ export class FilesView extends HTMLElement {
         this.menu.setFile = (f) => {
             this.menu.file = f;
             if (this.menu.file.mime.startsWith("video")) {
-                this.infosMenuItem.style.display = "block"
+                this.titleInfosMenuItem.style.display = "block"
                 this.videMenuItem.style.display = "block"
                 this.openInNewTabItem.style.display = "block"
                 if (this.menu.file.name.endsWith(".mp4")) {
@@ -318,7 +354,7 @@ export class FilesView extends HTMLElement {
                     this.toMp4MenuItem.style.display = "block"
                 }
             } else {
-                this.infosMenuItem.style.display = "none"
+                this.titleInfosMenuItem.style.display = "none"
                 this.videMenuItem.style.display = "none"
                 this.openInNewTabItem.style.display = "none"
             }
@@ -381,7 +417,7 @@ export class FilesView extends HTMLElement {
         this.openInNewTabItem.action = () => {
             let globule = this._file_explorer_.globule
             let url = globule.config.Protocol + "://" + globule.config.Domain + ":"
-            
+
 
             if (globule.config.Protocol == "https") {
                 url += globule.config.PortHttps
@@ -391,10 +427,10 @@ export class FilesView extends HTMLElement {
 
             this.menu.file.path.split("/").forEach(item => {
                 let component = encodeURIComponent(item.trim())
-                if(component.length > 0){
+                if (component.length > 0) {
                     url += "/" + component
                 }
-                
+
             })
 
             if (this.menu.file.mime == "video/hls-stream") {
@@ -411,7 +447,7 @@ export class FilesView extends HTMLElement {
         this.copyUrlItem.action = () => {
             let globule = this._file_explorer_.globule
             let url = globule.config.Protocol + "://" + globule.config.Domain + ":"
-            
+
 
             if (globule.config.Protocol == "https") {
                 url += globule.config.PortHttps
@@ -421,10 +457,10 @@ export class FilesView extends HTMLElement {
 
             this.menu.file.path.split("/").forEach(item => {
                 let component = encodeURIComponent(item.trim())
-                if(component.length > 0){
+                if (component.length > 0) {
                     url += "/" + component
                 }
-                
+
             })
 
             if (this.menu.file.mime == "video/hls-stream") {
@@ -435,7 +471,7 @@ export class FilesView extends HTMLElement {
             if (localStorage.getItem("user_token") != undefined) {
                 url += "&token=" + localStorage.getItem("user_token");
             }
-            
+
             copyToClipboard(url)
 
             ApplicationView.displayMessage("url was copy to clipboard...", 3000)
@@ -633,7 +669,13 @@ export class FilesView extends HTMLElement {
             this.menu.parentNode.removeChild(this.menu)
         }
 
-        this.infosMenuItem.action = () => {
+        this.fileInfosMenuItem.action = () => {
+            Model.eventHub.publish("display_file_infos_event", this.menu.file, true)
+            // hide the menu...
+            this.menu.parentNode.removeChild(this.menu)
+        }
+
+        this.titleInfosMenuItem.action = () => {
             // So here I will create a new permission manager object and display it for the given file.
             let globule = this._file_explorer_.globule
 
@@ -674,7 +716,7 @@ export class FilesView extends HTMLElement {
             getTitleInfo(this.menu.file, (titles) => {
                 if (titles.length > 0) {
                     this.menu.file.titles = titles // keep in the file itself...
-                    Model.eventHub.publish("display_file_infos_event", this.menu.file, true)
+                    Model.eventHub.publish("display_media_infos_event", this.menu.file, true)
                 }
             })
 
@@ -682,7 +724,7 @@ export class FilesView extends HTMLElement {
                 if (videos.length > 0) {
                     console.log(videos)
                     this.menu.file.videos = videos // keep in the file itself...
-                    Model.eventHub.publish("display_file_infos_event", this.menu.file, true)
+                    Model.eventHub.publish("display_media_infos_event", this.menu.file, true)
                 }
             })
             // hide the menu...
@@ -1386,7 +1428,7 @@ export class FilesListView extends FilesView {
 
         this.div.innerHTML = "";
 
-        
+
         let checkboxs = this.div.querySelectorAll("paper-checkbox")
         for (var i = 0; i < checkboxs.length; i++) {
             if (!checkboxs[i].checked) {
@@ -3382,8 +3424,8 @@ export class FileExplorer extends HTMLElement {
 
         if (localStorage.getItem("__file_explorer_position__")) {
             let position = JSON.parse(localStorage.getItem("__file_explorer_position__"))
-            if(!position){
-                position = {top:0, left:0}
+            if (!position) {
+                position = { top: 0, left: 0 }
             }
             if (position.top < offsetTop) {
                 position.top = offsetTop
@@ -3400,8 +3442,8 @@ export class FileExplorer extends HTMLElement {
 
         if (localStorage.getItem("__file_explorer_dimension__")) {
             let dimension = JSON.parse(localStorage.getItem("__file_explorer_dimension__"))
-            if(!dimension){
-                dimension = {with:600, height:400}
+            if (!dimension) {
+                dimension = { with: 600, height: 400 }
             }
             this.shadowRoot.querySelector("#file-explorer-box").style.width = dimension.width + "px"
             this.shadowRoot.querySelector("#file-explorer-box").style.height = dimension.height + "px"
@@ -3497,8 +3539,8 @@ export class FileExplorer extends HTMLElement {
         this.exitFullScreenBtn.onclick = () => {
 
             let position = JSON.parse(localStorage.getItem("__file_explorer_position__"))
-            if(!position){
-                position = {top:0, left:0}
+            if (!position) {
+                position = { top: 0, left: 0 }
             }
 
             this.style.top = position.top + "px"
@@ -3879,10 +3921,10 @@ export class FileExplorer extends HTMLElement {
         }
 
         // Informations
-        if (this.listeners["display_file_infos_event"] == undefined) {
-            Model.eventHub.subscribe("display_file_infos_event",
+        if (this.listeners["display_media_infos_event"] == undefined) {
+            Model.eventHub.subscribe("display_media_infos_event",
                 (uuid) => {
-                    this.listeners["display_file_infos_event"] = uuid;
+                    this.listeners["display_media_infos_event"] = uuid;
                 }, (file) => {
 
                     if (file.titles != undefined) {
@@ -3890,6 +3932,22 @@ export class FileExplorer extends HTMLElement {
                     } else if (file.videos != undefined) {
                         this.informationManager.setVideosInformation(file.videos)
                     }
+
+                    // I will display the permission manager.
+                    this.fileSelectionPanel.appendChild(this.informationManager)
+
+                }, false)
+        }
+
+        if (this.listeners["display_file_infos_event"] == undefined) {
+            Model.eventHub.subscribe("display_file_infos_event",
+                (uuid) => {
+                    this.listeners["display_file_infos_event"] = uuid;
+                }, (file) => {
+
+                    // display the file information itself.
+                    this.informationManager.setFileInformation(file)
+
 
                     // I will display the permission manager.
                     this.fileSelectionPanel.appendChild(this.informationManager)
@@ -4880,39 +4938,7 @@ export class FilesUploader extends HTMLElement {
 
     }
 
-    /**
-     * Format file size from bytes to Gb, Mb or Kb...
-     * @param {*} f_size 
-     * @returns 
-     */
-    getFileSizeString(f_size) {
 
-        // In case of already converted values...
-        if (typeof f_size === 'string' || f_size instanceof String) {
-            return f_size
-        }
-
-        let size = ""
-
-        if (f_size > 1024) {
-            if (f_size > 1024 * 1024) {
-                if (f_size > 1024 * 1024 * 1024) {
-                    let fileSize = f_size / (1024 * 1024 * 1024);
-                    size = fileSize.toFixed(2) + " Gb";
-                } else {
-                    let fileSize = f_size / (1024 * 1024);
-                    size = fileSize.toFixed(2) + " Mb";
-                }
-            } else {
-                let fileSize = f_size / 1024;
-                size = fileSize.toFixed(2) + " Kb";
-            }
-        } else {
-            size = f_size + " bytes";
-        }
-
-        return size
-    }
 
     /**
      * Dowload a video on globular server from a link.
