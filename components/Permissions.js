@@ -12,7 +12,11 @@ import { GetAllActionsRequest } from "globular-web-client/services_manager/servi
 import { Application } from "../Application";
 import { Group } from "../Group";
 import '@polymer/iron-icons/av-icons'
+import '@polymer/iron-icons/editor-icons'
 import { RejectPeerRqst } from "globular-web-client/resource/resource_pb";
+import { GetFileInfoRequest } from "globular-web-client/file/file_pb";
+import { File } from "../File";
+import { FileInfo } from "./Informations";
 
 // This function return the list of all possible permission name from the server... it a little bit slow...
 // so for the moment I will simply use static values read, write and delete.
@@ -214,6 +218,14 @@ export class PermissionsManager extends HTMLElement {
             this.parentNode.removeChild(this)
         }
 
+    }
+
+    hideHeader(){
+        this.shadowRoot.querySelector("#header").style.display = "none"
+    }
+
+    showHeader(){
+        this.shadowRoot.querySelector("#header").style.display = ""
     }
 
     // Add the list of available permissions.
@@ -1083,6 +1095,95 @@ export class PermissionsViewer extends HTMLElement {
 
 customElements.define('globular-permissions-viewer', PermissionsViewer)
 
+/**
+ * Return application info.
+ */
+function getApplication() {
+
+}
+
+/**
+ * Return blog info.
+ */
+function getBlog() {
+
+}
+
+/**
+ * Return domain info.
+ */
+function getDomain() {
+
+}
+
+/**
+ * Return conversation info.
+ */
+function getConversation() {
+
+}
+
+/**
+ * Return file info.
+ */
+function getFile(path, callback, errorCallback) {
+    let rqst = new GetFileInfoRequest
+    rqst.setPath(path)
+    rqst.setThumnailheight(80)
+    rqst.setThumnailwidth(128)
+    let globule = Model.globular
+    globule.fileService.getFileInfo(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
+        .then(rsp => {
+            let f = File.fromString(rsp.getData())
+            // the path that point to the resource
+            f.getPath = ()=>{
+                return f.path
+            }
+
+            // The brief description.
+            f.getTitle = ()=>{
+                return f.path
+            }
+
+            // return file information panel...
+            f.getInfo = ()=>{
+                return new FileInfo(f)
+            }
+
+            callback(f);
+
+        })
+        .catch(errorCallback)
+}
+
+/**
+ * Return group info.
+ */
+function getGroup() {
+
+}
+
+/**
+ * Return organisation info.
+ */
+function getOrganisation() {
+
+}
+
+/**
+ * Return package info.
+ */
+function getPackage() {
+
+}
+
+
+/**
+ * Return package info.
+ */
+function getRole() {
+
+}
 
 /**
  * Manage resource 
@@ -1107,18 +1208,24 @@ export class ResourcesPermissionsManager extends HTMLElement {
         </div>
         `
 
+
+
+
+    }
+
+    // I will get it when the value are set...
+    connectedCallback() {
+        this.innerHTML = ""
         // append list of different resources by type.
         this.appendChild(new ResourcesPermissionsType("application"))
         this.appendChild(new ResourcesPermissionsType("blog"))
         this.appendChild(new ResourcesPermissionsType("domain"))
         this.appendChild(new ResourcesPermissionsType("conversation"))
-        this.appendChild(new ResourcesPermissionsType("file"))
+        this.appendChild(new ResourcesPermissionsType("file", getFile))
         this.appendChild(new ResourcesPermissionsType("group"))
         this.appendChild(new ResourcesPermissionsType("organization"))
         this.appendChild(new ResourcesPermissionsType("pacakage"))
         this.appendChild(new ResourcesPermissionsType("role"))
-
-
     }
 
 }
@@ -1133,13 +1240,16 @@ export class ResourcesPermissionsType extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor(resource_type) {
+    constructor(resource_type, getResource) {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
 
         // Set the resource type
         this.resource_type = resource_type;
+
+        // The function use to get the actual resource.
+        this.getResource = getResource
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -1196,6 +1306,7 @@ export class ResourcesPermissionsType extends HTMLElement {
                         <span class="title" style="flex-grow: 1;">
                             ${resource_type + "(s)"}
                         </span>
+                        <span id="counter"></span>
                         <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
                             <iron-icon id="hide-btn" icon="unfold-less" style="flex-grow: 1; --iron-icon-fill-color:var(--palette-text-primary);"></iron-icon>
                             <paper-ripple class="circle" recenters=""></paper-ripple>
@@ -1203,7 +1314,7 @@ export class ResourcesPermissionsType extends HTMLElement {
                     </div>
                     <iron-collapse id="collapse-panel" style="width: 100%; transition-property: max-height; max-height: 0px; transition-duration: 0s;" role="group" aria-hidden="true" class="iron-collapse-closed">
                         <div id="content" style="display: flex; flex-direction: column;">
-                            content here...
+                            <slot></slot>
                         </div>
                     </iron-collapse>
                 </div>
@@ -1213,7 +1324,6 @@ export class ResourcesPermissionsType extends HTMLElement {
         `
 
         let togglePanel = this.shadowRoot.querySelector("#collapse-panel")
-        let content = this.shadowRoot.querySelector("#content")
         this.hideBtn = this.shadowRoot.querySelector("#hide-btn")
 
 
@@ -1230,8 +1340,15 @@ export class ResourcesPermissionsType extends HTMLElement {
             }
         }
 
-        this.getResourcePermissionsByResourceType(permissions=>{
-            console.log(permissions)
+        this.getResourcePermissionsByResourceType(permissions => {
+            this.shadowRoot.querySelector("#counter").innerHTML = permissions.length.toString()
+            permissions.forEach(p => {
+                if (this.getResource) {
+                    this.getResource(p.getPath(), (r) => {
+                        this.appendChild(new ResourcePermissions(r))
+                    }, err => ApplicationView.displayMessage(err, 3000))
+                }
+            })
         })
     }
 
@@ -1267,3 +1384,125 @@ export class ResourcesPermissionsType extends HTMLElement {
 }
 
 customElements.define('globular-resources-permissions-type', ResourcesPermissionsType)
+
+
+
+/**
+ * Search Box
+ */
+ export class ResourcePermissions extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor(resource) {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+            ${getTheme()}
+            #container {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                border-bottom: 1px solid var(--palette-background-default);
+            }
+
+            .header:hover {
+                -webkit-filter: invert(10%);
+                filter: invert(10%);
+            }
+            
+            .header {
+                display: flex;
+                align-items: center;
+                width: 100%;
+                transition: background 0.2s ease,padding 0.8s linear;
+                background-color: var(--palette-background-paper);
+            }
+
+            iron-icon{
+                padding: 5px;
+            }
+
+            iron-icon:hover{
+                cursor: pointer;
+            }
+
+        </style>
+        <div id="container">
+            <div class="header">
+                <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
+                    <iron-icon id="info-btn" icon="icons:info" style="flex-grow: 1; --iron-icon-fill-color:var(--palette-text-primary);"></iron-icon>
+                    <paper-ripple class="circle" recenters=""></paper-ripple>
+                </div>
+
+                <span style="flex-grow: 1; padding: 5px;">
+                    ${resource.getTitle()}
+                </span>
+
+                <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
+                    <iron-icon id="edit-btn" icon="editor:mode-edit" style="flex-grow: 1; --iron-icon-fill-color:var(--palette-text-primary);"></iron-icon>
+                    <paper-ripple class="circle" recenters=""></paper-ripple>
+                </div>
+            </div>
+            <iron-collapse id="info-collapse-panel" style="width: 100%; transition-property: max-height; max-height: 0px; transition-duration: 0s;" role="group" aria-hidden="true" class="iron-collapse-closed">
+                <div id="content" style="display: flex; flex-direction: column;">
+                    <slot name="resource-info"></slot>
+                </div>
+            </iron-collapse>
+            <iron-collapse id="permissions-editor-collapse-panel" style="width: 100%; transition-property: max-height; max-height: 0px; transition-duration: 0s;" role="group" aria-hidden="true" class="iron-collapse-closed">
+                <div id="content" style="display: flex; flex-direction: column;">
+                    <slot name="resource-permissions-editor"></slot>
+                </div>
+            </iron-collapse>
+        </div>
+        `
+
+        let infoTogglePanel = this.shadowRoot.querySelector("#info-collapse-panel")
+        let info = resource.getInfo()
+        info.slot = "resource-info"
+        this.appendChild(info)
+        this.infoBtn = this.shadowRoot.querySelector("#info-btn")
+
+        // give the focus to the input.
+        this.infoBtn.onclick = () => {
+
+            if (infoTogglePanel) {
+                if (!infoTogglePanel.opened) {
+                    // close
+                } else {
+                    // open
+                }
+                infoTogglePanel.toggle();
+            }
+        }
+
+        let permissionsTogglePanel = this.shadowRoot.querySelector("#permissions-editor-collapse-panel")
+        let permissionManager = new PermissionsManager
+        permissionManager.hideHeader()
+        permissionManager.slot = "resource-permissions-editor"
+        this.appendChild(permissionManager)
+        permissionManager.setPath(resource.getPath())
+        this.editBtn = this.shadowRoot.querySelector("#edit-btn")
+
+        // give the focus to the input.
+        this.editBtn.onclick = () => {
+
+            if (permissionsTogglePanel) {
+                if (!permissionsTogglePanel.opened) {
+                    // close
+                } else {
+                    // open
+                }
+                permissionsTogglePanel.toggle();
+            }
+        }
+
+    }
+
+}
+
+customElements.define('globular-resource-permissions', ResourcePermissions)

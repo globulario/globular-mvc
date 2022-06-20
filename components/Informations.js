@@ -1150,9 +1150,6 @@ customElements.define('globular-title-info', TitleInfo)
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
         let mime = file.mime
-        if(file.isDir){
-            mime = "Folder (inode/directory)"
-        }
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
