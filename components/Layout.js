@@ -181,6 +181,7 @@ export class Layout extends HTMLElement {
         sideMenu_.style.width = "auto";
         sideMenu_.style.display = "block";
         sideMenu_.style.overflow = "auto";
+        sideMenu_.style.marginRight = "40px";
       } else {
         // Set the menu in the toolbar.
         this.appToolbar.appendChild(this.sideMenuSlot);
@@ -192,6 +193,7 @@ export class Layout extends HTMLElement {
         sideMenu_.style.flexDirection = "column";
         sideMenu_.style.width = "100%";
         sideMenu_.style.marginTop = "24px";
+        sideMenu_.style.marginRight = "40px";
       }
     });
 

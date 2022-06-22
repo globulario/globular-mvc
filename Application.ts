@@ -600,10 +600,14 @@ export class Application extends Model {
   }
 
   /**
-   * Return application infos.
+   * Return application infos 
    * @param id
    */
   static getApplicationInfo(id: string): resource.Application {
+    // TODO manage application domain... 
+    if(id.indexOf("@") > 0){
+      return Application.infos.get(id.split("@")[0]);
+    }
     return Application.infos.get(id);
   }
 

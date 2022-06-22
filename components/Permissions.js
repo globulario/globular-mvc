@@ -1,7 +1,7 @@
 import { Model } from "../Model";
 import { getTheme } from "./Theme";
 import { v4 as uuidv4 } from "uuid";
-import { GetActionResourceInfosRqst, GetResourcePermissionsByResourceTypeRqst, GetResourcePermissionsRqst, Permission, SetResourcePermissionsRqst } from "globular-web-client/rbac/rbac_pb";
+import { DeleteResourcePermissionsRqst, GetActionResourceInfosRqst, GetResourcePermissionsByResourceTypeRqst, GetResourcePermissionsRqst, Permissions, Permission, SetResourcePermissionsRqst } from "globular-web-client/rbac/rbac_pb";
 import { Account } from "../Account";
 import { ApplicationView } from "../ApplicationView";
 import { SearchableAccountList, SearchableApplicationList, SearchableGroupList, SearchableOrganizationList } from "./List.js";
@@ -13,10 +13,11 @@ import { Application } from "../Application";
 import { Group } from "../Group";
 import '@polymer/iron-icons/av-icons'
 import '@polymer/iron-icons/editor-icons'
-import { RejectPeerRqst } from "globular-web-client/resource/resource_pb";
+import { Organization, RejectPeerRqst } from "globular-web-client/resource/resource_pb";
 import { GetFileInfoRequest } from "globular-web-client/file/file_pb";
 import { File } from "../File";
-import { FileInfo } from "./Informations";
+import { FileInfo, GroupInfo, OrganizationInfo } from "./Informations";
+import * as getUuidByString from "uuid-by-string";
 
 // This function return the list of all possible permission name from the server... it a little bit slow...
 // so for the moment I will simply use static values read, write and delete.
@@ -220,11 +221,11 @@ export class PermissionsManager extends HTMLElement {
 
     }
 
-    hideHeader(){
+    hideHeader() {
         this.shadowRoot.querySelector("#header").style.display = "none"
     }
 
-    showHeader(){
+    showHeader() {
         this.shadowRoot.querySelector("#header").style.display = ""
     }
 
@@ -348,17 +349,18 @@ export class PermissionsManager extends HTMLElement {
                     let rqst = new SetResourcePermissionsRqst
                     rqst.setPermissions(this.permissions)
                     rqst.setPath(this.path)
-                    rqst.setResourcetype("file")
+                    rqst.setResourcetype(this.permissions.getResourceType())
                     Model.globular.rbacService.setResourcePermissions(rqst, {
                         token: localStorage.getItem("user_token"),
                         application: Model.application,
                         domain: Model.domain,
                         address: Model.address
                     }).then(rsp => {
-                        ApplicationView.displayMessage("Permissions for path " + this.path + " was changed", 3000)
                         this.setPath(this.path)
                         Model.eventHub.publish(Application.account.id + "_change_permission_event", {}, false)
                     }).catch(err => ApplicationView.displayMessage(err, 3000))
+
+                    console.log("save permission ", this.permissions)
                 }, true, this)
         }
     }
@@ -368,56 +370,64 @@ export class PermissionsManager extends HTMLElement {
         Model.eventHub.unSubscribe("save_permission_event", this.savePermissionListener)
     }
 
+    setPermissions(permissions) {
+        this.permissions = permissions
+
+        // Here I will display the owner's
+        let ownersPermissionPanel = new PermissionPanel()
+        ownersPermissionPanel.id = "permission_owners_panel"
+
+        this.permissionsViewer.setPermissions(this.permissions)
+
+        ownersPermissionPanel.setPermission(this.permissions.getOwners(), true)
+        this.owners.appendChild(ownersPermissionPanel)
+
+        // The list of denied and allowed permissions.
+        this.permissions.getAllowedList().forEach(p => {
+            let panel = new PermissionPanel()
+            panel.id = "permission_" + p.getName() + "_allowed_panel"
+            panel.setPermission(p)
+            this.alloweds.appendChild(panel)
+        })
+
+        this.permissions.getDeniedList().forEach(p => {
+            let panel = new PermissionPanel()
+            panel.id = "permission_" + p.getName() + "_denied_panel"
+            panel.setPermission(p)
+            this.denieds.appendChild(panel)
+        })
+    }
+
     setPath(path) {
         // Keep the path in memory
         this.path = path;
+
         // clear the panel values.
         this.owners.innerHTML = "";
         this.alloweds.innerHTML = "";
         this.denieds.innerHTML = "";
-
         this.pathDiv.innerHTML = path;
 
         // So here I will get the actual permissions.
         let rqst = new GetResourcePermissionsRqst
         rqst.setPath(path)
 
-        Model.globular.rbacService.getResourcePermissions(rqst, {
-            token: localStorage.getItem("user_token"),
-            application: Model.application,
-            domain: Model.domain,
-            address: Model.address
-        }).then(rsp => {
-
-            // Here I will display the owner's
-            let ownersPermissionPanel = new PermissionPanel()
-            ownersPermissionPanel.id = "permission_owners_panel"
-            this.permissions = rsp.getPermissions()
-            this.permissionsViewer.setPermissions(this.permissions)
-
-            ownersPermissionPanel.setPermission(rsp.getPermissions().getOwners(), true)
-            this.owners.appendChild(ownersPermissionPanel)
-
-            // The list of denied and allowed permissions.
-            this.permissions.getAllowedList().forEach(p => {
-                let panel = new PermissionPanel()
-                panel.id = "permission_" + p.getName() + "_allowed_panel"
-                panel.setPermission(p)
-                this.alloweds.appendChild(panel)
+        if (this.permissions != null) {
+            this.setPermissions(this.permissions)
+        } else {
+            Model.globular.rbacService.getResourcePermissions(rqst, {
+                token: localStorage.getItem("user_token"),
+                application: Model.application,
+                domain: Model.domain,
+                address: Model.address
+            }).then(rsp => {
+                let permissions = rsp.getPermissions()
+                this.setPermissions(permissions)
+            }).catch(err => {
+                ApplicationView.displayMessage(err, 3000)
             })
 
-            this.permissions.getDeniedList().forEach(p => {
-                let panel = new PermissionPanel()
-                panel.id = "permission_" + p.getName() + "_denied_panel"
-                panel.setPermission(p)
-                this.denieds.appendChild(panel)
-            })
-
-        }).catch(err => {
-            ApplicationView.displayMessage(err, 3000)
-        })
-
-
+        }
     }
 }
 
@@ -548,16 +558,16 @@ export class PermissionPanel extends HTMLElement {
         return this.shadowRoot.querySelector(`#${uuid}-collapse-panel`)
     }
 
-    // The organisation permissions
-    setOrgnanisationsPermissions(organisations_) {
-        let content = this.createCollapsible(`Organizations(${organisations_.length})`)
+    // The organization permissions
+    setOrgnanisationsPermissions(organizations_) {
+        let content = this.createCollapsible(`Organizations(${organizations_.length})`)
         getAllOrganizations(
-            organisations => {
+            organizations => {
                 let list = []
-                this.permission.getOrganizationsList().forEach(organisationId => {
-                    let o_ = organisations.find(o => o.getId() === organisationId);
+                this.permission.getOrganizationsList().forEach(organizationId => {
+                    let o_ = organizations.find(o => o.getId() === organizationId);
                     if (o_ == undefined) {
-                        o_ = organisations.find(o => o.getId() + "@" + o.getDomain() === organisationId);
+                        o_ = organizations.find(o => o.getId() + "@" + o.getDomain() === organizationId);
                     }
                     if (o_ != undefined) {
                         list.push(o_)
@@ -699,7 +709,7 @@ export class PermissionPanel extends HTMLElement {
 
     }
 
-    // Each permission can be set for applications, peers, accounts, groups or organisations
+    // Each permission can be set for applications, peers, accounts, groups or organizations
     setAccountsPermissions(accounts_) {
         let content = this.createCollapsible(`Account(${accounts_.length})`)
 
@@ -922,6 +932,10 @@ export class PermissionsViewer extends HTMLElement {
     }
 
     createApplicationDiv(application) {
+        if(application == undefined){
+            console.log("application is not defined")
+            return
+        }
         let uuid = "_" + uuidv4();
         let html = `
         <style>
@@ -944,7 +958,7 @@ export class PermissionsViewer extends HTMLElement {
         return div
     }
 
-    createOrganizationDiv(organisation) {
+    createOrganizationDiv(organization) {
         let uuid = "_" + uuidv4();
         let html = `
             <style>
@@ -953,7 +967,7 @@ export class PermissionsViewer extends HTMLElement {
                 <div style="display: flex; align-items: center; padding: 5px; width: 100%;"> 
                     <iron-icon icon="social:domain" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display:block"};"></iron-icon>
                     <div style="display: flex; flex-direction: column; width:250px; font-size: .85em; padding-left: 8px;">
-                        <span>${organisation.getName()}</span>
+                        <span>${organization.getName()}</span>
                     </div>
                 </div>
             </div>`
@@ -1063,6 +1077,7 @@ export class PermissionsViewer extends HTMLElement {
                 })
             } else if (subject.type == "application") {
                 // Set application div.
+                console.log("----------> ", subject)
                 let applicationDiv = this.createApplicationDiv(Application.getApplicationInfo(subject.id))
                 subjectCell.innerHTML = ""
                 subjectCell.appendChild(applicationDiv)
@@ -1136,17 +1151,17 @@ function getFile(path, callback, errorCallback) {
         .then(rsp => {
             let f = File.fromString(rsp.getData())
             // the path that point to the resource
-            f.getPath = ()=>{
+            f.getPath = () => {
                 return f.path
             }
 
             // The brief description.
-            f.getTitle = ()=>{
+            f.getTitle = () => {
                 return f.path
             }
 
             // return file information panel...
-            f.getInfo = ()=>{
+            f.getInfo = () => {
                 return new FileInfo(f)
             }
 
@@ -1159,16 +1174,51 @@ function getFile(path, callback, errorCallback) {
 /**
  * Return group info.
  */
-function getGroup() {
+function getGroup(id, callback, errorCallback) {
+    Group.getGroup(id, (g) => {
+        console.log(id, g)
+        g.getPath = () => {
+            return id
+        }
 
+        // The brief description.
+        g.getTitle = () => {
+            return g.name
+        }
+
+        // return file information panel...
+        g.getInfo = () => {
+            return new GroupInfo(g)
+        }
+
+        callback(g)
+    }, errorCallback)
 }
 
 /**
- * Return organisation info.
+ * Return organization info.
  */
-function getOrganisation() {
+function getOrganization(id, callback, errorCallback) {
+    getOrganizationById(id, o => {
 
+        o.getPath = () => {
+            return o.getId()
+        }
+
+        // The brief description.
+        o.getTitle = () => {
+            return o.getName()
+        }
+
+        // return file information panel...
+        o.getInfo = () => {
+            return new OrganizationInfo(o)
+        }
+
+        callback(o)
+    }, errorCallback)
 }
+
 
 /**
  * Return package info.
@@ -1194,6 +1244,7 @@ export class ResourcesPermissionsManager extends HTMLElement {
     // Create the applicaiton view.
     constructor() {
         super()
+
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
 
@@ -1208,7 +1259,26 @@ export class ResourcesPermissionsManager extends HTMLElement {
         </div>
         `
 
+        // Event received when permissions was deleted
+        Model.globular.eventHub.subscribe("delete_resources_permissions_event",
+            uuid => { },
+            evt => {
+                let permissions = Permissions.deserializeBinary(evt)
+                if (this.querySelector(`#${permissions.getResourceType()}-permissions`)) {
+                    this.querySelector(`#${permissions.getResourceType()}-permissions`).deletePermissions(permissions)
+                }
+            }, false)
 
+        // Event received when permissions was deleted
+        Model.globular.eventHub.subscribe("set_resources_permissions_event",
+            uuid => { },
+            evt => {
+                let permissions = Permissions.deserializeBinary(evt)
+                if (this.querySelector(`#${permissions.getResourceType()}-permissions`)) {
+                    this.querySelector(`#${permissions.getResourceType()}-permissions`).setPermissions(permissions)
+                }
+
+            }, false)
 
 
     }
@@ -1217,15 +1287,23 @@ export class ResourcesPermissionsManager extends HTMLElement {
     connectedCallback() {
         this.innerHTML = ""
         // append list of different resources by type.
-        this.appendChild(new ResourcesPermissionsType("application"))
-        this.appendChild(new ResourcesPermissionsType("blog"))
-        this.appendChild(new ResourcesPermissionsType("domain"))
-        this.appendChild(new ResourcesPermissionsType("conversation"))
-        this.appendChild(new ResourcesPermissionsType("file", getFile))
-        this.appendChild(new ResourcesPermissionsType("group"))
-        this.appendChild(new ResourcesPermissionsType("organization"))
-        this.appendChild(new ResourcesPermissionsType("pacakage"))
-        this.appendChild(new ResourcesPermissionsType("role"))
+        this.appendResourcePermissions("application")
+        this.appendResourcePermissions("blog")
+        this.appendResourcePermissions("domain")
+        this.appendResourcePermissions("conversation")
+        this.appendResourcePermissions("file", getFile)
+        this.appendResourcePermissions("group", getGroup)
+        this.appendResourcePermissions("organization", getOrganization)
+        this.appendResourcePermissions("pacakage")
+        this.appendResourcePermissions("role")
+    }
+
+    appendResourcePermissions(typeName, fct) {
+        if (!this.querySelector(`#${typeName}-permissions`)) {
+            let resourcePermissions = new ResourcesPermissionsType(typeName, fct)
+            resourcePermissions.id = typeName + "-permissions"
+            this.appendChild(resourcePermissions)
+        }
     }
 
 }
@@ -1345,11 +1423,41 @@ export class ResourcesPermissionsType extends HTMLElement {
             permissions.forEach(p => {
                 if (this.getResource) {
                     this.getResource(p.getPath(), (r) => {
-                        this.appendChild(new ResourcePermissions(r))
+                        let r_ = new ResourcePermissions(r)
+                        r_.id = "_" + getUuidByString(p.getPath())
+                        this.appendChild(r_)
                     }, err => ApplicationView.displayMessage(err, 3000))
                 }
             })
         })
+    }
+
+    deletePermissions(p) {
+        let uuid = "_" + getUuidByString(p.getPath())
+        let r_ = this.querySelector("#" + uuid)
+        if (r_ != null) {
+            r_.parentNode.removeChild(r_)
+        }
+        this.shadowRoot.querySelector("#counter").innerHTML = this.childElementCount.toString()
+    }
+
+    setPermissions(p) {
+        let id = "_" + getUuidByString(p.getPath())
+
+        if (this.getResource) {
+            this.getResource(p.getPath(), (r) => {
+                if (this.querySelector("#" + id)) {
+                    this.removeChild(this.querySelector("#" + id))
+                }
+
+                let r_ = new ResourcePermissions(r)
+                r_.id = id
+                this.appendChild(r_)
+                this.shadowRoot.querySelector("#counter").innerHTML = this.childElementCount.toString()
+            }, err => ApplicationView.displayMessage(err, 3000))
+        }
+
+
     }
 
     // Get the list of permission by type...
@@ -1390,7 +1498,7 @@ customElements.define('globular-resources-permissions-type', ResourcesPermission
 /**
  * Search Box
  */
- export class ResourcePermissions extends HTMLElement {
+export class ResourcePermissions extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
@@ -1447,6 +1555,11 @@ customElements.define('globular-resources-permissions-type', ResourcesPermission
                     <iron-icon id="edit-btn" icon="editor:mode-edit" style="flex-grow: 1; --iron-icon-fill-color:var(--palette-text-primary);"></iron-icon>
                     <paper-ripple class="circle" recenters=""></paper-ripple>
                 </div>
+                
+                <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
+                    <iron-icon id="delete-btn" icon="delete" style="flex-grow: 1; --iron-icon-fill-color:var(--palette-text-primary);"></iron-icon>
+                    <paper-ripple class="circle" recenters=""></paper-ripple>
+                </div>
             </div>
             <iron-collapse id="info-collapse-panel" style="width: 100%; transition-property: max-height; max-height: 0px; transition-duration: 0s;" role="group" aria-hidden="true" class="iron-collapse-closed">
                 <div id="content" style="display: flex; flex-direction: column;">
@@ -1498,6 +1611,45 @@ customElements.define('globular-resources-permissions-type', ResourcesPermission
                     // open
                 }
                 permissionsTogglePanel.toggle();
+            }
+        }
+
+        let deleteBtn = this.shadowRoot.querySelector("#delete-btn")
+        deleteBtn.onclick = () => {
+            let toast = ApplicationView.displayMessage(`
+            <style>
+                ${getTheme()}
+            </style>
+            <div>
+                <div>Your about to delete permission for resource ${resource.getTitle()}</div>
+                <div>Is it what you want to do? </div>
+                <div style="display: flex; justify-content: flex-end;">
+                    <paper-button id="ok-button">Ok</paper-button>
+                    <paper-button id="cancel-button">Cancel</paper-button>
+                </div>
+            </div>
+            `, 60 * 1000)
+
+
+            let cancelBtn = toast.el.querySelector("#cancel-button")
+            cancelBtn.onclick = () => {
+                toast.dismiss();
+            }
+
+            let okBtn = toast.el.querySelector("#ok-button")
+            okBtn.onclick = () => {
+                // So here I will delete the permissions..
+                let rqst = new DeleteResourcePermissionsRqst
+                rqst.setPath(resource.getPath())
+                let globule = Model.globular
+                globule.rbacService.deleteResourcePermissions(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
+                    .then(rsp => {
+                        ApplicationView.displayMessage("Permission was removed", 3000)
+                        this.parentNode.removeChild(this)
+                    }).catch(err => ApplicationView.displayMessage(err, 3000))
+
+
+                toast.dismiss();
             }
         }
 

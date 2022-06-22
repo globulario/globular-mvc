@@ -38,6 +38,7 @@ export class SettingsMenu extends HTMLElement {
        #container {
            display: flex;
            flex-direction: column;
+           min-width: 200px;
        }
 
        globular-settings-side-menu-item.active{
@@ -785,6 +786,7 @@ export class ConnectionSetting extends HTMLElement {
       let toast = ApplicationView.displayMessage(
         `
             <style>
+            ${getTheme()}
               #yes-no-contact-delete-box{
                 display: flex;
                 flex-direction: column;

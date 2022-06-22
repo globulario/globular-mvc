@@ -1030,7 +1030,7 @@ customElements.define('globular-searchable-group-list', SearchableGroupList)
     }
 
     // The div that display the role.
-    createOrganizationDiv(organisation) {
+    createOrganizationDiv(organization) {
         let uuid = "_" + uuidv4();
         let html = `
         <style>
@@ -1039,9 +1039,9 @@ customElements.define('globular-searchable-group-list', SearchableGroupList)
             <div style="display: flex; align-items: center; padding: 5px; width: 100%;"> 
                 <iron-icon icon="social:domain" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display:block"};"></iron-icon>
                 <div style="display: flex; flex-direction: column; width:200px; font-size: .85em; padding-left: 8px; flex-grow: 1;">
-                    <span>${organisation.getName()}</span>
+                    <span>${organization.getName()}</span>
                 </div>
-                <paper-icon-button icon="delete" id="${organisation.getId()}_btn"></paper-icon-button>
+                <paper-icon-button icon="delete" id="${organization.getId()}_btn"></paper-icon-button>
             </div>
             
         </div>`

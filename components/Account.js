@@ -759,6 +759,7 @@ export class AccountPanel extends HTMLElement {
     let toast = ApplicationView.displayMessage(
       `
           <style>
+          ${getTheme()}
             #yes-no-contact-delete-box{
               display: flex;
               flex-direction: column;

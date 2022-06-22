@@ -34,6 +34,7 @@ function toDataURL(url, callback) {
     };
     xhr.open('GET', url);
     xhr.responseType = 'blob';
+    
     xhr.send();
 }
 

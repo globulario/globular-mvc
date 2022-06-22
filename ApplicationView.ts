@@ -46,6 +46,7 @@ import { OrganizationManager } from "./components/Organization.js";
 import * as getUuid from 'uuid-by-string'
 import { ConversationServicePromiseClient } from "globular-web-client/conversation/conversation_grpc_web_pb";
 import { SearchTitlesRequest } from "globular-web-client/title/title_pb";
+import { getTheme } from "./components/Theme";
 /**
  * Application view made use of Web-component and Materialyse to create a basic application
  * layout that can be use as starting point to any web-application.
@@ -314,6 +315,7 @@ export class ApplicationView extends View {
           let toast = ApplicationView.displayMessage(
             `
             <style>
+              ${getTheme()}
               #yes-no-contact-delete-box{
                 display: flex;
                 flex-direction: column;
@@ -1074,6 +1076,7 @@ export class ApplicationView extends View {
     let toast = ApplicationView.displayMessage(
       `
       <style>
+        ${getTheme()}
         #yes-no-contact-delete-box{
           display: flex;
           flex-direction: column;

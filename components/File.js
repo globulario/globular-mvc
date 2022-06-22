@@ -553,6 +553,7 @@ export class FilesView extends HTMLElement {
             let toast = ApplicationView.displayMessage(
                 `
             <style>
+              ${getTheme()}
               #yes-no-files-delete-box{
                 display: flex;
                 flex-direction: column;
@@ -1234,6 +1235,9 @@ export class FilesView extends HTMLElement {
                     xhr.timeout = 1500
                     xhr.open("GET", url);
                     xhr.responseType = "blob";
+                    xhr.setRequestHeader("token", localStorage.getItem("user_token"));
+                    xhr.setRequestHeader("application", Model.application);
+                    xhr.setRequestHeader("domain", Model.domain);
                     xhr.addEventListener('load', () => {
                         cb(xhr.response);
                     });
@@ -3911,7 +3915,8 @@ export class FileExplorer extends HTMLElement {
                 (uuid) => {
                     this.listeners["display_permission_manager_event"] = uuid;
                 }, (path) => {
-
+                    
+                    this.permissionManager.permissions = null
                     this.permissionManager.setPath(path)
 
                     // I will display the permission manager.
@@ -5159,7 +5164,7 @@ export class FilesUploader extends HTMLElement {
         // Upload files panel...
         for (var i = 0; i < files.length; i++) {
             let f = files[i]
-            let size = this.getFileSizeString(f.size)
+            let size = getFileSizeString(f.size)
             let row = document.createElement("tr")
             let cancelCell = document.createElement("td")
             let cancelBtn = document.createElement("paper-icon-button")
