@@ -5,6 +5,7 @@ import { Application } from "../Application";
 import { getAllGroups, getAllRoles } from "globular-web-client/api";
 import { Model } from "../Model";
 import { getAllOrganizations } from "./Organization";
+import { getAllPeers } from "./Peers";
 
 /**
  * String seach listbox.
@@ -1105,7 +1106,7 @@ customElements.define('globular-searchable-organization-list', SearchableOrganiz
             getAllPeers(Model.globular, (allPeers) => {
                 peers.forEach(p => {
                     // remove all existing items.
-                    allPeers = allGroups.filter(el => el.getId() !== p.getId())
+                    allPeers = allPeers.filter(el => el.getMac() !== p.getMac())
                 })
 
                 let html = `
@@ -1156,8 +1157,8 @@ customElements.define('globular-searchable-organization-list', SearchableOrganiz
                         let val = addPeerInput.getValue();
                         if (val.length >= 2) {
                             let values = []
-                            allGroups.forEach(g => {
-                                if (p.getName().toUpperCase().indexOf(val.toUpperCase()) != -1 || p.getId().toUpperCase().indexOf(val.toUpperCase()) != -1) {
+                            allPeers.forEach(p => {
+                                if (p.getHostname().toUpperCase().indexOf(val.toUpperCase()) != -1 || p.getMac().toUpperCase().indexOf(val.toUpperCase()) != -1) {
                                     values.push(p)
                                 }
                             })
@@ -1185,7 +1186,7 @@ customElements.define('globular-searchable-organization-list', SearchableOrganiz
                             // set values without the account
                             let values = []
                             let val = addPeerInput.getValue();
-                            addPeerInput.forEach(p => {
+                            allPeers.forEach(p => {
                                 if (p.getName().toUpperCase().indexOf(val.toUpperCase()) != -1) {
                                     values.push(p)
                                 }
@@ -1217,11 +1218,11 @@ customElements.define('globular-searchable-organization-list', SearchableOrganiz
         </style>
         <div id="${uuid}" class="item-div" style="">
             <div style="display: flex; align-items: center; padding: 5px; width: 100%;"> 
-                <iron-icon icon="social:people" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display:block"};"></iron-icon>
+                <iron-icon icon="hardware:computer" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display:block"};"></iron-icon>
                 <div style="display: flex; flex-direction: column; width:200px; font-size: .85em; padding-left: 8px; flex-grow: 1;">
-                    <span>${peer.getMac()}</span>
+                    <span>${peer.getHostname()} (${peer.getMac()})</span>
                 </div>
-                <paper-icon-button icon="delete" id="${group.getMac()}_btn"></paper-icon-button>
+                <paper-icon-button icon="delete" id="${peer.getMac()}_btn"></paper-icon-button>
             </div>
             
         </div>`
@@ -1238,7 +1239,7 @@ customElements.define('globular-searchable-organization-list', SearchableOrganiz
     }
 
     displayItem(p) {
-        let div = this.createGroupDiv(p)
+        let div = this.createPeerDiv(p)
         let deleteBtn = div.querySelector("paper-icon-button")
         deleteBtn.icon = "delete"
 
@@ -1246,7 +1247,7 @@ customElements.define('globular-searchable-organization-list', SearchableOrganiz
             deleteBtn.onclick = () => {
                 // remove the div...
                 div.parentNode.removeChild(div)
-                this.ondeleteitem(g)
+                this.ondeleteitem(p)
             }
         } else {
             deleteBtn.style.display = "none"
@@ -1256,14 +1257,14 @@ customElements.define('globular-searchable-organization-list', SearchableOrganiz
     }
 
     // That function can be overide, assume a string by default
-    filter(g) {
-        return g.getName().toUpperCase().indexOf(this.filter_.toUpperCase()) != -1 || g.getId().toUpperCase().indexOf(this.filter_.toUpperCase()) != -1
+    filter(p) {
+        return p.getHostname().toUpperCase().indexOf(this.filter_.toUpperCase()) != -1 || p.getMac().toUpperCase().indexOf(this.filter_.toUpperCase()) != -1
     }
 
     // The sort items function
     sortItems() {
         // Sort account...
-        return this.list.sort((a, b) => (a.getName() > b.getName()) ? 1 : -1)
+        return this.list.sort((a, b) => (a.getMac() > b.getMac()) ? 1 : -1)
     }
 }
 

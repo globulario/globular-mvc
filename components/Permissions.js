@@ -4,10 +4,10 @@ import { v4 as uuidv4 } from "uuid";
 import { DeleteResourcePermissionsRqst, GetActionResourceInfosRqst, GetResourcePermissionsByResourceTypeRqst, GetResourcePermissionsRqst, Permissions, Permission, SetResourcePermissionsRqst } from "globular-web-client/rbac/rbac_pb";
 import { Account } from "../Account";
 import { ApplicationView } from "../ApplicationView";
-import { SearchableAccountList, SearchableApplicationList, SearchableGroupList, SearchableOrganizationList } from "./List.js";
+import { SearchableAccountList, SearchableApplicationList, SearchableGroupList, SearchableOrganizationList, SearchablePeerList } from "./List.js";
 import { getAllApplicationsInfo, getAllGroups } from "globular-web-client/api";
 import { randomUUID } from "./utility";
-import { getAllOrganizations, getOrganizationById } from "./Organization";
+import { getAllOrganizations, getOrganizationById, getPeerById } from "./Organization";
 import { GetAllActionsRequest } from "globular-web-client/services_manager/services_manager_pb";
 import { Application } from "../Application";
 import { Group } from "../Group";
@@ -16,8 +16,9 @@ import '@polymer/iron-icons/editor-icons'
 import { Organization, RejectPeerRqst } from "globular-web-client/resource/resource_pb";
 import { GetFileInfoRequest } from "globular-web-client/file/file_pb";
 import { File } from "../File";
-import { FileInfo, GroupInfo, OrganizationInfo } from "./Informations";
+import { DomainInfo, FileInfo, GroupInfo, OrganizationInfo } from "./Informations";
 import * as getUuidByString from "uuid-by-string";
+import { getAllPeers } from "./Peers";
 
 // This function return the list of all possible permission name from the server... it a little bit slow...
 // so for the moment I will simply use static values read, write and delete.
@@ -501,8 +502,11 @@ export class PermissionPanel extends HTMLElement {
         // Set's Applications permissions
         this.setApplicationsPermissions(permission.getApplicationsList());
 
-        // Set's Orgnanisation permissions
-        this.setOrgnanisationsPermissions(permission.getOrganizationsList());
+        // Set's Orgnanization permissions
+        this.setOrgnanizationsPermissions(permission.getOrganizationsList());
+
+        // Set's Peer permissions
+        this.setPeersPermissions(permission.getPeersList());
 
     }
 
@@ -559,7 +563,46 @@ export class PermissionPanel extends HTMLElement {
     }
 
     // The organization permissions
-    setOrgnanisationsPermissions(organizations_) {
+    setPeersPermissions(peers_) {
+        let content = this.createCollapsible(`Peers(${peers_.length})`)
+        getAllPeers(
+            Model.globular,
+            peers => {
+                let list = []
+                this.permission.getPeersList().forEach(peerId => {
+                    let p_ = peers.find(p => p.getMac() === peerId);
+                    if (p_ != undefined) {
+                        list.push(p_)
+                    }
+                })
+
+                let peersList = new SearchablePeerList("Peers", list,
+                    p => {
+                        let index = this.permission.getPeersList().indexOf(p.getMac())
+                        if (index != -1) {
+                            this.permission.getPeersList().splice(index, 1)
+                            Model.eventHub.publish("save_permission_event", this.permission, true)
+                            peersList.removeItem(p)
+                        }
+                    },
+                    p => {
+                        let index = this.permission.getPeersList().indexOf(p.getMac())
+                        if (index == -1) {
+                            this.permission.getPeersList().push(p.getMac())
+                            Model.eventHub.publish("save_permission_event", this.permission, true)
+                            peersList.appendItem(p)
+                        }
+                    })
+
+                // Do not display the title again...
+                peersList.hideTitle()
+                content.appendChild(peersList)
+            }, err => ApplicationView.displayMessage(err, 3000))
+
+    }
+
+    // The organization permissions
+    setOrgnanizationsPermissions(organizations_) {
         let content = this.createCollapsible(`Organizations(${organizations_.length})`)
         getAllOrganizations(
             organizations => {
@@ -578,7 +621,7 @@ export class PermissionPanel extends HTMLElement {
                     o => {
                         let index = this.permission.getOrganizationsList().indexOf(o.getId())
                         if (index == -1) {
-                            index = this.permission.getGroupsList().indexOf(o.getId() + "@" + o.getDomain())
+                            index = this.permission.getOrganizationsList().indexOf(o.getId() + "@" + o.getDomain())
                         }
                         if (index != -1) {
                             this.permission.getOrganizationsList().splice(index, 1)
@@ -589,7 +632,7 @@ export class PermissionPanel extends HTMLElement {
                     o => {
                         let index = this.permission.getOrganizationsList().indexOf(o.getId())
                         if (index == -1) {
-                            index = this.permission.getGroupsList().indexOf(o.getId() + "@" + o.getDomain())
+                            index = this.permission.getOrganizationsList().indexOf(o.getId() + "@" + o.getDomain())
                         }
                         if (index == -1) {
                             this.permission.getOrganizationsList().push(o.getId())
@@ -627,7 +670,7 @@ export class PermissionPanel extends HTMLElement {
                     a => {
                         let index = this.permission.getApplicationsList().indexOf(a.getId())
                         if (index == -1) {
-                            index = this.permission.getGroupsList().indexOf(a.getId() + "@" + a.getDomain())
+                            index = this.permission.getApplicationsList().indexOf(a.getId() + "@" + a.getDomain())
                         }
                         if (index != -1) {
                             this.permission.getApplicationsList().splice(index, 1)
@@ -638,7 +681,7 @@ export class PermissionPanel extends HTMLElement {
                     a => {
                         let index = this.permission.getApplicationsList().indexOf(a.getId())
                         if (index == -1) {
-                            index = this.permission.getGroupsList().indexOf(a.getId() + "@" + a.getDomain())
+                            index = this.permission.getApplicationsList().indexOf(a.getId() + "@" + a.getDomain())
                         }
                         if (index == -1) {
                             this.permission.getApplicationsList().push(a.getId())
@@ -735,7 +778,7 @@ export class PermissionPanel extends HTMLElement {
                     a => {
                         let index = this.permission.getAccountsList().indexOf(a._id)
                         if (index == -1) {
-                            index = this.permission.getGroupsList().indexOf(a._id + "@" + a.domain)
+                            index = this.permission.getAccountsList().indexOf(a._id + "@" + a.domain)
                         }
                         if (index != -1) {
                             this.permission.getAccountsList().splice(index, 1)
@@ -746,7 +789,7 @@ export class PermissionPanel extends HTMLElement {
                     a => {
                         let index = this.permission.getAccountsList().indexOf(a._id)
                         if (index == -1) {
-                            index = this.permission.getGroupsList().indexOf(a._id + "@" + a.domain)
+                            index = this.permission.getAccountsList().indexOf(a._id + "@" + a.domain)
                         }
                         if (index == -1) {
                             this.permission.getAccountsList().push(a._id)
@@ -906,6 +949,21 @@ export class PermissionsViewer extends HTMLElement {
 
             subject.permissions[permission.getName()] = name
         })
+
+        // Peers
+        permission.getPeersList().forEach(p => {
+            let id = p + "_peer"
+            let subject = subjects[id]
+            if (subject == null) {
+                subject = {}
+                subject.type = "peer"
+                subject.id = p
+                subject.permissions = {}
+                subjects[id] = subject
+            }
+
+            subject.permissions[permission.getName()] = name
+        })
     }
 
     createAccountDiv(account) {
@@ -932,7 +990,7 @@ export class PermissionsViewer extends HTMLElement {
     }
 
     createApplicationDiv(application) {
-        if(application == undefined){
+        if (application == undefined) {
             console.log("application is not defined")
             return
         }
@@ -978,6 +1036,25 @@ export class PermissionsViewer extends HTMLElement {
         return div
     }
 
+    createPeerDiv(peer) {
+        let uuid = "_" + uuidv4();
+        let html = `
+            <style>
+            </style>
+            <div id="${uuid}" class="item-div" style="">
+                <div style="display: flex; align-items: center; padding: 5px; width: 100%;"> 
+                    <iron-icon icon="hardware:computer" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display:block"};"></iron-icon>
+                    <div style="display: flex; flex-direction: column; width:250px; font-size: .85em; padding-left: 8px;">
+                        <span>${peer.getHostname()} (${peer.getMac()})</span>
+                    </div>
+                </div>
+            </div>`
+
+        this.shadowRoot.appendChild(document.createRange().createContextualFragment(html))
+        let div = this.shadowRoot.getElementById(uuid)
+        div.parentNode.removeChild(div)
+        return div
+    }
 
     createGroupDiv(group) {
         let uuid = "_" + uuidv4();
@@ -1077,7 +1154,6 @@ export class PermissionsViewer extends HTMLElement {
                 })
             } else if (subject.type == "application") {
                 // Set application div.
-                console.log("----------> ", subject)
                 let applicationDiv = this.createApplicationDiv(Application.getApplicationInfo(subject.id))
                 subjectCell.innerHTML = ""
                 subjectCell.appendChild(applicationDiv)
@@ -1092,6 +1168,12 @@ export class PermissionsViewer extends HTMLElement {
                     let organizationDiv = this.createOrganizationDiv(o)
                     subjectCell.innerHTML = ""
                     subjectCell.appendChild(organizationDiv)
+                }, e => ApplicationView.displayMessage(e, 3000))
+            } else if (subject.type == "peer") {
+                getPeerById(subject.id, p => {
+                    let peerDiv = this.createPeerDiv(p)
+                    subjectCell.innerHTML = ""
+                    subjectCell.appendChild(peerDiv)
                 }, e => ApplicationView.displayMessage(e, 3000))
             }
 
@@ -1127,7 +1209,26 @@ function getBlog() {
 /**
  * Return domain info.
  */
-function getDomain() {
+function getDomain(domain, callback, errorCallback) {
+    let d = { name: domain }
+    // the path that point to the resource
+    d.getPath = () => {
+        return d.name
+    }
+
+    // The brief description.
+    d.getTitle = () => {
+        return d.name
+    }
+
+    // return file information panel...
+    d.getInfo = () => {
+
+        return new DomainInfo(d)
+    }
+
+    // callback
+    callback(d)
 
 }
 
@@ -1289,7 +1390,7 @@ export class ResourcesPermissionsManager extends HTMLElement {
         // append list of different resources by type.
         this.appendResourcePermissions("application")
         this.appendResourcePermissions("blog")
-        this.appendResourcePermissions("domain")
+        this.appendResourcePermissions("domain", getDomain)
         this.appendResourcePermissions("conversation")
         this.appendResourcePermissions("file", getFile)
         this.appendResourcePermissions("group", getGroup)

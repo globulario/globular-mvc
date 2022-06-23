@@ -353,12 +353,12 @@ let theme = `
   }
 
   paper-button{
-    font-size: 1rem;
+    font-size: .95rem;
   }
 
   paper-tooltip {
     --paper-tooltip: {
-      font-size: 1rem;
+      font-size: .95rem;
     }
   }
 

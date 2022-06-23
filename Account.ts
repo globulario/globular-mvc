@@ -141,14 +141,20 @@ export class Account extends Model {
             Account.accounts = {}
         }
 
-        let rqst = new ResourceService.GetAccountsRqst
-        rqst.setQuery(`{"$or":[{"_id":"${id}"},{"name":"${id}"} ]}`); // search by name and not id... the id will be retreived.
-        rqst.setOptions(`[{"Projection":{"_id":1, "email":1, "name":1, "groups":1, "organizations":1, "roles":1, "domain":1}}]`);
-
+        
         let token = localStorage.getItem("user_token")
         let decoded = jwt(token);
         let domain = (<any>decoded).domain;
-        let address = (<any>decoded).address;
+        let address = (<any>decoded).address; // default domain
+
+        if(id.indexOf("@") != -1){
+            address = id.split("@")[1] // take the domain given with the id.
+            id = id.split("@")[0]
+        }
+
+        let rqst = new ResourceService.GetAccountsRqst
+        rqst.setQuery(`{"$or":[{"_id":"${id}"},{"name":"${id}"} ]}`); // search by name and not id... the id will be retreived.
+        rqst.setOptions(`[{"Projection":{"_id":1, "email":1, "name":1, "groups":1, "organizations":1, "roles":1, "domain":1}}]`);
 
         let accountId = id
         if(accountId.indexOf("@") == -1){

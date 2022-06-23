@@ -3,11 +3,33 @@ import '@polymer/iron-icons/iron-icons.js';
 import "@polymer/iron-icons/hardware-icons";
 import * as GlobularWebClient from "globular-web-client";
 import { Model } from '../Model';
-import { AcceptPeerRqst, AddPeerActionsRqst, DeletePeerRqst, GetPeerApprovalStateRqst, Peer, RegisterPeerRqst, RemovePeerActionRqst } from 'globular-web-client/resource/resource_pb';
+import { AcceptPeerRqst, AddPeerActionsRqst, DeletePeerRqst, GetPeerApprovalStateRqst, GetPeersRqst, Peer, RegisterPeerRqst, RemovePeerActionRqst } from 'globular-web-client/resource/resource_pb';
 import { getAllPeersInfo } from 'globular-web-client/api';
 import { ApplicationView } from '../ApplicationView';
 import { SearchableList } from './List.js'
 import { GetAllActionsRequest } from 'globular-web-client/services_manager/services_manager_pb';
+
+export function getAllPeers(globule, callback, errorCallback) {
+    let rqst = new GetPeersRqst
+    rqst.setQuery("{}")
+    let peers = [];
+
+    let stream = globule.resourceService.getPeers(rqst, { domain: Model.domain,address: Model.address, application: Model.application, token: localStorage.getItem("user_token") });
+
+    // Get the stream and set event on it...
+    stream.on("data", (rsp) => {
+        peers = peers.concat(rsp.getPeersList());
+    });
+
+    stream.on("status", (status) => {
+        if (status.code == 0) {
+            callback(peers);
+        } else {
+            errorCallback({ message: status.details });
+        }
+    });
+}
+
 
 export class PeersManager extends HTMLElement {
     // attributes.

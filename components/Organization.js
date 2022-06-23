@@ -2,12 +2,15 @@ import { getTheme } from "./Theme";
 import '@polymer/iron-icons/iron-icons.js';
 
 import { Model } from '../Model';
-import { AddOrganizationAccountRqst, AddOrganizationApplicationRqst, AddOrganizationGroupRqst, AddOrganizationRoleRqst, Application, CreateOrganizationRqst, DeleteOrganizationRqst, GetOrganizationsRqst, Organization, RemoveOrganizationAccountRqst, RemoveOrganizationApplicationRqst, RemoveOrganizationGroupRqst, RemoveOrganizationRoleRqst } from 'globular-web-client/resource/resource_pb';
+import { AddOrganizationAccountRqst, AddOrganizationApplicationRqst, AddOrganizationGroupRqst, AddOrganizationRoleRqst, Application, CreateOrganizationRqst, DeleteOrganizationRqst, GetOrganizationsRqst, GetPeersRqst, Organization, RemoveOrganizationAccountRqst, RemoveOrganizationApplicationRqst, RemoveOrganizationGroupRqst, RemoveOrganizationRoleRqst } from 'globular-web-client/resource/resource_pb';
 import { ApplicationView } from '../ApplicationView';
 import { SearchableAccountList, SearchableApplicationList, SearchableGroupList, SearchableRoleList } from './List.js'
 import { Account } from '../Account';
 import * as ApplicationTs from '../Application';
 import { getAllGroups, getAllRoles } from 'globular-web-client/api';
+import { getAllPeers } from "./Peers";
+
+
 
 export function getAllOrganizations(callback, errorCallback) {
     let rqst = new GetOrganizationsRqst
@@ -46,6 +49,24 @@ export function getOrganizationById(id, callback, errorCallback){
         errorCallback("no organization found with id " + id)
     }, errorCallback)
 }
+
+export function getPeerById(id, callback, errorCallback){
+    let p_ = null
+    getAllPeers(Model.globular, peers=>{
+        peers.forEach(p=>{
+            if(p.getMac() == id){
+                p_ = p
+            }
+        })
+
+        if(p_ != null){
+            callback(p_)
+            return
+        }
+        errorCallback("no peer found with id " + id)
+    }, errorCallback)
+}
+
 
 export class OrganizationManager extends HTMLElement {
     // attributes.
