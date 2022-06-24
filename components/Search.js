@@ -487,6 +487,8 @@ export class SearchResults extends HTMLElement {
                 display: none;
                 flex-direction: column;
                 margin-top: 15px;
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
             }
 
             .header {
@@ -943,7 +945,7 @@ export class SearchVideoCard extends HTMLElement {
 
             .video-card{
                 border-radius: 3.5px;
-                border: 1px solid var(--palette-primary-accent);
+                border: 1px solid var(--palette-divider);
                 height: 100%;
                 max-width: 320px;
                 margin: 10px;

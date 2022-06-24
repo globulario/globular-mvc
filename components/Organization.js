@@ -40,6 +40,11 @@ export function getOrganizationById(id, callback, errorCallback){
             if(o.getId() == id){
                 o_ = o
             }
+            if(o_ == undefined){
+                if(o.getId() + "@" + o.getDomain() == id){
+                    o_ = o
+                }
+            }
         })
 
         if(o_ != null){

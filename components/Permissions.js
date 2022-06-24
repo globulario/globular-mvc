@@ -341,7 +341,7 @@ export class PermissionsManager extends HTMLElement {
     }
 
     // Save permissions
-    savePermissions(){
+    savePermissions() {
         let rqst = new SetResourcePermissionsRqst
         rqst.setPermissions(this.permissions)
         rqst.setPath(this.path)
@@ -490,19 +490,24 @@ export class PermissionPanel extends HTMLElement {
         }
 
         // Set's account permissions.
-        this.setAccountsPermissions(permission.getAccountsList());
+        if (permission.getAccountsList().length > 0)
+            this.setAccountsPermissions(permission.getAccountsList());
 
         // Set's groups permissions
-        this.setGroupsPermissions(permission.getGroupsList());
+        if (permission.getGroupsList().length > 0)
+            this.setGroupsPermissions(permission.getGroupsList());
 
         // Set's Applications permissions
-        this.setApplicationsPermissions(permission.getApplicationsList());
+        if (permission.getApplicationsList().length > 0)
+            this.setApplicationsPermissions(permission.getApplicationsList());
 
         // Set's Orgnanization permissions
-        this.setOrgnanizationsPermissions(permission.getOrganizationsList());
+        if (permission.getOrganizationsList().length > 0)
+            this.setOrgnanizationsPermissions(permission.getOrganizationsList());
 
         // Set's Peer permissions
-        this.setPeersPermissions(permission.getPeersList());
+        if (permission.getPeersList().length > 0)
+            this.setPeersPermissions(permission.getPeersList());
 
     }
 
@@ -560,6 +565,9 @@ export class PermissionPanel extends HTMLElement {
 
     // The organization permissions
     setPeersPermissions(peers_) {
+        if (peers_.length == 0) {
+            return
+        }
         let content = this.createCollapsible(`Peers(${peers_.length})`)
         getAllPeers(
             Model.globular,
@@ -599,7 +607,11 @@ export class PermissionPanel extends HTMLElement {
 
     // The organization permissions
     setOrgnanizationsPermissions(organizations_) {
+        if (organizations_.length == 0) {
+            return
+        }
         let content = this.createCollapsible(`Organizations(${organizations_.length})`)
+        console.log("-------------------------------> 614 ", organizations_)
         getAllOrganizations(
             organizations => {
                 let list = []
@@ -646,6 +658,9 @@ export class PermissionPanel extends HTMLElement {
 
     // The group permissions
     setApplicationsPermissions(applications_) {
+        if (applications_.length == 0) {
+            return
+        }
         let content = this.createCollapsible(`Applications(${applications_.length})`)
         getAllApplicationsInfo(Model.globular,
             applications => {
@@ -696,6 +711,9 @@ export class PermissionPanel extends HTMLElement {
 
     // The group permissions
     setGroupsPermissions(groups_) {
+        if (groups_.length == 0) {
+            return
+        }
         let content = this.createCollapsible(`Groups(${groups_.length})`)
 
         getAllGroups(Model.globular,
@@ -750,6 +768,9 @@ export class PermissionPanel extends HTMLElement {
 
     // Each permission can be set for applications, peers, accounts, groups or organizations
     setAccountsPermissions(accounts_) {
+        if (accounts_.length == 0) {
+            return
+        }
         let content = this.createCollapsible(`Account(${accounts_.length})`)
 
         // Here I will set the content of the collapse panel.
@@ -1197,7 +1218,7 @@ function getApplication(id, callback, errorCallback) {
     let token = localStorage.getItem("user_token")
     let decoded = JwtDecode(token);
     let address = decoded.address; // default domain
-
+    let path = id
     if (id.indexOf("@") != -1) {
         address = id.split("@")[1] // take the domain given with the id.
         id = id.split("@")[0]
@@ -1219,12 +1240,12 @@ function getApplication(id, callback, errorCallback) {
 
             // the path that point to the resource
             applicaiton.getPath = () => {
-                return id
+                return path
             }
 
             // The brief description.
             applicaiton.getTitle = () => {
-                return applicaiton.getAlias()
+                return applicaiton.getAlias() + " " + applicaiton.getVersion()
             }
 
             // return file information panel...
@@ -1317,7 +1338,6 @@ function getFile(path, callback, errorCallback) {
  */
 function getGroup(id, callback, errorCallback) {
     Group.getGroup(id, (g) => {
-        console.log(id, g)
         g.getPath = () => {
             return id
         }
@@ -1491,7 +1511,7 @@ export class ResourcesPermissionsType extends HTMLElement {
                 display: flex;
                 flex-direction: column;
                 align-items: center;
-                border-bottom: 1px solid var(--palette-background-default);
+                border-bottom: 1px solid var(--palette-divider);
             }
 
             .title {
