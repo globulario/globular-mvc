@@ -8,8 +8,6 @@ import { SearchableAccountList, SearchableApplicationList, SearchableGroupList, 
 import { Account } from '../Account';
 import * as ApplicationTs from '../Application';
 import { getAllGroups, getAllRoles } from 'globular-web-client/api';
-import { getAllPeers } from "./Peers";
-
 
 
 export function getAllOrganizations(callback, errorCallback) {
@@ -55,22 +53,7 @@ export function getOrganizationById(id, callback, errorCallback){
     }, errorCallback)
 }
 
-export function getPeerById(id, callback, errorCallback){
-    let p_ = null
-    getAllPeers(Model.globular, peers=>{
-        peers.forEach(p=>{
-            if(p.getMac() == id){
-                p_ = p
-            }
-        })
 
-        if(p_ != null){
-            callback(p_)
-            return
-        }
-        errorCallback("no peer found with id " + id)
-    }, errorCallback)
-}
 
 
 export class OrganizationManager extends HTMLElement {

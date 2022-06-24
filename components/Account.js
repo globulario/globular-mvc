@@ -14,7 +14,7 @@ import "./Session"
 import { Menu } from "./Menu";
 import { Model } from "../Model";
 import { getTheme } from "./Theme";
-import { AccountExistRsp, AddAccountRoleRqst, AddGroupMemberAccountRqst, AddOrganizationAccountRqst, DeleteAccountRqst, GetAccountsRqst, RegisterAccountRqst, RemoveAccountRoleRqst, RemoveGroupMemberAccountRqst, RemoveOrganizationAccountRqst } from "globular-web-client/resource/resource_pb";
+import { AddAccountRoleRqst, AddGroupMemberAccountRqst, AddOrganizationAccountRqst, DeleteAccountRqst, GetAccountsRqst, RegisterAccountRqst, RemoveAccountRoleRqst, RemoveGroupMemberAccountRqst, RemoveOrganizationAccountRqst } from "globular-web-client/resource/resource_pb";
 import { getAllGroups, getAllRoles } from 'globular-web-client/api';
 import { getAllOrganizations } from "./Organization";
 import { SearchableGroupList, SearchableOrganizationList, SearchableRoleList } from "./List";

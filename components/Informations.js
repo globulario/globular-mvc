@@ -8,7 +8,18 @@ import { ApplicationView } from "../ApplicationView";
 import { randomUUID } from "./utility";
 import { playVideo } from "./Video";
 
-//#tt1375666-div > div.title-informations-div
+function listToString(lst){
+    let str = "["
+    lst.forEach((s, i)=>{
+        str += s;
+        if(i < lst.length - 1){
+            str += " ,"
+        }
+    })
+    str += "]"
+
+    return str
+}
 
 const __style__ = `
 .title-div {
@@ -1296,7 +1307,7 @@ customElements.define('globular-application-info', ApplicationInfo)
 
                 <div style="display: table-row;">
                     <div style="display: table-cell; font-weight: 450;">Members:</div>
-                    <div style="display: table-cell;"></div>
+                    <div style="display: table-cell;">${ listToString(group.members) }</div>
                 </div>
             </div>
         </div>
@@ -1343,8 +1354,20 @@ customElements.define('globular-group-info', GroupInfo)
                 </div>
 
                 <div style="display: table-row;">
-                    <div style="display: table-cell; font-weight: 450;">Members:</div>
-                    <div style="display: table-cell;"></div>
+                    <div style="display: table-cell; font-weight: 450;">Accounts:</div>
+                    <div style="display: table-cell;">${ listToString(org.getAccountsList()) }</div>
+                </div>
+                <div style="display: table-row;">
+                    <div style="display: table-cell; font-weight: 450;">Groups:</div>
+                    <div style="display: table-cell;">${ listToString(org.getGroupsList()) }</div>
+                </div>
+                <div style="display: table-row;">
+                    <div style="display: table-cell; font-weight: 450;">Roles:</div>
+                    <div style="display: table-cell;">${ listToString(org.getRolesList()) }</div>
+                </div>
+                <div style="display: table-row;">
+                    <div style="display: table-cell; font-weight: 450;">Applications:</div>
+                    <div style="display: table-cell;">${ listToString(org.getApplicationsList()) }</div>
                 </div>
             </div>
         </div>
@@ -1385,13 +1408,77 @@ customElements.define('globular-blog-info', BlogInfo)
 
 
 /**
- * Display basic blog informations.
+ * Display package informations.
  */
- export class ConversationInfo extends HTMLElement {
+export class PackageInfo extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor() {
+    constructor(descriptor) {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+
+        let packageType = "Application Package"
+        if(descriptor.getType() == 1){
+            packageType = "Service Package"
+        }
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+            ${getTheme()}
+
+            #container {
+                display: flex;
+            }
+
+        </style>
+        <div id="container">
+            <div style="display: flex; flex-direction: column; justify-content: flex-start;  padding-left: 15px;">
+                <iron-icon id="icon" icon="icons:archive" style="height: 40px; width: 40px;"></iron-icon>
+                <span style="font-weight: 450;">${packageType}</span>
+            </div>
+            <div style="display: table; flex-grow: 1; padding-left: 20px;">
+                <div style="display: table-row;">
+                    <div style="display: table-cell; font-weight: 450;">Id:</div>
+                    <div style="display: table-cell;">${descriptor.getId()}</div>
+                </div>
+                <div style="display: table-row;">
+                    <div style="display: table-cell; font-weight: 450;">Name:</div>
+                    <div style="display: table-cell;">${descriptor.getName()}</div>
+                </div>
+                <div style="display: table-row;">
+                    <div style="display: table-cell; font-weight: 450;">Version:</div>
+                    <div style="display: table-cell;">${descriptor.getVersion()}</div>
+                </div>
+                <div style="display: table-row;">
+                    <div style="display: table-cell; font-weight: 450;">Publisher Id:</div>
+                    <div style="display: table-cell;">${descriptor.getPublisherid()}</div>
+                </div>
+                <div style="display: table-row;">
+                    <div style="display: table-cell; font-weight: 450;">Description:</div>
+                    <div style="display: table-cell;">${descriptor.getDescription()}</div>
+                </div>
+                <div style="display: table-row;">
+                    <div style="display: table-cell; font-weight: 450;">Keywords:</div>
+                    <div style="display: table-cell;">${listToString(descriptor.getKeywordsList())}</div>
+                </div>
+            </div>
+        </div>
+        `
+    }
+
+}
+
+customElements.define('globular-package-info', PackageInfo)
+
+
+export class RoleInfo extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor(role) {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
@@ -1400,9 +1487,93 @@ customElements.define('globular-blog-info', BlogInfo)
         this.shadowRoot.innerHTML = `
         <style>
             ${getTheme()}
+            #container {
+                display: flex;
+            }
+
         </style>
-        
         <div id="container">
+            <div>
+                <iron-icon id="icon" icon="notification:enhanced-encryption" style="height: 40px; width: 40px; padding-left: 15px;"></iron-icon>
+            </div>
+            <div style="display: table; flex-grow: 1; padding-left: 20px;">
+                <div style="display: table-row;">
+                    <div style="display: table-cell; font-weight: 450;">Id:</div>
+                    <div style="display: table-cell;">${role.getId()}</div>
+                </div>
+                <div style="display: table-row;">
+                    <div style="display: table-cell; font-weight: 450;">Name:</div>
+                    <div style="display: table-cell;">${role.getName()}</div>
+                </div>
+
+                <div style="display: table-row;">
+                    <div style="display: table-cell; font-weight: 450;">Accounts:</div>
+                    <div style="display: table-cell;">${ listToString(role.getMembersList()) }</div>
+                </div>
+            </div>
+        </div>
+        `
+    }
+
+}
+
+customElements.define('globular-role-info', RoleInfo)
+
+/**
+ * Display basic blog informations.
+ */
+ export class ConversationInfo extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor(conversation) {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+
+        let creationTime = new Date(conversation.getCreationTime() * 1000)
+        let lastMessageTime = new Date(conversation.getLastMessageTime() * 1000) 
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+            ${getTheme()}
+
+            #container {
+                display: flex;
+            }
+
+        </style>
+        <div id="container">
+            <div>
+                <iron-icon id="icon" icon="communication:forum" style="height: 40px; width: 40px; padding-left: 15px;"></iron-icon>
+            </div>
+            <div style="display: table; flex-grow: 1; padding-left: 20px;">
+                <div style="display: table-row;">
+                    <div style="display: table-cell; font-weight: 450;">Id:</div>
+                    <div style="display: table-cell;">${conversation.getUuid()}</div>
+                </div>
+                <div style="display: table-row;">
+                    <div style="display: table-cell; font-weight: 450;">Name:</div>
+                    <div style="display: table-cell;">${conversation.getName()}</div>
+                </div>
+                <div style="display: table-row;">
+                    <div style="display: table-cell; font-weight: 450;">Creation time:</div>
+                    <div style="display: table-cell;">${creationTime.toLocaleString()}</div>
+                </div>
+                <div style="display: table-row;">
+                    <div style="display: table-cell; font-weight: 450;">Last message time:</div>
+                    <div style="display: table-cell;">${lastMessageTime.toLocaleString()}</div>
+                </div>
+                <div style="display: table-row;">
+                    <div style="display: table-cell; font-weight: 450;">Keywords:</div>
+                    <div style="display: table-cell;">${listToString(conversation.getKeywordsList())}</div>
+                </div>
+                <div style="display: table-row;">
+                    <div style="display: table-cell; font-weight: 450;">Paticipants:</div>
+                    <div style="display: table-cell;">${listToString(conversation.getParticipantsList())}</div>
+                </div>
+            </div>
         </div>
         `
     }

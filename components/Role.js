@@ -10,6 +10,30 @@ import { SearchableAccountList, SearchableList } from './List.js'
 import { GetAllActionsRequest } from 'globular-web-client/services_manager/services_manager_pb';
 import { Account } from '../Account';
 
+// Return a role with a given id.
+export function getRoleById(id, callback, errorCallback){
+    let r_ = null
+    getAllRoles(Model.globular, roles=>{
+        roles.forEach(r=>{
+            if(r.getId() == id){
+                r_ = r
+            }
+        })
+
+        if(r_ == null){
+            if(r.getId() + "@" + r.getDomain() == id){
+                r_ = r
+            }
+        }
+
+        if(r_ != null){
+            callback(r_)
+            return
+        }
+        errorCallback("no role found with id " + id)
+    }, errorCallback)
+}
+
 export class RoleManager extends HTMLElement {
     // attributes.
 

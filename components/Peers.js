@@ -9,6 +9,23 @@ import { ApplicationView } from '../ApplicationView';
 import { SearchableList } from './List.js'
 import { GetAllActionsRequest } from 'globular-web-client/services_manager/services_manager_pb';
 
+export function getPeerById(id, callback, errorCallback){
+    let p_ = null
+    getAllPeers(Model.globular, peers=>{
+        peers.forEach(p=>{
+            if(p.getMac() == id){
+                p_ = p
+            }
+        })
+
+        if(p_ != null){
+            callback(p_)
+            return
+        }
+        errorCallback("no peer found with id " + id)
+    }, errorCallback)
+}
+
 export function getAllPeers(globule, callback, errorCallback) {
     let rqst = new GetPeersRqst
     rqst.setQuery("{}")

@@ -5,21 +5,24 @@ import { DeleteResourcePermissionsRqst, GetActionResourceInfosRqst, GetResourceP
 import { Account } from "../Account";
 import { ApplicationView } from "../ApplicationView";
 import { SearchableAccountList, SearchableApplicationList, SearchableGroupList, SearchableOrganizationList, SearchablePeerList } from "./List.js";
-import { getAllApplicationsInfo, getAllGroups } from "globular-web-client/api";
+import { getAllApplicationsInfo, getAllGroups, GetPackagesDescriptor } from "globular-web-client/api";
 import { randomUUID } from "./utility";
-import { getAllOrganizations, getOrganizationById, getPeerById } from "./Organization";
+import { getAllOrganizations, getOrganizationById } from "./Organization";
 import { GetAllActionsRequest } from "globular-web-client/services_manager/services_manager_pb";
 import { Application } from "../Application";
 import { Group } from "../Group";
 import '@polymer/iron-icons/av-icons'
 import '@polymer/iron-icons/editor-icons'
-import { GetApplicationsRqst, Organization, RejectPeerRqst } from "globular-web-client/resource/resource_pb";
+import { GetApplicationsRqst, GetPackagesDescriptorRequest, Organization, RejectPeerRqst } from "globular-web-client/resource/resource_pb";
 import { GetFileInfoRequest } from "globular-web-client/file/file_pb";
 import { File } from "../File";
-import { ApplicationInfo, DomainInfo, FileInfo, GroupInfo, OrganizationInfo } from "./Informations";
+import { ApplicationInfo, ConversationInfo, DomainInfo, FileInfo, GroupInfo, OrganizationInfo, PackageInfo, RoleInfo } from "./Informations";
 import * as getUuidByString from "uuid-by-string";
-import { getAllPeers } from "./Peers";
+import { getAllPeers, getPeerById } from "./Peers";
 import * as JwtDecode from "jwt-decode";
+import { GetConversationRequest, GetConversationsRequest } from "globular-web-client/conversation/conversation_pb";
+import { getRoleById } from "./Role";
+import { LogRqst } from "globular-web-client/log/log_pb";
 
 // This function return the list of all possible permission name from the server... it a little bit slow...
 // so for the moment I will simply use static values read, write and delete.
@@ -372,7 +375,7 @@ export class PermissionsManager extends HTMLElement {
         this.innerHTML = ""
 
         // set the permssion viewer
-        this.permissionsViewer = new PermissionsViewer()
+        this.permissionsViewer = new PermissionsViewer([...this.permissionsNames, "owner"])
         this.permissionsViewer.slot = "permission-viewer"
         this.permissionsViewer.setPermissions(this.permissions)
         this.appendChild(this.permissionsViewer)
@@ -611,7 +614,6 @@ export class PermissionPanel extends HTMLElement {
             return
         }
         let content = this.createCollapsible(`Organizations(${organizations_.length})`)
-        console.log("-------------------------------> 614 ", organizations_)
         getAllOrganizations(
             organizations => {
                 let list = []
@@ -837,10 +839,11 @@ export class PermissionsViewer extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor() {
+    constructor(permissionsNames) {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
+        this.permissionsNames = permissionsNames;
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -1195,10 +1198,9 @@ export class PermissionsViewer extends HTMLElement {
             }
 
             // Now I will set the value for other cells..
-            this.setPermissionCell(row, subject.permissions["read"])
-            this.setPermissionCell(row, subject.permissions["write"])
-            this.setPermissionCell(row, subject.permissions["delete"])
-            this.setPermissionCell(row, subject.permissions["owner"])
+            this.permissionsNames.forEach(id => {
+                this.setPermissionCell(row, subject.permissions[id])
+            })
 
             this.permissionsDiv.appendChild(row)
         }
@@ -1296,8 +1298,36 @@ function getDomain(domain, callback, errorCallback) {
 /**
  * Return conversation info.
  */
-function getConversation() {
+function getConversation(id, callback, errorCallback) {
+    let rqst = new GetConversationRequest
+    console.log("get conversation with id ", id)
+    rqst.setId(id)
+    let globule = Model.globular
+    globule.conversationService.getConversation(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
+        .then(rsp => {
 
+            let c = rsp.getConversation()
+            // the path that point to the resource
+            c.getPath = () => {
+                return id
+            }
+
+            // The brief description.
+            c.getTitle = () => {
+                return c.getName()
+            }
+
+            // return file information panel...
+            c.getInfo = () => {
+                return new ConversationInfo(c)
+            }
+
+            callback(c);
+
+        })
+        .catch(err => {
+            errorCallback(err)
+        })
 }
 
 /**
@@ -1384,16 +1414,76 @@ function getOrganization(id, callback, errorCallback) {
 /**
  * Return package info.
  */
-function getPackage() {
+function getPackage(id, callback, errorCallback) {
 
+    // so here I will split the given path to retreive the actual 
+    // package descriptor.
+    let infos = id.split("/")
+    let publisherid = infos[0]
+    let id_ = infos[1]
+    let name = infos[2]
+    let version = infos[3]
+
+    let rqst = new GetPackagesDescriptorRequest
+    rqst.setQuery(`{"$and":[{"id":"${id_}"},{"name":"${name}"},{"version":"${version}"},{"publisherid":"${publisherid}"}]}`);
+    let globule = Model.globular
+    let stream = globule.resourceService.getPackagesDescriptor(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
+
+    let descriptors = [];
+
+    stream.on("data", (rsp) => {
+        descriptors = descriptors.concat(rsp.getResultsList());
+    });
+
+    stream.on("status", (status) => {
+        if (status.code == 0) {
+            let p = descriptors[0]
+            // the path that point to the resource
+            p.getPath = () => {
+                return id
+            }
+
+            // The brief description.
+            p.getTitle = () => {
+                return p.getName() + " " + p.getVersion() + " from " + publisherid
+            }
+
+            // return file information panel...
+            p.getInfo = () => {
+                return new PackageInfo(p)
+            }
+
+            callback(p);
+        }else{
+            errorCallback(status.details)
+        }
+    })
+    
 }
 
 
 /**
  * Return package info.
  */
-function getRole() {
+function getRole(id, callback, errorCallback) {
+    getRoleById(id, r => {
 
+        r.getPath = () => {
+            return id
+        }
+
+        // The brief description.
+        r.getTitle = () => {
+            return r.getName()
+        }
+
+        // return file information panel...
+        r.getInfo = () => {
+            return new RoleInfo(r)
+        }
+
+        callback(r)
+    }, errorCallback)
 }
 
 /**
@@ -1451,12 +1541,12 @@ export class ResourcesPermissionsManager extends HTMLElement {
         this.appendResourcePermissions("application", getApplication)
         this.appendResourcePermissions("blog")
         this.appendResourcePermissions("domain", getDomain)
-        this.appendResourcePermissions("conversation")
+        this.appendResourcePermissions("conversation", getConversation)
         this.appendResourcePermissions("file", getFile)
         this.appendResourcePermissions("group", getGroup)
         this.appendResourcePermissions("organization", getOrganization)
-        this.appendResourcePermissions("pacakage")
-        this.appendResourcePermissions("role")
+        this.appendResourcePermissions("package", getPackage)
+        this.appendResourcePermissions("role", getRole)
     }
 
     appendResourcePermissions(typeName, fct) {
