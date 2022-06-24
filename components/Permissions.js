@@ -13,12 +13,13 @@ import { Application } from "../Application";
 import { Group } from "../Group";
 import '@polymer/iron-icons/av-icons'
 import '@polymer/iron-icons/editor-icons'
-import { Organization, RejectPeerRqst } from "globular-web-client/resource/resource_pb";
+import { GetApplicationsRqst, Organization, RejectPeerRqst } from "globular-web-client/resource/resource_pb";
 import { GetFileInfoRequest } from "globular-web-client/file/file_pb";
 import { File } from "../File";
-import { DomainInfo, FileInfo, GroupInfo, OrganizationInfo } from "./Informations";
+import { ApplicationInfo, DomainInfo, FileInfo, GroupInfo, OrganizationInfo } from "./Informations";
 import * as getUuidByString from "uuid-by-string";
 import { getAllPeers } from "./Peers";
+import * as JwtDecode from "jwt-decode";
 
 // This function return the list of all possible permission name from the server... it a little bit slow...
 // so for the moment I will simply use static values read, write and delete.
@@ -107,6 +108,11 @@ export class PermissionsManager extends HTMLElement {
                 padding: 10px;
             }
 
+            ::slotted(globular-permissions-viewer){
+                padding-bottom: 20px; 
+                padding-right: 40px;
+            }
+
         </style>
         <div id="container">
             <div id="header">
@@ -114,7 +120,7 @@ export class PermissionsManager extends HTMLElement {
                 <paper-icon-button icon="close"></paper-icon-button>
                 
             </div>
-            <globular-permissions-viewer style="padding-bottom: 20px; padding-right: 40px;"></globular-permissions-viewer>
+            <slot name="permission-viewer"></slot>
             <div style="padding-right: 40px;">
                 <div  class="title">
                 <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
@@ -124,7 +130,7 @@ export class PermissionsManager extends HTMLElement {
                     Owner(s)
                 </div>
                 <iron-collapse class="permissions" id="owner">
-                
+                    <slot name="owner"> </slot>
                 </iron-collapse>
             </div>
             <div>
@@ -139,7 +145,7 @@ export class PermissionsManager extends HTMLElement {
                     <paper-icon-button  id="add-allowed-btn" icon="icons:add"></paper-icon-button>
                 </div>
                 <iron-collapse class="permissions" id="allowed">
-                
+                    <slot name="allowed"> </slot>
                 </iron-collapse>
             </div>
             <div>
@@ -154,20 +160,21 @@ export class PermissionsManager extends HTMLElement {
                     <paper-icon-button id="add-denied-btn" icon="icons:add"></paper-icon-button>
                 </div>
                 <iron-collapse class="permissions" id="denied">
-                
+                    <slot name="denied"> </slot>
                 </iron-collapse>
             </div>
         </div>
         `
+
         // give the focus to the input.
         this.container = this.shadowRoot.querySelector("#container")
-        this.permissionsViewer = this.shadowRoot.querySelector("globular-permissions-viewer")
+
+
         this.pathDiv = this.shadowRoot.querySelector("#path")
         this.style.overflowY = "auto"
 
         // The tree sections.
         this.owners = this.shadowRoot.querySelector("#owner")
-
         this.alloweds = this.shadowRoot.querySelector("#allowed")
         this.denieds = this.shadowRoot.querySelector("#denied")
 
@@ -295,17 +302,11 @@ export class PermissionsManager extends HTMLElement {
     createPermission(name, type) {
         // So here I will try to find if the permission already exist in the interface.
         let id = "permission_" + name + "_" + type + "_panel"
-        let panel = null
-        if (type == "allowed") {
-            panel = this.alloweds.querySelector("#" + id)
-        } else if (type == "denied") {
-            panel = this.denieds.querySelector("#" + id)
-        }
-
+        let panel = this.querySelector("#" + id)
         if (panel == null) {
-
             // create the panel.
-            panel = new PermissionPanel()
+            panel = new PermissionPanel(this)
+
             panel.setAttribute("id", id)
             let permission = new Permission
             permission.setName(name)
@@ -314,11 +315,14 @@ export class PermissionsManager extends HTMLElement {
             // set the permission in the permissions object.
             if (type == "allowed") {
                 this.permissions.getAllowedList().push(permission)
-                this.alloweds.appendChild(panel)
+                panel.slot = "allowed"
+
             } else if (type == "denied") {
                 this.permissions.getDeniedList().push(permission)
-                this.denieds.appendChild(panel)
+                panel.slot = "denied"
             }
+
+            this.appendChild(panel)
 
         } else {
             ApplicationView.displayMessage("Permission " + name + " already exist", 3000)
@@ -336,99 +340,89 @@ export class PermissionsManager extends HTMLElement {
         }
     }
 
-    // The connection callback.
-    connectedCallback() {
+    // Save permissions
+    savePermissions(){
+        let rqst = new SetResourcePermissionsRqst
+        rqst.setPermissions(this.permissions)
+        rqst.setPath(this.path)
+        rqst.setResourcetype(this.permissions.getResourceType())
 
-        // Here I will get the list off all possible permission name...
-        // Save owner permission.
-        if (this.savePermissionListener.length == 0) {
-            Model.eventHub.subscribe("save_permission_event",
-                uuid => {
-                    this.savePermissionListener = uuid
-                },
-                evt => {
-                    let rqst = new SetResourcePermissionsRqst
-                    rqst.setPermissions(this.permissions)
-                    rqst.setPath(this.path)
-                    rqst.setResourcetype(this.permissions.getResourceType())
-                    Model.globular.rbacService.setResourcePermissions(rqst, {
-                        token: localStorage.getItem("user_token"),
-                        application: Model.application,
-                        domain: Model.domain,
-                        address: Model.address
-                    }).then(rsp => {
-                        this.setPath(this.path)
-                        Model.eventHub.publish(Application.account.id + "_change_permission_event", {}, false)
-                    }).catch(err => ApplicationView.displayMessage(err, 3000))
-
-                    console.log("save permission ", this.permissions)
-                }, true, this)
-        }
-    }
-
-    // When the event is diconnected.
-    disconnectCallback() {
-        Model.eventHub.unSubscribe("save_permission_event", this.savePermissionListener)
+        Model.globular.rbacService.setResourcePermissions(rqst, {
+            token: localStorage.getItem("user_token"),
+            application: Model.application,
+            domain: Model.domain,
+            address: Model.address
+        }).then(rsp => {
+            // reload the interface.
+            this.setPath(this.path)
+            Model.eventHub.publish(Application.account.id + "_change_permission_event", {}, false)
+        }).catch(err => ApplicationView.displayMessage(err, 3000))
     }
 
     setPermissions(permissions) {
+        if (permissions == null) {
+            console.log("permissions is null")
+            return;
+        }
+
         this.permissions = permissions
 
+        // clear the panel values.
+        this.pathDiv.innerHTML = this.path;
+        this.innerHTML = ""
+
+        // set the permssion viewer
+        this.permissionsViewer = new PermissionsViewer()
+        this.permissionsViewer.slot = "permission-viewer"
+        this.permissionsViewer.setPermissions(this.permissions)
+        this.appendChild(this.permissionsViewer)
+
         // Here I will display the owner's
-        let ownersPermissionPanel = new PermissionPanel()
+        let ownersPermissionPanel = new PermissionPanel(this)
         ownersPermissionPanel.id = "permission_owners_panel"
 
-        this.permissionsViewer.setPermissions(this.permissions)
-
         ownersPermissionPanel.setPermission(this.permissions.getOwners(), true)
-        this.owners.appendChild(ownersPermissionPanel)
+        ownersPermissionPanel.slot = "owner"
+        this.appendChild(ownersPermissionPanel)
 
         // The list of denied and allowed permissions.
         this.permissions.getAllowedList().forEach(p => {
-            let panel = new PermissionPanel()
+            let panel = new PermissionPanel(this)
             panel.id = "permission_" + p.getName() + "_allowed_panel"
+            panel.slot = "allowed"
             panel.setPermission(p)
-            this.alloweds.appendChild(panel)
+            this.appendChild(panel)
         })
 
         this.permissions.getDeniedList().forEach(p => {
-            let panel = new PermissionPanel()
+            let panel = new PermissionPanel(this)
             panel.id = "permission_" + p.getName() + "_denied_panel"
+            panel.slot = "denied"
             panel.setPermission(p)
-            this.denieds.appendChild(panel)
+            this.appendChild(panel)
         })
     }
 
+    // retreive the permissions from the backeend and set it in the interface.
     setPath(path) {
         // Keep the path in memory
         this.path = path;
-
-        // clear the panel values.
-        this.owners.innerHTML = "";
-        this.alloweds.innerHTML = "";
-        this.denieds.innerHTML = "";
-        this.pathDiv.innerHTML = path;
 
         // So here I will get the actual permissions.
         let rqst = new GetResourcePermissionsRqst
         rqst.setPath(path)
 
-        if (this.permissions != null) {
-            this.setPermissions(this.permissions)
-        } else {
-            Model.globular.rbacService.getResourcePermissions(rqst, {
-                token: localStorage.getItem("user_token"),
-                application: Model.application,
-                domain: Model.domain,
-                address: Model.address
-            }).then(rsp => {
-                let permissions = rsp.getPermissions()
-                this.setPermissions(permissions)
-            }).catch(err => {
-                ApplicationView.displayMessage(err, 3000)
-            })
-
-        }
+        Model.globular.rbacService.getResourcePermissions(rqst, {
+            token: localStorage.getItem("user_token"),
+            application: Model.application,
+            domain: Model.domain,
+            address: Model.address
+        }).then(rsp => {
+            let permissions = rsp.getPermissions()
+            this.setPermissions(permissions)
+        }).catch(err => {
+            ApplicationView.displayMessage(err, 3000)
+        })
     }
 }
 
@@ -442,10 +436,12 @@ export class PermissionPanel extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor() {
+    constructor(permissionManager) {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
+
+        this.permissionManager = permissionManager;
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -581,7 +577,7 @@ export class PermissionPanel extends HTMLElement {
                         let index = this.permission.getPeersList().indexOf(p.getMac())
                         if (index != -1) {
                             this.permission.getPeersList().splice(index, 1)
-                            Model.eventHub.publish("save_permission_event", this.permission, true)
+                            this.permissionManager.savePermissions()
                             peersList.removeItem(p)
                         }
                     },
@@ -589,7 +585,7 @@ export class PermissionPanel extends HTMLElement {
                         let index = this.permission.getPeersList().indexOf(p.getMac())
                         if (index == -1) {
                             this.permission.getPeersList().push(p.getMac())
-                            Model.eventHub.publish("save_permission_event", this.permission, true)
+                            this.permissionManager.savePermissions()
                             peersList.appendItem(p)
                         }
                     })
@@ -625,7 +621,7 @@ export class PermissionPanel extends HTMLElement {
                         }
                         if (index != -1) {
                             this.permission.getOrganizationsList().splice(index, 1)
-                            Model.eventHub.publish("save_permission_event", this.permission, true)
+                            this.permissionManager.savePermissions()
                             organizationList.removeItem(o)
                         }
                     },
@@ -636,7 +632,7 @@ export class PermissionPanel extends HTMLElement {
                         }
                         if (index == -1) {
                             this.permission.getOrganizationsList().push(o.getId())
-                            Model.eventHub.publish("save_permission_event", this.permission, true)
+                            this.permissionManager.savePermissions()
                             organizationList.appendItem(o)
                         }
                     })
@@ -674,7 +670,7 @@ export class PermissionPanel extends HTMLElement {
                         }
                         if (index != -1) {
                             this.permission.getApplicationsList().splice(index, 1)
-                            Model.eventHub.publish("save_permission_event", this.permission, true)
+                            this.permissionManager.savePermissions()
                             applicationList.removeItem(a)
                         }
                     },
@@ -685,7 +681,7 @@ export class PermissionPanel extends HTMLElement {
                         }
                         if (index == -1) {
                             this.permission.getApplicationsList().push(a.getId())
-                            Model.eventHub.publish("save_permission_event", this.permission, true)
+                            this.permissionManager.savePermissions()
                             applicationList.appendItem(a)
                         }
                     })
@@ -728,7 +724,7 @@ export class PermissionPanel extends HTMLElement {
                         }
                         if (index != -1) {
                             this.permission.getGroupsList().splice(index, 1)
-                            Model.eventHub.publish("save_permission_event", this.permission, true)
+                            this.permissionManager.savePermissions()
                             groupsList.removeItem(g)
                         }
                     },
@@ -739,7 +735,7 @@ export class PermissionPanel extends HTMLElement {
                         }
                         if (index == -1) {
                             this.permission.getGroupsList().push(g.getId())
-                            Model.eventHub.publish("save_permission_event", this.permission, true)
+                            this.permissionManager.savePermissions()
                             groupsList.appendItem(g)
                         }
                     })
@@ -782,7 +778,7 @@ export class PermissionPanel extends HTMLElement {
                         }
                         if (index != -1) {
                             this.permission.getAccountsList().splice(index, 1)
-                            Model.eventHub.publish("save_permission_event", this.permission, true)
+                            this.permissionManager.savePermissions()
                             accountsList.removeItem(a)
                         }
                     },
@@ -793,7 +789,7 @@ export class PermissionPanel extends HTMLElement {
                         }
                         if (index == -1) {
                             this.permission.getAccountsList().push(a._id)
-                            Model.eventHub.publish("save_permission_event", this.permission, true)
+                            this.permissionManager.savePermissions()
                             accountsList.appendItem(a)
                         }
                     })
@@ -1195,8 +1191,52 @@ customElements.define('globular-permissions-viewer', PermissionsViewer)
 /**
  * Return application info.
  */
-function getApplication() {
+function getApplication(id, callback, errorCallback) {
+    let rqst = new GetApplicationsRqst
 
+    let token = localStorage.getItem("user_token")
+    let decoded = JwtDecode(token);
+    let address = decoded.address; // default domain
+
+    if (id.indexOf("@") != -1) {
+        address = id.split("@")[1] // take the domain given with the id.
+        id = id.split("@")[0]
+    }
+
+    rqst.setQuery(`{"_id":"${id}"}`)
+
+    let globule = Model.getGlobule(address)
+    let stream = globule.resourceService.getApplications(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
+    let applications = [];
+
+    stream.on("data", (rsp) => {
+        applications = applications.concat(rsp.getApplicationsList());
+    });
+
+    stream.on("status", (status) => {
+        if (status.code == 0) {
+            let applicaiton = applications[0]
+
+            // the path that point to the resource
+            applicaiton.getPath = () => {
+                return id
+            }
+
+            // The brief description.
+            applicaiton.getTitle = () => {
+                return applicaiton.getAlias()
+            }
+
+            // return file information panel...
+            applicaiton.getInfo = () => {
+                return new ApplicationInfo(applicaiton)
+            }
+
+            callback(applicaiton);
+        } else {
+            errorCallback(status.details)
+        }
+    })
 }
 
 /**
@@ -1388,7 +1428,7 @@ export class ResourcesPermissionsManager extends HTMLElement {
     connectedCallback() {
         this.innerHTML = ""
         // append list of different resources by type.
-        this.appendResourcePermissions("application")
+        this.appendResourcePermissions("application", getApplication)
         this.appendResourcePermissions("blog")
         this.appendResourcePermissions("domain", getDomain)
         this.appendResourcePermissions("conversation")
