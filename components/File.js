@@ -215,6 +215,7 @@ let dirs = {}
  * @param {*} force If set the dir will be read from the server.
  */
 function _readDir(path, callback, errorCallback, globule, force = false) {
+    console.log("read dir ", path, " force ", force)
     let key = getUuidByString(globule.config.Domain + "@" + path)
     if (!force || path == "/public" || path == "/shared") {
         if (dirs[key] != null) {
@@ -225,6 +226,7 @@ function _readDir(path, callback, errorCallback, globule, force = false) {
 
     // Here I will keep the dir info in the cache...
     File.readDir(path, false, (dir) => {
+        console.log("read dir from the server ", path)
         callback(dir)
         dirs[key] = dir
     }, errorCallback, globule)
