@@ -1780,6 +1780,12 @@ export class StringListSetting extends Setting {
   }
 
   setValues(valueArray) {
+    // Remove previous values...
+    let inputs = this.shadowRoot.querySelectorAll("paper-input");
+    for(var i=0; i < inputs.length; i++){
+      inputs[i].parentNode.parentNode.removeChild(inputs[i].parentNode)
+    }
+
     if (valueArray == null) {
       return
     }

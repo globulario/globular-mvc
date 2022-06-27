@@ -78,6 +78,60 @@ function jsonToHtml(data) {
 }
 
 /**
+ * Here I will create the image from the data url.
+ * @param {*} url 
+ * @param {*} callback 
+ */
+function getImageFile(url, callback) {
+    fetch(url)
+        .then((e) => {
+            return e.blob()
+        })
+        .then((blob) => {
+            // please change the file.extension with something more meaningful
+            // or create a utility function to parse from URL
+            //let img = document.createElement("img")
+            const url = URL.createObjectURL(blob)
+            let img = new Image()
+            img.onload = () => {
+                URL.revokeObjectURL(url)
+                callback(img)
+            }
+            img.src = url
+        })
+}
+
+/**
+ * Create a thumbnail from an url. The url can from from img.src...
+ * @param {*} src The image url
+ * @param {*} w The width of the thumnail
+ * @param {*} callback The callback to be call
+ */
+function createThumbmail(src, w, callback) {
+    getImageFile(src, (img) => {
+        if (img.width > w) {
+            var oc = document.createElement('canvas'), octx = oc.getContext('2d');
+            oc.width = img.width;
+            oc.height = img.height;
+            octx.drawImage(img, 0, 0);
+            if (img.width > img.height) {
+                oc.height = (img.height / img.width) * w;
+                oc.width = w;
+            } else {
+                oc.width = (img.width / img.height) * w;
+                oc.height = w;
+            }
+            octx.drawImage(oc, 0, 0, oc.width, oc.height);
+            octx.drawImage(img, 0, 0, oc.width, oc.height);
+            callback(oc.toDataURL());
+        } else {
+            callback(img.src);
+        }
+
+    })
+}
+
+/**
  * Search Box
  */
 export class BlogPostElement extends HTMLElement {
@@ -185,6 +239,7 @@ export class BlogPostElement extends HTMLElement {
                     <paper-card id="blog-editor-options-panel" class="blog-options-panel" style="display: none;">
                         <div class="card-content" style="background-color: transparent;">
                             <paper-input id="blog-title-input" label="title"></paper-input>
+                            <paper-input id="blog-subtitle-input" label="subtitle"></paper-input>
                             <globular-string-list-setting id="keywords-list" name="keywords" description="keywords will be use by the search engine to retreive your blog."></globular-string-list-setting>
                         </div>
                     </paper-card>
@@ -284,14 +339,17 @@ export class BlogPostElement extends HTMLElement {
         // The editor values.
         this.titleSpan = this.shadowRoot.querySelector(".blog-reader-title")
         this.titleInput = this.shadowRoot.querySelector("#blog-title-input")
+        this.subtitleInput = this.shadowRoot.querySelector("#blog-subtitle-input")
         this.keywordsEditList = this.shadowRoot.querySelector("#keywords-list")
 
         this.shadowRoot.querySelector("#blog-editor-delete-btn").onclick = () => {
             let rqst = new DeleteBlogPostRequest
             rqst.setUuid(this.blog.getUuid())
+            let globule = Model.globular
+            rqst.setIndexpath(globule.config.DataPath + "/search/blogPosts")
 
             // Delete the blog...
-            Model.globular.blogService.deleteBlogPost(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: localStorage.getItem("user_token") })
+            globule.blogService.deleteBlogPost(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: localStorage.getItem("user_token") })
                 .then(rsp => {
                     Model.eventHub.publish(this.blog.getUuid() + "_blog_delete_event", {}, false)
                 })
@@ -341,6 +399,7 @@ export class BlogPostElement extends HTMLElement {
                     // set back values.
                     this.titleSpan.innerHTML = this.blog.getTitle()
                     this.titleInput.value = this.blog.getTitle()
+                    this.subtitleInput.value = this.blog.getSubtitle()
                     this.keywordsEditList.setValues(this.blog.getKeywordsList())
                 })
             }, false, this)
@@ -375,7 +434,17 @@ export class BlogPostElement extends HTMLElement {
 
         this.titleSpan.innerHTML = blog.getTitle()
         this.titleInput.value = blog.getTitle()
+        this.subtitleInput.value = blog.getSubtitle()
         this.keywordsEditList.setValues(blog.getKeywordsList())
+    }
+
+    getThumbnail(width, callback) {
+        let images = this.editorDiv.querySelectorAll("img")
+        if (images.length > 0) {
+            createThumbmail(images[0].src, width, dataUrl => callback(dataUrl))
+        } else {
+            callback("")
+        }
     }
 
     /**
@@ -390,8 +459,21 @@ export class BlogPostElement extends HTMLElement {
         this.shadowRoot.querySelector(".blog-post-reader-div").style.display = "none"
 
         if (this.editorDiv != null) {
+            if (this.blog != null) {
+                if (this.blog.getTitle().length > 0) {
+                    this.shadowRoot.querySelector("#blog-editor-title").innerHTML = this.blog.getTitle()
+                    this.titleSpan.innerHTML = this.blog.getTitle()
+                    this.titleInput.value = this.blog.getTitle()
+                    this.subtitleInput.value = this.blog.getSubtitle()
+                    this.titleSpan.style.color = "var(--palette-text-primary)"
+                    this.shadowRoot.querySelector("#blog-editor-title").style.color = "var(--palette-text-primary)"
+                } else {
+                    this.titleSpan.style.color = "var(--palette-action-disabled)"
+                    this.shadowRoot.querySelector("#blog-editor-title").style.color = "var(--palette-action-disabled)"
+                    this.shadowRoot.querySelector("#blog-editor-title").innerHTML = ` ${Application.account.name}, express yourself`
+                }
+            }
             callback(this.editorDiv)
-
             return
         }
 
@@ -405,11 +487,16 @@ export class BlogPostElement extends HTMLElement {
         if (this.blog != undefined) {
             data = JSON.parse(this.blog.getText())
             if (this.blog.getTitle().length > 0) {
+                this.shadowRoot.querySelector("#blog-editor-title").innerHTML = this.blog.getTitle()
                 this.titleSpan.innerHTML = this.blog.getTitle()
                 this.titleInput.value = this.blog.getTitle()
+                this.subtitleInput.value = this.blog.getSubtitle()
                 this.titleSpan.style.color = "var(--palette-text-primary)"
+                this.shadowRoot.querySelector("#blog-editor-title").style.color = "var(--palette-text-primary)"
             } else {
                 this.titleSpan.style.color = "var(--palette-action-disabled)"
+                this.shadowRoot.querySelector("#blog-editor-title").style.color = "var(--palette-action-disabled)"
+                this.shadowRoot.querySelector("#blog-editor-title").innerHTML = ` ${Application.account.name}, express yourself`
             }
 
 
@@ -533,6 +620,7 @@ export class BlogPostElement extends HTMLElement {
         this.editorDiv = null;
         this.editor = null;
         this.titleInput.value = ""
+        this.subtitleInput.value = ""
         this.titleSpan.innerHTML = ` ${Application.account.name}, express yourself`
         this.keywordsEditList.setValues([])
 
@@ -549,45 +637,77 @@ export class BlogPostElement extends HTMLElement {
     publish() {
         this.editor.save().then((outputData) => {
             if (this.blog == null) {
+                let globule = Model.globular // see if the blog need domain...
                 let rqst = new CreateBlogPostRequest
+                rqst.setIndexpath(globule.config.DataPath + "/search/blogPosts")
                 rqst.setAccountId(Application.account.id)
                 rqst.setText(JSON.stringify(outputData));
                 rqst.setLanguage(navigator.language.split("-")[0])
                 rqst.setTitle(this.titleInput.value)
+                rqst.setSubtitle(this.subtitleInput.value)
                 rqst.setKeywordsList(this.keywordsEditList.getValues())
-                rqst.setThumbnail("")
 
-                Model.globular.blogService.createBlogPost(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: localStorage.getItem("user_token") })
-                    .then(rsp => {
-                        this.blog = rsp.getBlogPost();
-                        ApplicationView.displayMessage("Your post is published!", 3000)
-                        // Publish the event
-                        Model.eventHub.publish(Application.account.id + "_publish_blog_event", this.blog.serializeBinary(), false)
-                        this.clear()
+                // if the title is empty I will set it from the firt h1 found in the text...
+                if (this.titleInput.value.length == 0) {
+                    let h1 = this.editorDiv.querySelectorAll("h1")
+                    if (h1.length > 0) {
+                        rqst.setTitle(h1[0].innerHTML)
+                    }
+                }
+                // do the same with subtitle...
+                if (this.subtitleInput.value.length == 0) {
+                    let h2 = this.editorDiv.querySelectorAll("h2")
+                    if (h2.length > 0) {
+                        rqst.setSubtitle(h2[0].innerHTML)
+                    }
+                }
 
-                    }).catch(e => {
-                        ApplicationView.displayMessage(e, 3000)
-                    })
+                let createBlog = () => {
+                    globule.blogService.createBlogPost(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: localStorage.getItem("user_token") })
+                        .then(rsp => {
+                            this.blog = rsp.getBlogPost();
+                            ApplicationView.displayMessage("Your post is published!", 3000)
+                            // Publish the event
+                            Model.eventHub.publish(Application.account.id + "_publish_blog_event", this.blog.serializeBinary(), false)
+
+                        }).catch(e => {
+                            ApplicationView.displayMessage(e, 3000)
+                        })
+                }
+
+                this.getThumbnail(500, dataUrl => { rqst.setThumbnail(dataUrl); createBlog(); })
+
+                this.clear()
+
             } else {
 
                 let rqst = new SaveBlogPostRequest
+                let globule = Model.globular
+                rqst.setIndexpath(globule.config.DataPath + "/search/blogPosts")
                 this.blog.setText(JSON.stringify(outputData))
-                this.blog.setThumbnail(image)
                 this.blog.setLanguage(navigator.language.split("-")[0])
                 this.blog.setTitle(this.titleInput.value)
+                this.blog.setSubtitle(this.subtitleInput.value)
                 this.blog.setKeywordsList(this.keywordsEditList.getValues())
-
                 rqst.setBlogPost(this.blog)
-                Model.globular.blogService.saveBlogPost(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: localStorage.getItem("user_token") })
-                    .then(rsp => {
-                        ApplicationView.displayMessage("Your post was updated!", 3000)
 
-                        // That function will update the blog...
-                        Model.eventHub.publish(this.blog.getUuid() + "_blog_updated_event", this.blog.serializeBinary(), false)
+                let saveBlog = () => {
+                    globule.blogService.saveBlogPost(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: localStorage.getItem("user_token") })
+                        .then(rsp => {
+                            ApplicationView.displayMessage("Your post was updated!", 3000)
 
-                    }).catch(e => {
-                        ApplicationView.displayMessage(e, 3000)
-                    })
+                            // That function will update the blog...
+                            Model.eventHub.publish(this.blog.getUuid() + "_blog_updated_event", this.blog.serializeBinary(), false)
+
+                        }).catch(e => {
+                            ApplicationView.displayMessage(e, 3000)
+                        })
+                }
+
+                // set the thumbnail and save the blog...
+                this.getThumbnail(500, dataUrl => { this.blog.setThumbnail(dataUrl); saveBlog() })
+
+
             }
 
         }).catch((error) => {

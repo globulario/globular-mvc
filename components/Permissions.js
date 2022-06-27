@@ -16,13 +16,14 @@ import '@polymer/iron-icons/editor-icons'
 import { GetApplicationsRqst, GetPackagesDescriptorRequest, Organization, RejectPeerRqst } from "globular-web-client/resource/resource_pb";
 import { GetFileInfoRequest } from "globular-web-client/file/file_pb";
 import { File } from "../File";
-import { ApplicationInfo, ConversationInfo, DomainInfo, FileInfo, GroupInfo, OrganizationInfo, PackageInfo, RoleInfo } from "./Informations";
+import { ApplicationInfo, BlogPostInfo, ConversationInfo, DomainInfo, FileInfo, GroupInfo, OrganizationInfo, PackageInfo, RoleInfo } from "./Informations";
 import * as getUuidByString from "uuid-by-string";
 import { getAllPeers, getPeerById } from "./Peers";
 import * as JwtDecode from "jwt-decode";
 import { GetConversationRequest, GetConversationsRequest } from "globular-web-client/conversation/conversation_pb";
 import { getRoleById } from "./Role";
 import { LogRqst } from "globular-web-client/log/log_pb";
+import { GetBlogPostsRequest } from "globular-web-client/blog/blog_pb";
 
 // This function return the list of all possible permission name from the server... it a little bit slow...
 // so for the moment I will simply use static values read, write and delete.
@@ -1265,8 +1266,45 @@ function getApplication(id, callback, errorCallback) {
 /**
  * Return blog info.
  */
-function getBlog() {
+function getBlog(id, callback, errorCallback) {
+    
+    let rqst = new GetBlogPostsRequest
+    rqst.setUuidsList([id])
 
+    let token = localStorage.getItem("user_token")
+    let decoded = JwtDecode(token);
+    let address = decoded.address; // default domain
+    let globule = Model.getGlobule(address)
+    let stream = globule.blogService.getBlogPosts(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
+    let blogPosts = [];
+
+    stream.on("data", (rsp) => {
+        blogPosts.push(rsp.getBlogPost())
+    });
+
+    stream.on("status", (status) => {
+        if (status.code == 0) {
+            let b = {...blogPosts[0]}
+
+            b.getPath = () => {
+                return id
+            }
+        
+            // The brief description.
+            b.getTitle = () => {
+                return  blogPosts[0].getTitle() + "</br><span style=\"font-style: italic; padding-right: 5px\">written by</span>" + b.getAuthor()
+            }
+        
+            // return file information panel...
+            b.getInfo = () => {
+                return new BlogPostInfo(blogPosts[0])
+            }
+
+            callback(b);
+        }else{
+            errorCallback(status.details)
+        }
+    })
 }
 
 /**
@@ -1539,7 +1577,7 @@ export class ResourcesPermissionsManager extends HTMLElement {
         this.innerHTML = ""
         // append list of different resources by type.
         this.appendResourcePermissions("application", getApplication)
-        this.appendResourcePermissions("blog")
+        this.appendResourcePermissions("blog", getBlog)
         this.appendResourcePermissions("domain", getDomain)
         this.appendResourcePermissions("conversation", getConversation)
         this.appendResourcePermissions("file", getFile)

@@ -7,10 +7,11 @@ import { CreateVideoRequest, DeleteVideoRequest, GetTitleFilesRequest, SearchTit
 import { Model } from '../Model';
 import { getTheme } from "./Theme";
 import * as getUuid from 'uuid-by-string'
-import { InformationsManager, searchEpisodes } from './Informations';
+import { BlogPostInfo, InformationsManager, searchEpisodes } from './Informations';
 import { playVideo } from './Video';
 import { ApplicationView } from '../ApplicationView';
 import * as getUuidByString from 'uuid-by-string';
+import { SearchBlogPostsRequest } from 'globular-web-client/blog/blog_pb';
 
 // keep values in memorie to speedup...
 var titles = {}
@@ -34,7 +35,7 @@ function toDataURL(url, callback) {
     };
     xhr.open('GET', url);
     xhr.responseType = 'blob';
-    
+
     xhr.send();
 }
 
@@ -259,7 +260,7 @@ function playTitleListener(player, title, indexPath, globule) {
 }
 
 // Search over multiple peers...
-function searchTitles(query, searchContext) {
+function search(query, searchContext) {
 
     // Connections can contain many time the same address....
     let globules = Model.getGlobules()
@@ -267,11 +268,18 @@ function searchTitles(query, searchContext) {
     globules.forEach(g => {
         // TODO search with givin context ex titles, blogs etc...
         let indexPath = g.config.DataPath + "/search/" + searchContext
-        _searchTitles(g, query, indexPath)
+        if (searchContext == "blogPosts") {
+            searchBlogPosts(g, query, indexPath)
+        } else {
+            searchTitles(g, query, indexPath)
+        }
     })
 }
 
-function _searchTitles(globule, query, indexPath) {
+/** 
+ * Search titles...
+ */
+function searchTitles(globule, query, indexPath) {
 
     // This is a simple test...
     let rqst = new SearchTitlesRequest
@@ -308,6 +316,42 @@ function _searchTitles(globule, query, indexPath) {
     });
 }
 
+function searchBlogPosts(globule, query, indexPath) {
+
+    // This is a simple test...
+    let rqst = new SearchBlogPostsRequest
+    rqst.setIndexpath(indexPath)
+    rqst.setQuery(query)
+    rqst.setOffset(0)
+    rqst.setSize(100)
+
+    let stream = globule.blogService.searchBlogPosts(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+    stream.on("data", (rsp) => {
+
+        if (rsp.hasSummary()) {
+            Model.eventHub.publish("_display_search_results_", {}, true)
+            Model.eventHub.publish("__new_search_event__", { query: query, summary: rsp.getSummary() }, true)
+        } else if (rsp.hasFacets()) {
+            let uuid = "_" + getUuid(query)
+            Model.eventHub.publish(`${uuid}_search_facets_event__`, { facets: rsp.getFacets() }, true)
+        } else if (rsp.hasHit()) {
+            let hit = rsp.getHit()
+            hit.globule = globule // keep track where the hit was found...
+            // display the value in the console...
+            hit.getSnippetsList().forEach(val => {
+                let uuid = "_" + getUuid(query)
+                Model.eventHub.publish(`${uuid}_search_hit_event__`, { hit: hit }, true)
+            })
+        }
+    });
+
+    stream.on("status", (status) => {
+        if (status.code != 0) {
+            // In case of error I will return an empty array
+            console.log(status.details)
+        }
+    });
+}
 /**
  * Search Box
  */
@@ -319,7 +363,7 @@ export class SearchBar extends HTMLElement {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
-        this.searchContext = "titles"
+        this.searchContext = "blogPosts"
     }
 
     // The connection callback.
@@ -388,9 +432,10 @@ export class SearchBar extends HTMLElement {
         </style>
         <div id="search-bar">
             <iron-icon icon="search" style="--iron-icon-fill-color: var(--palette-text-accent);" ></iron-icon>
-            <input id='search_input' placeholder="Search Movies"></input>
+            <input id='search_input' placeholder=""></input>
             <paper-icon-button id="change-search-context" icon="icons:expand-more" style="--iron-icon-fill-color: var(--palette-text-accent); margin-right: 2px; height: 36px;" ></paper-icon-button>
             <paper-card id="context-search-selector">
+                <paper-button id="context-search-selector-blog-posts">Blog Posts</paper-button>
                 <paper-button id="context-search-selector-movies">Movies</paper-button>
                 <paper-button id="context-search-selector-videos" style="color: var(--palette-text-disabled)">Videos</paper-button>
                 <paper-button id="context-search-selector-close">Close</paper-button>
@@ -404,6 +449,7 @@ export class SearchBar extends HTMLElement {
 
         let changeSearchContextBtn = this.shadowRoot.getElementById("change-search-context")
         let contextSearchSelector = this.shadowRoot.getElementById("context-search-selector")
+        let contextSearchSelectorBlogPosts = this.shadowRoot.getElementById("context-search-selector-blog-posts")
         let contextSearchSelectorMovies = this.shadowRoot.getElementById("context-search-selector-movies")
         let contextSearchSelectorVideos = this.shadowRoot.getElementById("context-search-selector-videos")
 
@@ -414,7 +460,7 @@ export class SearchBar extends HTMLElement {
         searchInput.onkeydown = (evt) => {
             if (evt.key == "Enter") {
 
-                searchTitles(searchInput.value, this.searchContext)
+                search(searchInput.value, this.searchContext)
                 searchInput.value = ""
                 Model.eventHub.publish("_display_search_results_", {}, true)
 
@@ -433,6 +479,7 @@ export class SearchBar extends HTMLElement {
 
         // Change the search context, this will search over other indexations...
         changeSearchContextBtn.onclick = () => {
+
             if (contextSearchSelector.style.display != "flex") {
                 contextSearchSelector.style.display = "flex"
             } else {
@@ -445,6 +492,7 @@ export class SearchBar extends HTMLElement {
         }
 
         contextSearchSelectorMovies.onclick = () => {
+            contextSearchSelectorBlogPosts.style.color = "var(--palette-text-disabled)"
             contextSearchSelectorVideos.style.color = "var(--palette-text-disabled)"
             contextSearchSelectorMovies.style.color = ""
             this.searchContext = "titles"
@@ -452,11 +500,22 @@ export class SearchBar extends HTMLElement {
         }
 
         contextSearchSelectorVideos.onclick = () => {
+            contextSearchSelectorBlogPosts.style.color = "var(--palette-text-disabled)"
             contextSearchSelectorVideos.style.color = ""
             contextSearchSelectorMovies.style.color = "var(--palette-text-disabled)"
             this.searchContext = "videos"
             searchInput.placeholder = "Search Videos"
         }
+
+        contextSearchSelectorBlogPosts.onclick = () => {
+            contextSearchSelectorBlogPosts.style.color = ""
+            contextSearchSelectorVideos.style.color = "var(--palette-text-disabled)"
+            contextSearchSelectorMovies.style.color = "var(--palette-text-disabled)"
+            this.searchContext = "blogPosts"
+            searchInput.placeholder = "Search Blog Posts"
+        }
+
+        contextSearchSelectorBlogPosts.click()
 
     }
 }
@@ -489,6 +548,7 @@ export class SearchResults extends HTMLElement {
                 margin-top: 15px;
                 background-color: var(--palette-background-paper);
                 color: var(--palette-text-primary);
+                margin: 0px;
             }
 
             .header {
@@ -538,7 +598,7 @@ export class SearchResults extends HTMLElement {
             Model.eventHub.publish("_hide_search_results_", {}, true)
 
             // Hide the search results...
-            let facetFilters = /*document*/ApplicationView.layout.sideMenu().getElementsByTagName("globular-facet-search-filter")
+            let facetFilters = ApplicationView.layout.sideMenu().getElementsByTagName("globular-facet-search-filter")
             for (var i = 0; i < facetFilters.length; i++) {
                 let f = facetFilters[i]
                 f.style.display = "none"
@@ -556,7 +616,6 @@ export class SearchResults extends HTMLElement {
                 if (tab == null) {
                     let html = `
                     <paper-tab id="${uuid}-tab">
-                        <paper-icon-button id="${uuid}-refresh-btn" icon="icons:refresh" style="display:none;"></paper-icon-button>
                         <span>${evt.query} (<span id="${uuid}-total-span">${evt.summary.getTotal()}</span>)</span>
                         <paper-icon-button id="${uuid}-close-btn" icon="icons:close"></paper-icon-button>
                     </paper-tab>
@@ -591,13 +650,6 @@ export class SearchResults extends HTMLElement {
 
                         // display the filters...
                         page.facetFilter.style.display = ""
-                    }
-
-
-                    let refreshBtn = this.tabs.querySelector(`#${uuid}-refresh-btn`)
-                    refreshBtn.onclick = (evt_) => {
-                        evt_.stopPropagation()
-                        searchTitles(evt.query)
                     }
 
                     let closeBtn = this.tabs.querySelector(`#${uuid}-close-btn`)
@@ -722,10 +774,13 @@ export class SearchResultsPage extends HTMLElement {
                 <paper-icon-button id="search-result-icon-view-btn" style="" icon="icons:view-module"></paper-icon-button>
                 <paper-icon-button class="disable"  id="search-result-lst-view-btn" icon="icons:view-list"></paper-icon-button>
             </div>
-            <slot> </slot>
-            <slot name="mosaic" style="display: flex; flex-wrap: wrap;">
+            <div id="mosaic-view" style="display: block;">
+                <slot name="mosaic" style="display: flex; flex-wrap: wrap;"></slot>
+            </div>
+            <div id="list-view" style="display: none;">
+                <slot name="list" style="display: flex; flex-wrap: wrap;"> </slot>
+            </div>
 
-            </slot>
         </div>
         `
 
@@ -742,15 +797,16 @@ export class SearchResultsPage extends HTMLElement {
             this.searchReusltLstViewBtn.classList.remove("disable")
             this.searchReusltIconViewBtn.classList.add("disable")
             this.viewType = "lst"
-            this.classList.remove("mosaic")
-            this.refresh()
+            this.shadowRoot.querySelector("#list-view").style.display = "block"
+            this.shadowRoot.querySelector("#mosaic-view").style.display = "none"
         }
 
         this.searchReusltIconViewBtn.onclick = () => {
             this.searchReusltLstViewBtn.classList.add("disable")
             this.searchReusltIconViewBtn.classList.remove("disable")
             this.viewType = "mosaic"
-            this.refresh()
+            this.shadowRoot.querySelector("#list-view").style.display = "none"
+            this.shadowRoot.querySelector("#mosaic-view").style.display = "block"
         }
 
         // Display facets
@@ -764,25 +820,10 @@ export class SearchResultsPage extends HTMLElement {
             evt => {
                 this.hits.push(evt.hit)
                 Model.eventHub.publish("_display_search_results_", {}, true)
-                if (this.viewType == "lst") {
-                    this.displayListHit(evt.hit)
-                } else {
-                    this.displayMosaicHit(evt.hit)
-                }
 
+                this.displayListHit(evt.hit)
+                this.displayMosaicHit(evt.hit)
             }, true)
-    }
-
-    // Refresh the view....
-    refresh() {
-        this.innerHTML = ""
-        this.hits.forEach(hit => {
-            if (this.viewType == "lst") {
-                this.displayListHit(hit)
-            } else {
-                this.displayMosaicHit(hit)
-            }
-        })
     }
 
     clear() {
@@ -792,68 +833,78 @@ export class SearchResultsPage extends HTMLElement {
     // Display a mosaic vue of the result. If the result is a title I will use a flit card
     // if is a video well a video card.
     displayMosaicHit(hit) {
-
-        if (hit.hasTitle()) {
-            let id = "_flip_card_" + getUuidByString(hit.getTitle().getName())
-            if (this.querySelector("#" + id) == null) {
-                let flipCard = new SearchFlipCard();
-                flipCard.id = id
-                flipCard.slot = "mosaic"
-                flipCard.setTitle(hit.getTitle(), hit.globule)
-                this.appendChild(flipCard)
+        if (hit.hasTitle || hit.hasVideo) {
+            if (hit.hasTitle()) {
+                let id = "_flip_card_" + getUuidByString(hit.getTitle().getName())
+                if (this.querySelector("#" + id) == null) {
+                    let flipCard = new SearchFlipCard();
+                    flipCard.id = id
+                    flipCard.slot = "mosaic"
+                    flipCard.setTitle(hit.getTitle(), hit.globule)
+                    this.appendChild(flipCard)
+                }
+                return this.querySelector("#" + id)
+            } else if (hit.hasVideo()) {
+                let id = "_video_card_" + getUuidByString(hit.getVideo().getId())
+                if (this.querySelector("#" + id) == null) {
+                    let videoCard = new SearchVideoCard();
+                    videoCard.id = id
+                    videoCard.slot = "mosaic"
+                    videoCard.setVideo(hit.getVideo(), hit.globule)
+                    this.appendChild(videoCard)
+                }
+                return this.querySelector("#" + id)
             }
-        } else if (hit.hasVideo()) {
-            let id = "_video_card_" + getUuidByString(hit.getVideo().getId())
-            if (this.querySelector("#" + id) == null) {
-                let videoCard = new SearchVideoCard();
-                videoCard.id = id
-                videoCard.slot = "mosaic"
-                videoCard.setVideo(hit.getVideo(), hit.globule)
-                this.appendChild(videoCard)
+        } else {
+            let blogPost = hit.getBlog()
+            let blogPostInfo = new BlogPostInfo(blogPost, true);
+            blogPostInfo.classList.add("filterable")
+            blogPost.getKeywordsList().forEach(kw => blogPostInfo.classList.add(getUuidByString(kw.toLowerCase())))
+            let id = "_" + blogPost.getUuid()
+            if (!this.querySelector("#" + id)) {
+                blogPostInfo.id = id
+                blogPostInfo.slot = "mosaic"
+                this.appendChild(blogPostInfo)
             }
+            return this.querySelector("#" + id)
         }
 
     }
 
     displayListHit(hit) {
+
         if (this.querySelector(`#hit-div-${hit.getIndex()}`) != null) {
+            console.log("----------> already exist ", hit.getIndex())
             return;
         }
 
         let titleName = ""
 
-        if (hit.hasTitle()) {
-            titleName = hit.getTitle().getName()
+        if (hit.hasTitle) {
+            if (hit.hasTitle()) {
+                titleName = hit.getTitle().getName()
+            }
         }
 
         let html = `
-        <style>
-        @media only screen and (min-width: 1800px){
-            globular-search-results {
-                grid-row-start: 1;
-                grid-column-start: 4;
-                grid-column-end: 14;
-            }
-         }
-        </style>
-            <div id="hit-div-${hit.getIndex()}" class="hit-div">
-                <div class="hit-header-div">
-                    <span class="hit-index-div">
-                        ${hit.getIndex() + 1}.
-                    </span>
-                    <span  class="hit-title-name-div">
-                        ${titleName}
-                    </span>
-                    <span class="hit-score-div">
-                        ${hit.getScore().toFixed(3)}
-                    </span>
-                </div>
-                <div class="snippets-div">
-                    
-                </div>
-                <div class="title-info-div">
-                </div>
+        <div id="hit-div-${hit.getIndex()}" class="hit-div" slot="list">
+            <div class="hit-header-div">
+                <span class="hit-index-div">
+                    ${hit.getIndex() + 1}.
+                </span>
+                <span  class="hit-title-name-div">
+                    ${titleName}
+                </span>
+                <span class="hit-score-div">
+                    ${hit.getScore().toFixed(3)}
+                </span>
             </div>
+            <div class="snippets-div">
+                
+            </div>
+            <div class="title-info-div">
+            </div>
+        </div>
         `
 
 
@@ -867,40 +918,49 @@ export class SearchResultsPage extends HTMLElement {
         let infoDisplay = new InformationsManager()
         let hitDiv = this.querySelector(`#hit-div-${hit.getIndex()}`)
 
-        if (hit.hasTitle()) {
-            infoDisplay.setTitlesInformation([hit.getTitle()], hit.globule)
-            hitDiv.classList.add("filterable")
-            let title = hit.getTitle()
-            title.getGenresList().forEach(g => hitDiv.classList.add(getUuidByString(g.toLowerCase())))
-            hitDiv.classList.add(getUuidByString(title.getType().toLowerCase()))
+        if (hit.hasTitle || hit.hasVideo) {
+            if (hit.hasTitle()) {
+                infoDisplay.setTitlesInformation([hit.getTitle()], hit.globule)
+                hitDiv.classList.add("filterable")
+                let title = hit.getTitle()
+                title.getGenresList().forEach(g => hitDiv.classList.add(getUuidByString(g.toLowerCase())))
+                hitDiv.classList.add(getUuidByString(title.getType().toLowerCase()))
 
-            // now the term..
-            if (title.getRating() < 3.5) {
-                hitDiv.classList.add(getUuidByString("low"))
-            } else if (title.getRating() < 7.0) {
-                hitDiv.classList.add(getUuidByString("medium"))
-            } else {
-                hitDiv.classList.add(getUuidByString("high"))
+                // now the term..
+                if (title.getRating() < 3.5) {
+                    hitDiv.classList.add(getUuidByString("low"))
+                } else if (title.getRating() < 7.0) {
+                    hitDiv.classList.add(getUuidByString("medium"))
+                } else {
+                    hitDiv.classList.add(getUuidByString("high"))
+                }
+
+            } else if (hit.hasVideo()) {
+                infoDisplay.setVideosInformation([hit.getVideo()])
+                hitDiv.classList.add("filterable")
+                let video = hit.getVideo()
+                video.getGenresList().forEach(g => hitDiv.classList.add(getUuidByString(g.toLowerCase())))
+                video.getTagsList().forEach(tag => hitDiv.classList.add(getUuidByString(tag.toLowerCase())))
+
+                // now the term..
+                if (video.getRating() < 3.5) {
+                    hitDiv.classList.add(getUuidByString("low"))
+                } else if (video.getRating() < 7.0) {
+                    hitDiv.classList.add(getUuidByString("medium"))
+                } else {
+                    hitDiv.classList.add(getUuidByString("high"))
+                }
             }
 
+            infoDisplay.hideHeader()
         } else {
-            infoDisplay.setVideosInformation([hit.getVideo()])
+            let blogPost = hit.getBlog()
             hitDiv.classList.add("filterable")
-            let video = hit.getVideo()
-            video.getGenresList().forEach(g => hitDiv.classList.add(getUuidByString(g.toLowerCase())))
-            video.getTagsList().forEach(tag => hitDiv.classList.add(getUuidByString(tag.toLowerCase())))
-
-            // now the term..
-            if (video.getRating() < 3.5) {
-                hitDiv.classList.add(getUuidByString("low"))
-            } else if (video.getRating() < 7.0) {
-                hitDiv.classList.add(getUuidByString("medium"))
-            } else {
-                hitDiv.classList.add(getUuidByString("high"))
-            }
+            infoDisplay.setBlogPostInformation(blogPost)
+            blogPost.getKeywordsList().forEach(kw => hitDiv.classList.add(getUuidByString(kw.toLowerCase())))
         }
 
-        infoDisplay.hideHeader()
+
         titleInfoDiv.appendChild(infoDisplay)
 
         // Here  I will display the snippet results.
@@ -1169,7 +1229,7 @@ export class SearchVideoCard extends HTMLElement {
 customElements.define('globular-search-video-card', SearchVideoCard)
 
 /**
- * Display title with a flip card.
+ * Display title with a flip card for title (movies)
  */
 export class SearchFlipCard extends HTMLElement {
     // attributes.
@@ -1670,8 +1730,16 @@ export class FacetSearchFilter extends HTMLElement {
 
         this.page = page
 
+        // hide existing facet filters...
+        let facetFilters = ApplicationView.layout.sideMenu().getElementsByTagName("globular-facet-search-filter")
+        for (var i = 0; i < facetFilters.length; i++) {
+            let f = facetFilters[i]
+            f.style.display = "none"
+        }
+
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
+
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -1681,6 +1749,7 @@ export class FacetSearchFilter extends HTMLElement {
             #container{
                 font-size: 1.17rem;
                 padding: 10px;
+                padding-right: 30px;
             }
             
         </style>
@@ -1688,8 +1757,6 @@ export class FacetSearchFilter extends HTMLElement {
            <slot name="facets"></slot>
         </div>
         `
-
-        // test create offer...
     }
 
     // Set the facets...
@@ -1789,7 +1856,6 @@ export class SearchFacetPanel extends HTMLElement {
         this.shadowRoot.querySelector("#total_span").innerHTML = "(" + this.total + ")"
         this.shadowRoot.querySelector("#field_span").innerHTML = facet.getField()
 
-
         let range = document.createRange()
         let terms = facet.getTermsList().sort((a, b) => {
             if (a.getTerm() < b.getTerm()) { return -1; }
@@ -1810,7 +1876,7 @@ export class SearchFacetPanel extends HTMLElement {
                 className = obj.name
             }
 
-            let count = this.page.getElementsByClassName(getUuidByString(className)).length
+            let count = this.page.getElementsByClassName(getUuidByString(className)).length / 2 // list-view and mosaic-view will be count
             if (count > 0) {
                 let uuid = "_" + getUuidByString(className)
                 if (!facetList.querySelector("#" + uuid)) {

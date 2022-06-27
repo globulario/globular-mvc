@@ -707,7 +707,8 @@ globular-facet-search-filter{
    display: flex; 
    flex-direction: column;
    padding: 10px;
-   border: 1px solid var(--palette-background-paper);
+   border: 1px solid var(--palette-divider);
+   width: 100%;
 }
 
 .hit-header-div{

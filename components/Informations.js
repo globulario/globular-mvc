@@ -8,11 +8,11 @@ import { ApplicationView } from "../ApplicationView";
 import { randomUUID } from "./utility";
 import { playVideo } from "./Video";
 
-function listToString(lst){
+function listToString(lst) {
     let str = "["
-    lst.forEach((s, i)=>{
+    lst.forEach((s, i) => {
         str += s;
-        if(i < lst.length - 1){
+        if (i < lst.length - 1) {
             str += " ,"
         }
     })
@@ -32,14 +32,13 @@ const __style__ = `
 
 
 .title-informations-div {
-    
     font-size: 1em;
-    max-width: 450px;
+    /*max-width: 450px;*/
   
 }
 
 .title-poster-div img, p{
-    max-width: 256px;
+    /*max-width: 256px;*/
 }
 
 .title-genre-span {
@@ -472,9 +471,20 @@ export class InformationsManager extends HTMLElement {
         this.innerHTML = "" // remove previous content.
         this.shadowRoot.querySelector(".title-div").innerHTML = ""
         let video = videos[0]
-        let videoInfo = new VideoInfo(this.shadowRoot.querySelector(".title-div"),  this.hasAttribute("short"))
+        let videoInfo = new VideoInfo(this.shadowRoot.querySelector(".title-div"), this.hasAttribute("short"))
         videoInfo.setVideo(video)
         this.appendChild(videoInfo)
+    }
+
+    /**
+     * Display video informations.
+     * @param {*} videos 
+     */
+    setBlogPostInformation(blogPost) {
+        this.innerHTML = "" // remove previous content.
+        this.shadowRoot.querySelector(".title-div").innerHTML = ""
+        let blogPostInfo = new BlogPostInfo(blogPost)
+        this.appendChild(blogPostInfo)
     }
 
     /**
@@ -509,7 +519,7 @@ export class InformationsManager extends HTMLElement {
         this.appendChild(titleInfo)
     }
 
-    setFileInformation(file){
+    setFileInformation(file) {
         this.innerHTML = "" // remove previous content.
         this.shadowRoot.querySelector(".title-div").innerHTML = `
         <div style="display: flex; align-items: center;">
@@ -555,11 +565,15 @@ export class VideoInfo extends HTMLElement {
             .title-rating-div{
                 font-size: .8rem;
             }
+
+            .title-poster-img{
+                max-width: 320px;
+            }
         </style>
         <div>
             <div class="title-div">
                 <div class="title-poster-div" >
-                    <img id="title-poster-img" style="${this.isShort ? "display: none;" : ""}"></img>
+                    <img class="title-poster-img" style="${this.isShort ? "display: none;" : ""}"></img>
                     <div class="title-files-div">
                     </div>
                 </div>
@@ -598,7 +612,7 @@ export class VideoInfo extends HTMLElement {
         if (video.getPoster() != undefined) {
             // must be getContentUrl here... 
             posterUrl = video.getPoster().getContenturl()
-            this.shadowRoot.querySelector("#title-poster-img").src = posterUrl
+            this.shadowRoot.querySelector(".title-poster-img").src = posterUrl
         }
 
         this.shadowRoot.querySelector(".title-synopsis-div").innerHTML = video.getDescription()
@@ -783,10 +797,14 @@ export class TitleInfo extends HTMLElement {
                 display: flex;
                 justify-content: end;
             }
+
+            .title-poster-img{
+                max-width: 320px;
+            }
         </style>
         <div class="title-div" >
             <div class="title-poster-div" style="${this.isShort ? "display: none;" : ""}">
-                <img id="title-poster-img"></img>
+                <img class="title-poster-img"></img>
             </div>
             <div class="title-informations-div">
                 <div class="title-genres-div"></div>
@@ -835,8 +853,8 @@ export class TitleInfo extends HTMLElement {
         this.shadowRoot.querySelector(".title-synopsis-div").innerHTML = title.getDescription()
         this.shadowRoot.querySelector("#rating-span").innerHTML = title.getRating().toFixed(1)
         this.shadowRoot.querySelector("#rating-total-div").innerHTML = title.getRatingcount()
-        this.shadowRoot.querySelector("#title-poster-img").src = posterUrl
-        
+        this.shadowRoot.querySelector(".title-poster-img").src = posterUrl
+
 
         // Set the title div.
         this.titleDiv.innerHTML = `
@@ -1153,7 +1171,7 @@ customElements.define('globular-title-info', TitleInfo)
 /**
  * Display basic file informations.
  */
- export class FileInfo extends HTMLElement {
+export class FileInfo extends HTMLElement {
 
     // Create the applicaiton view.
     constructor(file) {
@@ -1210,7 +1228,7 @@ customElements.define('globular-file-info', FileInfo)
 /**
  * Display basic application informations.
  */
- export class ApplicationInfo extends HTMLElement {
+export class ApplicationInfo extends HTMLElement {
 
     // Create the applicaiton view.
     constructor(application) {
@@ -1273,7 +1291,7 @@ customElements.define('globular-application-info', ApplicationInfo)
 /**
  * Display basic file informations.
  */
- export class GroupInfo extends HTMLElement {
+export class GroupInfo extends HTMLElement {
 
     // Create the applicaiton view.
     constructor(group) {
@@ -1307,7 +1325,7 @@ customElements.define('globular-application-info', ApplicationInfo)
 
                 <div style="display: table-row;">
                     <div style="display: table-cell; font-weight: 450;">Members:</div>
-                    <div style="display: table-cell;">${ listToString(group.members) }</div>
+                    <div style="display: table-cell;">${listToString(group.members)}</div>
                 </div>
             </div>
         </div>
@@ -1321,7 +1339,7 @@ customElements.define('globular-group-info', GroupInfo)
 /**
  * Display basic organization informations.
  */
- export class OrganizationInfo extends HTMLElement {
+export class OrganizationInfo extends HTMLElement {
 
     // Create the applicaiton view.
     constructor(org) {
@@ -1355,19 +1373,19 @@ customElements.define('globular-group-info', GroupInfo)
 
                 <div style="display: table-row;">
                     <div style="display: table-cell; font-weight: 450;">Accounts:</div>
-                    <div style="display: table-cell;">${ listToString(org.getAccountsList()) }</div>
+                    <div style="display: table-cell;">${listToString(org.getAccountsList())}</div>
                 </div>
                 <div style="display: table-row;">
                     <div style="display: table-cell; font-weight: 450;">Groups:</div>
-                    <div style="display: table-cell;">${ listToString(org.getGroupsList()) }</div>
+                    <div style="display: table-cell;">${listToString(org.getGroupsList())}</div>
                 </div>
                 <div style="display: table-row;">
                     <div style="display: table-cell; font-weight: 450;">Roles:</div>
-                    <div style="display: table-cell;">${ listToString(org.getRolesList()) }</div>
+                    <div style="display: table-cell;">${listToString(org.getRolesList())}</div>
                 </div>
                 <div style="display: table-row;">
                     <div style="display: table-cell; font-weight: 450;">Applications:</div>
-                    <div style="display: table-cell;">${ listToString(org.getApplicationsList()) }</div>
+                    <div style="display: table-cell;">${listToString(org.getApplicationsList())}</div>
                 </div>
             </div>
         </div>
@@ -1382,29 +1400,184 @@ customElements.define('globular-organization-info', OrganizationInfo)
 /**
  * Display basic blog informations.
  */
- export class BlogInfo extends HTMLElement {
+export class BlogPostInfo extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor() {
+    constructor(blogPost, short) {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
 
-        // Innitialisation of the layout.
-        this.shadowRoot.innerHTML = `
-        <style>
-            ${getTheme()}
-        </style>
+        let creationTime = new Date(blogPost.getCreationtime() * 1000)
+        let status = "Draft"
+        if (blogPost.getStatus() == 1) {
+            status = "Published"
+        } else if (blogPost.getStatus() == 2) {
+            status = "Archived"
+        }
 
-        <div id="container">
-        </div>
-        `
+
+        if (short != undefined) {
+            if (short == true) {
+                this.setAttribute("short", "true")
+            } else {
+                this.setAttribute("short", "false")
+            }
+        } else {
+            this.setAttribute("short", "false")
+        }
+
+        // Now if the thumbnail is not empty...
+        let thumbnail = blogPost.getThumbnail()
+
+        // Innitialisation of the layout.
+        if (this.getAttribute("short") == "true") {
+            this.shadowRoot.innerHTML = `
+            <style>
+                ${getTheme()}
+                #container {
+
+                }
+
+                .blog-post-card {
+                    display: flex;
+                    flex-direction: column;
+
+                    border-radius: 3.5px;
+                    border: 1px solid var(--palette-divider);
+                    height: 100%;
+                    max-width: 450px;
+                    width: 450px;
+                    margin: 10px;
+                    max-width: 450px;
+                    max-height: 285px;
+                    min-height: 285px;
+                    margin: 10px;
+                    overflow: hidden;
+                }
+
+                .blog-post-card:hover{
+                    box-shadow: rgba(0, 0, 0, 0.16) 0px 3px 6px, rgba(0, 0, 0, 0.23) 0px 3px 6px;
+                    cursor: pointer;
+                }
+    
+
+                .blog-post-card img{
+                    align-self: center;
+                }
+
+                .blog-post-card div{
+                    display: block;
+                    padding: 5px;
+                }
+
+                img{
+                    border-top-left-radius: 3.5px;
+                    border-top-right-radius: 3.5px;
+                    object-fit: cover;
+                    width: 100%;
+                    height:50%;
+
+                }
+
+                .blog-title{
+                    font-weight: 400;
+                    font-size: 18px;
+                    line-height: 24px;
+                    font-weight: bold;
+                }
+
+                .blog-subtitle{
+                    font-weight: 400;
+                    line-height: 24px;
+                    font-size: 16px;
+                }
+
+                .blog-author {
+                    font-weight: bold;
+                }
+
+                .blog-author, .blog-creation-date{
+                    line-height: 16px;
+                    font-size: 12px;
+                }
+    
+            </style>
+            <div id="container" class="blog-post-card">
+                <img style="display:${thumbnail.length == 0 ? "none" : "block"};" src="${thumbnail}"></img>
+                <span style="flex-grow: 1;"></span>
+                <div class="blog-title">${blogPost.getTitle()}</div>
+                <div class="blog-subtitle">${blogPost.getSubtitle()}</div>
+                <div style="display: flex;">
+                    <div class="blog-author" style="flex-grow: 1;">${blogPost.getAuthor()}</div>
+                    <div class="blog-creation-date">${creationTime.toLocaleDateString()}</div>
+                </div>
+            </div>
+            `
+        } else {
+            this.shadowRoot.innerHTML = `
+            <style>
+                ${getTheme()}
+                #container {
+                    display: flex;
+                }
+    
+            </style>
+            <div id="container">
+                <div>
+                   <img style="width: 128px; padding-left: 10px; padding-top: 10px; display:${thumbnail.length == 0 ? "none" : "block"};" src="${thumbnail}"></img>
+                </div>
+                <div style="display: table; flex-grow: 1; padding-left: 20px;">
+                    <div style="display: table-row;">
+                        <div style="display: table-cell; font-weight: 450;">Id:</div>
+                        <div style="display: table-cell;">${blogPost.getUuid()}</div>
+                    </div>
+                    <div style="display: table-row;">
+                        <div style="display: table-cell; font-weight: 450;">Title:</div>
+                        <div style="display: table-cell;">${blogPost.getTitle()}</div>
+                    </div>
+                    <div style="display: table-row;">
+                        <div style="display: table-cell; font-weight: 450;">subtitle:</div>
+                        <div style="display: table-cell;">${blogPost.getSubtitle()}</div>
+                    </div>
+                    <div style="display: table-row;">
+                        <div style="display: table-cell; font-weight: 450;">Author:</div>
+                        <div style="display: table-cell;">${blogPost.getAuthor()}</div>
+                    </div>
+                    <div style="display: table-row;">
+                        <div style="display: table-cell; font-weight: 450;">Status:</div>
+                        <div style="display: table-cell;">${status}</div>
+                    </div>
+                    <div style="display: table-row;">
+                        <div style="display: table-cell; font-weight: 450;">Language:</div>
+                        <div style="display: table-cell;">${blogPost.getLanguage()}</div>
+                    </div>
+                    <div style="display: table-row;">
+                        <div style="display: table-cell; font-weight: 450;">Date:</div>
+                        <div style="display: table-cell;">${creationTime.toLocaleDateString()}</div>
+                    </div>
+    
+                    <div style="display: table-row;">
+                        <div style="display: table-cell; font-weight: 450;">Keywords:</div>
+                        <div style="display: table-cell;">${listToString(blogPost.getKeywordsList())}</div>
+                    </div>
+                </div>
+            </div>
+            `
+
+            // so here I will retreive more information about the author if it's available...
+            
+        }
+    }
+
+    connectedCallback() {
+
     }
 
 }
 
-customElements.define('globular-blog-info', BlogInfo)
+customElements.define('globular-blog-post-info', BlogPostInfo)
 
 
 /**
@@ -1420,7 +1593,7 @@ export class PackageInfo extends HTMLElement {
         this.attachShadow({ mode: 'open' });
 
         let packageType = "Application Package"
-        if(descriptor.getType() == 1){
+        if (descriptor.getType() == 1) {
             packageType = "Service Package"
         }
 
@@ -1508,7 +1681,7 @@ export class RoleInfo extends HTMLElement {
 
                 <div style="display: table-row;">
                     <div style="display: table-cell; font-weight: 450;">Accounts:</div>
-                    <div style="display: table-cell;">${ listToString(role.getMembersList()) }</div>
+                    <div style="display: table-cell;">${listToString(role.getMembersList())}</div>
                 </div>
             </div>
         </div>
@@ -1522,7 +1695,7 @@ customElements.define('globular-role-info', RoleInfo)
 /**
  * Display basic blog informations.
  */
- export class ConversationInfo extends HTMLElement {
+export class ConversationInfo extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
@@ -1532,7 +1705,7 @@ customElements.define('globular-role-info', RoleInfo)
         this.attachShadow({ mode: 'open' });
 
         let creationTime = new Date(conversation.getCreationTime() * 1000)
-        let lastMessageTime = new Date(conversation.getLastMessageTime() * 1000) 
+        let lastMessageTime = new Date(conversation.getLastMessageTime() * 1000)
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -1585,7 +1758,7 @@ customElements.define('globular-conversation-info', ConversationInfo)
 /**
  * Display basic blog informations.
  */
- export class DomainInfo extends HTMLElement {
+export class DomainInfo extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
