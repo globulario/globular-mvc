@@ -1247,7 +1247,7 @@ function getApplication(id, callback, errorCallback) {
             }
 
             // The brief description.
-            applicaiton.getTitle = () => {
+            applicaiton.getHeaderText = () => {
                 return applicaiton.getAlias() + " " + applicaiton.getVersion()
             }
 
@@ -1284,14 +1284,13 @@ function getBlog(id, callback, errorCallback) {
 
     stream.on("status", (status) => {
         if (status.code == 0) {
-            let b = {...blogPosts[0]}
-
+            const b = blogPosts[0]
             b.getPath = () => {
                 return id
             }
         
             // The brief description.
-            b.getTitle = () => {
+            b.getHeaderText = () => {
                 return  blogPosts[0].getTitle() + "</br><span style=\"font-style: italic; padding-right: 5px\">written by</span>" + b.getAuthor()
             }
         
@@ -1318,7 +1317,7 @@ function getDomain(domain, callback, errorCallback) {
     }
 
     // The brief description.
-    d.getTitle = () => {
+    d.getHeaderText = () => {
         return d.name
     }
 
@@ -1351,7 +1350,7 @@ function getConversation(id, callback, errorCallback) {
             }
 
             // The brief description.
-            c.getTitle = () => {
+            c.getHeaderText = () => {
                 return c.getName()
             }
 
@@ -1386,7 +1385,7 @@ function getFile(path, callback, errorCallback) {
             }
 
             // The brief description.
-            f.getTitle = () => {
+            f.getHeaderText = () => {
                 return f.path
             }
 
@@ -1411,7 +1410,7 @@ function getGroup(id, callback, errorCallback) {
         }
 
         // The brief description.
-        g.getTitle = () => {
+        g.getHeaderText = () => {
             return g.name
         }
 
@@ -1435,7 +1434,7 @@ function getOrganization(id, callback, errorCallback) {
         }
 
         // The brief description.
-        o.getTitle = () => {
+        o.getHeaderText = () => {
             return o.getName()
         }
 
@@ -1456,7 +1455,7 @@ function getPackage(id, callback, errorCallback) {
 
     // so here I will split the given path to retreive the actual 
     // package descriptor.
-    let infos = id.split("/")
+    let infos = id.split("|")
     let publisherid = infos[0]
     let id_ = infos[1]
     let name = infos[2]
@@ -1482,7 +1481,7 @@ function getPackage(id, callback, errorCallback) {
             }
 
             // The brief description.
-            p.getTitle = () => {
+            p.getHeaderText = () => {
                 return p.getName() + " " + p.getVersion() + " from " + publisherid
             }
 
@@ -1511,7 +1510,7 @@ function getRole(id, callback, errorCallback) {
         }
 
         // The brief description.
-        r.getTitle = () => {
+        r.getHeaderText = () => {
             return r.getName()
         }
 
@@ -1837,7 +1836,7 @@ export class ResourcePermissions extends HTMLElement {
                 </div>
 
                 <span style="flex-grow: 1; padding: 5px;">
-                    ${resource.getTitle()}
+                    ${resource.getHeaderText()}
                 </span>
 
                 <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
@@ -1910,7 +1909,7 @@ export class ResourcePermissions extends HTMLElement {
                 ${getTheme()}
             </style>
             <div>
-                <div>Your about to delete permission for resource ${resource.getTitle()}</div>
+                <div>Your about to delete permission for resource ${resource.getHeaderText()}</div>
                 <div>Is it what you want to do? </div>
                 <div style="display: flex; justify-content: flex-end;">
                     <paper-button id="ok-button">Ok</paper-button>
