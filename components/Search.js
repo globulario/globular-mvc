@@ -13,6 +13,7 @@ import { ApplicationView } from '../ApplicationView';
 import * as getUuidByString from 'uuid-by-string';
 import { SearchBlogPostsRequest } from 'globular-web-client/blog/blog_pb';
 
+
 // keep values in memorie to speedup...
 var titles = {}
 
@@ -548,7 +549,8 @@ export class SearchResults extends HTMLElement {
                 margin-top: 15px;
                 background-color: var(--palette-background-paper);
                 color: var(--palette-text-primary);
-                margin: 0px;
+                margin-top: 10px;
+                margin-bottom: 10px;
             }
 
             .header {
@@ -1010,8 +1012,7 @@ export class SearchVideoCard extends HTMLElement {
                 max-width: 320px;
                 margin: 10px;
                 max-width: 320px;
-                max-height: 285px;
-                min-height: 285px;
+                height: 285px;
                 margin: 10px;
                 overflow: hidden;
             }

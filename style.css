@@ -483,7 +483,6 @@ globular-blog-posts globular-blog-post{
       grid-row-start: 1;
       grid-column-start: 1;
       grid-column-end: 17;
-      margin-top: 10px;
    }
 
    globular-terminal{
@@ -508,10 +507,14 @@ globular-blog-posts globular-blog-post{
    }
 
    globular-settings-panel, globular-blog-posts{
-      grid-row-start: 2;
       grid-column-start: 1;
       grid-column-end: 17;
    }
+
+   globular-settings-panel{
+      grid-row-start: 2;
+   }
+
 
    globular-settings-panel{
       grid-row-start: 1;
@@ -534,7 +537,6 @@ globular-blog-posts globular-blog-post{
       grid-row-start: 1;
       grid-column-start: 3;
       grid-column-end: 15;
-      margin-top: 10px;
    }
 
    globular-terminal{
@@ -559,10 +561,16 @@ globular-blog-posts globular-blog-post{
    }
    
    globular-settings-panel, globular-blog-posts{
-      grid-row-start: 2;
-      grid-row-end: 3;
       grid-column-start: 3;
       grid-column-end: 15;
+   }
+
+   globular-settings-panel{
+      grid-row-end: 3;
+   }
+
+   globular-settings-panel{
+      grid-row-start: 2;
    }
 
    globular-messenger{
@@ -578,7 +586,6 @@ globular-blog-posts globular-blog-post{
       grid-row-start: 1;
       grid-column-start: 5;
       grid-column-end: 13;
-      margin-top: 10px;
    }
 
    globular-terminal{
@@ -603,13 +610,12 @@ globular-blog-posts globular-blog-post{
    }
 
    globular-settings-panel, globular-blog-posts{
-      grid-row-start: 2;
       grid-column-start: 5;
       grid-column-end: 13;
    }
 
    globular-settings-panel{
-      grid-row-start: 1;
+      grid-row-start: 2;
    }
 
 
@@ -632,8 +638,6 @@ globular-blog-posts globular-blog-post{
       grid-row-start: 1;
       grid-column-start: 4;
       grid-column-end: 14;
-      margin-top: 10px;
-
    }
 
 
@@ -661,9 +665,12 @@ globular-blog-posts globular-blog-post{
 
 
    globular-settings-panel, globular-blog-posts{
-      grid-row-start: 2;
       grid-column-start: 4;
       grid-column-end: 14;
+   }
+
+   globular-settings-panel{
+      grid-row-start: 2;
    }
 
    globular-settings-panel {

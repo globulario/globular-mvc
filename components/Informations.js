@@ -1451,8 +1451,7 @@ export class BlogPostInfo extends HTMLElement {
                     width: 450px;
                     margin: 10px;
                     max-width: 450px;
-                    max-height: 285px;
-                    min-height: 285px;
+                    height: 285px;
                     margin: 10px;
                     overflow: hidden;
                 }
@@ -1476,8 +1475,10 @@ export class BlogPostInfo extends HTMLElement {
                     border-top-left-radius: 3.5px;
                     border-top-right-radius: 3.5px;
                     object-fit: cover;
-                    width: 100%;
-                    height:50%;
+                    width: 500px;
+                    position: absolute;
+                    top: -10px;
+                    left: -10px;
 
                 }
 
@@ -1502,10 +1503,32 @@ export class BlogPostInfo extends HTMLElement {
                     line-height: 16px;
                     font-size: 12px;
                 }
+
+                .image-box {
+                    position: relative;
+                    margin: auto;
+                    overflow: hidden;
+                    width: 450px;
+                    height:50%;
+                }
+
+                .image-box img {
+                    max-width: 100%;
+                    transition: all 0.3s;
+                    display: block;
+                    height: auto;
+                    transform: scale(1.05);
+                }
+                
+                .image-box:hover img {
+                    transform: scale(1);
+                }
     
             </style>
             <div id="container" class="blog-post-card">
-                <img style="display:${thumbnail.length == 0 ? "none" : "block"};" src="${thumbnail}"></img>
+                <div class="image-box">
+                    <img style="display:${thumbnail.length == 0 ? "none" : "block"};" src="${thumbnail}"></img>
+                </div>
                 <span style="flex-grow: 1;"></span>
                 <div class="blog-title">${blogPost.getTitle()}</div>
                 <div class="blog-subtitle">${blogPost.getSubtitle()}</div>
@@ -1566,8 +1589,19 @@ export class BlogPostInfo extends HTMLElement {
             </div>
             `
 
-            // so here I will retreive more information about the author if it's available...
-            
+
+        }
+        // so here I will retreive more information about the author if it's available...
+        this.shadowRoot.querySelector("#container").onclick = () => {
+            Model.eventHub.publish("_display_blog_event_", blogPost, true)
+        }
+
+        if (this.deleteListener == undefined) {
+            Model.eventHub.subscribe(blogPost.getUuid() + "_blog_delete_event", uuid => this.deleteListener = uuid,
+                evt => {
+                    // simplity remove it from it parent...
+                    this.parentNode.removeChild(this)
+                }, false, this)
         }
     }
 

@@ -21,6 +21,8 @@ import { Account } from '../Account';
 import { v4 as uuidv4 } from "uuid";
 import '@polymer/iron-icons/communication-icons'
 import * as getUuidByString from 'uuid-by-string';
+import { BlogPostInfo } from './Informations';
+import { AppScrollEffectsBehavior } from '@polymer/app-layout/app-scroll-effects/app-scroll-effects-behavior';
 
 const intervals = [
     { label: 'year', seconds: 31536000 },
@@ -146,6 +148,9 @@ export class BlogPostElement extends HTMLElement {
             this.id = "_" + blog.getUuid()
         }
 
+        // The close event listener.
+        this.onclose = null
+
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
 
@@ -157,6 +162,8 @@ export class BlogPostElement extends HTMLElement {
             #container {
                 display: flex;
                 justify-content: center;
+                margin-bottom: 10px;
+                margin-top: 10px;
             }
 
             .blog-post-editor-div{
@@ -219,10 +226,16 @@ export class BlogPostElement extends HTMLElement {
                 text-align: center;
             }
 
+            #close-btn{
+                position: absolute;
+                top: 0px;
+                right: 0px;
+                z-index: 100;
+            }
+
         </style>
 
         <div id="container">
-            
             <paper-card class="blog-post-editor-div">
                 <div class="blog-post-title-div">
                     <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
@@ -233,6 +246,7 @@ export class BlogPostElement extends HTMLElement {
                         ${Application.account.name}, express yourself
                     </span>
                     <paper-icon-button icon="icons:more-horiz" id="blog-editor-menu-btn"></paper-icon-button>
+                    <paper-icon-button id="close-editor-btn" icon="icons:close"></paper-icon-button>
                 </div>
                 <iron-collapse opened = "[[opened]]" id="collapse-panel" style="display: flex; flex-direction: column;">
                     
@@ -269,17 +283,17 @@ export class BlogPostElement extends HTMLElement {
                     </div>
                     <h2 class="blog-reader-title"></h2>
                     <paper-icon-button icon="icons:more-horiz" id="blog-reader-menu-btn"></paper-icon-button>
+                    <paper-icon-button id="close-reader-btn" icon="icons:close"></paper-icon-button>
                 </div>
                 <paper-card id="blog-reader-options-panel"  class="blog-options-panel"  style="display: none;">
-                    <div class="card-content" style="background-color: transparent;">
-                        
-                    </div>
+                    <div class="card-content" style="background-color: transparent;"></div>
                     <div class="blog-actions" style="justify-content: end; border-color: var(--palette-action-disabled);">
                         <paper-button style="align-self: end;" id="blog-reader-edit-btn">Edit</paper-button>
                     </div>
                 </paper-card>
                 <slot id="read-only-blog-content" name="read-only-blog-content"></slot>
                 <slot name="blog-comments"></slot>
+                
             </paper-card>
         </div>
         `
@@ -288,6 +302,28 @@ export class BlogPostElement extends HTMLElement {
         this.blogComments = new BlogComments(blog)
         this.blogComments.slot = "blog-comments"
         this.appendChild(this.blogComments)
+
+        if (blog != null) {
+            if (blog.getStatus() == 0) {
+                this.shadowRoot.querySelector("paper-radio-group").selected = "draft"
+            } else if (blog.getStatus() == 1) {
+                this.shadowRoot.querySelector("paper-radio-group").selected = "published"
+            } else if (blog.getStatus() == 2) {
+                this.shadowRoot.querySelector("paper-radio-group").selected = "archived"
+            }
+        }
+
+        this.shadowRoot.querySelector("#close-reader-btn").onclick = () => {
+            if (this.onclose != undefined) {
+                this.onclose()
+            }
+        }
+
+        this.shadowRoot.querySelector("#close-editor-btn").onclick = () => {
+            if (this.onclose != undefined) {
+                this.onclose()
+            }
+        }
 
         this.collapse_btn = this.shadowRoot.querySelector("#collapse-btn")
         this.collapse_panel = this.shadowRoot.querySelector("#collapse-panel")
@@ -352,6 +388,7 @@ export class BlogPostElement extends HTMLElement {
             globule.blogService.deleteBlogPost(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: localStorage.getItem("user_token") })
                 .then(rsp => {
                     Model.eventHub.publish(this.blog.getUuid() + "_blog_delete_event", {}, false)
+
                 })
                 .catch(e => ApplicationView.displayMessage(e, 3000))
         }
@@ -359,6 +396,7 @@ export class BlogPostElement extends HTMLElement {
         // switch to edit mode...
         this.shadowRoot.querySelector("#blog-reader-edit-btn").onclick = () => {
             this.edit(() => {
+                this.setAttribute("editable", "true")
                 ApplicationView.displayMessage("you'r in edit mode, click save to exit...", 3000)
             })
         }
@@ -395,21 +433,44 @@ export class BlogPostElement extends HTMLElement {
             Model.eventHub.subscribe(this.blog.getUuid() + "_blog_updated_event", uuid => this.updateListener = uuid, evt => {
 
                 this.blog = BlogPost.deserializeBinary(Uint8Array.from(evt.split(",")))
-                this.read(() => {
-                    // set back values.
-                    this.titleSpan.innerHTML = this.blog.getTitle()
-                    this.titleInput.value = this.blog.getTitle()
-                    this.subtitleInput.value = this.blog.getSubtitle()
-                    this.keywordsEditList.setValues(this.blog.getKeywordsList())
-                })
+                let isEditable = this.getAttribute("editable")
+                if (isEditable == undefined) {
+                    isEditable = false
+                } else {
+                    if (this.getAttribute("editable") == "true") {
+                        isEditable = true
+                    } else {
+                        isEditable = false
+                    }
+                }
+
+                if (isEditable) {
+                    this.edit(() => {
+                        this.titleSpan.innerHTML = this.blog.getTitle()
+                        this.titleInput.value = this.blog.getTitle()
+                        this.subtitleInput.value = this.blog.getSubtitle()
+                        this.keywordsEditList.setValues(this.blog.getKeywordsList())
+                    })
+                } else {
+                    this.read(() => {
+                        // set back values.
+                        this.titleSpan.innerHTML = this.blog.getTitle()
+                        this.titleInput.value = this.blog.getTitle()
+                        this.subtitleInput.value = this.blog.getSubtitle()
+                        this.keywordsEditList.setValues(this.blog.getKeywordsList())
+                    })
+                }
             }, false, this)
         }
 
         if (this.deleteListener == undefined) {
-            Model.eventHub.subscribe(this.blog.getUuid() + "_blog_delete_event", uuid => this.updateListener = uuid,
+            Model.eventHub.subscribe(this.blog.getUuid() + "_blog_delete_event", uuid => this.deleteListener = uuid,
                 evt => {
                     // simplity remove it from it parent...
                     this.parentNode.removeChild(this)
+                    if (this.onclose) {
+                        this.onclose()
+                    }
                 }, false, this)
         }
 
@@ -436,6 +497,8 @@ export class BlogPostElement extends HTMLElement {
         this.titleInput.value = blog.getTitle()
         this.subtitleInput.value = blog.getSubtitle()
         this.keywordsEditList.setValues(blog.getKeywordsList())
+
+
     }
 
     getThumbnail(width, callback) {
@@ -615,7 +678,6 @@ export class BlogPostElement extends HTMLElement {
      */
     clear() {
         this.blog = null
-
         this.removeChild(this.editorDiv);
         this.editorDiv = null;
         this.editor = null;
@@ -667,6 +729,7 @@ export class BlogPostElement extends HTMLElement {
                         .then(rsp => {
                             this.blog = rsp.getBlogPost();
                             ApplicationView.displayMessage("Your post is published!", 3000)
+
                             // Publish the event
                             Model.eventHub.publish(Application.account.id + "_publish_blog_event", this.blog.serializeBinary(), false)
 
@@ -676,8 +739,7 @@ export class BlogPostElement extends HTMLElement {
                 }
 
                 this.getThumbnail(500, dataUrl => { rqst.setThumbnail(dataUrl); createBlog(); })
-
-                this.clear()
+                //this.clear()
 
             } else {
 
@@ -689,6 +751,19 @@ export class BlogPostElement extends HTMLElement {
                 this.blog.setTitle(this.titleInput.value)
                 this.blog.setSubtitle(this.subtitleInput.value)
                 this.blog.setKeywordsList(this.keywordsEditList.getValues())
+
+                // Set the blogpost status...
+                if (this.shadowRoot.querySelector("paper-radio-group").selected == "draft") {
+                    this.blog.setStatus(0)
+
+                } else if (this.shadowRoot.querySelector("paper-radio-group").selected == "published") {
+                    this.blog.setStatus(1)
+
+                } else if (this.shadowRoot.querySelector("paper-radio-group").selected == "archived") {
+                    this.blog.setStatus(2)
+
+                }
+
                 rqst.setBlogPost(this.blog)
 
                 let saveBlog = () => {
@@ -736,22 +811,93 @@ export class BlogPosts extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
             ${getTheme()}
+
+            #container{
+                display: flex;
+                flex-direction: column;
+                margin-top: 10px;
+                margin-bottom: 10px;
+            }
+
             #blog-lst-div{
                 display: flex;
                 justify-content: center;
                 flex-direction: column;
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
             }
+
+            .blogs{
+                display: flex;
+                flex-direction: column;
+            }
+
+            h2{
+                margin-bottom: 4px;
+                margin-left: 10px;
+                border-bottom: 1px solid var(--palette-divider);
+                width: 80%;
+            }
+
+            #new-blog-post-btn {
+                
+            }
+
         </style>
         <div id="container">
-            <div id="blog-lst-div">
-                <slot></slot>
-            </div>
+            <paper-card id="blog-lst-div">
+                <div style="display: flex; border: none; align-items: center;">
+                    <h1 id="blog-title" style="flex-grow: 1; padding-left:10px">Blog(s)</h1>
+                    <span>new post</span>
+                    <paper-icon-button id="new-blog-post-btn" icon="icons:add" title="Create new Post"></paper-icon-button>
+                </div>
+                <div class="blogs">
+                    <h2 id="draft-title">Draft(s)</h2>
+                    <div style="display: flex; flex-wrap: wrap;">
+                        <slot name="draft"></slot>
+                    </div>
+                </div>
+                <div class="blogs">
+                    <h2 id="published-title">Published(s)</h2>
+                    <div style="display: flex; flex-wrap: wrap;">
+                        <slot name="published"></slot>
+                    </div>
+                </div>
+                <div class="blogs">
+                    <h2 id="archived-title">Archived(s)</h2>
+                    <div style="display: flex; flex-wrap: wrap;">
+                        <slot name="archived"></slot>
+                    </div>
+                </div>
+            </paper-card>
         </div>
         `
+        this.listeners = {}
+
+        // Display the blog post editor...
+        this.shadowRoot.querySelector("#new-blog-post-btn").onclick = () => {
+            // Test the blog-post
+            let editor = new BlogPostElement()
+            editor.setAttribute("editable", "true")
+            let parentNode = this.parentNode
+            parentNode.removeChild(this)
+            parentNode.appendChild(editor)
+
+            editor.onclose = () => {
+                this.removeAttribute("editable")
+                parentNode.removeChild(editor)
+                parentNode.appendChild(this)
+            }
+        }
+    }
+
+    onloaded(){
+
     }
 
     connectedCallback() {
         // If the blog editor is set to true...
+
         let authors = []
         if (this.getAttribute("account") != undefined) {
             Account.getAccount(this.getAttribute("account"),
@@ -779,7 +925,8 @@ export class BlogPosts extends HTMLElement {
                                     // Get the date from the event and create the newly
                                     this.setBlog(BlogPost.deserializeBinary(Uint8Array.from(evt.split(","))), true)
                                 }, false, this)
-
+                            
+                           
                             authors.push(contact._id)
                             if (index == contacts.length - 1) {
                                 this.getBlogs(authors, blogs => {
@@ -804,11 +951,22 @@ export class BlogPosts extends HTMLElement {
             if (connections.length == 0) {
                 this._getBlogs(globule, authors, (blogs) => {
                     blogs_ = blogs_.concat(blogs)
+                    blogs_ = blogs_.filter((b0, index, self) =>
+                        index === self.findIndex((b1) => (
+                            b0.getUuid() === b1.getUuid()
+                        ))
+                    )
+                    this.onloaded()
                     callback(blogs_)
                 })
             } else {
                 this._getBlogs(globule, authors, (blogs) => {
                     blogs_ = blogs_.concat(blogs)
+                    blogs_ = blogs_.filter((b0, index, self) =>
+                        index === self.findIndex((b1) => (
+                            b0.getUuid() === b1.getUuid()
+                        ))
+                    )
                     _getBlogs_() // get the account from the next globule.
                 })
             }
@@ -841,24 +999,41 @@ export class BlogPosts extends HTMLElement {
         })
     }
 
-    setBlog(b, prepend = false) {
-        if (this.querySelector("#_" + b.getUuid()) != undefined) {
-            // not append the blog twice...
-            return
+    setBlog(b) {
+        let blogInfo = this.querySelector("#_" + b.getUuid() + "_info")
+        if (blogInfo == undefined) {
+            blogInfo = new BlogPostInfo(b, true)
+            blogInfo.id = "_" + b.getUuid() + "_info"
+            this.appendChild(blogInfo)
         }
 
-        // Create a new BlogPostElement...
-        let blog = new BlogPostElement(b)
+        if (b.getStatus() == 0) {
+            blogInfo.slot = "draft"
+        } else if (b.getStatus() == 1) {
+            blogInfo.slot = "published"
+        } else if (b.getStatus() == 2) {
+            blogInfo.slot = "archived"
+        }
 
-        // Generate the blog display and set in the list.
-        blog.read(() => {
-            if (prepend) {
-                this.prepend(blog)
-            } else {
-                this.appendChild(blog)
-            }
+        // Display the total number of blog...
+        this.shadowRoot.querySelector("#blog-title").innerHTML = `Blog(${this.querySelectorAll(`globular-blog-post-info`).length})`
 
-        })
+        // Set the section titles.
+        this.shadowRoot.querySelector("#draft-title").innerHTML = `Draft(${this.querySelectorAll(`[slot="draft"]`).length})`
+        this.shadowRoot.querySelector("#published-title").innerHTML = `Published(${this.querySelectorAll(`[slot="published"]`).length})`
+        this.shadowRoot.querySelector("#archived-title").innerHTML = `Archived(${this.querySelectorAll(`[slot="archived"]`).length})`
+
+        // listen for change...
+        if (this.listeners[b.getUuid() + "_blog_updated_event_listener"] == undefined) {
+
+            Model.eventHub.subscribe(b.getUuid() + "_blog_updated_event", uuid => {
+                this.listeners[b.getUuid() + "_blog_updated_event_listener"] = uuid
+            }, evt => {
+                b = BlogPost.deserializeBinary(Uint8Array.from(evt.split(",")))
+                this.setBlog(b)
+            }, false, this)
+        }
+
     }
 
     // The list of blogs

@@ -500,7 +500,6 @@ export class Application extends Model {
                 ApplicationView.displayMessage(err, 3000)
               })
 
-            ApplicationView.resume();
             this.initNotifications();
             this.startRefreshToken();
           },
@@ -986,13 +985,10 @@ export class Application extends Model {
                 ApplicationView.displayMessage(err, 3000)
               })
 
-            ApplicationView.resume();
+            //ApplicationView.resume();
             this.initNotifications();
             // Start refresh as needed.
             this.startRefreshToken();
-
-
-
           }, (err: any) => {
             ApplicationView.resume();
             onError(err);

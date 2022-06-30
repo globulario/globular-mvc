@@ -47,6 +47,9 @@ import * as getUuid from 'uuid-by-string'
 import { ConversationServicePromiseClient } from "globular-web-client/conversation/conversation_grpc_web_pb";
 import { SearchTitlesRequest } from "globular-web-client/title/title_pb";
 import { getTheme } from "./components/Theme";
+import { GetBlogPostsRequest } from "globular-web-client/blog/blog_pb";
+import { borderLeftWidth } from "html2canvas/dist/types/css/property-descriptors/border-width";
+
 /**
  * Application view made use of Web-component and Materialyse to create a basic application
  * layout that can be use as starting point to any web-application.
@@ -435,6 +438,75 @@ export class ApplicationView extends View {
       },
       true, this
     );
+
+    Model.eventHub.subscribe("_display_blog_event_", uuid => { }, b => {
+      
+      let displayBlog = () => {
+        let blog = this.getWorkspace().querySelector(`#_${b.getUuid()}`)
+        if(blog == null){
+          blog = new BlogPostElement(b)
+        }
+        
+        if (this._workspace_childnodes.length == 0) {
+          // Keep the content of the workspace.
+          while (this.getWorkspace().childNodes.length > 0) {
+            let node = this.getWorkspace().childNodes[this.getWorkspace().childNodes.length - 1]
+            this._workspace_childnodes.push(node)
+            this.getWorkspace().removeChild(node)
+          }
+        }
+
+        // Generate the blog display and set in the list.
+        blog.read(() => {
+          blog.onclose = () => {
+
+            // remove the blog
+            if(blog.parentNode!=undefined){
+              blog.parentNode.removeChild(blog)
+            }
+            
+
+            // restore the workspace
+            for (var i = 0; i < this._workspace_childnodes.length; i++) {
+              let node = this._workspace_childnodes[i]
+              this.getWorkspace().appendChild(node)
+            }
+
+            // be sure nothing is keeping...
+            this._sidemenu_childnodes = new Array<any>();
+            this._workspace_childnodes = new Array<any>();
+
+          }
+          this.getWorkspace().appendChild(blog)
+        })
+      }
+
+      if(b.getText().length > 0){
+        displayBlog()
+      }else{
+        let rqst = new GetBlogPostsRequest
+        let id = b.getUuid()
+        rqst.setUuidsList([id])
+    
+        let token = localStorage.getItem("user_token")
+        let globule = Model.globular
+        let stream = globule.blogService.getBlogPosts(rqst, { application: Application.application, domain: globule.config.Domain, token: token })
+ 
+        stream.on("data", (rsp) => {
+            b = rsp.getBlogPost()
+        });
+    
+        stream.on("status", (status) => {
+            if (status.code == 0) {
+              Model.eventHub.publish("_hide_search_results_", null, true)
+              displayBlog()
+            }else{
+                ApplicationView.displayMessage(status.details, 3000)
+            }
+        })
+      }
+
+    }, true)
 
     // Search result event...
     Model.eventHub.subscribe("_display_search_results_",
