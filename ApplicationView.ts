@@ -27,9 +27,10 @@ import { ImageCropper } from "./components/Image";
 import "./components/table/table.js"
 import { Conversation, Invitation } from "globular-web-client/conversation/conversation_pb";
 import { ConversationManager } from "./Conversation";
-import { BlogPostElement, BlogPosts } from "./components/BlogPost"
+import { BlogPostElement, BlogEditingMenu } from "./components/BlogPost"
 import { Terminal } from "./components/Terminal"
 import { Workspace } from './components/Workspace'
+import { WatchingMenu } from './components/watching'
 
 // This variable is there to give acces to wait and resume...
 export let applicationView: ApplicationView;
@@ -95,6 +96,12 @@ export class ApplicationView extends View {
 
   /** The file menu */
   private filesMenu: FilesMenu;
+
+  /** The watching content */
+  private watchingMenu: WatchingMenu;
+
+  /** The blog editing menu */
+  private blogEditingMenu: BlogEditingMenu;
 
   /** The messenger menu */
   private messengerMenu: MessengerMenu;
@@ -205,6 +212,20 @@ export class ApplicationView extends View {
       // save image from the picture.
     };
 
+    // The watching menu.
+    this.watchingMenu = new WatchingMenu();
+
+    // The blog editing menu...
+    this.blogEditingMenu = new BlogEditingMenu();
+
+    // Set the close action for both blog edit and continue watching...
+    this.blogEditingMenu.onclose = this.watchingMenu.onclose = () => {
+
+      // restore the workspace
+      this.restoreContent();
+    }
+
+
 
     // The file menu
     this.filesMenu = new FilesMenu();
@@ -214,6 +235,34 @@ export class ApplicationView extends View {
 
     this.getWorkspace()
 
+    this._sidemenu_childnodes = new Array<any>();
+    this._workspace_childnodes = new Array<any>();
+  }
+
+  hideContent() {
+
+    if (this._workspace_childnodes.length != 0) {
+      this._sidemenu_childnodes = new Array<any>();
+      this._workspace_childnodes = new Array<any>();
+    }
+
+    // Keep the content of the workspace.
+    let i = this.getWorkspace().childNodes.length
+    while (i > 0) {
+      let node = this.getWorkspace().childNodes[this.getWorkspace().childNodes.length - 1]
+      if (!node.classList.contains("draggable")) {
+        this._workspace_childnodes.push(node)
+        this.getWorkspace().removeChild(node)
+      }
+      i--
+    }
+  }
+
+  restoreContent() {
+    for (var i = 0; i < this._workspace_childnodes.length; i++) {
+      let node = this._workspace_childnodes[i]
+      this.getWorkspace().appendChild(node)
+    }
     this._sidemenu_childnodes = new Array<any>();
     this._workspace_childnodes = new Array<any>();
   }
@@ -231,8 +280,6 @@ export class ApplicationView extends View {
     this.login_.init();
     this.accountMenu.init();
     this.applicationsMenu.init();
-    this.notificationMenu.init();
-    this.filesMenu.init();
 
 
     // Logout event
@@ -370,8 +417,6 @@ export class ApplicationView extends View {
           }
         }
 
-
-
         // The contacts will be initialyse at login time only.
         this.contactsMenu.init(account);
 
@@ -440,97 +485,107 @@ export class ApplicationView extends View {
     );
 
     Model.eventHub.subscribe("_display_blog_event_", uuid => { }, b => {
-      
+
       let displayBlog = () => {
         let blog = this.getWorkspace().querySelector(`#_${b.getUuid()}`)
-        if(blog == null){
+        if (blog == null) {
           blog = new BlogPostElement(b)
         }
-        
-        if (this._workspace_childnodes.length == 0) {
-          // Keep the content of the workspace.
-          while (this.getWorkspace().childNodes.length > 0) {
-            let node = this.getWorkspace().childNodes[this.getWorkspace().childNodes.length - 1]
-            this._workspace_childnodes.push(node)
-            this.getWorkspace().removeChild(node)
-          }
-        }
+
+        this.hideContent()
+
 
         // Generate the blog display and set in the list.
         blog.read(() => {
           blog.onclose = () => {
 
             // remove the blog
-            if(blog.parentNode!=undefined){
+            if (blog.parentNode != undefined) {
               blog.parentNode.removeChild(blog)
             }
-            
+
 
             // restore the workspace
-            for (var i = 0; i < this._workspace_childnodes.length; i++) {
-              let node = this._workspace_childnodes[i]
-              this.getWorkspace().appendChild(node)
-            }
-
-            // be sure nothing is keeping...
-            this._sidemenu_childnodes = new Array<any>();
-            this._workspace_childnodes = new Array<any>();
+            this.restoreContent()
 
           }
           this.getWorkspace().appendChild(blog)
         })
       }
 
-      if(b.getText().length > 0){
+      if (b.getText().length > 0) {
         displayBlog()
-      }else{
+      } else {
         let rqst = new GetBlogPostsRequest
         let id = b.getUuid()
         rqst.setUuidsList([id])
-    
+
         let token = localStorage.getItem("user_token")
         let globule = Model.globular
         let stream = globule.blogService.getBlogPosts(rqst, { application: Application.application, domain: globule.config.Domain, token: token })
- 
+
         stream.on("data", (rsp) => {
-            b = rsp.getBlogPost()
+          b = rsp.getBlogPost()
         });
-    
+
         stream.on("status", (status) => {
-            if (status.code == 0) {
-              Model.eventHub.publish("_hide_search_results_", null, true)
-              displayBlog()
-            }else{
-                ApplicationView.displayMessage(status.details, 3000)
-            }
+          if (status.code == 0) {
+            Model.eventHub.publish("_hide_search_results_", null, true)
+            displayBlog()
+          } else {
+            ApplicationView.displayMessage(status.details, 3000)
+          }
         })
       }
 
     }, true)
 
+    // Display user watching content...
+    Model.eventHub.subscribe("_display_watching_event_",
+      uuid => { },
+      evt => {
+
+        // remove actual nodes
+        this.hideContent()
+
+
+        // Append the watching component...
+        this.getWorkspace().appendChild(evt);
+
+      }, true)
+
+    Model.eventHub.subscribe("_display_blogs_event_",
+      uuid => { },
+      evt => {
+
+        // remove actual nodes
+        this.hideContent()
+
+
+        // Append the watching component...
+        this.getWorkspace().appendChild(evt);
+
+      }, true)
+
     // Search result event...
     Model.eventHub.subscribe("_display_search_results_",
       uuid => { },
       evt => {
+
         if (this._searchResults != undefined) {
-          if (this._searchResults.parentNode != undefined) {
-            return // the search result is already visible.
+          if (this.getWorkspace().querySelectorAll("globular-search-results").length == 1) {
+            console.log("the search results are already visible.")
+            return
           }
         }
 
 
-        if (this._workspace_childnodes.length == 0) {
-          // Keep the content of the workspace.
-          while (this.getWorkspace().childNodes.length > 0) {
-            let node = this.getWorkspace().childNodes[this.getWorkspace().childNodes.length - 1]
-            this._workspace_childnodes.push(node)
-            this.getWorkspace().removeChild(node)
-          }
-        }
+        this.hideContent()
 
 
         // The search result panel where the result will be displayed.
         if (this._searchResults == null) {
+          console.log("search result is null")
           this._searchResults = new SearchResults()
         }
 
@@ -541,6 +596,14 @@ export class ApplicationView extends View {
     Model.eventHub.subscribe("_hide_search_results_",
       uuid => { },
       evt => {
+
+        // hide all the side bar...
+        let facetFilters = ApplicationView.layout.sideMenu().getElementsByTagName("globular-facet-search-filter")
+        for (var i = 0; i < facetFilters.length; i++) {
+          let f = <any>facetFilters[i]
+          f.style.display = "none"
+        }
+
         // The search results
         if (this._searchBar != undefined) {
           if (this._searchResults.parentNode != undefined) {
@@ -549,14 +612,7 @@ export class ApplicationView extends View {
         }
 
         // restore the workspace
-        for (var i = 0; i < this._workspace_childnodes.length; i++) {
-          let node = this._workspace_childnodes[i]
-          this.getWorkspace().appendChild(node)
-        }
-
-        // be sure nothing is keeping...
-        this._sidemenu_childnodes = new Array<any>();
-        this._workspace_childnodes = new Array<any>();
+        this.restoreContent()
 
       }, true)
 
@@ -578,6 +634,14 @@ export class ApplicationView extends View {
 
         if (this.isLogin) {
           this.overFlowMenu.show();
+
+          this.overFlowMenu.getMenuDiv().appendChild(this.blogEditingMenu);
+          this.blogEditingMenu.getMenuDiv().classList.remove("bottom");
+          this.blogEditingMenu.getMenuDiv().classList.add("left");
+
+          this.overFlowMenu.getMenuDiv().appendChild(this.watchingMenu);
+          this.watchingMenu.getMenuDiv().classList.remove("bottom");
+          this.watchingMenu.getMenuDiv().classList.add("left");
 
           this.overFlowMenu.getMenuDiv().appendChild(this.filesMenu);
           this.filesMenu.getMenuDiv().classList.remove("bottom");
@@ -612,6 +676,14 @@ export class ApplicationView extends View {
 
         if (this.isLogin) {
           this.overFlowMenu.hide();
+
+          ApplicationView.layout.toolbar().appendChild(this.blogEditingMenu);
+          this.blogEditingMenu.getMenuDiv().classList.remove("left");
+          this.blogEditingMenu.getMenuDiv().classList.add("bottom");
+
+          ApplicationView.layout.toolbar().appendChild(this.watchingMenu);
+          this.watchingMenu.getMenuDiv().classList.remove("left");
+          this.watchingMenu.getMenuDiv().classList.add("bottom");
 
           ApplicationView.layout.toolbar().appendChild(this.filesMenu);
           this.filesMenu.getMenuDiv().classList.remove("left");
@@ -837,6 +909,12 @@ export class ApplicationView extends View {
     ApplicationView.layout.title().innerHTML = ""
     ApplicationView.layout.title().appendChild(this._searchBar)
 
+    // set menu...
+    this.notificationMenu.init();
+    this.filesMenu.init();
+    this.watchingMenu.init();
+    this.blogEditingMenu.init();
+
     this.isLogin = true;
 
     window.dispatchEvent(new Event("resize"));
@@ -882,15 +960,7 @@ export class ApplicationView extends View {
       }
     }
 
-    this._sidemenu_childnodes = new Array<any>();
-    this._workspace_childnodes = new Array<any>();
-
-    // Keep the content of the workspace.
-    while (this.getWorkspace().childNodes.length > 0) {
-      let node = this.getWorkspace().childNodes[this.getWorkspace().childNodes.length - 1]
-      this._workspace_childnodes.push(node)
-      this.getWorkspace().removeChild(node)
-    }
+    this.hideContent()
 
     // Keep the content of the side menu
     while (this.getSideMenu().childNodes.length > 0) {
@@ -914,11 +984,7 @@ export class ApplicationView extends View {
     }
 
     // restore the workspace
-    for (var i = 0; i < this._workspace_childnodes.length; i++) {
-      let node = this._workspace_childnodes[i]
-      this.getWorkspace().appendChild(node)
-    }
-
+    this.restoreContent()
 
     // restore the side menu
     for (var i = 0; i < this._sidemenu_childnodes.length; i++) {

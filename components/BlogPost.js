@@ -23,6 +23,7 @@ import '@polymer/iron-icons/communication-icons'
 import * as getUuidByString from 'uuid-by-string';
 import { BlogPostInfo } from './Informations';
 import { AppScrollEffectsBehavior } from '@polymer/app-layout/app-scroll-effects/app-scroll-effects-behavior';
+import { Menu } from './Menu';
 
 const intervals = [
     { label: 'year', seconds: 31536000 },
@@ -802,7 +803,7 @@ export class BlogPosts extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor() {
+    constructor(userName) {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
@@ -846,10 +847,15 @@ export class BlogPosts extends HTMLElement {
         </style>
         <div id="container">
             <paper-card id="blog-lst-div">
-                <div style="display: flex; border: none; align-items: center;">
-                    <h1 id="blog-title" style="flex-grow: 1; padding-left:10px">Blog(s)</h1>
-                    <span>new post</span>
-                    <paper-icon-button id="new-blog-post-btn" icon="icons:add" title="Create new Post"></paper-icon-button>
+                <div style="display: flex; border: none;">
+                    <div style="display: flex; flex-direction: column; padding-left:10px; flex-grow: 1;">
+                        <h1 id="blog-title" style="margin:0px;" >Blog(s)</h1>
+                        <div style="display: flex; align-items: center;">
+                            <span>new post</span>
+                            <paper-icon-button id="new-blog-post-btn" icon="icons:add" title="Create new Post"></paper-icon-button>
+                        </div>
+                    </div>
+                    <paper-icon-button id="close-btn" icon="icons:close" title="Create new Post"></paper-icon-button>
                 </div>
                 <div class="blogs">
                     <h2 id="draft-title">Draft(s)</h2>
@@ -872,6 +878,17 @@ export class BlogPosts extends HTMLElement {
             </paper-card>
         </div>
         `
+
+        this.onclose = null
+
+        // simply close the watching content...
+        this.shadowRoot.querySelector("#close-btn").onclick = ()=>{
+            this.parentNode.removeChild(this)
+            if(this.onclose != null){
+                this.onclose()
+            }
+        }
+        
         this.listeners = {}
 
         // Display the blog post editor...
@@ -889,56 +906,24 @@ export class BlogPosts extends HTMLElement {
                 parentNode.appendChild(this)
             }
         }
-    }
 
-    onloaded(){
-
-    }
-
-    connectedCallback() {
         // If the blog editor is set to true...
-
         let authors = []
-        if (this.getAttribute("account") != undefined) {
-            Account.getAccount(this.getAttribute("account"),
-                account => {
-                    // Subcribe to my own blog create event...
-                    Model.eventHub.subscribe(account.id + "_publish_blog_event", uuid => this[account.id + "_publish_blog_listener"] = uuid,
-                        evt => {
-                            // Get the date from the event and create the newly
-                            this.setBlog(BlogPost.deserializeBinary(Uint8Array.from(evt.split(","))), true)
-                        }, false, this)
+        Account.getAccount(userName,
+            account => {
+                // Subcribe to my own blog create event...
+                Model.eventHub.subscribe(account.id + "_publish_blog_event", uuid => this[account.id + "_publish_blog_listener"] = uuid,
+                    evt => {
+                        // Get the date from the event and create the newly
+                        this.setBlog(BlogPost.deserializeBinary(Uint8Array.from(evt.split(","))), true)
+                    }, false, this)
 
-                    authors.push(account.id)
+                authors.push(account.id)
 
-                    Account.getContacts(account, "{}", contacts => {
-                        if (contacts.length == 0) {
-                            this.getBlogs(authors, blogs => {
-                                this.setBlogPosts(blogs)
-                            })
-                            return
-                        }
-                        let index = 0;
-                        contacts.forEach(contact => {
-                            Model.eventHub.subscribe(contact._id + "_publish_blog_event", uuid => this[contact._id + "_publish_blog_listener"] = uuid,
-                                evt => {
-                                    // Get the date from the event and create the newly
-                                    this.setBlog(BlogPost.deserializeBinary(Uint8Array.from(evt.split(","))), true)
-                                }, false, this)
-                            
-                           
-                            authors.push(contact._id)
-                            if (index == contacts.length - 1) {
-                                this.getBlogs(authors, blogs => {
-                                    this.setBlogPosts(blogs)
-                                })
-                            }
-
-                            index++
-                        })
-                    }, err => ApplicationView.displayMessage(err, 3000))
+                this.getBlogs(authors, blogs => {
+                    this.setBlogPosts(blogs)
                 })
-        }
+            })
     }
 
     // Retreive all blog from all connected peers...
@@ -1650,3 +1635,47 @@ export class BlogEmotions extends HTMLElement {
 }
 
 customElements.define('globular-blog-emotions', BlogEmotions)
+
+
+/**
+ * Login/Register functionality.
+ */
+export class BlogEditingMenu extends Menu {
+
+    // Create the application view.
+    constructor() {
+        super("blog-editing", "icons:create", "Blog Editing")
+
+        this.onclose = null;
+        this.blogs = null;
+
+        this.onclick = () => {
+            let icon = this.getIconDiv().querySelector("iron-icon")
+            icon.style.removeProperty("--iron-icon-fill-color")
+            if(this.blogs.parentNode == undefined){
+                Model.eventHub.publish("_display_blogs_event_", this.blogs, true)
+            }
+        }
+    }
+
+    init() {
+        // The blog list...
+        if (this.blogs == null) {
+            const userName = localStorage.getItem("user_name");
+            let blogs = new BlogPosts(userName)
+            blogs.onclose = this.onclose;
+
+            ApplicationView.wait("Retreive Blogs </br>Please wait...")
+
+            blogs.style.display = "none";
+            blogs.onloaded = () => {
+                ApplicationView.resume()
+                blogs.style.display = "";
+            }
+            this.blogs = blogs;
+        }
+
+    }
+}
+
+customElements.define('globular-blog-editing-menu', BlogEditingMenu)

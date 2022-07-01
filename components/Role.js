@@ -103,6 +103,7 @@ export class RoleManager extends HTMLElement {
             (roles) => {
                 roles.forEach(r => {
                     if (r.getId() != "admin" && r.getId() != "guest") {
+                        console.log("role ", r)
                         let panel = new RolePanel(r)
                         content.appendChild(panel)
                     }
@@ -227,7 +228,7 @@ export class RolePanel extends HTMLElement {
         this.attachShadow({ mode: 'open' });
 
         // Keep group informations.
-        this.role = role;
+        this.role_ = role;
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -280,7 +281,7 @@ export class RolePanel extends HTMLElement {
         </style>
         <div id="container">
             <div class="header">
-                <span class="title">${this.role.getName()}</span>
+                <span class="title">${role.getName()}</span>
                 <paper-button id="delete-role-btn">Delete</paper-button>
                 <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
                     <iron-icon  id="hide-btn"  icon="unfold-less" style="flex-grow: 1; --iron-icon-fill-color:var(--palette-text-primary);" icon="add"></iron-icon>
@@ -304,7 +305,7 @@ export class RolePanel extends HTMLElement {
 
 
         // Here I will create the searchable actions list.
-        let actionsList = new SearchableList("Actions", this.role.getActionsList(),
+        let actionsList = new SearchableList("Actions", role.getActionsList(),
             (action) => {
                 // remove action...
                 let removeActionRqst = new RemoveRoleActionRqst
@@ -425,7 +426,7 @@ export class RolePanel extends HTMLElement {
 
                 // I will get the account object whit the given id.
                 let list = []
-                this.role.getMembersList().forEach(accountId => {
+                this.role_.getMembersList().forEach(accountId => {
                     let a_ = accounts.find(a => a._id === accountId);
                     if (a_ != undefined) {
                         list.push(a_)

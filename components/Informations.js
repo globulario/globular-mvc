@@ -398,10 +398,13 @@ export class InformationsManager extends HTMLElement {
                 flex-direction: column;
                 padding: 8px;
                 overflow: auto;
+                z-index: 100;
             }
 
             #header {
                 display: flex;
+                line-height: 20px;
+                padding-bottom: 10px;
             }
 
             #header h1, h2, h3 {
@@ -635,7 +638,7 @@ export class VideoInfo extends HTMLElement {
         // Set the header section.
         this.titleDiv.innerHTML = `
         <h3 class="title-sub-title-div"> 
-            <h1 id="title-name" class="title" style="${this.isShort ? "font-size: 1rem;" : ""}"> ${publisherName} </h1>
+            <h1 id="title-name" class="title" style="${this.isShort ? "font-size: 1rem; padding-bottom: 10px;" : ""}"> ${publisherName} </h1>
             <div style="display: flex; align-items: baseline;">
                 <h3 class="title-sub-title-div">          
                     <span id="title-type"><span>Genre: </span>${genres}</span>
@@ -858,7 +861,7 @@ export class TitleInfo extends HTMLElement {
 
         // Set the title div.
         this.titleDiv.innerHTML = `
-           <h1 id="title-name" class="title" style="${this.isShort ? "font-size: 1.2rem;text-align: left;" : ""}"> </h1>
+           <h1 id="title-name" class="title" style="${this.isShort ? "font-size: 1.2rem;text-align: left; margin-bottom: 10px;" : ""}"> </h1>
            <h3 class="title-sub-title-div">             
                <span id="title-type"></span>
                <span id="title-year"></span>
@@ -1519,10 +1522,10 @@ export class BlogPostInfo extends HTMLElement {
                     height: auto;
                     transform: scale(1.05);
                 }
-                
+                /**
                 .image-box:hover img {
                     transform: scale(1);
-                }
+                }*/
     
             </style>
             <div id="container" class="blog-post-card">
@@ -1538,6 +1541,15 @@ export class BlogPostInfo extends HTMLElement {
                 </div>
             </div>
             `
+
+            this.shadowRoot.querySelector("#container").onmouseover = ()=>{
+                this.shadowRoot.querySelector("img").style.transform = "scale(1)"
+            }
+
+            this.shadowRoot.querySelector("#container").onmouseout = ()=>{
+                this.shadowRoot.querySelector("img").style.transform = ""
+            }
+
         } else {
             this.shadowRoot.innerHTML = `
             <style>

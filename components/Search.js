@@ -151,6 +151,7 @@ export function getImdbInfo(id, callback, errorcallback, globule) {
             errorcallback("fail to get info from query " + url + " status " + this.status)
         }
     };
+
     /* TODO see if we protected it...
       query += "?domain=" + Model.domain // application is not know at this time...
       if (localStorage.getItem("user_token") != undefined) {
@@ -261,26 +262,49 @@ function playTitleListener(player, title, indexPath, globule) {
 }
 
 // Search over multiple peers...
-function search(query, searchContext) {
+function search(query, contexts) {
 
     // Connections can contain many time the same address....
     let globules = Model.getGlobules()
 
     globules.forEach(g => {
-        // TODO search with givin context ex titles, blogs etc...
-        let indexPath = g.config.DataPath + "/search/" + searchContext
-        if (searchContext == "blogPosts") {
-            searchBlogPosts(g, query, indexPath)
-        } else {
-            searchTitles(g, query, indexPath)
+        // Search recursively...
+        let search_ = (contexts) => {
+            let context = contexts.pop()
+            let indexPath = g.config.DataPath + "/search/" + context
+            if (context == "blogPosts") {
+                if (contexts.length == 0) {
+                    searchBlogPosts(g, query, indexPath, () => {
+                        console.log("done!")
+                    })
+                } else {
+                    searchBlogPosts(g, query, indexPath, () => {
+                        search_(contexts)
+                    })
+                }
+            } else {
+                if (contexts.length == 0) {
+                    searchTitles(g, query, indexPath, () => {
+                        console.log("done!")
+                    })
+                } else {
+                    searchTitles(g, query, indexPath, () => {
+                        search_(contexts)
+                    })
+                }
+            }
         }
+
+        // search contexts
+        search_(contexts)
+
     })
 }
 
 /** 
  * Search titles...
  */
-function searchTitles(globule, query, indexPath) {
+function searchTitles(globule, query, indexPath, callback) {
 
     // This is a simple test...
     let rqst = new SearchTitlesRequest
@@ -304,7 +328,7 @@ function searchTitles(globule, query, indexPath) {
             // display the value in the console...
             hit.getSnippetsList().forEach(val => {
                 let uuid = "_" + getUuid(query)
-                Model.eventHub.publish(`${uuid}_search_hit_event__`, { hit: hit }, true)
+                Model.eventHub.publish(`${uuid}_search_hit_event__`, { hit: hit, context: indexPath.substring(indexPath.lastIndexOf("/") + 1) }, true)
             })
         }
     });
@@ -313,11 +337,13 @@ function searchTitles(globule, query, indexPath) {
         if (status.code != 0) {
             // In case of error I will return an empty array
             console.log(status.details)
+        } else {
+            callback()
         }
     });
 }
 
-function searchBlogPosts(globule, query, indexPath) {
+function searchBlogPosts(globule, query, indexPath, callback) {
 
     // This is a simple test...
     let rqst = new SearchBlogPostsRequest
@@ -341,7 +367,7 @@ function searchBlogPosts(globule, query, indexPath) {
             // display the value in the console...
             hit.getSnippetsList().forEach(val => {
                 let uuid = "_" + getUuid(query)
-                Model.eventHub.publish(`${uuid}_search_hit_event__`, { hit: hit }, true)
+                Model.eventHub.publish(`${uuid}_search_hit_event__`, { hit: hit, context: indexPath.substring(indexPath.lastIndexOf("/") + 1) }, true)
             })
         }
     });
@@ -350,6 +376,8 @@ function searchBlogPosts(globule, query, indexPath) {
         if (status.code != 0) {
             // In case of error I will return an empty array
             console.log(status.details)
+        } else {
+            callback()
         }
     });
 }
@@ -364,7 +392,6 @@ export class SearchBar extends HTMLElement {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
-        this.searchContext = "blogPosts"
     }
 
     // The connection callback.
@@ -430,16 +457,21 @@ export class SearchBar extends HTMLElement {
                 position: relative;
             }
 
+            paper-checkbox {
+                margin-left: 16px;
+                margin-bottom: 8px;
+                margin-top: 8px;
+            }
+
         </style>
         <div id="search-bar">
             <iron-icon icon="search" style="--iron-icon-fill-color: var(--palette-text-accent);" ></iron-icon>
-            <input id='search_input' placeholder=""></input>
+            <input id='search_input' placeholder="Search"></input>
             <paper-icon-button id="change-search-context" icon="icons:expand-more" style="--iron-icon-fill-color: var(--palette-text-accent); margin-right: 2px; height: 36px;" ></paper-icon-button>
             <paper-card id="context-search-selector">
-                <paper-button id="context-search-selector-blog-posts">Blog Posts</paper-button>
-                <paper-button id="context-search-selector-movies">Movies</paper-button>
-                <paper-button id="context-search-selector-videos" style="color: var(--palette-text-disabled)">Videos</paper-button>
-                <paper-button id="context-search-selector-close">Close</paper-button>
+                <paper-checkbox checked name="blogPosts" id="context-search-selector-blog-posts">Blog Posts</paper-checkbox>
+                <paper-checkbox checked name="titles" id="context-search-selector-movies">Movies</paper-checkbox>
+                <paper-checkbox checked name="videos" id="context-search-selector-videos">Videos</paper-checkbox>
             </paper-card>
         </div>
         `
@@ -450,9 +482,6 @@ export class SearchBar extends HTMLElement {
 
         let changeSearchContextBtn = this.shadowRoot.getElementById("change-search-context")
         let contextSearchSelector = this.shadowRoot.getElementById("context-search-selector")
-        let contextSearchSelectorBlogPosts = this.shadowRoot.getElementById("context-search-selector-blog-posts")
-        let contextSearchSelectorMovies = this.shadowRoot.getElementById("context-search-selector-movies")
-        let contextSearchSelectorVideos = this.shadowRoot.getElementById("context-search-selector-videos")
 
         searchInput.onblur = () => {
             div.style.boxShadow = ""
@@ -460,10 +489,23 @@ export class SearchBar extends HTMLElement {
 
         searchInput.onkeydown = (evt) => {
             if (evt.key == "Enter") {
+                let contexts = []
+                let checkboxs = this.shadowRoot.querySelectorAll("paper-checkbox")
+                for (var i = 0; i < checkboxs.length; i++) {
+                    let c = checkboxs[i]
+                    if (c.checked) {
+                        contexts.push(c.name)
+                    }
+                }
 
-                search(searchInput.value, this.searchContext)
-                searchInput.value = ""
-                Model.eventHub.publish("_display_search_results_", {}, true)
+                if (contexts.length > 0) {
+                    search(searchInput.value, contexts)
+                    searchInput.value = ""
+                    Model.eventHub.publish("_display_search_results_", {}, true)
+                } else {
+                    ApplicationView.displayMessage("You must selected a search context, Blog, Video or Title...", 3000)
+                    contextSearchSelector.style.display = "flex"
+                }
 
             } else if (evt.key == "Escape") {
                 Model.eventHub.publish("_hide_search_results_", {}, true)
@@ -476,6 +518,14 @@ export class SearchBar extends HTMLElement {
             div.style.boxShadow = "var(--dark-mode-shadow)"
             contextSearchSelector.style.display = "none"
             Model.eventHub.publish("_display_search_results_", {}, true)
+           
+            let pages = document.querySelectorAll("globular-search-results-page")
+            for(var i=0; i < pages.length; i++){
+                let page = pages[i]
+                if(page.style.display != "none"){
+                    page.facetFilter.style.display = ""
+                }
+            }
         }
 
         // Change the search context, this will search over other indexations...
@@ -487,37 +537,6 @@ export class SearchBar extends HTMLElement {
                 contextSearchSelector.style.display = "none"
             }
         }
-
-        this.shadowRoot.getElementById("context-search-selector-close").onclick = () => {
-            contextSearchSelector.style.display = "none"
-        }
-
-        contextSearchSelectorMovies.onclick = () => {
-            contextSearchSelectorBlogPosts.style.color = "var(--palette-text-disabled)"
-            contextSearchSelectorVideos.style.color = "var(--palette-text-disabled)"
-            contextSearchSelectorMovies.style.color = ""
-            this.searchContext = "titles"
-            searchInput.placeholder = "Search Movies"
-        }
-
-        contextSearchSelectorVideos.onclick = () => {
-            contextSearchSelectorBlogPosts.style.color = "var(--palette-text-disabled)"
-            contextSearchSelectorVideos.style.color = ""
-            contextSearchSelectorMovies.style.color = "var(--palette-text-disabled)"
-            this.searchContext = "videos"
-            searchInput.placeholder = "Search Videos"
-        }
-
-        contextSearchSelectorBlogPosts.onclick = () => {
-            contextSearchSelectorBlogPosts.style.color = ""
-            contextSearchSelectorVideos.style.color = "var(--palette-text-disabled)"
-            contextSearchSelectorMovies.style.color = "var(--palette-text-disabled)"
-            this.searchContext = "blogPosts"
-            searchInput.placeholder = "Search Blog Posts"
-        }
-
-        contextSearchSelectorBlogPosts.click()
-
     }
 }
 
@@ -544,7 +563,6 @@ export class SearchResults extends HTMLElement {
             #container{
                 width: 100%;
                 height: 100%;
-                display: none;
                 flex-direction: column;
                 margin-top: 15px;
                 background-color: var(--palette-background-paper);
@@ -585,6 +603,7 @@ export class SearchResults extends HTMLElement {
                 </paper-tabs>
                 <paper-icon-button id="close-all-btn" icon="icons:close"></paper-icon-button>
             </div>
+            <h2 id="empty-search-msg" style="text-align: center; color: var(--palette-divider);">No search results to display...</h2>
             <slot></slot>
         </paper-card>
         `
@@ -592,7 +611,9 @@ export class SearchResults extends HTMLElement {
         this.tabs = this.shadowRoot.querySelector("#search-results")
 
         Model.eventHub.subscribe("_hide_search_results_", uuid => { }, evt => {
-            this.shadowRoot.querySelector("#container").style.display = "none"
+            if (this.parentNode) {
+                this.parentNode.removeChild(this)
+            }
         }, true)
 
         this.closeAllBtn = this.shadowRoot.querySelector("#close-all-btn")
@@ -603,7 +624,7 @@ export class SearchResults extends HTMLElement {
             let facetFilters = ApplicationView.layout.sideMenu().getElementsByTagName("globular-facet-search-filter")
             for (var i = 0; i < facetFilters.length; i++) {
                 let f = facetFilters[i]
-                f.style.display = "none"
+                f.parentNode.removeChild(f)
             }
         }
 
@@ -658,6 +679,10 @@ export class SearchResults extends HTMLElement {
                     closeBtn.onclick = (evt_) => {
                         evt_.stopPropagation()
                         this.deletePageResults(uuid)
+
+                        if (this.children.length == 0) {
+                            this.shadowRoot.querySelector("#empty-search-msg").style.display = "block";
+                        }
                     }
                     this.tabs.selected = this.children.length;
 
@@ -676,6 +701,7 @@ export class SearchResults extends HTMLElement {
                         this.children[i].style.display = "none";
                     }
                     this.appendChild(resultsPage)
+                    this.shadowRoot.querySelector("#empty-search-msg").style.display = "none";
                     ApplicationView.layout.sideMenu().appendChild(resultsPage.facetFilter)
                 }
 
@@ -777,10 +803,14 @@ export class SearchResultsPage extends HTMLElement {
                 <paper-icon-button class="disable"  id="search-result-lst-view-btn" icon="icons:view-list"></paper-icon-button>
             </div>
             <div id="mosaic-view" style="display: block;">
-                <slot name="mosaic" style="display: flex; flex-wrap: wrap;"></slot>
+                <slot name="mosaic_blogPosts" style="display: flex; flex-wrap: wrap;"></slot>
+                <slot name="mosaic_videos" style="display: flex; flex-wrap: wrap;"></slot>
+                <slot name="mosaic_titles" style="display: flex; flex-wrap: wrap;"></slot>
             </div>
             <div id="list-view" style="display: none;">
-                <slot name="list" style="display: flex; flex-wrap: wrap;"> </slot>
+                <slot name="list_blogPosts" style="display: flex; flex-wrap: wrap;"> </slot>
+                <slot name="list_videos" style="display: flex; flex-wrap: wrap;"> </slot>
+                <slot name="list_titles" style="display: flex; flex-wrap: wrap;"> </slot>
             </div>
 
         </div>
@@ -823,8 +853,8 @@ export class SearchResultsPage extends HTMLElement {
                 this.hits.push(evt.hit)
                 Model.eventHub.publish("_display_search_results_", {}, true)
 
-                this.displayListHit(evt.hit)
-                this.displayMosaicHit(evt.hit)
+                this.displayListHit(evt.hit, evt.context)
+                this.displayMosaicHit(evt.hit, evt.context)
             }, true)
     }
 
@@ -834,62 +864,65 @@ export class SearchResultsPage extends HTMLElement {
 
     // Display a mosaic vue of the result. If the result is a title I will use a flit card
     // if is a video well a video card.
-    displayMosaicHit(hit) {
+    displayMosaicHit(hit, context) {
         if (hit.hasTitle || hit.hasVideo) {
             if (hit.hasTitle()) {
                 let id = "_flip_card_" + getUuidByString(hit.getTitle().getName())
-                if (this.querySelector("#" + id) == null) {
-                    let flipCard = new SearchFlipCard();
+                let flipCard = this.querySelector("#" + id)
+                if (!flipCard) {
+                    flipCard = new SearchFlipCard();
                     flipCard.id = id
-                    flipCard.slot = "mosaic"
+                    flipCard.slot = "mosaic_" + context
                     flipCard.setTitle(hit.getTitle(), hit.globule)
                     this.appendChild(flipCard)
                 }
-                return this.querySelector("#" + id)
+                return flipCard
             } else if (hit.hasVideo()) {
                 let id = "_video_card_" + getUuidByString(hit.getVideo().getId())
-                if (this.querySelector("#" + id) == null) {
-                    let videoCard = new SearchVideoCard();
+                let videoCard = this.querySelector("#" + id)
+                if (!videoCard) {
+                    videoCard = new SearchVideoCard();
                     videoCard.id = id
-                    videoCard.slot = "mosaic"
+                    videoCard.slot = "mosaic_" + context
                     videoCard.setVideo(hit.getVideo(), hit.globule)
                     this.appendChild(videoCard)
                 }
-                return this.querySelector("#" + id)
+                return videoCard
             }
         } else {
             let blogPost = hit.getBlog()
-            let blogPostInfo = new BlogPostInfo(blogPost, true);
-            blogPostInfo.classList.add("filterable")
-            blogPost.getKeywordsList().forEach(kw => blogPostInfo.classList.add(getUuidByString(kw.toLowerCase())))
-            let id = "_" + blogPost.getUuid()
-            if (!this.querySelector("#" + id)) {
+            let id = "_" + blogPost.getUuid() + "_info"
+            let blogPostInfo = this.querySelector("#" + id);
+            if (!blogPostInfo) {
+                blogPostInfo = new BlogPostInfo(blogPost, true);
+                blogPostInfo.classList.add("filterable")
+                blogPost.getKeywordsList().forEach(kw => blogPostInfo.classList.add(getUuidByString(kw.toLowerCase())))
                 blogPostInfo.id = id
-                blogPostInfo.slot = "mosaic"
+                blogPostInfo.slot = "mosaic_" + context
                 this.appendChild(blogPostInfo)
             }
-            return this.querySelector("#" + id)
+            return blogPostInfo
         }
 
     }
 
-    displayListHit(hit) {
-
-        if (this.querySelector(`#hit-div-${hit.getIndex()}`) != null) {
-            console.log("----------> already exist ", hit.getIndex())
-            return;
-        }
+    displayListHit(hit, context) {
 
         let titleName = ""
-
+        let uuid = ""
         if (hit.hasTitle) {
             if (hit.hasTitle()) {
                 titleName = hit.getTitle().getName()
+                uuid = getUuidByString(hit.getTitle().getId())
+            }else{
+                uuid = getUuidByString(hit.getVideo().getId())
             }
+        }else{
+           uuid = hit.getBlog().getUuid()
         }
 
         let html = `
-        <div id="hit-div-${hit.getIndex()}" class="hit-div" slot="list">
+        <div id="hit-div-${uuid}" class="hit-div" slot="list_${context}">
             <div class="hit-header-div">
                 <span class="hit-index-div">
                     ${hit.getIndex() + 1}.
@@ -918,8 +951,9 @@ export class SearchResultsPage extends HTMLElement {
         let titleInfoDiv = this.children[this.children.length - 1].children[2]
 
         let infoDisplay = new InformationsManager()
-        let hitDiv = this.querySelector(`#hit-div-${hit.getIndex()}`)
-
+       
+        let hitDiv = this.querySelector(`#hit-div-${uuid}`)
+        
         if (hit.hasTitle || hit.hasVideo) {
             if (hit.hasTitle()) {
                 infoDisplay.setTitlesInformation([hit.getTitle()], hit.globule)
@@ -1324,7 +1358,7 @@ export class SearchFlipCard extends HTMLElement {
 
         </style>
 
-        <div class="title-card" slot="mosaic" id="hit-div-mosaic">
+        <div class="title-card" id="hit-div-mosaic">
             <div class="flip-container" ontouchstart="this.classList.toggle('hover');">
                 <div class="flipper">
                     <div id="hit-div-mosaic-front" class="front">
@@ -1829,6 +1863,11 @@ export class SearchFacetPanel extends HTMLElement {
         checkbox_.onclick = () => {
             let filterables = page.querySelectorAll(".filterable")
             filterables.forEach(f => f.style.display = "none") // hide all
+
+            if (checkbox_.checked) {
+                filterables.forEach(f => f.style.display = "block") // hide all
+            }
+
             let checkboxs = facetList.querySelectorAll("paper-checkbox")
             for (var i = 0; i < checkboxs.length; i++) {
                 let checkbox = checkboxs[i]
@@ -1841,8 +1880,7 @@ export class SearchFacetPanel extends HTMLElement {
                 } else {
                     if (!checkbox.checked) {
                         checkbox.checked = true
-                        checkbox.onclick()
-
+                        //checkbox.onclick() // do not set it...
                     }
                 }
             }
