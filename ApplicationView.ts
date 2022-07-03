@@ -230,6 +230,7 @@ export class ApplicationView extends View {
 
     // The content creator.
     this.contentManager = new ContentManager();
+  
 
     // The file menu
     this.filesMenu = new FilesMenu();
@@ -280,7 +281,20 @@ export class ApplicationView extends View {
     this.login_.init();
     this.accountMenu.init();
     this.applicationsMenu.init();
+    this.contentManager.init();
 
+    // Set the current webpage...
+    Model.eventHub.subscribe("_set_web_page_",
+    uuid => { },
+    evt => {
+
+      // remove actual nodes
+      this.hideContent()
+
+      // Append the watching component...
+      this.getWorkspace().appendChild(evt);
+
+    }, true)
 
     // Logout event
     Model.eventHub.subscribe(
@@ -854,7 +868,8 @@ export class ApplicationView extends View {
       return
     }
 
-
+    // Test if the user can edit the website...
+    this.contentManager.setEditMode()
 
     /** implement it as needed */
     if (this.login_.parentNode != null) {
@@ -869,10 +884,6 @@ export class ApplicationView extends View {
 
     // Append the over flow menu.
     ApplicationView.layout.toolbar().appendChild(this.overFlowMenu);
-
-    // Append the content manager to the navigation panel...
-    this.contentManager.init();
-
     ApplicationView.layout.navigation().appendChild(this.contentManager)
 
     this.overFlowMenu.hide(); // not show it at first.

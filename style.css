@@ -846,3 +846,9 @@ globular-media-watching {
 globular-content-manager{
    flex-grow: 1;
 }
+
+/** Take most of the space... */
+globular-web-page{
+   grid-column-start: 1;
+   grid-column-end: 17;
+}
