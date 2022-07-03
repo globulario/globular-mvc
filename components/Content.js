@@ -181,6 +181,14 @@ export class GlobularNavigation extends HTMLElement {
         if (!this.create_page_listener)
             Model.eventHub.subscribe("_create_page_event_", uuid => this.create_page_listener = uuid, evt => this.createPage())
 
+        // The set page event...
+        if (!this.set_page_listener)
+            Model.eventHub.subscribe("_set_web_page_",
+                uuid => this.set_page_listener = uuid,
+                page => {
+                    console.log("set page ", page)
+                }, true)
+
         // Init the webpages...
         this.initWebPages();
     }
@@ -206,7 +214,6 @@ export class GlobularNavigation extends HTMLElement {
         let pageLnk = new NavigationPageLink()
         this.appendChild(pageLnk)
         pageLnk.webPage = new WebPage("page_" + uuidv4(), "new page")
-        pageLnk.webPage.setPage()
         pageLnk.setEditMode()
     }
 
@@ -299,6 +306,11 @@ export class NavigationPageLink extends HTMLElement {
 
         this.span = this.shadowRoot.querySelector("#page-name-span")
 
+        // Set the page...
+        this.span.onclick = () => {
+            this.webPage.setPage()
+        }
+
         // enter edit mode.
         this.span.addEventListener('dblclick', () => {
             if (this.edit) {
@@ -310,8 +322,10 @@ export class NavigationPageLink extends HTMLElement {
         this.input.onblur = () => {
             if (this.webPage.name != this.input.value) {
                 this.webPage.name = this.input.value;
-                this.webPage.setEditMode()
+                this.webPage.setAttribute("name", this.webPage.name)
                 Model.eventHub.publish("_need_save_event_", null, true)
+                this.webPage.edit = true;
+                this.webPage.setPage()
             }
             this.resetEditMode()
         }
@@ -349,6 +363,7 @@ export class NavigationPageLink extends HTMLElement {
 
         // also set it page to edit mode...
         this.webPage.edit = true
+
     }
 
     resetEditMode() {
@@ -356,7 +371,7 @@ export class NavigationPageLink extends HTMLElement {
         this.editor.style.display = "none"
         this.span.style.visibility = "visible"
         this.span.style.position = ""
-        this.webPage.resetEditMode()
+        this.webPage.edit = false
     }
 
     save(callback, errorCallback) {
@@ -381,6 +396,9 @@ export class WebPage extends HTMLElement {
 
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
+
+        // edit mode 
+        this.edit = false
 
         // set the page id.
         this.id = id;
@@ -426,6 +444,10 @@ export class WebPage extends HTMLElement {
         // Here I will create a new editor...
         if (!this.editor) {
             this.editor = new EditorJS({
+                onChange: (api, event) => {
+                    /** Publish need save event. */
+                    Model.eventHub.publish("_need_save_event_", null, true)
+                },
                 holder: this.editorDiv.id,
                 autofocus: true,
                 /** 
@@ -505,12 +527,14 @@ export class WebPage extends HTMLElement {
     // enter edit mode.
     setEditMode() {
         // Here I will display the editor...
-        this.setEditor(()=>{
-            ApplicationView.displayMessage("you are in edit mode", 3000)
+        this.setEditor(() => {
+            // ApplicationView.displayMessage("you are in edit mode", 3000)
+            console.log("you are in edit mode!")
         })
     }
 
-    resetEditMode(){
+    resetEditMode() {
+
         console.log("reset edit mode!")
     }
 

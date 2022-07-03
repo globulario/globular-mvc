@@ -31,7 +31,7 @@ import { BlogPostElement, BlogEditingMenu } from "./components/BlogPost"
 import { Terminal } from "./components/Terminal"
 import { Workspace } from './components/Workspace'
 import { WatchingMenu } from './components/watching'
-import {ContentManager} from './components/Content'
+import { ContentManager } from './components/Content'
 
 
 // This variable is there to give acces to wait and resume...
@@ -120,7 +120,7 @@ export class ApplicationView extends View {
   private _title_: any;
 
   /** The content editor... */
-  private contentManager: ContentManager; 
+  private contentManager: ContentManager;
 
   /** The camera */
   private _camera: Camera;
@@ -230,7 +230,7 @@ export class ApplicationView extends View {
 
     // The content creator.
     this.contentManager = new ContentManager();
-  
+
 
     // The file menu
     this.filesMenu = new FilesMenu();
@@ -285,16 +285,24 @@ export class ApplicationView extends View {
 
     // Set the current webpage...
     Model.eventHub.subscribe("_set_web_page_",
-    uuid => { },
-    evt => {
+      uuid => { },
+      page => {
 
-      // remove actual nodes
-      this.hideContent()
+        // remove actual nodes
+        this.hideContent()
 
-      // Append the watching component...
-      this.getWorkspace().appendChild(evt);
+        // Append the watching component...
+        this.getWorkspace().appendChild(page);
 
-    }, true)
+        // Set edit mode as needed...
+        if (page.edit == true) {
+          // set the editor.
+          page.setEditor(()=>{
+            console.log("you are in edit mode!")
+          })
+        }
+
+      }, true)
 
     // Logout event
     Model.eventHub.subscribe(
@@ -569,7 +577,7 @@ export class ApplicationView extends View {
       }, true)
 
 
-      Model.eventHub.subscribe("_open_file_explorer_event_",
+    Model.eventHub.subscribe("_open_file_explorer_event_",
       uuid => { },
       explorer => {
         // Append the watching component...
