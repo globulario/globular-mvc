@@ -88,10 +88,17 @@ export class Layout extends HTMLElement {
 
             ::slotted(#toolbar) {
               display: flex;
-              flex-grow: 1;
               align-self: center;
               justify-self: flex-end;
               justify-content: flex-end;
+              color: var(--palette-text-accent);
+            }
+
+            ::slotted(#navigation) {
+              display: flex;
+              flex-grow: 1;
+              align-self: center;
+              justify-content: flex-start;
               color: var(--palette-text-accent);
             }
             
@@ -118,6 +125,7 @@ export class Layout extends HTMLElement {
               color: var(--palette-text-primary);
             }
 
+
           </style>
       
           <app-drawer-layout id="layout" fullbleed force-narrow>
@@ -134,7 +142,9 @@ export class Layout extends HTMLElement {
                   </paper-icon-button>
                   <div id="main-title">
                     <slot id="title" name="title"></slot>
-                    <slot id="toolbar" name="toolbar"></slot>
+                    <slot id="navigation" name="navigation"></slot>
+                    <slot id="toolbar" name="toolbar">
+                    </slot>
                   </div>
                 </app-toolbar>
               </app-header>
@@ -250,17 +260,26 @@ export class Layout extends HTMLElement {
   width() {
     return this.shadowRoot.getElementById("layout").offsetWidth;
   }
+
   /**
    * That contain the application title.
    */
   title() {
     return this.querySelector(`[slot="title"]`)
   }
+
   /**
    * The toolbar contain the application menu.
    */
   toolbar() {
     return this.querySelector(`[slot="toolbar"]`)
+  }
+
+  /**
+   * The navigation div
+   */
+  navigation() {
+    return this.querySelector(`[slot="navigation"]`)
   }
 
   /**

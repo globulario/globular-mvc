@@ -31,9 +31,10 @@ import { BlogPostElement, BlogEditingMenu } from "./components/BlogPost"
 import { Terminal } from "./components/Terminal"
 import { Workspace } from './components/Workspace'
 import { WatchingMenu } from './components/watching'
+import {ContentManager} from './components/Content'
+
 
 // This variable is there to give acces to wait and resume...
-export let applicationView: ApplicationView;
 const nameGenrator = new DockerNames();
 
 // Must be imported to overide the materialyse style
@@ -118,6 +119,8 @@ export class ApplicationView extends View {
   /** Keep title content between login and logout... */
   private _title_: any;
 
+  /** The content editor... */
+  private contentManager: ContentManager; 
 
   /** The camera */
   private _camera: Camera;
@@ -225,15 +228,12 @@ export class ApplicationView extends View {
       this.restoreContent();
     }
 
-
+    // The content creator.
+    this.contentManager = new ContentManager();
 
     // The file menu
     this.filesMenu = new FilesMenu();
 
-    // set the global varialbe...
-    applicationView = this;
-
-    this.getWorkspace()
 
     this._sidemenu_childnodes = new Array<any>();
     this._workspace_childnodes = new Array<any>();
@@ -554,6 +554,15 @@ export class ApplicationView extends View {
 
       }, true)
 
+
+      Model.eventHub.subscribe("_open_file_explorer_event_",
+      uuid => { },
+      explorer => {
+        // Append the watching component...
+        this.getWorkspace().appendChild(explorer);
+      }, true)
+
+
     Model.eventHub.subscribe("_display_blogs_event_",
       uuid => { },
       evt => {
@@ -860,6 +869,11 @@ export class ApplicationView extends View {
 
     // Append the over flow menu.
     ApplicationView.layout.toolbar().appendChild(this.overFlowMenu);
+
+    // Append the content manager to the navigation panel...
+    this.contentManager.init();
+
+    ApplicationView.layout.navigation().appendChild(this.contentManager)
 
     this.overFlowMenu.hide(); // not show it at first.
     this.accountMenu.setAccount(account);

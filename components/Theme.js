@@ -58,6 +58,7 @@ let theme = `
     --paper-checkbox-unchecked-color: var(--palette-action-disabled);
     --paper-checkbox-unchecked-ink-color: var(--palette-action-disabled);
 
+   
     /**/
     --paper-checkbox-checkmark-color: var(--palette-text-accent);
     --paper-checkbox-label-color: rgb(195, 195, 195));

@@ -842,3 +842,7 @@ globular-media-watching {
    margin-top: 10px;
    margin-bottom: 10px;
 }
+
+globular-content-manager{
+   flex-grow: 1;
+}

@@ -3917,7 +3917,7 @@ export class FileExplorer extends HTMLElement {
                 (uuid) => {
                     this.listeners["display_permission_manager_event"] = uuid;
                 }, (path) => {
-                    
+
                     this.permissionManager.permissions = null
                     this.permissionManager.setPath(path)
 
@@ -4347,22 +4347,14 @@ export class FileExplorer extends HTMLElement {
         }
     }
 
-    getWorkspace() {
-        return document.querySelector("globular-workspace")
-    }
 
     open() {
 
         this.style.display = "flex"
+        this.isOpen = true;
 
         if (this.onopen != undefined) {
             this.onopen();
-        }
-
-        let workspace = this.getWorkspace()
-        if (workspace != undefined) {
-            workspace.appendChild(this)
-            this.isOpen = true;
         }
     }
 
@@ -4373,9 +4365,11 @@ export class FileExplorer extends HTMLElement {
             this.onclose();
 
         }
+
         if (this.parentNode != null) {
             this.parentNode.removeChild(this)
         }
+
         this.isOpen = false
 
     }
@@ -4426,16 +4420,13 @@ export class FilesMenu extends Menu {
 
             fileExplorer.onclose = () => {
                 // Remove the file explorer.
-                if (fileExplorer.parentNode != undefined) {
-                    return
-                }
                 fileExplorer.parentNode.removeChild(fileExplorer)
                 fileExplorer.delete() // remove all listeners.
                 fileExplorer = null;
             }
 
+            Model.eventHub.publish("_open_file_explorer_event_", fileExplorer, true)
             fileExplorer.open()
-
         }
     }
 

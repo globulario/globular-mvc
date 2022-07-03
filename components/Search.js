@@ -913,12 +913,17 @@ export class SearchResultsPage extends HTMLElement {
         if (hit.hasTitle) {
             if (hit.hasTitle()) {
                 titleName = hit.getTitle().getName()
-                uuid = getUuidByString(hit.getTitle().getId())
+                uuid = getUuidByString(hit.getIndex() + "_title")
             }else{
-                uuid = getUuidByString(hit.getVideo().getId())
+                uuid = getUuidByString(hit.getIndex()+ "_video")
             }
         }else{
-           uuid = hit.getBlog().getUuid()
+           uuid = getUuidByString(hit.getIndex()+ "_blog")
+        }
+
+        // insert one time...
+        if(this.querySelector(`#hit-div-${uuid}`)){
+            return
         }
 
         let html = `

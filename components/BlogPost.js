@@ -1644,7 +1644,7 @@ export class BlogEditingMenu extends Menu {
 
     // Create the application view.
     constructor() {
-        super("blog-editing", "icons:create", "Blog Editing")
+        super("blog-editing", "icons:speaker-notes", "Blog Editing")
 
         this.onclose = null;
         this.blogs = null;
