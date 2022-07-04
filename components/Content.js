@@ -16,8 +16,49 @@ import Checklist from '@editorjs/checklist';
 import Paragraph from 'editorjs-paragraph-with-alignment'
 import CodeTool from '@editorjs/code'
 import Underline from '@editorjs/underline';
+import * as edjsHTML from 'editorjs-html'
+import { mergeTypedArrays, uint8arrayToStringMethod } from "../Utility";
 
 import { v4 as uuidv4 } from "uuid";
+import * as JwtDecode from "jwt-decode";
+import { FindRqst, ReplaceOneRqst } from "globular-web-client/persistence/persistence_pb";
+
+// Get the image default size...
+function getMeta(url, callback) {
+    const img = new Image();
+    img.addEventListener("load", () => {
+        callback({ width: img.naturalWidth, height: img.naturalHeight });
+    });
+    img.src = url;
+}
+
+// generate html from json data
+function jsonToHtml(data) {
+    // So here I will get the plain html from the output json data.
+    const edjsParser = edjsHTML();
+    let elements = edjsParser.parse(data);
+    let html = ""
+    elements.forEach(e => {
+        html += e
+    });
+
+    var div = document.createElement('div');
+    div.slot = "read-mode"
+    div.innerHTML = html.trim();
+
+    // Now I will set image height.
+    let images = div.querySelectorAll("img")
+    images.forEach(img => {
+        getMeta(img.src, meta => {
+            if (meta.width < div.offsetWidth && meta.height < div.offsetHeight) {
+                img.style.width = meta.width + "px"
+                img.style.height = meta.height + "px"
+            }
+        })
+
+    })
+    return div
+}
 
 /**
  * The content creator, it control edit mode and page creation.
@@ -190,12 +231,52 @@ export class GlobularNavigation extends HTMLElement {
                 }, true)
 
         // Init the webpages...
-        this.initWebPages();
+        this.loadWebPages(pages => {
+            for (var i = 0; i < pages.length; i++) {
+                let page = new WebPage(pages[i]._id, pages[i].name, pages[i].index, pages[i].data)
+                let lnk = new NavigationPageLink(page)
+                this.appendChild(lnk)
+                if (page.index == 0) {
+                    page.setPage()
+                }
+            }
+        }, err => ApplicationView.displayMessage(err, 3000));
     }
 
     // Retreive webpage content...
-    initWebPages(callback, errorCallback) {
+    loadWebPages(callback, errorCallback) {
 
+        // Insert the notification in the db.
+        let rqst = new FindRqst();
+
+        // set connection infos.
+        let db = Model.application + "_db";
+        rqst.setId(Model.application);
+        rqst.setDatabase(db);
+        rqst.setCollection("WebPages");
+        rqst.setQuery("{}");
+
+        let stream = Model.getGlobule(Model.address).persistenceService.find(rqst, {
+            application: Model.application,
+            domain: Model.domain
+        });
+
+        let data = [];
+
+        stream.on("data", (rsp) => {
+            data = mergeTypedArrays(data, rsp.getData());
+        });
+
+        stream.on("status", (status) => {
+            if (status.code == 0) {
+                uint8arrayToStringMethod(data, (str) => {
+                    callback(JSON.parse(str));
+                });
+            } else {
+                // In case of error I will return an empty array
+                errorCallback(status.details)
+            }
+        });
     }
 
     // Set|Reset edit mode.
@@ -204,7 +285,11 @@ export class GlobularNavigation extends HTMLElement {
         for (var i = 0; i < links.length; i++) {
             links[i].edit = edit;
             if (edit) {
+                // set the page edit mode.
+                links[i].webPage.setEditMode()
+            } else {
                 links[i].resetEditMode()
+                links[i].webPage.resetEditMode()
             }
         }
     }
@@ -256,12 +341,12 @@ export class NavigationPageLink extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor() {
+    constructor(webPage) {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
         this.edit = true
-        this.webPage = null
+        this.webPage = webPage
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -294,7 +379,7 @@ export class NavigationPageLink extends HTMLElement {
         </style>
         <div>
             <span id="page-name-span"></span>
-            <span id="page-name-editor" style="display: flex;">
+            <span id="page-name-editor" style="display: none;">
                 <paper-icon-button icon="icons:delete"></paper-icon-button>
                 <input id="page-name-editor-input" type="text"></input>
             </span>
@@ -309,6 +394,13 @@ export class NavigationPageLink extends HTMLElement {
         // Set the page...
         this.span.onclick = () => {
             this.webPage.setPage()
+        }
+
+        // set initial values.
+        if (this.webPage) {
+            this.edit = false
+            this.span.innerHTML = this.webPage.name
+            this.input.value = this.webPage.name
         }
 
         // enter edit mode.
@@ -341,8 +433,6 @@ export class NavigationPageLink extends HTMLElement {
             }
             this.setInputWidth()
         }
-
-
     }
 
     setInputWidth() {
@@ -391,7 +481,7 @@ customElements.define('globular-page-link', NavigationPageLink)
 export class WebPage extends HTMLElement {
 
     // Create the applicaiton view.
-    constructor(id, name) {
+    constructor(id, name, index, data) {
         super()
 
         // Set the shadow dom.
@@ -400,23 +490,43 @@ export class WebPage extends HTMLElement {
         // edit mode 
         this.edit = false
 
-        // set the page id.
-        this.id = id;
+
+
+        // The page data...
+        if (data != undefined) {
+            this.data = data
+        } else {
+            this.data = {} // empty object...
+        }
 
         // Page Name 
         this.name = name
-
-        // The page data...
-        this.data = {}
-
         if (this.hasAttribute("name")) {
             this.name = this.getAttribute("name")
         } else if (name.length > 0) {
             this.setAttribute("name", name)
         }
 
+        // set the page id.
+        this.id = id;
+        if (this.hasAttribute("id")) {
+            this.id = this.getAttribute("id")
+        } else if (id.length > 0) {
+            this.setAttribute("id", id)
+        }
+
         // The page index (use by navigation)
-        this.index = 0;
+        if (index != undefined) {
+            this.index = index
+        } else {
+            this.index = 0;
+        }
+
+        if (this.hasAttribute("index")) {
+            this.index = this.getAttribute("index")
+        } else if (index) {
+            this.setAttribute("index", index)
+        }
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -435,6 +545,17 @@ export class WebPage extends HTMLElement {
         this.editorDiv.slot = "edit-mode"
         this.appendChild(this.editorDiv)
 
+        // append the content as read mode...
+        this.setContent()
+    }
+
+    setContent() {
+        // Here the content is initialysed...
+        if (this.data.version) {
+            let div = jsonToHtml(this.data)
+            div.id = "content"
+            this.appendChild(div)
+        }
     }
 
     // Set the page editor...
@@ -442,81 +563,98 @@ export class WebPage extends HTMLElement {
 
         // Here I will create the editor...
         // Here I will create a new editor...
-        if (!this.editor) {
-            this.editor = new EditorJS({
-                onChange: (api, event) => {
-                    /** Publish need save event. */
-                    Model.eventHub.publish("_need_save_event_", null, true)
+
+        this.editor = new EditorJS({
+            onChange: (api, event) => {
+                /** Publish need save event. */
+                Model.eventHub.publish("_need_save_event_", null, true)
+            },
+            holder: this.editorDiv.id,
+            autofocus: true,
+            /** 
+             * Available Tools list. 
+             * Pass Tool's class or Settings object for each Tool you want to use 
+             * 
+             * linkTool: {
+                    class: LinkTool,
+                    config: {
+                        endpoint: 'http://localhost:8008/fetchUrl', // Your backend endpoint for url data fetching
+                    }
                 },
-                holder: this.editorDiv.id,
-                autofocus: true,
-                /** 
-                 * Available Tools list. 
-                 * Pass Tool's class or Settings object for each Tool you want to use 
-                 * 
-                 * linkTool: {
-                        class: LinkTool,
-                        config: {
-                            endpoint: 'http://localhost:8008/fetchUrl', // Your backend endpoint for url data fetching
+             */
+            tools: {
+                header: Header,
+                delimiter: Delimiter,
+                quote: Quote,
+                list: NestedList,
+                checklist: {
+                    class: Checklist,
+                    inlineToolbar: true,
+                },
+                table: Table,
+                paragraph: {
+                    class: Paragraph,
+                    inlineToolbar: true,
+                },
+                underline: Underline,
+                code: CodeTool,
+                raw: RawTool,
+                embed: {
+                    class: Embed,
+                    inlineToolbar: false,
+                    config: {
+                        services: {
+                            youtube: true,
+                            coub: true,
+                            codepen: true,
+                            imgur: true,
+                            gfycat: true,
+                            twitchvideo: true,
+                            vimeo: true,
+                            vine: true,
+                            twitter: true,
+                            instagram: true,
+                            aparat: true,
+                            facebook: true,
+                            pinterest: true,
                         }
                     },
-                 */
-                tools: {
-                    header: Header,
-                    delimiter: Delimiter,
-                    quote: Quote,
-                    list: NestedList,
-                    checklist: {
-                        class: Checklist,
-                        inlineToolbar: true,
-                    },
-                    table: Table,
-                    paragraph: {
-                        class: Paragraph,
-                        inlineToolbar: true,
-                    },
-                    underline: Underline,
-                    code: CodeTool,
-                    raw: RawTool,
-                    embed: {
-                        class: Embed,
-                        inlineToolbar: false,
-                        config: {
-                            services: {
-                                youtube: true,
-                                coub: true,
-                                codepen: true,
-                                imgur: true,
-                                gfycat: true,
-                                twitchvideo: true,
-                                vimeo: true,
-                                vine: true,
-                                twitter: true,
-                                instagram: true,
-                                aparat: true,
-                                facebook: true,
-                                pinterest: true,
-                            }
-                        },
-                    },
-                    image: SimpleImage,
                 },
-                data: this.data
+                image: SimpleImage,
+            },
+            data: this.getData()
+        });
+
+        // Move the editor inside the 
+        this.editor.isReady
+            .then(() => {
+                /** Do anything you need after editor initialization */
+                this.editorDiv.querySelector(".codex-editor__redactor").style.paddingBottom = "0px";
+                /** done with the editor initialisation */
+                callback()
+
+            })
+            .catch((reason) => {
+                ApplicationView.displayMessage(`Editor.js initialization failed because of ${reason}`, 3000)
             });
 
-            // Move the editor inside the 
-            this.editor.isReady
-                .then(() => {
-                    /** Do anything you need after editor initialization */
-                    this.editorDiv.querySelector(".codex-editor__redactor").style.paddingBottom = "0px";
-                    /** done with the editor initialisation */
-                    callback()
+    }
 
-                })
-                .catch((reason) => {
-                    ApplicationView.displayMessage(`Editor.js initialization failed because of ${reason}`, 3000)
-                });
-        }
+    getData() {
+        return this.data
+    }
+
+    toString() {
+        let str = JSON.stringify({ _id: this.id, name: this.name, index: this.index, user_id: localStorage.getItem("user_id"), data: this.data })
+        return str
+    }
+
+    fromString(str) {
+        // Here I will initialise the page from string.
+        let obj = JSON.parse(str)
+        this.id = obj._id
+        this.name = obj.name
+        this.data = obj.data
     }
 
     // Return the list of all page...
@@ -528,20 +666,71 @@ export class WebPage extends HTMLElement {
     setEditMode() {
         // Here I will display the editor...
         this.setEditor(() => {
-            // ApplicationView.displayMessage("you are in edit mode", 3000)
-            console.log("you are in edit mode!")
+            let content = this.querySelector("#content")
+            if (content)
+                this.removeChild(content)
         })
     }
 
     resetEditMode() {
-
-        console.log("reset edit mode!")
+        this.editorDiv.innerHTML = ""
+        this.setContent()
     }
 
     // Save the actual content.
     save(callback, errorCallback) {
-        console.log("save ", this.name)
-        callback()
+        if (this.editor == null) {
+            errorCallback("no editor was initilyse")
+            return
+        }
+
+        // save the editor content to the application database.
+        this.editor.save().then((data) => {
+
+            this.data = data
+            let str = this.toString()
+
+            // save the user_data
+            let rqst = new ReplaceOneRqst();
+            let db = Model.application + "_db";
+
+            // set the connection infos,
+            rqst.setId(Model.application);
+            rqst.setDatabase(db);
+            let collection = "WebPages";
+
+            // save only user data and not the how user info...
+            rqst.setCollection(collection);
+            rqst.setQuery(`{"_id":"${this.id}"}`);
+            rqst.setValue(str);
+            rqst.setOptions(`[{"upsert": true}]`);
+
+            // So here I will set the address from the address found in the token and not 
+            // the address of the client itself.
+            let token = localStorage.getItem("user_token")
+            let decoded = JwtDecode(token);
+            let address = decoded.address;
+            let domain = decoded.domain;
+
+            // call persist data
+            Model.getGlobule(address).persistenceService
+                .replaceOne(rqst, {
+                    token: token,
+                    application: Model.application,
+                    domain: domain,
+                    address: address
+                })
+                .then((rsp) => {
+                    // Here I will return the value with it
+                    Model.eventHub.publish(`update_page_${this.id}_evt`, str, false)
+                    console.log(str)
+                    callback(this);
+                })
+                .catch((err) => {
+                    errorCallback(err);
+                });
+        })
+
     }
 }
 
