@@ -295,12 +295,12 @@ export class ApplicationView extends View {
         this.getWorkspace().appendChild(page);
 
         // Set edit mode as needed...
-        if (page.edit == true) {
+        /*if (page.edit == true) {
           // set the editor.
           page.setEditor(()=>{
             console.log("you are in edit mode!")
           })
-        }
+        }*/
 
       }, true)
 

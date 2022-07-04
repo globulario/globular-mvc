@@ -33,7 +33,7 @@ function getMeta(url, callback) {
 }
 
 // generate html from json data
-function jsonToHtml(data) {
+function jsonToHtml(data, slot) {
     // So here I will get the plain html from the output json data.
     const edjsParser = edjsHTML();
     let elements = edjsParser.parse(data);
@@ -43,7 +43,7 @@ function jsonToHtml(data) {
     });
 
     var div = document.createElement('div');
-    div.slot = "read-mode"
+    div.slot = slot
     div.innerHTML = html.trim();
 
     // Now I will set image height.
@@ -453,6 +453,7 @@ export class NavigationPageLink extends HTMLElement {
 
         // also set it page to edit mode...
         this.webPage.edit = true
+        this.webPage.setEditMode()
 
     }
 
@@ -490,15 +491,6 @@ export class WebPage extends HTMLElement {
         // edit mode 
         this.edit = false
 
-
-
-        // The page data...
-        if (data != undefined) {
-            this.data = data
-        } else {
-            this.data = {} // empty object...
-        }
-
         // Page Name 
         this.name = name
         if (this.hasAttribute("name")) {
@@ -532,129 +524,27 @@ export class WebPage extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
             ${getTheme()}
+            #container {
+                width: 100%;
+                height: 100%;
+            }
         </style>
-        <slot name="read-mode">
-        </slot>
-        <slot name="edit-mode">
-        </slot>
+        <div id="container">
+            <slot></slot>
+        </div>
         `
 
-        // Create the editor div...
-        this.editorDiv = document.createElement("div")
-        this.editorDiv.id = id + "_editorjs"
-        this.editorDiv.slot = "edit-mode"
-        this.appendChild(this.editorDiv)
+        // Now I will create the main layout...
+        this.layout = new Layout(data)
 
-        // append the content as read mode...
-        this.setContent()
+        // append it to the page.
+        this.appendChild(this.layout)
     }
 
-    setContent() {
-        // Here the content is initialysed...
-        if (this.data.version) {
-            let div = jsonToHtml(this.data)
-            div.id = "content"
-            this.appendChild(div)
-        }
-    }
-
-    // Set the page editor...
-    setEditor(callback) {
-
-        // Here I will create the editor...
-        // Here I will create a new editor...
-
-        this.editor = new EditorJS({
-            onChange: (api, event) => {
-                /** Publish need save event. */
-                Model.eventHub.publish("_need_save_event_", null, true)
-            },
-            holder: this.editorDiv.id,
-            autofocus: true,
-            /** 
-             * Available Tools list. 
-             * Pass Tool's class or Settings object for each Tool you want to use 
-             * 
-             * linkTool: {
-                    class: LinkTool,
-                    config: {
-                        endpoint: 'http://localhost:8008/fetchUrl', // Your backend endpoint for url data fetching
-                    }
-                },
-             */
-            tools: {
-                header: Header,
-                delimiter: Delimiter,
-                quote: Quote,
-                list: NestedList,
-                checklist: {
-                    class: Checklist,
-                    inlineToolbar: true,
-                },
-                table: Table,
-                paragraph: {
-                    class: Paragraph,
-                    inlineToolbar: true,
-                },
-                underline: Underline,
-                code: CodeTool,
-                raw: RawTool,
-                embed: {
-                    class: Embed,
-                    inlineToolbar: false,
-                    config: {
-                        services: {
-                            youtube: true,
-                            coub: true,
-                            codepen: true,
-                            imgur: true,
-                            gfycat: true,
-                            twitchvideo: true,
-                            vimeo: true,
-                            vine: true,
-                            twitter: true,
-                            instagram: true,
-                            aparat: true,
-                            facebook: true,
-                            pinterest: true,
-                        }
-                    },
-                },
-                image: SimpleImage,
-            },
-            data: this.getData()
-        });
-
-        // Move the editor inside the 
-        this.editor.isReady
-            .then(() => {
-                /** Do anything you need after editor initialization */
-                this.editorDiv.querySelector(".codex-editor__redactor").style.paddingBottom = "0px";
-                /** done with the editor initialisation */
-                callback()
-
-            })
-            .catch((reason) => {
-                ApplicationView.displayMessage(`Editor.js initialization failed because of ${reason}`, 3000)
-            });
-
-    }
-
-    getData() {
-        return this.data
-    }
-
+    // return the stringnify page...
     toString() {
-        let str = JSON.stringify({ _id: this.id, name: this.name, index: this.index, user_id: localStorage.getItem("user_id"), data: this.data })
+        let str = JSON.stringify({ _id: this.id, name: this.name, index: this.index, user_id: localStorage.getItem("user_id"), data: this.layout.data })
         return str
-    }
-
-    fromString(str) {
-        // Here I will initialise the page from string.
-        let obj = JSON.parse(str)
-        this.id = obj._id
-        this.name = obj.name
-        this.data = obj.data
     }
 
     // Return the list of all page...
@@ -664,30 +554,23 @@ export class WebPage extends HTMLElement {
 
     // enter edit mode.
     setEditMode() {
+        console.log("set edit mode...")
         // Here I will display the editor...
-        this.setEditor(() => {
-            let content = this.querySelector("#content")
-            if (content)
-                this.removeChild(content)
-        })
+        this.layout.setEditMode()
     }
 
     resetEditMode() {
-        this.editorDiv.innerHTML = ""
-        this.setContent()
+        this.layout.resetEditMode()
     }
 
     // Save the actual content.
     save(callback, errorCallback) {
-        if (this.editor == null) {
-            errorCallback("no editor was initilyse")
-            return
-        }
+        this.layout.getData(data => {
 
-        // save the editor content to the application database.
-        this.editor.save().then((data) => {
+            // set the layout data...
+            this.layout.data = data;
 
-            this.data = data
+            // save the editor content to the application database.
             let str = this.toString()
 
             // save the user_data
@@ -729,9 +612,100 @@ export class WebPage extends HTMLElement {
                 .catch((err) => {
                     errorCallback(err);
                 });
-        })
+        }, errorCallback)
 
     }
 }
 
 customElements.define('globular-web-page', WebPage)
+
+
+/**
+ * Layout tool.
+ */
+export class Layout extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor(data) {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+
+        this.data = {}
+        if (data) {
+            this.data = data
+        }
+
+
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+            ${getTheme()}
+
+            #container {
+                width: 100%;
+                height: 100%;
+                position: relative;
+            }
+
+            #toolbar{
+                display: none;
+                position: absolute;
+                top: 0px;
+                left: 0px;
+            }
+
+            #handle{
+                display: none;
+                position: absolute;
+                top: 1px;
+                left: 1px;
+                bottom: 1px;
+                right: 1px;
+                border: 2px dashed var(--palette-divider);
+            }
+
+        </style>
+        <div id="container">
+            <div id="handle">
+            </div>
+            <div id="toolbar">
+                <paper-icon-button icon="icons:add"></paper-icon-button>
+            </div>
+            <slot></slot>
+        </div>
+        `
+
+        // Get the layout elements...
+        this.container = this.shadowRoot.querySelector("#container")
+        this.toolbar = this.shadowRoot.querySelector("#toolbar")
+        this.handle = this.shadowRoot.querySelector("#handle")
+    }
+
+    /**
+     * Return the data contain in the layout...
+     */
+    getData(callback, errorCallback) {
+        return {};
+    }
+
+    /**
+     * Set layout edit mode.
+     */
+    setEditMode() {
+        this.toolbar.style.display = "flex"
+        this.handle.style.display = "block"
+    }
+
+    /**
+     * Reset layout edit mode.
+     */
+    resetEditMode() {
+        this.toolbar.style.display = "none"
+        this.handle.style.display = "none"
+    }
+}
+
+customElements.define('globular-layout', Layout)
