@@ -23,6 +23,12 @@ import { v4 as uuidv4 } from "uuid";
 import * as JwtDecode from "jwt-decode";
 import { FindRqst, ReplaceOneRqst } from "globular-web-client/persistence/persistence_pb";
 
+import * as ace from 'brace';
+import 'brace/mode/css';
+import 'brace/theme/monokai';
+import { setMoveable } from './moveable'
+import { setResizeable } from './rezieable'
+
 // Get the image default size...
 function getMeta(url, callback) {
     const img = new Image();
@@ -80,6 +86,13 @@ export class ContentManager extends HTMLElement {
             #container{
                 display: flex;
                 align-items: center;
+            }
+
+            .vertical{
+                flex-direction: column-reverse;
+            }
+
+            .horizontal{
                 flex-grow: 1;
                 border-right: 1px solid var(--palette-divider);
                 margin-left: 10px;
@@ -127,6 +140,18 @@ export class ContentManager extends HTMLElement {
                 saveAllBtn.removeAttribute("disable")
                 saveAllBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-text-primary)")
             })
+    }
+
+    setVertical() {
+        this.shadowRoot.querySelector("#container").classList.add("vertical")
+        this.shadowRoot.querySelector("#container").classList.remove("horizontal")
+        this.shadowRoot.querySelector("globular-navigation").setVertical()
+    }
+
+    setHorizontal() {
+        this.shadowRoot.querySelector("#container").classList.add("horizontal")
+        this.shadowRoot.querySelector("#container").classList.remove("vertical")
+        this.shadowRoot.querySelector("globular-navigation").setHorizontal()
     }
 
     // Display the toolbar...
@@ -241,6 +266,14 @@ export class GlobularNavigation extends HTMLElement {
                 }
             }
         }, err => ApplicationView.displayMessage(err, 3000));
+    }
+
+    setVertical() {
+        this.shadowRoot.querySelector("#container").style.flexDirection = "column"
+    }
+
+    setHorizontal() {
+        this.shadowRoot.querySelector("#container").style.flexDirection = "row"
     }
 
     // Retreive webpage content...
@@ -619,6 +652,58 @@ export class WebPage extends HTMLElement {
 
 customElements.define('globular-web-page', WebPage)
 
+/**
+ * Return the list of all rules.
+ * @param {*} el 
+ * @returns 
+ */
+let getRules = (el) => {
+    var sheets = window.document.styleSheets, ret = [];
+    el.matches = el.matches || el.webkitMatchesSelector || el.mozMatchesSelector || el.msMatchesSelector || el.oMatchesSelector;
+    for (var i in sheets) {
+        try {
+            var rules = sheets[i].rules || sheets[i].cssRules;
+            for (var r in rules) {
+                if (el.matches(rules[r].selectorText)) {
+                    ret.push(rules[r]);
+                }
+            }
+        } catch (exception) {
+
+        }
+    }
+
+    return ret;
+}
+
+/**
+ * Return the list of inheriated rules.
+ * @param {*} node 
+ * @param {*} parentNode 
+ */
+let getInheritedRules = (node, parentNode) => {
+
+    if (parentNode.cssRules == undefined) {
+        parentNode.cssRules = []
+    }
+
+    if (node.inheritedCssRules == undefined) {
+        node.inheritedCssRules = []
+    }
+
+    for (var i = 0; i < parentNode.cssRules.length; i++) {
+        let rule = parentNode.cssRules[i]
+        if (node.matches(rule.selectorText)) {
+            if (node.inheritedCssRules.indexOf(rule) == -1 && node.cssRules.indexOf(rule) == -1) {
+                node.inheritedCssRules.push(rule);
+            }
+        }
+    }
+
+    if (parentNode.parentNode != undefined) {
+        getInheritedRules(node, parentNode.parentNode)
+    }
+}
 
 /**
  * Layout tool.
@@ -637,17 +722,20 @@ export class Layout extends HTMLElement {
             this.data = data
         }
 
-
+        // The style of the container...
+        this.style_ = `
+#layout{
+    width: 100%; 
+    height: 100%;
+}
+`
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
             ${getTheme()}
-
-            #container {
-                width: 100%;
-                height: 100%;
-                position: relative;
+            #container{
+                position: absolute;
             }
 
             #toolbar{
@@ -655,6 +743,7 @@ export class Layout extends HTMLElement {
                 position: absolute;
                 top: 0px;
                 left: 0px;
+                right: 0px;
             }
 
             #handle{
@@ -666,14 +755,27 @@ export class Layout extends HTMLElement {
                 right: 1px;
                 border: 2px dashed var(--palette-divider);
             }
-
         </style>
+
+        <style id="layout-style">
+            ${this.style_}
+        </style>
+
         <div id="container">
-            <div id="handle">
+            <div style="position: relative; width: 100%; height: 100%;">
+                <div id="handle">
+                </div>
+                <div id="toolbar">
+                    <paper-icon-button id="add-layout-btn" style="z-index: 10;" icon="icons:add"></paper-icon-button>
+                    <paper-tooltip for="add-layout-btn" role="tooltip" tabindex="-1">Add Layout Btn</paper-tooltip>
+                    <span style="flex-grow: 1;"></span>
+                    <paper-button id="edit-css-btn" style="z-index: 10;">css</paper-button>
+                    <paper-tooltip for="edit-css-btn" role="tooltip" tabindex="-1">Edit Layout Style</paper-tooltip>
+                </div>
             </div>
-            <div id="toolbar">
-                <paper-icon-button icon="icons:add"></paper-icon-button>
-            </div>
+        </div>
+
+        <div id="layout">
             <slot></slot>
         </div>
         `
@@ -682,6 +784,51 @@ export class Layout extends HTMLElement {
         this.container = this.shadowRoot.querySelector("#container")
         this.toolbar = this.shadowRoot.querySelector("#toolbar")
         this.handle = this.shadowRoot.querySelector("#handle")
+        this.layout = this.shadowRoot.querySelector("#layout")
+
+        // The css button.
+        this.editCssRulesBtn = this.shadowRoot.querySelector("#edit-css-btn")
+        let css_editor = null
+        this.editCssRulesBtn.onclick = () => {
+            if (css_editor != null) {
+                this.appendChild(css_editor)
+                return
+            }
+
+            // Set the css from the editor...
+            css_editor = new CssEditor((evt) => {
+                let css = css_editor.getText()
+
+                // Here I will set the css text of the layout...
+                this.shadowRoot.querySelector("#layout-style").innerText = css
+
+                this.setContainerPosition()
+
+            })
+
+            this.appendChild(css_editor)
+
+            // Set the style to the editor...
+            css_editor.setText(this.style_)
+        }
+
+        // Keep the container synch with the layout div...
+        window.addEventListener('resize', () => {
+            this.setContainerPosition()
+        });
+    }
+
+    // The connected callback...
+    connectedCallback() {
+        // set the container style...
+        this.setContainerPosition()
+    }
+
+    setContainerPosition() {
+        this.container.style.left = this.layout.offsetLeft + "px";
+        this.container.style.top = this.layout.offsetTop + "px";
+        this.container.style.width = this.layout.offsetWidth + "px";
+        this.container.style.height = this.layout.offsetHeight + "px";
     }
 
     /**
@@ -709,3 +856,150 @@ export class Layout extends HTMLElement {
 }
 
 customElements.define('globular-layout', Layout)
+
+/**
+ * Ace Editor use as CSS editor...
+ */
+export class CssEditor extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor(onchange) {
+        super()
+
+        // This is call when the editor text change.
+        this.onchange = onchange;
+
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+            ${getTheme()}
+            #container{
+                width: 720px;
+                height: 400px;
+                position: fixed;
+            }
+
+            .header{
+                display: flex;
+                align-items: center;
+                color: var(--palette-text-accent);
+                background-color: var(--palette-primary-accent);
+                border-bottom: 1px solid var(--palette-divider);
+                z-index: 100;
+            }
+
+            .header span{
+                flex-grow: 1;
+                text-align: center;
+                font-size: 1.1rem;
+                font-weight: 500;
+                display: inline-block;
+                white-space: nowrap;
+                overflow: hidden !important;
+                text-overflow: ellipsis;
+            }
+
+            paper-card {
+                background: var(--palette-background-default); 
+                border-top: 1px solid var(--palette-background-paper);
+                border-left: 1px solid var(--palette-background-paper);
+            }
+
+        </style>
+        <paper-card id="container" class="no-select">
+            <div class="header">
+                <paper-icon-button id="close-btn" icon="icons:close" style="min-width: 40px; --iron-icon-fill-color: var(--palette-text-accent);"></paper-icon-button>
+                <span id="title-span"></span>
+            </div>
+
+            <slot></slot>
+            
+        </paper-card>
+        `
+
+        this.shadowRoot.querySelector("#close-btn").onclick = () => {
+            this.parentNode.removeChild(this)
+        }
+
+        this.editor = null;
+
+        let container = this.shadowRoot.querySelector("#container")
+
+        let offsetTop = this.shadowRoot.querySelector(".header").offsetHeight
+        if (offsetTop == 0) {
+            offsetTop = 60
+        }
+
+        if (localStorage.getItem("__css_editor_position__")) {
+            let position = JSON.parse(localStorage.getItem("__css_editor_position__"))
+            if (position.top < offsetTop) {
+                position.top = offsetTop
+            }
+            container.style.top = position.top + "px"
+            container.style.left = position.left + "px"
+        } else {
+            container.style.left = ((document.body.offsetWidth - 720) / 2) + "px"
+            container.style.top = "80px"
+        }
+
+
+        setMoveable(this.shadowRoot.querySelector(".header"), container, (left, top) => {
+            localStorage.setItem("__css_editor_position__", JSON.stringify({ top: top, left: left }))
+        }, this, offsetTop)
+
+
+        if (localStorage.getItem("__css_editor_dimension__")) {
+            let dimension = JSON.parse(localStorage.getItem("__css_editor_dimension__"))
+            container.style.width = dimension.width + "px"
+            container.style.height = dimension.height + "px"
+        }
+
+        // Set resizable properties...
+        setResizeable(container, (width, height) => {
+            localStorage.setItem("__css_editor_dimension__", JSON.stringify({ width: width, height: height }))
+        })
+    }
+
+    connectedCallback() {
+        // init the ace editor.
+        if (this.editor == null) {
+            let content = document.createElement("div")
+            content.style.position = "relative"
+            content.style.height = "calc(100% - 40px)"
+            content.style.width = "100%"
+            content.id = "css-editor"
+            this.appendChild(content)
+
+
+            // Create the css editor...
+            this.editor = ace.edit('css-editor');
+            this.editor.getSession().setMode('ace/mode/css');
+
+            // Set the theme...
+            if(localStorage.getItem( localStorage.getItem("user_id") + "_theme") == "dark"){
+                this.editor.setTheme('ace/theme/monokai');
+            }
+
+            // Connect the change event.
+            this.editor.getSession().on('change', this.onchange);
+        }
+    }
+
+    // Set the text to edit...
+    setText(txt) {
+        // Set the text.
+        console.log("set value ", txt)
+        this.editor.setValue(txt)
+    }
+
+    // Return the editor content.
+    getText() {
+        return this.editor.getValue()
+    }
+}
+
+customElements.define('globular-css-editor', CssEditor)

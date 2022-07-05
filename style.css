@@ -862,6 +862,7 @@ globular-content-manager {
 
 /** Take most of the space... */
 globular-web-page {
+   grid-row-start: 1;
    grid-column-start: 1;
    grid-column-end: 17;
 }

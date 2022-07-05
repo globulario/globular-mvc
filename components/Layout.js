@@ -95,10 +95,7 @@ export class Layout extends HTMLElement {
             }
 
             ::slotted(#navigation) {
-              display: flex;
-              flex-grow: 1;
-              align-self: center;
-              justify-content: flex-start;
+              width: 100%;
               color: var(--palette-text-accent);
             }
             
@@ -162,6 +159,7 @@ export class Layout extends HTMLElement {
     this.hamburger = this.shadowRoot.getElementById("menu-btn");
     this.content = this.shadowRoot.getElementById("content");
     this.sideMenuSlot = this.shadowRoot.getElementById("side-menu");
+
     this.header = this.shadowRoot.querySelector("app-header")
 
     this.hideSideBar();
@@ -192,6 +190,14 @@ export class Layout extends HTMLElement {
         sideMenu_.style.display = "block";
         sideMenu_.style.overflow = "auto";
         sideMenu_.style.marginRight = "40px";
+
+        // put the naviagtion content into it default slot.
+        let navigation = this.querySelector("#navigation")
+        navigation.slot = "navigation"
+        let contentManager = navigation.querySelector("globular-content-manager")
+        if (contentManager)
+          contentManager.setHorizontal()
+
       } else {
         // Set the menu in the toolbar.
         this.appToolbar.appendChild(this.sideMenuSlot);
@@ -204,6 +210,13 @@ export class Layout extends HTMLElement {
         sideMenu_.style.width = "100%";
         sideMenu_.style.marginTop = "24px";
         sideMenu_.style.marginRight = "40px";
+
+        // put the navigation in the the side menu...
+        let navigation = this.querySelector("#navigation")
+        navigation.slot = "side-menu"
+        let contentManager = navigation.querySelector("globular-content-manager")
+        if (contentManager)
+          contentManager.setVertical()
       }
     });
 

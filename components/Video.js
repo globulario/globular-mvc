@@ -151,11 +151,7 @@ export class VideoPlayer extends HTMLElement {
 
         setResizeable(container, (width, height) => {
             localStorage.setItem("__video_player_dimension__", JSON.stringify({ width: width, height: height }))
-            if (this.video > 0) {
-                container.style.height = this.video.offsetHeight + "px"
-            } else {
-                container.style.height = "auto"
-            }
+            container.style.height = "auto"
         })
         container.resizeHeightDiv.style.display = "none"
 
