@@ -139,6 +139,7 @@ export class ContentManager extends HTMLElement {
                 let saveAllBtn = this.shadowRoot.querySelector("#save-all-btn")
                 saveAllBtn.removeAttribute("disable")
                 saveAllBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-text-primary)")
+                window.dispatchEvent(new Event('resize'));
             })
     }
 
@@ -183,10 +184,14 @@ export class ContentManager extends HTMLElement {
 
         // Save all...
         saveAllBtn.onclick = () => {
+            if (saveAllBtn.hasAttribute("disable")) {
+                return // nothing to save...
+            }
+
+            // Save all pages at once.
             this.shadowRoot.querySelector("globular-navigation").savePages()
             saveAllBtn.setAttribute("disable")
             saveAllBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
-
         }
 
         createPageBtn.onclick = () => {
@@ -339,7 +344,6 @@ export class GlobularNavigation extends HTMLElement {
     savePages() {
         let links = this.querySelectorAll("globular-page-link")
         let savePages_ = (index) => {
-
             if (index < links.length - 1) {
                 links[index].save(() => {
                     savePages_(++index)
@@ -719,16 +723,21 @@ export class Layout extends HTMLElement {
 
         this.data = {}
         if (data) {
-            this.data = data
-        }
-
-        // The style of the container...
-        this.style_ = `
+            this.data = data;
+            this.style_ = this.data.style;
+            for(var i=0; i < this.data.children.length; i++){
+                let layout = new Layout(this.data.children[i])
+                this.appendChild(layout)
+            }
+        } else {
+            // The style of the container...
+            this.style_ = `
 #layout{
     width: 100%; 
     height: 100%;
 }
-`
+        `
+        }
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -749,10 +758,10 @@ export class Layout extends HTMLElement {
             #handle{
                 display: none;
                 position: absolute;
-                top: 1px;
-                left: 1px;
-                bottom: 1px;
-                right: 1px;
+                top: 0px;
+                left: 0px;
+                bottom: 0px;
+                right: 0px;
                 border: 2px dashed var(--palette-divider);
             }
         </style>
@@ -797,19 +806,30 @@ export class Layout extends HTMLElement {
 
             // Set the css from the editor...
             css_editor = new CssEditor((evt) => {
-                let css = css_editor.getText()
+                this.style_ = css_editor.getText()
 
                 // Here I will set the css text of the layout...
-                this.shadowRoot.querySelector("#layout-style").innerText = css
-
+                this.shadowRoot.querySelector("#layout-style").innerText = this.style_
                 this.setContainerPosition()
 
+                Model.eventHub.publish("_need_save_event_", null, true)
             })
 
             this.appendChild(css_editor)
 
             // Set the style to the editor...
             css_editor.setText(this.style_)
+        }
+
+        // The add layout button
+        this.addLayoutBtn = this.shadowRoot.querySelector("#add-layout-btn")
+        this.addLayoutBtn.onclick = () => {
+
+            // Here I will create a new child layout...
+            let layout = new Layout(null)
+            layout.setEditMode()
+            this.appendChild(layout)
+            Model.eventHub.publish("_need_save_event_", null, true)
         }
 
         // Keep the container synch with the layout div...
@@ -835,7 +855,30 @@ export class Layout extends HTMLElement {
      * Return the data contain in the layout...
      */
     getData(callback, errorCallback) {
-        return {};
+        // A layout is a recursive structure...
+        let obj = { style: this.style_, children: [] }
+        let layouts = this.getElementsByTagName("globular-layout")
+        let getData_ = (index) => {
+            if (index == layouts.length - 1) {
+                layouts[index].getData((o)=>{
+                    obj.children.push(o)
+                    callback(obj) // Done go to previous level...
+                })
+            } else {
+                layouts[index].getData((o) => {
+                    obj.children.push(o)
+                    index++
+                    getData_(index) // append next children object.
+                })
+            }
+        }
+
+        if (layouts.length > 0) {
+            getData_(0)
+        } else {
+            callback(obj)
+        }
+
     }
 
     /**
@@ -844,6 +887,12 @@ export class Layout extends HTMLElement {
     setEditMode() {
         this.toolbar.style.display = "flex"
         this.handle.style.display = "block"
+
+        let layouts = this.getElementsByTagName("globular-layout")
+        for(var i=0; i < layouts.length; i++){
+            layouts[i].setEditMode()
+        }
+        
     }
 
     /**
@@ -852,6 +901,11 @@ export class Layout extends HTMLElement {
     resetEditMode() {
         this.toolbar.style.display = "none"
         this.handle.style.display = "none"
+
+        let layouts = this.getElementsByTagName("globular-layout")
+        for(var i=0; i < layouts.length; i++){
+            layouts[i].resetEditMode()
+        }
     }
 }
 
@@ -980,7 +1034,7 @@ export class CssEditor extends HTMLElement {
             this.editor.getSession().setMode('ace/mode/css');
 
             // Set the theme...
-            if(localStorage.getItem( localStorage.getItem("user_id") + "_theme") == "dark"){
+            if (localStorage.getItem(localStorage.getItem("user_id") + "_theme") == "dark") {
                 this.editor.setTheme('ace/theme/monokai');
             }
 
