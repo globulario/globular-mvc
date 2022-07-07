@@ -565,6 +565,13 @@ export class WebPage extends HTMLElement {
                 width: 100%;
                 height: 100%;
             }
+
+            globular-layout-selector {
+                position: fixed;
+                top: 75px;
+                right: 25px;
+            }
+            
         </style>
         <div id="container">
             <slot></slot>
@@ -573,9 +580,14 @@ export class WebPage extends HTMLElement {
 
         // Now I will create the main layout...
         this.layout = new Layout(data)
+        this.layout.label = "main layout"
 
         // append it to the page.
         this.appendChild(this.layout)
+
+        // Tool to help select layout...
+        this.layoutSelector = new LayoutSelector(this.layout)
+
     }
 
     // return the stringnify page...
@@ -594,10 +606,12 @@ export class WebPage extends HTMLElement {
         console.log("set edit mode...")
         // Here I will display the editor...
         this.layout.setEditMode()
+        this.shadowRoot.querySelector("#container").appendChild(this.layoutSelector)
     }
 
     resetEditMode() {
         this.layout.resetEditMode()
+        this.shadowRoot.querySelector("#container").removeChild(this.layoutSelector)
     }
 
     // Save the actual content.
@@ -725,7 +739,7 @@ export class Layout extends HTMLElement {
         if (data) {
             this.data = data;
             this.style_ = this.data.style;
-            for(var i=0; i < this.data.children.length; i++){
+            for (var i = 0; i < this.data.children.length; i++) {
                 let layout = new Layout(this.data.children[i])
                 this.appendChild(layout)
             }
@@ -747,14 +761,6 @@ export class Layout extends HTMLElement {
                 position: absolute;
             }
 
-            #toolbar{
-                display: none;
-                position: absolute;
-                top: 0px;
-                left: 0px;
-                right: 0px;
-            }
-
             #handle{
                 display: none;
                 position: absolute;
@@ -774,13 +780,6 @@ export class Layout extends HTMLElement {
             <div style="position: relative; width: 100%; height: 100%;">
                 <div id="handle">
                 </div>
-                <div id="toolbar">
-                    <paper-icon-button id="add-layout-btn" style="z-index: 10;" icon="icons:add"></paper-icon-button>
-                    <paper-tooltip for="add-layout-btn" role="tooltip" tabindex="-1">Add Layout Btn</paper-tooltip>
-                    <span style="flex-grow: 1;"></span>
-                    <paper-button id="edit-css-btn" style="z-index: 10;">css</paper-button>
-                    <paper-tooltip for="edit-css-btn" role="tooltip" tabindex="-1">Edit Layout Style</paper-tooltip>
-                </div>
             </div>
         </div>
 
@@ -791,46 +790,11 @@ export class Layout extends HTMLElement {
 
         // Get the layout elements...
         this.container = this.shadowRoot.querySelector("#container")
-        this.toolbar = this.shadowRoot.querySelector("#toolbar")
         this.handle = this.shadowRoot.querySelector("#handle")
         this.layout = this.shadowRoot.querySelector("#layout")
 
         // The css button.
-        this.editCssRulesBtn = this.shadowRoot.querySelector("#edit-css-btn")
-        let css_editor = null
-        this.editCssRulesBtn.onclick = () => {
-            if (css_editor != null) {
-                this.appendChild(css_editor)
-                return
-            }
-
-            // Set the css from the editor...
-            css_editor = new CssEditor((evt) => {
-                this.style_ = css_editor.getText()
-
-                // Here I will set the css text of the layout...
-                this.shadowRoot.querySelector("#layout-style").innerText = this.style_
-                this.setContainerPosition()
-
-                Model.eventHub.publish("_need_save_event_", null, true)
-            })
-
-            this.appendChild(css_editor)
-
-            // Set the style to the editor...
-            css_editor.setText(this.style_)
-        }
-
-        // The add layout button
-        this.addLayoutBtn = this.shadowRoot.querySelector("#add-layout-btn")
-        this.addLayoutBtn.onclick = () => {
-
-            // Here I will create a new child layout...
-            let layout = new Layout(null)
-            layout.setEditMode()
-            this.appendChild(layout)
-            Model.eventHub.publish("_need_save_event_", null, true)
-        }
+        this.css_editor = null
 
         // Keep the container synch with the layout div...
         window.addEventListener('resize', () => {
@@ -838,10 +802,61 @@ export class Layout extends HTMLElement {
         });
     }
 
+    /**
+     * Add a new layout in that layout
+     */
+    createLayout() {
+        // Here I will create a new child layout...
+        let layout = new Layout(null)
+        layout.setEditMode()
+        this.appendChild(layout)
+        Model.eventHub.publish("_need_save_event_", null, true)
+    }
+
+    /**
+     * Display the css editor.
+     * @returns 
+     */
+    showCssEditor() {
+        if (this.css_editor != null) {
+            this.appendChild(this.css_editor)
+            return
+        }
+
+        // Set the css from the editor...
+        this.css_editor = new CssEditor((evt) => {
+            this.style_ = this.css_editor.getText()
+
+            // Here I will set the css text of the layout...
+            this.shadowRoot.querySelector("#layout-style").innerText = this.style_
+            this.setContainerPosition()
+
+            Model.eventHub.publish("_need_save_event_", null, true)
+        },()=>{
+            this.emphasis()
+        },
+        ()=>{
+            this.de_emphasis()
+        })
+
+        this.appendChild(this.css_editor)
+
+        // Set the style to the editor...
+        this.css_editor.setText(this.style_)
+    }
+
     // The connected callback...
     connectedCallback() {
         // set the container style...
         this.setContainerPosition()
+    }
+
+    emphasis(){
+        this.handle.style.borderColor = "var(--palette-primary-light)"
+    }
+
+    de_emphasis(){
+        this.handle.style.borderColor = "var(--palette-divider)"
     }
 
     setContainerPosition() {
@@ -860,7 +875,7 @@ export class Layout extends HTMLElement {
         let layouts = this.getElementsByTagName("globular-layout")
         let getData_ = (index) => {
             if (index == layouts.length - 1) {
-                layouts[index].getData((o)=>{
+                layouts[index].getData((o) => {
                     obj.children.push(o)
                     callback(obj) // Done go to previous level...
                 })
@@ -885,25 +900,24 @@ export class Layout extends HTMLElement {
      * Set layout edit mode.
      */
     setEditMode() {
-        this.toolbar.style.display = "flex"
         this.handle.style.display = "block"
 
         let layouts = this.getElementsByTagName("globular-layout")
-        for(var i=0; i < layouts.length; i++){
+        for (var i = 0; i < layouts.length; i++) {
             layouts[i].setEditMode()
         }
-        
+
     }
 
     /**
      * Reset layout edit mode.
      */
     resetEditMode() {
-        this.toolbar.style.display = "none"
+
         this.handle.style.display = "none"
 
         let layouts = this.getElementsByTagName("globular-layout")
-        for(var i=0; i < layouts.length; i++){
+        for (var i = 0; i < layouts.length; i++) {
             layouts[i].resetEditMode()
         }
     }
@@ -918,11 +932,18 @@ export class CssEditor extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor(onchange) {
+    constructor(onchange, onfocus, onblur, onclose) {
         super()
 
         // This is call when the editor text change.
         this.onchange = onchange;
+
+        // Call when the editor is close.
+        this.onclose = onclose
+
+        this.onfocus = onfocus
+
+        this.onblur = onblur
 
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
@@ -977,11 +998,26 @@ export class CssEditor extends HTMLElement {
 
         this.shadowRoot.querySelector("#close-btn").onclick = () => {
             this.parentNode.removeChild(this)
+            if(this.onclose){
+                this.onclose()
+            }
         }
 
         this.editor = null;
 
         let container = this.shadowRoot.querySelector("#container")
+        
+        container.onmouseover = onfocus;
+
+        container.onclick = ()=>{
+            container.style.zIndex = 100;
+        }
+
+        container.onmouseout = ()=>{
+            container.style.zIndex = 0;
+            onblur()
+        } 
+
 
         let offsetTop = this.shadowRoot.querySelector(".header").offsetHeight
         if (offsetTop == 0) {
@@ -1021,16 +1057,17 @@ export class CssEditor extends HTMLElement {
     connectedCallback() {
         // init the ace editor.
         if (this.editor == null) {
+
             let content = document.createElement("div")
             content.style.position = "relative"
             content.style.height = "calc(100% - 40px)"
             content.style.width = "100%"
-            content.id = "css-editor"
+            content.id = "css-editor-" + uuidv4()
             this.appendChild(content)
 
 
             // Create the css editor...
-            this.editor = ace.edit('css-editor');
+            this.editor = ace.edit(content.id);
             this.editor.getSession().setMode('ace/mode/css');
 
             // Set the theme...
@@ -1057,3 +1094,109 @@ export class CssEditor extends HTMLElement {
 }
 
 customElements.define('globular-css-editor', CssEditor)
+
+/**
+ * Layout Selector
+ * Display the hierarchy of layout and help to select it when
+ * they are hidden...
+ */
+export class LayoutSelector extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor(layout) {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+
+        this.layout = layout;
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+            ${getTheme()}
+            #container{
+                display: flex;
+                flex-direction: column;
+                font-size: 1.2rem;
+            }
+
+            #childrens{
+                display: flex;
+                flex-direction: column;
+                margin-left: 20px;
+            }
+
+            input{
+                border: none;
+                font-size: 1.2rem;
+                width: 120px;
+                background-color: transparent;
+            }
+
+            input:focus{
+                outline: none;
+            }
+
+            #read-mode, #edit-mode{
+                align-items: center;
+            }
+
+            .btn{
+                --iron-icon-height: 16px;
+                --iron-icon-width: 16px;
+            }
+
+            #label:hover{
+                cursor: pointer;
+            }
+
+        </style>
+        <div id="container">
+            <div id="edit-mode" style="display: none;">
+                <input value="${this.layout.label}"></input>
+                <paper-icon-button id="delete-layout-btn"  icon="icons:delete" class="btn"></paper-icon-button>
+                <paper-tooltip for="delete-layout-btn" role="tooltip" tabindex="-1">Delete Layout</paper-tooltip>
+                <paper-icon-button id="add-layout-btn" icon="icons:add" class="btn"></paper-icon-button>
+                <paper-tooltip for="add-layout-btn" role="tooltip" tabindex="-1">Add Layout</paper-tooltip>
+            </div>
+   
+            <span id="label">${this.layout.label}</span>
+            
+            <div id="childrens"></div>
+        </div>
+        `
+
+        // Help to see where is the layout on the page.
+        let label = this.shadowRoot.querySelector("#label")
+        label.onmouseenter = ()=>{
+            this.layout.emphasis()
+        }
+
+        label.onmouseout = ()=>{
+            this.layout.de_emphasis()
+        }
+
+        // Display the 
+        label.onclick = ()=>{
+            this.layout.emphasis()
+            label.style.display = "none";
+            this.shadowRoot.querySelector("#edit-mode").style.display = "flex";
+            this.layout.showCssEditor()
+            this.layout.css_editor.onclose = ()=>{
+                this.layout.de_emphasis()
+                label.style.display = "block";
+                this.shadowRoot.querySelector("#edit-mode").style.display = "none";
+            }
+        }
+
+        for(var i=0; i < this.layout.children.length; i++){
+            let c =  this.layout.children[i]
+            c.label = " children " + i
+            this.shadowRoot.querySelector("#childrens").appendChild(new LayoutSelector(c))
+        }
+
+    }
+}
+customElements.define('globular-layout-selector', LayoutSelector)
+

@@ -292,6 +292,7 @@ export class ApplicationView extends View {
         this.hideContent()
 
         // Append the watching component...
+        console.log("--------> 295 set Page ", page)
         this.getWorkspace().appendChild(page);
 
         // Set edit mode as needed...
