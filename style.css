@@ -808,6 +808,10 @@ globular-facet-search-filter {
    font-size: 1.20rem;
 }
 
+.draggable{
+   position: sticky;
+}
+
 globular-search-video-card {
    margin: 5px;
    height: 100%;

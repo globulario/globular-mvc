@@ -580,7 +580,9 @@ export class WebPage extends HTMLElement {
 
         // Now I will create the main layout...
         this.layout = new Layout(data)
-        this.layout.label = "main layout"
+        if(this.layout.label.length == 0){
+            this.layout.label = "main layout"
+        }
 
         // append it to the page.
         this.appendChild(this.layout)
@@ -736,13 +738,25 @@ export class Layout extends HTMLElement {
         this.attachShadow({ mode: 'open' });
 
         this.data = {}
+        this.label = ""
+        this.style_ = ""
+
         if (data) {
             this.data = data;
-            this.style_ = this.data.style;
+
+            // The style...
+            this.style_ = data.style;
+
+            // Also set the label.
+            this.label = data.label
+
             for (var i = 0; i < this.data.children.length; i++) {
                 let layout = new Layout(this.data.children[i])
+                layout.style_ = this.data.children[i].style
+                layout.label = this.data.children[i].label
                 this.appendChild(layout)
             }
+
         } else {
             // The style of the container...
             this.style_ = `
@@ -768,7 +782,7 @@ export class Layout extends HTMLElement {
                 left: 0px;
                 bottom: 0px;
                 right: 0px;
-                border: 2px dashed var(--palette-divider);
+                border: 4px dashed var(--palette-divider);
             }
         </style>
 
@@ -792,6 +806,7 @@ export class Layout extends HTMLElement {
         this.container = this.shadowRoot.querySelector("#container")
         this.handle = this.shadowRoot.querySelector("#handle")
         this.layout = this.shadowRoot.querySelector("#layout")
+        this.label = ""
 
         // The css button.
         this.css_editor = null
@@ -814,24 +829,42 @@ export class Layout extends HTMLElement {
     }
 
     /**
+     * Set the layout label (name...)
+     * @param {*} label 
+     */
+    setLabel(label){
+        this.label = label
+        if(this.css_editor){
+            this.css_editor.setTitle(label)
+        }
+    }
+
+    /**
      * Display the css editor.
      * @returns 
      */
     showCssEditor() {
         if (this.css_editor != null) {
             this.appendChild(this.css_editor)
+            let editors = document.getElementsByTagName("globular-css-editor")
+            for(var i=0; i < editors.length; i++){
+                editors[i].style.zIndex = 1
+            }
+            this.css_editor.style.zIndex = 10
             return
         }
 
         // Set the css from the editor...
         this.css_editor = new CssEditor((evt) => {
+            if(this.style_ !=this.css_editor.getText()){
+                Model.eventHub.publish("_need_save_event_", null, true)
+            }
             this.style_ = this.css_editor.getText()
 
             // Here I will set the css text of the layout...
             this.shadowRoot.querySelector("#layout-style").innerText = this.style_
             this.setContainerPosition()
-
-            Model.eventHub.publish("_need_save_event_", null, true)
+            
         },()=>{
             this.emphasis()
         },
@@ -843,6 +876,7 @@ export class Layout extends HTMLElement {
 
         // Set the style to the editor...
         this.css_editor.setText(this.style_)
+        this.css_editor.setTitle(this.label)
     }
 
     // The connected callback...
@@ -871,7 +905,7 @@ export class Layout extends HTMLElement {
      */
     getData(callback, errorCallback) {
         // A layout is a recursive structure...
-        let obj = { style: this.style_, children: [] }
+        let obj = { style: this.style_, children: [], label: this.label}
         let layouts = this.getElementsByTagName("globular-layout")
         let getData_ = (index) => {
             if (index == layouts.length - 1) {
@@ -1006,9 +1040,11 @@ export class CssEditor extends HTMLElement {
         this.editor = null;
 
         let container = this.shadowRoot.querySelector("#container")
-        
-        container.onmouseover = onfocus;
 
+        container.onmouseover = onfocus;
+        container.onmouseout = onblur;
+
+        /*
         container.onclick = ()=>{
             container.style.zIndex = 100;
         }
@@ -1016,7 +1052,7 @@ export class CssEditor extends HTMLElement {
         container.onmouseout = ()=>{
             container.style.zIndex = 0;
             onblur()
-        } 
+        }*/
 
 
         let offsetTop = this.shadowRoot.querySelector(".header").offsetHeight
@@ -1078,6 +1114,11 @@ export class CssEditor extends HTMLElement {
             // Connect the change event.
             this.editor.getSession().on('change', this.onchange);
         }
+    }
+
+    // Set the editor title.
+    setTitle(title){
+        this.shadowRoot.querySelector("#title-span").innerHTML = title;
     }
 
     // Set the text to edit...
@@ -1154,7 +1195,7 @@ export class LayoutSelector extends HTMLElement {
         </style>
         <div id="container">
             <div id="edit-mode" style="display: none;">
-                <input value="${this.layout.label}"></input>
+                <input id="label-input" value="${this.layout.label}"></input>
                 <paper-icon-button id="delete-layout-btn"  icon="icons:delete" class="btn"></paper-icon-button>
                 <paper-tooltip for="delete-layout-btn" role="tooltip" tabindex="-1">Delete Layout</paper-tooltip>
                 <paper-icon-button id="add-layout-btn" icon="icons:add" class="btn"></paper-icon-button>
@@ -1162,10 +1203,10 @@ export class LayoutSelector extends HTMLElement {
             </div>
    
             <span id="label">${this.layout.label}</span>
-            
             <div id="childrens"></div>
         </div>
         `
+
 
         // Help to see where is the layout on the page.
         let label = this.shadowRoot.querySelector("#label")
@@ -1190,9 +1231,29 @@ export class LayoutSelector extends HTMLElement {
             }
         }
 
+        let input = this.shadowRoot.querySelector("#label-input")
+        input.onchange = ()=>{
+           label.innerHTML = input.value;
+           layout.setLabel(input.value)
+           Model.eventHub.publish("_need_save_event_", null, true);
+
+        }
+
+        let addLayoutBtn = this.shadowRoot.querySelector("#add-layout-btn")
+        addLayoutBtn.onclick = ()=>{
+
+        }
+
+        let deleteLayoutBtn = this.shadowRoot.querySelector("#delete-layout-btn")
+        deleteLayoutBtn.onclick = ()=>{
+
+        }
+
         for(var i=0; i < this.layout.children.length; i++){
             let c =  this.layout.children[i]
-            c.label = " children " + i
+            if(c.label.length == 0){
+                c.label = " children " + i
+            }
             this.shadowRoot.querySelector("#childrens").appendChild(new LayoutSelector(c))
         }
 
