@@ -373,6 +373,12 @@ globular-application-manager {
    }
 }
 
+/** Web-content **/
+.web-content{
+   display: flex;
+   flex-direction: column;
+}
+
 body,
 html {
    font-weight: 400;
@@ -858,6 +864,10 @@ globular-applications-menu {
 globular-media-watching {
    margin-top: 10px;
    margin-bottom: 10px;
+}
+
+globular-media-watching, globular-blog-posts{
+   z-index: 5;
 }
 
 globular-content-manager {

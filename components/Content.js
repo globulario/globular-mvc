@@ -28,6 +28,8 @@ import 'brace/mode/css';
 import 'brace/theme/monokai';
 import { setMoveable } from './moveable'
 import { setResizeable } from './rezieable'
+import { GetThumbnailsRequest } from "globular-web-client/file/file_pb";
+import { randomUUID } from "./utility";
 
 // Get the image default size...
 function getMeta(url, callback) {
@@ -39,7 +41,7 @@ function getMeta(url, callback) {
 }
 
 // generate html from json data
-function jsonToHtml(data, slot) {
+function jsonToHtml(data) {
     // So here I will get the plain html from the output json data.
     const edjsParser = edjsHTML();
     let elements = edjsParser.parse(data);
@@ -49,7 +51,6 @@ function jsonToHtml(data, slot) {
     });
 
     var div = document.createElement('div');
-    div.slot = slot
     div.innerHTML = html.trim();
 
     // Now I will set image height.
@@ -78,7 +79,7 @@ export class ContentManager extends HTMLElement {
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
 
-        // Innitialisation of the layout.
+        // Innitialisation of the element.
         this.shadowRoot.innerHTML = `
         <style>
             ${getTheme()}
@@ -216,7 +217,7 @@ export class GlobularNavigation extends HTMLElement {
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
 
-        // Innitialisation of the layout.
+        // Innitialisation of the element.
         this.shadowRoot.innerHTML = `
         <style>
             ${getTheme()}
@@ -258,6 +259,13 @@ export class GlobularNavigation extends HTMLElement {
                 uuid => this.set_page_listener = uuid,
                 page => {
                     console.log("set page ", page)
+                    let lnks = this.querySelectorAll("globular-page-link")
+                    for (var i = 0; i < lnks.length; i++) {
+                        lnks[i].span.style.textDecoration = "none"
+                    }
+
+                    lnks[page.index].span.style.textDecoration = "underline"
+
                 }, true)
 
         // Init the webpages...
@@ -336,7 +344,12 @@ export class GlobularNavigation extends HTMLElement {
     createPage() {
         let pageLnk = new NavigationPageLink()
         this.appendChild(pageLnk)
-        pageLnk.webPage = new WebPage("page_" + uuidv4(), "new page")
+        let index = 0
+        let pages = ApplicationView.layout.workspace().querySelectorAll("globular-web-page")
+        if (pages) {
+            index = pages.length
+        }
+        pageLnk.webPage = new WebPage("page_" + uuidv4(), "new page", index)
         pageLnk.setEditMode()
     }
 
@@ -385,7 +398,7 @@ export class NavigationPageLink extends HTMLElement {
         this.edit = true
         this.webPage = webPage
 
-        // Innitialisation of the layout.
+        // Innitialisation of the element.
         this.shadowRoot.innerHTML = `
         <style>
             ${getTheme()}
@@ -425,7 +438,6 @@ export class NavigationPageLink extends HTMLElement {
 
         this.editor = this.shadowRoot.querySelector("#page-name-editor")
         this.input = this.shadowRoot.querySelector("#page-name-editor-input")
-
         this.span = this.shadowRoot.querySelector("#page-name-span")
 
         // Set the page...
@@ -557,44 +569,70 @@ export class WebPage extends HTMLElement {
             this.setAttribute("index", index)
         }
 
-        // Innitialisation of the layout.
+        // Innitialisation of the element.
         this.shadowRoot.innerHTML = `
         <style>
             ${getTheme()}
             #container {
                 width: 100%;
                 height: 100%;
+                position: relative;
             }
 
-            globular-layout-selector {
+            globular-element-selector {
                 position: fixed;
                 top: 75px;
                 right: 25px;
             }
+
+            #add-page-element-btn{
+                display: none;
+                position: absolute;
+                top: 0px;
+                left: 0px;
+            }
             
         </style>
         <div id="container">
+            <paper-icon-button id="add-page-element-btn" icon="icons:add"></paper-icon-button>
+            <paper-tooltip for="add-page-element-btn" role="tooltip" tabindex="-1">Add Element</paper-tooltip>
             <slot></slot>
         </div>
         `
 
-        // Now I will create the main layout...
-        this.layout = new Layout(data)
-        if(this.layout.label.length == 0){
-            this.layout.label = "main layout"
+        // Now I will create the main element...
+        /*this.element = new ElementEditor(data)
+        if (this.element.id.length == 0) {
+            this.element.id = "_" + uuidv4()
         }
 
         // append it to the page.
-        this.appendChild(this.layout)
+        this.appendChild(this.element)
 
-        // Tool to help select layout...
-        this.layoutSelector = new LayoutSelector(this.layout)
+        // Tool to help select element...
+        this.elementSelector = new ElementSelector(this.element)*/
 
+        this.appendElementBtn = this.shadowRoot.querySelector("#add-page-element-btn")
+        this.appendElementBtn.onclick = () => {
+            this.appendElement("div", "_" + randomUUID()) // create an empty div...
+        }
+
+    }
+
+    // Append element on the page.
+    appendElement(tagName, id) {
+   
+        // Now I will create the element selector and editor.
+        let elementEditor = new ElementEditor({id: "_" + randomUUID(), tagName:"DIV", parentId: this.id})
+        this.appendChild(elementEditor)
+
+        // set in edit mode.
+        elementEditor.setEditMode()
     }
 
     // return the stringnify page...
     toString() {
-        let str = JSON.stringify({ _id: this.id, name: this.name, index: this.index, user_id: localStorage.getItem("user_id"), data: this.layout.data })
+        let str = JSON.stringify({ _id: this.id, name: this.name, index: this.index, user_id: localStorage.getItem("user_id"), data: this.element.data })
         return str
     }
 
@@ -606,22 +644,26 @@ export class WebPage extends HTMLElement {
     // enter edit mode.
     setEditMode() {
         console.log("set edit mode...")
+        this.appendElementBtn.style.display = "block"
         // Here I will display the editor...
-        this.layout.setEditMode()
-        this.shadowRoot.querySelector("#container").appendChild(this.layoutSelector)
+        //this.element.setEditMode()
+        //this.shadowRoot.querySelector("#container").appendChild(this.elementSelector)
     }
 
     resetEditMode() {
-        this.layout.resetEditMode()
-        this.shadowRoot.querySelector("#container").removeChild(this.layoutSelector)
+        this.appendElementBtn.style.display = "none"
+        //this.element.resetEditMode()
+        //this.shadowRoot.querySelector("#container").removeChild(this.elementSelector)
     }
 
     // Save the actual content.
     save(callback, errorCallback) {
-        this.layout.getData(data => {
+        // TODO save all imediate child...
+        
+        this.element.getData(data => {
 
-            // set the layout data...
-            this.layout.data = data;
+            // set the element data...
+            this.element.data = data;
 
             // save the editor content to the application database.
             let str = this.toString()
@@ -726,48 +768,73 @@ let getInheritedRules = (node, parentNode) => {
 }
 
 /**
- * Layout tool.
+ * Element Editor.
  */
-export class Layout extends HTMLElement {
-    // attributes.
+export class ElementEditor extends HTMLElement {
 
     // Create the applicaiton view.
     constructor(data) {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
-
-        this.data = {}
-        this.label = ""
+        this.id = ""
         this.style_ = ""
+        this.edit = false;
 
         if (data) {
-            this.data = data;
+
+            // The tagName
+            this.tagName_ = data.tagName
 
             // The style...
-            this.style_ = data.style;
-
-            // Also set the label.
-            this.label = data.label
-
-            for (var i = 0; i < this.data.children.length; i++) {
-                let layout = new Layout(this.data.children[i])
-                layout.style_ = this.data.children[i].style
-                layout.label = this.data.children[i].label
-                this.appendChild(layout)
+            if(data.style_){
+                this.style_ = data.style;
+            }else{
+                this.style_ = `
+#${data.id}{
+    /** Element style here */
+}
+`
             }
 
-        } else {
-            // The style of the container...
-            this.style_ = `
-#layout{
-    width: 100%; 
-    height: 100%;
-}
-        `
+            // Also set the id.
+            this.id = data.id
+
+            // The parent id where to create the element...
+            this.parentId = data.parentId
+            this.parent = document.getElementById(this.parentId)
+            if(!this.parent){
+                ApplicationView.displayMessage("no node found with id " + this.parentId)
+                return
+            }
+
+            this.element = this.parent.querySelector("#" + this.id)
+            if(this.element==undefined){
+
+                // I will create the element it-self
+                this.element = document.createElement(data.tagName)
+                this.element.id = this.id
+                this.parent.appendChild(this.element)
+
+                // I will create the element style.
+                this.elementStyle = document.createElement("style")
+                this.elementStyle.id = this.id + "_style"
+                this.parent.appendChild(this.elementStyle)
+
+            }
+
+            /**
+                for (var i = 0; i < data.children.length; i++) {
+                    let element = new ElementEditor(data.children[i])
+                    element.style_ = data.children[i].style
+                    element.id = data.children[i].id
+                    element.content = data.children[i].content
+                    this.appendChild(element)
+                }
+            */
         }
 
-        // Innitialisation of the layout.
+        // Innitialisation of the element.
         this.shadowRoot.innerHTML = `
         <style>
             ${getTheme()}
@@ -784,58 +851,94 @@ export class Layout extends HTMLElement {
                 right: 0px;
                 border: 4px dashed var(--palette-divider);
             }
-        </style>
 
-        <style id="layout-style">
-            ${this.style_}
+            #toolbar{
+                position: absolute;
+                top: 0px;
+                left: 0px;
+
+            }
         </style>
 
         <div id="container">
             <div style="position: relative; width: 100%; height: 100%;">
                 <div id="handle">
+                    <div id="toolbar">
+                        <paper-icon-button id="delete-element-btn"  icon="icons:delete" class="btn"></paper-icon-button>
+                        <paper-tooltip for="delete-element-btn" role="tooltip" tabindex="-1">Delete Layout</paper-tooltip>
+                        <paper-icon-button id="add-element-btn" icon="icons:add" class="btn"></paper-icon-button>
+                        <paper-tooltip for="add-element-btn" role="tooltip" tabindex="-1">Add Layout</paper-tooltip>
+                        <paper-button id="css-edit-btn">css</paper-button>
+                        <paper-tooltip for="css-edit-btn" role="tooltip" tabindex="-1">Edit CSS</paper-tooltip>
+                        <paper-button id="js-edit-btn">js</paper-button>
+                        <paper-tooltip for="js-edit-btn" role="tooltip" tabindex="-1">Edit JS</paper-tooltip>
+                    </div>
                 </div>
             </div>
         </div>
-
-        <div id="layout">
-            <slot></slot>
-        </div>
+        <slot></slot>
         `
 
-        // Get the layout elements...
+        // Get the element elements...
         this.container = this.shadowRoot.querySelector("#container")
         this.handle = this.shadowRoot.querySelector("#handle")
-        this.layout = this.shadowRoot.querySelector("#layout")
-        this.label = ""
+        this.selector = null
 
-        // The css button.
+        // The css editor...
         this.css_editor = null
 
-        // Keep the container synch with the layout div...
+        // Add new element...
+        let addLayoutBtn = this.shadowRoot.querySelector("#add-element-btn")
+        addLayoutBtn.onclick = () => {
+            this.createElement()
+        }
+
+        // Delete element.
+        let deleteLayoutBtn = this.shadowRoot.querySelector("#delete-element-btn")
+        deleteLayoutBtn.onclick = () => {
+            // also remove it selector.
+            this.selector.parentNode.removeChild(this.selector)
+            this.parentNode.removeChild(this)
+            Model.eventHub.publish("_need_save_event_", null, true)
+        }
+
+        let editCssBtn = this.shadowRoot.querySelector("#css-edit-btn")
+        editCssBtn.onclick = () => {
+            this.showCssEditor()
+        }
+
+        // Keep the container synch with the element div...
         window.addEventListener('resize', () => {
             this.setContainerPosition()
+        });
+
+        // That function will be use to edit the content of the element...
+        this.handle.addEventListener('dblclick', (evt) => {
+            evt.stopImmediatePropagation()
         });
     }
 
     /**
-     * Add a new layout in that layout
+     * Add a new element in that element
      */
-    createLayout() {
-        // Here I will create a new child layout...
-        let layout = new Layout(null)
-        layout.setEditMode()
-        this.appendChild(layout)
+    createElement() {
+        // Here I will create a new child element...
+        let element = new ElementEditor({ tagName:"DIV", parentId:this.id, id:"_" + uuidv4(), style:""})
+        element.setEditMode()
+        this.appendChild(element)
         Model.eventHub.publish("_need_save_event_", null, true)
+
+        // this.selector.appendSelector(new ElementSelector(element))
     }
 
     /**
-     * Set the layout label (name...)
-     * @param {*} label 
+     * Set the element id (name...)
+     * @param {*} id 
      */
-    setLabel(label){
-        this.label = label
-        if(this.css_editor){
-            this.css_editor.setTitle(label)
+    setId(id) {
+        this.id = id
+        if (this.css_editor) {
+            this.css_editor.setTitle(id)
         }
     }
 
@@ -844,10 +947,12 @@ export class Layout extends HTMLElement {
      * @returns 
      */
     showCssEditor() {
+
+        // Show the css to edit the element style.
         if (this.css_editor != null) {
             this.appendChild(this.css_editor)
             let editors = document.getElementsByTagName("globular-css-editor")
-            for(var i=0; i < editors.length; i++){
+            for (var i = 0; i < editors.length; i++) {
                 editors[i].style.zIndex = 1
             }
             this.css_editor.style.zIndex = 10
@@ -856,19 +961,21 @@ export class Layout extends HTMLElement {
 
         // Set the css from the editor...
         this.css_editor = new CssEditor((evt) => {
-            if(this.style_ !=this.css_editor.getText()){
+            if (this.style_ != this.css_editor.getText()) {
                 Model.eventHub.publish("_need_save_event_", null, true)
             }
+
             this.style_ = this.css_editor.getText()
 
-            // Here I will set the css text of the layout...
-            this.shadowRoot.querySelector("#layout-style").innerText = this.style_
+            // Here I will set the css text of the element...
+            this.parent.querySelector(`#${this.id}_style`).innerText = this.style_
+
+            // TODO set the context (element style, stylesheet etc.)
             this.setContainerPosition()
-            
-        },()=>{
+
+        }, () => {
             this.emphasis()
-        },
-        ()=>{
+        }, () => {
             this.de_emphasis()
         })
 
@@ -876,7 +983,7 @@ export class Layout extends HTMLElement {
 
         // Set the style to the editor...
         this.css_editor.setText(this.style_)
-        this.css_editor.setTitle(this.label)
+        this.css_editor.setTitle(this.id)
     }
 
     // The connected callback...
@@ -885,79 +992,104 @@ export class Layout extends HTMLElement {
         this.setContainerPosition()
     }
 
-    emphasis(){
+    emphasis() {
         this.handle.style.borderColor = "var(--palette-primary-light)"
     }
 
-    de_emphasis(){
+    de_emphasis() {
         this.handle.style.borderColor = "var(--palette-divider)"
     }
 
     setContainerPosition() {
-        this.container.style.left = this.layout.offsetLeft + "px";
-        this.container.style.top = this.layout.offsetTop + "px";
-        this.container.style.width = this.layout.offsetWidth + "px";
-        this.container.style.height = this.layout.offsetHeight + "px";
+        this.container.style.left = this.element.offsetLeft + "px";
+        this.container.style.top = this.element.offsetTop + "px";
+        this.container.style.width = this.element.offsetWidth + "px";
+        this.container.style.height = this.element.offsetHeight + "px";
     }
 
     /**
-     * Return the data contain in the layout...
+     * Return the data contain in the element...
      */
     getData(callback, errorCallback) {
-        // A layout is a recursive structure...
-        let obj = { style: this.style_, children: [], label: this.label}
-        let layouts = this.getElementsByTagName("globular-layout")
-        let getData_ = (index) => {
-            if (index == layouts.length - 1) {
-                layouts[index].getData((o) => {
-                    obj.children.push(o)
-                    callback(obj) // Done go to previous level...
-                })
+        // A element is a recursive structure...
+        let obj = { tagName: this.tagName_, style: this.style_, children: [], id: this.id, parentId: this.parentId }
+
+        if (this.editor_js) {
+            // save the editor content to the application database.
+            this.editor_js.save().then((data) => {
+                obj.content = data
+                callback(obj)
+
+            }).catch(err => errorCallback(err))
+        } else if (this.content) {
+            callback(obj)
+        } else {
+
+            let elements_ = this.querySelectorAll("globular-element-editor")
+            let elements = []
+
+            // keep only immediate childs...
+            for (var i = 0; i < elements_.length; i++) {
+                if (elements_[i].parentNode == this) {
+                    elements.push(elements_[i])
+                }
+            }
+
+            let getData_ = (index) => {
+                if (index == elements.length - 1) {
+                    elements[index].getData((o) => {
+                        obj.children.push(o)
+                        callback(obj) // Done go to previous level...
+                    })
+                } else {
+                    elements[index].getData((o) => {
+                        obj.children.push(o)
+                        index++
+                        getData_(index) // append next children object.
+                    })
+                }
+            }
+
+            if (elements.length > 0) {
+                getData_(0)
             } else {
-                layouts[index].getData((o) => {
-                    obj.children.push(o)
-                    index++
-                    getData_(index) // append next children object.
-                })
+                callback(obj)
             }
         }
-
-        if (layouts.length > 0) {
-            getData_(0)
-        } else {
-            callback(obj)
-        }
-
     }
 
     /**
-     * Set layout edit mode.
+     * Set element edit mode.
      */
     setEditMode() {
         this.handle.style.display = "block"
+        this.edit = true
 
-        let layouts = this.getElementsByTagName("globular-layout")
-        for (var i = 0; i < layouts.length; i++) {
-            layouts[i].setEditMode()
+        /** see if all element must be in edit mode...
+        let elements = this.getElementsByTagName("globular-element-editor")
+        for (var i = 0; i < elements.length; i++) {
+            elements[i].setEditMode()
         }
-
+        */
     }
 
     /**
-     * Reset layout edit mode.
+     * Reset element edit mode.
      */
     resetEditMode() {
-
         this.handle.style.display = "none"
+        this.edit = false
 
-        let layouts = this.getElementsByTagName("globular-layout")
-        for (var i = 0; i < layouts.length; i++) {
-            layouts[i].resetEditMode()
+        /** see if all element must be in edit mode.
+        let elements = this.getElementsByTagName("globular-element-editor")
+        for (var i = 0; i < elements.length; i++) {
+            elements[i].resetEditMode()
         }
+        */
     }
 }
 
-customElements.define('globular-layout', Layout)
+customElements.define('globular-element-editor', ElementEditor)
 
 /**
  * Ace Editor use as CSS editor...
@@ -982,7 +1114,7 @@ export class CssEditor extends HTMLElement {
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
 
-        // Innitialisation of the layout.
+        // Innitialisation of the element.
         this.shadowRoot.innerHTML = `
         <style>
             ${getTheme()}
@@ -1032,7 +1164,7 @@ export class CssEditor extends HTMLElement {
 
         this.shadowRoot.querySelector("#close-btn").onclick = () => {
             this.parentNode.removeChild(this)
-            if(this.onclose){
+            if (this.onclose) {
                 this.onclose()
             }
         }
@@ -1043,17 +1175,6 @@ export class CssEditor extends HTMLElement {
 
         container.onmouseover = onfocus;
         container.onmouseout = onblur;
-
-        /*
-        container.onclick = ()=>{
-            container.style.zIndex = 100;
-        }
-
-        container.onmouseout = ()=>{
-            container.style.zIndex = 0;
-            onblur()
-        }*/
-
 
         let offsetTop = this.shadowRoot.querySelector(".header").offsetHeight
         if (offsetTop == 0) {
@@ -1117,7 +1238,7 @@ export class CssEditor extends HTMLElement {
     }
 
     // Set the editor title.
-    setTitle(title){
+    setTitle(title) {
         this.shadowRoot.querySelector("#title-span").innerHTML = title;
     }
 
@@ -1138,21 +1259,24 @@ customElements.define('globular-css-editor', CssEditor)
 
 /**
  * Layout Selector
- * Display the hierarchy of layout and help to select it when
+ * Display the hierarchy of element and help to select it when
  * they are hidden...
  */
-export class LayoutSelector extends HTMLElement {
+export class ElementSelector extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor(layout) {
+    constructor(element) {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
 
-        this.layout = layout;
+        this.element = element;
 
-        // Innitialisation of the layout.
+        // associate the selector with it element.
+        element.selector = this;
+
+        // Innitialisation of the element.
         this.shadowRoot.innerHTML = `
         <style>
             ${getTheme()}
@@ -1188,76 +1312,67 @@ export class LayoutSelector extends HTMLElement {
                 --iron-icon-width: 16px;
             }
 
-            #label:hover{
+            #id:hover{
                 cursor: pointer;
             }
 
         </style>
         <div id="container">
             <div id="edit-mode" style="display: none;">
-                <input id="label-input" value="${this.layout.label}"></input>
-                <paper-icon-button id="delete-layout-btn"  icon="icons:delete" class="btn"></paper-icon-button>
-                <paper-tooltip for="delete-layout-btn" role="tooltip" tabindex="-1">Delete Layout</paper-tooltip>
-                <paper-icon-button id="add-layout-btn" icon="icons:add" class="btn"></paper-icon-button>
-                <paper-tooltip for="add-layout-btn" role="tooltip" tabindex="-1">Add Layout</paper-tooltip>
+                <input id="id-input" value="${this.element.id}"></input>
             </div>
-   
-            <span id="label">${this.layout.label}</span>
+            <span id="id">${this.element.id}</span>
             <div id="childrens"></div>
         </div>
         `
 
-
-        // Help to see where is the layout on the page.
-        let label = this.shadowRoot.querySelector("#label")
-        label.onmouseenter = ()=>{
-            this.layout.emphasis()
+        // Help to see where is the element on the page.
+        let id = this.shadowRoot.querySelector("#id")
+        id.onmouseenter = () => {
+            this.element.emphasis()
         }
 
-        label.onmouseout = ()=>{
-            this.layout.de_emphasis()
+        id.onmouseout = () => {
+            this.element.de_emphasis()
         }
 
-        // Display the 
-        label.onclick = ()=>{
-            this.layout.emphasis()
-            label.style.display = "none";
+        // Display the id.
+        id.onclick = () => {
+            this.element.emphasis()
+            id.style.display = "none";
             this.shadowRoot.querySelector("#edit-mode").style.display = "flex";
-            this.layout.showCssEditor()
-            this.layout.css_editor.onclose = ()=>{
-                this.layout.de_emphasis()
-                label.style.display = "block";
+            // set the onclose event.
+            this.element.css_editor.onclose = () => {
+                this.element.de_emphasis()
+                id.style.display = "block";
                 this.shadowRoot.querySelector("#edit-mode").style.display = "none";
             }
         }
 
-        let input = this.shadowRoot.querySelector("#label-input")
-        input.onchange = ()=>{
-           label.innerHTML = input.value;
-           layout.setLabel(input.value)
-           Model.eventHub.publish("_need_save_event_", null, true);
+        let input = this.shadowRoot.querySelector("#id-input")
+        input.onchange = () => {
+            id.innerHTML = input.value;
+            element.setId(input.value)
+            Model.eventHub.publish("_need_save_event_", null, true);
 
         }
 
-        let addLayoutBtn = this.shadowRoot.querySelector("#add-layout-btn")
-        addLayoutBtn.onclick = ()=>{
-
-        }
-
-        let deleteLayoutBtn = this.shadowRoot.querySelector("#delete-layout-btn")
-        deleteLayoutBtn.onclick = ()=>{
-
-        }
-
-        for(var i=0; i < this.layout.children.length; i++){
-            let c =  this.layout.children[i]
-            if(c.label.length == 0){
-                c.label = " children " + i
+        for (var i = 0; i < this.element.children.length; i++) {
+            let c = this.element.children[i]
+            if (c.tagName == "GLOBULAR-LAYOUT") {
+                if (c.id.length == 0) {
+                    c.id = "children " + i
+                }
+                this.appendSelector(new ElementSelector(c))
             }
-            this.shadowRoot.querySelector("#childrens").appendChild(new LayoutSelector(c))
         }
 
     }
+
+    appendSelector(element) {
+        this.shadowRoot.querySelector("#childrens").appendChild(element)
+    }
 }
-customElements.define('globular-layout-selector', LayoutSelector)
+
+customElements.define('globular-element-selector', ElementSelector)
 
