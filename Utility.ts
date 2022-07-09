@@ -50,3 +50,7 @@ function dataURItoBlob(dataURI: string): Blob {
 
   return new Blob([ia], { type: mimeString });
 }
+
+export function helloWorld() {
+  alert( 'Hello, world!' );
+}

@@ -39,18 +39,11 @@ const nameGenrator = new DockerNames();
 
 // Must be imported to overide the materialyse style
 import "./style.css"
-import { rgbToHsl } from "./components/utility";
-import { readDir, uploadFiles } from "globular-web-client/api";
 import { ServerGeneralSettings } from "./serverGeneralSettings";
-import { SaveConfigRequest } from "globular-web-client/admin/admin_pb";
 import { ServicesSettings } from "./ServicesSettings";
-import { OrganizationManager } from "./components/Organization.js";
 import * as getUuid from 'uuid-by-string'
-import { ConversationServicePromiseClient } from "globular-web-client/conversation/conversation_grpc_web_pb";
-import { SearchTitlesRequest } from "globular-web-client/title/title_pb";
 import { getTheme } from "./components/Theme";
 import { GetBlogPostsRequest } from "globular-web-client/blog/blog_pb";
-import { borderLeftWidth } from "html2canvas/dist/types/css/property-descriptors/border-width";
 
 /**
  * Application view made use of Web-component and Materialyse to create a basic application

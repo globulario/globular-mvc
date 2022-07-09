@@ -3,33 +3,20 @@ import { getTheme } from "./Theme";
 import '@polymer/paper-input/paper-input.js';
 import '@polymer/paper-icon-button/paper-icon-button.js';
 import { ApplicationView } from "../ApplicationView";
-import EditorJS from '@editorjs/editorjs';
-import RawTool from '@editorjs/raw';
-import Header from '@editorjs/header';
-import Delimiter from '@editorjs/delimiter';
-import Embed from '@editorjs/embed';
-import Table from '@editorjs/table'
-import Quote from '@editorjs/quote'
-import SimpleImage from '@editorjs/simple-image'
-import NestedList from '@editorjs/nested-list';
-import Checklist from '@editorjs/checklist';
-import Paragraph from 'editorjs-paragraph-with-alignment'
-import CodeTool from '@editorjs/code'
-import Underline from '@editorjs/underline';
-import * as edjsHTML from 'editorjs-html'
 import { mergeTypedArrays, uint8arrayToStringMethod } from "../Utility";
-
 import { v4 as uuidv4 } from "uuid";
 import * as JwtDecode from "jwt-decode";
 import { FindRqst, ReplaceOneRqst } from "globular-web-client/persistence/persistence_pb";
 
+// The ace editor...
 import * as ace from 'brace';
 import 'brace/mode/css';
+import 'brace/mode/javascript';
 import 'brace/theme/monokai';
 import { setMoveable } from './moveable'
 import { setResizeable } from './rezieable'
-import { GetThumbnailsRequest } from "globular-web-client/file/file_pb";
-import { randomUUID } from "./utility";
+import { getCoords, localToGlobal, randomUUID } from "./utility";
+import * as getUuidByString from "uuid-by-string";
 
 // Get the image default size...
 function getMeta(url, callback) {
@@ -106,6 +93,10 @@ export class ContentManager extends HTMLElement {
                 flex-grow: 1;
             }
 
+            #toolbar {
+                display: flex;
+            }
+
         </style>
 
 
@@ -113,7 +104,7 @@ export class ContentManager extends HTMLElement {
 
             <globular-navigation></globular-navigation>
 
-            <div id="toolbar" style="display: flex;">
+            <div id="toolbar">
                 <paper-icon-button id="create-page-btn" icon="icons:note-add"></paper-icon-button>
                 <paper-tooltip for="create-page-btn" role="tooltip" tabindex="-1">Create Web Page</paper-tooltip>
                 
@@ -258,7 +249,6 @@ export class GlobularNavigation extends HTMLElement {
             Model.eventHub.subscribe("_set_web_page_",
                 uuid => this.set_page_listener = uuid,
                 page => {
-                    console.log("set page ", page)
                     let lnks = this.querySelectorAll("globular-page-link")
                     for (var i = 0; i < lnks.length; i++) {
                         lnks[i].span.style.textDecoration = "none"
@@ -271,7 +261,7 @@ export class GlobularNavigation extends HTMLElement {
         // Init the webpages...
         this.loadWebPages(pages => {
             for (var i = 0; i < pages.length; i++) {
-                let page = new WebPage(pages[i]._id, pages[i].name, pages[i].index, pages[i].data)
+                let page = new WebPage(pages[i]._id, pages[i].name, pages[i].style, pages[i].script, pages[i].index, pages[i].elements)
                 let lnk = new NavigationPageLink(page)
                 this.appendChild(lnk)
                 if (page.index == 0) {
@@ -349,7 +339,7 @@ export class GlobularNavigation extends HTMLElement {
         if (pages) {
             index = pages.length
         }
-        pageLnk.webPage = new WebPage("page_" + uuidv4(), "new page", index)
+        pageLnk.webPage = new WebPage("page_" + uuidv4(), "new page", "", "", index)
         pageLnk.setEditMode()
     }
 
@@ -430,7 +420,6 @@ export class NavigationPageLink extends HTMLElement {
         <div>
             <span id="page-name-span"></span>
             <span id="page-name-editor" style="display: none;">
-                <paper-icon-button icon="icons:delete"></paper-icon-button>
                 <input id="page-name-editor-input" type="text"></input>
             </span>
         </div>
@@ -462,11 +451,9 @@ export class NavigationPageLink extends HTMLElement {
         // Set the page 
         this.input.onblur = () => {
             if (this.webPage.name != this.input.value) {
-                this.webPage.name = this.input.value;
-                this.webPage.setAttribute("name", this.webPage.name)
-                Model.eventHub.publish("_need_save_event_", null, true)
-                this.webPage.edit = true;
-                this.webPage.setPage()
+
+                this.webPage.setName(this.input.value)
+
             }
             this.resetEditMode()
         }
@@ -531,11 +518,17 @@ customElements.define('globular-page-link', NavigationPageLink)
 export class WebPage extends HTMLElement {
 
     // Create the applicaiton view.
-    constructor(id, name, index, data) {
+    constructor(id, name, style, script, index, elements) {
         super()
 
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
+
+        // The css editor.
+        this.css_editor = null
+
+        // The javascript editor
+        this.javascript_editor = null
 
         // edit mode 
         this.edit = false
@@ -555,6 +548,26 @@ export class WebPage extends HTMLElement {
         } else if (id.length > 0) {
             this.setAttribute("id", id)
         }
+
+
+        // The style element.
+        this.style_ = style
+
+        if (this.style_.length == 0) {
+
+            this.style_ = `
+#${this.id}{
+    /** Element style here */
+}`
+        }
+
+
+        // The script element
+        this.script_ = script
+        if (this.script_ == undefined) {
+            this.script_ = ""
+        }
+
 
         // The page index (use by navigation)
         if (index != undefined) {
@@ -579,61 +592,166 @@ export class WebPage extends HTMLElement {
                 position: relative;
             }
 
-            globular-element-selector {
-                position: fixed;
-                top: 75px;
-                right: 25px;
-            }
-
-            #add-page-element-btn{
-                display: none;
+            #toolbar{
+                display: flex;
                 position: absolute;
                 top: 0px;
                 left: 0px;
+                background-color: var(--palette-primary-accent);
+                border: 1px solid var(--palette-divider);
+            }
+
+            #selectors{
+                display: flex;
+                flex-direction: column;
+                position: absolute;
+                top: 0px;
+                right: 25px;
             }
             
+            #page-selector:hover{
+                cursor: pointer;
+            }
+
+            globular-element-selector {
+                margin-left: 16px;
+            }
+
+            globular-element-selector:hover{
+                cursor: pointer;
+            }
+
         </style>
         <div id="container">
-            <paper-icon-button id="add-page-element-btn" icon="icons:add"></paper-icon-button>
-            <paper-tooltip for="add-page-element-btn" role="tooltip" tabindex="-1">Add Element</paper-tooltip>
             <slot></slot>
+            <div id="toolbar" style="display: flex;">
+                <paper-icon-button id="add-element-btn" icon="icons:add" class="btn"></paper-icon-button>
+                <paper-tooltip for="add-element-btn" role="tooltip" tabindex="-1">Add Element</paper-tooltip>
+                <paper-button id="css-edit-btn">css</paper-button>
+                <paper-tooltip for="css-edit-btn" role="tooltip" tabindex="-1">Edit CSS</paper-tooltip>
+                <paper-button id="js-edit-btn">js</paper-button>
+                <paper-tooltip for="js-edit-btn" role="tooltip" tabindex="-1">Edit JS</paper-tooltip>
+                <paper-icon-button id="delete-element-btn"  icon="icons:delete" class="btn"></paper-icon-button>
+                <paper-tooltip for="delete-element-btn" role="tooltip" tabindex="-1">Delete Element</paper-tooltip>
+            </div>
+            <div id="selectors">
+                <div id="page-selector" style="text-decoration: underline;">${this.name}</div>
+                <div style="margin-left: 10px; display: flex; flex-direction: column;">
+                <slot name="selectors"></slot>
+                </div>
+            </div>
+            
         </div>
         `
 
-        // Now I will create the main element...
-        /*this.element = new ElementEditor(data)
-        if (this.element.id.length == 0) {
-            this.element.id = "_" + uuidv4()
+        // Editing menu...
+        this.toolbar = this.shadowRoot.querySelector("#toolbar")
+        this.selectors = this.shadowRoot.querySelector("#selectors")
+
+        this.appendElementBtn = this.shadowRoot.querySelector("#add-element-btn")
+        this.appendElementBtn.onclick = () => {
+            this.appendElement("DIV", "_" + randomUUID()) // create an empty div...
         }
 
-        // append it to the page.
-        this.appendChild(this.element)
+        this.pageSelector = this.shadowRoot.querySelector("#page-selector")
+        this.pageSelector.onclick = () => {
+            let selectors = document.getElementsByTagName("globular-element-selector")
+            for (var i = 0; i < selectors.length; i++) {
+                selectors[i].de_emphasis()
+            }
 
-        // Tool to help select element...
-        this.elementSelector = new ElementSelector(this.element)*/
+            // Here I will reset all visible toolbar..
+            this.emphasis()
 
-        this.appendElementBtn = this.shadowRoot.querySelector("#add-page-element-btn")
-        this.appendElementBtn.onclick = () => {
-            this.appendElement("div", "_" + randomUUID()) // create an empty div...
+            // hide all toolbar...
+            let editors = document.getElementsByTagName("globular-element-editor")
+            for(var i=0; i < editors.length; i++){
+                editors[i].resetEditMode()
+            }
+
+            // display the page toolbar...
+            this.toolbar.style.display = "flex"
+
+        }
+
+        // Now I will create the sytle element.
+        let style_ = document.createElement("style")
+        style_.innerText = this.style_
+        style_.id = this.id + "_style"
+        this.appendChild(style_)
+
+        // set the script for the page.
+        let script_ = document.createElement("script")
+        script_.innerText = this.script_
+        script_.id = this.id + "_script"
+
+        // script_.setAttribute("type", "module")
+        this.appendChild(script_)
+
+        // Initialyse page elements and sub-elements.
+        if (elements) {
+            for (var i = 0; i < elements.length; i++) {
+                let e = elements[i]
+                e.parent = this
+                let editor = new ElementEditor(e)
+                this.appendChild(editor)
+                editor.selector.slot = "selectors"
+                this.appendChild(editor.selector)
+            }
+        }
+
+        let editCssBtn = this.shadowRoot.querySelector("#css-edit-btn")
+        editCssBtn.onclick = () => {
+            this.showCssEditor()
+        }
+
+        let editJavascriptBtn = this.shadowRoot.querySelector("#js-edit-btn")
+        editJavascriptBtn.onclick = () => {
+            this.showJavascriptEditor()
+        }
+
+        // Keep the container synch with the element div...
+        window.addEventListener('resize', () => {
+
+        });
+
+        // hide toolbar and selectors...
+        this.resetEditMode()
+
+
+        // The on drop event.
+        this.ondrop = (evt) => {
+            evt.preventDefault();
+            var html = evt.dataTransfer.getData("text/html");
+            let selector = this.getActiveSelector()
+            if (selector != null) {
+                selector.style.border = ""
+                // Set the content from the html text...
+                selector.editor.setHtml(html)
+            }
+        }
+
+        // The drag over content.
+        this.ondragover = (evt) => {
+            evt.preventDefault();
+            let selector = this.getActiveSelector()
+            if (selector == null) {
+                ApplicationView.displayMessage("select the target element where to drop the content.", 3500)
+                return
+            }
+            selector.style.border = "1px solid var(--palette-divider)"
         }
 
     }
 
     // Append element on the page.
     appendElement(tagName, id) {
-   
         // Now I will create the element selector and editor.
-        let elementEditor = new ElementEditor({id: "_" + randomUUID(), tagName:"DIV", parentId: this.id})
-        this.appendChild(elementEditor)
-
-        // set in edit mode.
-        elementEditor.setEditMode()
-    }
-
-    // return the stringnify page...
-    toString() {
-        let str = JSON.stringify({ _id: this.id, name: this.name, index: this.index, user_id: localStorage.getItem("user_id"), data: this.element.data })
-        return str
+        let editor = new ElementEditor({ id: id, tagName, parentId: this.id, parent: this })
+        this.appendChild(editor)
+        editor.selector.slot = "selectors"
+        this.appendChild(editor.selector)
+        Model.eventHub.publish("_need_save_event_", null, true)
     }
 
     // Return the list of all page...
@@ -641,73 +759,217 @@ export class WebPage extends HTMLElement {
         Model.eventHub.publish("_set_web_page_", this, true)
     }
 
+    // Set the page name
+    setName(name) {
+        this.setAttribute("name", name)
+        this.name = name;
+        Model.eventHub.publish("_need_save_event_", null, true)
+        this.shadowRoot.querySelector("#page-selector").innerHTML = this.name
+        this.edit = true;
+        this.setPage()
+    }
+
+    /**
+     * Display the javascript code editor.
+     * @returns 
+     */
+    showJavascriptEditor() {
+        if (this.getJavascriptEditor() != null) {
+            ApplicationView.layout.workspace().appendChild(this.getJavascriptEditor())
+            let editors = document.getElementsByTagName("globular-code-editor")
+            for (var i = 0; i < editors.length; i++) {
+                editors[i].style.zIndex = 1
+            }
+            this.getJavascriptEditor().style.zIndex = 10
+            return
+        }
+    }
+
+    getJavascriptEditor() {
+        if (this.javascript_editor != null) {
+            return this.javascript_editor
+        }
+        // Set the css from the editor...
+        this.javascript_editor = new CodeEditor("javascript", ApplicationView.layout.workspace(), (evt) => {
+            if (this.style_ != this.javascript_editor.getText()) {
+                Model.eventHub.publish("_need_save_event_", null, true)
+            }
+
+            // set the script
+            this.script_ = this.javascript_editor.getText()
+
+            // Here I will set the css text of the element...
+            this.querySelector(`#${this.id}_script`).innerText = this.script_
+
+        }, () => {
+            // on editor focus
+        }, () => {
+            // on editor lost focus
+        })
+
+        // Set the style to the editor...
+        this.javascript_editor.setText(this.script_)
+        this.javascript_editor.setTitle("JS " + this.id)
+
+        return this.javascript_editor
+    }
+
+    getCssEditor() {
+        if (this.css_editor != null) {
+            return this.css_editor
+        }
+        // Set the css from the editor...
+        this.css_editor = new CodeEditor("css", ApplicationView.layout.workspace(), (evt) => {
+            if (this.style_ != this.css_editor.getText()) {
+                Model.eventHub.publish("_need_save_event_", null, true)
+            }
+
+            this.style_ = this.css_editor.getText()
+
+            // Here I will set the css text of the element...
+            this.querySelector(`#${this.id}_style`).innerText = this.style_
+
+        }, () => {
+            // focus
+        }, () => {
+            // lost focus
+        })
+
+
+        // Set the style to the editor...
+        this.css_editor.setText(this.style_)
+        this.css_editor.setTitle(this.id)
+
+        return this.css_editor
+    }
+
+    // show the css edito.
+    showCssEditor() {
+        // Show the css to edit the element style.
+        if (this.getCssEditor() != null) {
+            ApplicationView.layout.workspace().appendChild(this.getCssEditor())
+            let editors = document.getElementsByTagName("globular-code-editor")
+            for (var i = 0; i < editors.length; i++) {
+                editors[i].style.zIndex = 1
+            }
+            this.getCssEditor().style.zIndex = 10
+            return
+        }
+    }
+
+    hideToolbar() {
+        this.shadowRoot.querySelector("#toolbar").style.display = "none"
+    }
+
+    getActiveSelector() {
+        let selectors = document.getElementsByTagName("globular-element-selector")
+        for (var i = 0; i < selectors.length; i++) {
+            if (selectors[i].active) {
+                return selectors[i]
+            }
+        }
+        return null
+    }
+
     // enter edit mode.
     setEditMode() {
-        console.log("set edit mode...")
-        this.appendElementBtn.style.display = "block"
         // Here I will display the editor...
-        //this.element.setEditMode()
-        //this.shadowRoot.querySelector("#container").appendChild(this.elementSelector)
+        let editors = document.getElementsByTagName("globular-element-editor")
+        for(var i=0; i < editors.length; i++){
+            editors[i].resetEditMode()
+        }
+
+        this.shadowRoot.querySelector("#container").appendChild(this.selectors)
+        this.shadowRoot.querySelector("#container").appendChild(this.toolbar)
     }
 
     resetEditMode() {
-        this.appendElementBtn.style.display = "none"
-        //this.element.resetEditMode()
-        //this.shadowRoot.querySelector("#container").removeChild(this.elementSelector)
+        let editors = this.querySelectorAll("globular-element-editor")
+        for (var i = 0; i < editors.length; i++) {
+            editors[i].resetEditMode()
+        }
+        this.shadowRoot.querySelector("#container").removeChild(this.selectors)
+        this.shadowRoot.querySelector("#container").removeChild(this.toolbar)
+    }
+
+    emphasis() {
+        this.shadowRoot.querySelector("#page-selector").style.textDecoration = "underline"
+    }
+
+    de_emphasis() {
+        this.shadowRoot.querySelector("#page-selector").style.textDecoration = ""
     }
 
     // Save the actual content.
     save(callback, errorCallback) {
         // TODO save all imediate child...
-        
-        this.element.getData(data => {
+        let editors_ = this.querySelectorAll("globular-element-editor")
+        let editors = []
+        // keep only immediate childs.
+        for (var i = 0; i < editors_.length; i++) {
+            if (editors_[i].parentNode === this) {
+                editors.push(editors_[i])
+            }
+        }
 
-            // set the element data...
-            this.element.data = data;
+        let elements = []
 
-            // save the editor content to the application database.
-            let str = this.toString()
+        let getData_ = (index) => {
+            if (index < editors.length) {
+                let editor = editors[index]
+                editor.getData(data => {
+                    // set the element data...
+                    elements.push(data);
+                    index += 1
+                    getData_(index)
+                }, errorCallback)
+            } else {
+                // create a string from page information..
+                let str = JSON.stringify({ _id: this.id, name: this.name, style: this.style_, script: this.script_, index: this.index, user_id: localStorage.getItem("user_id"), elements: elements })
 
-            // save the user_data
-            let rqst = new ReplaceOneRqst();
-            let db = Model.application + "_db";
+                // save the user_data
+                let rqst = new ReplaceOneRqst();
+                let db = Model.application + "_db";
 
-            // set the connection infos,
-            rqst.setId(Model.application);
-            rqst.setDatabase(db);
-            let collection = "WebPages";
+                // set the connection infos,
+                rqst.setId(Model.application);
+                rqst.setDatabase(db);
+                let collection = "WebPages";
 
-            // save only user data and not the how user info...
-            rqst.setCollection(collection);
-            rqst.setQuery(`{"_id":"${this.id}"}`);
-            rqst.setValue(str);
-            rqst.setOptions(`[{"upsert": true}]`);
+                // save only user data and not the how user info...
+                rqst.setCollection(collection);
+                rqst.setQuery(`{"_id":"${this.id}"}`);
+                rqst.setValue(str);
+                rqst.setOptions(`[{"upsert": true}]`);
 
-            // So here I will set the address from the address found in the token and not 
-            // the address of the client itself.
-            let token = localStorage.getItem("user_token")
-            let decoded = JwtDecode(token);
-            let address = decoded.address;
-            let domain = decoded.domain;
+                // So here I will set the address from the address found in the token and not 
+                // the address of the client itself.
+                let token = localStorage.getItem("user_token")
+                let decoded = JwtDecode(token);
+                let address = decoded.address;
+                let domain = decoded.domain;
 
-            // call persist data
-            Model.getGlobule(address).persistenceService
-                .replaceOne(rqst, {
-                    token: token,
-                    application: Model.application,
-                    domain: domain,
-                    address: address
-                })
-                .then((rsp) => {
-                    // Here I will return the value with it
-                    Model.eventHub.publish(`update_page_${this.id}_evt`, str, false)
-                    console.log(str)
-                    callback(this);
-                })
-                .catch((err) => {
-                    errorCallback(err);
-                });
-        }, errorCallback)
+                // call persist data
+                Model.getGlobule(address).persistenceService
+                    .replaceOne(rqst, {
+                        token: token,
+                        application: Model.application,
+                        domain: domain,
+                        address: address
+                    })
+                    .then((rsp) => {
+                        // Here I will return the value with it
+                        Model.eventHub.publish(`update_page_${this.id}_evt`, str, false)
+                        callback(this);
+                    })
+                    .catch((err) => {
+                        errorCallback(err);
+                    });
+            }
+        }
+
+        // save page element event it's empty...
+        getData_(0)
 
     }
 }
@@ -777,19 +1039,85 @@ export class ElementEditor extends HTMLElement {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
+
+        // Innitialisation of the element.
+        this.shadowRoot.innerHTML = `
+               <style>
+                   ${getTheme()}
+                   #container{
+                       position: fixed;
+                   }
+       
+                   #handle{
+                       display: none;
+                       position: absolute;
+                       top: 0px;
+                       left: 0px;
+                       bottom: 0px;
+                       right: 0px;
+                       border: 4px dashed var(--palette-divider);
+                   }
+       
+                   #toolbar{
+                       position: absolute;
+                       z-index: 5;
+                       top: 0px;
+                       left: 0px;
+                       display: none;
+                       background-color: var(--palette-primary-accent);
+                       border: 1px solid var(--palette-divider);
+                   }
+                   
+               </style>
+       
+               <div id="container">
+                   <div style="position: relative; width: 100%; height: 100%;">
+                       <div id="handle">
+                           <div id="toolbar">
+                               <paper-icon-button id="add-element-btn" icon="icons:add" class="btn"></paper-icon-button>
+                               <paper-tooltip for="add-element-btn" role="tooltip" tabindex="-1">Add Element</paper-tooltip>
+                               <paper-button id="css-edit-btn">css</paper-button>
+                               <paper-tooltip for="css-edit-btn" role="tooltip" tabindex="-1">Edit CSS</paper-tooltip>
+                               <paper-button id="js-edit-btn">js</paper-button>
+                               <paper-tooltip for="js-edit-btn" role="tooltip" tabindex="-1">Edit JS</paper-tooltip>
+                               <paper-icon-button id="delete-element-btn"  icon="icons:delete" class="btn"></paper-icon-button>
+                               <paper-tooltip for="delete-element-btn" role="tooltip" tabindex="-1">Delete Element</paper-tooltip>
+                           </div>
+                       </div>
+                   </div>
+               </div>
+               <slot></slot>
+               `
+
+
         this.id = ""
         this.style_ = ""
+        this.script_ = ""
         this.edit = false;
 
         if (data) {
+
+            this.id = data.id
+
+            // The parent id where to create the element...
+            this.parentId = data.parentId
+            if (data.parent == undefined) {
+                this.parent = document.getElementById(this.parentId)
+                if (!this.parent) {
+                    ApplicationView.displayMessage("no node found with id " + this.parentId, 3000)
+                    return
+                }
+            } else {
+                this.parent = data.parent
+            }
 
             // The tagName
             this.tagName_ = data.tagName
 
             // The style...
-            if(data.style_){
+            if (data.style) {
                 this.style_ = data.style;
-            }else{
+            } else {
                 this.style_ = `
 #${data.id}{
     /** Element style here */
@@ -797,95 +1125,62 @@ export class ElementEditor extends HTMLElement {
 `
             }
 
-            // Also set the id.
-            this.id = data.id
-
-            // The parent id where to create the element...
-            this.parentId = data.parentId
-            this.parent = document.getElementById(this.parentId)
-            if(!this.parent){
-                ApplicationView.displayMessage("no node found with id " + this.parentId)
-                return
+            // set the script.
+            if (data.script) {
+                this.script_ = data.script
             }
 
             this.element = this.parent.querySelector("#" + this.id)
-            if(this.element==undefined){
+            if (this.element == undefined) {
 
                 // I will create the element it-self
                 this.element = document.createElement(data.tagName)
                 this.element.id = this.id
+                this.element.editor = this
                 this.parent.appendChild(this.element)
 
                 // I will create the element style.
                 this.elementStyle = document.createElement("style")
                 this.elementStyle.id = this.id + "_style"
                 this.parent.appendChild(this.elementStyle)
+                this.parent.querySelector(`#${this.id}_style`).innerText = this.style_
 
+                // I will create the element script.
+                this.elementScript = document.createElement("script")
+                this.elementScript.id = this.id + "_script"
+                this.parent.appendChild(this.elementScript)
+                this.parent.querySelector(`#${this.id}_script`).innerText = this.script_
             }
 
-            /**
-                for (var i = 0; i < data.children.length; i++) {
-                    let element = new ElementEditor(data.children[i])
-                    element.style_ = data.children[i].style
-                    element.id = data.children[i].id
-                    element.content = data.children[i].content
-                    this.appendChild(element)
+            // Set the element selector
+            if (this.selector == null) {
+                this.selector = new ElementSelector(this)
+                if (this.parent.editor) {
+                    if (this.parent.editor.selector) {
+                        this.parent.editor.selector.appendSelector(this.selector)
+                    }
                 }
-            */
+            }
+
+            // Initilalyse sub-elements and sub-element editor...
+            if (data.children) {
+                for (var i = 0; i < data.children.length; i++) {
+                    data.children[i].parent = this.element // set the element in the data...
+                    let editor = new ElementEditor(data.children[i])
+                    this.element.appendChild(editor)
+                }
+            }
         }
-
-        // Innitialisation of the element.
-        this.shadowRoot.innerHTML = `
-        <style>
-            ${getTheme()}
-            #container{
-                position: absolute;
-            }
-
-            #handle{
-                display: none;
-                position: absolute;
-                top: 0px;
-                left: 0px;
-                bottom: 0px;
-                right: 0px;
-                border: 4px dashed var(--palette-divider);
-            }
-
-            #toolbar{
-                position: absolute;
-                top: 0px;
-                left: 0px;
-
-            }
-        </style>
-
-        <div id="container">
-            <div style="position: relative; width: 100%; height: 100%;">
-                <div id="handle">
-                    <div id="toolbar">
-                        <paper-icon-button id="delete-element-btn"  icon="icons:delete" class="btn"></paper-icon-button>
-                        <paper-tooltip for="delete-element-btn" role="tooltip" tabindex="-1">Delete Layout</paper-tooltip>
-                        <paper-icon-button id="add-element-btn" icon="icons:add" class="btn"></paper-icon-button>
-                        <paper-tooltip for="add-element-btn" role="tooltip" tabindex="-1">Add Layout</paper-tooltip>
-                        <paper-button id="css-edit-btn">css</paper-button>
-                        <paper-tooltip for="css-edit-btn" role="tooltip" tabindex="-1">Edit CSS</paper-tooltip>
-                        <paper-button id="js-edit-btn">js</paper-button>
-                        <paper-tooltip for="js-edit-btn" role="tooltip" tabindex="-1">Edit JS</paper-tooltip>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <slot></slot>
-        `
 
         // Get the element elements...
         this.container = this.shadowRoot.querySelector("#container")
         this.handle = this.shadowRoot.querySelector("#handle")
-        this.selector = null
 
         // The css editor...
         this.css_editor = null
+
+        // The javascript editor
+        this.javascript_editor = null
 
         // Add new element...
         let addLayoutBtn = this.shadowRoot.querySelector("#add-element-btn")
@@ -899,12 +1194,18 @@ export class ElementEditor extends HTMLElement {
             // also remove it selector.
             this.selector.parentNode.removeChild(this.selector)
             this.parentNode.removeChild(this)
+            this.element.parentNode.removeChild(this.element)
             Model.eventHub.publish("_need_save_event_", null, true)
         }
 
         let editCssBtn = this.shadowRoot.querySelector("#css-edit-btn")
         editCssBtn.onclick = () => {
             this.showCssEditor()
+        }
+
+        let editJavascriptBtn = this.shadowRoot.querySelector("#js-edit-btn")
+        editJavascriptBtn.onclick = () => {
+            this.showJavascriptEditor()
         }
 
         // Keep the container synch with the element div...
@@ -923,12 +1224,33 @@ export class ElementEditor extends HTMLElement {
      */
     createElement() {
         // Here I will create a new child element...
-        let element = new ElementEditor({ tagName:"DIV", parentId:this.id, id:"_" + uuidv4(), style:""})
-        element.setEditMode()
-        this.appendChild(element)
+        let editor = new ElementEditor({ tagName: "DIV", parentId: this.id, parent: this.element, id: "_" + uuidv4(), style: "" })
+        this.element.appendChild(editor)
         Model.eventHub.publish("_need_save_event_", null, true)
+    }
 
-        // this.selector.appendSelector(new ElementSelector(element))
+    /**
+     * Append element...
+     */
+    appendElement(e) {
+
+        // Now the element style...
+        if(e.tagName!="STYLE"){
+            let style_ =  ""
+            let id = "_" + uuidv4()
+
+            if(e.hasAttribute("style"))
+                style_ = `#${id}{${e.getAttribute("style")}}`
+
+            let editor = new ElementEditor({ tagName: e.tagName, parentId: this.id, parent: this.element, id: id, style: style_ })
+    
+            // I will make the function recursive...
+            for (var i = 0; i < e.children.length; i++) {
+                editor.appendElement(e.children[i])
+            }
+        }
+
+        Model.eventHub.publish("_need_save_event_", null, true)
     }
 
     /**
@@ -937,9 +1259,52 @@ export class ElementEditor extends HTMLElement {
      */
     setId(id) {
         this.id = id
-        if (this.css_editor) {
-            this.css_editor.setTitle(id)
+        this.getCssEditor().setTitle(id)
+    }
+
+    /**
+     * Display the javascript code editor.
+     * @returns 
+     */
+    showJavascriptEditor() {
+        if (this.getJavascriptEditor() != null) {
+            ApplicationView.layout.workspace().appendChild(this.getJavascriptEditor())
+            let editors = document.getElementsByTagName("globular-code-editor")
+            for (var i = 0; i < editors.length; i++) {
+                editors[i].style.zIndex = 1
+            }
+            this.getJavascriptEditor().style.zIndex = 10
+            return
         }
+    }
+
+    getJavascriptEditor() {
+        if (this.javascript_editor != null) {
+            return this.javascript_editor
+        }
+        // Set the css from the editor...
+        this.javascript_editor = new CodeEditor("javascript", ApplicationView.layout.workspace(), (evt) => {
+            if (this.style_ != this.javascript_editor.getText()) {
+                Model.eventHub.publish("_need_save_event_", null, true)
+            }
+
+            // set the script
+            this.script_ = this.javascript_editor.getText()
+
+            // Here I will set the css text of the element...
+            this.parent.querySelector(`#${this.id}_script`).innerText = this.script_
+
+        }, () => {
+            this.emphasis()
+        }, () => {
+            this.de_emphasis()
+        })
+
+        // Set the style to the editor...
+        this.javascript_editor.setText(this.script_)
+        this.javascript_editor.setTitle("JS " + this.id)
+
+        return this.javascript_editor
     }
 
     /**
@@ -947,20 +1312,24 @@ export class ElementEditor extends HTMLElement {
      * @returns 
      */
     showCssEditor() {
-
         // Show the css to edit the element style.
-        if (this.css_editor != null) {
-            this.appendChild(this.css_editor)
-            let editors = document.getElementsByTagName("globular-css-editor")
+        if (this.getCssEditor() != null) {
+            ApplicationView.layout.workspace().appendChild(this.getCssEditor())
+            let editors = document.getElementsByTagName("globular-code-editor")
             for (var i = 0; i < editors.length; i++) {
                 editors[i].style.zIndex = 1
             }
-            this.css_editor.style.zIndex = 10
+            this.getCssEditor().style.zIndex = 10
             return
         }
+    }
 
+    getCssEditor() {
+        if (this.css_editor != null) {
+            return this.css_editor
+        }
         // Set the css from the editor...
-        this.css_editor = new CssEditor((evt) => {
+        this.css_editor = new CodeEditor("css", ApplicationView.layout.workspace(), (evt) => {
             if (this.style_ != this.css_editor.getText()) {
                 Model.eventHub.publish("_need_save_event_", null, true)
             }
@@ -979,11 +1348,11 @@ export class ElementEditor extends HTMLElement {
             this.de_emphasis()
         })
 
-        this.appendChild(this.css_editor)
-
         // Set the style to the editor...
         this.css_editor.setText(this.style_)
-        this.css_editor.setTitle(this.id)
+        this.css_editor.setTitle("CSS " + this.id)
+
+        return this.css_editor
     }
 
     // The connected callback...
@@ -1001,8 +1370,15 @@ export class ElementEditor extends HTMLElement {
     }
 
     setContainerPosition() {
-        this.container.style.left = this.element.offsetLeft + "px";
-        this.container.style.top = this.element.offsetTop + "px";
+
+        if (this.element == null) {
+            return
+        }
+
+        let position = getCoords(this.element)
+
+        this.container.style.top = position.top + "px";
+        this.container.style.left = position.left + "px";
         this.container.style.width = this.element.offsetWidth + "px";
         this.container.style.height = this.element.offsetHeight + "px";
     }
@@ -1012,65 +1388,74 @@ export class ElementEditor extends HTMLElement {
      */
     getData(callback, errorCallback) {
         // A element is a recursive structure...
-        let obj = { tagName: this.tagName_, style: this.style_, children: [], id: this.id, parentId: this.parentId }
+        let obj = { tagName: this.tagName_, style: this.style_, script: this.script_, children: [], id: this.id, parentId: this.parentId }
+        let editors_ = this.element.querySelectorAll("globular-element-editor")
+        let editors = []
 
-        if (this.editor_js) {
-            // save the editor content to the application database.
-            this.editor_js.save().then((data) => {
-                obj.content = data
-                callback(obj)
 
-            }).catch(err => errorCallback(err))
-        } else if (this.content) {
-            callback(obj)
-        } else {
 
-            let elements_ = this.querySelectorAll("globular-element-editor")
-            let elements = []
-
-            // keep only immediate childs...
-            for (var i = 0; i < elements_.length; i++) {
-                if (elements_[i].parentNode == this) {
-                    elements.push(elements_[i])
-                }
-            }
-
-            let getData_ = (index) => {
-                if (index == elements.length - 1) {
-                    elements[index].getData((o) => {
-                        obj.children.push(o)
-                        callback(obj) // Done go to previous level...
-                    })
-                } else {
-                    elements[index].getData((o) => {
-                        obj.children.push(o)
-                        index++
-                        getData_(index) // append next children object.
-                    })
-                }
-            }
-
-            if (elements.length > 0) {
-                getData_(0)
-            } else {
-                callback(obj)
+        // keep only immediate childs...
+        for (var i = 0; i < editors_.length; i++) {
+            if (editors_[i].parentNode == this.element) {
+                editors.push(editors_[i])
             }
         }
+
+
+        let getData_ = (index) => {
+            if (index == editors.length - 1) {
+                editors[index].getData((o) => {
+                    obj.children.push(o)
+                    callback(obj) // Done go to previous level...
+                })
+            } else {
+                editors[index].getData((o) => {
+                    obj.children.push(o)
+                    index++
+                    getData_(index) // append next children object.
+                })
+            }
+        }
+
+        if (editors.length > 0) {
+            getData_(0)
+        } else {
+            callback(obj)
+        }
+    }
+
+    showToolbar() {
+        let pages = document.getElementsByTagName("globular-web-page")
+        for (var i = 0; i < pages.length; i++) {
+            pages[i].hideToolbar()
+        }
+
+        let editors = document.getElementsByTagName("globular-element-editor")
+        for (var i = 0; i < editors.length; i++) {
+            editors[i].hideToolbar()
+        }
+
+        this.shadowRoot.querySelector("#toolbar").style.display = "flex"
+    }
+
+    hideToolbar() {
+        this.shadowRoot.querySelector("#toolbar").style.display = "none"
     }
 
     /**
      * Set element edit mode.
      */
     setEditMode() {
-        this.handle.style.display = "block"
-        this.edit = true
-
-        /** see if all element must be in edit mode...
-        let elements = this.getElementsByTagName("globular-element-editor")
-        for (var i = 0; i < elements.length; i++) {
-            elements[i].setEditMode()
+        // reset actual editor...
+        let editors = document.getElementsByTagName("globular-element-editor")
+        for(var i=0; i < editors.length; i++){
+            editors[i].resetEditMode()
         }
-        */
+
+        // Set the actual editor.
+        this.handle.style.display = "block";
+        this.edit = true;
+        this.parent.appendChild(this)
     }
 
     /**
@@ -1079,13 +1464,30 @@ export class ElementEditor extends HTMLElement {
     resetEditMode() {
         this.handle.style.display = "none"
         this.edit = false
+        this.parent.removeChild(this)
+    }
 
-        /** see if all element must be in edit mode.
-        let elements = this.getElementsByTagName("globular-element-editor")
-        for (var i = 0; i < elements.length; i++) {
-            elements[i].resetEditMode()
+    /**
+     * Set html content.
+     */
+    setHtml(html) {
+
+        // make a new parser
+        const parser = new DOMParser();
+
+        // convert html string into DOM
+        const doc = parser.parseFromString(html, "text/html");
+
+        console.log("document: ", doc)
+
+        for (var i = 0; i < doc.body.children.length; i++) {
+            this.appendElement(doc.body.children[i])
         }
-        */
+
+        // So here I will generate the code from each element found in the input html.
+        //this.element.innerHTML = html
+
+        window.dispatchEvent(new Event('resize'));
     }
 }
 
@@ -1094,22 +1496,26 @@ customElements.define('globular-element-editor', ElementEditor)
 /**
  * Ace Editor use as CSS editor...
  */
-export class CssEditor extends HTMLElement {
+export class CodeEditor extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor(onchange, onfocus, onblur, onclose) {
+    constructor(mode, parent, onchange, onfocus, onblur, onclose) {
         super()
+
+        this.mode = mode;
+
+        this.parent = parent;
 
         // This is call when the editor text change.
         this.onchange = onchange;
 
         // Call when the editor is close.
-        this.onclose = onclose
+        this.onclose = onclose;
 
-        this.onfocus = onfocus
+        this.onfocus = onfocus;
 
-        this.onblur = onblur
+        this.onblur = onblur;
 
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
@@ -1181,8 +1587,8 @@ export class CssEditor extends HTMLElement {
             offsetTop = 60
         }
 
-        if (localStorage.getItem("__css_editor_position__")) {
-            let position = JSON.parse(localStorage.getItem("__css_editor_position__"))
+        if (localStorage.getItem("__code_editor_position__")) {
+            let position = JSON.parse(localStorage.getItem("__code_editor_position__"))
             if (position.top < offsetTop) {
                 position.top = offsetTop
             }
@@ -1195,23 +1601,25 @@ export class CssEditor extends HTMLElement {
 
 
         setMoveable(this.shadowRoot.querySelector(".header"), container, (left, top) => {
-            localStorage.setItem("__css_editor_position__", JSON.stringify({ top: top, left: left }))
+            localStorage.setItem("__code_editor_position__", JSON.stringify({ top: top, left: left }))
         }, this, offsetTop)
 
 
-        if (localStorage.getItem("__css_editor_dimension__")) {
-            let dimension = JSON.parse(localStorage.getItem("__css_editor_dimension__"))
+        if (localStorage.getItem("__code_editor_dimension__")) {
+            let dimension = JSON.parse(localStorage.getItem("__code_editor_dimension__"))
             container.style.width = dimension.width + "px"
             container.style.height = dimension.height + "px"
         }
 
         // Set resizable properties...
         setResizeable(container, (width, height) => {
-            localStorage.setItem("__css_editor_dimension__", JSON.stringify({ width: width, height: height }))
+            localStorage.setItem("__code_editor_dimension__", JSON.stringify({ width: width, height: height }))
         })
+
+        this.init()
     }
 
-    connectedCallback() {
+    init() {
         // init the ace editor.
         if (this.editor == null) {
 
@@ -1222,10 +1630,9 @@ export class CssEditor extends HTMLElement {
             content.id = "css-editor-" + uuidv4()
             this.appendChild(content)
 
-
             // Create the css editor...
-            this.editor = ace.edit(content.id);
-            this.editor.getSession().setMode('ace/mode/css');
+            this.editor = ace.edit(content);
+            this.editor.getSession().setMode('ace/mode/' + this.mode);
 
             // Set the theme...
             if (localStorage.getItem(localStorage.getItem("user_id") + "_theme") == "dark") {
@@ -1245,7 +1652,6 @@ export class CssEditor extends HTMLElement {
     // Set the text to edit...
     setText(txt) {
         // Set the text.
-        console.log("set value ", txt)
         this.editor.setValue(txt)
     }
 
@@ -1255,7 +1661,7 @@ export class CssEditor extends HTMLElement {
     }
 }
 
-customElements.define('globular-css-editor', CssEditor)
+customElements.define('globular-code-editor', CodeEditor)
 
 /**
  * Layout Selector
@@ -1266,15 +1672,18 @@ export class ElementSelector extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor(element) {
+    constructor(editor) {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
 
-        this.element = element;
+        // true if the selector is active.
+        this.active = false
+
+        this.editor = editor;
 
         // associate the selector with it element.
-        element.selector = this;
+        editor.selector = this;
 
         // Innitialisation of the element.
         this.shadowRoot.innerHTML = `
@@ -1284,23 +1693,12 @@ export class ElementSelector extends HTMLElement {
                 display: flex;
                 flex-direction: column;
                 font-size: 1.2rem;
+                margin-left: 20px;
             }
 
             #childrens{
                 display: flex;
                 flex-direction: column;
-                margin-left: 20px;
-            }
-
-            input{
-                border: none;
-                font-size: 1.2rem;
-                width: 120px;
-                background-color: transparent;
-            }
-
-            input:focus{
-                outline: none;
             }
 
             #read-mode, #edit-mode{
@@ -1316,62 +1714,72 @@ export class ElementSelector extends HTMLElement {
                 cursor: pointer;
             }
 
+            #childrens{
+                
+            }
+
         </style>
         <div id="container">
-            <div id="edit-mode" style="display: none;">
-                <input id="id-input" value="${this.element.id}"></input>
+            <span id="id">${this.editor.element.tagName.toLowerCase()} id="${this.editor.element.id}"</span>
+            <div id="childrens">
+                <slot></slot>
             </div>
-            <span id="id">${this.element.id}</span>
-            <div id="childrens"></div>
         </div>
         `
 
         // Help to see where is the element on the page.
         let id = this.shadowRoot.querySelector("#id")
         id.onmouseenter = () => {
-            this.element.emphasis()
+            this.editor.emphasis()
         }
 
         id.onmouseout = () => {
-            this.element.de_emphasis()
+            this.editor.de_emphasis()
         }
 
         // Display the id.
         id.onclick = () => {
-            this.element.emphasis()
-            id.style.display = "none";
-            this.shadowRoot.querySelector("#edit-mode").style.display = "flex";
+
+            let pages = document.getElementsByTagName("globular-web-page")
+            for (var i = 0; i < pages.length; i++) {
+                pages[i].de_emphasis()
+            }
+
+            let selectors = document.getElementsByTagName("globular-element-selector")
+            for (var i = 0; i < selectors.length; i++) {
+                selectors[i].de_emphasis()
+            }
+
+            this.emphasis()
+
+            // set edit mode
+            this.editor.setEditMode()
+
+            // show it tool bar.
+            this.editor.showToolbar()
+
             // set the onclose event.
-            this.element.css_editor.onclose = () => {
-                this.element.de_emphasis()
-                id.style.display = "block";
-                this.shadowRoot.querySelector("#edit-mode").style.display = "none";
+            this.editor.getCssEditor().onclose = () => {
+                // this.editor.resetEditMode()
             }
         }
-
-        let input = this.shadowRoot.querySelector("#id-input")
-        input.onchange = () => {
-            id.innerHTML = input.value;
-            element.setId(input.value)
-            Model.eventHub.publish("_need_save_event_", null, true);
-
-        }
-
-        for (var i = 0; i < this.element.children.length; i++) {
-            let c = this.element.children[i]
-            if (c.tagName == "GLOBULAR-LAYOUT") {
-                if (c.id.length == 0) {
-                    c.id = "children " + i
-                }
-                this.appendSelector(new ElementSelector(c))
-            }
-        }
-
     }
 
-    appendSelector(element) {
-        this.shadowRoot.querySelector("#childrens").appendChild(element)
+    emphasis() {
+        this.active = true
+        this.shadowRoot.querySelector("#id").style.textDecoration = "underline"
     }
+
+    de_emphasis() {
+        this.active = false
+        this.shadowRoot.querySelector("#id").style.textDecoration = ""
+    }
+
+    appendSelector(selector) {
+        this.appendChild(selector)
+    }
+
+
 }
 
 customElements.define('globular-element-selector', ElementSelector)
