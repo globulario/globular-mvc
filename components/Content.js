@@ -665,7 +665,7 @@ export class WebPage extends HTMLElement {
 
             // hide all toolbar...
             let editors = document.getElementsByTagName("globular-element-editor")
-            for(var i=0; i < editors.length; i++){
+            for (var i = 0; i < editors.length; i++) {
                 editors[i].resetEditMode()
             }
 
@@ -875,7 +875,7 @@ export class WebPage extends HTMLElement {
     setEditMode() {
         // Here I will display the editor...
         let editors = document.getElementsByTagName("globular-element-editor")
-        for(var i=0; i < editors.length; i++){
+        for (var i = 0; i < editors.length; i++) {
             editors[i].resetEditMode()
         }
 
@@ -1045,7 +1045,7 @@ export class ElementEditor extends HTMLElement {
                <style>
                    ${getTheme()}
                    #container{
-                       position: fixed;
+                       position: absolute;
                    }
        
                    #handle{
@@ -1059,9 +1059,8 @@ export class ElementEditor extends HTMLElement {
                    }
        
                    #toolbar{
-                       position: absolute;
-                       z-index: 5;
-                       top: 0px;
+                       position: fixed;
+                       top: 65px;
                        left: 0px;
                        display: none;
                        background-color: var(--palette-primary-accent);
@@ -1072,19 +1071,18 @@ export class ElementEditor extends HTMLElement {
        
                <div id="container">
                    <div style="position: relative; width: 100%; height: 100%;">
-                       <div id="handle">
-                           <div id="toolbar">
-                               <paper-icon-button id="add-element-btn" icon="icons:add" class="btn"></paper-icon-button>
-                               <paper-tooltip for="add-element-btn" role="tooltip" tabindex="-1">Add Element</paper-tooltip>
-                               <paper-button id="css-edit-btn">css</paper-button>
-                               <paper-tooltip for="css-edit-btn" role="tooltip" tabindex="-1">Edit CSS</paper-tooltip>
-                               <paper-button id="js-edit-btn">js</paper-button>
-                               <paper-tooltip for="js-edit-btn" role="tooltip" tabindex="-1">Edit JS</paper-tooltip>
-                               <paper-icon-button id="delete-element-btn"  icon="icons:delete" class="btn"></paper-icon-button>
-                               <paper-tooltip for="delete-element-btn" role="tooltip" tabindex="-1">Delete Element</paper-tooltip>
-                           </div>
-                       </div>
+                       <div id="handle"></div>
                    </div>
+                   <div id="toolbar">
+                        <paper-icon-button id="add-element-btn" icon="icons:add" class="btn"></paper-icon-button>
+                        <paper-tooltip for="add-element-btn" role="tooltip" tabindex="-1">Add Element</paper-tooltip>
+                        <paper-button id="css-edit-btn">css</paper-button>
+                        <paper-tooltip for="css-edit-btn" role="tooltip" tabindex="-1">Edit CSS</paper-tooltip>
+                        <paper-button id="js-edit-btn">js</paper-button>
+                        <paper-tooltip for="js-edit-btn" role="tooltip" tabindex="-1">Edit JS</paper-tooltip>
+                        <paper-icon-button id="delete-element-btn"  icon="icons:delete" class="btn"></paper-icon-button>
+                        <paper-tooltip for="delete-element-btn" role="tooltip" tabindex="-1">Delete Element</paper-tooltip>
+                    </div>
                </div>
                <slot></slot>
                `
@@ -1097,7 +1095,7 @@ export class ElementEditor extends HTMLElement {
 
         if (data) {
 
-            this.id = data.id
+            this.id = data.id + "_editor"
 
             // The parent id where to create the element...
             this.parentId = data.parentId
@@ -1130,26 +1128,45 @@ export class ElementEditor extends HTMLElement {
                 this.script_ = data.script
             }
 
-            this.element = this.parent.querySelector("#" + this.id)
+            this.element = this.parent.querySelector("#" + data.id)
             if (this.element == undefined) {
 
                 // I will create the element it-self
                 this.element = document.createElement(data.tagName)
-                this.element.id = this.id
+                this.element.id = data.id
                 this.element.editor = this
                 this.parent.appendChild(this.element)
 
+                // set the data depending of the type
+                if (data.tagName == "IMG") {
+                    this.element.src = data.data
+                } else if (data.tagName == "STRONG" || data.tagName == "P" || data.tagName == "SPAN") {
+                    this.element.innerHTML = data.data
+                }
+
+                // Set the element in edit mode.
+                this.element.addEventListener('dblclick', (evt) => {
+                    evt.stopPropagation()
+                    this.element.editor.setEditMode()
+                    this.element.editor.emphasis()
+                    let selectors = document.getElementsByTagName("globular-element-selector")
+                    for (var i = 0; i < selectors.length; i++) {
+                        selectors[i].de_emphasis()
+                    }
+                    this.element.editor.selector.emphasis()
+                });
+
                 // I will create the element style.
                 this.elementStyle = document.createElement("style")
-                this.elementStyle.id = this.id + "_style"
+                this.elementStyle.id = data.id + "_style"
                 this.parent.appendChild(this.elementStyle)
-                this.parent.querySelector(`#${this.id}_style`).innerText = this.style_
+                this.parent.querySelector(`#${data.id}_style`).innerText = this.style_
 
                 // I will create the element script.
                 this.elementScript = document.createElement("script")
-                this.elementScript.id = this.id + "_script"
+                this.elementScript.id = data.id + "_script"
                 this.parent.appendChild(this.elementScript)
-                this.parent.querySelector(`#${this.id}_script`).innerText = this.script_
+                this.parent.querySelector(`#${data.id}_script`).innerText = this.script_
             }
 
             // Set the element selector
@@ -1175,6 +1192,7 @@ export class ElementEditor extends HTMLElement {
         // Get the element elements...
         this.container = this.shadowRoot.querySelector("#container")
         this.handle = this.shadowRoot.querySelector("#handle")
+        this.toolbar = this.shadowRoot.querySelector("#toolbar")
 
         // The css editor...
         this.css_editor = null
@@ -1230,36 +1248,70 @@ export class ElementEditor extends HTMLElement {
     }
 
     /**
+     * 
+     * @param {*} e 
+     */
+    countChildren(e) {
+        let count = 0;
+        for (var i = 0; i < e.children.length; i++) {
+            let c = e.children[i]
+            if (c.tagName != "STYLE" && c.tagName != "SCRIPT") {
+                count += 1
+            }
+        }
+        return count
+    }
+
+    getElementData(e) {
+        let data = ""
+
+        // Here I will get various element data.
+        if (e.tagName == "IMG") {
+            data = e.src
+        } else if (e.tagName == "INPUT" || e.tagName == "TEXT-AREA") {
+            data = e.value
+        } else {
+            if (this.countChildren(e) == 0) {
+                data = e.innerText
+            } else {
+                // here I will try to see if the content contain free text..
+                let text = [].reduce.call(e.childNodes,  (a, b)=> { return a + (b.nodeType === 3 ? b.textContent : ''); }, '');
+                if(text.length>0){
+                    data = e.innerHTML
+                    e.innerHTML = "" // I will not process it childs...
+                }
+            }
+        }
+
+        return data
+    }
+
+    /**
      * Append element...
      */
     appendElement(e) {
 
         // Now the element style...
-        if(e.tagName!="STYLE"){
-            let style_ =  ""
+        if (e.tagName != "STYLE") {
+            let style_ = ""
             let id = "_" + uuidv4()
 
-            if(e.hasAttribute("style"))
+            if (e.hasAttribute("style"))
                 style_ = `#${id}{${e.getAttribute("style")}}`
 
-            let editor = new ElementEditor({ tagName: e.tagName, parentId: this.id, parent: this.element, id: id, style: style_ })
-    
+            
+
+            let editor = new ElementEditor({ tagName: e.tagName, parentId: this.id, parent: this.element, id: id, style: style_, data: this.getElementData(e) })
+
             // I will make the function recursive...
             for (var i = 0; i < e.children.length; i++) {
                 editor.appendElement(e.children[i])
             }
+
+            window.dispatchEvent(new Event('resize'));
         }
 
         Model.eventHub.publish("_need_save_event_", null, true)
-    }
-
-    /**
-     * Set the element id (name...)
-     * @param {*} id 
-     */
-    setId(id) {
-        this.id = id
-        this.getCssEditor().setTitle(id)
     }
 
     /**
@@ -1292,7 +1344,7 @@ export class ElementEditor extends HTMLElement {
             this.script_ = this.javascript_editor.getText()
 
             // Here I will set the css text of the element...
-            this.parent.querySelector(`#${this.id}_script`).innerText = this.script_
+            this.parent.querySelector(`#${this.element.id}_script`).innerText = this.script_
 
         }, () => {
             this.emphasis()
@@ -1302,7 +1354,7 @@ export class ElementEditor extends HTMLElement {
 
         // Set the style to the editor...
         this.javascript_editor.setText(this.script_)
-        this.javascript_editor.setTitle("JS " + this.id)
+        this.javascript_editor.setTitle("JS " + this.element.id)
 
         return this.javascript_editor
     }
@@ -1337,7 +1389,8 @@ export class ElementEditor extends HTMLElement {
             this.style_ = this.css_editor.getText()
 
             // Here I will set the css text of the element...
-            this.parent.querySelector(`#${this.id}_style`).innerText = this.style_
+            if (this.parent.querySelector(`#${this.element.id}_style`))
+                this.parent.querySelector(`#${this.element.id}_style`).innerText = this.style_
 
             // TODO set the context (element style, stylesheet etc.)
             this.setContainerPosition()
@@ -1350,7 +1403,7 @@ export class ElementEditor extends HTMLElement {
 
         // Set the style to the editor...
         this.css_editor.setText(this.style_)
-        this.css_editor.setTitle("CSS " + this.id)
+        this.css_editor.setTitle("CSS " + this.element.id)
 
         return this.css_editor
     }
@@ -1375,10 +1428,8 @@ export class ElementEditor extends HTMLElement {
             return
         }
 
-        let position = getCoords(this.element)
-
-        this.container.style.top = position.top + "px";
-        this.container.style.left = position.left + "px";
+        this.container.style.top = this.element.offsetTop + "px";
+        this.container.style.left = this.element.offsetLeft + "px";
         this.container.style.width = this.element.offsetWidth + "px";
         this.container.style.height = this.element.offsetHeight + "px";
     }
@@ -1387,20 +1438,17 @@ export class ElementEditor extends HTMLElement {
      * Return the data contain in the element...
      */
     getData(callback, errorCallback) {
+
         // A element is a recursive structure...
-        let obj = { tagName: this.tagName_, style: this.style_, script: this.script_, children: [], id: this.id, parentId: this.parentId }
-        let editors_ = this.element.querySelectorAll("globular-element-editor")
+        let obj = { tagName: this.tagName_, style: this.style_, script: this.script_, children: [], id: this.element.id, parentId: this.parentId, data: this.getElementData(this.element) }
         let editors = []
 
-
-
         // keep only immediate childs...
-        for (var i = 0; i < editors_.length; i++) {
-            if (editors_[i].parentNode == this.element) {
-                editors.push(editors_[i])
+        for (var i = 0; i < this.element.children.length; i++) {
+            if (this.element.children[i].editor) {
+                editors.push(this.element.children[i].editor)
             }
         }
-
 
         let getData_ = (index) => {
             if (index == editors.length - 1) {
@@ -1448,9 +1496,11 @@ export class ElementEditor extends HTMLElement {
     setEditMode() {
         // reset actual editor...
         let editors = document.getElementsByTagName("globular-element-editor")
-        for(var i=0; i < editors.length; i++){
+        for (var i = 0; i < editors.length; i++) {
             editors[i].resetEditMode()
         }
+
+        this.toolbar.style.display = "flex";
 
         // Set the actual editor.
         this.handle.style.display = "block";
@@ -1462,6 +1512,8 @@ export class ElementEditor extends HTMLElement {
      * Reset element edit mode.
      */
     resetEditMode() {
+        this.toolbar.style.display = "none";
+
         this.handle.style.display = "none"
         this.edit = false
         this.parent.removeChild(this)
@@ -1484,10 +1536,7 @@ export class ElementEditor extends HTMLElement {
             this.appendElement(doc.body.children[i])
         }
 
-        // So here I will generate the code from each element found in the input html.
-        //this.element.innerHTML = html
-
-        window.dispatchEvent(new Event('resize'));
+        this.resetEditMode()
     }
 }
 
@@ -1768,11 +1817,13 @@ export class ElementSelector extends HTMLElement {
     emphasis() {
         this.active = true
         this.shadowRoot.querySelector("#id").style.textDecoration = "underline"
+        this.shadowRoot.querySelector("#id").style.color = "var(--palette-primary-light)"
     }
 
     de_emphasis() {
         this.active = false
         this.shadowRoot.querySelector("#id").style.textDecoration = ""
+        this.shadowRoot.querySelector("#id").style.color = ""
     }
 
     appendSelector(selector) {
