@@ -1,7 +1,17 @@
 /**
  * That propertie take a div and append resizeable capabilities.
  */
-export function setResizeable(div, onresize) {
+export function setResizeable(div, onresize, side, zIndex) {
+
+    // resizeable by right side...
+    if(side == undefined){
+        side = "right"
+    }
+
+    if(zIndex == undefined){
+        zIndex = 100
+    }
+
     // keep movable attribute in the div itself.
     div.isResizeWidth = false;
     div.isResizeHeigth = false;
@@ -16,8 +26,14 @@ export function setResizeable(div, onresize) {
     resizeWidthDiv.style.top = "0px"
     resizeWidthDiv.style.bottom = "5px"
     resizeWidthDiv.style.width = "5px"
-    resizeWidthDiv.style.right = "-1px"
-    resizeWidthDiv.style.zIndex = 1000
+
+    if(side == "right")
+        resizeWidthDiv.style.right = "-1px"
+    else
+        resizeWidthDiv.style.left = "-1px"
+
+    resizeWidthDiv.style.zIndex = zIndex
+
     div.appendChild(resizeWidthDiv)
     div.resizeWidthDiv = resizeWidthDiv
 
@@ -35,10 +51,10 @@ export function setResizeable(div, onresize) {
     resizeHeightDiv.id = "resize-height-div"
     resizeHeightDiv.style.position = "absolute"
     resizeHeightDiv.style.height = "5px"
-    resizeHeightDiv.style.bottom = "-1px"
     resizeHeightDiv.style.left = "0px"
     resizeHeightDiv.style.right = "5px"
-    resizeHeightDiv.style.zIndex = 1000
+    resizeHeightDiv.style.bottom = "-1px"
+    resizeHeightDiv.style.zIndex = zIndex
 
     div.appendChild(resizeHeightDiv)
     div.resizeHeightDiv = resizeHeightDiv
@@ -57,7 +73,11 @@ export function setResizeable(div, onresize) {
     resizeDiv.id = "resize-div"
     resizeDiv.style.position = "absolute"
     resizeDiv.style.bottom = "-1px"
-    resizeDiv.style.right = "-1px"
+    if(side == "right"){
+        resizeDiv.style.right = "-1px"
+    }else{
+        resizeDiv.style.left = "-1px"
+    }
     resizeDiv.style.height = "10px"
     resizeDiv.style.width = "10px"
     resizeDiv.style.zIndex = 1000
@@ -72,7 +92,6 @@ export function setResizeable(div, onresize) {
         this.style.cursor = "default"
         this.style.backgroundColor = ""
     }
-
 
     resizeDiv.onmouseenter = function (div) {
         return function () {
@@ -150,6 +169,7 @@ export function setResizeable(div, onresize) {
         } while (elem = elem.offsetParent);
         return offsetLeft;
     }
+
 
     function getOffsetTop(elem) {
         var offsetTop = 0;

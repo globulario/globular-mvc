@@ -20,10 +20,11 @@ export class SlidePanel extends HTMLElement {
             ${getTheme()}
 
             #container{
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
                 position: fixed;
                 top: 65px;
                 bottom: 0px;
-                width: 500px;
                 overflow: auto;
                 direction:rtl; 
             }

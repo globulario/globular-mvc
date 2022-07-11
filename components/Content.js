@@ -14,10 +14,13 @@ import * as ace from 'brace';
 import 'brace/mode/css';
 import 'brace/mode/javascript';
 import 'brace/theme/monokai';
+
 import { setMoveable } from './moveable'
 import { setResizeable } from './rezieable'
-import { randomUUID } from "./utility";
+import { getCoords, randomUUID } from "./utility";
 import * as getUuidByString from "uuid-by-string";
+
+import * as cssbeautifier from "cssbeautifier"
 
 // The css visual editor...
 /*
@@ -328,9 +331,11 @@ export class Navigation extends HTMLElement {
             links[i].edit = edit;
             if (edit) {
                 // set the page edit mode.
+                links[i].webPage.edit = true
                 links[i].webPage.setEditMode()
             } else {
                 links[i].resetEditMode()
+                links[i].webPage.edit = false
                 links[i].webPage.resetEditMode()
             }
         }
@@ -544,6 +549,7 @@ export class NavigationPageLink extends HTMLElement {
     }
 
     resetEditMode() {
+
         this.setInputWidth()
         this.editor.style.display = "none"
         this.span.style.visibility = "visible"
@@ -647,6 +653,7 @@ export class WebPage extends HTMLElement {
                 display: flex;
                 flex-direction: column;
                 margin-left: 10px;
+                font-size: 1rem;
             }
             
             #page-selector:hover{
@@ -735,7 +742,7 @@ export class WebPage extends HTMLElement {
         this.shadowRoot.querySelector("#current-edit-page").onclick = () => {
             // scroll to page.
             document.getElementsByTagName("globular-web-page")[0].scrollTo({
-                top: this.shadowRoot.querySelector(`#${this.id}_selector`).offsetTop - 65,
+                top: this.shadowRoot.querySelector(`#${this.id}_selector`).offsetTop - (65+10),
                 left: 0,
                 behavior: 'smooth'
             });
@@ -994,6 +1001,7 @@ export class WebPage extends HTMLElement {
         // Here I will display the editor...
         let editors = document.getElementsByTagName("globular-element-editor")
         for (var i = 0; i < editors.length; i++) {
+            editors[i].edit = false
             editors[i].resetEditMode()
         }
 
@@ -1004,6 +1012,7 @@ export class WebPage extends HTMLElement {
     resetEditMode() {
         let editors = this.querySelectorAll("globular-element-editor")
         for (var i = 0; i < editors.length; i++) {
+            editors[i].edit = false
             editors[i].resetEditMode()
         }
         this.shadowRoot.querySelector("#container").removeChild(this.selectors)
@@ -1080,8 +1089,9 @@ export class WebPage extends HTMLElement {
                     getData_(index)
                 }, errorCallback)
             } else {
+
                 // create a string from page information..
-                let str = JSON.stringify({ _id: this.id, name: this.name, style: this.style_, script: this.script_, index: this.index, user_id: localStorage.getItem("user_id"), elements: elements })
+                let str = JSON.stringify({ _id: this.id, name: this.name, style: cssbeautifier(this.style_), script: this.script_, index: this.index, user_id: localStorage.getItem("user_id"), elements: elements })
 
                 // save the user_data
                 let rqst = new ReplaceOneRqst();
@@ -1338,21 +1348,25 @@ export class ElementEditor extends HTMLElement {
 
                 // Set the element in edit mode.
                 this.element.addEventListener('dblclick', (evt) => {
-                    evt.stopPropagation()
-                    this.element.editor.setEditMode()
-                    this.element.editor.emphasis()
-                    let selectors = document.getElementsByTagName("globular-element-selector")
-                    for (var i = 0; i < selectors.length; i++) {
-                        selectors[i].de_emphasis()
+                    let page = document.getElementsByTagName("globular-web-page")[0]
+                    if (page.edit) {
+                        evt.stopPropagation()
+                        this.element.editor.edit = true
+                        this.element.editor.setEditMode()
+                        this.element.editor.emphasis()
+                        let selectors = document.getElementsByTagName("globular-element-selector")
+                        for (var i = 0; i < selectors.length; i++) {
+                            selectors[i].de_emphasis()
+                        }
+                        this.element.editor.selector.emphasis()
+                        page.hideToolbar()
+                        // Now I will scroll to the selector...
+                        page.scrollTo({
+                            top: document.getElementById(this.element.editor.selector.id).offsetTop - (65+10),
+                            left: 0,
+                            behavior: 'smooth'
+                        });
                     }
-                    this.element.editor.selector.emphasis()
-                    document.getElementsByTagName("globular-web-page")[0].hideToolbar()
-                    // Now I will scroll to the selector...
-                    document.getElementsByTagName("globular-web-page")[0].scrollTo({
-                        top: document.getElementById(this.element.editor.selector.id).offsetTop - 65,
-                        left: 0,
-                        behavior: 'smooth'
-                    });
                 });
 
                 // I will create the element style.
@@ -1381,14 +1395,15 @@ export class ElementEditor extends HTMLElement {
 
             // set elment in view...
             this.shadowRoot.querySelector("#current-edit-element").onclick = () => {
+                let position = getCoords(document.getElementById(this.element.id))
                 window.scrollTo({
-                    top: document.getElementById(this.element.id).offsetTop - 65,
+                    top: position.top - (65+10),
                     left: 0,
                     behavior: 'smooth'
                 });
 
                 document.getElementsByTagName("globular-web-page")[0].scrollTo({
-                    top: document.getElementById(this.selector.id).offsetTop - 65,
+                    top: document.getElementById(this.selector.id).offsetTop - (65+10),
                     left: 0,
                     behavior: 'smooth'
                 });
@@ -1406,7 +1421,17 @@ export class ElementEditor extends HTMLElement {
 
         // Get the element elements...
         this.container = this.shadowRoot.querySelector("#container")
+
+
         this.handle = this.shadowRoot.querySelector("#handle")
+
+        // Here the user try to access element hidden by this editor...
+        this.handle.addEventListener('dblclick', (evt) => {
+            this.selector.de_emphasis()
+            this.de_emphasis()
+            this.parentNode.removeChild(this)
+        })
+
         this.toolbar = this.shadowRoot.querySelector("#toolbar")
 
         // The css editor...
@@ -1516,7 +1541,7 @@ export class ElementEditor extends HTMLElement {
 
 
 
-            let editor = new ElementEditor({ tagName: e.tagName, parentId: this.id, parent: this.element, id: id, style: style_, data: this.getElementData(e) })
+            let editor = new ElementEditor({ tagName: e.tagName, parentId: this.id, parent: this.element, id: id, style: cssbeautifier(style_), data: this.getElementData(e) })
 
             // I will make the function recursive...
             for (var i = 0; i < e.children.length; i++) {
@@ -1655,7 +1680,7 @@ export class ElementEditor extends HTMLElement {
     getData(callback, errorCallback) {
 
         // A element is a recursive structure...
-        let obj = { tagName: this.tagName_, style: this.style_, script: this.script_, children: [], id: this.element.id, parentId: this.parentId, data: this.getElementData(this.element) }
+        let obj = { tagName: this.tagName_, style: cssbeautifier(this.style_), script: this.script_, children: [], id: this.element.id, parentId: this.parentId, data: this.getElementData(this.element) }
         let editors = []
 
         // keep only immediate childs...
@@ -1962,7 +1987,8 @@ export class ElementSelector extends HTMLElement {
             }
 
             #container span {
-                white-space:nowrap
+                white-space:nowrap;
+                font-size: 1rem;
             }
 
             #childrens{
@@ -2009,10 +2035,10 @@ export class ElementSelector extends HTMLElement {
 
         // Display the id.
         id.onclick = () => {
-
+            let position = getCoords(document.getElementById(this.editor.element.id))
             // Scroll to the element.
             window.scrollTo({
-                top: document.getElementById(this.editor.element.id).offsetTop - 65,
+                top: position.top - (65+10),
                 left: 0,
                 behavior: 'smooth'
             });
@@ -2031,6 +2057,7 @@ export class ElementSelector extends HTMLElement {
             this.editor.emphasis()
 
             // set edit mode
+            this.editor.edit = true
             this.editor.setEditMode()
 
             // show it tool bar.
