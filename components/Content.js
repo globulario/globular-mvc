@@ -1,12 +1,13 @@
 import { Model } from "../Model";
 import { getTheme } from "./Theme";
+import { SlidePanel } from "./Slide"
 import '@polymer/paper-input/paper-input.js';
 import '@polymer/paper-icon-button/paper-icon-button.js';
 import { ApplicationView } from "../ApplicationView";
 import { mergeTypedArrays, uint8arrayToStringMethod } from "../Utility";
 import { v4 as uuidv4 } from "uuid";
 import * as JwtDecode from "jwt-decode";
-import { FindRqst, ReplaceOneRqst } from "globular-web-client/persistence/persistence_pb";
+import { DeleteOneRqst, FindRqst, ReplaceOneRqst } from "globular-web-client/persistence/persistence_pb";
 
 // The ace editor...
 import * as ace from 'brace';
@@ -15,44 +16,22 @@ import 'brace/mode/javascript';
 import 'brace/theme/monokai';
 import { setMoveable } from './moveable'
 import { setResizeable } from './rezieable'
-import { getCoords, localToGlobal, randomUUID } from "./utility";
+import { randomUUID } from "./utility";
 import * as getUuidByString from "uuid-by-string";
 
-// Get the image default size...
-function getMeta(url, callback) {
-    const img = new Image();
-    img.addEventListener("load", () => {
-        callback({ width: img.naturalWidth, height: img.naturalHeight });
-    });
-    img.src = url;
-}
-
-// generate html from json data
-function jsonToHtml(data) {
-    // So here I will get the plain html from the output json data.
-    const edjsParser = edjsHTML();
-    let elements = edjsParser.parse(data);
-    let html = ""
-    elements.forEach(e => {
-        html += e
-    });
-
-    var div = document.createElement('div');
-    div.innerHTML = html.trim();
-
-    // Now I will set image height.
-    let images = div.querySelectorAll("img")
-    images.forEach(img => {
-        getMeta(img.src, meta => {
-            if (meta.width < div.offsetWidth && meta.height < div.offsetHeight) {
-                img.style.width = meta.width + "px"
-                img.style.height = meta.height + "px"
-            }
-        })
-
-    })
-    return div
-}
+// The css visual editor...
+/*
+import "./sidebar";
+import "./css_editor/css_layout_editor";
+import "./css_editor/css_spacing_editor";
+import "./css_editor/css_size_editor";
+import "./css_editor/css_position_editor";
+import "./css_editor/css_typography_editor";
+import "./css_editor/css_backgrounds_editor";
+import "./css_editor/css_borders_editor";
+import "./css_editor/css_effects_editor";
+import "./css_editor/css_grid_child";
+*/
 
 /**
  * The content creator, it control edit mode and page creation.
@@ -89,10 +68,6 @@ export class ContentManager extends HTMLElement {
                 padding-right: 10px;
             }
 
-            globular-navigation {
-                flex-grow: 1;
-            }
-
             #toolbar {
                 display: flex;
             }
@@ -102,8 +77,7 @@ export class ContentManager extends HTMLElement {
 
         <div id="container">
 
-            <globular-navigation></globular-navigation>
-
+            <slot></slot>
             <div id="toolbar">
                 <paper-icon-button id="create-page-btn" icon="icons:note-add"></paper-icon-button>
                 <paper-tooltip for="create-page-btn" role="tooltip" tabindex="-1">Create Web Page</paper-tooltip>
@@ -123,9 +97,12 @@ export class ContentManager extends HTMLElement {
     }
 
     init() {
-        // init stuff.
-        this.shadowRoot.querySelector("globular-navigation").init()
+        this.navigation = new Navigation()
 
+        this.appendChild(this.navigation)
+        this.navigation.init()
+
+        // init stuff.
         if (this.needSaveEventListener == null)
             Model.eventHub.subscribe("_need_save_event_", uuid => this.needSaveEventListener = uuid, evt => {
                 let saveAllBtn = this.shadowRoot.querySelector("#save-all-btn")
@@ -138,13 +115,13 @@ export class ContentManager extends HTMLElement {
     setVertical() {
         this.shadowRoot.querySelector("#container").classList.add("vertical")
         this.shadowRoot.querySelector("#container").classList.remove("horizontal")
-        this.shadowRoot.querySelector("globular-navigation").setVertical()
+        this.navigation.setVertical()
     }
 
     setHorizontal() {
         this.shadowRoot.querySelector("#container").classList.add("horizontal")
         this.shadowRoot.querySelector("#container").classList.remove("vertical")
-        this.shadowRoot.querySelector("globular-navigation").setHorizontal()
+        this.navigation.setHorizontal()
     }
 
     // Display the toolbar...
@@ -181,7 +158,7 @@ export class ContentManager extends HTMLElement {
             }
 
             // Save all pages at once.
-            this.shadowRoot.querySelector("globular-navigation").savePages()
+            this.navigation.savePages()
             saveAllBtn.setAttribute("disable")
             saveAllBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
         }
@@ -199,7 +176,7 @@ customElements.define('globular-content-manager', ContentManager)
 /**
  * Contain the navigation panel
  */
-export class GlobularNavigation extends HTMLElement {
+export class Navigation extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
@@ -232,6 +209,9 @@ export class GlobularNavigation extends HTMLElement {
         this.set_content_edit_mode_listener = null
 
         this.create_page_listener = null
+
+        // keep page to be deleted...
+        this.toDelete = []
     }
 
     init() {
@@ -244,22 +224,48 @@ export class GlobularNavigation extends HTMLElement {
         if (!this.create_page_listener)
             Model.eventHub.subscribe("_create_page_event_", uuid => this.create_page_listener = uuid, evt => this.createPage())
 
+        // delete page event.
+        if (!this.delete_page_listener)
+            Model.eventHub.subscribe("_delete_web_page_", uuid => this.delete_page_listener = uuid, page => {
+                console.log("delete page...", page)
+                this.toDelete.push(page)
+
+                // so here I will delete the page lnk...
+                let lnk = page.link
+                this.removeChild(lnk)
+                let lnks = document.getElementsByTagName("globular-page-link")
+                for (var i = 0; i < lnks.length; i++) {
+                    lnks[i].webPage.index = i;
+                }
+
+                if (lnks.length > 0) {
+                    if (lnk.webPage.index == 0) {
+                        lnks[0].webPage.setPage()
+                    } else {
+                        lnks[lnk.webPage.index - 1].webPage.setPage()
+                    }
+                }
+
+            })
+
         // The set page event...
         if (!this.set_page_listener)
             Model.eventHub.subscribe("_set_web_page_",
                 uuid => this.set_page_listener = uuid,
                 page => {
-                    let lnks = this.querySelectorAll("globular-page-link")
+                    let lnks = document.getElementsByTagName("globular-page-link")
                     for (var i = 0; i < lnks.length; i++) {
-                        lnks[i].span.style.textDecoration = "none"
+                        lnks[i].de_emphasis()
                     }
 
-                    lnks[page.index].span.style.textDecoration = "underline"
+                    lnks[page.index].emphasis()
 
                 }, true)
 
         // Init the webpages...
+        ApplicationView.wait(`<div style="display: flex; flex-direction: column; justify-content: center;"><span>load webpages</span><span>please wait</span><span>...</span></div>`)
         this.loadWebPages(pages => {
+            ApplicationView.resume()
             for (var i = 0; i < pages.length; i++) {
                 let page = new WebPage(pages[i]._id, pages[i].name, pages[i].style, pages[i].script, pages[i].index, pages[i].elements)
                 let lnk = new NavigationPageLink(page)
@@ -332,33 +338,62 @@ export class GlobularNavigation extends HTMLElement {
 
     // Create page event.
     createPage() {
+
+        let index = 0
+        let lnks = document.getElementsByTagName("globular-page-link")
+        if (lnks) {
+            index = lnks.length
+        }
+
         let pageLnk = new NavigationPageLink()
         this.appendChild(pageLnk)
-        let index = 0
-        let pages = ApplicationView.layout.workspace().querySelectorAll("globular-web-page")
-        if (pages) {
-            index = pages.length
-        }
         pageLnk.webPage = new WebPage("page_" + uuidv4(), "new page", "", "", index)
         pageLnk.setEditMode()
     }
 
     // Save all pages...
     savePages() {
+
+        // delete the page 
+        let deletePages_ = (page) => {
+            // delete the page.
+            page.delete(() => {
+                if (this.toDelete.length > 0) {
+                    let page = this.toDelete.pop()
+                    deletePages_(page)
+                }
+            }, err => {
+                ApplicationView.displayMessage(err, 300);
+                // also try to delete the page.
+                if (this.toDelete.length > 0) {
+                    let page = this.toDelete.pop()
+                    deletePages_(page)
+                }
+            })
+        }
+
+
         let links = this.querySelectorAll("globular-page-link")
         let savePages_ = (index) => {
             if (index < links.length - 1) {
                 links[index].save(() => {
                     savePages_(++index)
                 }, err => {
-                    ApplicationView.displayMessage(`fail to save page ${links[index].webPage.name} with error </br>`, err)
+                    // I will set the page index before save it... 
+                    links[index].webPage.index = index
+                    ApplicationView.displayMessage(`fail to save page ${links[index].webPage.name} with error </br>`, err, 3000)
                     savePages_(++index)
                 });
             } else {
                 links[index].save(() => {
+                    if (this.toDelete.length > 0) {
+                        // remove page mark as delete...
+                        let page = this.toDelete.pop()
+                        deletePages_(page)
+                    }
                     ApplicationView.displayMessage("all content was saved", 3000)
                 }, err => {
-                    ApplicationView.displayMessage(`fail to save page ${links[index].webPage.name} with error </br>`, err)
+                    ApplicationView.displayMessage(`fail to save page ${links[index].webPage.name} with error </br>`, err, 3000)
                 });
 
             }
@@ -371,7 +406,7 @@ export class GlobularNavigation extends HTMLElement {
     }
 }
 
-customElements.define('globular-navigation', GlobularNavigation)
+customElements.define('globular-navigation', Navigation)
 
 
 /**
@@ -387,6 +422,7 @@ export class NavigationPageLink extends HTMLElement {
         this.attachShadow({ mode: 'open' });
         this.edit = true
         this.webPage = webPage
+        webPage.link = this
 
         // Innitialisation of the element.
         this.shadowRoot.innerHTML = `
@@ -432,6 +468,7 @@ export class NavigationPageLink extends HTMLElement {
         // Set the page...
         this.span.onclick = () => {
             this.webPage.setPage()
+            this.emphasis()
         }
 
         // set initial values.
@@ -469,6 +506,19 @@ export class NavigationPageLink extends HTMLElement {
             }
             this.setInputWidth()
         }
+    }
+
+    emphasis() {
+        let lnks = this.shadowRoot.querySelectorAll("globular-page-link")
+        for (var i = 0; i < lnks.length; i++) {
+            lnks[i].de_emphasis()
+        }
+
+        this.span.style.textDecoration = "underline"
+    }
+
+    de_emphasis() {
+        this.span.style.textDecoration = "none"
     }
 
     setInputWidth() {
@@ -592,21 +642,11 @@ export class WebPage extends HTMLElement {
                 position: relative;
             }
 
-            #toolbar{
-                display: flex;
-                position: absolute;
-                top: 0px;
-                left: 0px;
-                background-color: var(--palette-primary-accent);
-                border: 1px solid var(--palette-divider);
-            }
 
             #selectors{
                 display: flex;
                 flex-direction: column;
-                position: absolute;
-                top: 0px;
-                right: 25px;
+                margin-left: 10px;
             }
             
             #page-selector:hover{
@@ -621,39 +661,93 @@ export class WebPage extends HTMLElement {
                 cursor: pointer;
             }
 
+            #toolbar{
+                display: flex;
+                flex-direction: column;
+                position: fixed;
+                top: 65px;
+                left: 0px;
+            }
+
+            .toolbar{
+                display: flex;
+                flex-direction: row;
+                height: 40px;
+            }
+
+
+            .toolbar paper-icon-button, paper-button{
+                height: 40px;
+                margin: 0px;
+                color: var(--palette-text-primary);
+                background-color: var(--palette-primary-accent);
+                border-bottom: 1px solid var(--palette-divider);
+            }
+
+            #current-edit-page{
+                font-family: var(--font-family);
+                color: var(--palette-action-disabled);
+                font-size: 1rem;
+                margin-left: 5px;
+            }
+
+            #current-edit-page:hover{
+                cursor: pointer;
+            }
+
+            #delete-page-btn{
+                border-right: 1px solid var(--palette-divider);
+            }
+
         </style>
         <div id="container">
             <slot></slot>
-            <div id="toolbar" style="display: flex;">
-                <paper-icon-button id="add-element-btn" icon="icons:add" class="btn"></paper-icon-button>
-                <paper-tooltip for="add-element-btn" role="tooltip" tabindex="-1">Add Element</paper-tooltip>
-                <paper-button id="css-edit-btn">css</paper-button>
-                <paper-tooltip for="css-edit-btn" role="tooltip" tabindex="-1">Edit CSS</paper-tooltip>
-                <paper-button id="js-edit-btn">js</paper-button>
-                <paper-tooltip for="js-edit-btn" role="tooltip" tabindex="-1">Edit JS</paper-tooltip>
-                <paper-icon-button id="delete-element-btn"  icon="icons:delete" class="btn"></paper-icon-button>
-                <paper-tooltip for="delete-element-btn" role="tooltip" tabindex="-1">Delete Element</paper-tooltip>
-            </div>
-            <div id="selectors">
-                <div id="page-selector" style="text-decoration: underline;">${this.name}</div>
-                <div style="margin-left: 10px; display: flex; flex-direction: column;">
-                <slot name="selectors"></slot>
+            <div id="toolbar">
+                <div class="toolbar">
+                    <paper-icon-button id="add-element-btn" icon="icons:add" class="btn"></paper-icon-button>
+                    <paper-tooltip for="add-element-btn" role="tooltip" tabindex="-1">Add Element</paper-tooltip>
+                    <paper-button id="css-edit-btn">css</paper-button>
+                    <paper-tooltip for="css-edit-btn" role="tooltip" tabindex="-1">Edit CSS</paper-tooltip>
+                    <paper-button id="js-edit-btn">js</paper-button>
+                    <paper-tooltip for="js-edit-btn" role="tooltip" tabindex="-1">Edit JS</paper-tooltip>
+                    <paper-icon-button id="delete-page-btn"  icon="icons:delete" class="btn"></paper-icon-button>
+                    <paper-tooltip for="delete-page-btn" role="tooltip" tabindex="-1">Delete Page</paper-tooltip>
                 </div>
+                <span id="current-edit-page">
+                    ${this.name}
+                </span>
             </div>
-            
+            <globular-slide-panel side="right">
+                <div id="selectors">
+                    <div id="${this.id}_selector" style="text-decoration: underline;">${this.name}</div>
+                    <div style="margin-left: 10px; display: flex; flex-direction: column;">
+                    <slot name="selectors"></slot>
+                    </div>
+                </div>
+            </globular-slide-panel>
         </div>
         `
 
         // Editing menu...
         this.toolbar = this.shadowRoot.querySelector("#toolbar")
-        this.selectors = this.shadowRoot.querySelector("#selectors")
+        this.selectors = this.shadowRoot.querySelector("globular-slide-panel")
+
+        this.shadowRoot.querySelector("#current-edit-page").onclick = () => {
+            // scroll to page.
+            document.getElementsByTagName("globular-web-page")[0].scrollTo({
+                top: this.shadowRoot.querySelector(`#${this.id}_selector`).offsetTop - 65,
+                left: 0,
+                behavior: 'smooth'
+            });
+        }
+
 
         this.appendElementBtn = this.shadowRoot.querySelector("#add-element-btn")
         this.appendElementBtn.onclick = () => {
             this.appendElement("DIV", "_" + randomUUID()) // create an empty div...
         }
 
-        this.pageSelector = this.shadowRoot.querySelector("#page-selector")
+        this.pageSelector = this.shadowRoot.querySelector(`#${this.id}_selector`)
         this.pageSelector.onclick = () => {
             let selectors = document.getElementsByTagName("globular-element-selector")
             for (var i = 0; i < selectors.length; i++) {
@@ -694,15 +788,20 @@ export class WebPage extends HTMLElement {
                 let e = elements[i]
                 e.parent = this
                 let editor = new ElementEditor(e)
-                this.appendChild(editor)
                 editor.selector.slot = "selectors"
-                this.appendChild(editor.selector)
+                if (!this.querySelector("#" + editor.selector.id))
+                    this.appendChild(editor.selector)
             }
         }
 
         let editCssBtn = this.shadowRoot.querySelector("#css-edit-btn")
         editCssBtn.onclick = () => {
             this.showCssEditor()
+        }
+
+        let deletePageBtn = this.shadowRoot.querySelector("#delete-page-btn")
+        deletePageBtn.onclick = () => {
+            this.markForDelete()
         }
 
         let editJavascriptBtn = this.shadowRoot.querySelector("#js-edit-btn")
@@ -722,12 +821,15 @@ export class WebPage extends HTMLElement {
         // The on drop event.
         this.ondrop = (evt) => {
             evt.preventDefault();
+
             var html = evt.dataTransfer.getData("text/html");
             let selector = this.getActiveSelector()
             if (selector != null) {
                 selector.style.border = ""
+                ApplicationView.wait("append content...")
                 // Set the content from the html text...
                 selector.editor.setHtml(html)
+                ApplicationView.resume()
             }
         }
 
@@ -759,12 +861,28 @@ export class WebPage extends HTMLElement {
         Model.eventHub.publish("_set_web_page_", this, true)
     }
 
+    scrollTo(to) {
+        this.selectors.scrollTo(to)
+    }
+
+    // Delete the webpage event...
+    markForDelete() {
+        // delete from it parent
+        if (this.parentNode) {
+            this.parentNode.removeChild(this)
+        }
+        Model.eventHub.publish("_delete_web_page_", this, true)
+        Model.eventHub.publish("_need_save_event_", null, true)
+    }
+
     // Set the page name
     setName(name) {
         this.setAttribute("name", name)
         this.name = name;
         Model.eventHub.publish("_need_save_event_", null, true)
         this.shadowRoot.querySelector("#page-selector").innerHTML = this.name
+        this.shadowRoot.querySelector("#current-edit-page").innerHTML = this.name
+
         this.edit = true;
         this.setPage()
     }
@@ -893,22 +1011,60 @@ export class WebPage extends HTMLElement {
     }
 
     emphasis() {
-        this.shadowRoot.querySelector("#page-selector").style.textDecoration = "underline"
+        this.shadowRoot.querySelector(`#${this.id}_selector`).style.textDecoration = "underline"
     }
 
     de_emphasis() {
-        this.shadowRoot.querySelector("#page-selector").style.textDecoration = ""
+        this.shadowRoot.querySelector(`#${this.id}_selector`).style.textDecoration = ""
+    }
+
+    delete(callback, errorCallback) {
+        // save the user_data
+        let rqst = new DeleteOneRqst();
+        let db = Model.application + "_db";
+
+        // set the connection infos,
+        rqst.setId(Model.application);
+        rqst.setDatabase(db);
+        let collection = "WebPages";
+
+        // save only user data and not the how user info...
+        rqst.setCollection(collection);
+        rqst.setQuery(`{"_id":"${this.id}"}`);
+
+        // So here I will set the address from the address found in the token and not 
+        // the address of the client itself.
+        let token = localStorage.getItem("user_token")
+        let decoded = JwtDecode(token);
+        let address = decoded.address;
+        let domain = decoded.domain;
+
+        // call persist data
+        Model.getGlobule(address).persistenceService
+            .deleteOne(rqst, {
+                token: token,
+                application: Model.application,
+                domain: domain,
+                address: address
+            })
+            .then((rsp) => {
+                // Here I will return the value with it
+                Model.eventHub.publish(`update_page_${this.id}_evt`, str, false)
+                callback(this);
+            })
+            .catch((err) => {
+                errorCallback(err);
+            });
     }
 
     // Save the actual content.
     save(callback, errorCallback) {
-        // TODO save all imediate child...
-        let editors_ = this.querySelectorAll("globular-element-editor")
+
         let editors = []
         // keep only immediate childs.
-        for (var i = 0; i < editors_.length; i++) {
-            if (editors_[i].parentNode === this) {
-                editors.push(editors_[i])
+        for (var i = 0; i < this.children.length; i++) {
+            if (this.children[i].editor) {
+                editors.push(this.children[i].editor)
             }
         }
 
@@ -1058,14 +1214,44 @@ export class ElementEditor extends HTMLElement {
                        border: 4px dashed var(--palette-divider);
                    }
        
+
                    #toolbar{
-                       position: fixed;
-                       top: 65px;
-                       left: 0px;
-                       display: none;
-                       background-color: var(--palette-primary-accent);
-                       border: 1px solid var(--palette-divider);
-                   }
+                        display: flex;
+                        flex-direction: column;
+                        position: fixed;
+                        top: 65px;
+                        left: 0px;
+                    }
+        
+                    .toolbar{
+                        display: flex;
+                        flex-direction: row;
+                        height: 40px;
+                    }
+        
+                    .toolbar paper-icon-button, paper-button{
+                        height: 40px;
+                        margin: 0px;
+                        color: var(--palette-text-primary);
+                        background-color: var(--palette-primary-accent);
+                        border-bottom: 1px solid var(--palette-divider);
+                    }
+        
+                    #current-edit-element{
+                        font-family: var(--font-family);
+                        color: var(--palette-action-disabled);
+                        font-size: 1rem;
+                        margin-left: 5px;
+                    }
+
+                    #current-edit-element:hover{
+                        cursor: pointer;
+                    }
+        
+
+                    #delete-element-btn{
+                        border-right: 1px solid var(--palette-divider);
+                    }
                    
                </style>
        
@@ -1074,19 +1260,23 @@ export class ElementEditor extends HTMLElement {
                        <div id="handle"></div>
                    </div>
                    <div id="toolbar">
-                        <paper-icon-button id="add-element-btn" icon="icons:add" class="btn"></paper-icon-button>
-                        <paper-tooltip for="add-element-btn" role="tooltip" tabindex="-1">Add Element</paper-tooltip>
-                        <paper-button id="css-edit-btn">css</paper-button>
-                        <paper-tooltip for="css-edit-btn" role="tooltip" tabindex="-1">Edit CSS</paper-tooltip>
-                        <paper-button id="js-edit-btn">js</paper-button>
-                        <paper-tooltip for="js-edit-btn" role="tooltip" tabindex="-1">Edit JS</paper-tooltip>
-                        <paper-icon-button id="delete-element-btn"  icon="icons:delete" class="btn"></paper-icon-button>
-                        <paper-tooltip for="delete-element-btn" role="tooltip" tabindex="-1">Delete Element</paper-tooltip>
+                        <div class="toolbar">
+                            <paper-icon-button id="add-element-btn" icon="icons:add" class="btn"></paper-icon-button>
+                            <paper-tooltip for="add-element-btn" role="tooltip" tabindex="-1">Add Element</paper-tooltip>
+                            <paper-button id="css-edit-btn">css</paper-button>
+                            <paper-tooltip for="css-edit-btn" role="tooltip" tabindex="-1">Edit CSS</paper-tooltip>
+                            <paper-button id="js-edit-btn">js</paper-button>
+                            <paper-tooltip for="js-edit-btn" role="tooltip" tabindex="-1">Edit JS</paper-tooltip>
+                            <paper-icon-button id="delete-element-btn"  icon="icons:delete" class="btn"></paper-icon-button>
+                            <paper-tooltip for="delete-element-btn" role="tooltip" tabindex="-1">Delete Element</paper-tooltip>
+                        </div>
+                        <span id="current-edit-element">
+                            ${data.id}
+                        </span>
                     </div>
                </div>
                <slot></slot>
                `
-
 
         this.id = ""
         this.style_ = ""
@@ -1138,10 +1328,12 @@ export class ElementEditor extends HTMLElement {
                 this.parent.appendChild(this.element)
 
                 // set the data depending of the type
-                if (data.tagName == "IMG") {
-                    this.element.src = data.data
-                } else if (data.tagName == "STRONG" || data.tagName == "P" || data.tagName == "SPAN") {
-                    this.element.innerHTML = data.data
+                if (data.data) {
+                    if (data.tagName == "IMG") {
+                        this.element.src = data.data
+                    } else {
+                        this.element.innerHTML = data.data
+                    }
                 }
 
                 // Set the element in edit mode.
@@ -1154,6 +1346,13 @@ export class ElementEditor extends HTMLElement {
                         selectors[i].de_emphasis()
                     }
                     this.element.editor.selector.emphasis()
+                    document.getElementsByTagName("globular-web-page")[0].hideToolbar()
+                    // Now I will scroll to the selector...
+                    document.getElementsByTagName("globular-web-page")[0].scrollTo({
+                        top: document.getElementById(this.element.editor.selector.id).offsetTop - 65,
+                        left: 0,
+                        behavior: 'smooth'
+                    });
                 });
 
                 // I will create the element style.
@@ -1172,6 +1371,7 @@ export class ElementEditor extends HTMLElement {
             // Set the element selector
             if (this.selector == null) {
                 this.selector = new ElementSelector(this)
+                this.selector.id = data.id + "_selector"
                 if (this.parent.editor) {
                     if (this.parent.editor.selector) {
                         this.parent.editor.selector.appendSelector(this.selector)
@@ -1179,12 +1379,27 @@ export class ElementEditor extends HTMLElement {
                 }
             }
 
+            // set elment in view...
+            this.shadowRoot.querySelector("#current-edit-element").onclick = () => {
+                window.scrollTo({
+                    top: document.getElementById(this.element.id).offsetTop - 65,
+                    left: 0,
+                    behavior: 'smooth'
+                });
+
+                document.getElementsByTagName("globular-web-page")[0].scrollTo({
+                    top: document.getElementById(this.selector.id).offsetTop - 65,
+                    left: 0,
+                    behavior: 'smooth'
+                });
+            }
+
+
             // Initilalyse sub-elements and sub-element editor...
             if (data.children) {
                 for (var i = 0; i < data.children.length; i++) {
                     data.children[i].parent = this.element // set the element in the data...
-                    let editor = new ElementEditor(data.children[i])
-                    this.element.appendChild(editor)
+                    new ElementEditor(data.children[i])
                 }
             }
         }
@@ -1275,8 +1490,8 @@ export class ElementEditor extends HTMLElement {
                 data = e.innerText
             } else {
                 // here I will try to see if the content contain free text..
-                let text = [].reduce.call(e.childNodes,  (a, b)=> { return a + (b.nodeType === 3 ? b.textContent : ''); }, '');
-                if(text.length>0){
+                let text = [].reduce.call(e.childNodes, (a, b) => { return a + (b.nodeType === 3 ? b.textContent : ''); }, '');
+                if (text.length > 0) {
                     data = e.innerHTML
                     e.innerHTML = "" // I will not process it childs...
                 }
@@ -1299,7 +1514,7 @@ export class ElementEditor extends HTMLElement {
             if (e.hasAttribute("style"))
                 style_ = `#${id}{${e.getAttribute("style")}}`
 
-            
+
 
             let editor = new ElementEditor({ tagName: e.tagName, parentId: this.id, parent: this.element, id: id, style: style_, data: this.getElementData(e) })
 
@@ -1743,6 +1958,11 @@ export class ElementSelector extends HTMLElement {
                 flex-direction: column;
                 font-size: 1.2rem;
                 margin-left: 20px;
+                width: 100%;
+            }
+
+            #container span {
+                white-space:nowrap
             }
 
             #childrens{
@@ -1764,7 +1984,8 @@ export class ElementSelector extends HTMLElement {
             }
 
             #childrens{
-                
+                display: inline;
+                width: 100%;
             }
 
         </style>
@@ -1789,6 +2010,13 @@ export class ElementSelector extends HTMLElement {
         // Display the id.
         id.onclick = () => {
 
+            // Scroll to the element.
+            window.scrollTo({
+                top: document.getElementById(this.editor.element.id).offsetTop - 65,
+                left: 0,
+                behavior: 'smooth'
+            });
+
             let pages = document.getElementsByTagName("globular-web-page")
             for (var i = 0; i < pages.length; i++) {
                 pages[i].de_emphasis()
@@ -1800,6 +2028,7 @@ export class ElementSelector extends HTMLElement {
             }
 
             this.emphasis()
+            this.editor.emphasis()
 
             // set edit mode
             this.editor.setEditMode()
@@ -1827,6 +2056,14 @@ export class ElementSelector extends HTMLElement {
     }
 
     appendSelector(selector) {
+
+        // append selector once...
+        for (var i = 0; i < this.children.length; i++) {
+            if (this.children[i].id == selector.id) {
+                return
+            }
+        }
+
         this.appendChild(selector)
     }
 

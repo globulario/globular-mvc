@@ -285,16 +285,7 @@ export class ApplicationView extends View {
         this.hideContent()
 
         // Append the watching component...
-        console.log("--------> 295 set Page ", page)
         this.getWorkspace().appendChild(page);
-
-        // Set edit mode as needed...
-        /*if (page.edit == true) {
-          // set the editor.
-          page.setEditor(()=>{
-            console.log("you are in edit mode!")
-          })
-        }*/
 
       }, true)
 
@@ -733,6 +724,8 @@ export class ApplicationView extends View {
       }
     });
 
+    ApplicationView.layout.navigation().appendChild(this.contentManager)
+
     window.dispatchEvent(new Event("resize"));
 
   }
@@ -886,8 +879,7 @@ export class ApplicationView extends View {
 
     // Append the over flow menu.
     ApplicationView.layout.toolbar().appendChild(this.overFlowMenu);
-    ApplicationView.layout.navigation().appendChild(this.contentManager)
-
+ 
     this.overFlowMenu.hide(); // not show it at first.
     this.accountMenu.setAccount(account);
 

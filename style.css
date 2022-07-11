@@ -880,3 +880,7 @@ globular-web-page {
    grid-column-start: 1;
    grid-column-end: 17;
 }
+
+globular-navigation {
+   flex-grow: 1;
+}
