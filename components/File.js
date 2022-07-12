@@ -4050,8 +4050,44 @@ export class FileExplorer extends HTMLElement {
             }, true)
         }
 
+        // Load the root dir...
         this.displayWaitMessage("load " + this.root)
         _readDir(this.root, (dir) => {
+            // set interface with the given directory.
+            this.resume()
+
+            if (this.fileNavigator != null) {
+                this.fileNavigator.setDir(dir)
+            } else {
+                console.log("no file navigator!")
+            }
+
+            if (this.pathNavigator != null) {
+                this.pathNavigator.setDir(dir)
+            } else {
+                console.log("no path navigator!")
+            }
+
+            if (this.filesListView != null) {
+                this.filesListView.setDir(dir)
+            } else {
+                console.log("no file list view!")
+            }
+
+            if (this.filesIconView) {
+                this.filesIconView.setDir(dir)
+            } else {
+                console.log("no file icon view!")
+            }
+
+            this.setDir(dir)
+
+
+        }, this.onerror, this.globule)
+
+        // Load the application dir.
+        this.displayWaitMessage("load " + Model.application + "dir")
+        _readDir(this.globule.config.DataPath + "/files/applications/" + Model.application, (dir) => {
             // set interface with the given directory.
             this.resume()
 

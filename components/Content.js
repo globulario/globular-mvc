@@ -13,6 +13,7 @@ import { DeleteOneRqst, FindRqst, ReplaceOneRqst } from "globular-web-client/per
 import * as ace from 'brace';
 import 'brace/mode/css';
 import 'brace/mode/javascript';
+import 'brace/mode/html';
 import 'brace/theme/monokai';
 
 import { setMoveable } from './moveable'
@@ -21,20 +22,59 @@ import { getCoords, randomUUID } from "./utility";
 import * as getUuidByString from "uuid-by-string";
 
 import * as cssbeautifier from "cssbeautifier"
+import htmlBeautify from 'html-beautify'
 
-// The css visual editor...
-/*
-import "./sidebar";
-import "./css_editor/css_layout_editor";
-import "./css_editor/css_spacing_editor";
-import "./css_editor/css_size_editor";
-import "./css_editor/css_position_editor";
-import "./css_editor/css_typography_editor";
-import "./css_editor/css_backgrounds_editor";
-import "./css_editor/css_borders_editor";
-import "./css_editor/css_effects_editor";
-import "./css_editor/css_grid_child";
-*/
+// Test if the tag can hold text...
+function canHoldText(tagName) {
+    let tags = [
+        "tt",
+        "i",
+        "b",
+        "big",
+        "small",
+        "em",
+        "strong",
+        "dfn",
+        "code",
+        "samp",
+        "kbd",
+        "var",
+        "cite",
+        "abbr",
+        "acronym",
+        "sub",
+        "sup",
+        "span",
+        "bdo",
+        "address",
+        "div",
+        "a",
+        "object",
+        "p",
+        "h1", "h2", "h3", "h4", "h5", "h6",
+        "pre",
+        "q",
+        "ins",
+        "del",
+        "dt",
+        "dd",
+        "li",
+        "label",
+        "option",
+        "textarea",
+        "fieldset",
+        "legend",
+        "button",
+        "caption",
+        "td",
+        "th",
+        "title",
+        "script",
+        "style",
+        "blockquote"]
+
+    return tags.indexOf(tagName.toLowerCase()) != -1
+}
 
 /**
  * The content creator, it control edit mode and page creation.
@@ -350,9 +390,9 @@ export class Navigation extends HTMLElement {
             index = lnks.length
         }
 
-        let pageLnk = new NavigationPageLink()
+        let page = new WebPage("page_" + uuidv4(), "new page", "", "", index)
+        let pageLnk = new NavigationPageLink(page)
         this.appendChild(pageLnk)
-        pageLnk.webPage = new WebPage("page_" + uuidv4(), "new page", "", "", index)
         pageLnk.setEditMode()
     }
 
@@ -426,8 +466,10 @@ export class NavigationPageLink extends HTMLElement {
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
         this.edit = true
-        this.webPage = webPage
-        webPage.link = this
+        if (webPage) {
+            this.webPage = webPage
+            this.webPage.link = this
+        }
 
         // Innitialisation of the element.
         this.shadowRoot.innerHTML = `
@@ -689,6 +731,7 @@ export class WebPage extends HTMLElement {
                 color: var(--palette-text-primary);
                 background-color: var(--palette-primary-accent);
                 border-bottom: 1px solid var(--palette-divider);
+                border-radius: 0px;
             }
 
             #current-edit-page{
@@ -742,7 +785,7 @@ export class WebPage extends HTMLElement {
         this.shadowRoot.querySelector("#current-edit-page").onclick = () => {
             // scroll to page.
             document.getElementsByTagName("globular-web-page")[0].scrollTo({
-                top: this.shadowRoot.querySelector(`#${this.id}_selector`).offsetTop - (65+10),
+                top: this.shadowRoot.querySelector(`#${this.id}_selector`).offsetTop - (65 + 10),
                 left: 0,
                 behavior: 'smooth'
             });
@@ -1091,7 +1134,7 @@ export class WebPage extends HTMLElement {
             } else {
 
                 // create a string from page information..
-                let str = JSON.stringify({ _id: this.id, name: this.name, style: cssbeautifier(this.style_), script: this.script_, index: this.index, user_id: localStorage.getItem("user_id"), elements: elements })
+                let str = JSON.stringify({ _id: this.id, name: this.name, style: this.style_, script: this.script_, index: this.index, user_id: localStorage.getItem("user_id"), elements: elements })
 
                 // save the user_data
                 let rqst = new ReplaceOneRqst();
@@ -1142,58 +1185,6 @@ export class WebPage extends HTMLElement {
 
 customElements.define('globular-web-page', WebPage)
 
-/**
- * Return the list of all rules.
- * @param {*} el 
- * @returns 
- */
-let getRules = (el) => {
-    var sheets = window.document.styleSheets, ret = [];
-    el.matches = el.matches || el.webkitMatchesSelector || el.mozMatchesSelector || el.msMatchesSelector || el.oMatchesSelector;
-    for (var i in sheets) {
-        try {
-            var rules = sheets[i].rules || sheets[i].cssRules;
-            for (var r in rules) {
-                if (el.matches(rules[r].selectorText)) {
-                    ret.push(rules[r]);
-                }
-            }
-        } catch (exception) {
-
-        }
-    }
-
-    return ret;
-}
-
-/**
- * Return the list of inheriated rules.
- * @param {*} node 
- * @param {*} parentNode 
- */
-let getInheritedRules = (node, parentNode) => {
-
-    if (parentNode.cssRules == undefined) {
-        parentNode.cssRules = []
-    }
-
-    if (node.inheritedCssRules == undefined) {
-        node.inheritedCssRules = []
-    }
-
-    for (var i = 0; i < parentNode.cssRules.length; i++) {
-        let rule = parentNode.cssRules[i]
-        if (node.matches(rule.selectorText)) {
-            if (node.inheritedCssRules.indexOf(rule) == -1 && node.cssRules.indexOf(rule) == -1) {
-                node.inheritedCssRules.push(rule);
-            }
-        }
-    }
-
-    if (parentNode.parentNode != undefined) {
-        getInheritedRules(node, parentNode.parentNode)
-    }
-}
 
 /**
  * Element Editor.
@@ -1245,6 +1236,7 @@ export class ElementEditor extends HTMLElement {
                         color: var(--palette-text-primary);
                         background-color: var(--palette-primary-accent);
                         border-bottom: 1px solid var(--palette-divider);
+                        border-radius: 0px;
                     }
         
                     #current-edit-element{
@@ -1277,6 +1269,10 @@ export class ElementEditor extends HTMLElement {
                             <paper-tooltip for="css-edit-btn" role="tooltip" tabindex="-1">Edit CSS</paper-tooltip>
                             <paper-button id="js-edit-btn">js</paper-button>
                             <paper-tooltip for="js-edit-btn" role="tooltip" tabindex="-1">Edit JS</paper-tooltip>
+                            <paper-icon-button style="display: none;" id="text-edit-btn"  icon="editor:text-fields" class="btn"></paper-icon-button>
+                            <paper-tooltip for="text-edit-btn" role="tooltip" tabindex="-1">Edit Text</paper-tooltip>
+                            <paper-icon-button style="display: none;" id="image-edit-btn"  icon="editor:insert-photo" class="btn"></paper-icon-button>
+                            <paper-tooltip for="image-edit-btn" role="tooltip" tabindex="-1">Set Image</paper-tooltip>
                             <paper-icon-button id="delete-element-btn"  icon="icons:delete" class="btn"></paper-icon-button>
                             <paper-tooltip for="delete-element-btn" role="tooltip" tabindex="-1">Delete Element</paper-tooltip>
                         </div>
@@ -1333,9 +1329,38 @@ export class ElementEditor extends HTMLElement {
 
                 // I will create the element it-self
                 this.element = document.createElement(data.tagName)
+                if (this.element == null) {
+                    this.element = document.createElement("DIV")
+                    console.log("fail to create element of type ", data.tagName, " I will use a DIV instead...")
+                }
+
                 this.element.id = data.id
                 this.element.editor = this
                 this.parent.appendChild(this.element)
+
+                this.setElementEvents()
+
+                // the classes
+                if (data.classes) {
+                    for (var i = 0; i < data.classes.length; i++) {
+                        if (data.classes[i].length > 0) {
+                            let className = data.classes[i]
+                            this.element.classList.add(className)
+
+                        }
+                    }
+                }
+
+                // the attributes...
+                if (data.attributes) {
+                    for (var name in data.attributes) {
+                        // I will keep generated id instead of exting one.
+                        if (name != "id" && name != "style" && name != "class") {
+                            if (data.attributes[name])
+                                this.element.setAttribute(name, data.attributes[name])
+                        }
+                    }
+                }
 
                 // set the data depending of the type
                 if (data.data) {
@@ -1346,28 +1371,15 @@ export class ElementEditor extends HTMLElement {
                     }
                 }
 
-                // Set the element in edit mode.
-                this.element.addEventListener('dblclick', (evt) => {
-                    let page = document.getElementsByTagName("globular-web-page")[0]
-                    if (page.edit) {
-                        evt.stopPropagation()
-                        this.element.editor.edit = true
-                        this.element.editor.setEditMode()
-                        this.element.editor.emphasis()
-                        let selectors = document.getElementsByTagName("globular-element-selector")
-                        for (var i = 0; i < selectors.length; i++) {
-                            selectors[i].de_emphasis()
-                        }
-                        this.element.editor.selector.emphasis()
-                        page.hideToolbar()
-                        // Now I will scroll to the selector...
-                        page.scrollTo({
-                            top: document.getElementById(this.element.editor.selector.id).offsetTop - (65+10),
-                            left: 0,
-                            behavior: 'smooth'
-                        });
+                // if the node can hold text I will display the edit button...
+                if (canHoldText(data.tagName)) {
+                    this.shadowRoot.querySelector("#text-edit-btn").style.display = "block"
+                    this.shadowRoot.querySelector("#text-edit-btn").onclick = () => {
+                        this.showHtmlEditor()
                     }
-                });
+                } else if (data.tagName == "IMG") {
+                    this.shadowRoot.querySelector("#image-edit-btn").style.display = "block"
+                }
 
                 // I will create the element style.
                 this.elementStyle = document.createElement("style")
@@ -1380,6 +1392,7 @@ export class ElementEditor extends HTMLElement {
                 this.elementScript.id = data.id + "_script"
                 this.parent.appendChild(this.elementScript)
                 this.parent.querySelector(`#${data.id}_script`).innerText = this.script_
+
             }
 
             // Set the element selector
@@ -1397,13 +1410,13 @@ export class ElementEditor extends HTMLElement {
             this.shadowRoot.querySelector("#current-edit-element").onclick = () => {
                 let position = getCoords(document.getElementById(this.element.id))
                 window.scrollTo({
-                    top: position.top - (65+10),
+                    top: position.top - (65 + 10),
                     left: 0,
                     behavior: 'smooth'
                 });
 
                 document.getElementsByTagName("globular-web-page")[0].scrollTo({
-                    top: document.getElementById(this.selector.id).offsetTop - (65+10),
+                    top: document.getElementById(this.selector.id).offsetTop - (65 + 10),
                     left: 0,
                     behavior: 'smooth'
                 });
@@ -1439,6 +1452,9 @@ export class ElementEditor extends HTMLElement {
 
         // The javascript editor
         this.javascript_editor = null
+
+        // The html content editor...
+        this.html_editor = null
 
         // Add new element...
         let addLayoutBtn = this.shadowRoot.querySelector("#add-element-btn")
@@ -1540,8 +1556,16 @@ export class ElementEditor extends HTMLElement {
                 style_ = `#${id}{${e.getAttribute("style")}}`
 
 
+            const attrs = e.getAttributeNames().reduce((acc, name) => {
+                return { ...acc, [name]: this.element.getAttribute(name) };
+            }, {});
 
-            let editor = new ElementEditor({ tagName: e.tagName, parentId: this.id, parent: this.element, id: id, style: cssbeautifier(style_), data: this.getElementData(e) })
+            let classes = []
+            this.element.classList.forEach(c => {
+                classes.push(c)
+            });
+
+            let editor = new ElementEditor({ tagName: e.tagName, parentId: this.id, parent: this.element, id: id, style:style_, data: this.getElementData(e), attributes: attrs, classes: classes })
 
             // I will make the function recursive...
             for (var i = 0; i < e.children.length; i++) {
@@ -1552,6 +1576,76 @@ export class ElementEditor extends HTMLElement {
         }
 
         Model.eventHub.publish("_need_save_event_", null, true)
+    }
+
+    /**
+     * Show html editor.
+     * @returns 
+     */
+    showHtmlEditor() {
+        if (this.getHtmlEditor() != null) {
+            ApplicationView.layout.workspace().appendChild(this.getHtmlEditor())
+            let editors = document.getElementsByTagName("globular-code-editor")
+            for (var i = 0; i < editors.length; i++) {
+                editors[i].style.zIndex = 1
+            }
+            this.getHtmlEditor().style.zIndex = 10
+            return
+        }
+    }
+
+    getHtmlEditor() {
+        if (this.html_editor != null) {
+            return this.html_editor
+        }
+
+
+        // Set the css from the editor...
+        this.html_editor = new CodeEditor("html", ApplicationView.layout.workspace(), (evt) => {
+            // Test if the innerHTML has change...
+            if (this.element.innerHTML != this.html_editor.getText()) {
+                Model.eventHub.publish("_need_save_event_", null, true)
+            }
+
+            // get active editor...
+            let editors = []
+            let getEditors = (e) => {
+                if (e.editor != undefined) {
+                    editors.push(e.editor)
+                }
+                for (var i = 0; i < e.children.length; i++) {
+                    getEditors(e.children[i])
+                }
+            }
+
+            getEditors(this.element)
+
+            // set the innerHTML value. The element object will be lost...
+            this.element.innerHTML = this.html_editor.getText().replace(/(\r\n|\n|\r)/gm, "").replace("<br>", "");
+
+            // So I will set back new element object in it editor.
+            editors.forEach(editor => {
+                // Set element       
+                editor.element = document.getElementById(editor.element.id)
+                editor.element.editor = editor
+                editor.parent = editor.element.parentNode
+                editor.setContainerPosition()
+                editor.setElementEvents()
+            })
+
+            
+
+        }, () => {
+            this.emphasis()
+        }, () => {
+            this.de_emphasis()
+        })
+
+        // Set the style to the editor...
+        this.html_editor.setText(htmlBeautify(this.element.innerHTML))
+        this.html_editor.setTitle("HTML " + this.element.id)
+
+        return this.html_editor
     }
 
     /**
@@ -1576,7 +1670,7 @@ export class ElementEditor extends HTMLElement {
         }
         // Set the css from the editor...
         this.javascript_editor = new CodeEditor("javascript", ApplicationView.layout.workspace(), (evt) => {
-            if (this.style_ != this.javascript_editor.getText()) {
+            if (this.script_ != this.javascript_editor.getText()) {
                 Model.eventHub.publish("_need_save_event_", null, true)
             }
 
@@ -1622,11 +1716,11 @@ export class ElementEditor extends HTMLElement {
         }
         // Set the css from the editor...
         this.css_editor = new CodeEditor("css", ApplicationView.layout.workspace(), (evt) => {
-            if (this.style_ != this.css_editor.getText()) {
+            if (this.style_ != this.css_editor.getText().replace(/(\r\n|\n|\r)/gm, "").replace("<br>", "")) {
                 Model.eventHub.publish("_need_save_event_", null, true)
             }
 
-            this.style_ = this.css_editor.getText()
+            this.style_ = this.css_editor.getText().replace(/(\r\n|\n|\r)/gm, "").replace("<br>", "");
 
             // Here I will set the css text of the element...
             if (this.parent.querySelector(`#${this.element.id}_style`))
@@ -1642,7 +1736,7 @@ export class ElementEditor extends HTMLElement {
         })
 
         // Set the style to the editor...
-        this.css_editor.setText(this.style_)
+        this.css_editor.setText(cssbeautifier(this.style_))
         this.css_editor.setTitle("CSS " + this.element.id)
 
         return this.css_editor
@@ -1662,6 +1756,31 @@ export class ElementEditor extends HTMLElement {
         this.handle.style.borderColor = "var(--palette-divider)"
     }
 
+    setElementEvents() {
+        // The double click event.
+        this.element.addEventListener('dblclick', (evt) => {
+            let page = document.getElementsByTagName("globular-web-page")[0]
+            if (page.edit) {
+                evt.stopPropagation()
+                this.element.editor.edit = true
+                this.element.editor.setEditMode()
+                this.element.editor.emphasis()
+                let selectors = document.getElementsByTagName("globular-element-selector")
+                for (var i = 0; i < selectors.length; i++) {
+                    selectors[i].de_emphasis()
+                }
+                this.element.editor.selector.emphasis()
+                page.hideToolbar()
+                // Now I will scroll to the selector...
+                page.scrollTo({
+                    top: document.getElementById(this.element.editor.selector.id).offsetTop - (65 + 10),
+                    left: 0,
+                    behavior: 'smooth'
+                });
+            }
+        });
+    }
+
     setContainerPosition() {
 
         if (this.element == null) {
@@ -1679,8 +1798,18 @@ export class ElementEditor extends HTMLElement {
      */
     getData(callback, errorCallback) {
 
+        // get the list of all attributes.
+        const attrs = this.element.getAttributeNames().reduce((acc, name) => {
+            return { ...acc, [name]: this.element.getAttribute(name) };
+        }, {});
+
+        let classes = []
+        this.element.classList.forEach(c => {
+            classes.push(c)
+        });
+
         // A element is a recursive structure...
-        let obj = { tagName: this.tagName_, style: cssbeautifier(this.style_), script: this.script_, children: [], id: this.element.id, parentId: this.parentId, data: this.getElementData(this.element) }
+        let obj = { tagName: this.tagName_, style: this.style_, script: this.script_, children: [], id: this.element.id, parentId: this.parentId, data: this.getElementData(this.element), classes: classes, attributes: attrs }
         let editors = []
 
         // keep only immediate childs...
@@ -1742,6 +1871,7 @@ export class ElementEditor extends HTMLElement {
 
         this.toolbar.style.display = "flex";
 
+
         // Set the actual editor.
         this.handle.style.display = "block";
         this.edit = true;
@@ -1769,9 +1899,6 @@ export class ElementEditor extends HTMLElement {
 
         // convert html string into DOM
         const doc = parser.parseFromString(html, "text/html");
-
-        console.log("document: ", doc)
-
         for (var i = 0; i < doc.body.children.length; i++) {
             this.appendElement(doc.body.children[i])
         }
@@ -2038,7 +2165,7 @@ export class ElementSelector extends HTMLElement {
             let position = getCoords(document.getElementById(this.editor.element.id))
             // Scroll to the element.
             window.scrollTo({
-                top: position.top - (65+10),
+                top: position.top - (65 + 10),
                 left: 0,
                 behavior: 'smooth'
             });
