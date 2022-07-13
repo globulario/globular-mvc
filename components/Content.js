@@ -446,6 +446,10 @@ export class Navigation extends HTMLElement {
 
         if (links.length > 0) {
             savePages_(0)
+        } else if (this.toDelete.length > 0) {
+            // remove page mark as delete...
+            let page = this.toDelete.pop()
+            deletePages_(page)
         }
 
     }
@@ -720,10 +724,11 @@ export class WebPage extends HTMLElement {
 
             .toolbar{
                 display: flex;
+                flex-direction: column;
                 flex-direction: row;
                 height: 40px;
+                z-index: 100;
             }
-
 
             .toolbar paper-icon-button, paper-button{
                 height: 40px;
@@ -821,6 +826,7 @@ export class WebPage extends HTMLElement {
         // Now I will create the sytle element.
         let style_ = document.createElement("style")
         style_.innerText = this.style_
+        style_.setAttribute("scoped", "")
         style_.id = this.id + "_style"
         this.appendChild(style_)
 
@@ -930,11 +936,13 @@ export class WebPage extends HTMLElement {
         this.setAttribute("name", name)
         this.name = name;
         Model.eventHub.publish("_need_save_event_", null, true)
-        this.shadowRoot.querySelector("#page-selector").innerHTML = this.name
-        this.shadowRoot.querySelector("#current-edit-page").innerHTML = this.name
-
         this.edit = true;
         this.setPage()
+
+        if (this.shadowRoot.querySelector(`#${this.id}_selector`))
+            this.shadowRoot.querySelector(`#${this.id}_selector`).innerHTML = this.name
+        if (this.shadowRoot.querySelector("#current-edit-page"))
+            this.shadowRoot.querySelector("#current-edit-page").innerHTML = this.name
     }
 
     /**
@@ -1224,10 +1232,13 @@ export class ElementEditor extends HTMLElement {
                         left: 0px;
                     }
         
+
                     .toolbar{
                         display: flex;
+                        flex-direction: column;
                         flex-direction: row;
                         height: 40px;
+                        z-index: 100;
                     }
         
                     .toolbar paper-icon-button, paper-button{
@@ -1269,10 +1280,8 @@ export class ElementEditor extends HTMLElement {
                             <paper-tooltip for="css-edit-btn" role="tooltip" tabindex="-1">Edit CSS</paper-tooltip>
                             <paper-button id="js-edit-btn">js</paper-button>
                             <paper-tooltip for="js-edit-btn" role="tooltip" tabindex="-1">Edit JS</paper-tooltip>
-                            <paper-icon-button style="display: none;" id="text-edit-btn"  icon="editor:text-fields" class="btn"></paper-icon-button>
-                            <paper-tooltip for="text-edit-btn" role="tooltip" tabindex="-1">Edit Text</paper-tooltip>
-                            <paper-icon-button style="display: none;" id="image-edit-btn"  icon="editor:insert-photo" class="btn"></paper-icon-button>
-                            <paper-tooltip for="image-edit-btn" role="tooltip" tabindex="-1">Set Image</paper-tooltip>
+                            <paper-button id="html-edit-btn"  class="btn">HTML</paper-button>
+                            <paper-tooltip for="html-edit-btn" role="tooltip" tabindex="-1">Edit Text</paper-tooltip>
                             <paper-icon-button id="delete-element-btn"  icon="icons:delete" class="btn"></paper-icon-button>
                             <paper-tooltip for="delete-element-btn" role="tooltip" tabindex="-1">Delete Element</paper-tooltip>
                         </div>
@@ -1336,26 +1345,21 @@ export class ElementEditor extends HTMLElement {
 
                 this.element.id = data.id
                 this.element.editor = this
+  
                 this.parent.appendChild(this.element)
 
                 this.setElementEvents()
 
                 // the classes
                 if (data.classes) {
-                    for (var i = 0; i < data.classes.length; i++) {
-                        if (data.classes[i].length > 0) {
-                            let className = data.classes[i]
-                            this.element.classList.add(className)
-
-                        }
-                    }
+                   this.element.className = data.classes
                 }
 
                 // the attributes...
                 if (data.attributes) {
                     for (var name in data.attributes) {
                         // I will keep generated id instead of exting one.
-                        if (name != "id" && name != "style" && name != "class") {
+                        if (name != "id" && name != "class") {
                             if (data.attributes[name])
                                 this.element.setAttribute(name, data.attributes[name])
                         }
@@ -1369,16 +1373,6 @@ export class ElementEditor extends HTMLElement {
                     } else {
                         this.element.innerHTML = data.data
                     }
-                }
-
-                // if the node can hold text I will display the edit button...
-                if (canHoldText(data.tagName)) {
-                    this.shadowRoot.querySelector("#text-edit-btn").style.display = "block"
-                    this.shadowRoot.querySelector("#text-edit-btn").onclick = () => {
-                        this.showHtmlEditor()
-                    }
-                } else if (data.tagName == "IMG") {
-                    this.shadowRoot.querySelector("#image-edit-btn").style.display = "block"
                 }
 
                 // I will create the element style.
@@ -1482,6 +1476,12 @@ export class ElementEditor extends HTMLElement {
             this.showJavascriptEditor()
         }
 
+
+        this.shadowRoot.querySelector("#html-edit-btn").onclick = () => {
+            this.showHtmlEditor()
+        }
+
+
         // Keep the container synch with the element div...
         window.addEventListener('resize', () => {
             this.setContainerPosition()
@@ -1560,12 +1560,7 @@ export class ElementEditor extends HTMLElement {
                 return { ...acc, [name]: this.element.getAttribute(name) };
             }, {});
 
-            let classes = []
-            this.element.classList.forEach(c => {
-                classes.push(c)
-            });
-
-            let editor = new ElementEditor({ tagName: e.tagName, parentId: this.id, parent: this.element, id: id, style:style_, data: this.getElementData(e), attributes: attrs, classes: classes })
+            let editor = new ElementEditor({ tagName: e.tagName, parentId: this.id, parent: this.element, id: id, style: style_, data: this.getElementData(e), attributes: attrs, classes: e.className })
 
             // I will make the function recursive...
             for (var i = 0; i < e.children.length; i++) {
@@ -1621,7 +1616,7 @@ export class ElementEditor extends HTMLElement {
             getEditors(this.element)
 
             // set the innerHTML value. The element object will be lost...
-            this.element.innerHTML = this.html_editor.getText().replace(/(\r\n|\n|\r)/gm, "").replace("<br>", "");
+            this.element.outerHTML = this.html_editor.getText().replace(/(\r\n|\n|\r)/gm, "").replace("<br>", "");
 
             // So I will set back new element object in it editor.
             editors.forEach(editor => {
@@ -1633,7 +1628,7 @@ export class ElementEditor extends HTMLElement {
                 editor.setElementEvents()
             })
 
-            
+
 
         }, () => {
             this.emphasis()
@@ -1642,7 +1637,7 @@ export class ElementEditor extends HTMLElement {
         })
 
         // Set the style to the editor...
-        this.html_editor.setText(htmlBeautify(this.element.innerHTML))
+        this.html_editor.setText(htmlBeautify(this.element.outerHTML))
         this.html_editor.setTitle("HTML " + this.element.id)
 
         return this.html_editor
@@ -1803,13 +1798,9 @@ export class ElementEditor extends HTMLElement {
             return { ...acc, [name]: this.element.getAttribute(name) };
         }, {});
 
-        let classes = []
-        this.element.classList.forEach(c => {
-            classes.push(c)
-        });
-
+ 
         // A element is a recursive structure...
-        let obj = { tagName: this.tagName_, style: this.style_, script: this.script_, children: [], id: this.element.id, parentId: this.parentId, data: this.getElementData(this.element), classes: classes, attributes: attrs }
+        let obj = { tagName: this.tagName_, style: this.style_, script: this.script_, children: [], id: this.element.id, parentId: this.parentId, data: this.getElementData(this.element), classes: this.element.className, attributes: attrs }
         let editors = []
 
         // keep only immediate childs...
