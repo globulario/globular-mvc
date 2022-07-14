@@ -115,6 +115,10 @@ export class ContentManager extends HTMLElement {
                 display: flex;
             }
 
+            #edit-create-css-style-btn{
+                position: relative;
+            }
+
         </style>
 
 
@@ -122,6 +126,12 @@ export class ContentManager extends HTMLElement {
 
             <slot></slot>
             <div id="toolbar">
+                <div style="position: relative;">
+                    <paper-button id="edit-create-css-style-btn" icon="icons:create">CSS</paper-button>
+                    <paper-tooltip for="edit-create-css-style-btn" role="tooltip" tabindex="-1">Application CSS Style</paper-tooltip>
+                    <slot name="css-manager"/>
+                </div>
+
                 <paper-icon-button id="create-page-btn" icon="icons:note-add"></paper-icon-button>
                 <paper-tooltip for="create-page-btn" role="tooltip" tabindex="-1">Create Web Page</paper-tooltip>
                 
@@ -134,6 +144,12 @@ export class ContentManager extends HTMLElement {
         </div>
         `
 
+        // The style manager.
+        this.styleManager = new StyleManager()
+        this.styleManager.slot = "css-manager"
+        this.appendChild(this.styleManager)
+
+
         // only display tool if the user is allowed...
         this.toolbar = this.shadowRoot.querySelector("#toolbar")
         this.toolbar.parentNode.removeChild(this.toolbar)
@@ -144,6 +160,17 @@ export class ContentManager extends HTMLElement {
 
         this.appendChild(this.navigation)
         this.navigation.init()
+
+        // load style...
+        this.loadStyles(styles=>{
+            styles.forEach(s=>{
+                let style = document.createElement("style")
+                style.id = s.id
+                style.name = s.name
+                style.innerText = s.text
+                ApplicationView.layout.workspace().appendChild(style)
+            })
+        }, err=>ApplicationView.displayMessage(err, 3000))
 
         // init stuff.
         if (this.needSaveEventListener == null)
@@ -173,10 +200,12 @@ export class ContentManager extends HTMLElement {
         let setCreateModeBtn = this.shadowRoot.querySelector("#set-create-mode-btn")
         let createPageBtn = this.shadowRoot.querySelector("#create-page-btn")
         let saveAllBtn = this.shadowRoot.querySelector("#save-all-btn")
+        let createEditCss = this.shadowRoot.querySelector("#edit-create-css-style-btn")
 
         setCreateModeBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
         createPageBtn.style.display = "none"
         saveAllBtn.style.display = "none"
+        createEditCss.style.display = "none"
         saveAllBtn.setAttribute("disable")
         saveAllBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
 
@@ -184,14 +213,23 @@ export class ContentManager extends HTMLElement {
             if (createPageBtn.style.display == "none") {
                 setCreateModeBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-text-primary)")
                 createPageBtn.style.display = "block"
+                createEditCss.style.display = "block"
                 saveAllBtn.style.display = "block"
                 Model.eventHub.publish("_set_content_edit_mode_", true, true)
             } else {
                 setCreateModeBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
                 createPageBtn.style.display = "none"
                 saveAllBtn.style.display = "none"
+                createEditCss.style.display = "none"
                 Model.eventHub.publish("_set_content_edit_mode_", false, true)
             }
+        }
+
+
+        // Display styles...
+        createEditCss.onclick = (evt) => {
+            evt.stopPropagation()
+            this.styleManager.show()
         }
 
         // Save all...
@@ -202,6 +240,12 @@ export class ContentManager extends HTMLElement {
 
             // Save all pages at once.
             this.navigation.savePages()
+
+            // I will save all style...
+            this.saveStyles(() => {
+                console.log("styles was saved!")
+            })
+
             saveAllBtn.setAttribute("disable")
             saveAllBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
         }
@@ -211,10 +255,370 @@ export class ContentManager extends HTMLElement {
         }
     }
 
+    loadStyles(callback, errorCallback){
+        let rqst = new FindRqst();
+
+        // set connection infos.
+        let db = Model.application + "_db";
+        rqst.setId(Model.application);
+        rqst.setDatabase(db);
+        rqst.setCollection("Styles");
+        rqst.setQuery("{}");
+
+        let stream = Model.getGlobule(Model.address).persistenceService.find(rqst, {
+            application: Model.application,
+            domain: Model.domain
+        });
+
+        let data = [];
+
+        stream.on("data", (rsp) => {
+            data = mergeTypedArrays(data, rsp.getData());
+        });
+
+        stream.on("status", (status) => {
+            if (status.code == 0) {
+                uint8arrayToStringMethod(data, (str) => {
+                    callback(JSON.parse(str));
+                });
+            } else {
+                // In case of error I will return an empty array
+                errorCallback(status.details)
+            }
+        });
+    }
+
+    saveStyles(callback) {
+        // Get immediate style elements.
+        let styles_ = ApplicationView.layout.workspace().querySelectorAll("style")
+        let styles = []
+        for (var i = 0; i < styles_.length; i++) {
+            let style = styles_[i]
+            if (style.parentNode == ApplicationView.layout.workspace()) {
+                styles.push(style)
+            }
+        }
+
+        let saveStyle = (index) => {
+            let style = styles[index]
+
+            // I will put the style content into the style...
+            let str = JSON.stringify({ id: style.id, name: style.name, text: style.innerText })
+
+            // save the user_data
+            let rqst = new ReplaceOneRqst();
+            let db = Model.application + "_db";
+
+            // set the connection infos,
+            rqst.setId(Model.application);
+            rqst.setDatabase(db);
+            let collection = "Styles";
+
+            // save only user data and not the how user info...
+            rqst.setCollection(collection);
+            rqst.setQuery(`{"_id":"${style.id}"}`);
+            rqst.setValue(str);
+            rqst.setOptions(`[{"upsert": true}]`);
+
+            // So here I will set the address from the address found in the token and not 
+            // the address of the client itself.
+            let token = localStorage.getItem("user_token")
+            let decoded = JwtDecode(token);
+            let address = decoded.address;
+            let domain = decoded.domain;
+
+            // call persist data
+            Model.getGlobule(address).persistenceService
+                .replaceOne(rqst, {
+                    token: token,
+                    application: Model.application,
+                    domain: domain,
+                    address: address
+                })
+                .then((rsp) => {
+                    if (index < styles.length) {
+                        index++
+                        saveStyle(index)
+                    } else {
+                        callback()
+                    }
+                })
+                .catch((err) => {
+                    console.log(err)
+                    // try to save next style
+                    if (index < styles.length) {
+                        index += 1
+                        saveStyles(index)
+                    } else {
+                        callback()
+                    }
+                });
+        }
+
+        saveStyle(0)
+    }
 }
 
 customElements.define('globular-content-manager', ContentManager)
 
+/**
+ * 
+ */
+export class StyleManager extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor() {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+
+        // keep the list of style to be deleted...
+        this.toDelete = []
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+            ${getTheme()}
+
+            #container{
+                display: flex;
+                flex-direction: column;
+                position: absolute;
+                top: 64px;
+                right: 0px;
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
+                min-width: 290px;
+            }
+
+            #styles{
+                display: flex;
+                align-items: center;
+                flex-direction: column;
+                text-transform: initial;
+            }
+
+            .css-lnk {
+                position: relative;
+                display: flex; 
+                align-items: center; 
+                width: 100%; 
+                transition: background 0.2s ease,padding 0.8s linear;
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
+            }
+
+            .css-lnk:hover{
+                filter: invert(10%);
+                cursor: pointer;
+            }
+
+        </style>
+        <paper-card id="container">
+            <div style="display: flex; border-bottom: 1px solid var(--palette-divider);">
+                <paper-icon-button id="add-style-btn" icon="icons:add" class="btn"></paper-icon-button>
+                <paper-tooltip for="add-style-btn" role="tooltip" tabindex="-1">Add Style</paper-tooltip>
+                <div id="create-style-div" style="display: none; flex-grow: 1;">
+                    <paper-input  style="display: flex;flex-grow: 1;" no-label-float></paper-input>
+                </div>
+            </div>
+
+            <div style="max-height: 400px; overflow-y: auto">
+                <div id="styles">
+                    
+                </div>
+            </div>
+            
+        </paper-card>
+        `
+
+        // The container.
+        this.container = this.shadowRoot.querySelector("#container")
+        this.container.onclick = (evt) => {
+            evt.stopPropagation()
+        }
+
+
+        let addStyleBtn = this.shadowRoot.querySelector("#add-style-btn")
+        addStyleBtn.onclick = (evt) => {
+            evt.stopPropagation()
+            this.addStyle()
+        }
+
+        this.parent = null
+        this.visible = false
+
+        // Hide the 
+        document.body.addEventListener("click", (evt) => {
+            if (this.visible) {
+                var rectMenu = this.container.getBoundingClientRect();
+                var overMenu = evt.x > rectMenu.x && evt.x < rectMenu.right && evt.y > rectMenu.y && evt.y < rectMenu.bottom
+                if (!overMenu) {
+                    this.hide()
+                }
+            }
+        })
+    }
+
+    connectedCallback() {
+        // keep the parent in variable.
+        this.parent = this.parentNode
+        if (!this.visible) {
+            this.hide()
+        }
+        this.displayStyles() // load styles..
+    }
+
+    getCssEditor(style) {
+
+        if (ApplicationView.layout.workspace().querySelector("#" + style.id + "_css_editor") != null) {
+            return ApplicationView.layout.workspace().querySelector("#" + style.id + "_css_editor") 
+        }
+
+
+        // Set the css from the editor...
+        let css_editor = new CodeEditor("css", ApplicationView.layout.workspace(), (evt) => {
+            if (style.innerText != css_editor.getText()) {
+                Model.eventHub.publish("_need_save_event_", null, true)
+            }
+
+            // Here I will set the css text of the element...
+            style.innerText = css_editor.getText()
+
+        }, () => {
+            // focus
+        }, () => {
+            // lost focus
+        })
+
+        // Set the style to the editor...
+        css_editor.setText(cssbeautifier(style.innerText))
+        css_editor.setTitle(style.name)
+
+        return css_editor
+    }
+
+    // show the css edito.
+    showCssEditor(style) {
+        // Show the css to edit the element style.
+        let editor = this.getCssEditor(style)
+        if (editor != null) {
+            ApplicationView.layout.workspace().appendChild(editor)
+            let editors = document.getElementsByTagName("globular-code-editor")
+            for (var i = 0; i < editors.length; i++) {
+                editors[i].style.zIndex = 1
+            }
+            editor.style.zIndex = 10
+            this.hide()
+            return
+        }
+    }
+
+    show() {
+        if (this.parent) {
+            if (!this.visible) {
+                this.visible = true
+                this.parent.appendChild(this)
+            }
+        }
+    }
+
+    hide() {
+        if (this.parentNode) {
+            this.visible = false
+            this.parentNode.removeChild(this)
+        }
+    }
+
+
+    // Display list of existing style...
+    displayStyles() {
+        let div = this.shadowRoot.querySelector("#styles")
+        div.innerHTML = "";
+
+        // Get style list.
+        let styles_ = ApplicationView.layout.workspace().querySelectorAll("style")
+        let styles = []
+        for (var i = 0; i < styles_.length; i++) {
+            let style = styles_[i]
+            if (style.parentNode == ApplicationView.layout.workspace()) {
+                styles.push(style)
+            }
+        }
+
+
+        for (var i = 0; i < styles.length; i++) {
+
+            let style = styles[i]
+            if (style.parentNode == ApplicationView.layout.workspace()) {
+                let html = `
+                <div class="css-lnk">
+                    <span id="css-edit-${style.id}-lnk" style="flex-grow: 1; padding-left: 16px;">${style.name}</span>
+                    <paper-icon-button id="delete-style-btn"  icon="icons:delete" class="btn"></paper-icon-button>
+                    <paper-ripple> </paper-ripple>
+                </div>
+                `
+
+                let range = document.createRange()
+                div.appendChild(range.createContextualFragment(html))
+
+                let editLnk = div.querySelector(`#css-edit-${style.id}-lnk`)
+                editLnk.onclick = ()=>{
+                    this.showCssEditor(style)
+                }
+            }
+        }
+
+    }
+
+    // Add a new CSS Style...
+    addStyle() {
+        let div = this.shadowRoot.querySelector("#create-style-div")
+        div.style.display = "flex"
+        let input = div.querySelector("paper-input")
+
+        setTimeout(() => {
+            input.focus()
+        }, 100)
+
+        input.onkeyup = (evt) => {
+            evt.stopPropagation();
+
+            if (evt.code === 'Enter' || evt.code === "NumpadEnter") {
+                console.log("Enter key press!")
+                let name = input.value;
+                let id = "_" + getUuidByString(name)
+                if (ApplicationView.layout.workspace().querySelector("#" + id)) {
+                    ApplicationView.displayMessage("A style named " + name + " already exist!")
+                    return
+                }
+                input.value = ""
+                div.style.display = "none"
+                // So here I will create style and put in the workspace...
+                let style = document.createElement("style")
+                style.id = id
+                style.name = name
+
+                // append the style in the workspace.
+                ApplicationView.layout.workspace().appendChild(style)
+
+                // refresh the style list...
+                this.displayStyles()
+                Model.eventHub.publish("_need_save_event_", null, true)
+                
+                return
+            } else if (evt.code === 'Escape') {
+                input.value = ""
+                input.blur()
+                div.style.display = "none"
+                return
+            }
+        }
+    }
+}
+
+customElements.define('globular-style-manager', StyleManager)
 
 /**
  * Contain the navigation panel
@@ -437,6 +841,8 @@ export class Navigation extends HTMLElement {
                         deletePages_(page)
                     }
                     ApplicationView.displayMessage("all content was saved", 3000)
+                    window.dispatchEvent(new Event('resize'));
+
                 }, err => {
                     ApplicationView.displayMessage(`fail to save page ${links[index].webPage.name} with error </br>`, err, 3000)
                 });
@@ -718,8 +1124,8 @@ export class WebPage extends HTMLElement {
                 display: flex;
                 flex-direction: column;
                 position: fixed;
-                top: 65px;
-                left: 0px;
+                top: 75px;
+                left: 10px;
             }
 
             .toolbar{
@@ -1013,7 +1419,7 @@ export class WebPage extends HTMLElement {
 
 
         // Set the style to the editor...
-        this.css_editor.setText(this.style_)
+        this.css_editor.setText(cssbeautifier(this.style_))
         this.css_editor.setTitle(this.id)
 
         return this.css_editor
@@ -1116,6 +1522,7 @@ export class WebPage extends HTMLElement {
                 errorCallback(err);
             });
     }
+
 
     // Save the actual content.
     save(callback, errorCallback) {
@@ -1228,8 +1635,8 @@ export class ElementEditor extends HTMLElement {
                         display: flex;
                         flex-direction: column;
                         position: fixed;
-                        top: 65px;
-                        left: 0px;
+                        top: 75px;
+                        left: 10px;
                     }
         
 
@@ -1345,14 +1752,14 @@ export class ElementEditor extends HTMLElement {
 
                 this.element.id = data.id
                 this.element.editor = this
-  
+
                 this.parent.appendChild(this.element)
 
                 this.setElementEvents()
 
                 // the classes
                 if (data.classes) {
-                   this.element.className = data.classes
+                    this.element.className = data.classes
                 }
 
                 // the attributes...
@@ -1377,6 +1784,7 @@ export class ElementEditor extends HTMLElement {
 
                 // I will create the element style.
                 this.elementStyle = document.createElement("style")
+                this.elementStyle.setAttribute("scoped", "")
                 this.elementStyle.id = data.id + "_style"
                 this.parent.appendChild(this.elementStyle)
                 this.parent.querySelector(`#${data.id}_style`).innerText = this.style_
@@ -1534,7 +1942,7 @@ export class ElementEditor extends HTMLElement {
                 let text = [].reduce.call(e.childNodes, (a, b) => { return a + (b.nodeType === 3 ? b.textContent : ''); }, '');
                 if (text.length > 0) {
                     data = e.innerHTML
-                    e.innerHTML = "" // I will not process it childs...
+                    e.hasFreeText = true;
                 }
             }
         }
@@ -1798,17 +2206,18 @@ export class ElementEditor extends HTMLElement {
             return { ...acc, [name]: this.element.getAttribute(name) };
         }, {});
 
- 
+
         // A element is a recursive structure...
         let obj = { tagName: this.tagName_, style: this.style_, script: this.script_, children: [], id: this.element.id, parentId: this.parentId, data: this.getElementData(this.element), classes: this.element.className, attributes: attrs }
         let editors = []
 
         // keep only immediate childs...
-        for (var i = 0; i < this.element.children.length; i++) {
-            if (this.element.children[i].editor) {
-                editors.push(this.element.children[i].editor)
+        if (!this.element.hasFreeText)
+            for (var i = 0; i < this.element.children.length; i++) {
+                if (this.element.children[i].editor) {
+                    editors.push(this.element.children[i].editor)
+                }
             }
-        }
 
         let getData_ = (index) => {
             if (index == editors.length - 1) {
