@@ -86,7 +86,7 @@ function getCssEditor(style) {
 
     // Set the css from the editor...
     let css_editor = new CodeEditor("css", ApplicationView.layout.workspace(), (evt) => {
-        if (style.innerText != css_editor.getText()) {
+        if (cssbeautifier(style.innerText) != css_editor.getText()) {
             Model.eventHub.publish("_need_save_event_", null, true)
         }
 
@@ -1050,7 +1050,7 @@ export class CodeManager extends HTMLElement {
                                 e.name = input.value
                                 e.id = id
                                 editLnk.innerText = e.name
-                                
+
                                 // set need save...
                                 Model.eventHub.publish("_need_save_event_", null, true)
                             }
