@@ -23,6 +23,7 @@ import * as getUuidByString from "uuid-by-string";
 
 import * as cssbeautifier from "cssbeautifier"
 import htmlBeautify from 'html-beautify'
+import jsBeautify from 'js-beautify'
 
 // Test if the tag can hold text...
 function canHoldText(tagName) {
@@ -150,12 +151,13 @@ function getJavascriptEditor(script) {
 
     // Set the css from the editor...
     let javascript_editor = new CodeEditor("javascript", ApplicationView.layout.workspace(), (evt) => {
-        if (script.innerText != javascript_editor.getText()) {
+        if (jsBeautify(script.innerText) != javascript_editor.getText()) {
+            script.reload = true // mark it to be reload at save time...
             Model.eventHub.publish("_need_save_event_", null, true)
         }
 
         // set the script
-        script.innerText = javascript_editor.getText()
+        script.innerText = javascript_editor.getText().split("<br>").join("")
 
     }, () => {
         // on editor focus
@@ -167,7 +169,7 @@ function getJavascriptEditor(script) {
     javascript_editor.id = script.id + "_js_editor"
 
     // Set the style to the editor...
-    javascript_editor.setText(script.innerText)
+    javascript_editor.setText(jsBeautify(script.innerText))
     if (script.name)
         javascript_editor.setTitle("JS:" + script.name)
     else
@@ -494,7 +496,7 @@ export class ContentManager extends HTMLElement {
                                 this.deleteStyle(this.styleManager.toDelete.pop(), () => {
                                     console.log("all style and scipt are delete...")
                                 }, err => ApplicationView.displayMessage(err, 3000))
-                            }else{
+                            } else {
                                 console.log("all scipt are delete...")
                             }
                         }, err => ApplicationView.displayMessage(err, 3000))
@@ -998,14 +1000,14 @@ export class CodeManager extends HTMLElement {
                 let deleteBtn = div.querySelector(`#delete-${e.id}-btn`)
 
                 let editBtn = div.querySelector(`#edit-${e.id}-btn`)
-                editBtn.onclick = (evt)=>{
+                editBtn.onclick = (evt) => {
                     // remove the editLnk 
                     let parent = editLnk.parentNode
                     parent.removeChild(editLnk)
 
                     editBtn.setAttribute("disable")
                     editBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
-                    
+
                     // Create the input to set the new name...
                     let input = document.createElement("paper-input")
                     input.setAttribute("no-label-float")
@@ -1013,34 +1015,34 @@ export class CodeManager extends HTMLElement {
                     input.value = e.name
 
                     // put in edit mode and pre-select the text.
-                    setTimeout(()=>{
+                    setTimeout(() => {
                         input.focus()
                         input.inputElement.inputElement.select()
 
                     }, 100)
 
-                    input.onkeyup = (evt)=>{
+                    input.onkeyup = (evt) => {
                         if (evt.code === 'Enter' || evt.code === "NumpadEnter" || evt.code === 'Escape') {
-                            
-                            if( evt.code != 'Escape'){
+
+                            if (evt.code != 'Escape') {
                                 let id = ""
-                                if(this.mode == "css"){
-                                    id= "_" + getUuidByString(input.value + "_style")
-                                }else{
+                                if (this.mode == "css") {
+                                    id = "_" + getUuidByString(input.value + "_style")
+                                } else {
                                     id = "_" + getUuidByString(input.value + "_script")
                                 }
 
-                                if(document.getElementById(id)){
-                                    if(this.mode == "css"){
+                                if (document.getElementById(id)) {
+                                    if (this.mode == "css") {
                                         ApplicationView.displayMessage("style with name " + input.value + " already exist!", 3000)
-                                    }else{
+                                    } else {
                                         ApplicationView.displayMessage("script with name " + input.value + " already exist!", 3000)
                                     }
 
                                     // reselect the text...
                                     input.inputElement.inputElement.select()
 
-                                    return 
+                                    return
                                 }
 
                                 // create a copy of the node to delete at save...
@@ -1061,10 +1063,10 @@ export class CodeManager extends HTMLElement {
                             parent.insertBefore(editLnk, deleteBtn)
                         }
                     }
-                    
+
                 }
 
-                
+
                 deleteBtn.onclick = () => {
                     // remove the element menu
                     deleteBtn.parentNode.parentNode.removeChild(deleteBtn.parentNode)
@@ -1716,7 +1718,8 @@ export class WebPage extends HTMLElement {
 
         this.appendElementBtn = this.shadowRoot.querySelector("#add-element-btn")
         this.appendElementBtn.onclick = () => {
-            this.appendElement("DIV", "_" + randomUUID()) // create an empty div...
+            let element = this.appendElement("DIV", "_" + randomUUID()) // create an empty div...
+            element.editor.selector.click()
         }
 
         this.pageSelector = this.shadowRoot.querySelector(`#${this.id}_selector`)
@@ -1843,6 +1846,7 @@ export class WebPage extends HTMLElement {
         editor.selector.slot = "selectors"
         this.appendChild(editor.selector)
         Model.eventHub.publish("_need_save_event_", null, true)
+        return editor.element
     }
 
     // Return the list of all page...
@@ -2023,6 +2027,25 @@ export class WebPage extends HTMLElement {
                     .then((rsp) => {
                         // Here I will return the value with it
                         Model.eventHub.publish(`update_page_${this.id}_evt`, str, false)
+
+                        // Eval the script to make modification effective...
+                        let scripts = this.querySelectorAll("script")
+                        for (var i = 0; i < scripts.length; i++) {
+                            let s = scripts[i]
+                            if (s.reload) {
+                                let parent = s.parentNode
+                                parent.removeChild(s)
+
+                                let s_ = document.createElement("script")
+
+                                s_.id = s.id
+                                s_.name = s.name
+                                s_.innerText = s.innerText.split("<br>").join("") // remove beautify...
+                                parent.appendChild(s_)
+                            }
+
+                        }
+
                         callback(this);
                     })
                     .catch((err) => {
@@ -2333,6 +2356,7 @@ export class ElementEditor extends HTMLElement {
         // Here I will create a new child element...
         let editor = new ElementEditor({ tagName: "DIV", parentId: this.id, parent: this.element, id: "_" + uuidv4(), style: "" })
         this.element.appendChild(editor)
+        editor.selector.click()
         Model.eventHub.publish("_need_save_event_", null, true)
     }
 
@@ -2834,34 +2858,38 @@ export class ElementSelector extends HTMLElement {
 
         // Display the id.
         id.onclick = () => {
-            let position = getCoords(document.getElementById(this.editor.element.id))
-            // Scroll to the element.
-            window.scrollTo({
-                top: position.top - (65 + 10),
-                left: 0,
-                behavior: 'smooth'
-            });
-
-            let pages = document.getElementsByTagName("globular-web-page")
-            for (var i = 0; i < pages.length; i++) {
-                pages[i].de_emphasis()
-            }
-
-            let selectors = document.getElementsByTagName("globular-element-selector")
-            for (var i = 0; i < selectors.length; i++) {
-                selectors[i].de_emphasis()
-            }
-
-            this.emphasis()
-            this.editor.emphasis()
-
-            // set edit mode
-            this.editor.edit = true
-            this.editor.setEditMode()
-
-            // show it tool bar.
-            this.editor.showToolbar()
+            this.click()
         }
+    }
+
+    click() {
+        let position = getCoords(document.getElementById(this.editor.element.id))
+        // Scroll to the element.
+        window.scrollTo({
+            top: position.top - (65 + 10),
+            left: 0,
+            behavior: 'smooth'
+        });
+
+        let pages = document.getElementsByTagName("globular-web-page")
+        for (var i = 0; i < pages.length; i++) {
+            pages[i].de_emphasis()
+        }
+
+        let selectors = document.getElementsByTagName("globular-element-selector")
+        for (var i = 0; i < selectors.length; i++) {
+            selectors[i].de_emphasis()
+        }
+
+        this.emphasis()
+        this.editor.emphasis()
+
+        // set edit mode
+        this.editor.edit = true
+        this.editor.setEditMode()
+
+        // show it tool bar.
+        this.editor.showToolbar()
     }
 
     emphasis() {
