@@ -76,6 +76,182 @@ function canHoldText(tagName) {
     return tags.indexOf(tagName.toLowerCase()) != -1
 }
 
+// Return the css editor.
+function getCssEditor(style) {
+
+    if (ApplicationView.layout.workspace().querySelector("#" + style.id + "_css_editor") != null) {
+        return ApplicationView.layout.workspace().querySelector("#" + style.id + "_css_editor")
+    }
+
+
+    // Set the css from the editor...
+    let css_editor = new CodeEditor("css", ApplicationView.layout.workspace(), (evt) => {
+        if (style.innerText != css_editor.getText()) {
+            Model.eventHub.publish("_need_save_event_", null, true)
+        }
+
+        // Here I will set the css text of the element...
+        style.innerText = css_editor.getText()
+
+    }, () => {
+        // focus
+    }, () => {
+        // lost focus
+    })
+
+    // Set the style to the editor...
+    css_editor.setText(cssbeautifier(style.innerText))
+    if (style.name)
+        css_editor.setTitle("CSS:" + style.name)
+    else
+        css_editor.setTitle("CSS:" + style.id.replace("_style", ""))
+
+    return css_editor
+}
+
+// show the css editor.
+function showCssEditor(style) {
+    // Show the css to edit the element style.
+    let editor = getCssEditor(style)
+    if (editor != null) {
+        ApplicationView.layout.workspace().appendChild(editor)
+        let editors = document.getElementsByTagName("globular-code-editor")
+        for (var i = 0; i < editors.length; i++) {
+            editors[i].style.zIndex = 1
+        }
+        editor.style.zIndex = 10
+
+        return
+    }
+}
+
+/**
+ * Display the javascript code editor.
+ * @returns 
+ */
+function showJavascriptEditor(script) {
+    let javascript_editor = getJavascriptEditor(script)
+    if (javascript_editor != null) {
+        ApplicationView.layout.workspace().appendChild(javascript_editor)
+        let editors = document.getElementsByTagName("globular-code-editor")
+        for (var i = 0; i < editors.length; i++) {
+            editors[i].style.zIndex = 1
+        }
+        javascript_editor.style.zIndex = 10
+        return
+    }
+}
+
+function getJavascriptEditor(script) {
+
+    if (ApplicationView.layout.workspace().querySelector("#" + script.id + "_js_editor") != null) {
+        return ApplicationView.layout.workspace().querySelector("#" + style.id + "_js_editor")
+    }
+
+    // Set the css from the editor...
+    let javascript_editor = new CodeEditor("javascript", ApplicationView.layout.workspace(), (evt) => {
+        if (script.innerText != javascript_editor.getText()) {
+            Model.eventHub.publish("_need_save_event_", null, true)
+        }
+
+        // set the script
+        script.innerText = javascript_editor.getText()
+
+    }, () => {
+        // on editor focus
+    }, () => {
+        // on editor lost focus
+    })
+
+    // set the editor id
+    javascript_editor.id = script.id + "_js_editor"
+
+    // Set the style to the editor...
+    javascript_editor.setText(script.innerText)
+    if (script.name)
+        javascript_editor.setTitle("JS:" + script.name)
+    else
+        javascript_editor.setTitle("JS:" + script.id.replace("_script", ""))
+
+    return javascript_editor
+}
+
+/**
+ * Show html editor.
+ * @returns 
+ */
+function showHtmlEditor(element) {
+    let html_editor = getHtmlEditor(element)
+    if (html_editor != null) {
+        ApplicationView.layout.workspace().appendChild(html_editor)
+        let editors = document.getElementsByTagName("globular-code-editor")
+        for (var i = 0; i < editors.length; i++) {
+            editors[i].style.zIndex = 1
+        }
+        html_editor.style.zIndex = 10
+        return
+    }
+}
+
+function getHtmlEditor(element) {
+    // be sure that the element reference is up to date.
+
+    if (ApplicationView.layout.workspace().querySelector("#" + element.id + "_html_editor") != null) {
+        return ApplicationView.layout.workspace().querySelector("#" + element.id + "_html_editor")
+    }
+
+    // Set the css from the editor...
+    let html_editor = new CodeEditor("html", ApplicationView.layout.workspace(), (evt) => {
+        // Test if the innerHTML has change...
+        if (htmlBeautify(element.outerHTML) != html_editor.getText()) {
+            Model.eventHub.publish("_need_save_event_", null, true)
+        }
+
+        // get active editor...
+        let editors = []
+        let getEditors = (e) => {
+            if (e.editor != undefined) {
+                editors.push(e.editor)
+            }
+            for (var i = 0; i < e.children.length; i++) {
+                getEditors(e.children[i])
+            }
+        }
+
+        getEditors(element)
+
+        // set the innerHTML value. The element object will be lost...
+        element.outerHTML = html_editor.getText().replace(/(\r\n|\n|\r)/gm, "").trim() // that will flush the actual element...
+        element = document.getElementById(element.id)
+
+        // So I will set back new element object in it editor.
+        editors.forEach(editor => {
+            // Set element      
+            editor.element = document.getElementById(editor.element.id) // refresh the element reference in the editor.
+            editor.element.editor = editor
+
+            // set back the editor position...
+            editor.setContainerPosition()
+            editor.setElementEvents()
+        })
+
+
+
+    }, () => {
+        element.editor.emphasis()
+    }, () => {
+        element.editor.de_emphasis()
+    })
+
+    // Set the style to the editor...
+    html_editor.id = element.id + "_html_editor"
+    html_editor.setText(htmlBeautify(element.outerHTML))
+    //html_editor.setText(element.outerHTML)
+    html_editor.setTitle("HTML " + element.id)
+
+    return html_editor
+}
+
 /**
  * The content creator, it control edit mode and page creation.
  */
@@ -127,8 +303,13 @@ export class ContentManager extends HTMLElement {
             <slot></slot>
             <div id="toolbar">
                 <div style="position: relative;">
+                    <paper-button id="edit-create-js-style-btn" icon="icons:create">JS</paper-button>
+                    <paper-tooltip for="edit-create-js-style-btn" role="tooltip" tabindex="-1">Application Scripts</paper-tooltip>
+                    <slot name="javascript-manager"/>
+                </div>
+                <div style="position: relative;">
                     <paper-button id="edit-create-css-style-btn" icon="icons:create">CSS</paper-button>
-                    <paper-tooltip for="edit-create-css-style-btn" role="tooltip" tabindex="-1">Application CSS Style</paper-tooltip>
+                    <paper-tooltip for="edit-create-css-style-btn" role="tooltip" tabindex="-1">Application Styles</paper-tooltip>
                     <slot name="css-manager"/>
                 </div>
 
@@ -145,9 +326,13 @@ export class ContentManager extends HTMLElement {
         `
 
         // The style manager.
-        this.styleManager = new StyleManager()
+        this.styleManager = new CodeManager("css")
         this.styleManager.slot = "css-manager"
         this.appendChild(this.styleManager)
+
+        this.scriptManager = new CodeManager("javascript")
+        this.scriptManager.slot = "javascript-manager"
+        this.appendChild(this.scriptManager)
 
 
         // only display tool if the user is allowed...
@@ -162,15 +347,26 @@ export class ContentManager extends HTMLElement {
         this.navigation.init()
 
         // load style...
-        this.loadStyles(styles=>{
-            styles.forEach(s=>{
+        this.loadStyles(styles => {
+            styles.forEach(s => {
                 let style = document.createElement("style")
                 style.id = s.id
                 style.name = s.name
                 style.innerText = s.text
                 ApplicationView.layout.workspace().appendChild(style)
             })
-        }, err=>ApplicationView.displayMessage(err, 3000))
+
+            // load scripts 
+            this.loadScripts(scripts => {
+                scripts.forEach(s => {
+                    let style = document.createElement("script")
+                    style.id = s.id
+                    style.name = s.name
+                    style.innerText = s.text
+                    ApplicationView.layout.workspace().appendChild(style)
+                })
+            }, err => ApplicationView.displayMessage(err, 3000))
+        }, err => ApplicationView.displayMessage(err, 3000))
 
         // init stuff.
         if (this.needSaveEventListener == null)
@@ -201,11 +397,15 @@ export class ContentManager extends HTMLElement {
         let createPageBtn = this.shadowRoot.querySelector("#create-page-btn")
         let saveAllBtn = this.shadowRoot.querySelector("#save-all-btn")
         let createEditCss = this.shadowRoot.querySelector("#edit-create-css-style-btn")
+        let createEditJs = this.shadowRoot.querySelector("#edit-create-js-style-btn")
+
 
         setCreateModeBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
         createPageBtn.style.display = "none"
         saveAllBtn.style.display = "none"
         createEditCss.style.display = "none"
+        createEditJs.style.display = "none"
+
         saveAllBtn.setAttribute("disable")
         saveAllBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
 
@@ -214,6 +414,7 @@ export class ContentManager extends HTMLElement {
                 setCreateModeBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-text-primary)")
                 createPageBtn.style.display = "block"
                 createEditCss.style.display = "block"
+                createEditJs.style.display = "block"
                 saveAllBtn.style.display = "block"
                 Model.eventHub.publish("_set_content_edit_mode_", true, true)
             } else {
@@ -221,15 +422,20 @@ export class ContentManager extends HTMLElement {
                 createPageBtn.style.display = "none"
                 saveAllBtn.style.display = "none"
                 createEditCss.style.display = "none"
+                createEditJs.style.display = "none"
                 Model.eventHub.publish("_set_content_edit_mode_", false, true)
             }
         }
-
 
         // Display styles...
         createEditCss.onclick = (evt) => {
             evt.stopPropagation()
             this.styleManager.show()
+        }
+
+        createEditJs.onclick = (evt) => {
+            evt.stopPropagation()
+            this.scriptManager.show()
         }
 
         // Save all...
@@ -241,9 +447,63 @@ export class ContentManager extends HTMLElement {
             // Save all pages at once.
             this.navigation.savePages()
 
+
+            // Delete style...
+            let deleteStyle = (style) => {
+                // delete the page.
+                this.deleteStyle(style, () => {
+                    if (this.styleManager.toDelete.length > 0) {
+                        let style = this.styleManager.toDelete.pop()
+                        deleteStyle(style)
+                    }
+                }, err => {
+                    ApplicationView.displayMessage(err, 300);
+                    // also try to delete the page.
+                    if (this.styleManager.toDelete.length > 0) {
+                        let style = this.styleManager.toDelete.pop()
+                        deleteStyle(style)
+                    }
+                })
+            }
+
+            let deleteScript = (script) => {
+                // delete the page.
+                this.deleteScript(script, () => {
+                    if (this.scriptManager.toDelete.length > 0) {
+                        let script = this.scriptManager.toDelete.pop()
+                        deleteScript(script)
+                    }
+                }, err => {
+                    ApplicationView.displayMessage(err, 300);
+                    // also try to delete the page.
+                    if (this.scriptManager.toDelete.length > 0) {
+                        let script = this.scriptManager.toDelete.pop()
+                        deleteScript(script)
+                    }
+                })
+            }
+
+
             // I will save all style...
             this.saveStyles(() => {
-                console.log("styles was saved!")
+                this.saveScripts(() => {
+                    // Delete script and style as needed...
+                    if (this.scriptManager.toDelete.length > 0) {
+                        this.deleteScript(this.scriptManager.toDelete.pop(), () => {
+                            if (this.styleManager.toDelete.length > 0) {
+                                this.deleteStyle(this.styleManager.toDelete.pop(), () => {
+                                    console.log("all style and scipt are delete...")
+                                }, err => ApplicationView.displayMessage(err, 3000))
+                            }else{
+                                console.log("all scipt are delete...")
+                            }
+                        }, err => ApplicationView.displayMessage(err, 3000))
+                    } else if (this.styleManager.toDelete.length > 0) {
+                        this.deleteStyle(this.styleManager.toDelete.pop(), () => {
+                            console.log("all style are delete...")
+                        }, err => ApplicationView.displayMessage(err, 3000))
+                    }
+                })
             })
 
             saveAllBtn.setAttribute("disable")
@@ -255,7 +515,8 @@ export class ContentManager extends HTMLElement {
         }
     }
 
-    loadStyles(callback, errorCallback){
+    // Load existing css styles...
+    loadStyles(callback, errorCallback) {
         let rqst = new FindRqst();
 
         // set connection infos.
@@ -288,6 +549,7 @@ export class ContentManager extends HTMLElement {
         });
     }
 
+    // save all styles element present in the workspace...
     saveStyles(callback) {
         // Get immediate style elements.
         let styles_ = ApplicationView.layout.workspace().querySelectorAll("style")
@@ -336,8 +598,8 @@ export class ContentManager extends HTMLElement {
                     address: address
                 })
                 .then((rsp) => {
+                    index += 1
                     if (index < styles.length) {
-                        index++
                         saveStyle(index)
                     } else {
                         callback()
@@ -345,17 +607,206 @@ export class ContentManager extends HTMLElement {
                 })
                 .catch((err) => {
                     console.log(err)
+                    index += 1
                     // try to save next style
                     if (index < styles.length) {
-                        index += 1
-                        saveStyles(index)
+                        saveStyle(index)
                     } else {
                         callback()
                     }
                 });
         }
 
-        saveStyle(0)
+        if (styles.length > 0) {
+            saveStyle(0)
+        } else {
+            callback()
+        }
+    }
+
+    deleteStyle(style, callback, errorCallback) {
+        // save the user_data
+        let rqst = new DeleteOneRqst();
+        let db = Model.application + "_db";
+
+        // set the connection infos,
+        rqst.setId(Model.application);
+        rqst.setDatabase(db);
+        let collection = "Styles";
+
+        // save only user data and not the how user info...
+        rqst.setCollection(collection);
+        rqst.setQuery(`{"_id":"${style.id}"}`);
+
+        // So here I will set the address from the address found in the token and not 
+        // the address of the client itself.
+        let token = localStorage.getItem("user_token")
+        let decoded = JwtDecode(token);
+        let address = decoded.address;
+        let domain = decoded.domain;
+
+        // call persist data
+        Model.getGlobule(address).persistenceService
+            .deleteOne(rqst, {
+                token: token,
+                application: Model.application,
+                domain: domain,
+                address: address
+            })
+            .then((rsp) => {
+                // Here I will return the value with it
+                callback(this);
+            })
+            .catch((err) => {
+                errorCallback(err);
+            });
+    }
+
+    // Load existing css scripts...
+    loadScripts(callback, errorCallback) {
+        let rqst = new FindRqst();
+
+        // set connection infos.
+        let db = Model.application + "_db";
+        rqst.setId(Model.application);
+        rqst.setDatabase(db);
+        rqst.setCollection("Scripts");
+        rqst.setQuery("{}");
+
+        let stream = Model.getGlobule(Model.address).persistenceService.find(rqst, {
+            application: Model.application,
+            domain: Model.domain
+        });
+
+        let data = [];
+
+        stream.on("data", (rsp) => {
+            data = mergeTypedArrays(data, rsp.getData());
+        });
+
+        stream.on("status", (status) => {
+            if (status.code == 0) {
+                uint8arrayToStringMethod(data, (str) => {
+                    callback(JSON.parse(str));
+                });
+            } else {
+                // In case of error I will return an empty array
+                errorCallback(status.details)
+            }
+        });
+    }
+
+    // save all scripts element present in the workspace...
+    saveScripts(callback) {
+        // Get immediate style elements.
+        let scripts_ = ApplicationView.layout.workspace().querySelectorAll("script")
+        let scripts = []
+        for (var i = 0; i < scripts_.length; i++) {
+            let s = scripts_[i]
+            if (s.parentNode == ApplicationView.layout.workspace()) {
+                scripts.push(s)
+            }
+        }
+
+        let saveScript = (index) => {
+            let s = scripts[index]
+
+            // I will put the style content into the style...
+            let str = JSON.stringify({ id: s.id, name: s.name, text: s.innerText })
+
+            // save the user_data
+            let rqst = new ReplaceOneRqst();
+            let db = Model.application + "_db";
+
+            // set the connection infos,
+            rqst.setId(Model.application);
+            rqst.setDatabase(db);
+            let collection = "Scripts";
+
+            // save only user data and not the how user info...
+            rqst.setCollection(collection);
+            rqst.setQuery(`{"_id":"${s.id}"}`);
+            rqst.setValue(str);
+            rqst.setOptions(`[{"upsert": true}]`);
+
+            // So here I will set the address from the address found in the token and not 
+            // the address of the client itself.
+            let token = localStorage.getItem("user_token")
+            let decoded = JwtDecode(token);
+            let address = decoded.address;
+            let domain = decoded.domain;
+
+            // call persist data
+            Model.getGlobule(address).persistenceService
+                .replaceOne(rqst, {
+                    token: token,
+                    application: Model.application,
+                    domain: domain,
+                    address: address
+                })
+                .then((rsp) => {
+                    index += 1
+                    if (index < scripts.length) {
+                        saveScript(index)
+                    } else {
+                        callback()
+                    }
+                })
+                .catch((err) => {
+                    console.log(err)
+                    index += 1
+                    // try to save next style
+                    if (index < scripts.length) {
+                        saveScript(index)
+                    } else {
+                        callback()
+                    }
+                });
+        }
+
+        if (scripts.length > 0) {
+            saveScript(0)
+        } else {
+            callback()
+        }
+    }
+
+    deleteScript(script, callback, errorCallback) {
+        // save the user_data
+        let rqst = new DeleteOneRqst();
+        let db = Model.application + "_db";
+
+        // set the connection infos,
+        rqst.setId(Model.application);
+        rqst.setDatabase(db);
+        let collection = "Scripts";
+
+        // save only user data and not the how user info...
+        rqst.setCollection(collection);
+        rqst.setQuery(`{"_id":"${script.id}"}`);
+
+        // So here I will set the address from the address found in the token and not 
+        // the address of the client itself.
+        let token = localStorage.getItem("user_token")
+        let decoded = JwtDecode(token);
+        let address = decoded.address;
+        let domain = decoded.domain;
+
+        // call persist data
+        Model.getGlobule(address).persistenceService
+            .deleteOne(rqst, {
+                token: token,
+                application: Model.application,
+                domain: domain,
+                address: address
+            })
+            .then((rsp) => {
+                // Here I will return the value with it
+                callback(this);
+            })
+            .catch((err) => {
+                errorCallback(err);
+            });
     }
 }
 
@@ -364,14 +815,16 @@ customElements.define('globular-content-manager', ContentManager)
 /**
  * 
  */
-export class StyleManager extends HTMLElement {
+export class CodeManager extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor() {
+    constructor(mode) {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
+
+        this.mode = mode
 
         // keep the list of style to be deleted...
         this.toDelete = []
@@ -399,7 +852,7 @@ export class StyleManager extends HTMLElement {
                 text-transform: initial;
             }
 
-            .css-lnk {
+            .element-lnk {
                 position: relative;
                 display: flex; 
                 align-items: center; 
@@ -409,7 +862,7 @@ export class StyleManager extends HTMLElement {
                 color: var(--palette-text-primary);
             }
 
-            .css-lnk:hover{
+            .element-lnk:hover{
                 filter: invert(10%);
                 cursor: pointer;
             }
@@ -417,15 +870,15 @@ export class StyleManager extends HTMLElement {
         </style>
         <paper-card id="container">
             <div style="display: flex; border-bottom: 1px solid var(--palette-divider);">
-                <paper-icon-button id="add-style-btn" icon="icons:add" class="btn"></paper-icon-button>
-                <paper-tooltip for="add-style-btn" role="tooltip" tabindex="-1">Add Style</paper-tooltip>
-                <div id="create-style-div" style="display: none; flex-grow: 1;">
+                <paper-icon-button id="add-element-btn" icon="icons:add" class="btn"></paper-icon-button>
+                <paper-tooltip for="add-element-btn" role="tooltip" tabindex="-1">Add Style</paper-tooltip>
+                <div id="create-element-div" style="display: none; flex-grow: 1;">
                     <paper-input  style="display: flex;flex-grow: 1;" no-label-float></paper-input>
                 </div>
             </div>
 
             <div style="max-height: 400px; overflow-y: auto">
-                <div id="styles">
+                <div id="content">
                     
                 </div>
             </div>
@@ -440,10 +893,10 @@ export class StyleManager extends HTMLElement {
         }
 
 
-        let addStyleBtn = this.shadowRoot.querySelector("#add-style-btn")
-        addStyleBtn.onclick = (evt) => {
+        let addElementBtn = this.shadowRoot.querySelector("#add-element-btn")
+        addElementBtn.onclick = (evt) => {
             evt.stopPropagation()
-            this.addStyle()
+            this.addCodeElement()
         }
 
         this.parent = null
@@ -467,57 +920,17 @@ export class StyleManager extends HTMLElement {
         if (!this.visible) {
             this.hide()
         }
-        this.displayStyles() // load styles..
-    }
 
-    getCssEditor(style) {
-
-        if (ApplicationView.layout.workspace().querySelector("#" + style.id + "_css_editor") != null) {
-            return ApplicationView.layout.workspace().querySelector("#" + style.id + "_css_editor") 
-        }
-
-
-        // Set the css from the editor...
-        let css_editor = new CodeEditor("css", ApplicationView.layout.workspace(), (evt) => {
-            if (style.innerText != css_editor.getText()) {
-                Model.eventHub.publish("_need_save_event_", null, true)
-            }
-
-            // Here I will set the css text of the element...
-            style.innerText = css_editor.getText()
-
-        }, () => {
-            // focus
-        }, () => {
-            // lost focus
-        })
-
-        // Set the style to the editor...
-        css_editor.setText(cssbeautifier(style.innerText))
-        css_editor.setTitle(style.name)
-
-        return css_editor
-    }
-
-    // show the css edito.
-    showCssEditor(style) {
-        // Show the css to edit the element style.
-        let editor = this.getCssEditor(style)
-        if (editor != null) {
-            ApplicationView.layout.workspace().appendChild(editor)
-            let editors = document.getElementsByTagName("globular-code-editor")
-            for (var i = 0; i < editors.length; i++) {
-                editors[i].style.zIndex = 1
-            }
-            editor.style.zIndex = 10
-            this.hide()
-            return
-        }
+        this.displayContent()
     }
 
     show() {
         if (this.parent) {
             if (!this.visible) {
+                let codeManagers = document.getElementsByTagName("globular-code-manager")
+                for (var i = 0; i < codeManagers.length; i++) {
+                    codeManagers[i].hide()
+                }
                 this.visible = true
                 this.parent.appendChild(this)
             }
@@ -531,31 +944,40 @@ export class StyleManager extends HTMLElement {
         }
     }
 
+    // Display list of existing script...
+    displayContent() {
 
-    // Display list of existing style...
-    displayStyles() {
-        let div = this.shadowRoot.querySelector("#styles")
+        // display style or script depending of the mode.
+        let tagName = ""
+        if (this.mode == "css") {
+            tagName = "style"
+        } else if (this.mode == "javascript") {
+            tagName = "script"
+        }
+
+        let div = this.shadowRoot.querySelector("#content")
         div.innerHTML = "";
 
         // Get style list.
-        let styles_ = ApplicationView.layout.workspace().querySelectorAll("style")
-        let styles = []
-        for (var i = 0; i < styles_.length; i++) {
-            let style = styles_[i]
-            if (style.parentNode == ApplicationView.layout.workspace()) {
-                styles.push(style)
+        let elements_ = ApplicationView.layout.workspace().querySelectorAll(tagName)
+        let elements = []
+        for (var i = 0; i < elements_.length; i++) {
+            let e = elements_[i]
+            if (e.parentNode == ApplicationView.layout.workspace()) {
+                elements.push(e)
             }
         }
 
 
-        for (var i = 0; i < styles.length; i++) {
+        for (var i = 0; i < elements.length; i++) {
 
-            let style = styles[i]
-            if (style.parentNode == ApplicationView.layout.workspace()) {
+            let e = elements[i]
+            if (e.parentNode == ApplicationView.layout.workspace()) {
                 let html = `
-                <div class="css-lnk">
-                    <span id="css-edit-${style.id}-lnk" style="flex-grow: 1; padding-left: 16px;">${style.name}</span>
-                    <paper-icon-button id="delete-style-btn"  icon="icons:delete" class="btn"></paper-icon-button>
+                <div class="element-lnk">
+                    <paper-icon-button id="edit-${e.id}-btn"  icon="icons:create" class="btn"></paper-icon-button>
+                    <span id="edit-${e.id}-lnk" style="flex-grow: 1; padding-left: 16px;">${e.name}</span>
+                    <paper-icon-button id="delete-${e.id}-btn"  icon="icons:delete" class="btn"></paper-icon-button>
                     <paper-ripple> </paper-ripple>
                 </div>
                 `
@@ -563,18 +985,106 @@ export class StyleManager extends HTMLElement {
                 let range = document.createRange()
                 div.appendChild(range.createContextualFragment(html))
 
-                let editLnk = div.querySelector(`#css-edit-${style.id}-lnk`)
-                editLnk.onclick = ()=>{
-                    this.showCssEditor(style)
+                let editLnk = div.querySelector(`#edit-${e.id}-lnk`)
+                editLnk.onclick = () => {
+                    if (this.mode == "css")
+                        showCssEditor(e)
+                    else if (this.mode = "javascript") {
+                        showJavascriptEditor(e)
+                    }
+                    this.hide()
                 }
+
+                let deleteBtn = div.querySelector(`#delete-${e.id}-btn`)
+
+                let editBtn = div.querySelector(`#edit-${e.id}-btn`)
+                editBtn.onclick = (evt)=>{
+                    // remove the editLnk 
+                    let parent = editLnk.parentNode
+                    parent.removeChild(editLnk)
+
+                    editBtn.setAttribute("disable")
+                    editBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
+                    
+                    // Create the input to set the new name...
+                    let input = document.createElement("paper-input")
+                    input.setAttribute("no-label-float")
+                    parent.insertBefore(input, deleteBtn)
+                    input.value = e.name
+
+                    // put in edit mode and pre-select the text.
+                    setTimeout(()=>{
+                        input.focus()
+                        input.inputElement.inputElement.select()
+
+                    }, 100)
+
+                    input.onkeyup = (evt)=>{
+                        if (evt.code === 'Enter' || evt.code === "NumpadEnter" || evt.code === 'Escape') {
+                            
+                            if( evt.code != 'Escape'){
+                                let id = ""
+                                if(this.mode == "css"){
+                                    id= "_" + getUuidByString(input.value + "_style")
+                                }else{
+                                    id = "_" + getUuidByString(input.value + "_script")
+                                }
+
+                                if(document.getElementById(id)){
+                                    if(this.mode == "css"){
+                                        ApplicationView.displayMessage("style with name " + input.value + " already exist!", 3000)
+                                    }else{
+                                        ApplicationView.displayMessage("script with name " + input.value + " already exist!", 3000)
+                                    }
+
+                                    // reselect the text...
+                                    input.inputElement.inputElement.select()
+
+                                    return 
+                                }
+
+                                // create a copy of the node to delete at save...
+                                this.toDelete.push(e.cloneNode(true))
+
+                                // set name...
+                                e.name = input.value
+                                e.id = id
+                                editLnk.innerText = e.name
+                                
+                                // set need save...
+                                Model.eventHub.publish("_need_save_event_", null, true)
+                            }
+
+                            editBtn.removeAttribute("disable")
+                            editBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-text-primary)")
+                            parent.removeChild(input)
+                            parent.insertBefore(editLnk, deleteBtn)
+                        }
+                    }
+                    
+                }
+
+                
+                deleteBtn.onclick = () => {
+                    // remove the element menu
+                    deleteBtn.parentNode.parentNode.removeChild(deleteBtn.parentNode)
+
+                    // remove the element itself...
+                    e.parentNode.removeChild(e)
+
+                    // mark the element to be deleted in the next save.
+                    this.toDelete.push(e)
+
+                    Model.eventHub.publish("_need_save_event_", null, true)
+                }
+
             }
         }
-
     }
 
-    // Add a new CSS Style...
-    addStyle() {
-        let div = this.shadowRoot.querySelector("#create-style-div")
+    // Add a new css style or js script element
+    addCodeElement() {
+        let div = this.shadowRoot.querySelector("#create-element-div")
         div.style.display = "flex"
         let input = div.querySelector("paper-input")
 
@@ -588,25 +1098,52 @@ export class StyleManager extends HTMLElement {
             if (evt.code === 'Enter' || evt.code === "NumpadEnter") {
                 console.log("Enter key press!")
                 let name = input.value;
-                let id = "_" + getUuidByString(name)
-                if (ApplicationView.layout.workspace().querySelector("#" + id)) {
-                    ApplicationView.displayMessage("A style named " + name + " already exist!")
-                    return
+                let id = ""
+
+                // if code is css style...
+                if (this.mode == "css") {
+                    id = "_" + getUuidByString(name + "_style")
+                    if (ApplicationView.layout.workspace().querySelector("#" + id)) {
+                        ApplicationView.displayMessage("A style named " + name + " already exist!")
+                        return
+                    }
+
+                    input.value = ""
+                    div.style.display = "none"
+                    // So here I will create style and put in the workspace...
+                    let style = document.createElement("style")
+                    style.id = id
+                    style.name = name
+
+                    // append the style in the workspace.
+                    ApplicationView.layout.workspace().appendChild(style)
+
+                    // refresh the style list...
+                    this.displayContent()
+                } else if (this.mode == "javascript") {
+                    id = "_" + getUuidByString(name + "_script")
+                    // Here the code is javascript.
+                    if (ApplicationView.layout.workspace().querySelector("#" + id)) {
+                        ApplicationView.displayMessage("A script named " + name + " already exist!")
+                        return
+                    }
+
+                    input.value = ""
+                    div.style.display = "none"
+                    // So here I will create style and put in the workspace...
+                    let script = document.createElement("script")
+                    script.id = id
+                    script.name = name
+
+                    // append the style in the workspace.
+                    ApplicationView.layout.workspace().appendChild(script)
+
+                    // refresh the style list...
+                    this.displayContent()
                 }
-                input.value = ""
-                div.style.display = "none"
-                // So here I will create style and put in the workspace...
-                let style = document.createElement("style")
-                style.id = id
-                style.name = name
 
-                // append the style in the workspace.
-                ApplicationView.layout.workspace().appendChild(style)
-
-                // refresh the style list...
-                this.displayStyles()
                 Model.eventHub.publish("_need_save_event_", null, true)
-                
+
                 return
             } else if (evt.code === 'Escape') {
                 input.value = ""
@@ -618,7 +1155,7 @@ export class StyleManager extends HTMLElement {
     }
 }
 
-customElements.define('globular-style-manager', StyleManager)
+customElements.define('globular-code-manager', CodeManager)
 
 /**
  * Contain the navigation panel
@@ -1032,12 +1569,6 @@ export class WebPage extends HTMLElement {
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
 
-        // The css editor.
-        this.css_editor = null
-
-        // The javascript editor
-        this.javascript_editor = null
-
         // edit mode 
         this.edit = false
 
@@ -1056,26 +1587,6 @@ export class WebPage extends HTMLElement {
         } else if (id.length > 0) {
             this.setAttribute("id", id)
         }
-
-
-        // The style element.
-        this.style_ = style
-
-        if (this.style_.length == 0) {
-
-            this.style_ = `
-#${this.id}{
-    /** Element style here */
-}`
-        }
-
-
-        // The script element
-        this.script_ = script
-        if (this.script_ == undefined) {
-            this.script_ = ""
-        }
-
 
         // The page index (use by navigation)
         if (index != undefined) {
@@ -1230,19 +1741,35 @@ export class WebPage extends HTMLElement {
         }
 
         // Now I will create the sytle element.
-        let style_ = document.createElement("style")
-        style_.innerText = this.style_
-        style_.setAttribute("scoped", "")
-        style_.id = this.id + "_style"
-        this.appendChild(style_)
+        this.style_ = document.createElement("style")
+
+        if (style.length == 0) {
+
+            style = `
+/** Page style here */
+#${this.id}{
+    width: 100%;
+    min-height: 500px;
+}`
+        }
+
+        this.style_.innerText = style
+        this.style_.setAttribute("scoped", "")
+        this.style_.id = this.id + "_style"
+
+        this.appendChild(this.style_)
 
         // set the script for the page.
-        let script_ = document.createElement("script")
-        script_.innerText = this.script_
-        script_.id = this.id + "_script"
+        this.script_ = document.createElement("script")
+        if (script) {
+            this.script_.innerText = script
+        } else {
+            this.script_.innerText = `/** Page script here */`
+        }
+        this.script_.id = this.id + "_script"
 
         // script_.setAttribute("type", "module")
-        this.appendChild(script_)
+        this.appendChild(this.script_)
 
         // Initialyse page elements and sub-elements.
         if (elements) {
@@ -1258,7 +1785,7 @@ export class WebPage extends HTMLElement {
 
         let editCssBtn = this.shadowRoot.querySelector("#css-edit-btn")
         editCssBtn.onclick = () => {
-            this.showCssEditor()
+            showCssEditor(this.style_)
         }
 
         let deletePageBtn = this.shadowRoot.querySelector("#delete-page-btn")
@@ -1268,7 +1795,7 @@ export class WebPage extends HTMLElement {
 
         let editJavascriptBtn = this.shadowRoot.querySelector("#js-edit-btn")
         editJavascriptBtn.onclick = () => {
-            this.showJavascriptEditor()
+            showJavascriptEditor(this.script_)
         }
 
         // Keep the container synch with the element div...
@@ -1349,94 +1876,6 @@ export class WebPage extends HTMLElement {
             this.shadowRoot.querySelector(`#${this.id}_selector`).innerHTML = this.name
         if (this.shadowRoot.querySelector("#current-edit-page"))
             this.shadowRoot.querySelector("#current-edit-page").innerHTML = this.name
-    }
-
-    /**
-     * Display the javascript code editor.
-     * @returns 
-     */
-    showJavascriptEditor() {
-        if (this.getJavascriptEditor() != null) {
-            ApplicationView.layout.workspace().appendChild(this.getJavascriptEditor())
-            let editors = document.getElementsByTagName("globular-code-editor")
-            for (var i = 0; i < editors.length; i++) {
-                editors[i].style.zIndex = 1
-            }
-            this.getJavascriptEditor().style.zIndex = 10
-            return
-        }
-    }
-
-    getJavascriptEditor() {
-        if (this.javascript_editor != null) {
-            return this.javascript_editor
-        }
-        // Set the css from the editor...
-        this.javascript_editor = new CodeEditor("javascript", ApplicationView.layout.workspace(), (evt) => {
-            if (this.style_ != this.javascript_editor.getText()) {
-                Model.eventHub.publish("_need_save_event_", null, true)
-            }
-
-            // set the script
-            this.script_ = this.javascript_editor.getText()
-
-            // Here I will set the css text of the element...
-            this.querySelector(`#${this.id}_script`).innerText = this.script_
-
-        }, () => {
-            // on editor focus
-        }, () => {
-            // on editor lost focus
-        })
-
-        // Set the style to the editor...
-        this.javascript_editor.setText(this.script_)
-        this.javascript_editor.setTitle("JS " + this.id)
-
-        return this.javascript_editor
-    }
-
-    getCssEditor() {
-        if (this.css_editor != null) {
-            return this.css_editor
-        }
-        // Set the css from the editor...
-        this.css_editor = new CodeEditor("css", ApplicationView.layout.workspace(), (evt) => {
-            if (this.style_ != this.css_editor.getText()) {
-                Model.eventHub.publish("_need_save_event_", null, true)
-            }
-
-            this.style_ = this.css_editor.getText()
-
-            // Here I will set the css text of the element...
-            this.querySelector(`#${this.id}_style`).innerText = this.style_
-
-        }, () => {
-            // focus
-        }, () => {
-            // lost focus
-        })
-
-
-        // Set the style to the editor...
-        this.css_editor.setText(cssbeautifier(this.style_))
-        this.css_editor.setTitle(this.id)
-
-        return this.css_editor
-    }
-
-    // show the css edito.
-    showCssEditor() {
-        // Show the css to edit the element style.
-        if (this.getCssEditor() != null) {
-            ApplicationView.layout.workspace().appendChild(this.getCssEditor())
-            let editors = document.getElementsByTagName("globular-code-editor")
-            for (var i = 0; i < editors.length; i++) {
-                editors[i].style.zIndex = 1
-            }
-            this.getCssEditor().style.zIndex = 10
-            return
-        }
     }
 
     hideToolbar() {
@@ -1549,7 +1988,7 @@ export class WebPage extends HTMLElement {
             } else {
 
                 // create a string from page information..
-                let str = JSON.stringify({ _id: this.id, name: this.name, style: this.style_, script: this.script_, index: this.index, user_id: localStorage.getItem("user_id"), elements: elements })
+                let str = JSON.stringify({ _id: this.id, name: this.name, style: this.style_.innerText, script: this.script_.innerText, index: this.index, user_id: localStorage.getItem("user_id"), elements: elements })
 
                 // save the user_data
                 let rqst = new ReplaceOneRqst();
@@ -1701,8 +2140,6 @@ export class ElementEditor extends HTMLElement {
                `
 
         this.id = ""
-        this.style_ = ""
-        this.script_ = ""
         this.edit = false;
 
         if (data) {
@@ -1711,36 +2148,22 @@ export class ElementEditor extends HTMLElement {
 
             // The parent id where to create the element...
             this.parentId = data.parentId
-            if (data.parent == undefined) {
-                this.parent = document.getElementById(this.parentId)
-                if (!this.parent) {
-                    ApplicationView.displayMessage("no node found with id " + this.parentId, 3000)
-                    return
-                }
-            } else {
-                this.parent = data.parent
-            }
+
 
             // The tagName
             this.tagName_ = data.tagName
 
-            // The style...
-            if (data.style) {
-                this.style_ = data.style;
-            } else {
-                this.style_ = `
-#${data.id}{
-    /** Element style here */
-}
-`
-            }
+            // I will not keep the reference.
+            let parent = data.parent
 
-            // set the script.
-            if (data.script) {
-                this.script_ = data.script
+            if (!parent) {
+                parent = this.getParent()
+                if (!parent) {
+                    console.log("fail to get parent with id ", this.parentId)
+                    return
+                }
             }
-
-            this.element = this.parent.querySelector("#" + data.id)
+            this.element = parent.querySelector("#" + data.id)
             if (this.element == undefined) {
 
                 // I will create the element it-self
@@ -1753,7 +2176,7 @@ export class ElementEditor extends HTMLElement {
                 this.element.id = data.id
                 this.element.editor = this
 
-                this.parent.appendChild(this.element)
+                parent.appendChild(this.element)
 
                 this.setElementEvents()
 
@@ -1786,24 +2209,37 @@ export class ElementEditor extends HTMLElement {
                 this.elementStyle = document.createElement("style")
                 this.elementStyle.setAttribute("scoped", "")
                 this.elementStyle.id = data.id + "_style"
-                this.parent.appendChild(this.elementStyle)
-                this.parent.querySelector(`#${data.id}_style`).innerText = this.style_
+                parent.appendChild(this.elementStyle)
+
+                if (data.style) {
+                    parent.querySelector(`#${data.id}_style`).innerText = data.style
+                } else {
+                    parent.querySelector(`#${data.id}_style`).innerText = `
+#${data.id}{
+    /** Element style here */
+}
+`
+                }
+
 
                 // I will create the element script.
                 this.elementScript = document.createElement("script")
                 this.elementScript.id = data.id + "_script"
-                this.parent.appendChild(this.elementScript)
-                this.parent.querySelector(`#${data.id}_script`).innerText = this.script_
-
+                parent.appendChild(this.elementScript)
+                if (data.script)
+                    parent.querySelector(`#${data.id}_script`).innerText = data.script
+                else
+                    parent.querySelector(`#${data.id}_script`).innerText = `/** Wrote Element Script here **/
+                    `
             }
 
             // Set the element selector
             if (this.selector == null) {
                 this.selector = new ElementSelector(this)
                 this.selector.id = data.id + "_selector"
-                if (this.parent.editor) {
-                    if (this.parent.editor.selector) {
-                        this.parent.editor.selector.appendSelector(this.selector)
+                if (parent.editor) {
+                    if (parent.editor.selector) {
+                        parent.editor.selector.appendSelector(this.selector)
                     }
                 }
             }
@@ -1849,15 +2285,6 @@ export class ElementEditor extends HTMLElement {
 
         this.toolbar = this.shadowRoot.querySelector("#toolbar")
 
-        // The css editor...
-        this.css_editor = null
-
-        // The javascript editor
-        this.javascript_editor = null
-
-        // The html content editor...
-        this.html_editor = null
-
         // Add new element...
         let addLayoutBtn = this.shadowRoot.querySelector("#add-element-btn")
         addLayoutBtn.onclick = () => {
@@ -1876,19 +2303,17 @@ export class ElementEditor extends HTMLElement {
 
         let editCssBtn = this.shadowRoot.querySelector("#css-edit-btn")
         editCssBtn.onclick = () => {
-            this.showCssEditor()
+            showCssEditor(this.getParent().querySelector(`#${this.element.id}_style`))
         }
 
         let editJavascriptBtn = this.shadowRoot.querySelector("#js-edit-btn")
         editJavascriptBtn.onclick = () => {
-            this.showJavascriptEditor()
+            showJavascriptEditor(this.getParent().querySelector(`#${this.element.id}_script`))
         }
-
 
         this.shadowRoot.querySelector("#html-edit-btn").onclick = () => {
-            this.showHtmlEditor()
+            showHtmlEditor(this.element)
         }
-
 
         // Keep the container synch with the element div...
         window.addEventListener('resize', () => {
@@ -1935,12 +2360,12 @@ export class ElementEditor extends HTMLElement {
         } else if (e.tagName == "INPUT" || e.tagName == "TEXT-AREA") {
             data = e.value
         } else {
-            if (this.countChildren(e) == 0) {
+            if (this.countChildren(e) == 0 && canHoldText(e.tagName)) {
                 data = e.innerText
             } else {
                 // here I will try to see if the content contain free text..
                 let text = [].reduce.call(e.childNodes, (a, b) => { return a + (b.nodeType === 3 ? b.textContent : ''); }, '');
-                if (text.length > 0) {
+                if (text.trim().length > 0) {
                     data = e.innerHTML
                     e.hasFreeText = true;
                 }
@@ -1979,170 +2404,6 @@ export class ElementEditor extends HTMLElement {
         }
 
         Model.eventHub.publish("_need_save_event_", null, true)
-    }
-
-    /**
-     * Show html editor.
-     * @returns 
-     */
-    showHtmlEditor() {
-        if (this.getHtmlEditor() != null) {
-            ApplicationView.layout.workspace().appendChild(this.getHtmlEditor())
-            let editors = document.getElementsByTagName("globular-code-editor")
-            for (var i = 0; i < editors.length; i++) {
-                editors[i].style.zIndex = 1
-            }
-            this.getHtmlEditor().style.zIndex = 10
-            return
-        }
-    }
-
-    getHtmlEditor() {
-        if (this.html_editor != null) {
-            return this.html_editor
-        }
-
-
-        // Set the css from the editor...
-        this.html_editor = new CodeEditor("html", ApplicationView.layout.workspace(), (evt) => {
-            // Test if the innerHTML has change...
-            if (this.element.innerHTML != this.html_editor.getText()) {
-                Model.eventHub.publish("_need_save_event_", null, true)
-            }
-
-            // get active editor...
-            let editors = []
-            let getEditors = (e) => {
-                if (e.editor != undefined) {
-                    editors.push(e.editor)
-                }
-                for (var i = 0; i < e.children.length; i++) {
-                    getEditors(e.children[i])
-                }
-            }
-
-            getEditors(this.element)
-
-            // set the innerHTML value. The element object will be lost...
-            this.element.outerHTML = this.html_editor.getText().replace(/(\r\n|\n|\r)/gm, "").replace("<br>", "");
-
-            // So I will set back new element object in it editor.
-            editors.forEach(editor => {
-                // Set element       
-                editor.element = document.getElementById(editor.element.id)
-                editor.element.editor = editor
-                editor.parent = editor.element.parentNode
-                editor.setContainerPosition()
-                editor.setElementEvents()
-            })
-
-
-
-        }, () => {
-            this.emphasis()
-        }, () => {
-            this.de_emphasis()
-        })
-
-        // Set the style to the editor...
-        this.html_editor.setText(htmlBeautify(this.element.outerHTML))
-        this.html_editor.setTitle("HTML " + this.element.id)
-
-        return this.html_editor
-    }
-
-    /**
-     * Display the javascript code editor.
-     * @returns 
-     */
-    showJavascriptEditor() {
-        if (this.getJavascriptEditor() != null) {
-            ApplicationView.layout.workspace().appendChild(this.getJavascriptEditor())
-            let editors = document.getElementsByTagName("globular-code-editor")
-            for (var i = 0; i < editors.length; i++) {
-                editors[i].style.zIndex = 1
-            }
-            this.getJavascriptEditor().style.zIndex = 10
-            return
-        }
-    }
-
-    getJavascriptEditor() {
-        if (this.javascript_editor != null) {
-            return this.javascript_editor
-        }
-        // Set the css from the editor...
-        this.javascript_editor = new CodeEditor("javascript", ApplicationView.layout.workspace(), (evt) => {
-            if (this.script_ != this.javascript_editor.getText()) {
-                Model.eventHub.publish("_need_save_event_", null, true)
-            }
-
-            // set the script
-            this.script_ = this.javascript_editor.getText()
-
-            // Here I will set the css text of the element...
-            this.parent.querySelector(`#${this.element.id}_script`).innerText = this.script_
-
-        }, () => {
-            this.emphasis()
-        }, () => {
-            this.de_emphasis()
-        })
-
-        // Set the style to the editor...
-        this.javascript_editor.setText(this.script_)
-        this.javascript_editor.setTitle("JS " + this.element.id)
-
-        return this.javascript_editor
-    }
-
-    /**
-     * Display the css editor.
-     * @returns 
-     */
-    showCssEditor() {
-        // Show the css to edit the element style.
-        if (this.getCssEditor() != null) {
-            ApplicationView.layout.workspace().appendChild(this.getCssEditor())
-            let editors = document.getElementsByTagName("globular-code-editor")
-            for (var i = 0; i < editors.length; i++) {
-                editors[i].style.zIndex = 1
-            }
-            this.getCssEditor().style.zIndex = 10
-            return
-        }
-    }
-
-    getCssEditor() {
-        if (this.css_editor != null) {
-            return this.css_editor
-        }
-        // Set the css from the editor...
-        this.css_editor = new CodeEditor("css", ApplicationView.layout.workspace(), (evt) => {
-            if (this.style_ != this.css_editor.getText().replace(/(\r\n|\n|\r)/gm, "").replace("<br>", "")) {
-                Model.eventHub.publish("_need_save_event_", null, true)
-            }
-
-            this.style_ = this.css_editor.getText().replace(/(\r\n|\n|\r)/gm, "").replace("<br>", "");
-
-            // Here I will set the css text of the element...
-            if (this.parent.querySelector(`#${this.element.id}_style`))
-                this.parent.querySelector(`#${this.element.id}_style`).innerText = this.style_
-
-            // TODO set the context (element style, stylesheet etc.)
-            this.setContainerPosition()
-
-        }, () => {
-            this.emphasis()
-        }, () => {
-            this.de_emphasis()
-        })
-
-        // Set the style to the editor...
-        this.css_editor.setText(cssbeautifier(this.style_))
-        this.css_editor.setTitle("CSS " + this.element.id)
-
-        return this.css_editor
     }
 
     // The connected callback...
@@ -2208,7 +2469,7 @@ export class ElementEditor extends HTMLElement {
 
 
         // A element is a recursive structure...
-        let obj = { tagName: this.tagName_, style: this.style_, script: this.script_, children: [], id: this.element.id, parentId: this.parentId, data: this.getElementData(this.element), classes: this.element.className, attributes: attrs }
+        let obj = { tagName: this.tagName_, style: this.elementStyle.innerText, script: this.elementScript.innerText, children: [], id: this.element.id, parentId: this.parentId, data: this.getElementData(this.element), classes: this.element.className, attributes: attrs }
         let editors = []
 
         // keep only immediate childs...
@@ -2260,6 +2521,19 @@ export class ElementEditor extends HTMLElement {
     }
 
     /**
+     * return the parent reference.
+     */
+    getParent() {
+        // Get the parent element node by default
+        if (this.element)
+            if (this.element.parentNode)
+                return this.element.parentNode
+
+        // Get the element by it id in case element are not initialyse
+        return document.getElementById(this.parentId)
+    }
+
+    /**
      * Set element edit mode.
      */
     setEditMode() {
@@ -2275,7 +2549,7 @@ export class ElementEditor extends HTMLElement {
         // Set the actual editor.
         this.handle.style.display = "block";
         this.edit = true;
-        this.parent.appendChild(this)
+        this.getParent().appendChild(this)
     }
 
     /**
@@ -2286,7 +2560,7 @@ export class ElementEditor extends HTMLElement {
 
         this.handle.style.display = "none"
         this.edit = false
-        this.parent.removeChild(this)
+        this.getParent().removeChild(this)
     }
 
     /**
@@ -2320,8 +2594,6 @@ export class CodeEditor extends HTMLElement {
         super()
 
         this.mode = mode;
-
-        this.parent = parent;
 
         // This is call when the editor text change.
         this.onchange = onchange;
@@ -2589,11 +2861,6 @@ export class ElementSelector extends HTMLElement {
 
             // show it tool bar.
             this.editor.showToolbar()
-
-            // set the onclose event.
-            this.editor.getCssEditor().onclose = () => {
-                // this.editor.resetEditMode()
-            }
         }
     }
 

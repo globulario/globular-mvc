@@ -27,7 +27,6 @@ import { getTheme } from "./Theme";
 
                 /** Position Element on the grid */
                 grid-template-columns: repeat(16, 1fr);
-                grid-auto-rows: minmax(100px, auto);
             }
 
             #container {
