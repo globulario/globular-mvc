@@ -3110,13 +3110,15 @@ export class ElementSelector extends HTMLElement {
 
             if (parent) {
                 let getNextChild = (c) => {
-
                     if (c.tagName != "STYLE" && c.tagName != "SCRIPT") {
                         return c
                     }
                     let index = getChildIndex(c)
                     index++
-                    return getNextChild(parent.children[index])
+                    if(parent.children[index])
+                        return getNextChild(parent.children[index])
+
+                    return null
                 }
 
                 let e = document.getElementById(id)
@@ -3212,7 +3214,10 @@ export class ElementSelector extends HTMLElement {
                     }
                     let index = getChildIndex(c)
                     index++
-                    return getNextChild(parent.children[index])
+                    if(parent.children[index])
+                        return getNextChild(parent.children[index])
+
+                    return null
                 }
 
                 let e = document.getElementById(id)
