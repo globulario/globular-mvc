@@ -30,6 +30,8 @@ export class SlidePanel extends HTMLElement {
             #container{
                 background-color: var(--palette-background-paper);
                 color: var(--palette-text-primary);
+                border-left: 1px solid var(--palette-action-disabled);
+                border-right: 1px solid var(--palette-action-disabled);
                 overflow: auto;
                 direction:rtl; 
             }

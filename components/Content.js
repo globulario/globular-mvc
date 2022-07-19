@@ -24,6 +24,7 @@ import * as getUuidByString from "uuid-by-string";
 import * as cssbeautifier from "cssbeautifier"
 import htmlBeautify from 'html-beautify'
 import jsBeautify from 'js-beautify'
+import { GetVideoConversionLogsRequest } from "globular-web-client/file/file_pb";
 
 // Test if the tag can hold text...
 function canHoldText(tagName) {
@@ -77,6 +78,10 @@ function canHoldText(tagName) {
     return tags.indexOf(tagName.toLowerCase()) != -1
 }
 
+function getChildIndex(node) {
+    return Array.prototype.indexOf.call(node.parentNode.childNodes, node);
+}
+
 // Return the css editor.
 function getCssEditor(style) {
 
@@ -87,12 +92,16 @@ function getCssEditor(style) {
 
     // Set the css from the editor...
     let css_editor = new CodeEditor("css", ApplicationView.layout.workspace(), (evt) => {
-        if (cssbeautifier(style.innerText) != css_editor.getText()) {
-            Model.eventHub.publish("_need_save_event_", null, true)
-        }
+        try {
+            if (cssbeautifier(style.innerText) != css_editor.getText()) {
+                Model.eventHub.publish("_need_save_event_", null, true)
+            }
 
-        // Here I will set the css text of the element...
-        style.innerText = css_editor.getText()
+            // Here I will set the css text of the element...
+            style.innerText = css_editor.getText()
+        } catch (err) {
+            style.innerText = css_editor.getText()
+        }
 
     }, () => {
         // focus
@@ -151,14 +160,17 @@ function getJavascriptEditor(script) {
 
     // Set the css from the editor...
     let javascript_editor = new CodeEditor("javascript", ApplicationView.layout.workspace(), (evt) => {
-        if (jsBeautify(script.innerText) != javascript_editor.getText()) {
-            script.reload = true // mark it to be reload at save time...
-            Model.eventHub.publish("_need_save_event_", null, true)
+        try {
+            if (jsBeautify(script.innerText) != javascript_editor.getText()) {
+                script.reload = true // mark it to be reload at save time...
+                Model.eventHub.publish("_need_save_event_", null, true)
+            }
+
+            // set the script
+            script.innerText = javascript_editor.getText().split("<br>").join("")
+        } catch (err) {
+            script.innerText = javascript_editor.getText().split("<br>").join("")
         }
-
-        // set the script
-        script.innerText = javascript_editor.getText().split("<br>").join("")
-
     }, () => {
         // on editor focus
     }, () => {
@@ -205,38 +217,41 @@ function getHtmlEditor(element) {
     // Set the css from the editor...
     let html_editor = new CodeEditor("html", ApplicationView.layout.workspace(), (evt) => {
         // Test if the innerHTML has change...
-        if (htmlBeautify(element.outerHTML) != html_editor.getText()) {
-            Model.eventHub.publish("_need_save_event_", null, true)
-        }
-
-        // get active editor...
-        let editors = []
-        let getEditors = (e) => {
-            if (e.editor != undefined) {
-                editors.push(e.editor)
+        try {
+            if (htmlBeautify(element.outerHTML) != html_editor.getText()) {
+                Model.eventHub.publish("_need_save_event_", null, true)
             }
-            for (var i = 0; i < e.children.length; i++) {
-                getEditors(e.children[i])
+
+            // get active editor...
+            let editors = []
+            let getEditors = (e) => {
+                if (e.editor != undefined) {
+                    editors.push(e.editor)
+                }
+                for (var i = 0; i < e.children.length; i++) {
+                    getEditors(e.children[i])
+                }
             }
+
+            getEditors(element)
+
+            // set the innerHTML value. The element object will be lost...
+            element.outerHTML = html_editor.getText().replace(/(\r\n|\n|\r)/gm, "").trim() // that will flush the actual element...
+            element = document.getElementById(element.id)
+
+            // So I will set back new element object in it editor.
+            editors.forEach(editor => {
+                // Set element      
+                editor.element = document.getElementById(editor.element.id) // refresh the element reference in the editor.
+                editor.element.editor = editor
+
+                // set back the editor position...
+                editor.setContainerPosition()
+                editor.setElementEvents()
+            })
+        } catch (err) {
+            // script.innerText = javascript_editor.getText().split("<br>").join("")
         }
-
-        getEditors(element)
-
-        // set the innerHTML value. The element object will be lost...
-        element.outerHTML = html_editor.getText().replace(/(\r\n|\n|\r)/gm, "").trim() // that will flush the actual element...
-        element = document.getElementById(element.id)
-
-        // So I will set back new element object in it editor.
-        editors.forEach(editor => {
-            // Set element      
-            editor.element = document.getElementById(editor.element.id) // refresh the element reference in the editor.
-            editor.element.editor = editor
-
-            // set back the editor position...
-            editor.setContainerPosition()
-            editor.setElementEvents()
-        })
-
 
 
     }, () => {
@@ -419,6 +434,7 @@ export class ContentManager extends HTMLElement {
                 createEditJs.style.display = "block"
                 saveAllBtn.style.display = "block"
                 Model.eventHub.publish("_set_content_edit_mode_", true, true)
+                this.navigation.edit = true
             } else {
                 setCreateModeBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
                 createPageBtn.style.display = "none"
@@ -426,6 +442,7 @@ export class ContentManager extends HTMLElement {
                 createEditCss.style.display = "none"
                 createEditJs.style.display = "none"
                 Model.eventHub.publish("_set_content_edit_mode_", false, true)
+                this.navigation.edit = false
             }
         }
 
@@ -1178,11 +1195,16 @@ export class Navigation extends HTMLElement {
 
             #container {
                 display: flex;
+                user-select: none;
+                -moz-user-select: none;
+                -khtml-user-select: none;
+                -webkit-user-select: none;
+                -o-user-select: none;
             }
 
-            ::slotted(globular-page-link){
-                margin-left: 10px;
-                margin-right: 10px;
+            ::slotted(.drop-zone) {
+                background-color: transparent;
+                width: 20px;
             }
 
         </style>
@@ -1198,6 +1220,10 @@ export class Navigation extends HTMLElement {
 
         // keep page to be deleted...
         this.toDelete = []
+
+        this.edit = false;
+
+        this.dragging = false;
     }
 
     init() {
@@ -1252,10 +1278,12 @@ export class Navigation extends HTMLElement {
         ApplicationView.wait(`<div style="display: flex; flex-direction: column; justify-content: center;"><span>load webpages</span><span>please wait</span><span>...</span></div>`)
         this.loadWebPages(pages => {
             ApplicationView.resume()
+            pages = pages.sort((a, b) => (a.index > b.index) ? 1 : ((b.index > a.index) ? -1 : 0))
+
             for (var i = 0; i < pages.length; i++) {
                 let page = new WebPage(pages[i]._id, pages[i].name, pages[i].style, pages[i].script, pages[i].index, pages[i].elements)
                 let lnk = new NavigationPageLink(page)
-                this.appendChild(lnk)
+                this.appendLink(lnk)
                 if (page.index == 0) {
                     page.setPage()
                 }
@@ -1335,8 +1363,92 @@ export class Navigation extends HTMLElement {
 
         let page = new WebPage("page_" + uuidv4(), "new page", "", "", index)
         let pageLnk = new NavigationPageLink(page)
-        this.appendChild(pageLnk)
+
+        this.appendLink(pageLnk)
         pageLnk.setEditMode()
+    }
+
+    appendLink(lnk) {
+        lnk.setAttribute("draggable", "true")
+
+        // the mouvse down on the div
+        lnk.ondragstart = (evt) => {
+            if (this.edit) {
+                lnk.style.cursor = "move";
+                this.dragging = true;
+                evt.dataTransfer.setData("Text", lnk.id);
+            }
+        }
+
+        // set back to default
+        lnk.ondragend = () => {
+            lnk.style.cursor = "default";
+            this.dragging = false;
+        }
+
+        let dropZones = this.querySelectorAll(".drop-zone")
+        if (dropZones.length == 0) {
+            // I will append the leading drop-zone.
+            this.appendChild(this.createDropZone())
+        }
+
+        this.appendChild(lnk)
+
+        // append the drop zone after the element.
+        this.appendChild(this.createDropZone())
+    }
+
+    createDropZone() {
+        let dropZone = document.createElement("div")
+        dropZone.classList.add("drop-zone")
+
+        dropZone.ondragenter = (evt) => {
+            evt.preventDefault()
+            if (this.dragging) {
+                dropZone.style.backgroundColor = "var(--palette-action-disabled)"
+            }
+        }
+
+        dropZone.ondragover = (evt) => {
+            evt.preventDefault()
+        }
+
+        dropZone.ondragleave = (evt) => {
+            evt.preventDefault()
+            if (this.dragging) {
+                dropZone.style.backgroundColor = ""
+            }
+        }
+
+        dropZone.ondrop = (evt) => {
+            evt.preventDefault()
+            if (this.dragging) {
+                var id = evt.dataTransfer.getData("Text");
+                var lnk = this.querySelector("#" + id)
+
+                // so here I will 
+                let index = getChildIndex(lnk)
+
+                // mode elements
+                this.insertBefore(this.children[index - 1], dropZone)
+                this.insertBefore(lnk, dropZone)
+
+                // re-index pages...
+                let lnks = this.querySelectorAll("globular-page-link")
+                for (var i = 0; i < lnks.length; i++) {
+                    // set the new index
+                    lnks[i].webPage.setAttribute("index", i)
+                    lnks[i].webPage.index = i
+                }
+
+                Model.eventHub.publish("_need_save_event_", null, true)
+
+                dropZone.style.backgroundColor = ""
+            }
+        }
+
+
+        return dropZone
     }
 
     // Save all pages...
@@ -1448,6 +1560,7 @@ export class NavigationPageLink extends HTMLElement {
                 cursor: pointer;
             }
 
+
         </style>
         <div>
             <span id="page-name-span"></span>
@@ -1457,21 +1570,18 @@ export class NavigationPageLink extends HTMLElement {
         </div>
         `
 
+        this.id = "_" + randomUUID()
         this.editor = this.shadowRoot.querySelector("#page-name-editor")
         this.input = this.shadowRoot.querySelector("#page-name-editor-input")
+
+        // contain the name of the link...
         this.span = this.shadowRoot.querySelector("#page-name-span")
+
 
         // Set the page...
         this.span.onclick = () => {
             this.webPage.setPage()
             this.emphasis()
-        }
-
-        // set initial values.
-        if (this.webPage) {
-            this.edit = false
-            this.span.innerHTML = this.webPage.name
-            this.input.value = this.webPage.name
         }
 
         // enter edit mode.
@@ -1480,6 +1590,14 @@ export class NavigationPageLink extends HTMLElement {
                 this.setEditMode()
             }
         });
+
+        // set initial values.
+        if (this.webPage) {
+            this.edit = false
+            this.span.innerHTML = this.webPage.name
+            this.input.value = this.webPage.name
+        }
+
 
         // Set the page 
         this.input.onblur = () => {
@@ -1619,6 +1737,12 @@ export class WebPage extends HTMLElement {
                 flex-direction: column;
                 margin-left: 10px;
                 font-size: 1rem;
+                text-align: left;
+                user-select: none;
+                -moz-user-select: none;
+                -khtml-user-select: none;
+                -webkit-user-select: none;
+                -o-user-select: none;
             }
             
             #page-selector:hover{
@@ -1647,6 +1771,11 @@ export class WebPage extends HTMLElement {
                 flex-direction: row;
                 height: 40px;
                 z-index: 100;
+                user-select: none;
+                -moz-user-select: none;
+                -khtml-user-select: none;
+                -webkit-user-select: none;
+                -o-user-select: none;
             }
 
             .toolbar paper-icon-button, paper-button{
@@ -1810,30 +1939,43 @@ export class WebPage extends HTMLElement {
         this.resetEditMode()
 
 
+        this.dragging = false;
+
+        this.ondragstart = () => {
+            this.dragging = true
+        }
+
+        this.ondragend = () => {
+            this.dragging = false
+        }
+
         // The on drop event.
         this.ondrop = (evt) => {
             evt.preventDefault();
-
-            var html = evt.dataTransfer.getData("text/html");
-            let selector = this.getActiveSelector()
-            if (selector != null) {
-                selector.style.border = ""
-                ApplicationView.wait("append content...")
-                // Set the content from the html text...
-                selector.editor.setHtml(html)
-                ApplicationView.resume()
+            if (this.dragging) {
+                var html = evt.dataTransfer.getData("text/html");
+                let selector = this.getActiveSelector()
+                if (selector != null) {
+                    selector.style.border = ""
+                    ApplicationView.wait("append content...")
+                    // Set the content from the html text...
+                    selector.editor.setHtml(html)
+                    ApplicationView.resume()
+                }
             }
         }
 
         // The drag over content.
         this.ondragover = (evt) => {
             evt.preventDefault();
-            let selector = this.getActiveSelector()
-            if (selector == null) {
-                ApplicationView.displayMessage("select the target element where to drop the content.", 3500)
-                return
+            if (this.dragging) {
+                let selector = this.getActiveSelector()
+                if (selector == null && this.dragging) {
+                    ApplicationView.displayMessage("select the target element where to drop the content.", 3500)
+                    return
+                }
+                selector.style.border = "1px solid var(--palette-divider)"
             }
-            selector.style.border = "1px solid var(--palette-divider)"
         }
 
     }
@@ -2108,6 +2250,11 @@ export class ElementEditor extends HTMLElement {
                         flex-direction: row;
                         height: 40px;
                         z-index: 100;
+                        user-select: none;
+                        -moz-user-select: none;
+                        -khtml-user-select: none;
+                        -webkit-user-select: none;
+                        -o-user-select: none;
                     }
         
                     .toolbar paper-icon-button, paper-button{
@@ -2260,6 +2407,8 @@ export class ElementEditor extends HTMLElement {
             if (this.selector == null) {
                 this.selector = new ElementSelector(this)
                 this.selector.id = data.id + "_selector"
+
+                // Append the selector to the parent editor.
                 if (parent.editor) {
                     if (parent.editor.selector) {
                         parent.editor.selector.appendSelector(this.selector)
@@ -2403,6 +2552,9 @@ export class ElementEditor extends HTMLElement {
      * Append element...
      */
     appendElement(e) {
+        if (e === this.element) {
+            return // can't insert element to itself...
+        }
 
         // Now the element style...
         if (e.tagName != "STYLE") {
@@ -2807,6 +2959,11 @@ export class ElementSelector extends HTMLElement {
                 font-size: 1.2rem;
                 margin-left: 20px;
                 width: 100%;
+                user-select: none;
+                -moz-user-select: none;
+                -khtml-user-select: none;
+                -webkit-user-select: none;
+                -o-user-select: none;
             }
 
             #container span {
@@ -2837,14 +2994,22 @@ export class ElementSelector extends HTMLElement {
                 width: 100%;
             }
 
+            .drop-zone{
+                height: 2px;
+                width: 100%;
+            }
+
         </style>
-        <div id="container">
+        <div id="container" draggable="true">
+            <span class="drop-zone" id="drop-before-${this.editor.element.id}"></span>
             <span id="id">${this.editor.element.tagName.toLowerCase()} id="${this.editor.element.id}"</span>
             <div id="childrens">
                 <slot></slot>
             </div>
+            <span class="drop-zone" id="drop-after-${this.editor.element.id}"></span>
         </div>
         `
+
 
         // Help to see where is the element on the page.
         let id = this.shadowRoot.querySelector("#id")
@@ -2860,6 +3025,294 @@ export class ElementSelector extends HTMLElement {
         id.onclick = () => {
             this.click()
         }
+
+        id.ondragenter = (evt) => {
+            document.getElementsByTagName("globular-web-page")[0].dragging = false;
+            evt.preventDefault()
+            id.style.border = "1px solid var(--palette-action-disabled)"
+        }
+
+        id.ondragend = id.ondragleave = (evt) => {
+            evt.preventDefault()
+            id.style.border = ""
+        }
+
+        id.ondragover = (evt) => {
+            evt.preventDefault()
+        }
+
+        id.ondrop = (evt) => {
+            evt.preventDefault()
+            id.style.border = ""
+            var id_ = evt.dataTransfer.getData("Text");
+            let e = document.getElementById(id_)
+
+            if (this.editor.element.children.length == 0) {
+                this.editor.element.appendChild(e)
+                // I will also move it style 
+                this.editor.element.appendChild(document.getElementById(e.id + "_style"))
+
+                // and it script.
+                this.editor.element.appendChild(document.getElementById(e.id + "_script"))
+            } else {
+
+
+                // and it script.
+                this.editor.element.insertBefore(document.getElementById(e.id + "_script"), this.editor.element.children[0])
+
+                // I will also move it style 
+                this.editor.element.insertBefore(document.getElementById(e.id + "_style"), this.editor.element.children[0])
+
+
+                // append the element
+                this.editor.element.insertBefore(e, this.editor.element.children[0])
+
+
+            }
+
+            e.editor.selector.slot = ""
+            this.editor.selector.appendChild(e.editor.selector)
+
+            e.editor.parentId = e.parentNode.id
+            this.setFirstSelectors()
+
+            window.dispatchEvent(new Event('resize'));
+            Model.eventHub.publish("_need_save_event_", null, true)
+
+        }
+
+        // Get the list of all child drop zone...
+
+        let dropBefore = this.shadowRoot.querySelector(`#drop-before-${this.editor.element.id}`)
+        dropBefore.ondragenter = (evt) => {
+            evt.preventDefault()
+            document.getElementsByTagName("globular-web-page")[0].dragging = false;
+            dropBefore.style.height = "10px"
+            dropBefore.style.backgroundColor = "var(--palette-action-disabled)"
+        }
+
+        dropBefore.ondragend = dropBefore.ondragleave = (evt) => {
+            evt.preventDefault()
+            dropBefore.style.height = "2px"
+            dropBefore.style.backgroundColor = ""
+        }
+
+        dropBefore.ondragover = (evt) => {
+            evt.preventDefault()
+        }
+
+        dropBefore.ondrop = (evt) => {
+            evt.preventDefault()
+            dropAfter.style.height = "2px"
+            dropAfter.style.backgroundColor = ""
+            var id = evt.dataTransfer.getData("Text");
+            let parent = this.editor.getParent()
+
+            if (parent) {
+                let getNextChild = (c) => {
+
+                    if (c.tagName != "STYLE" && c.tagName != "SCRIPT") {
+                        return c
+                    }
+                    let index = getChildIndex(c)
+                    index++
+                    return getNextChild(parent.children[index])
+                }
+
+                let e = document.getElementById(id)
+                let index = getChildIndex(this.editor.element)
+                let count = parent.children.length
+
+                // I will not count element selector and editor in case the parent is a webpage...
+                for (var i = 0; i < parent.children.length - 1; i++) {
+                    if (parent.children[i].tagName == "GLOBULAR-ELEMENT-SELECTOR" || parent.children[i].tagName == "GLOBULAR-ELEMENT-EDITOR") {
+                        count = count - 1
+                    }
+                }
+
+                if (index < count - 3) {
+
+                    // insert before element...
+                    parent.insertBefore(e, this.editor.element)
+
+                    // I will also move it style 
+                    parent.insertBefore(document.getElementById(e.id + "_style"), this.editor.element)
+
+                    // and it script.
+                    parent.insertBefore(document.getElementById(e.id + "_script"), this.editor.element)
+
+                    // append it selector...
+                    if (parent.editor)
+                        parent.editor.selector.insertBefore(e.editor.selector, this.editor.selector)
+                    else {
+                        e.editor.selector.slot = "selectors"
+                        parent.insertBefore(e.editor.selector, this.editor.selector)
+                    }
+                } else {
+                    parent.appendChild(e)
+
+                    // I will also move it style 
+                    parent.appendChild(document.getElementById(e.id + "_style"))
+
+                    // and it script.
+                    parent.appendChild(document.getElementById(e.id + "_script"))
+
+                    // append it selector...
+                    if (parent.editor)
+                        parent.editor.selector.appendChild(e.editor.selector)
+                    else {
+                        e.editor.selector.slot = "selectors"
+                        parent.appendChild(e.editor.selector)
+                    }
+                }
+
+                // set it new parent id.
+                e.editor.parentId = e.parentNode.id
+                this.setFirstSelectors()
+                window.dispatchEvent(new Event('resize'));
+                Model.eventHub.publish("_need_save_event_", null, true)
+
+            }
+        }
+
+        if (getChildIndex(this.editor.element) > 0) {
+            dropBefore.style.display = "none"
+        }
+
+
+        let dropAfter = this.shadowRoot.querySelector(`#drop-after-${this.editor.element.id}`)
+        dropAfter.ondragenter = (evt) => {
+            evt.preventDefault()
+            document.getElementsByTagName("globular-web-page")[0].dragging = false;
+            dropAfter.style.height = "10px"
+            dropAfter.style.backgroundColor = "var(--palette-action-disabled)"
+        }
+
+        dropAfter.ondragend = dropAfter.ondragleave = (evt) => {
+            evt.preventDefault()
+            dropAfter.style.height = "2px"
+            dropAfter.style.backgroundColor = ""
+        }
+
+        dropAfter.ondragover = (evt) => {
+            evt.preventDefault()
+        }
+
+        dropAfter.ondrop = (evt) => {
+            evt.preventDefault()
+            dropAfter.style.height = "2px"
+            dropAfter.style.backgroundColor = ""
+            var id = evt.dataTransfer.getData("Text");
+            let parent = this.editor.getParent()
+
+            if (parent) {
+                let getNextChild = (c) => {
+                    if (c.tagName != "STYLE" && c.tagName != "SCRIPT") {
+                        return c
+                    }
+                    let index = getChildIndex(c)
+                    index++
+                    return getNextChild(parent.children[index])
+                }
+
+                let e = document.getElementById(id)
+                let index = getChildIndex(this.editor.element)
+                let count = parent.children.length
+
+                // I will not count element selector and editor in case the parent is a webpage...
+                for (var i = 0; i < parent.children.length - 1; i++) {
+                    if (parent.children[i].tagName == "GLOBULAR-ELEMENT-SELECTOR" || parent.children[i].tagName == "GLOBULAR-ELEMENT-EDITOR") {
+                        count = count - 1
+                    }
+                }
+
+                if (index < count - 3) {
+
+                    let e_ = getNextChild(parent.children[index + 3])
+
+                    // insert before element...
+                    parent.insertBefore(e, e_)
+
+                    // I will also move it style 
+                    parent.insertBefore(document.getElementById(e.id + "_style"), e_)
+
+                    // and it script.
+                    parent.insertBefore(document.getElementById(e.id + "_script"), e_)
+
+                    // append it selector...
+                    if (parent.editor)
+                        if (e_.editor) {
+                            parent.editor.selector.insertBefore(e.editor.selector, e_.editor.selector)
+                        } else if (e_.selector) {
+                            parent.editor.selector.insertBefore(e.editor.selector, e_.selector)
+                        } else {
+                            e.editor.selector.slot = "selectors"
+                            if (e_.editor) {
+                                parent.insertBefore(e.editor.selector, e_.editor.selector)
+                            } else if (e_.selector) {
+                                parent.insertBefore(e.editor.selector, e_.selector)
+                            }
+                        }
+
+
+                } else {
+                    parent.appendChild(e)
+
+                    // I will also move it style 
+                    parent.appendChild(document.getElementById(e.id + "_style"))
+
+                    // and it script.
+                    parent.appendChild(document.getElementById(e.id + "_script"))
+
+
+                    // append it selector...
+                    if (parent.editor)
+                        parent.editor.selector.appendChild(e.editor.selector)
+                    else {
+                        e.editor.selector.slot = "selectors"
+                        parent.appendChild(e.editor.selector)
+                    }
+                }
+
+                // set it new parent id.
+                e.editor.parentId = e.parentNode.id
+
+                this.setFirstSelectors()
+
+                window.dispatchEvent(new Event('resize'));
+                Model.eventHub.publish("_need_save_event_", null, true)
+            }
+        }
+
+        let container = this.shadowRoot.querySelector("#container")
+        container.ondragstart = (evt) => {
+            evt.stopPropagation()
+            // set the id of the element to be move...
+            evt.dataTransfer.setData("Text", this.editor.element.id);
+        }
+
+
+    }
+
+    // Set the first element
+    setFirstSelectors() {
+        let selectors = document.getElementsByTagName("globular-element-selector")
+        for (var i = 0; i < selectors.length; i++) {
+            selectors[i].setFirstSelector()
+        }
+    }
+
+    // return the get drop before element
+    setFirstSelector() {
+        let dropBefore = this.shadowRoot.querySelector(`#drop-before-${this.editor.element.id}`)
+        let index = getChildIndex(this.editor.element)
+        if (index == 0) {
+            dropBefore.style.display = ""
+        } else {
+            dropBefore.style.display = "none"
+        }
+        dropBefore.style.backgroundColor = ""
+        dropBefore.style.height = "2px"
     }
 
     click() {

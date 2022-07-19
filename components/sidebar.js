@@ -26,6 +26,7 @@ export class Sidebar extends HTMLElement {
             ${getTheme()}
             #container{
                 min-width: ${this.width}px;
+
             }
 
             .Sidebar{
