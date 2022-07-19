@@ -2108,7 +2108,6 @@ export class WebPage extends HTMLElement {
             });
     }
 
-
     // Save the actual content.
     save(callback, errorCallback) {
 
@@ -2736,7 +2735,9 @@ export class ElementEditor extends HTMLElement {
 
         this.handle.style.display = "none"
         this.edit = false
-        this.getParent().removeChild(this)
+        if (this.parentNode) {
+            this.parentNode.removeChild(this)
+        }
     }
 
     /**
@@ -3115,7 +3116,7 @@ export class ElementSelector extends HTMLElement {
                     }
                     let index = getChildIndex(c)
                     index++
-                    if(parent.children[index])
+                    if (parent.children[index])
                         return getNextChild(parent.children[index])
 
                     return null
@@ -3144,9 +3145,9 @@ export class ElementSelector extends HTMLElement {
                     parent.insertBefore(document.getElementById(e.id + "_script"), this.editor.element)
 
                     // append it selector...
-                    if (parent.editor)
+                    if (parent.editor) {
                         parent.editor.selector.insertBefore(e.editor.selector, this.editor.selector)
-                    else {
+                    } else {
                         e.editor.selector.slot = "selectors"
                         parent.insertBefore(e.editor.selector, this.editor.selector)
                     }
@@ -3214,7 +3215,7 @@ export class ElementSelector extends HTMLElement {
                     }
                     let index = getChildIndex(c)
                     index++
-                    if(parent.children[index])
+                    if (parent.children[index])
                         return getNextChild(parent.children[index])
 
                     return null
@@ -3245,19 +3246,20 @@ export class ElementSelector extends HTMLElement {
                     parent.insertBefore(document.getElementById(e.id + "_script"), e_)
 
                     // append it selector...
-                    if (parent.editor)
+                    if (parent.editor) {
                         if (e_.editor) {
                             parent.editor.selector.insertBefore(e.editor.selector, e_.editor.selector)
                         } else if (e_.selector) {
                             parent.editor.selector.insertBefore(e.editor.selector, e_.selector)
-                        } else {
-                            e.editor.selector.slot = "selectors"
-                            if (e_.editor) {
-                                parent.insertBefore(e.editor.selector, e_.editor.selector)
-                            } else if (e_.selector) {
-                                parent.insertBefore(e.editor.selector, e_.selector)
-                            }
                         }
+                    } else {
+                        e.editor.selector.slot = "selectors"
+                        if (e_.editor) {
+                            parent.insertBefore(e.editor.selector, e_.editor.selector)
+                        } else if (e_.selector) {
+                            parent.insertBefore(e.editor.selector, e_.selector)
+                        }
+                    }
 
 
                 } else {
@@ -3295,8 +3297,10 @@ export class ElementSelector extends HTMLElement {
             // set the id of the element to be move...
             evt.dataTransfer.setData("Text", this.editor.element.id);
         }
+    }
 
-
+    connectedCallback(){
+        this.setFirstSelectors()
     }
 
     // Set the first element
@@ -3310,8 +3314,20 @@ export class ElementSelector extends HTMLElement {
     // return the get drop before element
     setFirstSelector() {
         let dropBefore = this.shadowRoot.querySelector(`#drop-before-${this.editor.element.id}`)
-        let index = getChildIndex(this.editor.element)
-        if (index == 0) {
+        let isFirst = true;
+        for(var i=0; i < this.editor.element.parentNode.children.length; i++){
+            let e = this.editor.element.parentNode.children[i]
+            if(e.tagName == "GLOBULAR-ELEMENT-SELECTOR"){
+                if(e === this.editor.selector){
+                    break;
+                }else{
+                    isFirst = false
+                    break
+                }
+            }
+        }
+
+        if (isFirst) {
             dropBefore.style.display = ""
         } else {
             dropBefore.style.display = "none"
