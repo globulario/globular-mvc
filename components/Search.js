@@ -591,6 +591,13 @@ export class SearchBar extends HTMLElement {
                     page.facetFilter.style.display = ""
                 }
             }
+
+            // I will remove all highligted text..
+            let highlighted = document.getElementsByClassName("highlighted")
+            for (var i = 0; i < highlighted.length; i++) {
+                if (highlighted[i].lowlight)
+                    highlighted[i].lowlight();
+            }
         }
 
         // Change the search context, this will search over other indexations...
@@ -953,7 +960,7 @@ export class SearchResultsPage extends HTMLElement {
 
                 webpageSearchResults.appendChild(range.createContextualFragment(html))
                 let snippetsDiv = webpageSearchResults.querySelector(`#snippets-${uuid}-div`)
-                if (snippet.Text){
+                if (snippet.Text) {
                     snippet.Text.forEach(s => {
                         let div = document.createElement("div")
                         div.innerHTML = s
@@ -977,7 +984,29 @@ export class SearchResultsPage extends HTMLElement {
                                 behavior: 'smooth'
                             });
 
-                            window.find(summary.getQuery())
+                            // I will remove all highligted text..
+                            let highlighted = document.getElementsByClassName("highlighted")
+                            for (var i = 0; i < highlighted.length; i++) {
+                                if (highlighted[i].lowlight)
+                                    highlighted[i].lowlight();
+                            }
+
+                            // So here I will highlight the text...
+                            const regex = new RegExp(summary.getQuery(), 'gi');
+
+                            let text = e.innerHTML;
+                            text = text.replace(/(<mark class="highlight">|<\/mark>)/gim, '');
+
+                            const newText = text.replace(regex, '<mark class="highlight">$&</mark>');
+                            e.innerHTML = newText;
+                            e.classList.add("highlighted")
+
+                            // set back propertie.
+                            e.lowlight = () => {
+                                e.innerHTML = text;
+                                e.classList.remove("highlighted")
+                                delete e.lowlight
+                            }
 
                             return
                         }

@@ -234,8 +234,6 @@ export class ApplicationView extends View {
   }
 
   hideContent() {
-    
-    Model.eventHub.publish("_hide_search_results_", null, true)
 
     if (this._workspace_childnodes.length != 0) {
       this._sidemenu_childnodes = new Array<any>();
@@ -247,7 +245,9 @@ export class ApplicationView extends View {
     while (i > 0) {
       let node = this.getWorkspace().childNodes[this.getWorkspace().childNodes.length - 1]
       if (!node.classList.contains("draggable")) {
-        this._workspace_childnodes.push(node)
+        if (node.tagName != "GLOBULAR-WEB-PAGE"){
+          this._workspace_childnodes.push(node)
+        }
         this.getWorkspace().removeChild(node)
       }
       i--
@@ -255,10 +255,42 @@ export class ApplicationView extends View {
   }
 
   restoreContent() {
+    let mediaWatching = null
+    let blogPosts = null
+    let searchResults = null
+    this.getWorkspace().innerHTML = ""
+
     for (var i = 0; i < this._workspace_childnodes.length; i++) {
       let node = this._workspace_childnodes[i]
-      this.getWorkspace().appendChild(node)
+      if (node.tagName != "GLOBULAR-WEB-PAGE" && node.tagName != "GLOBULAR-MEDIA-WATCHING" && node.tagName != "GLOBULAR-BLOG-POSTS" && node.tagName != "GLOBULAR-SEARCH-RESULTS") {
+        this.getWorkspace().appendChild(node)
+      } else if (node.tagName == "GLOBULAR-MEDIA-WATCHING") {
+        mediaWatching = node
+      } else if (node.tagName == "GLOBULAR-BLOG-POSTS") {
+        blogPosts = node
+      } else if (node.tagName == "GLOBULAR-SEARCH-RESULTS") {
+        searchResults = node
+      }
     }
+
+    if (mediaWatching) {
+      this.getWorkspace().appendChild(mediaWatching)
+    } else if (blogPosts) {
+      this.getWorkspace().appendChild(blogPosts)
+    } else if (searchResults) {
+      this.getWorkspace().appendChild(searchResults)
+    } else {
+      // set the active webpage...
+      let lnks = document.getElementsByTagName("globular-page-link")
+      for (var i = 0; i < lnks.length; i++) {
+        let lnk = <any>lnks[i]
+        if (lnk.active) {
+          this.getWorkspace().appendChild(lnk.webPage)
+          break
+        }
+      }
+    }
+
     this._sidemenu_childnodes = new Array<any>();
     this._workspace_childnodes = new Array<any>();
   }

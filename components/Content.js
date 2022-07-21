@@ -87,8 +87,8 @@ function getChildIndex(node) {
 // Return the css editor.
 function getCssEditor(style) {
 
-    if (ApplicationView.layout.workspace().querySelector("#" + style.id + "_css_editor") != null) {
-        return ApplicationView.layout.workspace().querySelector("#" + style.id + "_css_editor")
+    if (getWorkspace().querySelector("#" + style.id + "_css_editor") != null) {
+        return getWorkspace().querySelector("#" + style.id + "_css_editor")
     }
 
 
@@ -126,7 +126,7 @@ function showCssEditor(style) {
     // Show the css to edit the element style.
     let editor = getCssEditor(style)
     if (editor != null) {
-        ApplicationView.layout.workspace().appendChild(editor)
+        getWorkspace().appendChild(editor)
         let editors = document.getElementsByTagName("globular-code-editor")
         for (var i = 0; i < editors.length; i++) {
             editors[i].style.zIndex = 1
@@ -144,7 +144,7 @@ function showCssEditor(style) {
 function showJavascriptEditor(script) {
     let javascript_editor = getJavascriptEditor(script)
     if (javascript_editor != null) {
-        ApplicationView.layout.workspace().appendChild(javascript_editor)
+        getWorkspace().appendChild(javascript_editor)
         let editors = document.getElementsByTagName("globular-code-editor")
         for (var i = 0; i < editors.length; i++) {
             editors[i].style.zIndex = 1
@@ -156,8 +156,8 @@ function showJavascriptEditor(script) {
 
 function getJavascriptEditor(script) {
 
-    if (ApplicationView.layout.workspace().querySelector("#" + script.id + "_js_editor") != null) {
-        return ApplicationView.layout.workspace().querySelector("#" + style.id + "_js_editor")
+    if (getWorkspace().querySelector("#" + script.id + "_js_editor") != null) {
+        return getWorkspace().querySelector("#" + style.id + "_js_editor")
     }
 
     // Set the css from the editor...
@@ -199,7 +199,7 @@ function getJavascriptEditor(script) {
 function showHtmlEditor(element) {
     let html_editor = getHtmlEditor(element)
     if (html_editor != null) {
-        ApplicationView.layout.workspace().appendChild(html_editor)
+        getWorkspace().appendChild(html_editor)
         let editors = document.getElementsByTagName("globular-code-editor")
         for (var i = 0; i < editors.length; i++) {
             editors[i].style.zIndex = 1
@@ -212,8 +212,8 @@ function showHtmlEditor(element) {
 function getHtmlEditor(element) {
     // be sure that the element reference is up to date.
 
-    if (ApplicationView.layout.workspace().querySelector("#" + element.id + "_html_editor") != null) {
-        return ApplicationView.layout.workspace().querySelector("#" + element.id + "_html_editor")
+    if (getWorkspace().querySelector("#" + element.id + "_html_editor") != null) {
+        return getWorkspace().querySelector("#" + element.id + "_html_editor")
     }
 
     // Set the css from the editor...
@@ -271,12 +271,16 @@ function getHtmlEditor(element) {
     return html_editor
 }
 
+function getWorkspace(){
+   return document.getElementsByTagName("globular-workspace")[0];//document.body
+}
+
 /**
  * 
  * @returns The active page, editor must be on the active page.
  */
-function getActiveWebPage() {
-    return ApplicationView.layout.workspace().getElementsByTagName("globular-web-page")[0]
+export function getActiveWebPage() {
+    return getWorkspace().getElementsByTagName("globular-web-page")[0]
 }
 
 /**
@@ -380,7 +384,7 @@ export class ContentManager extends HTMLElement {
                 style.id = s.id
                 style.name = s.name
                 style.innerText = s.text
-                ApplicationView.layout.workspace().appendChild(style)
+                getWorkspace().appendChild(style)
             })
 
             // load scripts 
@@ -390,7 +394,7 @@ export class ContentManager extends HTMLElement {
                     style.id = s.id
                     style.name = s.name
                     style.innerText = s.text
-                    ApplicationView.layout.workspace().appendChild(style)
+                    getWorkspace().appendChild(style)
                 })
             }, err => ApplicationView.displayMessage(err, 3000))
         }, err => ApplicationView.displayMessage(err, 3000))
@@ -421,6 +425,9 @@ export class ContentManager extends HTMLElement {
 
     // Display the toolbar...
     setEditMode() {
+
+
+
         this.shadowRoot.querySelector("#container").appendChild(this.toolbar)
         let setCreateModeBtn = this.shadowRoot.querySelector("#set-create-mode-btn")
         let createPageBtn = this.shadowRoot.querySelector("#create-page-btn")
@@ -439,6 +446,12 @@ export class ContentManager extends HTMLElement {
         saveAllBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
 
         setCreateModeBtn.onclick = () => {
+            let highlighted = document.getElementsByClassName("highlighted")
+            for (var i = 0; i < highlighted.length; i++) {
+                if (highlighted[i].lowlight)
+                    highlighted[i].lowlight();
+            }
+
             if (createPageBtn.style.display == "none") {
                 setCreateModeBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-text-primary)")
                 createPageBtn.style.display = "block"
@@ -582,11 +595,11 @@ export class ContentManager extends HTMLElement {
     // save all styles element present in the workspace...
     saveStyles(callback) {
         // Get immediate style elements.
-        let styles_ = ApplicationView.layout.workspace().querySelectorAll("style")
+        let styles_ = getWorkspace().querySelectorAll("style")
         let styles = []
         for (var i = 0; i < styles_.length; i++) {
             let style = styles_[i]
-            if (style.parentNode == ApplicationView.layout.workspace()) {
+            if (style.parentNode == getWorkspace()) {
                 styles.push(style)
             }
         }
@@ -729,11 +742,11 @@ export class ContentManager extends HTMLElement {
     // save all scripts element present in the workspace...
     saveScripts(callback) {
         // Get immediate style elements.
-        let scripts_ = ApplicationView.layout.workspace().querySelectorAll("script")
+        let scripts_ = getWorkspace().querySelectorAll("script")
         let scripts = []
         for (var i = 0; i < scripts_.length; i++) {
             let s = scripts_[i]
-            if (s.parentNode == ApplicationView.layout.workspace()) {
+            if (s.parentNode == getWorkspace()) {
                 scripts.push(s)
             }
         }
@@ -988,12 +1001,17 @@ export class CodeManager extends HTMLElement {
         let div = this.shadowRoot.querySelector("#content")
         div.innerHTML = "";
 
+        // workspace must be active.
+        if(!getWorkspace()){
+            return
+        }
+
         // Get style list.
-        let elements_ = ApplicationView.layout.workspace().querySelectorAll(tagName)
+        let elements_ = getWorkspace().querySelectorAll(tagName)
         let elements = []
         for (var i = 0; i < elements_.length; i++) {
             let e = elements_[i]
-            if (e.parentNode == ApplicationView.layout.workspace()) {
+            if (e.parentNode == getWorkspace()) {
                 elements.push(e)
             }
         }
@@ -1002,7 +1020,7 @@ export class CodeManager extends HTMLElement {
         for (var i = 0; i < elements.length; i++) {
 
             let e = elements[i]
-            if (e.parentNode == ApplicationView.layout.workspace()) {
+            if (e.parentNode == getWorkspace()) {
                 let html = `
                 <div class="element-lnk">
                     <paper-icon-button id="edit-${e.id}-btn"  icon="icons:create" class="btn"></paper-icon-button>
@@ -1133,7 +1151,7 @@ export class CodeManager extends HTMLElement {
                 // if code is css style...
                 if (this.mode == "css") {
                     id = "_" + getUuidByString(name + "_style")
-                    if (ApplicationView.layout.workspace().querySelector("#" + id)) {
+                    if (getWorkspace().querySelector("#" + id)) {
                         ApplicationView.displayMessage("A style named " + name + " already exist!")
                         return
                     }
@@ -1146,14 +1164,14 @@ export class CodeManager extends HTMLElement {
                     style.name = name
 
                     // append the style in the workspace.
-                    ApplicationView.layout.workspace().appendChild(style)
+                    getWorkspace().appendChild(style)
 
                     // refresh the style list...
                     this.displayContent()
                 } else if (this.mode == "javascript") {
                     id = "_" + getUuidByString(name + "_script")
                     // Here the code is javascript.
-                    if (ApplicationView.layout.workspace().querySelector("#" + id)) {
+                    if (getWorkspace().querySelector("#" + id)) {
                         ApplicationView.displayMessage("A script named " + name + " already exist!")
                         return
                     }
@@ -1166,7 +1184,7 @@ export class CodeManager extends HTMLElement {
                     script.name = name
 
                     // append the style in the workspace.
-                    ApplicationView.layout.workspace().appendChild(script)
+                    getWorkspace().appendChild(script)
 
                     // refresh the style list...
                     this.displayContent()
@@ -1537,6 +1555,7 @@ export class NavigationPageLink extends HTMLElement {
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
         this.edit = true
+        this.active = false
         if (webPage) {
             this.webPage = webPage
             this.webPage.link = this
@@ -1590,6 +1609,13 @@ export class NavigationPageLink extends HTMLElement {
 
         // Set the page...
         this.span.onclick = () => {
+            // I will remove all highligted text..
+            let highlighted = document.getElementsByClassName("highlighted")
+            for (var i = 0; i < highlighted.length; i++) {
+                if (highlighted[i].lowlight)
+                    highlighted[i].lowlight();
+            }
+
             this.click()
         }
 
@@ -1644,10 +1670,12 @@ export class NavigationPageLink extends HTMLElement {
         }
 
         this.span.style.textDecoration = "underline"
+        this.active = true
     }
 
     de_emphasis() {
         this.span.style.textDecoration = "none"
+        this.active = false
     }
 
     setInputWidth() {
@@ -2131,7 +2159,10 @@ export class WebPage extends HTMLElement {
         this.loadPageData(data => {
             let dataElements = getDataElements(data.elements)
             removeSearchIndex_(dataElements)
-        }, errorCallback)
+        }, (err)=>{
+            console.log(err)
+            callback()
+        })
     }
 
     /**
@@ -2310,6 +2341,13 @@ export class WebPage extends HTMLElement {
         }
 
         this.needSave = false
+
+        // I will remove all highligted text..
+        let highlighted = document.getElementsByClassName("highlighted")
+        for (var i = 0; i < highlighted.length; i++) {
+            if (highlighted[i].lowlight)
+                highlighted[i].lowlight();
+        }
 
         // remove existing indexation.
         this.removeAllSearchIndex(() => {

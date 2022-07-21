@@ -241,6 +241,11 @@ globular-processes-manager .table-item-value {}
    --iron-icon-fill-color: var(--palette-text-primary);
 }
 
+/* Crucial */
+.highlight {
+   background-color: #EEF43B;
+ }
+
 .title {
    font-size: 1.25rem;
    text-transform: uppercase;
