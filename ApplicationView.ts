@@ -240,6 +240,7 @@ export class ApplicationView extends View {
       this._workspace_childnodes = new Array<any>();
     }
 
+
     // Keep the content of the workspace.
     let i = this.getWorkspace().childNodes.length
     while (i > 0) {
@@ -252,6 +253,16 @@ export class ApplicationView extends View {
       }
       i--
     }
+
+    // I will also remove the search filter...
+    let searchFacetFilters = document.getElementsByTagName("globular-facet-search-filter")
+    for(var index=0; index < searchFacetFilters.length; index++){
+      let parentNode = searchFacetFilters[index].parentNode
+      if(parentNode){
+        parentNode.removeChild(searchFacetFilters[index])
+      }
+    }
+    
   }
 
   restoreContent() {

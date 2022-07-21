@@ -958,71 +958,74 @@ export class SearchResultsPage extends HTMLElement {
                 </div>
                 `
 
-                webpageSearchResults.appendChild(range.createContextualFragment(html))
-                let snippetsDiv = webpageSearchResults.querySelector(`#snippets-${uuid}-div`)
+
                 if (snippet.Text) {
-                    snippet.Text.forEach(s => {
-                        let div = document.createElement("div")
-                        div.innerHTML = s
-                        snippetsDiv.appendChild(div)
-                    })
-                }
+                    if (snippet.Text.length > 0) {
+                        webpageSearchResults.appendChild(range.createContextualFragment(html))
+                        let snippetsDiv = webpageSearchResults.querySelector(`#snippets-${uuid}-div`)
+                        snippet.Text.forEach(s => {
+                            let div = document.createElement("div")
+                            div.innerHTML = s
+                            snippetsDiv.appendChild(div)
+                        })
+                    }
 
-                let lnk = webpageSearchResults.querySelector(`#page-${uuid}-lnk`)
-                lnk.onclick = () => {
-                    console.log(doc, snippet)
 
-                    let pageLnks = document.getElementsByTagName("globular-page-link")
-                    for (var i = 0; i < pageLnks.length; i++) {
-                        if (pageLnks[i].id.startsWith(doc.PageId)) {
-                            pageLnks[i].click()
-                            let e = document.getElementById(doc.Id)
-                            let position = getCoords(e)
-                            window.scrollTo({
-                                top: position.top - (65 + 10),
-                                left: 0,
-                                behavior: 'smooth'
-                            });
+                    let lnk = webpageSearchResults.querySelector(`#page-${uuid}-lnk`)
+                    lnk.onclick = () => {
+                        console.log(doc, snippet)
 
-                            // I will remove all highligted text..
-                            let highlighted = document.getElementsByClassName("highlighted")
-                            for (var i = 0; i < highlighted.length; i++) {
-                                if (highlighted[i].lowlight)
-                                    highlighted[i].lowlight();
+                        let pageLnks = document.getElementsByTagName("globular-page-link")
+                        for (var i = 0; i < pageLnks.length; i++) {
+                            if (pageLnks[i].id.startsWith(doc.PageId)) {
+                                pageLnks[i].click()
+                                let e = document.getElementById(doc.Id)
+                                let position = getCoords(e)
+                                window.scrollTo({
+                                    top: position.top - (65 + 10),
+                                    left: 0,
+                                    behavior: 'smooth'
+                                });
+
+                                // I will remove all highligted text..
+                                let highlighted = document.getElementsByClassName("highlighted")
+                                for (var i = 0; i < highlighted.length; i++) {
+                                    if (highlighted[i].lowlight)
+                                        highlighted[i].lowlight();
+                                }
+
+                                // So here I will highlight the text...
+                                const regex = new RegExp(summary.getQuery(), 'gi');
+
+                                let text = e.innerHTML;
+                                text = text.replace(/(<mark class="highlight">|<\/mark>)/gim, '');
+
+                                const newText = text.replace(regex, '<mark class="highlight">$&</mark>');
+                                e.innerHTML = newText;
+                                e.classList.add("highlighted")
+
+                                // set back propertie.
+                                e.lowlight = () => {
+                                    e.innerHTML = text;
+                                    e.classList.remove("highlighted")
+                                    delete e.lowlight
+                                }
+
+                                return
                             }
-
-                            // So here I will highlight the text...
-                            const regex = new RegExp(summary.getQuery(), 'gi');
-
-                            let text = e.innerHTML;
-                            text = text.replace(/(<mark class="highlight">|<\/mark>)/gim, '');
-
-                            const newText = text.replace(regex, '<mark class="highlight">$&</mark>');
-                            e.innerHTML = newText;
-                            e.classList.add("highlighted")
-
-                            // set back propertie.
-                            e.lowlight = () => {
-                                e.innerHTML = text;
-                                e.classList.remove("highlighted")
-                                delete e.lowlight
-                            }
-
-                            return
                         }
                     }
-                }
 
-                lnk.onmouseleave = () => {
-                    lnk.style.cursor = "default"
-                    lnk.style.textDecorationColor = ""
-                }
+                    lnk.onmouseleave = () => {
+                        lnk.style.cursor = "default"
+                        lnk.style.textDecorationColor = ""
+                    }
 
-                lnk.onmouseover = () => {
-                    lnk.style.cursor = "pointer"
-                    lnk.style.textDecorationColor = "var(--palette-primary-main)"
+                    lnk.onmouseover = () => {
+                        lnk.style.cursor = "pointer"
+                        lnk.style.textDecorationColor = "var(--palette-primary-main)"
+                    }
                 }
-
             })
         })
     }
