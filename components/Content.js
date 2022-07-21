@@ -384,7 +384,8 @@ export class ContentManager extends HTMLElement {
                 style.id = s.id
                 style.name = s.name
                 style.innerText = s.text
-                getWorkspace().appendChild(style)
+                ApplicationView.layout.workspace().appendChild(style)
+
             })
 
             // load scripts 
@@ -394,7 +395,7 @@ export class ContentManager extends HTMLElement {
                     style.id = s.id
                     style.name = s.name
                     style.innerText = s.text
-                    getWorkspace().appendChild(style)
+                    ApplicationView.layout.workspace().appendChild(style)
                 })
             }, err => ApplicationView.displayMessage(err, 3000))
         }, err => ApplicationView.displayMessage(err, 3000))
@@ -425,8 +426,6 @@ export class ContentManager extends HTMLElement {
 
     // Display the toolbar...
     setEditMode() {
-
-
 
         this.shadowRoot.querySelector("#container").appendChild(this.toolbar)
         let setCreateModeBtn = this.shadowRoot.querySelector("#set-create-mode-btn")
@@ -595,11 +594,11 @@ export class ContentManager extends HTMLElement {
     // save all styles element present in the workspace...
     saveStyles(callback) {
         // Get immediate style elements.
-        let styles_ = getWorkspace().querySelectorAll("style")
+        let styles_ = ApplicationView.layout.workspace().querySelectorAll("style")
         let styles = []
         for (var i = 0; i < styles_.length; i++) {
             let style = styles_[i]
-            if (style.parentNode == getWorkspace()) {
+            if (style.parentNode == ApplicationView.layout.workspace()) {
                 styles.push(style)
             }
         }
@@ -742,11 +741,11 @@ export class ContentManager extends HTMLElement {
     // save all scripts element present in the workspace...
     saveScripts(callback) {
         // Get immediate style elements.
-        let scripts_ = getWorkspace().querySelectorAll("script")
+        let scripts_ = ApplicationView.layout.workspace().querySelectorAll("script")
         let scripts = []
         for (var i = 0; i < scripts_.length; i++) {
             let s = scripts_[i]
-            if (s.parentNode == getWorkspace()) {
+            if (s.parentNode == ApplicationView.layout.workspace()) {
                 scripts.push(s)
             }
         }
@@ -1002,25 +1001,24 @@ export class CodeManager extends HTMLElement {
         div.innerHTML = "";
 
         // workspace must be active.
-        if(!getWorkspace()){
+        if(!ApplicationView.layout.workspace()){
             return
         }
 
         // Get style list.
-        let elements_ = getWorkspace().querySelectorAll(tagName)
+        let elements_ = ApplicationView.layout.workspace().querySelectorAll(tagName)
         let elements = []
         for (var i = 0; i < elements_.length; i++) {
             let e = elements_[i]
-            if (e.parentNode == getWorkspace()) {
+            if (e.parentNode == ApplicationView.layout.workspace()) {
                 elements.push(e)
             }
         }
 
-
         for (var i = 0; i < elements.length; i++) {
 
             let e = elements[i]
-            if (e.parentNode == getWorkspace()) {
+            if (e.parentNode == ApplicationView.layout.workspace()) {
                 let html = `
                 <div class="element-lnk">
                     <paper-icon-button id="edit-${e.id}-btn"  icon="icons:create" class="btn"></paper-icon-button>
@@ -1151,7 +1149,7 @@ export class CodeManager extends HTMLElement {
                 // if code is css style...
                 if (this.mode == "css") {
                     id = "_" + getUuidByString(name + "_style")
-                    if (getWorkspace().querySelector("#" + id)) {
+                    if (ApplicationView.layout.workspace().querySelector("#" + id)) {
                         ApplicationView.displayMessage("A style named " + name + " already exist!")
                         return
                     }
@@ -1164,14 +1162,14 @@ export class CodeManager extends HTMLElement {
                     style.name = name
 
                     // append the style in the workspace.
-                    getWorkspace().appendChild(style)
+                    ApplicationView.layout.workspace().appendChild(style)
 
                     // refresh the style list...
                     this.displayContent()
                 } else if (this.mode == "javascript") {
                     id = "_" + getUuidByString(name + "_script")
                     // Here the code is javascript.
-                    if (getWorkspace().querySelector("#" + id)) {
+                    if (ApplicationView.layout.workspace().querySelector("#" + id)) {
                         ApplicationView.displayMessage("A script named " + name + " already exist!")
                         return
                     }
@@ -1184,7 +1182,7 @@ export class CodeManager extends HTMLElement {
                     script.name = name
 
                     // append the style in the workspace.
-                    getWorkspace().appendChild(script)
+                    ApplicationView.layout.workspace().appendChild(script)
 
                     // refresh the style list...
                     this.displayContent()
