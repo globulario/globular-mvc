@@ -7,7 +7,7 @@ import { ApplicationView } from "../ApplicationView";
 import { mergeTypedArrays, uint8arrayToStringMethod } from "../Utility";
 import { v4 as uuidv4 } from "uuid";
 import * as JwtDecode from "jwt-decode";
-import { DeleteOneRqst, FindRqst, ReplaceOneRqst } from "globular-web-client/persistence/persistence_pb";
+import { DeleteOneRqst, FindOneRqst, FindRqst, ReplaceOneRqst } from "globular-web-client/persistence/persistence_pb";
 
 // The ace editor...
 import * as ace from 'brace';
@@ -272,6 +272,14 @@ function getHtmlEditor(element) {
 }
 
 /**
+ * 
+ * @returns The active page, editor must be on the active page.
+ */
+function getActiveWebPage() {
+    return ApplicationView.layout.workspace().getElementsByTagName("globular-web-page")[0]
+}
+
+/**
  * The content creator, it control edit mode and page creation.
  */
 export class ContentManager extends HTMLElement {
@@ -394,6 +402,8 @@ export class ContentManager extends HTMLElement {
                 saveAllBtn.removeAttribute("disable")
                 saveAllBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-text-primary)")
                 window.dispatchEvent(new Event('resize'));
+                // set need save...
+                getActiveWebPage().needSave = true;
             })
     }
 
@@ -467,7 +477,6 @@ export class ContentManager extends HTMLElement {
 
             // Save all pages at once.
             this.navigation.savePages()
-
 
             // Delete style...
             let deleteStyle = (style) => {
@@ -1478,7 +1487,7 @@ export class Navigation extends HTMLElement {
         let links = this.querySelectorAll("globular-page-link")
         let savePages_ = (index) => {
             if (index < links.length) {
-                console.log(index,  links[index])
+                console.log(index, links[index])
                 links[index].webPage.index = index
 
                 links[index].save(() => {
@@ -1697,6 +1706,9 @@ export class WebPage extends HTMLElement {
 
         // edit mode 
         this.edit = false
+
+        // limit the saving time...
+        this.needSave = false
 
         // Page Name 
         this.name = name
@@ -2014,6 +2026,7 @@ export class WebPage extends HTMLElement {
         if (this.parentNode) {
             this.parentNode.removeChild(this)
         }
+
         Model.eventHub.publish("_delete_web_page_", this, true)
         Model.eventHub.publish("_need_save_event_", null, true)
     }
@@ -2078,15 +2091,6 @@ export class WebPage extends HTMLElement {
     }
 
     removeAllSearchIndex(callback, errorCallback) {
-        let editors = []
-        // keep only immediate childs.
-        for (var i = 0; i < this.children.length; i++) {
-            if (this.children[i].editor) {
-                editors.push(this.children[i].editor)
-            }
-        }
-
-        let elements = []
 
         let getDataElements = (elements) => {
             let dataElements = []
@@ -2108,42 +2112,26 @@ export class WebPage extends HTMLElement {
             this.removeSearchIndex(element, () => {
 
                 if (dataElements.length == 0) {
-                    console.log("-------> 2111")
                     callback()
                 } else {
-                    console.log("-------> 2114")
                     removeSearchIndex_(dataElements)
                 }
             }, err => {
                 console.log("fail to remove index for ", element, err)
                 if (dataElements.length == 0) {
-                    console.log("-------> 2120")
                     callback()
                 } else {
-                    console.log("-------> 2123")
                     removeSearchIndex_(dataElements)
                 }
             })
         }
 
-        // Get elements list.
-        let getData_ = (index) => {
-            if (index < editors.length) {
-                let editor = editors[index]
-                editor.getData(data => {
-                    // set the element data...
-                    elements.push(data);
-                    index += 1
-                    getData_(index)
-                }, errorCallback)
-            } else {
-                let dataElements = getDataElements(elements)
-                removeSearchIndex_(dataElements)
-            }
-        }
 
-        // Get the page element data.
-        getData_(0)
+        // get page data from the db...
+        this.loadPageData(data => {
+            let dataElements = getDataElements(data.elements)
+            removeSearchIndex_(dataElements)
+        }, errorCallback)
     }
 
     /**
@@ -2176,50 +2164,55 @@ export class WebPage extends HTMLElement {
         ).then(() => {
             console.log("remove indexation success!")
             callback(this)
-        }).catch(err=>{
+        }).catch(err => {
             console.log("fail to remove indexation", err)
             errorCallback(err)
         })
 
     }
 
+    // Delete the page.
     delete(callback, errorCallback) {
-        // save the user_data
-        let rqst = new DeleteOneRqst();
-        let db = Model.application + "_db";
+        // delete indexation first...
+        this.removeAllSearchIndex(() => {
 
-        // set the connection infos,
-        rqst.setId(Model.application);
-        rqst.setDatabase(db);
-        let collection = "WebPages";
+            // save the user_data
+            let rqst = new DeleteOneRqst();
+            let db = Model.application + "_db";
 
-        // save only user data and not the how user info...
-        rqst.setCollection(collection);
-        rqst.setQuery(`{"_id":"${this.id}"}`);
+            // set the connection infos,
+            rqst.setId(Model.application);
+            rqst.setDatabase(db);
+            let collection = "WebPages";
 
-        // So here I will set the address from the address found in the token and not 
-        // the address of the client itself.
-        let token = localStorage.getItem("user_token")
-        let decoded = JwtDecode(token);
-        let address = decoded.address;
-        let domain = decoded.domain;
+            // save only user data and not the how user info...
+            rqst.setCollection(collection);
+            rqst.setQuery(`{"_id":"${this.id}"}`);
 
-        // call persist data
-        Model.getGlobule(address).persistenceService
-            .deleteOne(rqst, {
-                token: token,
-                application: Model.application,
-                domain: domain,
-                address: address
-            })
-            .then((rsp) => {
-                // Here I will return the value with it
-                this.removeAllSearchIndex(callback, errorCallback)
+            // So here I will set the address from the address found in the token and not 
+            // the address of the client itself.
+            let token = localStorage.getItem("user_token")
+            let decoded = JwtDecode(token);
+            let address = decoded.address;
+            let domain = decoded.domain;
 
-            })
-            .catch((err) => {
-                errorCallback(err);
-            });
+            // call persist data
+            Model.getGlobule(address).persistenceService
+                .deleteOne(rqst, {
+                    token: token,
+                    application: Model.application,
+                    domain: domain,
+                    address: address
+                })
+                .then((rsp) => {
+                    // Here I will return the value with it
+                    callback(this)
+                })
+                .catch((err) => {
+                    errorCallback(err);
+                });
+
+        }, errorCallback)
     }
 
     // Save the search index.
@@ -2271,102 +2264,149 @@ export class WebPage extends HTMLElement {
         })
     }
 
+    // load the page data...
+    loadPageData(callback, errorCallback) {
+        const collection = "WebPages";
+
+        // save the user_data
+        let rqst = new FindOneRqst();
+        let db = Model.application + "_db";
+
+        // set the connection infos,
+        rqst.setId(Model.application);
+        rqst.setDatabase(db);
+        rqst.setCollection(collection)
+        rqst.setQuery(`{"_id":"${this.id}"}`)
+
+        // So here I will set the address from the address found in the token and not 
+        // the address of the client itself.
+        let token = localStorage.getItem("user_token")
+        let decoded = JwtDecode(token);
+        let address = decoded.address;
+        let domain = decoded.domain;
+
+        // call persist data
+        Model.getGlobule(address).persistenceService
+            .findOne(rqst, {
+                token: token,
+                application: Model.application,
+                domain: domain,
+                address: address
+            })
+            .then(rsp => {
+                // Here I will return the value with it
+                let data = rsp.getResult().toJavaScript();
+                callback(data);
+            })
+            .catch(errorCallback);
+    }
+
     // Save the actual content.
     save(callback, errorCallback) {
 
-        let editors = []
-        // keep only immediate childs.
-        for (var i = 0; i < this.children.length; i++) {
-            if (this.children[i].editor) {
-                editors.push(this.children[i].editor)
-            }
+        if (!this.needSave) {
+            callback()
+            return
         }
 
-        let elements = []
+        this.needSave = false
 
-        let getData_ = (index) => {
-            if (index < editors.length) {
-                let editor = editors[index]
-                editor.getData(data => {
-                    // set the element data...
-                    elements.push(data);
-                    index += 1
-                    getData_(index)
-                }, errorCallback)
-            } else {
+        // remove existing indexation.
+        this.removeAllSearchIndex(() => {
+            let editors = []
+            // keep only immediate childs.
+            for (var i = 0; i < this.children.length; i++) {
+                if (this.children[i].editor) {
+                    editors.push(this.children[i].editor)
+                }
+            }
 
-                // create a string from page information..
-                let str = JSON.stringify({ _id: this.id, name: this.name, style: this.style_.innerText, script: this.script_.innerText, index: this.index, user_id: localStorage.getItem("user_id"), elements: elements })
+            // get the list of elements from the actual page.
+            let elements = []
+            let getData_ = (index) => {
+                if (index < editors.length) {
+                    let editor = editors[index]
+                    editor.getData(data => {
+                        // set the element data...
+                        elements.push(data);
+                        index += 1
+                        getData_(index)
+                    }, errorCallback)
+                } else {
 
-                // save the user_data
-                let rqst = new ReplaceOneRqst();
-                let db = Model.application + "_db";
+                    // create a string from page information..
+                    let str = JSON.stringify({ _id: this.id, name: this.name, style: this.style_.innerText, script: this.script_.innerText, index: this.index, user_id: localStorage.getItem("user_id"), elements: elements })
 
-                // set the connection infos,
-                rqst.setId(Model.application);
-                rqst.setDatabase(db);
-                let collection = "WebPages";
+                    // save the user_data
+                    let rqst = new ReplaceOneRqst();
+                    let db = Model.application + "_db";
 
-                // save only user data and not the how user info...
-                rqst.setCollection(collection);
-                rqst.setQuery(`{"_id":"${this.id}"}`);
-                rqst.setValue(str);
-                rqst.setOptions(`[{"upsert": true}]`);
+                    // set the connection infos,
+                    rqst.setId(Model.application);
+                    rqst.setDatabase(db);
+                    let collection = "WebPages";
 
-                // So here I will set the address from the address found in the token and not 
-                // the address of the client itself.
-                let token = localStorage.getItem("user_token")
-                let decoded = JwtDecode(token);
-                let address = decoded.address;
-                let domain = decoded.domain;
+                    // save only user data and not the how user info...
+                    rqst.setCollection(collection);
+                    rqst.setQuery(`{"_id":"${this.id}"}`);
+                    rqst.setValue(str);
+                    rqst.setOptions(`[{"upsert": true}]`);
 
-                // call persist data
-                Model.getGlobule(address).persistenceService
-                    .replaceOne(rqst, {
-                        token: token,
-                        application: Model.application,
-                        domain: domain,
-                        address: address
-                    })
-                    .then((rsp) => {
-                        // Here I will return the value with it
-                        Model.eventHub.publish(`update_page_${this.id}_evt`, str, false)
+                    // So here I will set the address from the address found in the token and not 
+                    // the address of the client itself.
+                    let token = localStorage.getItem("user_token")
+                    let decoded = JwtDecode(token);
+                    let address = decoded.address;
+                    let domain = decoded.domain;
 
-                        // Eval the script to make modification effective...
-                        let scripts = this.querySelectorAll("script")
-                        for (var i = 0; i < scripts.length; i++) {
-                            let s = scripts[i]
-                            if (s.reload) {
-                                let parent = s.parentNode
-                                parent.removeChild(s)
-
-                                let s_ = document.createElement("script")
-
-                                s_.id = s.id
-                                s_.name = s.name
-                                s_.innerText = s.innerText.split("<br>").join("") // remove beautify...
-                                parent.appendChild(s_)
-                            }
-                        }
-
-                        this.saveSearchIndex(this.id, this.name, elements, () => {
-                            callback(this);
-                        }, err => {
-                            console.log("err ", err)
-                            ApplicationView.displayMessage(err, 3000);
+                    // call persist data
+                    Model.getGlobule(address).persistenceService
+                        .replaceOne(rqst, {
+                            token: token,
+                            application: Model.application,
+                            domain: domain,
+                            address: address
                         })
+                        .then((rsp) => {
+                            // Here I will return the value with it
+                            Model.eventHub.publish(`update_page_${this.id}_evt`, str, false)
+
+                            // Eval the script to make modification effective...
+                            let scripts = this.querySelectorAll("script")
+                            for (var i = 0; i < scripts.length; i++) {
+                                let s = scripts[i]
+                                if (s.reload) {
+                                    let parent = s.parentNode
+                                    parent.removeChild(s)
+
+                                    let s_ = document.createElement("script")
+
+                                    s_.id = s.id
+                                    s_.name = s.name
+                                    s_.innerText = s.innerText.split("<br>").join("") // remove beautify...
+                                    parent.appendChild(s_)
+                                }
+                            }
+
+                            this.saveSearchIndex(this.id, this.name, elements, () => {
+                                callback(this);
+                            }, err => {
+                                console.log("err ", err)
+                                ApplicationView.displayMessage(err, 3000);
+                            })
 
 
-                    })
-                    .catch((err) => {
-                        errorCallback(err);
-                    });
+                        })
+                        .catch((err) => {
+                            errorCallback(err);
+                        });
+                }
             }
-        }
 
-        // save page element event it's empty...
-        getData_(0)
+            // save page element event it's empty...
+            getData_(0)
 
+        }, errorCallback)
     }
 }
 
