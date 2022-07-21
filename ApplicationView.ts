@@ -234,6 +234,8 @@ export class ApplicationView extends View {
   }
 
   hideContent() {
+    
+    Model.eventHub.publish("_hide_search_results_", null, true)
 
     if (this._workspace_childnodes.length != 0) {
       this._sidemenu_childnodes = new Array<any>();
@@ -280,6 +282,7 @@ export class ApplicationView extends View {
     Model.eventHub.subscribe("_set_web_page_",
       uuid => { },
       page => {
+
 
         // remove actual nodes
         this.hideContent()
@@ -622,8 +625,10 @@ export class ApplicationView extends View {
 
         // The search results
         if (this._searchBar != undefined) {
-          if (this._searchResults.parentNode != undefined) {
-            this._searchResults.parentNode.removeChild(this._searchResults)
+          if (this._searchResults) {
+            if (this._searchResults.parentNode != undefined) {
+              this._searchResults.parentNode.removeChild(this._searchResults)
+            }
           }
         }
 
@@ -879,7 +884,7 @@ export class ApplicationView extends View {
 
     // Append the over flow menu.
     ApplicationView.layout.toolbar().appendChild(this.overFlowMenu);
- 
+
     this.overFlowMenu.hide(); // not show it at first.
     this.accountMenu.setAccount(account);
 

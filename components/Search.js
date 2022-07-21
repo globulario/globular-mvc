@@ -12,6 +12,9 @@ import { playVideo } from './Video';
 import { ApplicationView } from '../ApplicationView';
 import * as getUuidByString from 'uuid-by-string';
 import { SearchBlogPostsRequest } from 'globular-web-client/blog/blog_pb';
+import { SearchDocumentsRequest } from 'globular-web-client/search/search_pb';
+import * as JwtDecode from 'jwt-decode';
+import { getCoords, randomUUID } from './utility';
 
 
 // keep values in memorie to speedup...
@@ -282,6 +285,17 @@ function search(query, contexts) {
                         search_(contexts)
                     })
                 }
+            } else if (context == "webPages") {
+                console.log("search webpages... ", query)
+                if (contexts.length == 0) {
+                    searchWebpageContent(query, () => {
+                        console.log("done!")
+                    })
+                } else {
+                    searchWebpageContent(query, () => {
+                        search_(contexts)
+                    })
+                }
             } else {
                 if (contexts.length == 0) {
                     searchTitles(g, query, indexPath, () => {
@@ -381,6 +395,56 @@ function searchBlogPosts(globule, query, indexPath, callback) {
         }
     });
 }
+
+/**
+ * Search document...
+ * @param {*} query 
+ */
+function searchWebpageContent(query, callback) {
+
+    // Search over web-content.
+    let rqst = new SearchDocumentsRequest
+    rqst.setPathsList([Model.globular.config.DataPath + "/search/applications/" + Model.application])
+    rqst.setLanguage("en")
+    rqst.setFieldsList(["Text"])
+    rqst.setOffset(0)
+    rqst.setPagesize(100)
+    rqst.setQuery(query)
+
+    let token = localStorage.getItem("user_token")
+    let decoded = JwtDecode(token);
+    let address = decoded.address;
+    let domain = decoded.domain;
+    let startTime = performance.now()
+
+    let stream = Model.getGlobule(address).searchService.searchDocuments(rqst, {
+        token: token,
+        application: Model.application,
+        domain: domain,
+        address: address
+    })
+
+    let results = []
+    stream.on("data", (rsp) => {
+        results = results.concat(rsp.getResults().getResultsList())
+    });
+
+    stream.on("status", (status) => {
+        if (status.code != 0) {
+            // In case of error I will return an empty array
+            console.log("fail to retreive ", query, status.details)
+        } else {
+            let took = performance.now() - startTime
+            Model.eventHub.publish("__new_search_event__", { query: query, summary: { getTotal: () => { return results.length }, getTook: () => { return took } } }, true)
+            Model.eventHub.publish("display_webpage_search_result_" + query, results, true)
+            console.log(results)
+            callback()
+        }
+    });
+
+
+}
+
 /**
  * Search Box
  */
@@ -469,6 +533,7 @@ export class SearchBar extends HTMLElement {
             <input id='search_input' placeholder="Search"></input>
             <paper-icon-button id="change-search-context" icon="icons:expand-more" style="--iron-icon-fill-color: var(--palette-text-accent); margin-right: 2px; height: 36px;" ></paper-icon-button>
             <paper-card id="context-search-selector">
+                <paper-checkbox checked name="webPages" id="context-search-selector-webpages">Webpages</paper-checkbox>
                 <paper-checkbox checked name="blogPosts" id="context-search-selector-blog-posts">Blog Posts</paper-checkbox>
                 <paper-checkbox checked name="titles" id="context-search-selector-movies">Movies</paper-checkbox>
                 <paper-checkbox checked name="videos" id="context-search-selector-videos">Videos</paper-checkbox>
@@ -518,11 +583,11 @@ export class SearchBar extends HTMLElement {
             div.style.boxShadow = "var(--dark-mode-shadow)"
             contextSearchSelector.style.display = "none"
             Model.eventHub.publish("_display_search_results_", {}, true)
-           
+
             let pages = document.querySelectorAll("globular-search-results-page")
-            for(var i=0; i < pages.length; i++){
+            for (var i = 0; i < pages.length; i++) {
                 let page = pages[i]
-                if(page.style.display != "none"){
+                if (page.style.display != "none") {
                     page.facetFilter.style.display = ""
                 }
             }
@@ -703,6 +768,8 @@ export class SearchResults extends HTMLElement {
                     this.appendChild(resultsPage)
                     this.shadowRoot.querySelector("#empty-search-msg").style.display = "none";
                     ApplicationView.layout.sideMenu().appendChild(resultsPage.facetFilter)
+                } else {
+                    resultsPage.updateSummary(evt.summary)
                 }
 
             }, true)
@@ -795,12 +862,19 @@ export class SearchResultsPage extends HTMLElement {
                 --iron-icon-fill-color: var(--palette-action-disabled);
             }
 
+            #webpage-search-results{
+                display: flex;
+                flex-direction: column;
+            }
+
         </style>
         <div class="container">
             <div id="summary">
-                <span style="padding: 15px;"> ${summary.getQuery()} ${summary.getTotal()} results (${summary.getTook()}ms)</span>
+                <span style="padding: 15px;"> ${summary.getQuery()} <span id="total-span">${summary.getTotal()}</span> results (<span id="took-span">${summary.getTook().toFixed(3)}</span> ms)</span>
                 <paper-icon-button id="search-result-icon-view-btn" style="" icon="icons:view-module"></paper-icon-button>
                 <paper-icon-button class="disable"  id="search-result-lst-view-btn" icon="icons:view-list"></paper-icon-button>
+            </div>
+            <div id="webpage-search-results">
             </div>
             <div id="mosaic-view" style="display: block;">
                 <slot name="mosaic_blogPosts" style="display: flex; flex-wrap: wrap;"></slot>
@@ -856,6 +930,72 @@ export class SearchResultsPage extends HTMLElement {
                 this.displayListHit(evt.hit, evt.context)
                 this.displayMosaicHit(evt.hit, evt.context)
             }, true)
+
+        // Append the webpage  search result...
+        Model.eventHub.subscribe("display_webpage_search_result_" + summary.getQuery(), uuid => this.display_webpage_search_result_page = uuid, results => {
+            let range = document.createRange()
+            let webpageSearchResults = this.shadowRoot.querySelector("#webpage-search-results")
+            results.forEach(r => {
+                let doc = JSON.parse(r.getData())
+                let snippet = JSON.parse(r.getSnippet());
+                let uuid = randomUUID()
+                let html = `
+                <div style="display: flex; flex-direction: column; margin: 10px; ">
+                    <div style="display: flex; align-items: baseline; margin-left: 2px;">
+                        <span style="font-size: 1.1rem; padding-right: 10px;">${parseFloat(r.getRank() / 1000).toFixed(3)} </span> 
+                        <div id="page-${uuid}-lnk" style="font-size: 1.1rem; font-weight: 400; text-decoration: underline; ">${doc.PageName}</div>
+                        
+                    </div>
+                    <div id="snippets-${uuid}-div" style="padding: 15px; font-size: 1.1rem"></div>
+                    <span style="border-bottom: 1px solid var(--palette-action-disabled); width: 80%;"></span>
+                </div>
+                `
+
+                webpageSearchResults.appendChild(range.createContextualFragment(html))
+                let snippetsDiv = webpageSearchResults.querySelector(`#snippets-${uuid}-div`)
+                if (snippet.Text){
+                    snippet.Text.forEach(s => {
+                        let div = document.createElement("div")
+                        div.innerHTML = s
+                        snippetsDiv.appendChild(div)
+                    })
+                }
+
+                let lnk = webpageSearchResults.querySelector(`#page-${uuid}-lnk`)
+                lnk.onclick = () => {
+                    console.log(doc, snippet)
+
+                    let pageLnks = document.getElementsByTagName("globular-page-link")
+                    for (var i = 0; i < pageLnks.length; i++) {
+                        if (pageLnks[i].id.startsWith(doc.PageId)) {
+                            pageLnks[i].click()
+                            let e = document.getElementById(doc.Id)
+                            let position = getCoords(e)
+                            window.scrollTo({
+                                top: position.top - (65 + 10),
+                                left: 0,
+                                behavior: 'smooth'
+                            });
+
+                            window.find(summary.getQuery())
+
+                            return
+                        }
+                    }
+                }
+
+                lnk.onmouseleave = () => {
+                    lnk.style.cursor = "default"
+                    lnk.style.textDecorationColor = ""
+                }
+
+                lnk.onmouseover = () => {
+                    lnk.style.cursor = "pointer"
+                    lnk.style.textDecorationColor = "var(--palette-primary-main)"
+                }
+
+            })
+        })
     }
 
     clear() {
@@ -906,6 +1046,17 @@ export class SearchResultsPage extends HTMLElement {
 
     }
 
+    updateSummary(summary) {
+        let totalSpan = this.shadowRoot.querySelector("#total-span")
+        let total = parseInt(totalSpan.innerText) + summary.getTotal()
+        totalSpan.innerText = total + ""
+
+        let tookSpan = this.shadowRoot.querySelector("#took-span")
+        let took = parseFloat(tookSpan.innerText)
+        took += summary.getTook()
+        tookSpan.innerText = took.toFixed(3) + ""
+    }
+
     displayListHit(hit, context) {
 
         let titleName = ""
@@ -914,15 +1065,15 @@ export class SearchResultsPage extends HTMLElement {
             if (hit.hasTitle()) {
                 titleName = hit.getTitle().getName()
                 uuid = getUuidByString(hit.getIndex() + "_title")
-            }else{
-                uuid = getUuidByString(hit.getIndex()+ "_video")
+            } else {
+                uuid = getUuidByString(hit.getIndex() + "_video")
             }
-        }else{
-           uuid = getUuidByString(hit.getIndex()+ "_blog")
+        } else {
+            uuid = getUuidByString(hit.getIndex() + "_blog")
         }
 
         // insert one time...
-        if(this.querySelector(`#hit-div-${uuid}`)){
+        if (this.querySelector(`#hit-div-${uuid}`)) {
             return
         }
 
@@ -956,9 +1107,9 @@ export class SearchResultsPage extends HTMLElement {
         let titleInfoDiv = this.children[this.children.length - 1].children[2]
 
         let infoDisplay = new InformationsManager()
-       
+
         let hitDiv = this.querySelector(`#hit-div-${uuid}`)
-        
+
         if (hit.hasTitle || hit.hasVideo) {
             if (hit.hasTitle()) {
                 infoDisplay.setTitlesInformation([hit.getTitle()], hit.globule)

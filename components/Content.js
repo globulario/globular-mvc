@@ -24,7 +24,9 @@ import * as getUuidByString from "uuid-by-string";
 import * as cssbeautifier from "cssbeautifier"
 import htmlBeautify from 'html-beautify'
 import jsBeautify from 'js-beautify'
+import nodeToDataURL from 'html-element-to-image'
 import { GetVideoConversionLogsRequest } from "globular-web-client/file/file_pb";
+import { DeleteDocumentRequest, IndexJsonObjectRequest } from "globular-web-client/search/search_pb";
 
 // Test if the tag can hold text...
 function canHoldText(tagName) {
@@ -91,7 +93,7 @@ function getCssEditor(style) {
 
 
     // Set the css from the editor...
-    let css_editor = new CodeEditor("css", ApplicationView.layout.workspace(), (evt) => {
+    let css_editor = new CodeEditor("css", (evt) => {
         try {
             if (cssbeautifier(style.innerText) != css_editor.getText()) {
                 Model.eventHub.publish("_need_save_event_", null, true)
@@ -159,7 +161,7 @@ function getJavascriptEditor(script) {
     }
 
     // Set the css from the editor...
-    let javascript_editor = new CodeEditor("javascript", ApplicationView.layout.workspace(), (evt) => {
+    let javascript_editor = new CodeEditor("javascript", (evt) => {
         try {
             if (jsBeautify(script.innerText) != javascript_editor.getText()) {
                 script.reload = true // mark it to be reload at save time...
@@ -215,7 +217,7 @@ function getHtmlEditor(element) {
     }
 
     // Set the css from the editor...
-    let html_editor = new CodeEditor("html", ApplicationView.layout.workspace(), (evt) => {
+    let html_editor = new CodeEditor("html", (evt) => {
         // Test if the innerHTML has change...
         try {
             if (htmlBeautify(element.outerHTML) != html_editor.getText()) {
@@ -1475,28 +1477,27 @@ export class Navigation extends HTMLElement {
 
         let links = this.querySelectorAll("globular-page-link")
         let savePages_ = (index) => {
-            if (index < links.length - 1) {
+            if (index < links.length) {
+                console.log(index,  links[index])
+                links[index].webPage.index = index
+
                 links[index].save(() => {
-                    savePages_(++index)
+                    index += 1
+                    savePages_(index)
                 }, err => {
                     // I will set the page index before save it... 
-                    links[index].webPage.index = index
                     ApplicationView.displayMessage(`fail to save page ${links[index].webPage.name} with error </br>`, err, 3000)
-                    savePages_(++index)
+                    index += 1
+                    savePages_(index)
                 });
             } else {
-                links[index].save(() => {
-                    if (this.toDelete.length > 0) {
-                        // remove page mark as delete...
-                        let page = this.toDelete.pop()
-                        deletePages_(page)
-                    }
-                    ApplicationView.displayMessage("all content was saved", 3000)
-                    window.dispatchEvent(new Event('resize'));
-
-                }, err => {
-                    ApplicationView.displayMessage(`fail to save page ${links[index].webPage.name} with error </br>`, err, 3000)
-                });
+                if (this.toDelete.length > 0) {
+                    // remove page mark as delete...
+                    let page = this.toDelete.pop()
+                    deletePages_(page)
+                }
+                ApplicationView.displayMessage("all content was saved", 3000)
+                window.dispatchEvent(new Event('resize'));
 
             }
         }
@@ -1570,7 +1571,7 @@ export class NavigationPageLink extends HTMLElement {
         </div>
         `
 
-        this.id = "_" + randomUUID()
+        this.id = this.webPage.id + "_lnk"
         this.editor = this.shadowRoot.querySelector("#page-name-editor")
         this.input = this.shadowRoot.querySelector("#page-name-editor-input")
 
@@ -1580,8 +1581,7 @@ export class NavigationPageLink extends HTMLElement {
 
         // Set the page...
         this.span.onclick = () => {
-            this.webPage.setPage()
-            this.emphasis()
+            this.click()
         }
 
         // enter edit mode.
@@ -1604,6 +1604,7 @@ export class NavigationPageLink extends HTMLElement {
             if (this.webPage.name != this.input.value) {
 
                 this.webPage.setName(this.input.value)
+                this.id = this.webPage.id + "_lnk"
 
             }
             this.resetEditMode()
@@ -1620,6 +1621,11 @@ export class NavigationPageLink extends HTMLElement {
             }
             this.setInputWidth()
         }
+    }
+
+    click() {
+        this.webPage.setPage()
+        this.emphasis()
     }
 
     emphasis() {
@@ -1884,8 +1890,9 @@ export class WebPage extends HTMLElement {
     min-height: 500px;
 }`
         }
-
         this.style_.innerText = style
+
+
         this.style_.setAttribute("scoped", "")
         this.style_.id = this.id + "_style"
 
@@ -1968,14 +1975,15 @@ export class WebPage extends HTMLElement {
         // The drag over content.
         this.ondragover = (evt) => {
             evt.preventDefault();
-            if (this.dragging) {
-                let selector = this.getActiveSelector()
-                if (selector == null && this.dragging) {
-                    ApplicationView.displayMessage("select the target element where to drop the content.", 3500)
-                    return
-                }
-                selector.style.border = "1px solid var(--palette-divider)"
+            evt.stopPropagation();
+            this.dragging = true;
+
+            let selector = this.getActiveSelector()
+            if (selector == null && this.dragging) {
+                // ApplicationView.displayMessage("select the target element where to drop the content.", 3500)
+                return
             }
+            selector.style.border = "1px solid var(--palette-divider)"
         }
 
     }
@@ -2069,6 +2077,112 @@ export class WebPage extends HTMLElement {
         this.shadowRoot.querySelector(`#${this.id}_selector`).style.textDecoration = ""
     }
 
+    removeAllSearchIndex(callback, errorCallback) {
+        let editors = []
+        // keep only immediate childs.
+        for (var i = 0; i < this.children.length; i++) {
+            if (this.children[i].editor) {
+                editors.push(this.children[i].editor)
+            }
+        }
+
+        let elements = []
+
+        let getDataElements = (elements) => {
+            let dataElements = []
+            for (var i = 0; i < elements.length; i++) {
+                if (elements[i].data.length > 0) {
+                    dataElements.push(elements[i].id)
+                }
+
+                if (elements[i].children) {
+                    dataElements = dataElements.concat(getDataElements(elements[i].children))
+                }
+            }
+            return dataElements
+        }
+
+        // Remove index.
+        let removeSearchIndex_ = (dataElements) => {
+            let element = dataElements.pop()
+            this.removeSearchIndex(element, () => {
+
+                if (dataElements.length == 0) {
+                    console.log("-------> 2111")
+                    callback()
+                } else {
+                    console.log("-------> 2114")
+                    removeSearchIndex_(dataElements)
+                }
+            }, err => {
+                console.log("fail to remove index for ", element, err)
+                if (dataElements.length == 0) {
+                    console.log("-------> 2120")
+                    callback()
+                } else {
+                    console.log("-------> 2123")
+                    removeSearchIndex_(dataElements)
+                }
+            })
+        }
+
+        // Get elements list.
+        let getData_ = (index) => {
+            if (index < editors.length) {
+                let editor = editors[index]
+                editor.getData(data => {
+                    // set the element data...
+                    elements.push(data);
+                    index += 1
+                    getData_(index)
+                }, errorCallback)
+            } else {
+                let dataElements = getDataElements(elements)
+                removeSearchIndex_(dataElements)
+            }
+        }
+
+        // Get the page element data.
+        getData_(0)
+    }
+
+    /**
+     * Remove the search index of a element with a given id.
+     * @param {*} id The element id
+     * @param {*} callback The remove callback
+     * @param {*} errorCallback The error callback
+     */
+    removeSearchIndex(id, callback, errorCallback) {
+
+        let rqst = new DeleteDocumentRequest()
+        rqst.setPath(Model.globular.config.DataPath + "/search/applications/" + Model.application)
+        rqst.setId(id)
+
+        // So here I will set the address from the address found in the token and not 
+        // the address of the client itself.
+        let token = localStorage.getItem("user_token")
+        let decoded = JwtDecode(token);
+        let address = decoded.address;
+        let domain = decoded.domain;
+
+        // call persist data
+        Model.getGlobule(address).searchService.deleteDocument(rqst,
+            {
+                token: token,
+                application: Model.application,
+                domain: domain,
+                address: address
+            }
+        ).then(() => {
+            console.log("remove indexation success!")
+            callback(this)
+        }).catch(err=>{
+            console.log("fail to remove indexation", err)
+            errorCallback(err)
+        })
+
+    }
+
     delete(callback, errorCallback) {
         // save the user_data
         let rqst = new DeleteOneRqst();
@@ -2100,12 +2214,61 @@ export class WebPage extends HTMLElement {
             })
             .then((rsp) => {
                 // Here I will return the value with it
-                Model.eventHub.publish(`update_page_${this.id}_evt`, str, false)
-                callback(this);
+                this.removeAllSearchIndex(callback, errorCallback)
+
             })
             .catch((err) => {
                 errorCallback(err);
             });
+    }
+
+    // Save the search index.
+    saveSearchIndex(pageId, pageName, elements, callback, errorCallback) {
+        // first of all i will keep only usefull field, those that contain data...
+        let getDataElements = (elements) => {
+            let dataElements = []
+            for (var i = 0; i < elements.length; i++) {
+                if (elements[i].data.length > 0) {
+                    dataElements.push({ Id: elements[i].id, PageId: pageId, PageName: pageName, Text: elements[i].data })
+                }
+
+                if (elements[i].children) {
+                    dataElements = dataElements.concat(getDataElements(elements[i].children))
+                }
+            }
+            return dataElements
+        }
+
+        let dataElements = getDataElements(elements)
+
+        dataElements.forEach(e => {
+
+            // Index the json object.
+            let rqst = new IndexJsonObjectRequest
+            rqst.setPath(Model.globular.config.DataPath + "/search/applications/" + Model.application)
+            rqst.setJsonstr(JSON.stringify(e))
+            rqst.setLanguage("en")
+            rqst.setId("Id")
+            rqst.setIndexsList(["PageId", "Id", "Text"])
+            let token = localStorage.getItem("user_token")
+            let decoded = JwtDecode(token);
+            let address = decoded.address;
+            let domain = decoded.domain;
+
+            // call persist data
+            Model.getGlobule(address).searchService
+                .indexJsonObject(rqst, {
+                    token: token,
+                    application: Model.application,
+                    domain: domain,
+                    address: address
+                })
+                .then((rsp) => {
+                    callback()
+                })
+                .catch(err => { console.log(err); errorCallback(err) })
+
+        })
     }
 
     // Save the actual content.
@@ -2184,10 +2347,16 @@ export class WebPage extends HTMLElement {
                                 s_.innerText = s.innerText.split("<br>").join("") // remove beautify...
                                 parent.appendChild(s_)
                             }
-
                         }
 
-                        callback(this);
+                        this.saveSearchIndex(this.id, this.name, elements, () => {
+                            callback(this);
+                        }, err => {
+                            console.log("err ", err)
+                            ApplicationView.displayMessage(err, 3000);
+                        })
+
+
                     })
                     .catch((err) => {
                         errorCallback(err);
@@ -2214,6 +2383,11 @@ export class ElementEditor extends HTMLElement {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
+        this.id = ""
+        this.edit = false;
+        if (data) {
+            this.id = data.id
+        }
 
         // Innitialisation of the element.
         this.shadowRoot.innerHTML = `
@@ -2301,15 +2475,12 @@ export class ElementEditor extends HTMLElement {
                             <paper-tooltip for="delete-element-btn" role="tooltip" tabindex="-1">Delete Element</paper-tooltip>
                         </div>
                         <span id="current-edit-element">
-                            ${data.id}
+                            ${this.id}
                         </span>
                     </div>
                </div>
                <slot></slot>
                `
-
-        this.id = ""
-        this.edit = false;
 
         if (data) {
 
@@ -2317,7 +2488,6 @@ export class ElementEditor extends HTMLElement {
 
             // The parent id where to create the element...
             this.parentId = data.parentId
-
 
             // The tagName
             this.tagName_ = data.tagName
@@ -2767,7 +2937,7 @@ export class CodeEditor extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor(mode, parent, onchange, onfocus, onblur, onclose) {
+    constructor(mode, onchange, onfocus, onblur, onclose) {
         super()
 
         this.mode = mode;
@@ -2947,8 +3117,9 @@ export class ElementSelector extends HTMLElement {
 
         this.editor = editor;
 
-        // associate the selector with it element.
-        editor.selector = this;
+        if (!this.editor) {
+            return
+        }
 
         // Innitialisation of the element.
         this.shadowRoot.innerHTML = `
@@ -3012,6 +3183,9 @@ export class ElementSelector extends HTMLElement {
         `
 
 
+
+        this.editor.selector = this
+
         // Help to see where is the element on the page.
         let id = this.shadowRoot.querySelector("#id")
         id.onmouseenter = () => {
@@ -3040,6 +3214,7 @@ export class ElementSelector extends HTMLElement {
 
         id.ondragover = (evt) => {
             evt.preventDefault()
+            evt.stopPropagation();
         }
 
         id.ondrop = (evt) => {
@@ -3055,8 +3230,9 @@ export class ElementSelector extends HTMLElement {
 
                 // and it script.
                 this.editor.element.appendChild(document.getElementById(e.id + "_script"))
-            } else {
 
+                this.editor.selector.appendChild(e.editor.selector)
+            } else {
 
                 // and it script.
                 this.editor.element.insertBefore(document.getElementById(e.id + "_script"), this.editor.element.children[0])
@@ -3068,11 +3244,14 @@ export class ElementSelector extends HTMLElement {
                 // append the element
                 this.editor.element.insertBefore(e, this.editor.element.children[0])
 
+                // append at top...
+                this.editor.selector.insertBefore(e.editor.selector, this.editor.selector.children[0])
+
 
             }
 
             e.editor.selector.slot = ""
-            this.editor.selector.appendChild(e.editor.selector)
+
 
             e.editor.parentId = e.parentNode.id
             this.setFirstSelectors()
@@ -3100,6 +3279,7 @@ export class ElementSelector extends HTMLElement {
 
         dropBefore.ondragover = (evt) => {
             evt.preventDefault()
+            evt.stopPropagation();
         }
 
         dropBefore.ondrop = (evt) => {
@@ -3199,6 +3379,7 @@ export class ElementSelector extends HTMLElement {
 
         dropAfter.ondragover = (evt) => {
             evt.preventDefault()
+            evt.stopPropagation();
         }
 
         dropAfter.ondrop = (evt) => {
@@ -3299,7 +3480,7 @@ export class ElementSelector extends HTMLElement {
         }
     }
 
-    connectedCallback(){
+    connectedCallback() {
         this.setFirstSelectors()
     }
 
@@ -3315,12 +3496,12 @@ export class ElementSelector extends HTMLElement {
     setFirstSelector() {
         let dropBefore = this.shadowRoot.querySelector(`#drop-before-${this.editor.element.id}`)
         let isFirst = true;
-        for(var i=0; i < this.editor.element.parentNode.children.length; i++){
+        for (var i = 0; i < this.editor.element.parentNode.children.length; i++) {
             let e = this.editor.element.parentNode.children[i]
-            if(e.tagName == "GLOBULAR-ELEMENT-SELECTOR"){
-                if(e === this.editor.selector){
+            if (e.tagName == "GLOBULAR-ELEMENT-SELECTOR") {
+                if (e === this.editor.selector) {
                     break;
-                }else{
+                } else {
                     isFirst = false
                     break
                 }
