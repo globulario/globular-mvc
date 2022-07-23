@@ -12,7 +12,7 @@ export function setMoveable(handle, draggable, onmove, element, offsetTop = 0) {
   handle.addEventListener('click', (e) => {
     let draggables = document.getElementsByClassName("draggable")
     for (var i = 0; i < draggables.length; i++) {
-      draggables[i].style.zIndex = 1;
+      draggables[i].style.zIndex = 6;
     }
 
     element.style.zIndex = 10;
@@ -25,7 +25,7 @@ export function setMoveable(handle, draggable, onmove, element, offsetTop = 0) {
     initY = e.offsetY;
     let draggables = document.getElementsByClassName("draggable")
     for (var i = 0; i < draggables.length; i++) {
-      draggables[i].style.zIndex = 1;
+      draggables[i].style.zIndex = 6;
     }
 
     element.style.zIndex = 10;

@@ -612,7 +612,9 @@ export class ApplicationView extends View {
       uuid => { },
       explorer => {
         // Append the watching component...
-        this.getWorkspace().appendChild(explorer);
+        ApplicationView.layout.workspace().appendChild(explorer);
+        explorer.style.zIndex = 10;
+
       }, true)
 
 
