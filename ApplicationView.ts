@@ -613,7 +613,7 @@ export class ApplicationView extends View {
       explorer => {
         // Append the watching component...
         ApplicationView.layout.workspace().appendChild(explorer);
-        explorer.style.zIndex = 10;
+        explorer.style.zIndex = 1000;
 
       }, true)
 

@@ -1353,8 +1353,10 @@ export class FilesView extends HTMLElement {
                             xmlhttp.onreadystatechange = () => {
                                 if (xmlhttp.status == 0) {
                                     // give time to finish write the file on the server...
+                                    setTimeout(()=>{
                                     Model.eventHub.publish("__upload_link_event__", { pid: pid, path: this.__dir__.path, infos: "", done: true, lnk: lnk }, true);
                                     Model.eventHub.publish("generate_video_preview_event", this.__dir__.path + "/" + fileName_, false);
+                                    }, 2 * 1000)
                                 }
                             };
 
@@ -3861,6 +3863,7 @@ export class FileExplorer extends HTMLElement {
 
     // Set the file explorer directory.
     init() {
+
         // Init the path navigator
         this.pathNavigator.init();
 
@@ -3922,6 +3925,7 @@ export class FileExplorer extends HTMLElement {
 
                     this.permissionManager.permissions = null
                     this.permissionManager.setPath(path)
+                    this.permissionManager.setResourceType = "file"
 
                     // I will display the permission manager.
                     this.fileSelectionPanel.appendChild(this.permissionManager)

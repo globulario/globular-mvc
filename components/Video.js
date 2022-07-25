@@ -37,8 +37,7 @@ export function playVideo(path, onplay, onclose, title, globule) {
     videoPlayer.style.height = "0px"
     videoPlayer.style.width = "0px"
 
-    parent = document.getElementsByTagName("globular-workspace")[0];//document.body
-    parent.appendChild(videoPlayer)
+    ApplicationView.layout.workspace().appendChild(videoPlayer)
 
     if (onplay && !videoPlayer.onplay) {
         videoPlayer.onplay = onplay

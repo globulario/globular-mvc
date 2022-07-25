@@ -255,6 +255,8 @@ export class PermissionsManager extends HTMLElement {
                     right: 20px;
                     top: ${parent.offsetTop + 20}px;
                     z-index: 100;
+                    background-color: var(--palette-background-paper);
+                    color: var(--palette-text-primary);
                 }
 
                 .card-content{
@@ -425,8 +427,23 @@ export class PermissionsManager extends HTMLElement {
             let permissions = rsp.getPermissions()
             this.setPermissions(permissions)
         }).catch(err => {
-            ApplicationView.displayMessage(err, 3000)
+            // ApplicationView.displayMessage(err, 3000)
+            console.log("permissions not define for ", path, "new permissions will be created.")
+            let permissions = new Permissions
+            permissions.setPath(path)
+            let owners = new Permission
+            owners.setName("owner")
+            permissions.setOwners(owners)
+            this.setPermissions(permissions)
+
         })
+    }
+
+    // Set the resource type.
+    setResourceType(resource_type) {
+        if (this.permissions) {
+            this.permissions.setResourceType(resource_type)
+        }
     }
 }
 
@@ -496,23 +513,32 @@ export class PermissionPanel extends HTMLElement {
         // Set's account permissions.
         if (permission.getAccountsList().length > 0)
             this.setAccountsPermissions(permission.getAccountsList());
+        else
+            this.setAccountsPermissions([]);
 
         // Set's groups permissions
         if (permission.getGroupsList().length > 0)
             this.setGroupsPermissions(permission.getGroupsList());
+        else
+            this.setGroupsPermissions([]);
 
         // Set's Applications permissions
         if (permission.getApplicationsList().length > 0)
             this.setApplicationsPermissions(permission.getApplicationsList());
+        else
+            this.setApplicationsPermissions([]);
 
         // Set's Orgnanization permissions
         if (permission.getOrganizationsList().length > 0)
             this.setOrgnanizationsPermissions(permission.getOrganizationsList());
+        else
+            this.setOrgnanizationsPermissions([]);
 
         // Set's Peer permissions
         if (permission.getPeersList().length > 0)
             this.setPeersPermissions(permission.getPeersList());
-
+        else
+            this.setPeersPermissions([]);
     }
 
     // Create a collapseible panel.
@@ -569,9 +595,7 @@ export class PermissionPanel extends HTMLElement {
 
     // The organization permissions
     setPeersPermissions(peers_) {
-        if (peers_.length == 0) {
-            return
-        }
+
         let content = this.createCollapsible(`Peers(${peers_.length})`)
         getAllPeers(
             Model.globular,
@@ -611,9 +635,7 @@ export class PermissionPanel extends HTMLElement {
 
     // The organization permissions
     setOrgnanizationsPermissions(organizations_) {
-        if (organizations_.length == 0) {
-            return
-        }
+
         let content = this.createCollapsible(`Organizations(${organizations_.length})`)
         getAllOrganizations(
             organizations => {
@@ -661,9 +683,7 @@ export class PermissionPanel extends HTMLElement {
 
     // The group permissions
     setApplicationsPermissions(applications_) {
-        if (applications_.length == 0) {
-            return
-        }
+
         let content = this.createCollapsible(`Applications(${applications_.length})`)
         getAllApplicationsInfo(Model.globular,
             applications => {
@@ -714,9 +734,7 @@ export class PermissionPanel extends HTMLElement {
 
     // The group permissions
     setGroupsPermissions(groups_) {
-        if (groups_.length == 0) {
-            return
-        }
+
         let content = this.createCollapsible(`Groups(${groups_.length})`)
 
         getAllGroups(Model.globular,
@@ -771,9 +789,7 @@ export class PermissionPanel extends HTMLElement {
 
     // Each permission can be set for applications, peers, accounts, groups or organizations
     setAccountsPermissions(accounts_) {
-        if (accounts_.length == 0) {
-            return
-        }
+
         let content = this.createCollapsible(`Account(${accounts_.length})`)
 
         // Here I will set the content of the collapse panel.
@@ -1267,7 +1283,7 @@ function getApplication(id, callback, errorCallback) {
  * Return blog info.
  */
 function getBlog(id, callback, errorCallback) {
-    
+
     let rqst = new GetBlogPostsRequest
     rqst.setUuidsList([id])
 
@@ -1288,19 +1304,19 @@ function getBlog(id, callback, errorCallback) {
             b.getPath = () => {
                 return id
             }
-        
+
             // The brief description.
             b.getHeaderText = () => {
-                return  blogPosts[0].getTitle() + "</br><span style=\"font-style: italic; padding-right: 5px\">written by</span>" + b.getAuthor()
+                return blogPosts[0].getTitle() + "</br><span style=\"font-style: italic; padding-right: 5px\">written by</span>" + b.getAuthor()
             }
-        
+
             // return file information panel...
             b.getInfo = () => {
                 return new BlogPostInfo(blogPosts[0])
             }
 
             callback(b);
-        }else{
+        } else {
             errorCallback(status.details)
         }
     })
@@ -1491,11 +1507,11 @@ function getPackage(id, callback, errorCallback) {
             }
 
             callback(p);
-        }else{
+        } else {
             errorCallback(status.details)
         }
     })
-    
+
 }
 
 

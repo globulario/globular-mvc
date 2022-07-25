@@ -1087,7 +1087,7 @@ export class Messenger extends HTMLElement {
         videoConversation.style.left = "0px"
 
         // append it to the workspace.
-        document.querySelector("globular-workspace").appendChild(videoConversation)
+        ApplicationView.layout.workspace().appendChild(videoConversation)
 
         // Display the messenger panel.
         this.shadowRoot.querySelector(".container").style.display = "flex";
