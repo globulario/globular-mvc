@@ -10,6 +10,7 @@ import "@polymer/paper-card/paper-card.js";
 import "@polymer/paper-button/paper-button.js";
 import "@polymer/paper-checkbox/paper-checkbox.js";
 import "./Session"
+import "./DiskSpace.js"
 
 import { Menu } from "./Menu";
 import { Model } from "../Model";
@@ -28,17 +29,19 @@ export function getAllAccountsInfo(callback, errorCallback) {
   rqst.setQuery("{}")
   let accounts = [];
 
-  let stream = Model.globular.resourceService.getAccounts(rqst, 
-    { domain: Model.domain, 
-      address: Model.address, 
-      application: 
-      Model.application, 
-      token: localStorage.getItem("user_token") });
+  let stream = Model.globular.resourceService.getAccounts(rqst,
+    {
+      domain: Model.domain,
+      address: Model.address,
+      application:
+        Model.application,
+      token: localStorage.getItem("user_token")
+    });
 
   // Get the stream and set event on it...
   stream.on("data", (rsp) => {
-    rsp.getAccountsList().forEach(a=>{
-      if(localStorage.getItem(a.getId())!=undefined){
+    rsp.getAccountsList().forEach(a => {
+      if (localStorage.getItem(a.getId()) != undefined) {
         let data = JSON.parse(localStorage.getItem(a.getId()))
         a.profilPicture_ = data.profilPicture_
         a.firstName_ = data.firstName_
@@ -431,11 +434,12 @@ export class AccountManager extends HTMLElement {
           rqst.setConfirmPassword("1234")
 
           rqst.setAccount(account)
-          Model.globular.resourceService.registerAccount(rqst, 
-            { domain: Model.domain, 
+          Model.globular.resourceService.registerAccount(rqst,
+            {
+              domain: Model.domain,
               address: Model.address,
-              application: Model.application, 
-              token: localStorage.getItem("user_token") 
+              application: Model.application,
+              token: localStorage.getItem("user_token")
             })
             .then(rsp => {
               ApplicationView.displayMessage("account " + accountId + " was created!", 3000)
@@ -469,6 +473,7 @@ export class AccountManager extends HTMLElement {
 }
 
 customElements.define('globular-account-manager', AccountManager)
+
 
 /**
  * Display account informations in the manager panel.
@@ -538,6 +543,7 @@ export class AccountPanel extends HTMLElement {
             <img style="width: 32px; height: 32px; display: ${this.account.profilPicture_ == undefined ? "none" : "block"};" src="${this.account.profilPicture_}"></img>
             <iron-icon icon="account-circle" style="width: 32px; height: 32px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${this.account.profilPicture_ != undefined ? "none" : "block"};"></iron-icon>
                 <span class="title">${this.account.getName()}</span>
+                <globular-disk-space-manager account="${this.account.getId()}"></globular-disk-space-manager>
                 <paper-button id="delete-account-btn">Delete</paper-button>
                 <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
                     <iron-icon  id="hide-btn"  icon="unfold-less" style="flex-grow: 1; --iron-icon-fill-color:var(--palette-text-primary);" icon="add"></iron-icon>
@@ -628,7 +634,7 @@ export class AccountPanel extends HTMLElement {
             let rqst = new AddOrganizationAccountRqst
             rqst.setOrganizationid(o.getId())
             rqst.setAccountid(a._id)
-            Model.globular.resourceService.addOrganizationAccount(rqst, { domain: Model.domain,address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
+            Model.globular.resourceService.addOrganizationAccount(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
               .then(rsp => {
                 this.organizationsList.appendItem(a)
                 ApplicationView.displayMessage("Account " + a._id + " has now organization " + o.getName(), 3000)

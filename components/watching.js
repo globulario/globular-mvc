@@ -125,7 +125,7 @@ export class MediaWatching extends HTMLElement {
 
         Model.eventHub.subscribe("remove_video_player_evt_", uuid => { }, evt => {
             if (title._id == evt._id) {
-                this.removeChild(card)
+                card.parentNode.removeChild(card)
                 let video_count = this.querySelectorAll(`[slot="video"]`).length
                 if (video_count > 0) {
                     this.shadowRoot.querySelector("#video_div").style.display = "flex"

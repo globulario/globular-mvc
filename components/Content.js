@@ -126,12 +126,13 @@ function showCssEditor(style) {
     // Show the css to edit the element style.
     let editor = getCssEditor(style)
     if (editor != null) {
-        getWorkspace().appendChild(editor)
+        ApplicationView.layout.workspace().appendChild(editor)
+        editor.style.zIndex = 1000;
         let editors = document.getElementsByTagName("globular-code-editor")
         for (var i = 0; i < editors.length; i++) {
             editors[i].style.zIndex = 1
         }
-        editor.style.zIndex = 10
+        editor.style.zIndex = 100
 
         return
     }
@@ -144,12 +145,13 @@ function showCssEditor(style) {
 function showJavascriptEditor(script) {
     let javascript_editor = getJavascriptEditor(script)
     if (javascript_editor != null) {
-        getWorkspace().appendChild(javascript_editor)
+        ApplicationView.layout.workspace().appendChild(javascript_editor)
+        javascript_editor.style.zIndex = 1000;
         let editors = document.getElementsByTagName("globular-code-editor")
         for (var i = 0; i < editors.length; i++) {
             editors[i].style.zIndex = 1
         }
-        javascript_editor.style.zIndex = 10
+        javascript_editor.style.zIndex = 100
         return
     }
 }
@@ -199,12 +201,13 @@ function getJavascriptEditor(script) {
 function showHtmlEditor(element) {
     let html_editor = getHtmlEditor(element)
     if (html_editor != null) {
-        getWorkspace().appendChild(html_editor)
+        ApplicationView.layout.workspace().appendChild(html_editor)
+        html_editor.style.zIndex = 1000;
         let editors = document.getElementsByTagName("globular-code-editor")
         for (var i = 0; i < editors.length; i++) {
             editors[i].style.zIndex = 1
         }
-        html_editor.style.zIndex = 10
+        html_editor.style.zIndex = 100
         return
     }
 }
@@ -320,6 +323,7 @@ export class ContentManager extends HTMLElement {
 
             #toolbar {
                 display: flex;
+                z-index: 100;
             }
 
             #edit-create-css-style-btn{
@@ -1807,6 +1811,7 @@ export class WebPage extends HTMLElement {
                 position: fixed;
                 top: 75px;
                 left: 10px;
+                z-index: 100;
             }
 
             .toolbar{
@@ -1814,7 +1819,6 @@ export class WebPage extends HTMLElement {
                 flex-direction: column;
                 flex-direction: row;
                 height: 40px;
-                z-index: 100;
                 user-select: none;
                 -moz-user-select: none;
                 -khtml-user-select: none;
@@ -1864,7 +1868,7 @@ export class WebPage extends HTMLElement {
                     ${this.name}
                 </span>
             </div>
-            <globular-slide-panel side="right">
+            <globular-slide-panel side="right" style="z-index: 99;">
                 <div id="selectors">
                     <div id="${this.id}_selector" style="text-decoration: underline;">${this.name}</div>
                     <div style="margin-left: 10px; display: flex; flex-direction: column;">
@@ -2490,6 +2494,7 @@ export class ElementEditor extends HTMLElement {
                         position: fixed;
                         top: 75px;
                         left: 10px;
+                        z-index: 100;
                     }
         
 
@@ -2498,7 +2503,6 @@ export class ElementEditor extends HTMLElement {
                         flex-direction: column;
                         flex-direction: row;
                         height: 40px;
-                        z-index: 100;
                         user-select: none;
                         -moz-user-select: none;
                         -khtml-user-select: none;
