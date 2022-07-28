@@ -1348,7 +1348,6 @@ export class FilesView extends HTMLElement {
 
                             // Now I will index the file...
                             var xmlhttp = new XMLHttpRequest();
-                            xmlhttp.timeout = 1500
                             let fileName_ = fileName
                             xmlhttp.onreadystatechange = () => {
                                 if (xmlhttp.status == 0) {
