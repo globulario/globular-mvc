@@ -332,7 +332,7 @@ export class VideoPlayer extends HTMLElement {
         })
 
         // Only HLS and MP4 are allow by the video player so if is not one it's the other...
-        if (thumbnailPath.lastIndexOf(".mp4") != -1) {
+        if (thumbnailPath.lastIndexOf(".mp4") != -1 || thumbnailPath.lastIndexOf(".MP4") != -1) {
             thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("."))
         } else if (!path.endsWith("/playlist.m3u8")) {
             path += "/playlist.m3u8"

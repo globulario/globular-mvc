@@ -26,7 +26,7 @@ export class ImagePanel {
       "style": "margin:10px 5px 10px 5px"
     }).down(); // Supported video.
 
-    if (fileInfo.Mime.endsWith(".mp4") || fileInfo.Mime.endsWith(".mp3") || fileInfo.Mime.endsWith(".avi") || fileInfo.Mime.endsWith(".mpeg")) {// this.video = this.panel.appendElement({ "tag": "video", "src": "http://" + server.hostName + ":" + server.port + path, "type": "video/mp4", "controls": "" }).down()
+    if (fileInfo.Mime.endsWith(".mp4") || fileInfo.Mime.endsWith(".mp3") || fileInfo.Mime.endsWith(".avi") || fileInfo.Mime.endsWith(".mpeg") || fileInfo.Mime.endsWith(".MP4") || fileInfo.Mime.endsWith(".MP3") || fileInfo.Mime.endsWith(".AVI") || fileInfo.Mime.endsWith(".MPEG")) {// this.video = this.panel.appendElement({ "tag": "video", "src": "http://" + server.hostName + ":" + server.port + path, "type": "video/mp4", "controls": "" }).down()
     } else {
       this.image = this.panel.appendElement({
         "tag": "img",

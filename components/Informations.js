@@ -149,7 +149,7 @@ function _readDir(path, callback, errorCallback, globule) {
 function getHiddenFiles(path, callback, globule) {
     // Set the title...
     let thumbnailPath = path.replace("/playlist.m3u8", "")
-    if (thumbnailPath.lastIndexOf(".mp4") != -1) {
+    if (thumbnailPath.lastIndexOf(".mp4") != -1 || thumbnailPath.lastIndexOf(".MP4") != -1) {
         thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("."))
     }
 

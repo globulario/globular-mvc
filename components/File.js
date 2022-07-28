@@ -236,7 +236,7 @@ function _readDir(path, callback, errorCallback, globule, force = false) {
 function getHiddenFiles(path, callback, globule) {
 
     let thumbnailPath = path.replace("/playlist.m3u8", "")
-    if (thumbnailPath.lastIndexOf(".mp4") != -1 || thumbnailPath.lastIndexOf(".mkv") != -1 || thumbnailPath.lastIndexOf(".avi") != -1) {
+    if (thumbnailPath.lastIndexOf(".mp4") != -1 || thumbnailPath.lastIndexOf(".mkv") != -1 || thumbnailPath.lastIndexOf(".avi") != -1 || thumbnailPath.lastIndexOf(".MP4") != -1 || thumbnailPath.lastIndexOf(".MKV") != -1 || thumbnailPath.lastIndexOf(".AVI") != -1) {
         thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("."))
     }
     thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/__preview__"
@@ -345,7 +345,7 @@ export class FilesView extends HTMLElement {
                 this.titleInfosMenuItem.style.display = "block"
                 this.videMenuItem.style.display = "block"
                 this.openInNewTabItem.style.display = "block"
-                if (this.menu.file.name.endsWith(".mp4")) {
+                if (this.menu.file.name.endsWith(".mp4") || this.menu.file.name.endsWith(".MP4")) {
                     this.toHlsMenuItem.style.display = "block"
                     this.toMp4MenuItem.style.display = "none"
                 } else if (this.menu.file.mime == "video/hls-stream") {

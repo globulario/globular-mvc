@@ -1384,7 +1384,7 @@ export class SearchVideoCard extends HTMLElement {
                     let path = rsp.getFilepathsList().pop()
 
                     let thumbnailPath = path
-                    if (thumbnailPath.lastIndexOf(".mp4") != -1) {
+                    if (thumbnailPath.lastIndexOf(".mp4") != -1 || thumbnailPath.lastIndexOf(".MP4") != -1) {
                         thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("."))
                     }
                     thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/preview.gif"
@@ -1768,7 +1768,7 @@ export class SearchTitleDetail extends HTMLElement {
                             }
 
                             let thumbnailPath = path
-                            if (thumbnailPath.lastIndexOf(".mp4") != -1) {
+                            if (thumbnailPath.lastIndexOf(".mp4") != -1 || thumbnailPath.lastIndexOf(".MP4") != -1) {
                                 thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("."))
                             }
                             thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/preview.gif"
@@ -1884,7 +1884,7 @@ export class SearchTitleDetail extends HTMLElement {
                     let path = rsp.getFilepathsList().pop()
 
                     let thumbnailPath = path
-                    if (thumbnailPath.lastIndexOf(".mp4") != -1) {
+                    if (thumbnailPath.lastIndexOf(".mp4") != -1 || thumbnailPath.lastIndexOf(".MP4") != -1) {
                         thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("."))
                     }
                     thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/preview.gif"
