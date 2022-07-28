@@ -3988,6 +3988,7 @@ export class FileExplorer extends HTMLElement {
                                     Model.eventHub.publish("__set_dir_event__", { path: dir, file_explorer_id: this.id }, true)
 
                                 }
+                                this.shadowRoot.querySelector("globular-disk-space-manager").refresh()
                                 this.resume()
                             }, err => ApplicationView.displayMessage(err, 3000), this.globule)
                         })

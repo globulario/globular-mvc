@@ -86,43 +86,7 @@ export class DiskSpaceManager extends HTMLElement {
   // The connection callback.
   connectedCallback() {
 
-    if (this.hasAttribute("account")) {
-      if (this.getAttribute("account") == "sa") {
-        this.style.display = "none";
-      } else {
-        this.getAllocatedSpace(this.getAttribute("account"), SubjectType.ACCOUNT,
-          () => {
-            this.setAllocatedSpace()
-            this.getAvailableSpace(this.getAttribute("account"), SubjectType.ACCOUNT, () => {
-              this.setAvailableSpace()
-            }, err => ApplicationView.displayMessage(err, 3000))
-          },
-          err => {
-            console.log(err);
-            this.errorMessageDiv.innerHTML = `no space was allocated for user ${this.getAttribute("account")}`
-            this.tooltip.innerHTML = `click here to allocate space`
-            this.errorMessageDiv.style.display = "block"
-            this.diskUsageDiv.style.display = "none"
-            this.progressBar.style.display = "none"
-          })
-      }
-    } else if (this.hasAttribute("application")) {
-      this.getAllocatedSpace(this.getAttribute("application"), SubjectType.APPLICATION, () => {
-        this.setAllocatedSpace()
-        this.getAvailableSpace(this.getAttribute("application"), SubjectType.APPLICATION, () => {
-          this.setAvailableSpace()
-        }, err => ApplicationView.displayMessage(err, 3000))
-
-      },
-        err => {
-          console.log(err);
-          this.errorMessageDiv.innerHTML = `no space was allocated for application ${this.getAttribute("application")}`
-          this.tooltip.innerHTML = `click here to allocate space`
-          this.errorMessageDiv.style.display = "block"
-          this.diskUsageDiv.style.display = "none"
-          this.progressBar.style.display = "none"
-        })
-    }
+    this.refresh()
 
   }
 
@@ -187,7 +151,7 @@ export class DiskSpaceManager extends HTMLElement {
         })
         .then((rsp) => {
           // Here I will return the value with it
-          this.allocated_space = rsp.getAllocatedSpace()
+          this.allocated_space = space
           this.setAllocatedSpace() // refresh the value.
         })
         .catch((err) => {
@@ -272,6 +236,47 @@ export class DiskSpaceManager extends HTMLElement {
         errorCallback(err);
       });
   }
+
+  refresh() {
+    if (this.hasAttribute("account")) {
+      if (this.getAttribute("account") == "sa") {
+        this.style.display = "none";
+      } else {
+        this.getAllocatedSpace(this.getAttribute("account"), SubjectType.ACCOUNT,
+          () => {
+            this.setAllocatedSpace()
+            this.getAvailableSpace(this.getAttribute("account"), SubjectType.ACCOUNT, () => {
+              this.setAvailableSpace()
+            }, err => ApplicationView.displayMessage(err, 3000))
+          },
+          err => {
+            console.log(err);
+            this.errorMessageDiv.innerHTML = `no space was allocated for user ${this.getAttribute("account")}`
+            this.tooltip.innerHTML = `click here to allocate space`
+            this.errorMessageDiv.style.display = "block"
+            this.diskUsageDiv.style.display = "none"
+            this.progressBar.style.display = "none"
+          })
+      }
+    } else if (this.hasAttribute("application")) {
+      this.getAllocatedSpace(this.getAttribute("application"), SubjectType.APPLICATION, () => {
+        this.setAllocatedSpace()
+        this.getAvailableSpace(this.getAttribute("application"), SubjectType.APPLICATION, () => {
+          this.setAvailableSpace()
+        }, err => ApplicationView.displayMessage(err, 3000))
+
+      },
+        err => {
+          console.log(err);
+          this.errorMessageDiv.innerHTML = `no space was allocated for application ${this.getAttribute("application")}`
+          this.tooltip.innerHTML = `click here to allocate space`
+          this.errorMessageDiv.style.display = "block"
+          this.diskUsageDiv.style.display = "none"
+          this.progressBar.style.display = "none"
+        })
+    }
+  }
+
 }
 
 customElements.define('globular-disk-space-manager', DiskSpaceManager)
