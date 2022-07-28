@@ -83,6 +83,30 @@ export function getFileSizeString(f_size) {
     return size
 }
 
+// Return the size of a file at url.
+function getFileSize(url_, callback, errorcallback){
+    let url = window.location.protocol + "//" + window.location.host + "/file_size"
+
+    var xmlhttp = new XMLHttpRequest();
+    xmlhttp.timeout = 1500
+    
+    xmlhttp.onreadystatechange = function () {
+        if (this.readyState == 4 && (this.status == 201 || this.status == 200)) {
+            let obj = JSON.parse(this.responseText)
+            callback(obj.size);
+        } else if (this.readyState == 4) {
+            errorcallback("fail to get the configuration file at url " + url + " status " + this.status)
+        }
+    };
+
+    url += "?url=" + url_
+
+    xmlhttp.open("GET", url, true);
+    xmlhttp.setRequestHeader("domain", Model.domain);
+
+    xmlhttp.send();
+}
+
 function copyToClipboard(text) {
     var dummy = document.createElement("textarea");
     // to avoid breaking orgain page when copying more words
@@ -1320,6 +1344,9 @@ export class FilesView extends HTMLElement {
                     } else {
                         rqst.setArgsList(["-f", "mp4", "-o", dest, url])
                     }
+
+                    // Retreive the file size...
+                    getFileSize(url, size=>console.log("-----------> ", size), err=>console.log(err))
 
                     rqst.setBlocking(true)
                     let stream = this._file_explorer_.globule.adminService.runCmd(rqst, { application: Application.application, domain: this._file_explorer_.globule.config.Domain, token: localStorage.getItem("user_token") })
