@@ -67,14 +67,14 @@ export function getFileSizeString(f_size) {
         if (f_size > 1024 * 1024) {
             if (f_size > 1024 * 1024 * 1024) {
                 let fileSize = f_size / (1024 * 1024 * 1024);
-                size = fileSize.toFixed(2) + " Gb";
+                size = fileSize.toFixed(2) + " GB";
             } else {
                 let fileSize = f_size / (1024 * 1024);
-                size = fileSize.toFixed(2) + " Mb";
+                size = fileSize.toFixed(2) + " MB";
             }
         } else {
             let fileSize = f_size / 1024;
-            size = fileSize.toFixed(2) + " Kb";
+            size = fileSize.toFixed(2) + " KB";
         }
     } else {
         size = f_size + " bytes";

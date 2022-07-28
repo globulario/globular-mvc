@@ -198,7 +198,6 @@ export class Account extends Model {
 
                 Account.accounts[data.getId() + "@" + data.getDomain()] = account;
                 account.session.initData(()=>{
-                    console.log("--------> session for ", account.name, " is ", account.session)
                     account.initData(() => {
 
                         // here I will initialyse groups...
