@@ -543,7 +543,7 @@ export class AccountPanel extends HTMLElement {
             <img style="width: 32px; height: 32px; display: ${this.account.profilPicture_ == undefined ? "none" : "block"};" src="${this.account.profilPicture_}"></img>
             <iron-icon icon="account-circle" style="width: 32px; height: 32px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${this.account.profilPicture_ != undefined ? "none" : "block"};"></iron-icon>
                 <span class="title">${this.account.getName()}</span>
-                <globular-disk-space-manager account="${this.account.getId()}"></globular-disk-space-manager>
+                <globular-disk-space-manager editable="true" account="${this.account.getId()}"></globular-disk-space-manager>
                 <paper-button id="delete-account-btn">Delete</paper-button>
                 <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
                     <iron-icon  id="hide-btn"  icon="unfold-less" style="flex-grow: 1; --iron-icon-fill-color:var(--palette-text-primary);" icon="add"></iron-icon>

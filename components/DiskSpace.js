@@ -63,20 +63,22 @@ export class DiskSpaceManager extends HTMLElement {
     this.errorMessageDiv = this.shadowRoot.querySelector("#error-message-div")
     this.progressBar = this.shadowRoot.querySelector("paper-progress")
 
-    if (this.getAttribute("editable")) {
-      this.allocatedSpaceSpan.onclick = this.errorMessageDiv.onclick = () => {
-        this.displayAllocatedSpaceInputBox()
-      }
+    if (this.hasAttribute("editable")) {
+      if (this.getAttribute("editable") == "true") {
+        this.allocatedSpaceSpan.onclick = this.errorMessageDiv.onclick = () => {
+          this.displayAllocatedSpaceInputBox()
+        }
 
-      this.allocatedSpaceSpan.onmouseenter=()=>{
-        this.style.pointer = "cursor"
-      }
+        this.allocatedSpaceSpan.onmouseover = () => {
+          this.style.cursor = "pointer"
+        }
 
-      this.allocatedSpaceSpan.onmouseleave=()=>{
-        this.style.pointer = "default"
-      }
+        this.allocatedSpaceSpan.onmouseleave = () => {
+          this.style.cusor = "default"
+        }
 
-      this.allocatedSpaceSpan.style.textDecoration = "underline"
+        this.allocatedSpaceSpan.style.textDecoration = "underline"
+      }
     }
 
   }

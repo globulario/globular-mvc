@@ -13,7 +13,7 @@ import "@polymer/paper-progress/paper-progress.js"
 import '@polymer/paper-dropdown-menu/paper-dropdown-menu.js'
 import '@polymer/paper-listbox/paper-listbox.js'
 import '@polymer/paper-item/paper-item.js'
-
+import "./DiskSpace.js"
 import * as getUuid from 'uuid-by-string'
 
 import { Model } from '../Model';
@@ -3402,6 +3402,7 @@ export class FileExplorer extends HTMLElement {
             </div>
             <div class="card-actions">
                 <paper-icon-button icon="icons:fullscreen-exit" id="exit-full-screen-btn" style="display: none;"></paper-icon-button>
+                <globular-disk-space-manager account="${Application.account.id}"></globular-disk-space-manager>
                 <span style="flex-grow: 1;"></span>
                 <div id="progress-div" style="display: none; flex-grow: 1; margin-right: 20px;">
                     <div style="diplay:flex; flex-direction: column;">
