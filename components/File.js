@@ -3847,7 +3847,7 @@ export class FileExplorer extends HTMLElement {
             fileInput.click()
             // this.pathNavigator
             fileInput.onchange = () => {
-                this.filesUploader.uploadFiles(this.globule, this.path, fileInput.files)
+                this.filesUploader.uploadFiles(this.path, fileInput.files)
             }
         }
 
