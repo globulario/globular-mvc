@@ -540,9 +540,9 @@ export class ApplicationView extends View {
     Model.eventHub.subscribe("_display_blog_event_", uuid => { }, b => {
 
       let displayBlog = () => {
-        let blog = this.getWorkspace().querySelector(`#_${b.getUuid()}`)
+        let blog = this.getWorkspace().querySelector(`#_${b.blogPost.getUuid()}`)
         if (blog == null) {
-          blog = new BlogPostElement(b)
+          blog = new BlogPostElement(b.blogPost, b.globule)
         }
 
         this.hideContent()
@@ -566,22 +566,22 @@ export class ApplicationView extends View {
         })
       }
 
-      if (b.getText().length > 0) {
+      if (b.blogPost.getText().length > 0) {
         displayBlog()
       } else {
         let rqst = new GetBlogPostsRequest
-        let id = b.getUuid()
+        let id = b.blogPost.getUuid()
         rqst.setUuidsList([id])
 
         let token = localStorage.getItem("user_token")
-        let globule = Model.globular
+        let globule = b.globule
         let stream = globule.blogService.getBlogPosts(rqst, { application: Application.application, domain: globule.config.Domain, token: token })
 
-        stream.on("data", (rsp) => {
-          b = rsp.getBlogPost()
+        stream.on("data", (rsp:any) => {
+          b.blogPost = rsp.getBlogPost()
         });
 
-        stream.on("status", (status) => {
+        stream.on("status", (status:any) => {
           if (status.code == 0) {
             Model.eventHub.publish("_hide_search_results_", null, true)
             displayBlog()

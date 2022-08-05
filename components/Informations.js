@@ -1407,8 +1407,12 @@ export class BlogPostInfo extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor(blogPost, short) {
+    constructor(blogPost, short, globule) {
         super()
+
+        // Keep the blogPost source...
+        this.globule = globule
+
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
 
@@ -1605,7 +1609,7 @@ export class BlogPostInfo extends HTMLElement {
         }
         // so here I will retreive more information about the author if it's available...
         this.shadowRoot.querySelector("#container").onclick = () => {
-            Model.eventHub.publish("_display_blog_event_", blogPost, true)
+            Model.eventHub.publish("_display_blog_event_", {blogPost:blogPost, globule:globule}, true)
         }
 
         if (this.deleteListener == undefined) {

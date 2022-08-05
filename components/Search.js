@@ -1066,7 +1066,7 @@ export class SearchResultsPage extends HTMLElement {
             let id = "_" + blogPost.getUuid() + "_info"
             let blogPostInfo = this.querySelector("#" + id);
             if (!blogPostInfo) {
-                blogPostInfo = new BlogPostInfo(blogPost, true);
+                blogPostInfo = new BlogPostInfo(blogPost, true, hit.globule);
                 blogPostInfo.classList.add("filterable")
                 blogPost.getKeywordsList().forEach(kw => blogPostInfo.classList.add(getUuidByString(kw.toLowerCase())))
                 blogPostInfo.id = id

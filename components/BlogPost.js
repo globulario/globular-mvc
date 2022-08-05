@@ -24,6 +24,7 @@ import * as getUuidByString from 'uuid-by-string';
 import { BlogPostInfo } from './Informations';
 import { AppScrollEffectsBehavior } from '@polymer/app-layout/app-scroll-effects/app-scroll-effects-behavior';
 import { Menu } from './Menu';
+import { GeneratePeerTokenRequest } from 'globular-web-client/authentication/authentication_pb';
 
 const intervals = [
     { label: 'year', seconds: 31536000 },
@@ -78,6 +79,29 @@ function jsonToHtml(data) {
     })
 
     return div
+}
+
+/**
+ * 
+ * @param {*} mac The mac address
+ * @param {*} callback The callback
+ * @param {*} errorCallback 
+ */
+function generatePeerToken(mac, callback, errorCallback) {
+
+    if (Model.globular.config.Mac == mac) {
+        callback(localStorage.getItem("user_token"))
+        return
+    }
+
+    let rqst = new GeneratePeerTokenRequest
+    rqst.setMac(mac)
+
+    Model.globular.authenticationService.generatePeerToken(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: localStorage.getItem("user_token") })
+        .then(rsp => {
+            callback(rsp.getToken())
+        })
+        .catch(errorCallback)
 }
 
 /**
@@ -141,12 +165,18 @@ export class BlogPostElement extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor(blog) {
+    constructor(blog, globule) {
         super()
+
 
         this.blog = blog
         if (blog != undefined) {
             this.id = "_" + blog.getUuid()
+        }
+
+        this.globule = globule
+        if (!globule) {
+            this.globule = Model.globular
         }
 
         // The close event listener.
@@ -300,7 +330,7 @@ export class BlogPostElement extends HTMLElement {
         `
 
         // The comments container...
-        this.blogComments = new BlogComments(blog)
+        this.blogComments = new BlogComments(blog, null, globule)
         this.blogComments.slot = "blog-comments"
         this.appendChild(this.blogComments)
 
@@ -382,16 +412,20 @@ export class BlogPostElement extends HTMLElement {
         this.shadowRoot.querySelector("#blog-editor-delete-btn").onclick = () => {
             let rqst = new DeleteBlogPostRequest
             rqst.setUuid(this.blog.getUuid())
-            let globule = Model.globular
+            let globule = this.globule
             rqst.setIndexpath(globule.config.DataPath + "/search/blogPosts")
 
             // Delete the blog...
-            globule.blogService.deleteBlogPost(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: localStorage.getItem("user_token") })
-                .then(rsp => {
-                    Model.eventHub.publish(this.blog.getUuid() + "_blog_delete_event", {}, false)
+            generatePeerToken(globule.config.Mac, token => {
+                globule.blogService.deleteBlogPost(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: token })
+                    .then(rsp => {
+                        Model.eventHub.publish(this.blog.getUuid() + "_blog_delete_event", {}, false)
 
-                })
-                .catch(e => ApplicationView.displayMessage(e, 3000))
+                    })
+                    .catch(e => ApplicationView.displayMessage(e, 3000))
+            }, err => ApplicationView.displayMessage(err, 3000))
+
+
         }
 
         // switch to edit mode...
@@ -700,7 +734,7 @@ export class BlogPostElement extends HTMLElement {
     publish() {
         this.editor.save().then((outputData) => {
             if (this.blog == null) {
-                let globule = Model.globular // see if the blog need domain...
+                let globule = this.globule // see if the blog need domain...
                 let rqst = new CreateBlogPostRequest
                 rqst.setIndexpath(globule.config.DataPath + "/search/blogPosts")
                 rqst.setAccountId(Application.account.id)
@@ -726,17 +760,21 @@ export class BlogPostElement extends HTMLElement {
                 }
 
                 let createBlog = () => {
-                    globule.blogService.createBlogPost(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: localStorage.getItem("user_token") })
-                        .then(rsp => {
-                            this.blog = rsp.getBlogPost();
-                            ApplicationView.displayMessage("Your post is published!", 3000)
+                    generatePeerToken(globule.config.Mac, token => {
+                        globule.blogService.createBlogPost(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: token })
+                            .then(rsp => {
+                                this.blog = rsp.getBlogPost();
+                                ApplicationView.displayMessage("Your post is published!", 3000)
 
-                            // Publish the event
-                            Model.eventHub.publish(Application.account.id + "_publish_blog_event", this.blog.serializeBinary(), false)
+                                // Publish the event
+                                Model.eventHub.publish(Application.account.id + "_publish_blog_event", this.blog.serializeBinary(), false)
 
-                        }).catch(e => {
-                            ApplicationView.displayMessage(e, 3000)
-                        })
+                            }).catch(e => {
+                                ApplicationView.displayMessage(e, 3000)
+                            })
+                    }, err => ApplicationView.displayMessage(err, 3000))
+
+
                 }
 
                 this.getThumbnail(500, dataUrl => { rqst.setThumbnail(dataUrl); createBlog(); })
@@ -745,7 +783,7 @@ export class BlogPostElement extends HTMLElement {
             } else {
 
                 let rqst = new SaveBlogPostRequest
-                let globule = Model.globular
+                let globule = this.globule
                 rqst.setIndexpath(globule.config.DataPath + "/search/blogPosts")
                 this.blog.setText(JSON.stringify(outputData))
                 this.blog.setLanguage(navigator.language.split("-")[0])
@@ -768,16 +806,19 @@ export class BlogPostElement extends HTMLElement {
                 rqst.setBlogPost(this.blog)
 
                 let saveBlog = () => {
-                    globule.blogService.saveBlogPost(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: localStorage.getItem("user_token") })
-                        .then(rsp => {
-                            ApplicationView.displayMessage("Your post was updated!", 3000)
+                    generatePeerToken(globule.config.Mac, token => {
+                        globule.blogService.saveBlogPost(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: token })
+                            .then(rsp => {
+                                ApplicationView.displayMessage("Your post was updated!", 3000)
 
-                            // That function will update the blog...
-                            Model.eventHub.publish(this.blog.getUuid() + "_blog_updated_event", this.blog.serializeBinary(), false)
+                                // That function will update the blog...
+                                Model.eventHub.publish(this.blog.getUuid() + "_blog_updated_event", this.blog.serializeBinary(), false)
 
-                        }).catch(e => {
-                            ApplicationView.displayMessage(e, 3000)
-                        })
+                            }).catch(e => {
+                                ApplicationView.displayMessage(e, 3000)
+                            })
+
+                    }, err => ApplicationView.displayMessage(err, 3000))
                 }
 
                 // set the thumbnail and save the blog...
@@ -882,13 +923,13 @@ export class BlogPosts extends HTMLElement {
         this.onclose = null
 
         // simply close the watching content...
-        this.shadowRoot.querySelector("#close-btn").onclick = ()=>{
+        this.shadowRoot.querySelector("#close-btn").onclick = () => {
             this.parentNode.removeChild(this)
-            if(this.onclose != null){
+            if (this.onclose != null) {
                 this.onclose()
             }
         }
-        
+
         this.listeners = {}
 
         // Display the blog post editor...
@@ -964,24 +1005,28 @@ export class BlogPosts extends HTMLElement {
     // Get the list of blogs.
     _getBlogs(globule, authors, callback) {
 
-        let rqst = new GetBlogPostsByAuthorsRequest
-        rqst.setAuthorsList(authors)
-        rqst.setMax(100)
+        generatePeerToken(globule.config.Mac, token => {
+            let rqst = new GetBlogPostsByAuthorsRequest
+            rqst.setAuthorsList(authors)
+            rqst.setMax(100)
 
-        let stream = globule.blogService.getBlogPostsByAuthors(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: localStorage.getItem("user_token") });
-        let blogs = []
+            let stream = globule.blogService.getBlogPostsByAuthors(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: token });
+            let blogs = []
 
-        stream.on("data", (rsp) => {
-            blogs.push(rsp.getBlogPost())
-        });
+            stream.on("data", (rsp) => {
+                blogs.push(rsp.getBlogPost())
+            });
 
-        stream.on("status", (status) => {
-            if (status.code == 0) {
-                callback(blogs)
-            } else {
-                callback([])
-            }
-        })
+            stream.on("status", (status) => {
+                if (status.code == 0) {
+                    callback(blogs)
+                } else {
+                    callback([])
+                }
+            })
+        }, err => ApplicationView.displayMessage(err, 3000))
+
+
     }
 
     setBlog(b) {
@@ -1042,7 +1087,7 @@ export class BlogComments extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor(blog, comment) {
+    constructor(blog, comment, globule) {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
@@ -1059,13 +1104,19 @@ export class BlogComments extends HTMLElement {
         </div>
         `
 
+
+        this.globule = globule
+        if (!globule) {
+            this.globule = Model.globular
+        }
+
         // The emotions 
-        this.emotions = new BlogEmotions(blog, comment)
+        this.emotions = new BlogEmotions(blog, comment, globule)
         this.emotions.slot = "blog-emotions"
         this.appendChild(this.emotions)
 
         // The comment editior
-        this.editor = new BlogCommentEditor(blog, comment)
+        this.editor = new BlogCommentEditor(blog, comment, globule)
         this.editor.slot = "blog-comment-editor"
         this.appendChild(this.editor)
 
@@ -1140,7 +1191,7 @@ export class BlogComments extends HTMLElement {
         }
 
         // So here I will display information about the comment 
-        let blogComment = new BlogComment(blog, comment)
+        let blogComment = new BlogComment(blog, comment, this.globule)
         blogComment.slot = "blog-comments"
         this.prepend(blogComment)
         blogComment.display()
@@ -1156,7 +1207,7 @@ export class BlogComment extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor(blog, comment) {
+    constructor(blog, comment, globule) {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
@@ -1165,6 +1216,10 @@ export class BlogComment extends HTMLElement {
         this.blog = blog;
         this.id = "_" + comment.getUuid()
 
+        this.globule = globule
+        if (!this.globule) {
+            this.globule = Model.globular
+        }
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -1209,7 +1264,7 @@ export class BlogComment extends HTMLElement {
         `
 
         // The comments container...
-        this.blogComments = new BlogComments(blog, comment)
+        this.blogComments = new BlogComments(blog, comment, this.globule)
         this.blogComments.slot = "blog-comments"
         this.appendChild(this.blogComments)
 
@@ -1260,11 +1315,15 @@ export class BlogCommentEditor extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor(blog, comment) {
+    constructor(blog, comment, globule) {
         super()
 
         this.blog = blog
         this.comment = comment
+        this.globule = globule
+        if (!this.globule) {
+            this.globule = Model.globular
+        }
 
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
@@ -1329,25 +1388,29 @@ export class BlogCommentEditor extends HTMLElement {
         emojiPicker.addEventListener('emoji-click', event => {
             this.collapse_btn.icon = "editor:insert-emoticon"
             this.collapse_panel.toggle();
-            let rqst = new AddEmojiRequest
-            let emoji = new Emoji
-            emoji.setAccountId(Application.account.id)
-            emoji.setEmoji(JSON.stringify(event.detail))
-            emoji.setParent(this.blog.getUuid())
-            if (comment != undefined) {
-                emoji.setParent(comment.getUuid())
-            }
+            generatePeerToken(this.globule.config.Mac, token => {
+                let rqst = new AddEmojiRequest
+                let emoji = new Emoji
+                emoji.setAccountId(Application.account.id)
+                emoji.setEmoji(JSON.stringify(event.detail))
+                emoji.setParent(this.blog.getUuid())
+                if (comment != undefined) {
+                    emoji.setParent(comment.getUuid())
+                }
 
-            rqst.setUuid(this.blog.getUuid())
-            rqst.setEmoji(emoji)
+                rqst.setUuid(this.blog.getUuid())
+                rqst.setEmoji(emoji)
 
-            Model.globular.blogService.addEmoji(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: localStorage.getItem("user_token") })
-                .then(rsp => {
-                    Model.eventHub.publish(emoji.getParent() + "_new_emotion_event", rsp.getEmoji().serializeBinary(), false)
-                })
-                .catch(e => {
-                    ApplicationView.displayMessage(e, 3000)
-                })
+                this.globule.blogService.addEmoji(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: token })
+                    .then(rsp => {
+                        Model.eventHub.publish(emoji.getParent() + "_new_emotion_event", rsp.getEmoji().serializeBinary(), false)
+                    })
+                    .catch(e => {
+                        ApplicationView.displayMessage(e, 3000)
+                    })
+            }, e => ApplicationView.displayMessage(e, 3000))
+
+
 
         });
 
@@ -1428,25 +1491,29 @@ export class BlogCommentEditor extends HTMLElement {
         let publishCommentButton = this.shadowRoot.querySelector("#publish-blog-comment")
         publishCommentButton.onclick = () => {
             this.editor.save().then((outputData) => {
-                let rqst = new AddCommentRequest
-                let comment = new Comment
-                rqst.setUuid(this.blog.getUuid())
-                comment.setAccountId(Application.account.id)
-                comment.setLanguage(navigator.language.split("-")[0])
-                comment.setText(JSON.stringify(outputData))
-                comment.setParent(this.blog.getUuid())
-                if (this.comment != undefined) {
-                    comment.setParent(this.comment.getUuid())
-                }
-                rqst.setComment(comment)
 
-                Model.globular.blogService.addComment(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: localStorage.getItem("user_token") })
-                    .then(rsp => {
-                        Model.eventHub.publish("new_" + comment.getParent() + "_comment_evt", rsp.getComment().serializeBinary(), false)
-                        addCommentBtn.style.display = "flex"
-                        this.editDiv.style.display = "none"
-                        this.removeChild(this.editorDiv)
-                    })
+                generatePeerToken(this.globule.config.Mac, token => {
+                    let rqst = new AddCommentRequest
+                    let comment = new Comment
+                    rqst.setUuid(this.blog.getUuid())
+                    comment.setAccountId(Application.account.id)
+                    comment.setLanguage(navigator.language.split("-")[0])
+                    comment.setText(JSON.stringify(outputData))
+                    comment.setParent(this.blog.getUuid())
+                    if (this.comment != undefined) {
+                        comment.setParent(this.comment.getUuid())
+                    }
+                    rqst.setComment(comment)
+
+                    this.globule.blogService.addComment(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: token })
+                        .then(rsp => {
+                            Model.eventHub.publish("new_" + comment.getParent() + "_comment_evt", rsp.getComment().serializeBinary(), false)
+                            addCommentBtn.style.display = "flex"
+                            this.editDiv.style.display = "none"
+                            this.removeChild(this.editorDiv)
+                        })
+                }, err => ApplicationView.displayMessage(err, 3000))
+
 
             })
         }
@@ -1652,7 +1719,7 @@ export class BlogEditingMenu extends Menu {
         this.onclick = () => {
             let icon = this.getIconDiv().querySelector("iron-icon")
             icon.style.removeProperty("--iron-icon-fill-color")
-            if(this.blogs.parentNode == undefined){
+            if (this.blogs.parentNode == undefined) {
                 Model.eventHub.publish("_display_blogs_event_", this.blogs, true)
             }
         }

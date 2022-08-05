@@ -668,7 +668,7 @@ export class PermissionPanel extends HTMLElement {
                             index = this.permission.getOrganizationsList().indexOf(o.getId() + "@" + o.getDomain())
                         }
                         if (index == -1) {
-                            this.permission.getOrganizationsList().push(o.getId())
+                            this.permission.getOrganizationsList().push(o.getId()  + "@" + o.getDomain())
                             this.permissionManager.savePermissions()
                             organizationList.appendItem(o)
                         }
@@ -718,7 +718,7 @@ export class PermissionPanel extends HTMLElement {
                             index = this.permission.getApplicationsList().indexOf(a.getId() + "@" + a.getDomain())
                         }
                         if (index == -1) {
-                            this.permission.getApplicationsList().push(a.getId())
+                            this.permission.getApplicationsList().push(a.getId()+ "@" + a.getDomain())
                             this.permissionManager.savePermissions()
                             applicationList.appendItem(a)
                         }
@@ -773,7 +773,7 @@ export class PermissionPanel extends HTMLElement {
                             index = this.permission.getGroupsList().indexOf(g.getId() + "@" + g.getDomain())
                         }
                         if (index == -1) {
-                            this.permission.getGroupsList().push(g.getId())
+                            this.permission.getGroupsList().push(g.getId() + "@" + g.getDomain())
                             this.permissionManager.savePermissions()
                             groupsList.appendItem(g)
                         }
@@ -828,7 +828,7 @@ export class PermissionPanel extends HTMLElement {
                             index = this.permission.getAccountsList().indexOf(a._id + "@" + a.domain)
                         }
                         if (index == -1) {
-                            this.permission.getAccountsList().push(a._id)
+                            this.permission.getAccountsList().push(a._id + "@" + a.domain)
                             this.permissionManager.savePermissions()
                             accountsList.appendItem(a)
                         }
