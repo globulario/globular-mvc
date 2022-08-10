@@ -710,6 +710,7 @@ export class FilesView extends HTMLElement {
             let getTitleInfo = (file, callback) => {
                 let rqst = new GetFileTitlesRequest
                 rqst.setIndexpath(globule.config.DataPath + "/search/titles")
+                
                 rqst.setFilepath(file.path)
 
                 globule.titleService.getFileTitles(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
@@ -727,12 +728,14 @@ export class FilesView extends HTMLElement {
             let getVideoInfo = (file, callback) => {
                 let globule = this._file_explorer_.globule
                 let rqst = new GetFileVideosRequest
+                console.log("read title for file ", file.path)
                 rqst.setIndexpath(globule.config.DataPath + "/search/videos")
                 rqst.setFilepath(file.path)
 
                 globule.titleService.getFileVideos(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
                     .then(rsp => {
-                        callback(rsp.getVideos().getVideosList())
+                        let videos = rsp.getVideos().getVideosList()
+                        callback(videos)
                     })
                     .catch(err => {
                         callback([])
@@ -1344,9 +1347,6 @@ export class FilesView extends HTMLElement {
                     } else {
                         rqst.setArgsList(["-f", "mp4", "-o", dest, url])
                     }
-
-                    // Retreive the file size...
-                    getFileSize(url, size=>console.log("-----------> ", size), err=>console.log(err))
 
                     rqst.setBlocking(true)
                     let stream = this._file_explorer_.globule.adminService.runCmd(rqst, { application: Application.application, domain: this._file_explorer_.globule.config.Domain, token: localStorage.getItem("user_token") })
@@ -2494,6 +2494,10 @@ export class PathNavigator extends HTMLElement {
                 title.title = dir
             }
             title.innerHTML = dir
+            if(dir.startsWith(Application.account.id)){
+                title.innerHTML = dir.replace(Application.account.id, Application.account.name)
+            }
+            
 
             // if the directory path sart with / ...
             if (index == 0) {
@@ -2797,6 +2801,10 @@ export class FileNavigator extends HTMLElement {
         let dir_ = this.div.querySelector(`#${id}`)
         if (dir_ == undefined) {
             let name = dir.path.split("/").pop();
+            if(name.startsWith(Application.account.id)){
+                // display more readable folder name...
+                name = name.replace(Application.account.id, Application.account.name)
+            }
             let offset = 10 * level
             let html = `
                 <style>

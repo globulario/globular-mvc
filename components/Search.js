@@ -265,14 +265,17 @@ function playTitleListener(player, title, indexPath, globule) {
 }
 
 // Search over multiple peers...
-function search(query, contexts) {
+function search(query, contexts_) {
 
     // Connections can contain many time the same address....
     let globules = Model.getGlobules()
 
     globules.forEach(g => {
+        let contexts = [...contexts_];
+
         // Search recursively...
         let search_ = (contexts) => {
+
             let context = contexts.pop()
             let indexPath = g.config.DataPath + "/search/" + context
             if (context == "blogPosts") {

@@ -1,6 +1,7 @@
 import { GetThumbnailsRequest } from "globular-web-client/file/file_pb";
 import { TargetsRequest } from "globular-web-client/monitoring/monitoring_pb";
 import { GetSubjectAllocatedSpaceRqst, GetSubjectAvailableSpaceRqst, SetSubjectAllocatedSpaceRqst, SubjectType } from "globular-web-client/rbac/rbac_pb";
+import { Application } from "../Application";
 import { ApplicationView } from "../ApplicationView";
 import { Model } from "../Model";
 import { getFileSizeString } from "./File";
@@ -251,7 +252,7 @@ export class DiskSpaceManager extends HTMLElement {
           },
           err => {
             console.log(err);
-            this.errorMessageDiv.innerHTML = `no space was allocated for user ${this.getAttribute("account")}`
+            this.errorMessageDiv.innerHTML = `no space was allocated for user ${Application.account.name}`
             this.tooltip.innerHTML = `click here to allocate space`
             this.errorMessageDiv.style.display = "block"
             this.diskUsageDiv.style.display = "none"

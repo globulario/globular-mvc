@@ -1362,6 +1362,7 @@ export class Navigation extends HTMLElement {
             } else {
                 // In case of error I will return an empty array
                 errorCallback(status.details)
+                ApplicationView.resume()
             }
         });
     }
