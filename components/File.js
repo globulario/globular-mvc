@@ -3146,7 +3146,7 @@ export class FileNavigator extends HTMLElement {
         }
         // The account...
         let rqst = new GetSharedResourceRqst
-        rqst.setSubject(Application.account.id)
+        rqst.setSubject(Application.account.id + "@" + Application.account.domain)
         rqst.setType(SubjectType.ACCOUNT)
 
         // Get file shared by account.
@@ -3453,6 +3453,8 @@ export class FileExplorer extends HTMLElement {
 
         // Give information about loading data...
         this.progressDiv = this.shadowRoot.querySelector("#progress-div")
+        this.shadowRoot.querySelector("globular-disk-space-manager").account = Application.account;
+    
 
         // enter full screen and exit full screen btn
         this.enterFullScreenBtn = this.shadowRoot.querySelector("#enter-full-screen-btn")

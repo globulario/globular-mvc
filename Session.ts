@@ -96,7 +96,8 @@ export class Session extends Model {
         let rqst = new resource.GetSessionRequest
 
         // Find the account by id or by name... both must be unique in the backend.
-        rqst.setAccountid(this.account.id)
+        let accountId = this.account.id + "@" + this.account.domain
+        rqst.setAccountid(accountId)
 
         // call persist data
         Model.globular.resourceService
@@ -109,7 +110,7 @@ export class Session extends Model {
             .then((rsp: resource.GetSessionResponse) => {
                 
                 let obj = rsp.getSession()
-                this._id = obj.getAccountid();
+                this._id = accountId;
                 this.state_ = obj.getState().valueOf();
                 this.lastStateTime = new Date(obj.getLastStateTime() * 1000);
                 console.log("session ", obj)
@@ -161,7 +162,7 @@ export class Session extends Model {
         let session = new resource.Session;
 
         // save the actual session informations.
-        session.setAccountid(this.account.id)
+        session.setAccountid(this.account.id + "@" + this.account.domain)
         let lastStateTime = 0
         if (this.lastStateTime) {
             lastStateTime = Math.floor(this.lastStateTime.getTime() / 1000)

@@ -395,7 +395,7 @@ export class OrganizationPanel extends HTMLElement {
                     this.accountsList.removeItem(a)
                     let rqst = new RemoveOrganizationAccountRqst
                     rqst.setOrganizationid(o.getId())
-                    rqst.setAccountid(a._id)
+                    rqst.setAccountid(a._id + "@" + a.domain)
                     Model.globular.resourceService.removeOrganizationAccount(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
                         .then(rsp => {
                             this.accountsList.removeItem(a)
@@ -408,7 +408,7 @@ export class OrganizationPanel extends HTMLElement {
                     a => {
                         let rqst = new AddOrganizationAccountRqst
                         rqst.setOrganizationid(o.getId())
-                        rqst.setAccountid(a._id)
+                        rqst.setAccountid(a._id + "@" + a.domain)
                         Model.globular.resourceService.addOrganizationAccount(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
                             .then(rsp => {
                                 this.accountsList.appendItem(a)

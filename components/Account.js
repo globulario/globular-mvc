@@ -24,12 +24,12 @@ import { localToGlobal } from "./utility";
 import { Picker } from "emoji-picker-element";
 
 
-export function getAllAccountsInfo(callback, errorCallback) {
+function getAllAccountsInfo_(globule, callback, errorCallback) {
   let rqst = new GetAccountsRqst
   rqst.setQuery("{}")
   let accounts = [];
 
-  let stream = Model.globular.resourceService.getAccounts(rqst,
+  let stream = globule.resourceService.getAccounts(rqst,
     {
       domain: Model.domain,
       address: Model.address,
@@ -41,11 +41,13 @@ export function getAllAccountsInfo(callback, errorCallback) {
   // Get the stream and set event on it...
   stream.on("data", (rsp) => {
     rsp.getAccountsList().forEach(a => {
+      // the data will be keep in the local storage if the user was once log on that computer.
       if (localStorage.getItem(a.getId()) != undefined) {
         let data = JSON.parse(localStorage.getItem(a.getId()))
         a.profilPicture_ = data.profilPicture_
         a.firstName_ = data.firstName_
         a.lastName_ = data.lastName_
+        a.globule = globule // keep reference to the parent globule.
       }
       accounts.push(a)
     })
@@ -60,6 +62,48 @@ export function getAllAccountsInfo(callback, errorCallback) {
   });
 }
 
+/**
+ * return the all account information.
+ */
+export function getAllAccountsInfo(callback, errorCallback, external) {
+
+  if (external == undefined) {
+    external = false;
+  }
+
+  // Connections can contain many time the same address....
+  let globules = Model.getGlobules()
+  let index = 0
+  let accounts_ = []
+
+  let _getAllAccountsInfo_ = (globule) => {
+    getAllAccountsInfo_(globule,
+      (accounts) => {
+        if (external) {
+          if (globules[index].config.Mac != Model.globular.config.Mac) {
+            accounts_ = accounts_.concat(accounts)
+          }
+        } else {
+          accounts_ = accounts_.concat(accounts)
+        }
+        // move to the next globule.
+        index++
+        if (index < globules.length) {
+          _getAllAccountsInfo_(globules[index])
+        } else {
+          // return the list of all accounts.
+          callback(accounts_)
+        }
+
+      }, errorCallback)
+  }
+
+  // retreive the list of accounts.
+  if (globules.length > 0) {
+    // call onces
+    _getAllAccountsInfo_(globules[0])
+  }
+}
 
 /**
  * Login/Register functionality.
@@ -349,7 +393,8 @@ export class AccountManager extends HTMLElement {
     let displayAccounts = () => {
       content.innerHTML = ""
       // Here I will get the list of all accounts.
-      getAllAccountsInfo(
+      getAllAccountsInfo_(
+        Model.globular,
         (accounts) => {
           accounts.forEach(a => {
             if (a.getId() != "admin" && a.getId() != "guest") {
@@ -565,6 +610,8 @@ export class AccountPanel extends HTMLElement {
     let content = this.shadowRoot.querySelector("#content")
     this.hideBtn = this.shadowRoot.querySelector("#hide-btn")
 
+    this.shadowRoot.querySelector("globular-disk-space-manager").account = this.account;
+    
     // Aggregations
     this.organizationsList = null
     this.rolesList = null
@@ -620,7 +667,7 @@ export class AccountPanel extends HTMLElement {
             this.organizationsList.removeItem(o)
             let rqst = new RemoveOrganizationAccountRqst
             rqst.setOrganizationid(o.getId())
-            rqst.setAccountid(a._id)
+            rqst.setAccountid(a._id + "@" + a.domain)
             Model.globular.resourceService.removeOrganizationAccount(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
               .then(rsp => {
                 this.organizationsList.removeItem(a)
@@ -633,7 +680,7 @@ export class AccountPanel extends HTMLElement {
           o => {
             let rqst = new AddOrganizationAccountRqst
             rqst.setOrganizationid(o.getId())
-            rqst.setAccountid(a._id)
+            rqst.setAccountid(a._id + "@" + a.domain)
             Model.globular.resourceService.addOrganizationAccount(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
               .then(rsp => {
                 this.organizationsList.appendItem(a)
@@ -669,7 +716,7 @@ export class AccountPanel extends HTMLElement {
           r => {
             this.rolesList.removeItem(r)
             let rqst = new RemoveAccountRoleRqst
-            rqst.setAccountid(a.getId())
+            rqst.setAccountid(a.getId() + "@" + a.getDomain())
             rqst.setRoleid(r.getId())
             Model.globular.resourceService.removeAccountRole(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
               .then(rsp => {
@@ -682,7 +729,7 @@ export class AccountPanel extends HTMLElement {
           },
           r => {
             let rqst = new AddAccountRoleRqst
-            rqst.setAccountid(a.getId())
+            rqst.setAccountid(a.getId() + "@" + a.getDomain())
             rqst.setRoleid(r.getId())
             Model.globular.resourceService.addAccountRole(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
               .then(rsp => {
@@ -717,7 +764,7 @@ export class AccountPanel extends HTMLElement {
           g => {
             this.groupsList.removeItem(g)
             let rqst = new RemoveGroupMemberAccountRqst
-            rqst.setAccountid(a.getId())
+            rqst.setAccountid(a.getId() + "@" + a.getDomain())
             rqst.setGroupid(g.getId())
             Model.globular.resourceService.removeGroupMemberAccount(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
               .then(rsp => {
@@ -730,7 +777,7 @@ export class AccountPanel extends HTMLElement {
           },
           g => {
             let rqst = new AddGroupMemberAccountRqst
-            rqst.setAccountid(a.getId())
+            rqst.setAccountid(a.getId()+ "@" + a.getDomain())
             rqst.setGroupid(g.getId())
             Model.globular.resourceService.addGroupMemberAccount(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
               .then(rsp => {
@@ -834,5 +881,195 @@ export class AccountPanel extends HTMLElement {
 
 customElements.define('globular-account-panel', AccountPanel)
 
+/**
+ * Display list of account not manage by this peer...
+ */
+export class ExternalAccountManager extends HTMLElement {
+  // attributes.
+
+  // Create the applicaiton view.
+  constructor() {
+    super()
+    // Set the shadow dom.
+    this.attachShadow({ mode: 'open' });
+
+    // Innitialisation of the layout.
+    this.shadowRoot.innerHTML = `
+      <style>
+          ${getTheme()}
+          #container{
+            display: flex;
+            flex-direction: column;
+            margin-top: 24px;
+          }
+
+          .title{
+            font-size: 1rem;
+            color: var(--cr-primary-text-color);
+            padding-left: 8px;
+            padding-bottom: 15px;
+          }
+      </style>
+      <div id="container">
+          <div class="title">Manage external accounts</div>
+          <paper-card>
+            <div class="card-content">
+              <slot>
+              </slot>
+            <div>
+          </paper-card>
+      </div>
+      `
+    // give the focus to the input.
+    let container = this.shadowRoot.querySelector("#container")
+
+    getAllAccountsInfo(accounts => {
+      console.log(accounts)
+      accounts.forEach(a => {
+        // I will manage only regular user account
+        if (a.getId() != "sa") {
+          let panel = new ExternalAccountPanel(a)
+          this.appendChild(panel)
+        }
+      })
+
+    }, err => ApplicationView.displayMessage(err, 3000), true)
+
+  }
+}
+
+customElements.define('globular-external-account-manager', ExternalAccountManager)
 
 
+/**
+ * External account info...
+ */
+export class ExternalAccountPanel extends HTMLElement {
+  // attributes.
+
+  // Create the applicaiton view.
+  constructor(account) {
+    super()
+    // Set the shadow dom.
+    this.attachShadow({ mode: 'open' });
+
+    // Innitialisation of the layout.
+    this.shadowRoot.innerHTML = `
+      <style>
+          ${getTheme()}
+          #container{
+            display: flex;
+
+          }
+
+          #icon-div iron-icon{
+            padding-right: 10px;
+          }
+
+          #profile-icon {
+              fill: var(--palette-text-primary);
+          }
+
+          #profile-picture{
+            width: 64px;
+            height: 64px;
+            padding-right: 10px;
+            border-radius: 20px;
+            border: 1px solid transparent;
+            display: none;
+          }
+
+      </style>
+      <div id="container">
+          <div id="icon-div" title="click here to change profile picture">
+              <iron-icon id="profile-icon" icon="account-circle"></iron-icon>
+              <img id="profile-picture"></img>
+          </div>
+          <span>${account.getName() + "@" + account.getDomain()}</span>
+          <span style="flex-grow: 1;"></span>
+          <globular-disk-space-manager editable="true" account="${account.getName() + "@" + account.getDomain()}"></globular-disk-space-manager>
+      </div>
+      `
+    // give the focus to the input.
+    let container = this.shadowRoot.querySelector("#container")
+
+    // Set the disk space account.
+    this.shadowRoot.querySelector("globular-disk-space-manager").account = account;
+
+    // Now if the picture is given...
+    this.img = this.shadowRoot.getElementById("profile-picture");
+    this.ico = this.shadowRoot.getElementById("profile-icon");
+
+    if (account.profilPicture_ != undefined) {
+      this.setProfilePicture(account.profilPicture_);
+    }
+
+
+  }
+
+  getIcon(){
+    return this.ico
+  }
+
+  
+  getImage(){
+    return this.img
+  }
+
+
+  resetProfilePicture() {
+    // reset the display
+    this.getIcon().style.display = "block";
+    this.getImage().style.display = "none";
+    this.getImage().src = "";
+
+    if (this.img != undefined) {
+      this.img.src = "";
+      this.img.style.display = "none";
+    }
+
+    if (this.ico != undefined) {
+      this.ico.style.display = "block";
+    }
+  }
+
+  /**
+   * Set the profile picture with the given data url.
+   * @param {*} dataUrl
+   */
+  setProfilePicture(dataUrl) {
+
+    // The account, and data url must be valid.
+    if (this.account == null) {
+      this.resetProfilePicture()
+      return;
+    }
+
+    if (dataUrl == undefined) {
+      this.resetProfilePicture()
+      return
+    }
+
+    if (dataUrl.length == 0) {
+      this.resetProfilePicture()
+      return;
+    }
+
+    // Here the account has a profile picture.
+    this.getIcon().style.display = "none";
+    this.getImage().style.display = "block";
+    this.getImage().src = dataUrl;
+
+    if (this.img != undefined) {
+      this.img.src = dataUrl;
+      this.img.style.display = "block";
+    }
+
+    if (this.ico != undefined) {
+      this.ico.style.display = "none";
+    }
+  }
+
+}
+
+customElements.define('globular-external-account-panel', ExternalAccountPanel)

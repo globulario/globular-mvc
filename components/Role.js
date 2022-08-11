@@ -437,7 +437,7 @@ export class RolePanel extends HTMLElement {
                     accountsList.removeItem(a)
                     let rqst = new RemoveAccountRoleRqst
                     rqst.setRoleid(role.getId())
-                    rqst.setAccountid(a._id)
+                    rqst.setAccountid(a._id + "@" + a.domain)
                     Model.globular.resourceService.removeAccountRole(rqst, { domain: Model.domain,address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
                         .then(rsp => {
                             accountsList.removeItem(a)
@@ -450,7 +450,7 @@ export class RolePanel extends HTMLElement {
                     a => {
                         let rqst = new AddAccountRoleRqst
                         rqst.setRoleid(role.getId())
-                        rqst.setAccountid(a._id)
+                        rqst.setAccountid(a._id + "@" + a.domain)
                         Model.globular.resourceService.addAccountRole(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
                             .then(rsp => {
                                 accountsList.appendItem(a)

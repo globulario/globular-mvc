@@ -136,31 +136,21 @@ export class Account extends Model {
             errorCallback("No account id given to getAccount function!")
             return
         }
+
         if (Account.accounts == null) {
             // Set the accouts map
             Account.accounts = {}
         }
 
-        
-        let token = localStorage.getItem("user_token")
-        let decoded = jwt(token);
-        let domain = (<any>decoded).domain;
-        let address = (<any>decoded).address; // default domain
-
-        if(id.indexOf("@") != -1){
-            address = id.split("@")[1] // take the domain given with the id.
-            id = id.split("@")[0]
-        }
-
-        let rqst = new ResourceService.GetAccountsRqst
-        rqst.setQuery(`{"$or":[{"_id":"${id}"},{"name":"${id}"} ]}`); // search by name and not id... the id will be retreived.
-        rqst.setOptions(`[{"Projection":{"_id":1, "email":1, "name":1, "groups":1, "organizations":1, "roles":1, "domain":1}}]`);
-
+        console.log("try to find account: ", id)
         let accountId = id
-        if(accountId.indexOf("@") == -1){
+        let domain = Model.domain
+
+        if (accountId.indexOf("@") == -1) {
             accountId = id + "@" + domain
-        }else{
-            address = accountId.split("@")[1]
+        } else {
+            domain = accountId.split("@")[1]
+            id = accountId.split("@")[0]
         }
 
         if (Account.accounts[accountId] != null) {
@@ -168,36 +158,43 @@ export class Account extends Model {
             return
         }
 
-        let stream = Model.getGlobule(address).resourceService.getAccounts(rqst, { domain: domain, address: address, application: Model.application, token: token })
-        let accounts_ = new Array<ResourceService.Account>();
+        let token = localStorage.getItem("user_token")
+        let rqst = new ResourceService.GetAccountsRqst
+        rqst.setQuery(`{"$or":[{"_id":"${id}"},{"name":"${id}"} ]}`); // search by name and not id... the id will be retreived.
+        rqst.setOptions(`[{"Projection":{"_id":1, "email":1, "name":1, "groups":1, "organizations":1, "roles":1, "domain":1}}]`);
+
+        let globule = Model.getGlobule(domain)
+        let stream = globule.resourceService.getAccounts(rqst, { domain: domain, application: Model.application, token: token })
+        let data: ResourceService.Account;
 
         stream.on("data", (rsp) => {
-            accounts_ = accounts_.concat(rsp.getAccountsList())
+            if (!data) {
+                data = rsp.getAccountsList().pop()
+            }
         });
 
         stream.on("status", (status) => {
             if (status.code == 0) {
-                if (accounts_.length == 0) {
-                    errorCallback("no account found with id " + accountId)
+
+                // so here I will get the session for the account...
+                if (Account.accounts[accountId] != null) {
+                    successCallback(Account.accounts[accountId]);
                     return
                 }
 
-
-                let data = accounts_[0]
-                // so here I will get the session for the account...
-                if (Account.accounts[data.getId() + "@" + data.getDomain()] != null) {
-                    successCallback(Account.accounts[data.getId() + "@" + data.getDomain()]);
+                // Initialyse the data...
+                if (!data) {
+                    console.log("no account found with id ", accountId)
                     return
                 }
 
                 console.log("receive account data: ", data)
 
-
                 let account = new Account(data.getId(), data.getEmail(), data.getName(), data.getDomain())
                 account.session = new Session(account)
+                Account.accounts[accountId] = account;
 
-                Account.accounts[data.getId() + "@" + data.getDomain()] = account;
-                account.session.initData(()=>{
+                account.session.initData(() => {
                     account.initData(() => {
 
                         // here I will initialyse groups...
@@ -207,6 +204,7 @@ export class Account extends Model {
                 }, errorCallback)
 
             } else {
+                console.log("fail to retreive account ", accountId, status.details)
                 errorCallback(status.details);
             }
         })
@@ -561,6 +559,18 @@ export class Account extends Model {
         return JSON.stringify({ _id: this.id, firstName_: this.firstName, lastName_: this.lastName, middleName_: this.middleName, profilPicture_: this.profilPicture });
     }
 
+    getId(): string {
+        return this._id
+    }
+
+    getDomain(): string {
+        return this._domain
+    }
+
+    getName(): string {
+        return this.name_
+    }
+
     static getContacts(account: Account, query: string, callback: (contacts: Array<any>) => void, errorCallback: (err: any) => void) {
 
         // Insert the notification in the db.
@@ -610,7 +620,7 @@ export class Account extends Model {
 
         // So here I will save the contact invitation into pending contact invitation collection...
         let rqst = new ResourceService.SetAccountContactRqst
-        rqst.setAccountid(from.id)
+        rqst.setAccountid(from.id + "@" + from._domain)
 
         let contact = new ResourceService.Contact
         contact.setId(to.id)
@@ -634,7 +644,7 @@ export class Account extends Model {
 
                 // Here I will return the value with it
                 let rqst = new ResourceService.SetAccountContactRqst
-                rqst.setAccountid(to.id)
+                rqst.setAccountid(to.id + "@" + to._domain)
 
                 let contact = new ResourceService.Contact
                 contact.setId(from.id)
@@ -668,10 +678,10 @@ export class Account extends Model {
     static getAccounts(query: string, callback: (accounts: Array<Account>) => void, errorCallback: (err: any) => void) {
         let accounts_ = new Array<Account>()
         let connections = Model.getGlobules()
-        
+
         let _getAccounts_ = () => {
             let globule = connections.pop()
-           
+
             if (connections.length == 0) {
                 Account._getAccounts(globule, query, (accounts: Array<Account>) => {
                     for (var i = 0; i < accounts.length; i++) {

@@ -14,7 +14,9 @@ export class Model {
 
     // That function will return a 
     public static getGlobule(address: string): GlobularWebClient.Globular {
-        return Model.globules.get(address);
+        let globule = Model.globules.get(address);
+
+        return globule;
     }
 
     public static getGlobules(): Array<GlobularWebClient.Globular> {
@@ -198,6 +200,7 @@ export class Model {
                             // append the globule to the list.
                             Model.globules.set(location.protocol + "//" + peer.getDomain() + ":" + port, globule)
                             Model.globules.set(url, globule)
+                            Model.globules.set(peer.getDomain(), globule)
 
                             if (index < peers.length) {
                                 connectToPeers()

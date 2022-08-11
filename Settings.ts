@@ -14,7 +14,7 @@ import "@polymer/iron-icons/notification-icons";
 import { ApplicationManager } from "./components/Applications";
 import { PeersManager } from "./components/Peers";
 import { OrganizationManager } from "./components/Organization";
-import { AccountManager } from "./components/Account";
+import { AccountManager, ExternalAccountManager } from "./components/Account";
 import { StartProcessVideoRequest, StopProcessVideoRequest, IsProcessVideoRequest, SetVideoConversionRequest, SetVideoStreamConversionRequest, SetStartVideoConversionHourRequest, SetMaximumVideoConversionDelayRequest, VideoConversionError, GetVideoConversionErrorsRequest, GetVideoConversionErrorsResponse, ClearVideoConversionErrorRequest, ClearVideoConversionErrorsRequest, VideoConversionLog, ClearVideoConversionLogsRequest, ClearVideoConversionLogsResponse, ClearVideoConversionErrorResponse, ClearVideoConversionErrorsResponse, GetVideoConversionLogsRequest, GetVideoConversionLogsResponse } from "globular-web-client/file/file_pb";
 import { GetServiceConfigurationByIdRequest } from "globular-web-client/config_manager/config_pb";
 import { PermissionsManager, ResourcesPermissionsManager } from "./components/Permissions";
@@ -848,7 +848,9 @@ export class VideoSettings extends Settings {
  */
 export class UsersSettings extends Settings {
 
-    accountManager: AccountManager;
+    localAccountManager: AccountManager;
+
+    externalAccountManager: ExternalAccountManager;
 
     // The application.
     constructor(settingsMenu: SettingsMenu, settingsPanel: SettingsPanel) {
@@ -885,13 +887,18 @@ export class UsersSettings extends Settings {
             <div class="title">
                 Accounts 
             </div>
-            <span class="subtitle" style="font-size: 1rem;">Account manager to set account setting's</span>
+            <span class="subtitle" style="font-size: 1rem;">Manage local accounts</span>
         `
 
         // Display the file explorer...
         accountSettingPage.appendChild(document.createRange().createContextualFragment(html));
-        this.accountManager = new AccountManager()
-        accountSettingPage.appendChild(this.accountManager)
+        this.localAccountManager = new AccountManager()
+        accountSettingPage.appendChild(this.localAccountManager)
+
+        // Now the external account use to display account not managed by the server but that can access ressources via
+        // peer connections.
+        this.externalAccountManager = new ExternalAccountManager()
+        accountSettingPage.appendChild(this.externalAccountManager)
 
     }
 

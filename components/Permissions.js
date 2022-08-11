@@ -1183,6 +1183,7 @@ export class PermissionsViewer extends HTMLElement {
             let subject = subjects[id]
             if (subject.type == "account") {
                 Account.getAccount(subject.id, (a) => {
+                    console.log("---------> account ", a)
                     let accountDiv = this.createAccountDiv(a)
                     subjectCell.innerHTML = ""
                     subjectCell.appendChild(accountDiv)

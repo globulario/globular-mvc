@@ -277,37 +277,39 @@ function search(query, contexts_) {
         let search_ = (contexts) => {
 
             let context = contexts.pop()
-            let indexPath = g.config.DataPath + "/search/" + context
-            if (context == "blogPosts") {
-                if (contexts.length == 0) {
-                    searchBlogPosts(g, query, indexPath, () => {
-                        console.log("done!")
-                    })
+            if (context) {
+                let indexPath = g.config.DataPath + "/search/" + context
+                if (context == "blogPosts") {
+                    if (contexts.length == 0) {
+                        searchBlogPosts(g, query, indexPath, () => {
+                            console.log("done!")
+                        })
+                    } else {
+                        searchBlogPosts(g, query, indexPath, () => {
+                            search_(contexts)
+                        })
+                    }
+                } else if (context == "webPages") {
+                    console.log("search webpages... ", query)
+                    if (contexts.length == 0) {
+                        searchWebpageContent(query, () => {
+                            console.log("done!")
+                        })
+                    } else {
+                        searchWebpageContent(query, () => {
+                            search_(contexts)
+                        })
+                    }
                 } else {
-                    searchBlogPosts(g, query, indexPath, () => {
-                        search_(contexts)
-                    })
-                }
-            } else if (context == "webPages") {
-                console.log("search webpages... ", query)
-                if (contexts.length == 0) {
-                    searchWebpageContent(query, () => {
-                        console.log("done!")
-                    })
-                } else {
-                    searchWebpageContent(query, () => {
-                        search_(contexts)
-                    })
-                }
-            } else {
-                if (contexts.length == 0) {
-                    searchTitles(g, query, indexPath, () => {
-                        console.log("done!")
-                    })
-                } else {
-                    searchTitles(g, query, indexPath, () => {
-                        search_(contexts)
-                    })
+                    if (contexts.length == 0) {
+                        searchTitles(g, query, indexPath, () => {
+                            console.log("done!")
+                        })
+                    } else {
+                        searchTitles(g, query, indexPath, () => {
+                            search_(contexts)
+                        })
+                    }
                 }
             }
         }
@@ -1425,8 +1427,7 @@ export class SearchVideoCard extends HTMLElement {
                             thumbnail.src = dataUrl
                             video.getPoster().setContenturl(thumbnail.src)
                             let rqst = new CreateVideoRequest
-                            let indexPath = globule.config.DataPath + "/search/videos"
-                            rqst.setIndexpath(indexPath)
+                            rqst.setIndexpath(globule.config.DataPath + "/search/videos")
                             rqst.setVideo(video)
                             globule.titleService.createVideo(rqst).then(
                                 () => {

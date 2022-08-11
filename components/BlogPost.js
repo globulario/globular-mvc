@@ -737,7 +737,7 @@ export class BlogPostElement extends HTMLElement {
                 let globule = this.globule // see if the blog need domain...
                 let rqst = new CreateBlogPostRequest
                 rqst.setIndexpath(globule.config.DataPath + "/search/blogPosts")
-                rqst.setAccountId(Application.account.id)
+                rqst.setAccountId(Application.account.id + "@" + Application.account.domain)
                 rqst.setText(JSON.stringify(outputData));
                 rqst.setLanguage(navigator.language.split("-")[0])
                 rqst.setTitle(this.titleInput.value)
@@ -1391,7 +1391,7 @@ export class BlogCommentEditor extends HTMLElement {
             generatePeerToken(this.globule.config.Mac, token => {
                 let rqst = new AddEmojiRequest
                 let emoji = new Emoji
-                emoji.setAccountId(Application.account.id)
+                emoji.setAccountId(Application.account.id + "@" + Application.account.domain)
                 emoji.setEmoji(JSON.stringify(event.detail))
                 emoji.setParent(this.blog.getUuid())
                 if (comment != undefined) {
@@ -1496,7 +1496,7 @@ export class BlogCommentEditor extends HTMLElement {
                     let rqst = new AddCommentRequest
                     let comment = new Comment
                     rqst.setUuid(this.blog.getUuid())
-                    comment.setAccountId(Application.account.id)
+                    comment.setAccountId(Application.account.id + "@" + Application.account.domain)
                     comment.setLanguage(navigator.language.split("-")[0])
                     comment.setText(JSON.stringify(outputData))
                     comment.setParent(this.blog.getUuid())

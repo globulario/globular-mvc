@@ -287,7 +287,7 @@ export class GroupPanel extends HTMLElement {
                     accountsList.removeItem(a)
                     let rqst = new RemoveGroupMemberAccountRqst
                     rqst.setGroupid(group.getId())
-                    rqst.setAccountid(a._id)
+                    rqst.setAccountid(a._id + "@" + a.domain)
                     Model.globular.resourceService.removeGroupMemberAccount(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
                         .then(rsp => {
                             accountsList.removeItem(a)
@@ -300,7 +300,7 @@ export class GroupPanel extends HTMLElement {
                     a => {
                         let rqst = new AddGroupMemberAccountRqst
                         rqst.setGroupid(group.getId())
-                        rqst.setAccountid(a._id)
+                        rqst.setAccountid(a._id + "@" + a.domain)
                         Model.globular.resourceService.addGroupMemberAccount(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
                             .then(rsp => {
                                 accountsList.appendItem(a)
