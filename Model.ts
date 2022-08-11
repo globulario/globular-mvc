@@ -1,9 +1,33 @@
 // Globular conneciton.
 import * as GlobularWebClient from "globular-web-client";
 import { getAllPeersInfo } from "globular-web-client/api";
+import { GeneratePeerTokenRequest } from "globular-web-client/authentication/authentication_pb";
 import { Peer } from "globular-web-client/resource/resource_pb";
 import { View } from "./View";
 
+
+/**
+ * 
+ * @param {*} mac The mac address
+ * @param {*} callback The callback
+ * @param {*} errorCallback 
+ */
+ export function generatePeerToken(mac:string, callback:(token:string)=>void, errorCallback:(err:any)=>void) {
+
+    if (Model.globular.config.Mac == mac) {
+        callback(localStorage.getItem("user_token"))
+        return
+    }
+
+    let rqst = new GeneratePeerTokenRequest
+    rqst.setMac(mac)
+
+    Model.globular.authenticationService.generatePeerToken(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: localStorage.getItem("user_token") })
+        .then(rsp => {
+            callback(rsp.getToken())
+        })
+        .catch(errorCallback)
+}
 
 export class Model {
 

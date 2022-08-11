@@ -15,7 +15,7 @@ import { getTheme } from "./Theme";
 import { ApplicationView } from '../ApplicationView';
 import { CreateBlogPostRequest, GetBlogPostsByAuthorsRequest, SaveBlogPostRequest, BlogPost, DeleteBlogPostRequest, AddEmojiRequest, Emoji, AddCommentRequest, Comment } from 'globular-web-client/blog/blog_pb';
 import { Application } from '../Application';
-import { Model } from '../Model';
+import { generatePeerToken, Model } from '../Model';
 import * as edjsHTML from 'editorjs-html'
 import { Account } from '../Account';
 import { v4 as uuidv4 } from "uuid";
@@ -24,7 +24,6 @@ import * as getUuidByString from 'uuid-by-string';
 import { BlogPostInfo } from './Informations';
 import { AppScrollEffectsBehavior } from '@polymer/app-layout/app-scroll-effects/app-scroll-effects-behavior';
 import { Menu } from './Menu';
-import { GeneratePeerTokenRequest } from 'globular-web-client/authentication/authentication_pb';
 
 const intervals = [
     { label: 'year', seconds: 31536000 },
@@ -81,28 +80,6 @@ function jsonToHtml(data) {
     return div
 }
 
-/**
- * 
- * @param {*} mac The mac address
- * @param {*} callback The callback
- * @param {*} errorCallback 
- */
-function generatePeerToken(mac, callback, errorCallback) {
-
-    if (Model.globular.config.Mac == mac) {
-        callback(localStorage.getItem("user_token"))
-        return
-    }
-
-    let rqst = new GeneratePeerTokenRequest
-    rqst.setMac(mac)
-
-    Model.globular.authenticationService.generatePeerToken(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: localStorage.getItem("user_token") })
-        .then(rsp => {
-            callback(rsp.getToken())
-        })
-        .catch(errorCallback)
-}
 
 /**
  * Here I will create the image from the data url.

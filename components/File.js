@@ -16,7 +16,7 @@ import '@polymer/paper-item/paper-item.js'
 import "./DiskSpace.js"
 import * as getUuid from 'uuid-by-string'
 
-import { Model } from '../Model';
+import { generatePeerToken, Model } from '../Model';
 import { File } from "../File";
 import { Menu } from './Menu';
 import { PermissionsManager } from './Permissions';
@@ -5301,33 +5301,38 @@ export class FilesUploader extends HTMLElement {
                     port = globule.config.PortHttps
                 }
 
-                uploadFiles(globule, path, [f],
-                    () => {
-                        if (index < files.length) {
-                            uploadFile(index, callback)
-                        } else {
-                            callback()
-                        }
-                    },
-                    event => {
-                        ApplicationView.displayMessage("Upload failed!", 3000)
-                    },
-                    event => {
-                        let progress = this.files_upload_table.children[0].querySelector("paper-progress")
-                        progress.value = (event.loaded / event.total) * 100
-                        if (event.loaded == event.total) {
-                            ApplicationView.displayMessage("File " + f.name + " was uploaded", 2000)
-                            this.files_upload_table.removeChild(this.files_upload_table.children[0])
-                            if (this.files_upload_table.children.length == 0) {
-                                this.btn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
-                                this.shadowRoot.querySelector("iron-collapse").style.display = "none";
+                // generate a token... 
+                generatePeerToken(globule.config.Mac, token=>{
+                    uploadFiles(globule, token, path, [f],
+                        () => {
+                            if (index < files.length) {
+                                uploadFile(index, callback)
+                            } else {
+                                callback()
                             }
-                        }
-                    },
-                    event => {
-                        console.log("abort file upload event", event);
-                    },
-                    port)
+                        },
+                        event => {
+                            ApplicationView.displayMessage("Upload failed!", 3000)
+                        },
+                        event => {
+                            let progress = this.files_upload_table.children[0].querySelector("paper-progress")
+                            progress.value = (event.loaded / event.total) * 100
+                            if (event.loaded == event.total) {
+                                ApplicationView.displayMessage("File " + f.name + " was uploaded", 2000)
+                                this.files_upload_table.removeChild(this.files_upload_table.children[0])
+                                if (this.files_upload_table.children.length == 0) {
+                                    this.btn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
+                                    this.shadowRoot.querySelector("iron-collapse").style.display = "none";
+                                }
+                            }
+                        },
+                        event => {
+                            console.log("abort file upload event", event);
+                        },
+                        port)
+                }, err=>ApplicationView.displayMessage(err, 3000))
+
+
             }
         }
 
