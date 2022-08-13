@@ -10,12 +10,14 @@ import { playVideo } from "./Video";
 
 function listToString(lst) {
     let str = "["
-    lst.forEach((s, i) => {
-        str += s;
-        if (i < lst.length - 1) {
-            str += " ,"
-        }
-    })
+    if (lst) {
+        lst.forEach((s, i) => {
+            str += s;
+            if (i < lst.length - 1) {
+                str += " ,"
+            }
+        })
+    }
     str += "]"
 
     return str
@@ -1546,11 +1548,11 @@ export class BlogPostInfo extends HTMLElement {
             </div>
             `
 
-            this.shadowRoot.querySelector("#container").onmouseover = ()=>{
+            this.shadowRoot.querySelector("#container").onmouseover = () => {
                 this.shadowRoot.querySelector("img").style.transform = "scale(1)"
             }
 
-            this.shadowRoot.querySelector("#container").onmouseout = ()=>{
+            this.shadowRoot.querySelector("#container").onmouseout = () => {
                 this.shadowRoot.querySelector("img").style.transform = ""
             }
 
@@ -1609,7 +1611,7 @@ export class BlogPostInfo extends HTMLElement {
         }
         // so here I will retreive more information about the author if it's available...
         this.shadowRoot.querySelector("#container").onclick = () => {
-            Model.eventHub.publish("_display_blog_event_", {blogPost:blogPost, globule:globule}, true)
+            Model.eventHub.publish("_display_blog_event_", { blogPost: blogPost, globule: globule }, true)
         }
 
         if (this.deleteListener == undefined) {

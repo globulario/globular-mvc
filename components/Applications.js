@@ -453,7 +453,7 @@ export class ApplicationPanel extends HTMLElement {
         <div id="container">
             <div class="header">
                 <img style="width: 32px; height: 32px;" src="${this.application.getIcon()}"></img>
-                <span class="title">${this.application.getName()}</span>
+                <span class="title">${this.application.getName() + "@" + this.application.getDomain()}</span>
                 <paper-button id="uninstall-application-btn"  >Uninstall</paper-button>
                 <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
                     <iron-icon  id="hide-btn"  icon="unfold-less" style="flex-grow: 1; --iron-icon-fill-color:var(--palette-text-primary);" icon="add"></iron-icon>
@@ -508,11 +508,11 @@ export class ApplicationPanel extends HTMLElement {
                 // remove action...
                 let rqst = new RemoveApplicationActionRqst
                 rqst.setAction(action)
-                rqst.setApplicationid(application.getId())
+                rqst.setApplicationid(application.getId() + "@" + application.getDomain())
                 Model.globular.resourceService.removeApplicationAction(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
                     .then(rsp => {
                         actionsList.removeItem(action)
-                        ApplicationView.displayMessage("Action " + action + " was removed from application " + application.getId(), 3000)
+                        ApplicationView.displayMessage("Action " + action + " was removed from application " + application.getId() + "@" + application.getDomain(), 3000)
                     }).catch(err => {
                         console.log(err)
                         ApplicationView.displayMessage(err, 3000)
@@ -520,7 +520,7 @@ export class ApplicationPanel extends HTMLElement {
 
             },
             (action) => {
-                ApplicationView.displayMessage("Action " + action + " was added to application " + application.getId(), 3000)
+                ApplicationView.displayMessage("Action " + action + " was added to application " + application.getId() + "@" + application.getDomain(), 3000)
             },
             (actions) => {
 
@@ -592,7 +592,7 @@ export class ApplicationPanel extends HTMLElement {
                                 actionAddBtn.onclick = () => {
 
                                     let rqst = new AddApplicationActionsRqst
-                                    rqst.setApplicationid(application.getId())
+                                    rqst.setApplicationid(application.getId() + "@" + application.getDomain())
                                     rqst.setActionsList([a])
                                     Model.globular.resourceService.addApplicationActions(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
                                         .then(rsp => {
@@ -663,7 +663,7 @@ export class ApplicationPanel extends HTMLElement {
     
           </style>
           <div id="yes-no-contact-delete-box">
-            <div>Your about to delete application named ${application.getName()}</div>
+            <div>Your about to delete application named ${application.getName() + "@" + application.getDomain()}</div>
             <div>Is it what you want to do? </div>
             <div style="justify-content: flex-end;">
               <paper-button id="yes-delete-contact">Yes</paper-button>
@@ -681,7 +681,7 @@ export class ApplicationPanel extends HTMLElement {
         yesBtn.onclick = () => {
 
             let rqst = new DeleteApplicationRqst
-            rqst.setApplicationid(application.getId())
+            rqst.setApplicationid(application.getId() + "@" + application.getDomain())
             Model.globular.resourceService.deleteApplication(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: localStorage.getItem("user_token") }).then((rsp) => {
                 ApplicationView.displayMessage(
                     "<iron-icon icon='communication:message' style='margin-right: 10px;'></iron-icon><div>Application named " +
@@ -729,7 +729,7 @@ export class ApplicationPanel extends HTMLElement {
     
           </style>
           <div id="yes-no-contact-delete-box">
-            <div>Your about to uninstall application named ${application.getName()}</div>
+            <div>Your about to uninstall application named ${application.getName() + "@" + application.getDomain()}</div>
             <div>Is it what you want to do? </div>
             <div style="justify-content: flex-end;">
               <paper-button id="yes-uninstall-btn">Yes</paper-button>
@@ -747,7 +747,7 @@ export class ApplicationPanel extends HTMLElement {
         yesBtn.onclick = () => {
 
             let rqst = new UninstallApplicationRequest
-            rqst.setApplicationid(application.getId())
+            rqst.setApplicationid(application.getId() + "@" + application.getDomain())
             Model.globular.applicationsManagerService.uninstallApplication(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") }).then((rsp) => {
                 ApplicationView.displayMessage(
                     "<iron-icon icon='communication:message' style='margin-right: 10px;'></iron-icon><div>Application named " +

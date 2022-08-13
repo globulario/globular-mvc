@@ -36,10 +36,16 @@ export class Group extends Model {
 
 
     initData(initCallback: () => void, errorCallback: (err: any) => void) {
+        
+        let domain = Model.domain
+        if(this._id.split("@").length > 0){
+            domain = this._id.split("@")[1]
+            this._id = this._id.split("@")[0]
+        }
 
         let rqst = new resource.GetGroupsRqst
         rqst.setQuery(`{"_id":"${this._id}"}`)
-        let stream = Model.globular.resourceService.getGroups(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
+        let stream = Model.globules.get(domain).resourceService.getGroups(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
         let groups_ = new Array<resource.Group>();
 
         stream.on("data", (rsp) => {

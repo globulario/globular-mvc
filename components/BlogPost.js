@@ -436,7 +436,7 @@ export class BlogPostElement extends HTMLElement {
         this.blog = blog;
         this.blogComments.setBlog(blog)
 
-        if (this.blog.getAuthor() != Application.account.id) {
+        if (this.blog.getAuthor() != Application.account.getId() + "@" + Application.account.getDomain()) {
             let editBtn = this.shadowRoot.querySelector("#blog-reader-edit-btn")
             editBtn.parentNode.removeChild(editBtn)
         }
@@ -575,7 +575,7 @@ export class BlogPostElement extends HTMLElement {
             }
 
 
-            if (this.blog.getAuthor() != Application.account.id) {
+            if (this.blog.getAuthor() != Application.account.getId() + "@" + Application.account.getDomain()) {
                 ApplicationView.displayMessage("your not allowed to edit ", this.blog.getAuthor(), " post!", 3000)
                 return
             }
@@ -714,7 +714,7 @@ export class BlogPostElement extends HTMLElement {
                 let globule = this.globule // see if the blog need domain...
                 let rqst = new CreateBlogPostRequest
                 rqst.setIndexpath(globule.config.DataPath + "/search/blogPosts")
-                rqst.setAccountId(Application.account.id + "@" + Application.account.domain)
+                rqst.setAccountId(Application.account.getId() + "@" + Application.account.getDomain())
                 rqst.setText(JSON.stringify(outputData));
                 rqst.setLanguage(navigator.language.split("-")[0])
                 rqst.setTitle(this.titleInput.value)
@@ -744,7 +744,7 @@ export class BlogPostElement extends HTMLElement {
                                 ApplicationView.displayMessage("Your post is published!", 3000)
 
                                 // Publish the event
-                                Model.eventHub.publish(Application.account.id + "_publish_blog_event", this.blog.serializeBinary(), false)
+                                Model.eventHub.publish(Application.account.getId() + "@" + Application.account.getDomain() + "_publish_blog_event", this.blog.serializeBinary(), false)
 
                             }).catch(e => {
                                 ApplicationView.displayMessage(e, 3000)
@@ -930,7 +930,7 @@ export class BlogPosts extends HTMLElement {
         Account.getAccount(userName,
             account => {
                 // Subcribe to my own blog create event...
-                Model.eventHub.subscribe(account.id + "_publish_blog_event", uuid => this[account.id + "_publish_blog_listener"] = uuid,
+                Model.eventHub.subscribe(account.id + "_publish_blog_event", uuid => this[account.getId() + "@" + account.getDomain() + "_publish_blog_listener"] = uuid,
                     evt => {
                         // Get the date from the event and create the newly
                         this.setBlog(BlogPost.deserializeBinary(Uint8Array.from(evt.split(","))), true)
@@ -1368,7 +1368,7 @@ export class BlogCommentEditor extends HTMLElement {
             generatePeerToken(this.globule.config.Mac, token => {
                 let rqst = new AddEmojiRequest
                 let emoji = new Emoji
-                emoji.setAccountId(Application.account.id + "@" + Application.account.domain)
+                emoji.setAccountId(Application.account.getId() + "@" + Application.account.getDomain())
                 emoji.setEmoji(JSON.stringify(event.detail))
                 emoji.setParent(this.blog.getUuid())
                 if (comment != undefined) {
@@ -1473,7 +1473,7 @@ export class BlogCommentEditor extends HTMLElement {
                     let rqst = new AddCommentRequest
                     let comment = new Comment
                     rqst.setUuid(this.blog.getUuid())
-                    comment.setAccountId(Application.account.id + "@" + Application.account.domain)
+                    comment.setAccountId(Application.account.getId() + "@" + Application.account.getDomain())
                     comment.setLanguage(navigator.language.split("-")[0])
                     comment.setText(JSON.stringify(outputData))
                     comment.setParent(this.blog.getUuid())

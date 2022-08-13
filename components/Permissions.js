@@ -1183,7 +1183,6 @@ export class PermissionsViewer extends HTMLElement {
             let subject = subjects[id]
             if (subject.type == "account") {
                 Account.getAccount(subject.id, (a) => {
-                    console.log("---------> account ", a)
                     let accountDiv = this.createAccountDiv(a)
                     subjectCell.innerHTML = ""
                     subjectCell.appendChild(accountDiv)
@@ -1235,9 +1234,7 @@ customElements.define('globular-permissions-viewer', PermissionsViewer)
 function getApplication(id, callback, errorCallback) {
     let rqst = new GetApplicationsRqst
 
-    let token = localStorage.getItem("user_token")
-    let decoded = JwtDecode(token);
-    let address = decoded.address; // default domain
+    let address = Model.domain; // default domain
     let path = id
     if (id.indexOf("@") != -1) {
         address = id.split("@")[1] // take the domain given with the id.
@@ -1428,7 +1425,7 @@ function getGroup(id, callback, errorCallback) {
 
         // The brief description.
         g.getHeaderText = () => {
-            return g.name
+            return id //g.name 
         }
 
         // return file information panel...

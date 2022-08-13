@@ -11,22 +11,21 @@ import { GetAllActionsRequest } from 'globular-web-client/services_manager/servi
 import { Account } from '../Account';
 
 // Return a role with a given id.
-export function getRoleById(id, callback, errorCallback){
+export function getRoleById(id, callback, errorCallback) {
     let r_ = null
-    getAllRoles(Model.globular, roles=>{
-        roles.forEach(r=>{
-            if(r.getId() == id){
+    getAllRoles(Model.globular, roles => {
+        roles.forEach(r => {
+            if (r.getId() == id) {
                 r_ = r
+            }
+            if (r_ == null) {
+                if (r.getId() + "@" + r.getDomain() == id) {
+                    r_ = r
+                }
             }
         })
 
-        if(r_ == null){
-            if(r.getId() + "@" + r.getDomain() == id){
-                r_ = r
-            }
-        }
-
-        if(r_ != null){
+        if (r_ != null) {
             callback(r_)
             return
         }
@@ -96,25 +95,25 @@ export class RoleManager extends HTMLElement {
         // give the focus to the input.
         let container = this.shadowRoot.querySelector("#container")
 
-        let displayRoles = ()=>{
+        let displayRoles = () => {
             content.innerHTML = ""
-        // Here I will get the list of all roles.
-        getAllRoles(Application.globular,
-            (roles) => {
-                roles.forEach(r => {
-                    if (r.getId() != "admin" && r.getId() != "guest") {
-                        console.log("role ", r)
-                        let panel = new RolePanel(r)
-                        content.appendChild(panel)
-                    }
-                })
-            }, err => { ApplicationView.displayMessage(err, 3000) })
+            // Here I will get the list of all roles.
+            getAllRoles(Application.globular,
+                (roles) => {
+                    roles.forEach(r => {
+                        if (r.getId() != "admin" && r.getId() != "guest") {
+                            console.log("role ", r)
+                            let panel = new RolePanel(r)
+                            content.appendChild(panel)
+                        }
+                    })
+                }, err => { ApplicationView.displayMessage(err, 3000) })
         }
-         
+
         // call once
         displayRoles()
 
-        Model.globular.eventHub.subscribe("refresh_role_evt", uuid=>{}, evt=>{
+        Model.globular.eventHub.subscribe("refresh_role_evt", uuid => { }, evt => {
             displayRoles()
         }, true)
 
@@ -164,16 +163,16 @@ export class RoleManager extends HTMLElement {
                 }
 
                 input = panel.querySelector("paper-input")
-                let createRoleButton =  panel.querySelector("paper-button")
+                let createRoleButton = panel.querySelector("paper-button")
 
                 // Create a new role.
-                createRoleButton.onclick = ()=>{
+                createRoleButton.onclick = () => {
                     let roleId = input.value;
-                    if(roleId.length == 0){
+                    if (roleId.length == 0) {
                         ApplicationView.displayMessage("No role name was given!", 3000)
                         setTimeout(() => {
                             input.focus()
-                          }, 100)
+                        }, 100)
                         return
                     }
 
@@ -181,28 +180,29 @@ export class RoleManager extends HTMLElement {
                     let role = new Role
                     role.setId(roleId)
                     role.setName(roleId)
+                    role.setDomain(Model.domain)
 
                     createRoleRqst.setRole(role)
-                    Model.globular.resourceService.createRole(createRoleRqst, { domain: Model.domain,address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
-                    .then(rsp => {
-                        ApplicationView.displayMessage("Role " + roleId + " was created!", 3000)
-                        panel.parentNode.removeChild(panel)
-                        displayRoles()
-                    }).catch(err => {
-                        ApplicationView.displayMessage(err, 3000)
-                        setTimeout(() => {
-                            input.focus()
-                          }, 100)
-                    })
-                   
+                    Model.globular.resourceService.createRole(createRoleRqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
+                        .then(rsp => {
+                            ApplicationView.displayMessage("Role " + roleId + "@" + Model.domain + " was created!", 3000)
+                            panel.parentNode.removeChild(panel)
+                            displayRoles()
+                        }).catch(err => {
+                            ApplicationView.displayMessage(err, 3000)
+                            setTimeout(() => {
+                                input.focus()
+                            }, 100)
+                        })
+
                 }
-            }else{
+            } else {
                 input = panel.querySelector("paper-input")
             }
-            
+
             setTimeout(() => {
                 input.focus()
-              }, 100)
+            }, 100)
 
         }
 
@@ -281,7 +281,7 @@ export class RolePanel extends HTMLElement {
         </style>
         <div id="container">
             <div class="header">
-                <span class="title">${role.getName()}</span>
+                <span class="title">${role.getName() + "@" + role.getDomain()}</span>
                 <paper-button id="delete-role-btn">Delete</paper-button>
                 <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
                     <iron-icon  id="hide-btn"  icon="unfold-less" style="flex-grow: 1; --iron-icon-fill-color:var(--palette-text-primary);" icon="add"></iron-icon>
@@ -299,7 +299,7 @@ export class RolePanel extends HTMLElement {
         this.hideBtn = this.shadowRoot.querySelector("#hide-btn")
 
         let deleteBtn = this.shadowRoot.querySelector("#delete-role-btn")
-        deleteBtn.onclick = ()=>{
+        deleteBtn.onclick = () => {
             this.onDeleteRole(role)
         }
 
@@ -310,18 +310,18 @@ export class RolePanel extends HTMLElement {
                 // remove action...
                 let removeActionRqst = new RemoveRoleActionRqst
                 removeActionRqst.setAction(action)
-                removeActionRqst.setRoleid(role.getId())
-                Model.globular.resourceService.removeRoleAction(removeActionRqst, { domain: Model.domain,address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
+                removeActionRqst.setRoleid(role.getId() + "@" + role.getDomain())
+                Model.globular.resourceService.removeRoleAction(removeActionRqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
                     .then(rsp => {
                         actionsList.removeItem(action)
-                        ApplicationView.displayMessage("Action " + action + " was removed from role " + role.getId(), 3000)
+                        ApplicationView.displayMessage("Action " + action + " was removed from role " + role.getId() + "@" + role.getDomain(), 3000)
                     }).catch(err => {
                         ApplicationView.displayMessage(err, 3000)
                     })
 
             },
             (action) => {
-                ApplicationView.displayMessage("Action " + action + " was added to role " + role.getId(), 3000)
+                ApplicationView.displayMessage("Action " + action + " was added to role " + role.getId() + "@" + role.getDomain(), 3000)
             },
             (actions) => {
 
@@ -393,7 +393,7 @@ export class RolePanel extends HTMLElement {
                                 actionAddBtn.onclick = () => {
 
                                     let rqst = new AddRoleActionsRqst
-                                    rqst.setRoleid(role.getId())
+                                    rqst.setRoleid(role.getId() + "@" + role.getDomain())
                                     rqst.setActionsList([a])
                                     Model.globular.resourceService.addRoleActions(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
                                         .then(rsp => {
@@ -427,7 +427,7 @@ export class RolePanel extends HTMLElement {
                 // I will get the account object whit the given id.
                 let list = []
                 this.role_.getMembersList().forEach(accountId => {
-                    let a_ = accounts.find(a => a._id === accountId);
+                    let a_ = accounts.find(a => a.getId() + "@" + a.getDomain() === accountId);
                     if (a_ != undefined) {
                         list.push(a_)
                     }
@@ -436,12 +436,12 @@ export class RolePanel extends HTMLElement {
                 let accountsList = new SearchableAccountList("Accounts", list, a => {
                     accountsList.removeItem(a)
                     let rqst = new RemoveAccountRoleRqst
-                    rqst.setRoleid(role.getId())
-                    rqst.setAccountid(a._id + "@" + a.domain)
-                    Model.globular.resourceService.removeAccountRole(rqst, { domain: Model.domain,address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
+                    rqst.setRoleid(role.getId() + "@" + role.getDomain())
+                    rqst.setAccountid(a.getId() + "@" + a.getDomain())
+                    Model.globular.resourceService.removeAccountRole(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
                         .then(rsp => {
                             accountsList.removeItem(a)
-                            ApplicationView.displayMessage("Account " + a._id + " was removed from role " + role.getId(), 3000)
+                            ApplicationView.displayMessage("Account " + a.getId() + "@" + a.getDomain() + " was removed from role " + role.getId() + "@" + role.getDomain(), 3000)
                         }).catch(err => {
                             accountsList.appendItem(a) // set it back
                             ApplicationView.displayMessage(err, 3000)
@@ -449,12 +449,12 @@ export class RolePanel extends HTMLElement {
                 },
                     a => {
                         let rqst = new AddAccountRoleRqst
-                        rqst.setRoleid(role.getId())
-                        rqst.setAccountid(a._id + "@" + a.domain)
+                        rqst.setRoleid(role.getId() + "@" + role.getDomain())
+                        rqst.setAccountid(a.getId() + "@" + a.getDomain())
                         Model.globular.resourceService.addAccountRole(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
                             .then(rsp => {
                                 accountsList.appendItem(a)
-                                ApplicationView.displayMessage("Account " + a._id + " has now role " + role.getId(), 3000)
+                                ApplicationView.displayMessage("Account " + a.getId() + "@" + a.getDomain() + " has now role " + role.getId() + "@" + role.getDomain(), 3000)
                             }).catch(err => {
                                 accountsList.removeItem(a)
                                 ApplicationView.displayMessage(err, 3000)
@@ -486,7 +486,7 @@ export class RolePanel extends HTMLElement {
 
     onDeleteRole(role) {
         let toast = ApplicationView.displayMessage(
-          `
+            `
           <style>
           ${getTheme()}
             #yes-no-contact-delete-box{
@@ -510,7 +510,7 @@ export class RolePanel extends HTMLElement {
     
           </style>
           <div id="yes-no-contact-delete-box">
-            <div>Your about to delete the role ${role.getName()}</div>
+            <div>Your about to delete the role ${role.getName() + "@" + role.getDomain()}</div>
             <div>Is it what you want to do? </div>
             <div style="justify-content: flex-end;">
               <paper-button id="yes-delete-contact">Yes</paper-button>
@@ -518,37 +518,37 @@ export class RolePanel extends HTMLElement {
             </div>
           </div>
           `,
-          15000 // 15 sec...
+            15000 // 15 sec...
         );
-    
+
         let yesBtn = document.querySelector("#yes-delete-contact")
         let noBtn = document.querySelector("#no-delete-contact")
-    
+
         // On yes
         yesBtn.onclick = () => {
 
-          let rqst = new DeleteRoleRqst
-          rqst.setRoleid(role.getId())
-          Model.globular.resourceService.deleteRole(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") } ).then((rsp)=>{
-            ApplicationView.displayMessage(
-                "<iron-icon icon='communication:message' style='margin-right: 10px;'></iron-icon><div>Role named " +
-                role.getName() +
-                " was deleted!</div>",
-                3000
-              );
-              Model.globular.eventHub.publish("refresh_role_evt", {}, true)
-              toast.dismiss();
-          }).catch(e=>{
-            ApplicationView.displayMessage(e, 3000)
-            toast.dismiss();
-          })
-    
+            let rqst = new DeleteRoleRqst
+            rqst.setRoleid(role.getId() + "@" + role.getDomain())
+            Model.globular.resourceService.deleteRole(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") }).then((rsp) => {
+                ApplicationView.displayMessage(
+                    "<iron-icon icon='communication:message' style='margin-right: 10px;'></iron-icon><div>Role named " +
+                    role.getName() +
+                    " was deleted!</div>",
+                    3000
+                );
+                Model.globular.eventHub.publish("refresh_role_evt", {}, true)
+                toast.dismiss();
+            }).catch(e => {
+                ApplicationView.displayMessage(e, 3000)
+                toast.dismiss();
+            })
+
         }
-    
+
         noBtn.onclick = () => {
-          toast.dismiss();
+            toast.dismiss();
         }
-      }
+    }
 }
 
 customElements.define('globular-role-panel', RolePanel)

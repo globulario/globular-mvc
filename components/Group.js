@@ -155,11 +155,12 @@ export class GroupManager extends HTMLElement {
                     let group = new Group
                     group.setId(groupId)
                     group.setName(groupId)
+                    group.setDomain(Model.domain)
 
                     rqst.setGroup(group)
                     Model.globular.resourceService.createGroup(rqst, { domain: Model.domain,address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
                     .then(rsp => {
-                        ApplicationView.displayMessage("Group " + groupId + " was created!", 3000)
+                        ApplicationView.displayMessage("Group " + groupId + "@" + Model.domain + " was created!", 3000)
                         panel.parentNode.removeChild(panel)
                         displayGroups()
                     }).catch(err => {
@@ -250,7 +251,7 @@ export class GroupPanel extends HTMLElement {
         <div id="container">
             <div class="header">
                 <paper-icon-button id="delete-group-btn" icon="delete"></paper-icon-button>
-                <span class="title">${this.group.getName()}</span>
+                <span class="title">${this.group.getName()  + "@" + this.group.getDomain()}</span>
                 <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
                     <iron-icon  id="hide-btn"  icon="unfold-less" style="flex-grow: 1; --iron-icon-fill-color:var(--palette-text-primary);" icon="add"></iron-icon>
                     <paper-ripple class="circle" recenters=""></paper-ripple>
@@ -277,7 +278,7 @@ export class GroupPanel extends HTMLElement {
                 // I will get the account object whit the given id.
                 let list = []
                 this.group.getMembersList().forEach(accountId => {
-                    let a_ = accounts.find(a => a._id === accountId);
+                    let a_ = accounts.find(a => a.getId() + "@" + a.getDomain() === accountId);
                     if (a_ != undefined) {
                         list.push(a_)
                     }
@@ -286,12 +287,12 @@ export class GroupPanel extends HTMLElement {
                 let accountsList = new SearchableAccountList("Accounts", list, a => {
                     accountsList.removeItem(a)
                     let rqst = new RemoveGroupMemberAccountRqst
-                    rqst.setGroupid(group.getId())
-                    rqst.setAccountid(a._id + "@" + a.domain)
+                    rqst.setGroupid(group.getId() + "@" + group.getDomain())
+                    rqst.setAccountid(a.getId() + "@" + a.getDomain())
                     Model.globular.resourceService.removeGroupMemberAccount(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
                         .then(rsp => {
                             accountsList.removeItem(a)
-                            ApplicationView.displayMessage("Account " + a._id + " was removed from group " + group.getId(), 3000)
+                            ApplicationView.displayMessage("Account " + a.getId() + "@" + a.getDomain() + " was removed from group " + group.getId() + "@" + group.getDomain(), 3000)
                         }).catch(err => {
                             accountsList.appendItem(a) // set it back
                             ApplicationView.displayMessage(err, 3000)
@@ -299,12 +300,12 @@ export class GroupPanel extends HTMLElement {
                 },
                     a => {
                         let rqst = new AddGroupMemberAccountRqst
-                        rqst.setGroupid(group.getId())
-                        rqst.setAccountid(a._id + "@" + a.domain)
+                        rqst.setGroupid(group.getId() + "@" + group.getDomain())
+                        rqst.setAccountid(a.getId() + "@" + a.getDomain())
                         Model.globular.resourceService.addGroupMemberAccount(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
                             .then(rsp => {
                                 accountsList.appendItem(a)
-                                ApplicationView.displayMessage("Account " + a._id + " has now group " + group.getId(), 3000)
+                                ApplicationView.displayMessage("Account " + a.getId() + "@" + a.getDomain() + " has now group " + group.getId() + "@" + group.getDomain(), 3000)
                             }).catch(err => {
                                 accountsList.removeItem(a)
                                 ApplicationView.displayMessage(err, 3000)
@@ -355,7 +356,7 @@ export class GroupPanel extends HTMLElement {
     
           </style>
           <div id="yes-no-contact-delete-box">
-            <div>Your about to delete the group ${group.getName()}</div>
+            <div>Your about to delete the group ${group.getName()  + "@" + group.getDomain()}</div>
             <div>Is it what you want to do? </div>
             <div style="justify-content: flex-end;">
               <paper-button id="yes-delete-contact">Yes</paper-button>
@@ -373,7 +374,7 @@ export class GroupPanel extends HTMLElement {
         yesBtn.onclick = () => {
 
           let rqst = new DeleteGroupRqst
-          rqst.setGroup(group.getId())
+          rqst.setGroup(group.getId() + "@" + group.getDomain())
           Model.globular.resourceService.deleteGroup(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") } ).then((rsp)=>{
             ApplicationView.displayMessage(
                 "<iron-icon icon='communication:message' style='margin-right: 10px;'></iron-icon><div>Group named " +

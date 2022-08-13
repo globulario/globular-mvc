@@ -587,8 +587,8 @@ export class AccountPanel extends HTMLElement {
             <div class="header">
             <img style="width: 32px; height: 32px; display: ${this.account.profilPicture_ == undefined ? "none" : "block"};" src="${this.account.profilPicture_}"></img>
             <iron-icon icon="account-circle" style="width: 32px; height: 32px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${this.account.profilPicture_ != undefined ? "none" : "block"};"></iron-icon>
-                <span class="title">${this.account.getName()}</span>
-                <globular-disk-space-manager editable="true" account="${this.account.getId()}"></globular-disk-space-manager>
+                <span class="title">${this.account.getName() + "@" + this.account.getDomain()}</span>
+                <globular-disk-space-manager editable="true" account="${this.account.getId() + "@" + this.account.getDomain()}"></globular-disk-space-manager>
                 <paper-button id="delete-account-btn">Delete</paper-button>
                 <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
                     <iron-icon  id="hide-btn"  icon="unfold-less" style="flex-grow: 1; --iron-icon-fill-color:var(--palette-text-primary);" icon="add"></iron-icon>
@@ -656,7 +656,7 @@ export class AccountPanel extends HTMLElement {
         // I will get the account object whit the given id.
         let list = []
         this.account.getOrganizationsList().forEach(organizationId => {
-          let o_ = organizations.find(o => o.getId() === organizationId);
+          let o_ = organizations.find(o => o.getId() + "@" + o.getDomain() === organizationId);
           if (o_ != undefined) {
             list.push(o_)
           }
@@ -666,12 +666,12 @@ export class AccountPanel extends HTMLElement {
           o => {
             this.organizationsList.removeItem(o)
             let rqst = new RemoveOrganizationAccountRqst
-            rqst.setOrganizationid(o.getId())
-            rqst.setAccountid(a._id + "@" + a.domain)
+            rqst.setOrganizationid(o.getId() + "@" + o.getDomain())
+            rqst.setAccountid(a.getId() + "@" + a.getDomain())
             Model.globular.resourceService.removeOrganizationAccount(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
               .then(rsp => {
                 this.organizationsList.removeItem(a)
-                ApplicationView.displayMessage("Account " + a._id + " was removed from account " + o.getName(), 3000)
+                ApplicationView.displayMessage("Account " + a.getId() + "@" + a.getDomain() + " was removed from account " + o.getName() + "@" + o.getDomain(), 3000)
               }).catch(err => {
                 this.organizationsList.appendItem(a) // set it back
                 ApplicationView.displayMessage(err, 3000)
@@ -679,12 +679,12 @@ export class AccountPanel extends HTMLElement {
           },
           o => {
             let rqst = new AddOrganizationAccountRqst
-            rqst.setOrganizationid(o.getId())
-            rqst.setAccountid(a._id + "@" + a.domain)
+            rqst.setOrganizationid(o.getId() + "@" + o.getDomain())
+            rqst.setAccountid(a.getId() + "@" + a.getDomain())
             Model.globular.resourceService.addOrganizationAccount(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
               .then(rsp => {
                 this.organizationsList.appendItem(a)
-                ApplicationView.displayMessage("Account " + a._id + " has now organization " + o.getName(), 3000)
+                ApplicationView.displayMessage("Account " + a.getId() + "@" + a.getDomain() + " has now organization " + o.getName() + "@" + o.getDomain(), 3000)
               }).catch(err => {
                 this.organizationsList.removeItem(a)
                 ApplicationView.displayMessage(err, 3000)
@@ -706,7 +706,7 @@ export class AccountPanel extends HTMLElement {
         // I will get the account object whit the given id.
         let list = []
         this.account.getRolesList().forEach(roleId => {
-          let r_ = roles.find(r => r.getId() === roleId);
+          let r_ = roles.find(r => r.getId() + "@" + r.getDomain() === roleId);
           if (r_ != undefined) {
             list.push(r_)
           }
@@ -717,11 +717,11 @@ export class AccountPanel extends HTMLElement {
             this.rolesList.removeItem(r)
             let rqst = new RemoveAccountRoleRqst
             rqst.setAccountid(a.getId() + "@" + a.getDomain())
-            rqst.setRoleid(r.getId())
+            rqst.setRoleid(r.getId() + "@" + r.getDomain())
             Model.globular.resourceService.removeAccountRole(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
               .then(rsp => {
                 this.rolesList.removeItem(r)
-                ApplicationView.displayMessage("Role " + r.getName() + " was removed from account " + a.getName(), 3000)
+                ApplicationView.displayMessage("Role " + r.getName() + "@" + r.getDomain() + " was removed from account " + a.getName() + "@" + a.getDomain(), 3000)
               }).catch(err => {
                 this.rolesList.appendItem(r) // set it back
                 ApplicationView.displayMessage(err, 3000)
@@ -730,11 +730,11 @@ export class AccountPanel extends HTMLElement {
           r => {
             let rqst = new AddAccountRoleRqst
             rqst.setAccountid(a.getId() + "@" + a.getDomain())
-            rqst.setRoleid(r.getId())
+            rqst.setRoleid(r.getId() + "@" + a.getDomain())
             Model.globular.resourceService.addAccountRole(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
               .then(rsp => {
                 this.rolesList.appendItem(r)
-                ApplicationView.displayMessage("Role " + r.getName() + " has now account " + a.getName(), 3000)
+                ApplicationView.displayMessage("Role " + r.getName() + "@" + r.getDomain() + " has now account " + a.getName() + "@" + a.getDomain(), 3000)
               }).catch(err => {
                 this.rolesList.removeItem(r)
                 ApplicationView.displayMessage(err, 3000)
@@ -754,7 +754,7 @@ export class AccountPanel extends HTMLElement {
         // I will get the account object whit the given id.
         let list = []
         this.account.getGroupsList().forEach(groupId => {
-          let g_ = groups.find(g => g.getId() === groupId);
+          let g_ = groups.find(g => g.getId() + "@" + g.getDomain() === groupId);
           if (g_ != undefined) {
             list.push(g_)
           }
@@ -765,11 +765,11 @@ export class AccountPanel extends HTMLElement {
             this.groupsList.removeItem(g)
             let rqst = new RemoveGroupMemberAccountRqst
             rqst.setAccountid(a.getId() + "@" + a.getDomain())
-            rqst.setGroupid(g.getId())
+            rqst.setGroupid(g.getId() + "@" + g.getDomain())
             Model.globular.resourceService.removeGroupMemberAccount(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
               .then(rsp => {
                 this.groupsList.removeItem(g)
-                ApplicationView.displayMessage("Group " + g.getName() + " was removed from account " + a.getName(), 3000)
+                ApplicationView.displayMessage("Group " + g.getName() + "@" + g.getDomain() + " was removed from account " + a.getName() + "@" + a.getDomain(), 3000)
               }).catch(err => {
                 this.groupsList.appendItem(g) // set it back
                 ApplicationView.displayMessage(err, 3000)
@@ -778,11 +778,11 @@ export class AccountPanel extends HTMLElement {
           g => {
             let rqst = new AddGroupMemberAccountRqst
             rqst.setAccountid(a.getId()+ "@" + a.getDomain())
-            rqst.setGroupid(g.getId())
+            rqst.setGroupid(g.getId() + "@" + g.getDomain())
             Model.globular.resourceService.addGroupMemberAccount(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
               .then(rsp => {
                 this.groupsList.appendItem(g)
-                ApplicationView.displayMessage("Group " + g.getName() + " has now account " + a.getName(), 3000)
+                ApplicationView.displayMessage("Group " + g.getName() + "@" + g.getDomain() + " has now account " + a.getName() + "@" + a.getDomain(), 3000)
               }).catch(err => {
                 this.groupsList.removeItem(g)
                 ApplicationView.displayMessage(err, 3000)
@@ -834,7 +834,7 @@ export class AccountPanel extends HTMLElement {
     
           </style>
           <div id="yes-no-account-delete-box">
-            <div>Your about to delete the account ${a.getName()}</div>
+            <div>Your about to delete the account ${a.getName() + "@" + a.getDomain()}</div>
             <div>Is it what you want to do? </div>
             <div style="justify-content: flex-end;">
               <paper-button id="yes-delete-account">Yes</paper-button>
@@ -856,7 +856,7 @@ export class AccountPanel extends HTMLElement {
       Model.globular.resourceService.deleteAccount(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") }).then((rsp) => {
         ApplicationView.displayMessage(
           "<iron-icon icon='communication:message' style='margin-right: 10px;'></iron-icon><div>account named " +
-          a.getName() +
+          a.getName() + "@" + a.getDomain() +
           " was deleted!</div>",
           3000
         );
