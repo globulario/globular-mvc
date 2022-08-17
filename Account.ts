@@ -301,6 +301,7 @@ export class Account extends Model {
     private static readOneUserData(
         query: string,
         userName: string,
+        userDomain: string,
         successCallback: (results: any) => void,
         errorCallback: (err: any) => void
     ) {
@@ -324,17 +325,13 @@ export class Account extends Model {
         // So here I will set the address from the address found in the token and not 
         // the address of the client itself.
         let token = localStorage.getItem("user_token")
-        let decoded = jwt(token);
-        let address = (<any>decoded).address;
-        let domain = (<any>decoded).domain;
 
         // call persist data
-        Model.getGlobule(address).persistenceService
+        Model.getGlobule(userDomain).persistenceService
             .findOne(rqst, {
                 token: token,
                 application: Model.application,
-                domain: domain,
-                address: address
+                domain: Model.domain // the domain at the origin of the request.
             })
             .then((rsp: any) => {
                 let data = rsp.getResult().toJavaScript();
@@ -421,6 +418,7 @@ export class Account extends Model {
         Account.readOneUserData(
             `{"$or":[{"_id":"${this.id}"},{"name":"${this.id}"} ]}`, // The query is made on the user database and not local_ressource Accounts here so name is name_ here
             userName, // The database to search into 
+            this.domain,
             (data: any) => {
 
                 if (Object.keys(data).length == 0) {
@@ -586,15 +584,11 @@ export class Account extends Model {
         rqst.setQuery(query);
 
         let token = localStorage.getItem("user_token")
-        let decoded = jwt(token);
-        let address = (<any>decoded).address;
-        let domain = (<any>decoded).domain;
 
-        let stream = Model.getGlobule(address).persistenceService.find(rqst, {
+        let stream = Model.getGlobule(account.domain).persistenceService.find(rqst, {
             token: token,
             application: Model.application,
-            domain: domain,
-            address: address
+            domain: Model.domain
         });
 
         let data: any;
@@ -628,15 +622,11 @@ export class Account extends Model {
         contact.setInvitationtime(Math.round(Date.now() / 1000))
         rqst.setContact(contact)
         let token = localStorage.getItem("user_token")
-        let decoded = jwt(token);
-        let address = (<any>decoded).address;
-        let domain = (<any>decoded).domain;
 
-        Model.getGlobule(address).resourceService.setAccountContact(rqst, {
+        Model.getGlobule(to.domain).resourceService.setAccountContact(rqst, {
             token: token,
             application: Model.application,
-            domain: domain,
-            address: address
+            domain: Model.domain
         })
             .then((rsp: ResourceService.SetAccountContactRsp) => {
                 let sentInvitation = `{"_id":"${to.id}", "invitationTime":${Math.floor(Date.now() / 1000)}, "status":"${status_from}"}`
@@ -652,17 +642,13 @@ export class Account extends Model {
                 contact.setInvitationtime(Math.round(Date.now() / 1000))
                 rqst.setContact(contact)
                 let token = localStorage.getItem("user_token")
-                let decoded = jwt(token);
-                let address = (<any>decoded).address;
-                let domain = (<any>decoded).domain;
 
                 // call persist data
-                Model.getGlobule(address).resourceService
+                Model.getGlobule(from.domain).resourceService
                     .setAccountContact(rqst, {
                         token: token,
                         application: Model.application,
-                        domain: domain,
-                        address: address
+                        domain: Model.domain
                     })
                     .then((rsp: ReplaceOneRsp) => {
                         // Here I will return the value with it

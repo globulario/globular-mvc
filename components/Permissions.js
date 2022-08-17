@@ -25,41 +25,6 @@ import { getRoleById } from "./Role";
 import { LogRqst } from "globular-web-client/log/log_pb";
 import { GetBlogPostsRequest } from "globular-web-client/blog/blog_pb";
 
-// This function return the list of all possible permission name from the server... it a little bit slow...
-// so for the moment I will simply use static values read, write and delete.
-function getPermissionNames(callbak, errorCallback) {
-    let permissionsNames = []
-    let getAllActionsRqst = new GetAllActionsRequest
-    Model.globular.servicesManagerService.getAllActions(getAllActionsRqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
-        .then(rsp => {
-            let actions = rsp.getActionsList()
-            let index = 0;
-            actions.forEach(a => {
-                let rqst_ = new GetActionResourceInfosRqst
-                rqst_.setAction(a)
-                Model.globular.rbacService.getActionResourceInfos(rqst_, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
-                    .then(rsp => {
-                        let infos = rsp.getInfosList()
-                        infos.forEach(info => {
-                            let p = info.getPermission()
-                            if (permissionsNames.indexOf(p) == -1) {
-                                permissionsNames.push(p)
-                            }
-                        })
-
-                        index++
-                        if (index == actions.length) {
-                            callbak(permissionsNames)
-                        }
-
-                    }).catch(e => {
-                        errorCallback(e)
-                    })
-
-            })
-        })
-}
-
 /**
  * Sample empty component
  */
@@ -69,6 +34,10 @@ export class PermissionsManager extends HTMLElement {
     // Create the applicaiton view.
     constructor() {
         super()
+        
+        // The active globule
+        this.globule = Model.globular
+
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
 
@@ -353,7 +322,7 @@ export class PermissionsManager extends HTMLElement {
         rqst.setPath(this.path)
         rqst.setResourcetype(this.permissions.getResourceType())
 
-        Model.globular.rbacService.setResourcePermissions(rqst, {
+        this.globule.rbacService.setResourcePermissions(rqst, {
             token: localStorage.getItem("user_token"),
             application: Model.application,
             domain: Model.domain,
@@ -418,11 +387,10 @@ export class PermissionsManager extends HTMLElement {
         let rqst = new GetResourcePermissionsRqst
         rqst.setPath(path)
 
-        Model.globular.rbacService.getResourcePermissions(rqst, {
+        this.globule.rbacService.getResourcePermissions(rqst, {
             token: localStorage.getItem("user_token"),
             application: Model.application,
-            domain: Model.domain,
-            address: Model.address
+            domain: Model.domain
         }).then(rsp => {
             let permissions = rsp.getPermissions()
             this.setPermissions(permissions)
@@ -459,6 +427,7 @@ export class PermissionPanel extends HTMLElement {
     // Create the applicaiton view.
     constructor(permissionManager) {
         super()
+        
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
 
@@ -598,7 +567,7 @@ export class PermissionPanel extends HTMLElement {
 
         let content = this.createCollapsible(`Peers(${peers_.length})`)
         getAllPeers(
-            Model.globular,
+            this.permissionManager.globule,
             peers => {
                 let list = []
                 this.permission.getPeersList().forEach(peerId => {
@@ -677,7 +646,7 @@ export class PermissionPanel extends HTMLElement {
                 // Do not display the title again...
                 organizationList.hideTitle()
                 content.appendChild(organizationList)
-            }, err => ApplicationView.displayMessage(err, 3000))
+            }, err => ApplicationView.displayMessage(err, 3000), this.permissionManager.globule)
 
     }
 
@@ -685,7 +654,7 @@ export class PermissionPanel extends HTMLElement {
     setApplicationsPermissions(applications_) {
 
         let content = this.createCollapsible(`Applications(${applications_.length})`)
-        getAllApplicationsInfo(Model.globular,
+        getAllApplicationsInfo(this.permissionManager.globule,
             applications => {
                 // I will get the account object whit the given id.
                 let list = []
@@ -737,7 +706,7 @@ export class PermissionPanel extends HTMLElement {
 
         let content = this.createCollapsible(`Groups(${groups_.length})`)
 
-        getAllGroups(Model.globular,
+        getAllGroups(this.permissionManager.globule,
             groups => {
                 // I will get the account object whit the given id.
                 let list = []
@@ -1232,6 +1201,7 @@ customElements.define('globular-permissions-viewer', PermissionsViewer)
  * Return application info.
  */
 function getApplication(id, callback, errorCallback) {
+
     let rqst = new GetApplicationsRqst
 
     let address = Model.domain; // default domain
@@ -1282,12 +1252,15 @@ function getApplication(id, callback, errorCallback) {
  */
 function getBlog(id, callback, errorCallback) {
 
+    let address = Model.domain; // default domain
+    if (id.indexOf("@") != -1) {
+        address = id.split("@")[1] // take the domain given with the id.
+        id = id.split("@")[0]
+    }
+
     let rqst = new GetBlogPostsRequest
     rqst.setUuidsList([id])
 
-    let token = localStorage.getItem("user_token")
-    let decoded = JwtDecode(token);
-    let address = decoded.address; // default domain
     let globule = Model.getGlobule(address)
     let stream = globule.blogService.getBlogPosts(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
     let blogPosts = [];
@@ -1352,8 +1325,15 @@ function getDomain(domain, callback, errorCallback) {
 function getConversation(id, callback, errorCallback) {
     let rqst = new GetConversationRequest
     console.log("get conversation with id ", id)
+    let address = Model.domain; // default domain
+    if (id.indexOf("@") != -1) {
+        address = id.split("@")[1] // take the domain given with the id.
+        id = id.split("@")[0]
+    }
+
     rqst.setId(id)
-    let globule = Model.globular
+    let globule = Model.getGlobule(address)
+    
     globule.conversationService.getConversation(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
         .then(rsp => {
 
@@ -1384,12 +1364,15 @@ function getConversation(id, callback, errorCallback) {
 /**
  * Return file info.
  */
-function getFile(path, callback, errorCallback) {
+function getFile(path, callback, errorCallback, globule) {
     let rqst = new GetFileInfoRequest
     rqst.setPath(path)
     rqst.setThumnailheight(80)
     rqst.setThumnailwidth(128)
-    let globule = Model.globular
+    if(!globule){
+        globule = Model.globular
+    }
+
     globule.fileService.getFileInfo(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
         .then(rsp => {
             let f = File.fromString(rsp.getData())
@@ -1475,9 +1458,15 @@ function getPackage(id, callback, errorCallback) {
     let name = infos[2]
     let version = infos[3]
 
+    let address = Model.domain; // default domain
+    if (id_.indexOf("@") != -1) {
+        address = id_.split("@")[1] // take the domain given with the id.
+    }
+
     let rqst = new GetPackagesDescriptorRequest
     rqst.setQuery(`{"$and":[{"id":"${id_}"},{"name":"${name}"},{"version":"${version}"},{"publisherid":"${publisherid}"}]}`);
-    let globule = Model.globular
+    let globule = Model.getGlobule(address)
+
     let stream = globule.resourceService.getPackagesDescriptor(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
 
     let descriptors = [];

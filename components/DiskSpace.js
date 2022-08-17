@@ -22,6 +22,7 @@ export class DiskSpaceManager extends HTMLElement {
     this.allocated_space = 0;
     this.available_space = 0;
     this.account = null;
+    this.globule = Model.globular;
 
     // Set the shadow dom.
     this.attachShadow({ mode: 'open' });
@@ -150,7 +151,7 @@ export class DiskSpaceManager extends HTMLElement {
       let token = localStorage.getItem("user_token")
 
       // call persist data
-      Model.globular.rbacService
+      this.globule.rbacService
         .setSubjectAllocatedSpace(rqst, {
           token: token,
           application: Model.application,
@@ -205,7 +206,7 @@ export class DiskSpaceManager extends HTMLElement {
     let token = localStorage.getItem("user_token")
 
     // call persist data
-    Model.globular.rbacService
+    this.globule.rbacService
       .getSubjectAllocatedSpace(rqst, {
         token: token,
         application: Model.application,
@@ -230,7 +231,7 @@ export class DiskSpaceManager extends HTMLElement {
     let token = localStorage.getItem("user_token")
 
     // call persist data
-    Model.globular.rbacService
+    this.globule.rbacService
       .getSubjectAvailableSpace(rqst, {
         token: token,
         application: Model.application,

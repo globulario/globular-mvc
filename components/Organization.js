@@ -10,12 +10,16 @@ import * as ApplicationTs from '../Application';
 import { getAllGroups, getAllRoles } from 'globular-web-client/api';
 
 
-export function getAllOrganizations(callback, errorCallback) {
+export function getAllOrganizations(callback, errorCallback, globule) {
+    if(globule == null){
+        globule = Model.globular
+    }
+
     let rqst = new GetOrganizationsRqst
     rqst.setQuery("{}")
     let organizations = [];
 
-    let stream = Model.globular.resourceService.getOrganizations(rqst, { domain: Model.domain,address: Model.address, application: Model.application, token: localStorage.getItem("user_token") });
+    let stream = globule.resourceService.getOrganizations(rqst, { domain: Model.domain,address: Model.address, application: Model.application, token: localStorage.getItem("user_token") });
 
     // Get the stream and set event on it...
     stream.on("data", (rsp) => {
@@ -493,7 +497,7 @@ export class OrganizationPanel extends HTMLElement {
                         this.rolesList.removeItem(r)
                         let rqst = new RemoveOrganizationRoleRqst
                         rqst.setOrganizationid(o.getId() + "@" + o.getDomain())
-                        rqst.setRoleid(r.getId() + "@" + o.getDomain())
+                        rqst.setRoleid(r.getId() + "@" + r.getDomain())
                         Model.globular.resourceService.removeOrganizationRole(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
                             .then(rsp => {
                                 this.rolesList.removeItem(r)
@@ -554,7 +558,7 @@ export class OrganizationPanel extends HTMLElement {
                     g => {
                         let rqst = new AddOrganizationGroupRqst
                         rqst.setOrganizationid(o.getId() + "@" + o.getDomain())
-                        rqst.setGroupid(g.getId() + "@" + o.getDomain())
+                        rqst.setGroupid(g.getId() + "@" + g.getDomain())
                         Model.globular.resourceService.addOrganizationGroup(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
                             .then(rsp => {
                                 this.groupsList.appendItem(g)

@@ -6,6 +6,7 @@ import { DeleteOneRqst, ReplaceOneRqst, FindOneRqst, FindRqst } from "../../glob
 import * as jwt from "jwt-decode";
 import { Model } from "../../globular-mvc/Model";
 import { Menu } from "./Menu";
+import { Application } from "../Application";
 
 /**
  * Search Box
@@ -499,13 +500,12 @@ export class WatchingMenu extends Menu {
         rqst.setQuery("{}"); // means all values.
 
         let token = localStorage.getItem("user_token")
-        let decoded = jwt(token);
-        let address = decoded.address;
-        let domain = decoded.domain;
+        let globule =  Model.getGlobule(Application.account.domain)
+        console.log(globule)
 
-        const stream = Model.globular.persistenceService.find(rqst, {
+        const stream = globule.persistenceService.find(rqst, {
             application: Model.application.length > 0 ? Model.application : Model.globular.config.IndexApplication,
-            domain: domain, address: address,
+            domain: Model.domain, token
         });
 
         let data = [];
@@ -546,17 +546,16 @@ export class WatchingMenu extends Menu {
         // So here I will set the address from the address found in the token and not 
         // the address of the client itself.
         let token = localStorage.getItem("user_token")
-        let decoded = jwt(token);
-        let address = decoded.address;
-        let domain = decoded.domain;
+
+        let globule =  Model.getGlobule(Application.account.domain)
+        console.log(globule)
 
         // call persist data
-        Model.getGlobule(address).persistenceService
+        globule.persistenceService
             .findOne(rqst, {
                 token: token,
                 application: Model.application,
-                domain: domain,
-                address: address
+                domain: Model.domain,
             })
             .then(rsp => {
                 // Here I will return the value with it
@@ -592,17 +591,15 @@ export class WatchingMenu extends Menu {
         // So here I will set the address from the address found in the token and not 
         // the address of the client itself.
         let token = localStorage.getItem("user_token")
-        let decoded = jwt(token);
-        let address = decoded.address;
-        let domain = decoded.domain;
+        let globule =  Model.getGlobule(Application.account.domain)
+        console.log(globule)
 
         // call persist data
-        Model.getGlobule(address).persistenceService
+        globule.persistenceService
             .deleteOne(rqst, {
                 token: token,
                 application: Model.application,
-                domain: domain,
-                address: address
+                domain: Model.domain
             })
             .then(rsp => {
                 // Here I will return the value with it
@@ -638,17 +635,16 @@ export class WatchingMenu extends Menu {
         // So here I will set the address from the address found in the token and not 
         // the address of the client itself.
         let token = localStorage.getItem("user_token")
-        let decoded = jwt(token);
-        let address = decoded.address;
-        let domain = decoded.domain;
+
+        let globule =  Model.getGlobule(Application.account.domain)
+        console.log(globule)
 
         // call persist data
-        Model.getGlobule(address).persistenceService
+        globule.persistenceService
             .replaceOne(rqst, {
                 token: token,
                 application: Model.application,
-                domain: domain,
-                address: address
+                domain: Model.domain
             })
             .then((rsp) => {
                 // Here I will return the value with it

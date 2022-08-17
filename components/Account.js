@@ -730,7 +730,7 @@ export class AccountPanel extends HTMLElement {
           r => {
             let rqst = new AddAccountRoleRqst
             rqst.setAccountid(a.getId() + "@" + a.getDomain())
-            rqst.setRoleid(r.getId() + "@" + a.getDomain())
+            rqst.setRoleid(r.getId() + "@" + r.getDomain())
             Model.globular.resourceService.addAccountRole(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
               .then(rsp => {
                 this.rolesList.appendItem(r)

@@ -604,7 +604,7 @@ export class Application extends Model {
    */
   static getApplicationInfo(id: string): resource.Application {
     // TODO manage application domain... 
-    if(id.indexOf("@") > 0){
+    if(id.indexOf("@") != -1){
       return Application.infos.get(id.split("@")[0]);
     }
     return Application.infos.get(id);
@@ -872,17 +872,23 @@ export class Application extends Model {
    * @param password
    */
   login(
-    email: string,
+    userId: string,
     password: string,
     onLogin: (account: Account) => void,
     onError: (err: any) => void
   ) {
     let rqst = new authentication.AuthenticateRqst();
-    rqst.setName(email);
+    rqst.setName(userId);
     rqst.setPassword(password);
-    ApplicationView.wait("<div>log in</div><div>" + email + "</div><div>...</div>");
+    rqst.setIssuer(Model.globular.config.Mac) // The token will be issue for the current globule.
 
-    Model.globular.authenticationService
+    ApplicationView.wait("<div>log in</div><div>" + userId + "</div><div>...</div>");
+    let globule = Model.globular
+    if(userId.indexOf("@") != -1){
+      globule = Model.getGlobule(userId.split("@")[1])
+    }
+
+    globule.authenticationService
       .authenticate(rqst)
       .then((rsp: authentication.AuthenticateRsp) => {
 
@@ -918,14 +924,14 @@ export class Application extends Model {
         connection.setHost(domain)
         rqst.setConnection(connection)
 
-        Model.getGlobule(address).persistenceService.createConnection(rqst, {
+        globule.persistenceService.createConnection(rqst, {
           token: localStorage.getItem("user_token"),
           application: Model.application,
           domain: domain,
           address: address
         }).then(() => {
           Application.account = new Account(id, email, userName, domain);
-          Account.getAccount(id, (account: Account) => {
+          Account.getAccount(userId, (account: Account) => {
             Application.account = account;
 
             // so here I will get the session for the account...

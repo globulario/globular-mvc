@@ -34,7 +34,7 @@ import { createArchive, deleteDir, deleteFile, downloadFileHttp, renameFile, upl
 import { ApplicationView } from '../ApplicationView';
 import { Application } from '../Application';
 import { RunCmdRequest } from 'globular-web-client/admin/admin_pb';
-import { GetSharedResourceRqst, SubjectType } from 'globular-web-client/rbac/rbac_pb';
+import { AddResourceOwnerRqst, GetSharedResourceRqst, SubjectType } from 'globular-web-client/rbac/rbac_pb';
 import { randomUUID } from './utility';
 import * as getUuidByString from 'uuid-by-string';
 import { ImageViewer } from './Image';
@@ -1381,7 +1381,21 @@ export class FilesView extends HTMLElement {
                                     // give time to finish write the file on the server...
                                     setTimeout(()=>{
                                     Model.eventHub.publish("__upload_link_event__", { pid: pid, path: this.__dir__.path, infos: "", done: true, lnk: lnk }, true);
-                                    Model.eventHub.publish("generate_video_preview_event", this.__dir__.path + "/" + fileName_, false);
+
+                                    // here I must send the event to 
+                                    globule.eventHub.publish("generate_video_preview_event", this.__dir__.path + "/" + fileName_, false);
+
+                                    // So there I will set the resource permission...
+                                    let rqst = new AddResourceOwnerRqst
+                                    rqst.setPath(this.__dir__.path + "/" + fileName_)
+                                    rqst.setResourcetype("file")
+                                    rqst.setSubject(Application.account.id + "@" + Application.account.domain)
+                                    rqst.setType(SubjectType.ACCOUNT)
+
+                                    globule.rbacService.addResourceOwner(rqst,  { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
+                                        .then(rsp=>{console.log("Permission was set for uploaded file!")})
+                                        .catch(err=>ApplicationView.displayMessage(err, 3000))
+
                                     }, 2 * 1000)
                                 }
                             };
@@ -3454,6 +3468,7 @@ export class FileExplorer extends HTMLElement {
         // Give information about loading data...
         this.progressDiv = this.shadowRoot.querySelector("#progress-div")
         this.shadowRoot.querySelector("globular-disk-space-manager").account = Application.account;
+        this.shadowRoot.querySelector("globular-disk-space-manager").globule = Model.globular
     
 
         // enter full screen and exit full screen btn
@@ -3895,6 +3910,8 @@ export class FileExplorer extends HTMLElement {
         shared = {}
         public_ = {}
         this.globule = globule
+        this.shadowRoot.querySelector("globular-disk-space-manager").globule = globule
+        this.permissionManager.globule = globule // set the globule for get permissions...
         this.init()
     }
 
@@ -3910,6 +3927,9 @@ export class FileExplorer extends HTMLElement {
 
         // Init file upload event listener...
         this.filesUploader.init();
+
+        // set the available space on the globule.
+        this.shadowRoot.querySelector("globular-disk-space-manager").refresh()
 
         if (this.listeners["__set_dir_event__"] == undefined) {
 
@@ -3928,10 +3948,10 @@ export class FileExplorer extends HTMLElement {
 
         // Service configuration change event...
 
-        if (this.listeners["update_globular_service_configuration_evt"] == undefined) {
-            Model.eventHub.subscribe("update_globular_service_configuration_evt",
+        if (this.listeners[`update_globular_service_configuration_${this.globule.config.Domain}_evt`] == undefined) {
+            this.globule.eventHub.subscribe(`update_globular_service_configuration_evt`,
                 (uuid) => {
-                    this.listeners["update_globular_service_configuration_evt"] = uuid;
+                    this.listeners[`update_globular_service_configuration_${this.globule.config.Domain}_evt`] = uuid;
                 }, (event) => {
                     let config = JSON.parse(event)
                     if (config.Name == "file.FileService") {
@@ -3942,10 +3962,10 @@ export class FileExplorer extends HTMLElement {
         }
 
         // File rename event.
-        if (this.listeners["file_rename_event"] == undefined) {
-            Model.eventHub.subscribe("file_rename_event",
+        if (this.listeners[`file_rename_${this.globule.config.domain}_event`] == undefined) {
+            this.globule.eventHub.subscribe("file_rename_event",
                 (uuid) => {
-                    this.listeners["file_rename_event"] = uuid;
+                    this.listeners[`file_rename_${this.globule.config.Domain}_event`] = uuid;
                 }, (path) => {
                     if (path.startsWith(this.getRoot())) {
                         _publishSetDirEvent(this.path, this)
@@ -3954,10 +3974,10 @@ export class FileExplorer extends HTMLElement {
         }
 
         // Permissions 
-        if (this.listeners["display_permission_manager_event"] == undefined) {
-            Model.eventHub.subscribe("display_permission_manager_event",
+        if (this.listeners[`display_permission_manager_${this.globule.config.Domain}_event`] == undefined) {
+            this.globule.eventHub.subscribe(`display_permission_manager_event`,
                 (uuid) => {
-                    this.listeners["display_permission_manager_event"] = uuid;
+                    this.listeners[`display_permission_manager_${this.globule.config.Domain}_event`] = uuid;
                 }, (path) => {
 
                     this.permissionManager.permissions = null
@@ -3971,10 +3991,10 @@ export class FileExplorer extends HTMLElement {
         }
 
         // Informations
-        if (this.listeners["display_media_infos_event"] == undefined) {
-            Model.eventHub.subscribe("display_media_infos_event",
+        if (this.listeners[`display_media_infos_${this.globule.config.Domain}_event`] == undefined) {
+            this.globule.eventHub.subscribe(`display_media_infos_event`,
                 (uuid) => {
-                    this.listeners["display_media_infos_event"] = uuid;
+                    this.listeners[`display_media_infos_${this.globule.config.Domain}_event`] = uuid;
                 }, (file) => {
 
                     if (file.titles != undefined) {
@@ -3989,10 +4009,10 @@ export class FileExplorer extends HTMLElement {
                 }, false)
         }
 
-        if (this.listeners["display_file_infos_event"] == undefined) {
-            Model.eventHub.subscribe("display_file_infos_event",
+        if (this.listeners[`display_file_infos_${this.globule.config.Domain}_event`] == undefined) {
+            this.globule.eventHub.subscribe(`display_file_infos_event`,
                 (uuid) => {
-                    this.listeners["display_file_infos_event"] = uuid;
+                    this.listeners[`display_file_infos_${this.globule.config.Domain}_event`] = uuid;
                 }, (file) => {
 
                     // display the file information itself.
@@ -4007,10 +4027,10 @@ export class FileExplorer extends HTMLElement {
 
         // Reload the content of a dir with the actual dir content description on the server.
         // must be call after file are deleted or renamed
-        if (this.listeners["reload_dir_event"] == undefined) {
-            Model.eventHub.subscribe("reload_dir_event",
+        if (this.listeners[`reload_dir_${this.globule.config.Domain}_event`] == undefined) {
+            this.globule.eventHub.subscribe("reload_dir_event",
                 (uuid) => {
-                    this.listeners["reload_dir_event"] = uuid
+                    this.listeners[`reload_dir_${this.globule.config.Domain}_event`] = uuid
                 }, (path) => {
 
                     // remove existing...
@@ -4034,9 +4054,9 @@ export class FileExplorer extends HTMLElement {
         }
 
         // Refresh the interface.
-        if (this.listeners["upload_files_event"] == undefined) {
-            Model.eventHub.subscribe("upload_files_event", (uuid) => {
-                this.listeners["upload_files_event"] = uuid
+        if (this.listeners[`upload_files_${this.globule.config.Domain}_event`] == undefined) {
+            this.globule.eventHub.subscribe("upload_files_event", (uuid) => {
+                this.listeners[`upload_files_${this.globule.config.Domain}_event`] = uuid
             },
                 evt => {
                     if (evt == this.path) {

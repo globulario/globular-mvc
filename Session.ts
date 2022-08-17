@@ -99,8 +99,11 @@ export class Session extends Model {
         let accountId = this.account.id + "@" + this.account.domain
         rqst.setAccountid(accountId)
 
+        // Get the globule where the user exist.
+        let globule = Model.getGlobule(this.account.domain)
+
         // call persist data
-        Model.globular.resourceService
+        globule.resourceService
             .getSession(rqst, {
                 token: localStorage.getItem("user_token"),
                 application: Model.application,

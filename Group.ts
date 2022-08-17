@@ -36,16 +36,16 @@ export class Group extends Model {
 
 
     initData(initCallback: () => void, errorCallback: (err: any) => void) {
-        
+
         let domain = Model.domain
-        if(this._id.split("@").length > 0){
+        if (this._id.indexOf("@") > 0) {
             domain = this._id.split("@")[1]
             this._id = this._id.split("@")[0]
         }
 
         let rqst = new resource.GetGroupsRqst
         rqst.setQuery(`{"_id":"${this._id}"}`)
-        let stream = Model.globules.get(domain).resourceService.getGroups(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
+        let stream = Model.getGlobule(domain).resourceService.getGroups(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
         let groups_ = new Array<resource.Group>();
 
         stream.on("data", (rsp) => {
@@ -90,12 +90,19 @@ export class Group extends Model {
     // Save the group.
     save(successCallback: (g: Group) => void, errorCallback: (err: any) => void) {
 
+        let domain = Model.domain
+        if (this._id.indexOf("@") > 0) {
+            domain = this._id.split("@")[1]
+            this._id = this._id.split("@")[0]
+        }
+
         let rqst = new resource.UpdateGroupRqst
         rqst.setGroupid(this._id)
         let data = this.toString();
         rqst.setValues(data)
 
-        Model.globular.resourceService.updateGroup(rqst, {
+
+        Model.getGlobule(domain).resourceService.updateGroup(rqst, {
             token: localStorage.getItem("user_token"),
             application: Model.application,
             domain: Model.domain,
