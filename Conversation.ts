@@ -75,7 +75,7 @@ export class ConversationManager {
    */
   static loadConversation(account: Account, succesCallback: (conversations: Conversations) => void, errorCallback: (err: any) => void) {
     let rqst = new GetConversationsRequest
-    rqst.setCreator(account.id);
+    rqst.setCreator(account.id + "@" + account.domain);
 
     Model.globular.conversationService.getConversations(rqst, {
       token: localStorage.getItem("user_token"),
@@ -90,9 +90,10 @@ export class ConversationManager {
     })
   }
 
-  static deleteConversation(conversationUuid: string, account: string, succesCallback: () => void, errorCallback: (err: any) => void) {
+  static deleteConversation(conversationUuid: string, succesCallback: () => void, errorCallback: (err: any) => void) {
     let rqst = new DeleteConversationRequest
     rqst.setConversationUuid(conversationUuid)
+    
 
     Model.globular.conversationService.deleteConversation(rqst, {
       token: localStorage.getItem("user_token"),
@@ -125,7 +126,7 @@ export class ConversationManager {
       address: Model.address
     }).then((rsp: DeleteConversationResponse) => {
       succesCallback()
-      Model.eventHub.publish(`kickout_conversation_${conversationUuid}_evt`, account, false)
+      Model.publish(`kickout_conversation_${conversationUuid}_evt`, account, false)
     }).catch(errorCallback)
   }
 
@@ -188,7 +189,7 @@ export class ConversationManager {
         let participants = conversation.getParticipantsList()
 
         // network event.
-        Model.eventHub.publish(`ready_conversation_${conversationUuid}_evt`, JSON.stringify({"participants":participants, "participant":Application.account.id}), false)
+        Model.publish(`ready_conversation_${conversationUuid}_evt`, JSON.stringify({"participants":participants, "participant":Application.account.id + "@" + Application.account.domain}), false)
         
       } else {
         // No message found...
@@ -196,7 +197,7 @@ export class ConversationManager {
           succesCallback(conversation, messages)
           let participants = conversation.getParticipantsList()
           // network event.
-          Model.eventHub.publish(`leave_conversation_${conversationUuid}_evt`, JSON.stringify({"participants":participants, "participant":Application.account.id}), false)
+          Model.publish(`leave_conversation_${conversationUuid}_evt`, JSON.stringify({"participants":participants, "participant":Application.account.id + "@" + Application.account.domain}), false)
           return
         }
         // An error happen
@@ -223,7 +224,7 @@ export class ConversationManager {
       let participants = rsp.getConversation().getParticipantsList()
 
       // network event.
-      Model.eventHub.publish(`leave_conversation_${conversationUuid}_evt`, JSON.stringify({"participants":participants, "participant":Application.account.id}), false)
+      Model.publish(`leave_conversation_${conversationUuid}_evt`, JSON.stringify({"participants":participants, "participant":Application.account.id + "@" + Application.account.domain}), false)
 
     }).catch(errorCallback)
   }
@@ -248,8 +249,8 @@ export class ConversationManager {
       successCallback()
       const encoded = encode(invitation.serializeBinary());
       // publish network event.
-      Model.eventHub.publish(`send_conversation_invitation_${from}_evt`, encoded, false)
-      Model.eventHub.publish(`receive_conversation_invitation_${to}_evt`, encoded, false)
+      Model.publish(`send_conversation_invitation_${from}_evt`, encoded, false)
+      Model.publish(`receive_conversation_invitation_${to}_evt`, encoded, false)
     }).catch(errorCallback)
   }
 
@@ -408,7 +409,7 @@ export class ConversationManager {
       }
 
       // Simply send event on the network...
-      Model.eventHub.publish(`delete_message_${msg.getUuid()}_evt`, null, false)
+      Model.publish(`delete_message_${msg.getUuid()}_evt`, null, false)
       
     }).catch(errorCallback)
   }
@@ -426,11 +427,11 @@ export class ConversationManager {
     message.setText(text)
     message.setInReplyTo(replyTo)
     message.setCreationTime(Math.round(Date.now() / 1000));
-    message.setAuthor(author.id);
+    message.setAuthor(author.id + "@" + author.domain);
     message.setLanguage(window.navigator.language.split("-")[0]);
     message.setDislikesList(new Array<string>());
     message.setLikesList(new Array<string>());
-    message.setReadersList([author.id]);
+    message.setReadersList([author.id + "@" + author.domain]);
     rqst.setMsg(message)
 
     Model.globular.conversationService.sendMessage(rqst, {

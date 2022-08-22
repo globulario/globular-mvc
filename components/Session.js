@@ -19,20 +19,30 @@ document.addEventListener('visibilitychange', function () {
     if (accountId.length > 0 && !away) {
         if (document.visibilityState == 'hidden') {
             timeout = setTimeout(() => {
-                Model.eventHub.publish(`__session_state_${accountId}_change_event__`, { _id: accountId, state: 2, lastStateTime: new Date() }, true)
+                Account.getAccount(accountId, a => {
+                    Model.getGlobule(a.session.domain).eventHub.publish(`__session_state_${a.id + "@" + a.domain}_change_event__`, { _id: a.id + "@" + a.domain, state: 2, lastStateTime: new Date() }, true)
+                }, err => console.log(err))
+
             }, 30 * 1000)
         } else {
-            Model.eventHub.publish(`__session_state_${accountId}_change_event__`, { _id: accountId, state: 0, lastStateTime: sessionTime }, true)
-            if (timeout != undefined) {
-                clearTimeout(timeout)
-            }
+
+            Account.getAccount(accountId, a => {
+                Model.getGlobule(a.session.domain).eventHub.publish(`__session_state_${a.id + "@" + a.domain}_change_event__`, { _id: a.id + "@" + a.domain, state: 0, lastStateTime: sessionTime }, true)
+                if (timeout != undefined) {
+                    clearTimeout(timeout)
+                }
+            }, err => console.log(err))
+
+
         }
     }
 });
 
 window.addEventListener('beforeunload', function (e) {
     // the absence of a returnValue property on the event will guarantee the browser unload happens
-    Model.eventHub.publish(`__session_state_${accountId}_change_event__`, { _id: accountId, state: 1, lastStateTime: new Date() }, true)
+    Account.getAccount(accountId, a => {
+        Model.getGlobule(a.session.domain).eventHub.publish(`__session_state_${a.id + "@" + a.domain}_change_event__`, { _id: a.id + "@" + a.domain, state: 1, lastStateTime: new Date() }, true)
+    }, err => console.log(err))
     delete e['returnValue'];
 });
 
@@ -114,7 +124,7 @@ export class SessionState extends HTMLElement {
                     this.stateName.innerHTML = "Online"
                 }
                 // local event.
-                Model.eventHub.publish(`__session_state_${this.account.id}_change_event__`, session, true)
+                Model.getGlobule(this.account.session.domain).eventHub.publish(`__session_state_${this.account.id + "@" + this.account.domain}_change_event__`, session, true)
             }
         } else {
             this.away.parentNode.removeChild(this.away);
@@ -122,17 +132,16 @@ export class SessionState extends HTMLElement {
 
         // The account can be the actual object or a string...
         if (this.hasAttribute("account")) {
-            if (this.hasAttribute("editable")) {
-                // keep in memory
-                accountId = this.getAttribute("account")
-            }
+            let accountId = this.getAttribute("account")
+            console.log("get account ", accountId)
 
-            Account.getAccount(this.getAttribute("account"), (val) => {
+            Account.getAccount(accountId, (val) => {
                 this.account = val;
                 this.init();
             }, (err) => {
                 ApplicationView.displayMessage(err, 3000)
             })
+
         }
     }
 
@@ -141,21 +150,52 @@ export class SessionState extends HTMLElement {
      */
     init() {
         // if no account was define simply return without init session...
-        if (this.account == undefined)  {
+        if (!this.account) {
+            setTimeout(()=>{
+                if (this.hasAttribute("account")) {
+                    let accountId = this.getAttribute("account")
+                    Account.getAccount(accountId, (val) => {
+                        this.account = val;
+                        this.init();
+                    }, (err) => {
+                        ApplicationView.displayMessage(err, 3000)
+                    })
+        
+                }
+            }, 1000)
             return
         }
 
-        if (this.hasAttribute("editable"))  {
-            sessionTime = this.account.session.lastStateTime;
+        if (!this.account.session) {
+            setTimeout(()=>{
+                if (this.hasAttribute("account")) {
+                    let accountId = this.getAttribute("account")
+                    Account.getAccount(accountId, (val) => {
+                        this.account = val;
+                        this.init();
+                    }, (err) => {
+                        ApplicationView.displayMessage(err, 3000)
+                    })
+        
+                }
+            }, 1000)
+            return
         }
 
         // unsubscribe first.
-        Model.eventHub.subscribe(`session_state_${this.account.id}_change_event`,
+        let globule = Model.getGlobule(this.account.session.domain)
+
+
+        if (this.hasAttribute("editable")) {
+            sessionTime = this.account.session.lastStateTime;
+        }
+
+        globule.eventHub.subscribe(`session_state_${this.account.id + "@" + this.account.domain}_change_event`,
             (uuid) => {
                 this.sessionChangeListener = uuid;
             },
             (evt) => {
-                
+
                 // Set the value here...
                 let obj = JSON.parse(evt)
                 this.account.session.lastStateTime_ = new Date(obj.lastStateTime * 1000)
@@ -189,7 +229,7 @@ export class SessionState extends HTMLElement {
         } else {
             this.stateName.innerHTML = "Away"
         }
-        
+
         let delay = Math.floor((Date.now() - lastStateTime.getTime()) / 1000);
 
         if (delay < 60) {
@@ -217,7 +257,9 @@ export class SessionState extends HTMLElement {
             clearInterval(this.interval);
         }
         if (this.sessionChangeListener.length > 0) {
-            Model.eventHub.unSubscribe(`session_state_${this.account.id}_change_event`, this.sessionChangeListener)
+            if (this.account.session) {
+                Model.getGlobule(this.account.session.domain).eventHub.unSubscribe(`session_state_${this.account.id + "@" + this.account.domain}_change_event`, this.sessionChangeListener)
+            }
         }
     }
 }

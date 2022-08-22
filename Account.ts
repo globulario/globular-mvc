@@ -117,7 +117,7 @@ export class Account extends Model {
 
         this._id = id;
         this.name_ = name;
-        this._domain = domain;
+        this.domain = domain;
         this.email_ = email;
         this.hasData = false;
         this.firstName_ = "";
@@ -142,7 +142,6 @@ export class Account extends Model {
             Account.accounts = {}
         }
 
-        console.log("try to find account: ", id)
         let accountId = id
         let domain = Model.domain
 
@@ -154,8 +153,10 @@ export class Account extends Model {
         }
 
         if (Account.accounts[accountId] != null) {
-            successCallback(Account.accounts[accountId]);
-            return
+            if (Account.accounts[accountId].session != null) {
+                successCallback(Account.accounts[accountId]);
+                return
+            }
         }
 
         let token = localStorage.getItem("user_token")
@@ -178,13 +179,16 @@ export class Account extends Model {
 
                 // so here I will get the session for the account...
                 if (Account.accounts[accountId] != null) {
-                    successCallback(Account.accounts[accountId]);
-                    return
+                    if (Account.accounts[accountId].session != null) {
+                        successCallback(Account.accounts[accountId]);
+                        return
+                    }
+
                 }
 
                 // Initialyse the data...
                 if (!data) {
-                    console.log("no account found with id ", accountId)
+                    errorCallback("no account found with id " + accountId)
                     return
                 }
 
@@ -195,6 +199,7 @@ export class Account extends Model {
                 Account.accounts[accountId] = account;
 
                 account.session.initData(() => {
+
                     account.initData(() => {
 
                         // here I will initialyse groups...
@@ -280,18 +285,18 @@ export class Account extends Model {
     }
 
     // Keep track of the listener.
-    private static setListener(id: string, uuid: string) {
+    private static setListener(id: string, domain: string, uuid: string) {
         if (Account.listeners == undefined) {
             Account.listeners = {};
         }
-        Account.listeners[id] = uuid;
+        Account.listeners[id + "@" + domain] = uuid;
         return
     }
 
-    private static unsetListener(id: string) {
-        let uuid = Account.getListener(id);
+    private static unsetListener(id: string, domain: string) {
+        let uuid = Account.getListener(id + "@" + domain);
         if (uuid != null) {
-            Model.eventHub.unSubscribe(`update_account_${id}_data_evt`, uuid);
+            Model.getGlobule(domain).eventHub.unSubscribe(`update_account_${id + "@" + domain}_data_evt`, uuid);
         }
     }
 
@@ -433,15 +438,15 @@ export class Account extends Model {
                 // Here I will keep the Account up-to date.
                 if (Account.getListener(this.id) == undefined) {
                     // Here I will connect the objet to keep track of accout data change.
-                    Model.eventHub.subscribe(`update_account_${this.id}_data_evt`,
+                    Model.eventHub.subscribe(`update_account_${this.id + "@" + this.domain}_data_evt`,
                         (uuid: string) => {
-                            Account.setListener(this.id, uuid);
+                            Account.setListener(this.id, this.domain, uuid);
                         },
                         (str: string) => {
                             let data = JSON.parse(str);
                             this.setData(data); // refresh data.
                             // Here I will rethrow the event locally...
-                            Model.eventHub.publish(`__update_account_${this.id}_data_evt__`, data, true);
+                            Model.eventHub.publish(`__update_account_${this.id + "@" + this.domain}_data_evt__`, data, true);
                         }, false, this)
                 }
 
@@ -531,21 +536,17 @@ export class Account extends Model {
         // So here I will set the address from the address found in the token and not 
         // the address of the client itself.
         let token = localStorage.getItem("user_token")
-        let decoded = jwt(token);
-        let address = (<any>decoded).address;
-        let domain = (<any>decoded).domain;
 
         // call persist data
-        Model.getGlobule(address).persistenceService
+        Model.getGlobule(this.domain).persistenceService
             .replaceOne(rqst, {
                 token: token,
                 application: Model.application,
-                domain: domain,
-                address: address
+                domain: Model.domain
             })
             .then((rsp: ReplaceOneRsp) => {
                 // Here I will return the value with it
-                Model.eventHub.publish(`update_account_${this.id}_data_evt`, data, false)
+                Model.publish(`update_account_${this.id + "@" + this.domain}_data_evt`, data, false)
                 callback(this);
             })
             .catch((err: any) => {
@@ -562,7 +563,7 @@ export class Account extends Model {
     }
 
     getDomain(): string {
-        return this._domain
+        return this.domain
     }
 
     getName(): string {
@@ -584,8 +585,9 @@ export class Account extends Model {
         rqst.setQuery(query);
 
         let token = localStorage.getItem("user_token")
+        let globule = Model.getGlobule(account.domain)
 
-        let stream = Model.getGlobule(account.domain).persistenceService.find(rqst, {
+        let stream = globule.persistenceService.find(rqst, {
             token: token,
             application: Model.application,
             domain: Model.domain
@@ -614,37 +616,38 @@ export class Account extends Model {
 
         // So here I will save the contact invitation into pending contact invitation collection...
         let rqst = new ResourceService.SetAccountContactRqst
-        rqst.setAccountid(from.id + "@" + from._domain)
+        rqst.setAccountid(from.id + "@" + from.domain)
 
         let contact = new ResourceService.Contact
-        contact.setId(to.id)
+        contact.setId(to.id + "@" + to.domain)
         contact.setStatus(status_from)
         contact.setInvitationtime(Math.round(Date.now() / 1000))
         rqst.setContact(contact)
         let token = localStorage.getItem("user_token")
+        let globule = Model.getGlobule(from.domain)
 
-        Model.getGlobule(to.domain).resourceService.setAccountContact(rqst, {
+        globule.resourceService.setAccountContact(rqst, {
             token: token,
             application: Model.application,
             domain: Model.domain
         })
             .then((rsp: ResourceService.SetAccountContactRsp) => {
-                let sentInvitation = `{"_id":"${to.id}", "invitationTime":${Math.floor(Date.now() / 1000)}, "status":"${status_from}"}`
-                Model.eventHub.publish(status_from + "_" + from.id + "_evt", sentInvitation, false)
+                let sentInvitation = `{"_id":"${to.id + "@" + to.domain}", "invitationTime":${Math.floor(Date.now() / 1000)}, "status":"${status_from}"}`
+                Model.publish(status_from + "_" + from.id + "@" + from.domain + "_evt", sentInvitation, false)
 
                 // Here I will return the value with it
                 let rqst = new ResourceService.SetAccountContactRqst
-                rqst.setAccountid(to.id + "@" + to._domain)
+                rqst.setAccountid(to.id + "@" + to.domain)
 
                 let contact = new ResourceService.Contact
-                contact.setId(from.id)
+                contact.setId(from.id + "@" + from.domain)
                 contact.setStatus(status_to)
                 contact.setInvitationtime(Math.round(Date.now() / 1000))
                 rqst.setContact(contact)
                 let token = localStorage.getItem("user_token")
 
                 // call persist data
-                Model.getGlobule(from.domain).resourceService
+                Model.getGlobule(to.domain).resourceService
                     .setAccountContact(rqst, {
                         token: token,
                         application: Model.application,
@@ -652,8 +655,8 @@ export class Account extends Model {
                     })
                     .then((rsp: ReplaceOneRsp) => {
                         // Here I will return the value with it
-                        let receivedInvitation = `{"_id":"${from.id}", "invitationTime":${Math.floor(Date.now() / 1000)}, "status":"${status_to}"}`
-                        Model.eventHub.publish(status_to + "_" + to.id + "_evt", receivedInvitation, false)
+                        let receivedInvitation = `{"_id":"${from.id + "@" + from.domain}", "invitationTime":${Math.floor(Date.now() / 1000)}, "status":"${status_to}"}`
+                        Model.publish(status_to + "_" + to.id + "@" + to.domain + "_evt", receivedInvitation, false)
                         successCallback();
                     })
                     .catch(errorCallback);

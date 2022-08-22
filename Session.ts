@@ -2,6 +2,7 @@ import { Model } from "./Model";
 import { ApplicationView } from "./ApplicationView";
 import { Account } from "./Account"
 import * as resource from "globular-web-client/resource/resource_pb";
+import { Globular } from "globular-web-client";
 
 /**
  * The session object will keep information about the
@@ -19,6 +20,11 @@ export class Session extends Model {
     private account: Account;
     private state_: SessionState;
     private lastStateTime_: Date; // Keep track ot the last session state.
+    private domain_: string; // where the session is...
+
+    public get domain(): string {
+        return this.domain_
+    }
 
     public get lastStateTime(): Date {
         return this.lastStateTime_;
@@ -29,10 +35,6 @@ export class Session extends Model {
 
     public get state(): SessionState {
         return this.state_;
-    }
-
-    public get domain(): string {
-        return this.account.domain;
     }
 
     // Set the session state.
@@ -60,84 +62,133 @@ export class Session extends Model {
             this.lastStateTime = new Date(lastStateTime * 1000)
         }
 
-        // So here I will lisen on session change event and keep this object with it.
-        Model.eventHub.subscribe(`session_state_${this.account.id}_change_event`,
-            (uuid: string) => {
-                /** nothing special here... */
-            },
-            (evt: string) => {
-                let obj = JSON.parse(evt)
-                // update the session state from the network.
-                this.state_ = obj.state;
-                this.lastStateTime = new Date(obj.lastStateTime * 1000); // a number to date
+    }
 
-            }, false, this)
+    // Retreive the most recent session on all peers
+    getSession(callback: (session: resource.Session, domain: string) => void, errorCallback: (err: any) => void) {
+        let globules = Model.getGlobules()
 
-        Model.eventHub.subscribe(`__session_state_${this.account.id}_change_event__`,
-            (uuid: string) => {
-                /** nothing special here... */
-            },
-            (obj: any) => {
-                // Set the object state from the object and save it...
-                this.state_ = obj.state;
-                this.lastStateTime = obj.lastStateTime; // already a date
+        // Keep the most recent session...
+        let lastSession: resource.Session
+        let lastDomain: string
 
-                this.save(() => {
-                    /* nothing here*/
-                }, (err: any) => {
-                    ApplicationView.displayMessage(err, 3000)
+        let _getSession_ = (globule: Globular) => {
+
+            // In that case I will get the values from the database...
+            let rqst = new resource.GetSessionRequest
+            rqst.setAccountid(this._id)
+
+            // call persist data
+            globule.resourceService
+                .getSession(rqst, {
+                    token: localStorage.getItem("user_token"),
+                    application: Model.application,
+                    domain: Model.domain,
+                    address: Model.address
                 })
-            }, true, this)
+                .then((rsp: resource.GetSessionResponse) => {
+                    // get the response
+                    let obj = rsp.getSession()
+                    if (lastSession != null) {
+                        if (obj.getExpireAt() > lastSession.getExpireAt()) {
+                            lastSession = obj
+                            lastDomain = globule.config.Domain
+                        }
+                    } else {
+                        lastSession = obj
+                        lastDomain = globule.config.Domain
+                    }
+
+                    if (globules.length > 0) {
+                        _getSession_(globules.pop())
+                        return
+                    }
+
+                    // end here...
+                    callback(lastSession, lastDomain)
+
+                }).catch(err => {
+                    if (globules.length > 0) {
+                        _getSession_(globules.pop())
+                        return
+                    }
+
+
+                    if (lastSession != null) {
+                        callback(lastSession, lastDomain)
+                    } else {
+                        errorCallback(err)
+                    }
+                    return
+
+
+                })
+        }
+
+        _getSession_(globules.pop())
+
+
     }
 
     initData(initCallback: () => void, errorCallback: (err: any) => void) {
-
-        // In that case I will get the values from the database...
-        let rqst = new resource.GetSessionRequest
-
-        // Find the account by id or by name... both must be unique in the backend.
         let accountId = this.account.id + "@" + this.account.domain
-        rqst.setAccountid(accountId)
+        this._id = accountId;
 
-        // Get the globule where the user exist.
-        let globule = Model.getGlobule(this.account.domain)
+        this.getSession((session: resource.Session, domain: string) => {
 
-        // call persist data
-        globule.resourceService
-            .getSession(rqst, {
-                token: localStorage.getItem("user_token"),
-                application: Model.application,
-                domain: Model.domain,
-                address: Model.address
-            })
-            .then((rsp: resource.GetSessionResponse) => {
-                
-                let obj = rsp.getSession()
-                this._id = accountId;
-                this.state_ = obj.getState().valueOf();
-                this.lastStateTime = new Date(obj.getLastStateTime() * 1000);
-                console.log("session ", obj)
-                Account.getAccount(this._id,
-                    (account: Account) => {
-                        // Here I will connect local event to react with interface element...
-                        this.account = account;
-                        initCallback()
-                    }, errorCallback)
+            this.state_ = session.getState().valueOf();
+            this.lastStateTime = new Date(session.getLastStateTime() * 1000);
+            this.domain_ = domain;
 
-            })
-            .catch((err: any) => {
-                console.log("fail to get session ", err)
-                // In that case I will save defaut session values...
-                this.save(() => {
+            // So here I will lisen on session change event and keep this object with it.
+            Model.getGlobule(this.account.session.domain).eventHub.subscribe(`session_state_${this.account.id + "@" + this.account.domain}_change_event`,
+                (uuid: string) => {
+                    /** nothing special here... */
+                },
+                (evt: string) => {
+                    let obj = JSON.parse(evt)
+                    // update the session state from the network.
+                    this.state_ = obj.state;
+                    this.lastStateTime = new Date(obj.lastStateTime * 1000); // a number to date
+
+                }, false, this)
+
+            Model.getGlobule(this.account.session.domain).eventHub.subscribe(`__session_state_${this.account.id + "@" + this.account.domain}_change_event__`,
+                (uuid: string) => {
+                    /** nothing special here... */
+                },
+                (obj: any) => {
+                    // Set the object state from the object and save it...
+                    this.state_ = obj.state;
+                    this.lastStateTime = obj.lastStateTime; // already a date
+
+                    this.save(() => {
+                        /* nothing here*/
+                    }, (err: any) => {
+                        ApplicationView.displayMessage(err, 3000)
+                    })
+                }, true, this)
+
+            console.log("session ", session)
+            Account.getAccount(this._id,
+                (account: Account) => {
+                    // Here I will connect local event to react with interface element...
+                    this.account = account;
                     initCallback()
                 }, errorCallback)
-            });
+        }, (err: any) => {
+            console.log("fail to get session ", err)
+            // In that case I will save defaut session values...
+            this.save(() => {
+                initCallback()
+            }, errorCallback)
+        })
     }
 
     toString(): string {
         // return the basic infomration to be store in the database.
         let lastTime = 0
-        if(this.lastStateTime){
+        if (this.lastStateTime) {
             lastTime = Math.floor(this.lastStateTime.getTime() / 1000)
         }
         return `{"_id":"${this._id}", "state":${this.state.toString()}, "lastStateTime":"${lastTime}"}`
@@ -194,7 +245,7 @@ export class Session extends Model {
             .then((rsp: resource.UpdateSessionResponse) => {
                 // Here I will return the value with it
                 console.log("-------------------> session change ", this)
-                Model.eventHub.publish(`session_state_${this._id}_change_event`, this.toString(), false)
+                Model.publish(`session_state_${this._id}_change_event`, this.toString(), false)
                 onSave();
             })
             .catch((err: any) => {

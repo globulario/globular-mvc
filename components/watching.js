@@ -489,6 +489,7 @@ export class WatchingMenu extends Menu {
 
         const rqst = new FindRqst();
         const userName = localStorage.getItem("user_name");
+        const userDomain = localStorage.getItem("user_domain");
         const collection = "watching";
         let id = userName.split("@").join("_").split(".").join("_");
         let db = id + "_db";
@@ -500,7 +501,7 @@ export class WatchingMenu extends Menu {
         rqst.setQuery("{}"); // means all values.
 
         let token = localStorage.getItem("user_token")
-        let globule =  Model.getGlobule(Application.account.domain)
+        let globule =  Model.getGlobule(userDomain)
         console.log(globule)
 
         const stream = globule.persistenceService.find(rqst, {
@@ -530,6 +531,7 @@ export class WatchingMenu extends Menu {
      */
     getWacthingTitle(titleId, callback) {
         const userName = localStorage.getItem("user_name");
+        const userDomain = localStorage.getItem("user_domain");
         const collection = "watching";
 
         // save the user_data
@@ -547,7 +549,7 @@ export class WatchingMenu extends Menu {
         // the address of the client itself.
         let token = localStorage.getItem("user_token")
 
-        let globule =  Model.getGlobule(Application.account.domain)
+        let globule =  Model.getGlobule(userDomain)
         console.log(globule)
 
         // call persist data
@@ -574,6 +576,7 @@ export class WatchingMenu extends Menu {
    */
     removeWacthingTitle(title) {
         const userName = localStorage.getItem("user_name");
+        const userDomain = localStorage.getItem("user_domain");
         const collection = "watching";
         localStorage.removeItem(title._id)
 
@@ -591,7 +594,7 @@ export class WatchingMenu extends Menu {
         // So here I will set the address from the address found in the token and not 
         // the address of the client itself.
         let token = localStorage.getItem("user_token")
-        let globule =  Model.getGlobule(Application.account.domain)
+        let globule =  Model.getGlobule(userDomain)
         console.log(globule)
 
         // call persist data
@@ -614,6 +617,7 @@ export class WatchingMenu extends Menu {
     saveWatchingTitle(title, callback) {
 
         const userName = localStorage.getItem("user_name");
+        const userDomain = localStorage.getItem("user_domain");
         const collection = "watching";
         localStorage.setItem(title._id, title.currentTime)
 
@@ -636,7 +640,7 @@ export class WatchingMenu extends Menu {
         // the address of the client itself.
         let token = localStorage.getItem("user_token")
 
-        let globule =  Model.getGlobule(Application.account.domain)
+        let globule =  Model.getGlobule(userDomain)
         console.log(globule)
 
         // call persist data

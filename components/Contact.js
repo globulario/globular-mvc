@@ -135,7 +135,6 @@ export class ContactsMenu extends Menu {
 
         // Action's
         let contactLst = this.shadowRoot.getElementById("Contacts-list")
-
         let contactsTab = this.shadowRoot.getElementById("contacts-tab")
         let sentContactInvitationsTab = this.shadowRoot.getElementById("sent-contact-invitations-tab")
         let receivedContactInvitationsTab = this.shadowRoot.getElementById("received-contact-invitations-tab")
@@ -260,25 +259,6 @@ export class ContactsMenu extends Menu {
 customElements.define('globular-contacts-menu', ContactsMenu)
 
 
-
-// Example of event that will keep the contact uptodate.
-/*
-
-TODO keep the account card in line with it info
-                // This fuction will keep the value updated in the contact list.
-                Model.eventHub.subscribe(`__update_account_${value._id}_data_evt__`,
-                (uuid) => {
-
-                },
-                (data) => {
-                  console.log("-------------------------> ", data)
-                },
-                true)
-
-
-*/
-
-
 /**
  * Display the list of sent contact invitation. If the invitation was not pending it will be removed.
  */
@@ -296,7 +276,7 @@ export class SentContactInvitations extends HTMLElement {
         this.account = account;
         this.onRevokeContact = onRevokeContact;
 
-        Model.eventHub.subscribe("sent_" + account.id + "_evt",
+        Model.eventHub.subscribe("sent_" + account.id + "@" + account.domain + "_evt",
             (uuid) => { },
             (evt) => {
                 // So here I will append the account into the list.
@@ -347,7 +327,9 @@ export class SentContactInvitations extends HTMLElement {
             ApplicationView.displayMessage(err, 3000)
         })
 
-        Model.eventHub.subscribe("revoked_" + account.id + "_evt",
+        let globule = Model.getGlobule(account.session.domain)
+
+        globule.eventHub.subscribe("revoked_" + account.id + "@" + account.domain + "_evt",
             (uuid) => { },
             (evt) => {
                 let invitation = JSON.parse(evt);
@@ -362,7 +344,7 @@ export class SentContactInvitations extends HTMLElement {
             },
             false, this)
 
-        Model.eventHub.subscribe("declined_" + account.id + "_evt",
+        globule.eventHub.subscribe("declined_" + account.id + "@" + account.domain + "_evt",
             (uuid) => { },
             (evt) => {
                 let invitation = JSON.parse(evt);
@@ -377,7 +359,7 @@ export class SentContactInvitations extends HTMLElement {
             },
             false, this)
 
-        Model.eventHub.subscribe("accepted_" + account.id + "_evt",
+        globule.eventHub.subscribe("accepted_" + account.id + "@" + account.domain + "_evt",
             (uuid) => { },
             (evt) => {
                 let invitation = JSON.parse(evt);
@@ -448,7 +430,9 @@ export class ReceivedContactInvitations extends HTMLElement {
         this.onAcceptContact = onAcceptContact;
         this.onDeclineContact = onDeclineContact;
 
-        Model.eventHub.subscribe("received_" + account.id + "_evt",
+        let globule = Model.getGlobule(account.session.domain) // connect to the local event hub...
+
+        globule.eventHub.subscribe("received_" + account.id + "@" + account.domain + "_evt",
             (uuid) => { },
             (evt) => {
                 let invitation = JSON.parse(evt);
@@ -463,7 +447,7 @@ export class ReceivedContactInvitations extends HTMLElement {
             },
             false, this)
 
-        Model.eventHub.subscribe("revoked_" + account.id + "_evt",
+        globule.eventHub.subscribe("revoked_" + account.id + "@" + account.domain + "_evt",
             (uuid) => { },
             (evt) => {
                 let invitation = JSON.parse(evt);
@@ -478,7 +462,7 @@ export class ReceivedContactInvitations extends HTMLElement {
             },
             false, this)
 
-        Model.eventHub.subscribe("declined_" + account.id + "_evt",
+        globule.eventHub.subscribe("declined_" + account.id + "@" + account.domain + "_evt",
             (uuid) => { },
             (evt) => {
                 let invitation = JSON.parse(evt);
@@ -493,7 +477,7 @@ export class ReceivedContactInvitations extends HTMLElement {
             },
             false, this)
 
-        Model.eventHub.subscribe("accepted_" + account.id + "_evt",
+        globule.eventHub.subscribe("accepted_" + account.id + "@" + account.domain + "_evt",
             (uuid) => { },
             (evt) => {
                 let invitation = JSON.parse(evt);
@@ -597,8 +581,9 @@ export class ContactList extends HTMLElement {
 
         this.account = account;
         this.onDeleteContact = onDeleteContact;
+        let globule = Model.getGlobule(account.session.domain)
 
-        Model.eventHub.subscribe("accepted_" + account.id + "_evt",
+        globule.eventHub.subscribe("accepted_" + account.id + "@" + account.domain + "_evt",
             (uuid) => { },
             (evt) => {
                 let invitation = JSON.parse(evt);
@@ -613,7 +598,7 @@ export class ContactList extends HTMLElement {
             },
             false, this)
 
-        Model.eventHub.subscribe("deleted_" + account.id + "_evt",
+        globule.eventHub.subscribe("deleted_" + account.id + "@" + account.domain + "_evt",
             (uuid) => { },
             (evt) => {
                 let invitation = JSON.parse(evt);
@@ -829,7 +814,7 @@ export class ContactCard extends HTMLElement {
                     <span>${this.contact.email_}</span>
                 </div>
             </div>
-            <globular-session-state account="${this.contact.name}"></globular-session-state>
+            <globular-session-state account="${this.contact.id + "@" + this.contact.domain}"></globular-session-state>
             <div class="actions-div">
                 <slot></slot>
             </div>

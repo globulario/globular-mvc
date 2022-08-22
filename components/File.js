@@ -645,7 +645,7 @@ export class FilesView extends HTMLElement {
                                     globule.fileService.removePublicDir(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
                                         .then(rsp => {
                                             delete dirs[getUuidByString(this._file_explorer_.globule.config.Domain + "@/public")]
-                                            Model.eventHub.publish("reload_dir_event", "/public", false);
+                                            Model.publish("reload_dir_event", "/public", false);
                                         })
                                         .catch(err => { ApplicationView.displayMessage(err, 3000) })
                                 } else {
@@ -667,7 +667,7 @@ export class FilesView extends HTMLElement {
                         deleteFile(globule, f.path,
                             () => {
                                 delete dirs[getUuidByString(this._file_explorer_.globule.config.Domain + "@" + path)]
-                                Model.eventHub.publish("reload_dir_event", path, false);
+                                Model.publish("reload_dir_event", path, false);
                                 if (index < Object.keys(this.selected).length) {
                                     deleteFile_()
                                 } else {
@@ -813,7 +813,7 @@ export class FilesView extends HTMLElement {
             globule.fileService.createVideoPreview(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
                 .then(rsp => {
                     ApplicationView.displayMessage("Preview are created </br>" + path, 3500)
-                    Model.eventHub.publish("refresh_dir_evt", this.menu.file.path.substring(0, this.menu.file.path.lastIndexOf("/")), false);
+                    Model.publish("refresh_dir_evt", this.menu.file.path.substring(0, this.menu.file.path.lastIndexOf("/")), false);
                 })
                 .catch(err => {
                     ApplicationView.displayMessage(err, 3000)
@@ -860,7 +860,7 @@ export class FilesView extends HTMLElement {
             globule.fileService.convertVideoToHls(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
                 .then(rsp => {
                     ApplicationView.displayMessage("Conversion done </br>" + path, 3500)
-                    Model.eventHub.publish("refresh_dir_evt", this.menu.file.path.substring(0, this.menu.file.path.lastIndexOf("/")), false);
+                    Model.publish("refresh_dir_evt", this.menu.file.path.substring(0, this.menu.file.path.lastIndexOf("/")), false);
                 })
                 .catch(err => {
                     ApplicationView.displayMessage(err, 3000)
@@ -1059,12 +1059,12 @@ export class FilesView extends HTMLElement {
                     let f = this.paperTray[i]
                     let path_ = f.substring(0, f.lastIndexOf("/"))
                     delete dirs[getUuidByString(this._file_explorer_.globule.config.Domain + "@" + path)]
-                    Model.eventHub.publish("reload_dir_event", path_, false);
+                    Model.publish("reload_dir_event", path_, false);
                 }
                 this.paperTray = []
                 this.edit = ""
                 delete dirs[getUuidByString(this._file_explorer_.globule.config.Domain + "@" + path)]
-                Model.eventHub.publish("reload_dir_event", path, false);
+                Model.publish("reload_dir_event", path, false);
             })
             .catch(err => {
                 this.paperTray = []
@@ -3450,7 +3450,7 @@ export class FileExplorer extends HTMLElement {
             </div>
             <div class="card-actions">
                 <paper-icon-button icon="icons:fullscreen-exit" id="exit-full-screen-btn" style="display: none;"></paper-icon-button>
-                <globular-disk-space-manager account="${Application.account.id}"></globular-disk-space-manager>
+                <globular-disk-space-manager account="${Application.account.id + "@" + Application.account.domain}"></globular-disk-space-manager>
                 <span style="flex-grow: 1;"></span>
                 <div id="progress-div" style="display: none; flex-grow: 1; margin-right: 20px;">
                     <div style="diplay:flex; flex-direction: column;">
@@ -3809,7 +3809,7 @@ export class FileExplorer extends HTMLElement {
                         })
                         .then(() => {
                             // The new directory was created.
-                            Model.eventHub.publish("reload_dir_event", this.path, false);
+                            Model.publish("reload_dir_event", this.path, false);
                         })
                         .catch((err) => {
                             ApplicationView.displayMessage(err, 3000)
@@ -3845,7 +3845,7 @@ export class FileExplorer extends HTMLElement {
         // Refresh the root directory and send event to
         // refresh all the interface.
         this.refreshBtn.onclick = () => {
-            Model.eventHub.publish("reload_dir_event", this.path, false);
+            Model.publish("reload_dir_event", this.path, false);
         }
 
 
@@ -5360,7 +5360,7 @@ export class FilesUploader extends HTMLElement {
         uploadFile(0, () => {
             ApplicationView.displayMessage("All files are now uploaded!", 2000)
             delete dirs[getUuidByString(this._file_explorer_.globule.config.Domain + "@" + path)]
-            Model.eventHub.publish("reload_dir_event", path, false)
+            Model.publish("reload_dir_event", path, false)
         })
 
     }

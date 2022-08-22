@@ -141,7 +141,7 @@ export class AccountMenu extends Menu {
     this.account = account;
 
     // Set the data url.
-    Model.eventHub.subscribe(`__update_account_${account._id}_data_evt__`,
+    Model.globular.eventHub.subscribe(`__update_account_${account._id + "@" + account.domain}_data_evt__`,
       (uuid) => {
         this.accountUpdateListener = uuid;
       },
@@ -220,7 +220,7 @@ export class AccountMenu extends Menu {
                         </span>
                     </div>
                 </div>
-                <globular-session-state account="${account.id}" editable state="online"></globular-session-state>
+                <globular-session-state account="${account.id + "@" + account.domain}" editable state="online"></globular-session-state>
             </div>
             <div class="card-actions">
               <paper-button id="settings_btn" >settings
@@ -235,6 +235,10 @@ export class AccountMenu extends Menu {
     let range = document.createRange();
     this.getMenuDiv().innerHTML = ""; // remove existing elements.
     this.getMenuDiv().appendChild(range.createContextualFragment(html));
+
+    // Set the account.
+    this.getMenuDiv().querySelector("globular-session-state").account = account
+    this.getMenuDiv().querySelector("globular-session-state").init()
 
     // Action's
     this.shadowRoot.appendChild(this.getMenuDiv());

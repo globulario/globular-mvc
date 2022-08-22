@@ -330,7 +330,7 @@ export class PermissionsManager extends HTMLElement {
         }).then(rsp => {
             // reload the interface.
             this.setPath(this.path)
-            Model.eventHub.publish(Application.account.id + "_change_permission_event", {}, false)
+            Model.publish(Application.account.id + "_change_permission_event", {}, false)
         }).catch(err => ApplicationView.displayMessage(err, 3000))
     }
 

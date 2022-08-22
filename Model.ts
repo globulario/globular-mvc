@@ -80,6 +80,14 @@ export class Model {
         return app;
     }
 
+    // Pulish event on all globules...
+    public static publish(name:string, data:any, local:boolean): void{
+        let globules = Model.getGlobules()
+        globules.forEach(g=>{
+            g.eventHub.publish(name, data, local)
+        })
+    }
+
 
     // The view.
     private _view: View;

@@ -2410,7 +2410,7 @@ export class WebPage extends HTMLElement {
                         })
                         .then((rsp) => {
                             // Here I will return the value with it
-                            Model.eventHub.publish(`update_page_${this.id}_evt`, str, false)
+                            Model.publish(`update_page_${this.id}_evt`, str, false)
 
                             // Eval the script to make modification effective...
                             let scripts = this.querySelectorAll("script")

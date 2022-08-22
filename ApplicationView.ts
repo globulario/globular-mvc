@@ -355,6 +355,9 @@ export class ApplicationView extends View {
       },
       (account: Account) => {
 
+        // set the account
+        Application.account = account;
+
         this.onLogin(account);
 
         // Here I will set contact menu actions.
@@ -436,7 +439,7 @@ export class ApplicationView extends View {
             </style>
             <div id="yes-no-contact-delete-box">
               <div>Your about to delete the contact</div>
-              <globular-contact-card id="contact-to-delete" contact="${contact.id}"></globular-contact-card>
+              <globular-contact-card id="contact-to-delete" contact="${contact.id + "@" + contact.domain}"></globular-contact-card>
               <div>Is it what you want to do? </div>
               <div style="justify-content: flex-end;">
                 <paper-button raised id="yes-delete-contact">Yes</paper-button>
@@ -646,6 +649,7 @@ export class ApplicationView extends View {
 
         this.hideContent()
 
+    // The logout event.
 
         // The search result panel where the result will be displayed.
         if (this._searchResults == null) {
@@ -1255,9 +1259,9 @@ export class ApplicationView extends View {
     inviteContactInput.displayValue = (contact: Account) => {
       let card = new ContactCard(Application.account, contact);
       card.setInviteButton((a: Account) => {
-        ConversationManager.sendConversationInvitation(conversation.getUuid(), conversation.getName(), Application.account.id, a.id,
+        ConversationManager.sendConversationInvitation(conversation.getUuid(), conversation.getName(), Application.account.id + "@" + Application.account.domain, a.id + "@" + a.domain,
           () => {
-            Model.eventHub.publish("send_conversation_invitation_event_", { participant: a.name, conversation: conversation.getName() }, true)
+            Model.eventHub.publish("send_conversation_invitation_event_", { participant: a.id + "@" + a.domain, conversation: conversation.getName() }, true)
           },
           (err: any) => {
             ApplicationView.displayMessage(err, 3000)
@@ -1322,12 +1326,12 @@ export class ApplicationView extends View {
     // On yes
     yesBtn.onclick = () => {
 
-      ConversationManager.deleteConversation(conversation.getUuid(), Application.account.id, () => {
+      ConversationManager.deleteConversation(conversation.getUuid(), () => {
         toast.dismiss();
         // Publish the list of participant with the account removed from it.
         let participants = conversation.getParticipantsList()
-        participants.splice(participants.indexOf(Application.account.id), 1)
-        Model.eventHub.publish(`leave_conversation_${conversation.getUuid()}_evt`, JSON.stringify({ "participants": participants, "participant": Application.account.id }), false)
+        participants.splice(participants.indexOf(Application.account.id + "@" + Application.account.domain), 1)
+        Model.publish(`leave_conversation_${conversation.getUuid()}_evt`, JSON.stringify({ "participants": participants, "participant": Application.account.id + "@" + Application.account.domain}), false)
         ApplicationView.displayMessage(
           "<iron-icon icon='communication:message' style='margin-right: 10px;'></iron-icon><div>Conversation named " +
           conversation.getName() +

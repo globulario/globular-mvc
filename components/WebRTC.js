@@ -133,7 +133,7 @@ export class VideoConversation extends HTMLElement {
                                 .createOffer(offerOptions)
                                 .then((offer) => {
                                     rtcPeerConnection.setLocalDescription(offer).then(() => {
-                                        Model.eventHub.publish(`on_webrtc_offer_${connectionId}_evt`, JSON.stringify({ "offer": offer, "connectionId": this.conversationUuid + "_" + Application.account._id }), false);
+                                        Model.publish(`on_webrtc_offer_${connectionId}_evt`, JSON.stringify({ "offer": offer, "connectionId": this.conversationUuid + "_" + Application.account._id }), false);
                                     })
                                 })
                                 .catch((err) => {
@@ -191,7 +191,7 @@ export class VideoConversation extends HTMLElement {
                         .createAnswer()
                         .then(answer => {
                             rtcPeerConnection.setLocalDescription(answer).then(() => {
-                                Model.eventHub.publish(`on_webrtc_answer_${connectionId}_evt`, JSON.stringify({ "answer": answer, "connectionId": this.conversationUuid + "_" + Application.account._id }), false);
+                                Model.publish(`on_webrtc_answer_${connectionId}_evt`, JSON.stringify({ "answer": answer, "connectionId": this.conversationUuid + "_" + Application.account._id }), false);
                             })
                         })
                         .catch((err) => {
@@ -266,8 +266,8 @@ export class VideoConversation extends HTMLElement {
             this.startShareScreenBtn.style.display = "none"
         }
 
-        Model.eventHub.publish(`video_conversation_close_${connectionId}_evt`, {}, false);
-        Model.eventHub.publish(`video_conversation_close_${this.conversationUuid + "_" + Application.account._id}_evt`, {}, false);
+        Model.publish(`video_conversation_close_${connectionId}_evt`, {}, false);
+        Model.publish(`video_conversation_close_${this.conversationUuid + "_" + Application.account._id}_evt`, {}, false);
     }
 
     // init a new peer connections.
@@ -295,7 +295,7 @@ export class VideoConversation extends HTMLElement {
 
             rtcPeerConnection.onicecandidate = (evt) => {
                 if (evt.candidate) {
-                    Model.eventHub.publish(`on_webrtc_candidate_${connectionId}_evt`, JSON.stringify({ "candidate": evt.candidate.toJSON(), "connectionId": this.conversationUuid + "_" + Application.account._id }), false);
+                    Model.publish(`on_webrtc_candidate_${connectionId}_evt`, JSON.stringify({ "candidate": evt.candidate.toJSON(), "connectionId": this.conversationUuid + "_" + Application.account._id }), false);
                 }
             }
 
@@ -314,8 +314,8 @@ export class VideoConversation extends HTMLElement {
                             onconnected(rtcPeerConnection)
                         }
 
-                        Model.eventHub.publish(`video_conversation_open_${connectionId}_evt`, {}, false);
-                        Model.eventHub.publish(`video_conversation_open_${this.conversationUuid + "_" + Application.account._id}_evt`, {}, false);
+                        Model.publish(`video_conversation_open_${connectionId}_evt`, {}, false);
+                        Model.publish(`video_conversation_open_${this.conversationUuid + "_" + Application.account._id}_evt`, {}, false);
     
                         break;
                     case "disconnected":

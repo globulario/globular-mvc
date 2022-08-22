@@ -13,6 +13,7 @@ import { getTheme } from "./Theme";
 import { Notification } from "../Notification"
 import { Account } from "../Account"
 import { ApplicationView } from '../ApplicationView';
+import { Application } from '../Application';
 
 /**
  * Login/Register functionality.
@@ -236,6 +237,7 @@ export class NotificationMenu extends Menu {
     }
 
     init() {
+        
         // The logout event.
         Model.eventHub.subscribe("logout_event",
             (uuid) => {
@@ -243,28 +245,9 @@ export class NotificationMenu extends Menu {
             },
             (account) => {
                 this.clearUserNotifications()
-                Model.eventHub.unSubscribe(account.name + "_notification_event", this.account_notification_listener)
+                Model.eventHub.unSubscribe(account.id + "@" + account.domain + "_notification_event", this.account_notification_listener)
             }, true, this)
 
-        // The logout event.
-        Model.eventHub.subscribe("login_event",
-            (uuid) => {
-                /** nothing to do here. */
-            },
-            (account) => {
-                Model.eventHub.subscribe(account.name + "_notification_event",
-                    (uuid) => {
-                        this.account_notification_listener = uuid
-                    },
-                    (evt) => {
-                        this.setNotificationCount()
-                        let notification = Notification.fromString(evt)
-                        this.appendNofication(this.userNotificationsPanel, notification)
-                        if (!this.userNotificationsCollapse.opened) {
-                            this.userNotificationsCollapse.toggle()
-                        }
-                    }, false)
-            }, true, this)
 
         Model.eventHub.subscribe("set_application_notifications_event",
             (uuid) => {
@@ -295,6 +278,19 @@ export class NotificationMenu extends Menu {
                     this.applicationNotificationsCollapse.toggle()
                 }
             }, false, this)
+
+        Model.eventHub.subscribe(Application.account.id + "@" + Application.account.domain + "_notification_event",
+            (uuid) => {
+                this.account_notification_listener = uuid
+            },
+            (evt) => {
+                this.setNotificationCount()
+                let notification = Notification.fromString(evt)
+                this.appendNofication(this.userNotificationsPanel, notification)
+                if (!this.userNotificationsCollapse.opened) {
+                    this.userNotificationsCollapse.toggle()
+                }
+            }, false)
 
     }
 
@@ -418,7 +414,7 @@ export class NotificationMenu extends Menu {
         let closeBtn = this.shadowRoot.getElementById(`div_${notification._id}_close_btn`)
 
         closeBtn.onclick = () => {
-            Model.eventHub.publish("delete_notification_event_", notification, true)
+            Model.publish("delete_notification_event_", notification, true)
             if (this.onclose != undefined) {
                 this.onclose(notification);
             }
@@ -444,23 +440,25 @@ export class NotificationMenu extends Menu {
         notificationDiv.style.display = "flex"
         notificationDiv.style.position = "relative"
         notificationDiv.style.padding = ".75rem"
-
-
-        let date = new Date(notification._date)
-        let now = new Date()
-        let delay = Math.floor((now.getTime() - date.getTime()) / 1000);
         let date_div = this.shadowRoot.getElementById(`div_${notification._id}_date`)
-        date_div.date = date
 
-        if (delay < 60) {
-            date_div.innerHTML = delay + " seconds ago"
-        } else if (delay < 60 * 60) {
-            date_div.innerHTML = Math.floor(delay / (60)) + " minutes ago"
-        } else if (delay < 60 * 60 * 24) {
-            date_div.innerHTML = Math.floor(delay / (60 * 60)) + " hours ago"
-        } else {
-            date_div.innerHTML = Math.floor(delay / (60 * 60 * 24)) + " days ago"
-        }
+        setInterval(() => {
+            let date = new Date(notification._date)
+            let now = new Date()
+            let delay = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+            date_div.date = date
+
+            if (delay < 60) {
+                date_div.innerHTML = delay + " seconds ago"
+            } else if (delay < 60 * 60) {
+                date_div.innerHTML = Math.floor(delay / (60)) + " minutes ago"
+            } else if (delay < 60 * 60 * 24) {
+                date_div.innerHTML = Math.floor(delay / (60 * 60)) + " hours ago"
+            } else {
+                date_div.innerHTML = Math.floor(delay / (60 * 60 * 24)) + " days ago"
+            }
+        }, 1000)
 
         // Now the new notification count badge.
         let count = 0;
@@ -510,7 +508,7 @@ export class NotificationMenu extends Menu {
                     }
                     toast.dismiss()
                 }
-    
+
             }
 
 
@@ -541,7 +539,7 @@ export class NotificationMenu extends Menu {
                     closeBtn.style.display = "block"
                     closeBtn.right = "-10px"
                     closeBtn.onclick = () => {
-                        Model.eventHub.publish("delete_notification_event_", notification, true)
+                        Model.publish("delete_notification_event_", notification, true)
                         if (this.onclose != undefined) {
                             this.onclose(notification);
                         }

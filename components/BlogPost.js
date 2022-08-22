@@ -396,7 +396,7 @@ export class BlogPostElement extends HTMLElement {
             generatePeerToken(globule.config.Mac, token => {
                 globule.blogService.deleteBlogPost(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: token })
                     .then(rsp => {
-                        Model.eventHub.publish(this.blog.getUuid() + "_blog_delete_event", {}, false)
+                        Model.publish(this.blog.getUuid() + "_blog_delete_event", {}, false)
 
                     })
                     .catch(e => ApplicationView.displayMessage(e, 3000))
@@ -789,7 +789,7 @@ export class BlogPostElement extends HTMLElement {
                                 ApplicationView.displayMessage("Your post was updated!", 3000)
 
                                 // That function will update the blog...
-                                Model.eventHub.publish(this.blog.getUuid() + "_blog_updated_event", this.blog.serializeBinary(), false)
+                                Model.publish(this.blog.getUuid() + "_blog_updated_event", this.blog.serializeBinary(), false)
 
                             }).catch(e => {
                                 ApplicationView.displayMessage(e, 3000)
@@ -1484,7 +1484,7 @@ export class BlogCommentEditor extends HTMLElement {
 
                     this.globule.blogService.addComment(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: token })
                         .then(rsp => {
-                            Model.eventHub.publish("new_" + comment.getParent() + "_comment_evt", rsp.getComment().serializeBinary(), false)
+                            Model.publish("new_" + comment.getParent() + "_comment_evt", rsp.getComment().serializeBinary(), false)
                             addCommentBtn.style.display = "flex"
                             this.editDiv.style.display = "none"
                             this.removeChild(this.editorDiv)
@@ -1706,7 +1706,8 @@ export class BlogEditingMenu extends Menu {
         // The blog list...
         if (this.blogs == null) {
             const userName = localStorage.getItem("user_name");
-            let blogs = new BlogPosts(userName)
+            const userDomain = localStorage.getItem("user_domain");
+            let blogs = new BlogPosts(userName + "@" + userDomain)
             blogs.onclose = this.onclose;
 
             ApplicationView.wait("Retreive Blogs </br>Please wait...")

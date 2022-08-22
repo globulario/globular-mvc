@@ -76,18 +76,20 @@ export class MessengerMenu extends Menu {
         this.account = account;
 
         // Event listener when a new conversation is created...
-        Model.eventHub.subscribe(`send_conversation_invitation_${this.account.id}_evt`,
+        Model.eventHub.subscribe(`send_conversation_invitation_${this.account.id + "@" + this.account.domain}_evt`,
             (uuid) => { },
             (data) => {
+                console.log(`receive event send_conversation_invitation_${this.account.id + "@" + this.account.domain}_evt`)
                 const decoded = decode(data);
                 let invitation = Invitation.deserializeBinary(decoded)
                 this.appendSentInvitation(invitation)
             },
             false)
 
-        Model.eventHub.subscribe(`receive_conversation_invitation_${this.account.id}_evt`,
+        Model.eventHub.subscribe(`receive_conversation_invitation_${this.account.id  + "@" + this.account.domain}_evt`,
             (uuid) => { },
             (data) => {
+                console.log(`receive event receive_conversation_invitation_${this.account.id + "@" + this.account.domain}_evt`)
                 const decoded = decode(data);
                 let invitation = Invitation.deserializeBinary(decoded)
                 this.appendReceivedInvitation(invitation)
@@ -192,7 +194,7 @@ export class MessengerMenu extends Menu {
         this.receivedConversationsInvitationsLst = this.shadowRoot.querySelector("#received-conversations-invitations-lst")
 
         // Setup the list of received invitations
-        ConversationManager.getReceivedInvitations(account.id,
+        ConversationManager.getReceivedInvitations(account.id  + "@" + this.account.domain,
             (invitations) => {
                 /** Get initial invitation list. */
                 invitations.forEach(invitation => {
@@ -205,7 +207,7 @@ export class MessengerMenu extends Menu {
             })
 
         // Setup the list of sent invitations.
-        ConversationManager.getSentInvitations(account.id,
+        ConversationManager.getSentInvitations(account.id  + "@" + this.account.domain,
             invitations => {
                 invitations.forEach(invitation => {
                     this.appendSentInvitation(invitation)
@@ -377,7 +379,7 @@ export class MessengerMenu extends Menu {
             },
             (participant) => {
                 // check for kickout...
-                if (participant == this.account.id) {
+                if (participant == this.account.id  + "@" + this.account.domain) {
                     let conversationInfos = this.conversationsLst.querySelector("#conversation_" + conversationUuid + "_infos")
                     if (conversationInfos != undefined) {
                         // That's mean the user get kickout from the conversation...
@@ -407,14 +409,14 @@ export class MessengerMenu extends Menu {
 
             }, false)
 
-        let invitationCard = new InvitationCard(invitation, this.account.id, invitation.getFrom(), invitation.getConversation());
+        let invitationCard = new InvitationCard(invitation, this.account.id + "@" + this.account.domain, invitation.getFrom(), invitation.getConversation());
 
         invitationCard.setAcceptButton((invitation) => {
 
             ConversationManager.acceptConversationInvitation(invitation,
                 () => {
                     // Publish network events
-                    Model.eventHub.publish(`accept_conversation_invitation_${invitation.getConversation()}_${invitation.getFrom()}_evt`, `{}`, false)
+                    Model.publish(`accept_conversation_invitation_${invitation.getConversation()}_${invitation.getFrom()}_evt`, `{}`, false)
 
                     // re-init the conversation list.
                     ConversationManager.loadConversation(this.account,
@@ -435,7 +437,7 @@ export class MessengerMenu extends Menu {
             ConversationManager.declineConversationInvitation(invitation,
                 () => {
                     // Publish network events
-                    Model.eventHub.publish(`decline_conversation_invitation_${invitation.getConversation()}_${invitation.getFrom()}_evt`, {}, false)
+                    Model.publish(`decline_conversation_invitation_${invitation.getConversation()}_${invitation.getFrom()}_evt`, {}, false)
                 },
                 (err) => {
                     ApplicationView.displayMessage(err, 3000)
@@ -664,7 +666,7 @@ export class ConversationInfos extends HTMLElement {
                     this.owners.appendChild(span)
                     this.setLeaveButton()
                     this.setJoinButton();
-                    if (owner == this.account.id) {
+                    if (owner == this.account.id  + "@" + this.account.domain) {
                         this.setInviteButton();
                     }
                     this.setDeleteButton();
@@ -1166,7 +1168,7 @@ export class Messenger extends HTMLElement {
             },
             (participant) => {
                 // check for kickout...
-                if (participant == this.account.id) {
+                if (participant == this.account.id  + "@" + this.account.domain) {
                     // That's mean the user get kickout from the conversation...
                     this.closeConversation(conversationUuid)
                 }
@@ -1445,19 +1447,17 @@ export class ParticipantsList extends HTMLElement {
         PermissionManager.getResourcePermissions(conversation.getUuid(),
             (permissions) => {
                 permissions.getOwners().getAccountsList().forEach(owner => {
-                    if (owner == this.account.id && !this.isOwner) {
+                    if (owner == this.account.id  + "@" + this.account.domain && !this.isOwner) {
                         this.isOwner = true
                     }
                 })
 
                 // Now I will append paticipant who wrote messages in that conversation and are not necessary in the room at that time...
                 let __participants__ = JSON.parse(JSON.stringify(conversation.getParticipantsList())) //.participants;
-                let __unavailable__ = []
                 messages.forEach(message => {
                     let index = __participants__.indexOf(message.getAuthor())
                     if (index == -1) {
                         __participants__.push(message.getAuthor())
-                        __unavailable__.push(message.getAuthor())
                     }
                 })
 
@@ -1467,7 +1467,7 @@ export class ParticipantsList extends HTMLElement {
                     Account.getAccount(paticipant,
                         p => {
                             // if the session is offline or the user is in the list of unavailble user then I will set it session as unavailable.
-                            if (p.session.state == 1 || __unavailable__.indexOf(p._id) != -1) {
+                            if (p.session.state > 0) {
                                 this.setUnavailableParticipantRow(p, conversation)
                             } else {
                                 this.setAvailableParticipantRow(p, conversation)
@@ -1483,15 +1483,17 @@ export class ParticipantsList extends HTMLElement {
                             }
 
                             // Here if the session state change...
-                            Model.eventHub.subscribe(`session_state_${p._id}_change_event`,
+                            console.log("---------------> subscribe to ", `session_state_${p._id + "@" + p.domain}_change_event`, p.session.domain)
+                            Model.getGlobule(p.session.domain).eventHub.subscribe(`session_state_${p._id + "@" + p.domain}_change_event`,
                                 (uuid) => {
                                 },
                                 (evt) => {
+                                    console.log("---------------> event recived: ", `session_state_${p._id + "@" + p.domain}_change_event`, p.session.domain)
                                     // Set the value here...
                                     let obj = JSON.parse(evt)
                                     p.session.lastStateTime_ = new Date(obj.lastStateTime * 1000)
                                     p.session.state_ = obj.state
-                                    if (p.session.state == 1 || __unavailable__.indexOf(p._id) != -1) {
+                                    if (p.session.state > 0) {
                                         this.setUnavailableParticipantRow(p, conversation)
                                     } else {
                                         this.setAvailableParticipantRow(p, conversation)
@@ -1533,7 +1535,7 @@ export class ParticipantsList extends HTMLElement {
                     </div>
                     <div style="flex-grow: 1;">
                         <span><span style="font-style: italic;">${p.name_}</span> ${p.firstName_} ${p.lastName_}</span>
-                        <globular-session-state account=${p._id}></globular-session-state>
+                        <globular-session-state account=${p._id + "@" + p.domain}></globular-session-state>
                     </div>
                     <paper-icon-button icon="av:videocam"> </paper-icon-button>
                 </div>
@@ -1544,7 +1546,7 @@ export class ParticipantsList extends HTMLElement {
         let participantRow = this.participantList.querySelector(`#paticipant-${p._id}-row`)
 
         let startVideoBtn = participantRow.querySelector("paper-icon-button")
-        if (p._id == Application.account.id) {
+        if (p.id + "@" + p.domain == Application.account.id +  + "@" + this.account.domain) {
             startVideoBtn.style.display = "none"
         }
 
@@ -1596,7 +1598,7 @@ export class ParticipantsList extends HTMLElement {
     /** Set the kickout action. */
     kickoutFromConversation(conversation, user, row) {
 
-        if (user._id != this.account._id && this.isOwner) {
+        if (user._id + "@" + user.domain != this.account._id + "@" + this.account.domain && this.isOwner) {
             let id = `conversation_${conversation.getUuid()}_${user._id}_kickout_btn`
             let html = `
             <div id="${id}" class="btn" title="Kickout ${user.name_} from this conversation.">
@@ -1608,7 +1610,7 @@ export class ParticipantsList extends HTMLElement {
             row.appendChild(document.createRange().createContextualFragment(html))
             let btn = this.shadowRoot.querySelector("#" + id)
             btn.onclick = () => {
-                ConversationManager.kickoutFromConversation(conversation.getUuid(), user._id,
+                ConversationManager.kickoutFromConversation(conversation.getUuid(), user._id + "@" + user.domain,
                     () => {
                         ApplicationView.displayMessage(`
                         <div style="display: flex; flex-direction: column;">
@@ -2495,15 +2497,15 @@ export class GlobularMessagePanel extends HTMLElement {
         let participantInfos = this.shadowRoot.querySelector(".conversation-participant-info");
 
         // Now the like/dislike button...
-        if (this.account.id != this.msg.getAuthor()) {
+        if (this.account.id + "@" + this.account.domain != this.msg.getAuthor()) {
             let likeBtn = this.shadowRoot.querySelector(`#like-btn-${msg.getUuid().split("/").join("_")}`)
             likeBtn.onclick = () => {
-                ConversationManager.likeIt(this.msg.getConversation(), this.msg.getUuid(), this.account.id, () => { }, err => { ApplicationView.displayMessage(err, 3000) })
+                ConversationManager.likeIt(this.msg.getConversation(), this.msg.getUuid(), this.account.id + "@" + this.account.domain, () => { }, err => { ApplicationView.displayMessage(err, 3000) })
             }
 
             let dislikeBtn = this.shadowRoot.querySelector(`#dislike-btn-${msg.getUuid().split("/").join("_")}`)
             dislikeBtn.onclick = () => {
-                ConversationManager.dislikeIt(this.msg.getConversation(), this.msg.getUuid(), this.account.id, () => { }, err => { ApplicationView.displayMessage(err, 3000) })
+                ConversationManager.dislikeIt(this.msg.getConversation(), this.msg.getUuid(), this.account.id + "@" + this.account.domain, () => { }, err => { ApplicationView.displayMessage(err, 3000) })
             }
         }
 
@@ -2511,7 +2513,7 @@ export class GlobularMessagePanel extends HTMLElement {
         Account.getAccount(msg.getAuthor(),
             (author) => {
                 /** Retreive the image and account informations */
-                if (this.account.id == author.id) {
+                if (this.account.id + "@" + this.account.domain == author.id + "@" + author.domain) {
                     participantInfos.parentNode.style.borderTopRightRadius = "0px";
                 } else {
 
@@ -2599,7 +2601,7 @@ export class GlobularMessagePanel extends HTMLElement {
         let deleteBtn = this.shadowRoot.querySelector(`#delete-btn-${msg.getUuid().split("/").join("_")}`)
 
         if (replyBtn != null) {
-            if (this.account.id == msg.getAuthor()) {
+            if (this.account.id + "@" + this.account.domain == msg.getAuthor()) {
                 replyBtn.parentNode.removeChild(replyBtn)
             } else {
                 // Now the reply button...
@@ -2608,7 +2610,7 @@ export class GlobularMessagePanel extends HTMLElement {
         }
 
         if (deleteBtn != null) {
-            if (this.account.id != msg.getAuthor()) {
+            if (this.account.id + "@" + this.account.domain != msg.getAuthor()) {
                 deleteBtn.parentNode.removeChild(deleteBtn)
             } else {
                 // Now the reply button...

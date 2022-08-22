@@ -110,7 +110,7 @@ export class Group extends Model {
         })
             .then((rsp: ReplaceOneRsp) => {
                 // Here I will return the value with it
-                Model.eventHub.publish(`update_group_${this._id}_data_evt`, data, false)
+                Model.publish(`update_group_${this._id}_data_evt`, data, false)
                 successCallback(this);
             })
             .catch((err: any) => {

@@ -20,12 +20,14 @@ import { ConversationManager } from "./Conversation";
 import { Conversations } from "globular-web-client/conversation/conversation_pb";
 import { LogInfo, LogLevel, LogRqst, LogRsp, Occurence } from "globular-web-client/log/log_pb";
 import { Session, SessionState } from "./Session";
+import { formatBoolean } from "./components/utility";
+import { DomPlatform } from "chart.js";
 
 // Get the configuration from url
 function getFileConfig(url: string, callback: (obj: any) => void, errorcallback: (err: any) => void) {
   var xmlhttp = new XMLHttpRequest();
   xmlhttp.timeout = 1500
-  
+
   xmlhttp.onreadystatechange = function () {
     if (this.readyState == 4 && (this.status == 201 || this.status == 200)) {
       var obj = JSON.parse(this.responseText);
@@ -136,7 +138,7 @@ export class Application extends Model {
 
 
     view.setTitle(title); // set the title.
-    
+
 
     // Set the application theme...
     let theme = localStorage.getItem("globular_theme")
@@ -156,7 +158,7 @@ export class Application extends Model {
     url = url.replace("index.html", "")
     getFileConfig(url + "config.json",
       (config: any) => {
-        
+
         callback(config)
       }, errorCallback)
   }
@@ -191,7 +193,7 @@ export class Application extends Model {
           occurence.setUsername(Application.account.name)
         }
 
-        if(error == undefined) {
+        if (error == undefined) {
           return
         }
 
@@ -453,7 +455,7 @@ export class Application extends Model {
             Model.eventHub.publish("login_event", account, true);
 
             // When new contact is accepted.
-            Model.eventHub.subscribe("accepted_" + account.id + "_evt",
+            Model.eventHub.subscribe("accepted_" + account.id + "@" + account.domain + "_evt",
               (uuid) => { },
               (evt) => {
                 let invitation = JSON.parse(evt);
@@ -462,9 +464,9 @@ export class Application extends Model {
               false, this)
 
             account.session.state = SessionState.Online
-            Model.eventHub.publish(`__session_state_${account.id}_change_event__`, account.session, true)
+            Model.publish(`__session_state_${account.id + "@" + account.domain}_change_event__`, account.session, true)
 
-            Model.eventHub.subscribe("deleted_" + account.id + "_evt",
+            Model.eventHub.subscribe("deleted_" + account.id + "@" + account.domain + "_evt",
               (uuid) => { },
               (evt) => {
                 let invitation = JSON.parse(evt);
@@ -604,7 +606,7 @@ export class Application extends Model {
    */
   static getApplicationInfo(id: string): resource.Application {
     // TODO manage application domain... 
-    if(id.indexOf("@") != -1){
+    if (id.indexOf("@") != -1) {
       return Application.infos.get(id.split("@")[0]);
     }
     return Application.infos.get(id);
@@ -714,7 +716,7 @@ export class Application extends Model {
         }
       );
 
-    }, delay - 10*1000); // refresh 10 sec before exipire timeout.
+    }, delay - 10 * 1000); // refresh 10 sec before exipire timeout.
   }
 
   /**
@@ -776,8 +778,8 @@ export class Application extends Model {
 
         rqst.setConnection(connection)
 
-        let address =  (<any>decoded).address;
-        let domain =  (<any>decoded).domain;
+        let address = (<any>decoded).address;
+        let domain = (<any>decoded).domain;
         connection.setHost(domain)
 
         Model.getGlobule(address).persistenceService.createConnection(rqst, {
@@ -824,47 +826,61 @@ export class Application extends Model {
 
   // Display message when contact state change.
   addContactListener(contact: any) {
+    Account.getAccount(contact._id, (account: Account) => {
 
-    Model.eventHub.subscribe(`session_state_${contact._id}_change_event`,
-      (uuid: string) => {
-        this.contactsListener[contact._id] = uuid;
-      },
-      (evt: string) => {
-        Account.getAccount(contact._id, (account: Account) => {
-          const obj = JSON.parse(evt)
-          account.session.lastStateTime = new Date(obj.lastStateTime * 1000)
-          account.session.state = obj.state
+      console.log("contact: ", contact)
+      console.log("contact account ", account)
+      console.log("contact session ", account.session)
+      let globule = Model.globular
+      if (globule) {
+        // subscribe to session event change.
+        globule.eventHub.subscribe(`session_state_${account.id + "@" + account.domain}_change_event`,
+          (uuid: string) => {
+            this.contactsListener[contact._id] = uuid;
+          },
+          (evt: string) => {
 
-          // Here I will ask the user for confirmation before actually delete the contact informations.
-          let toast = <any>ApplicationView.displayMessage(
-            `
-          <style>
-            #contact-session-info-box{
-              display: flex;
-              flex-direction: column;
-            }
+            if (account.session) {
+              const obj = JSON.parse(evt)
+              account.session.lastStateTime = new Date(obj.lastStateTime * 1000)
+              account.session.state = obj.state
 
-            #contact-session-info-box globular-contact-card{
-              padding-bottom: 10px;
-            }
+              // Here I will ask the user for confirmation before actually delete the contact informations.
+              let toast = <any>ApplicationView.displayMessage(
+                `
+                <style>
+                  #contact-session-info-box{
+                    display: flex;
+                    flex-direction: column;
+                  }
 
-            #contact-session-info-box div{
-              display: flex;
-              font-size: 1.2rem;
-              padding-bottom: 10px;
-            }
-          </style>
-          <div id="contact-session-info-box">
-            <div>Session state change... </div>
-            <globular-contact-card contact="${contact._id}"></globular-contact-card>
-          </div>
+                  #contact-session-info-box globular-contact-card{
+                    padding-bottom: 10px;
+                  }
+
+                  #contact-session-info-box div{
+                    display: flex;
+                    font-size: 1.2rem;
+                    padding-bottom: 10px;
+                  }
+                </style>
+                <div id="contact-session-info-box">
+                  <div>Session state change... </div>
+                  <globular-contact-card contact="${account.id + "@" + account.domain}"></globular-contact-card>
+                </div>
           `,
-            5000 // 15 sec...
-          );
-        }, (err: any) => { })
+                5000 // 15 sec...
+              )
+            }
 
+          }, false, this)
 
-      }, false, this)
+      } else {
+        console.log("fail to connect to ", account.session.domain)
+      }
+
+    }, err => console.log(err))
+
   }
   /**
    * Login into the application
@@ -884,7 +900,7 @@ export class Application extends Model {
 
     ApplicationView.wait("<div>log in</div><div>" + userId + "</div><div>...</div>");
     let globule = Model.globular
-    if(userId.indexOf("@") != -1){
+    if (userId.indexOf("@") != -1) {
       globule = Model.getGlobule(userId.split("@")[1])
     }
 
@@ -898,8 +914,9 @@ export class Application extends Model {
         let userName = (<any>decoded).username;
         let email = (<any>decoded).email;
         let id = (<any>decoded).id;
-        let address =  (<any>decoded).address;
-        let domain =  (<any>decoded).domain;
+        let address = (<any>decoded).address;
+        let userDomain = (<any>decoded).user_domain;
+
 
         // here I will save the user token and user_name in the local storage.
         localStorage.setItem("user_token", token);
@@ -907,7 +924,7 @@ export class Application extends Model {
         localStorage.setItem("user_email", email);
         localStorage.setItem("user_name", userName);
         localStorage.setItem("user_id", id);
-        localStorage.setItem("user_domain", domain);
+        localStorage.setItem("user_domain", userDomain);
 
         let rqst = new CreateConnectionRqst
         let connectionId = userName.split("@").join("_").split(".").join("_");
@@ -921,17 +938,17 @@ export class Application extends Model {
         connection.setName(id)
         connection.setPort(27017)
         connection.setTimeout(60)
-        connection.setHost(domain)
+        connection.setHost(Model.domain)
         rqst.setConnection(connection)
 
         globule.persistenceService.createConnection(rqst, {
           token: localStorage.getItem("user_token"),
           application: Model.application,
-          domain: domain,
+          domain: Model.domain,
           address: address
         }).then(() => {
-          Application.account = new Account(id, email, userName, domain);
-          Account.getAccount(userId, (account: Account) => {
+          Application.account = new Account(id, email, userName, userDomain);
+          Account.getAccount(userId + "@" + userDomain, (account: Account) => {
             Application.account = account;
 
             // so here I will get the session for the account...
@@ -944,7 +961,7 @@ export class Application extends Model {
             onLogin(account);
 
             // When new contact is accepted.
-            Model.eventHub.subscribe("accepted_" + account.id + "_evt",
+            Model.eventHub.subscribe("accepted_" + account.id + "@" + account.session.domain + "_evt",
               (uuid) => { },
               (evt) => {
                 let invitation = JSON.parse(evt);
@@ -952,7 +969,7 @@ export class Application extends Model {
               },
               false, this)
 
-            Model.eventHub.subscribe("deleted_" + account.id + "_evt",
+            Model.eventHub.subscribe("deleted_" + account.id + "@" + account.session.domain + "_evt",
               (uuid) => { },
               (evt) => {
                 let invitation = JSON.parse(evt);
@@ -961,7 +978,7 @@ export class Application extends Model {
               false, this)
 
 
-            Model.eventHub.publish(`__session_state_${Application.account.id}_change_event__`, Application.account.session, true)
+            Model.getGlobule(Application.account.session.domain).eventHub.publish(`__session_state_${Application.account.id + "@" + Application.account.domain}_change_event__`, Application.account.session, true)
 
             // retreive the contacts
             Account.getContacts(Application.account, `{"status":"accepted"}`, (contacts: Array<Account>) => {
@@ -1020,15 +1037,19 @@ export class Application extends Model {
    * Close the current session explicitelty.
    */
   static logout() {
+
     // Send local event.
     if (Application.account != undefined) {
-      Model.eventHub.publish("logout_event", Application.account, true);
 
+      // refresh the page to be sure all variable are clear...
+      ApplicationView.wait("bye bye "+ Application.account.name+"!")
+      
       // So here I will set the account session state to onlise.
       Application.account.session.state = SessionState.Offline;
 
-      Model.eventHub.publish(`__session_state_${Application.account.id}_change_event__`, Application.account.session, true)
-      Model.eventHub.publish(`session_state_${Application.account.id}_change_event`, Application.account.session.toString(), false)
+      Model.eventHub.publish("logout_event", Application.account, true);
+      Model.getGlobule(Application.account.session.domain).eventHub.publish(`__session_state_${Application.account.id + "@" + Application.account.domain}_change_event__`, Application.account.session, true)
+      Model.publish(`session_state_${Application.account.id + "@" + Application.account.domain}_change_event`, Application.account.session.toString(), false)
 
       // Set room to undefined.
       Application.account = null;
@@ -1042,8 +1063,12 @@ export class Application extends Model {
     localStorage.removeItem("user_email");
     localStorage.removeItem("token_expired");
 
-    // refresh the page to be sure all variable are clear...
-    window.location.reload();
+
+    setTimeout(() => {
+      ApplicationView.resume()
+      window.location.reload();
+    }, 1000)
+
 
   }
 
@@ -1180,12 +1205,14 @@ export class Application extends Model {
       notification_.setNotificationType(resource.NotificationType.APPLICATION_NOTIFICATION)
     } else {
       notification_.setNotificationType(resource.NotificationType.USER_NOTIFICATION)
-      notification_.setSender(Application.account.id)
+      notification_.setSender(Application.account.id + "@" + Application.account.domain)
     }
 
     rqst.setNotification(notification_)
 
-    Model.globular.resourceService
+    let globule = Application.getGlobule(notification.recipient.split("@")[1])
+
+    globule.resourceService
       .createNotification(rqst, {
         token: localStorage.getItem("user_token"),
         application: Model.application,
@@ -1193,8 +1220,12 @@ export class Application extends Model {
         address: Model.address
       })
       .then(() => {
+
+        console.log("-----------> publish notification: ", notification.recipient + "_notification_event")
+
         // Here I will throw a network event...
-        Model.eventHub.publish(
+        // Publish the notification
+        Model.publish(
           notification.recipient + "_notification_event",
           notification.toString(),
           false
@@ -1219,6 +1250,8 @@ export class Application extends Model {
     errorCallback: (err: any) => void
   ) {
 
+    let globule = Model.globular
+
     // So here I will get the list of notification for the given type.
     let rqst = new resource.GetNotificationsRqst
 
@@ -1226,9 +1259,10 @@ export class Application extends Model {
       rqst.setRecipient(Model.application)
     } else {
       rqst.setRecipient(Application.account.id)
+      globule = Model.getGlobule(Application.account.domain)
     }
 
-    let stream = Model.globular.resourceService.getNotifications(rqst, {
+    let stream = globule.resourceService.getNotifications(rqst, {
       token: localStorage.getItem("user_token"),
       application: Model.application,
       domain: Model.domain,
@@ -1265,11 +1299,15 @@ export class Application extends Model {
   removeNotification(notification: Notification) {
 
     let rqst = new resource.DeleteNotificationRqst
+    let globule = Model.globular
+    if (notification.type == NotificationType.User) {
+      globule = Model.getGlobule(Application.account.domain)
+    }
 
     rqst.setId(notification.id)
     rqst.setRecipient(notification.recipient)
 
-    Model.globular.resourceService
+    globule.resourceService
       .deleteNotification(rqst, {
         token: localStorage.getItem("user_token"),
         application: Model.application,
@@ -1279,7 +1317,7 @@ export class Application extends Model {
       .then(() => {
         // The notification is not deleted so I will send network event to remove it from
         // the display.
-        Model.eventHub.publish(
+        Model.publish(
           notification.id + "_delete_notification_event",
           notification.toString(),
           false
@@ -1303,7 +1341,7 @@ export class Application extends Model {
   onInviteParticipant(evt: any) {
     // Create a user notification.
     let notification = new Notification(
-      Application.account.id,
+      Application.account.id + "@" + Application.account.domain,
       NotificationType.User,
       evt["participant"],
       `
@@ -1335,9 +1373,9 @@ export class Application extends Model {
   onInviteContact(contact: Account) {
     // Create a user notification.
     let notification = new Notification(
-      Application.account.id,
+      Application.account.id + "@" + Application.account.domain,
       NotificationType.User,
-      contact.name,
+      contact.id + "@" + contact.domain,
       `
       <div style="display: flex; flex-direction: column;">
         <p>
@@ -1367,9 +1405,9 @@ export class Application extends Model {
   onAcceptContactInvitation(contact: Account) {
     // Create a user notification.
     let notification = new Notification(
-      Application.account.id,
+      Application.account.id + "@" + Application.account.domain,
       NotificationType.User,
-      contact.name,
+      contact.id + "@" + contact.domain,
       `
       <div style="display: flex; flex-direction: column;">
         <p>
@@ -1399,9 +1437,9 @@ export class Application extends Model {
   // Decline contact invitation.
   onDeclineContactInvitation(contact: Account) {
     let notification = new Notification(
-      Application.account.id,
+      Application.account.id + "@" + Application.account.domain,
       NotificationType.User,
-      contact.name,
+      contact.id + "@" + contact.domain,
       `
       <div style="display: flex; flex-direction: column;">
         <p>
@@ -1431,9 +1469,9 @@ export class Application extends Model {
   // Revoke contact invitation.
   onRevokeContactInvitation(contact: Account) {
     let notification = new Notification(
-      Application.account.id,
+      Application.account.id + "@" + Application.account.domain,
       NotificationType.User,
-      contact.name,
+      contact.id + "@" + contact.domain,
       `
       <div style="display: flex; flex-direction: column;">
         <p>
@@ -1463,9 +1501,9 @@ export class Application extends Model {
   // Delete contact invitation.
   onDeleteContact(contact: Account) {
     let notification = new Notification(
-      Application.account.id,
+      Application.account.id + "@" + Application.account.domain,
       NotificationType.User,
-      contact.name,
+      contact.id + "@" + contact.domain,
       `
       <div style="display: flex; flex-direction: column;">
         <p>
