@@ -30,11 +30,15 @@ const offerOptions = {
 export class VideoConversation extends HTMLElement {
     // attributes.
 
+
     // Create the applicaiton view.
-    constructor(conversationUuid) {
+    constructor(conversation) {
         super()
 
-        this.conversationUuid = conversationUuid
+        // Keep reference to the conversation
+        this.conversation = conversation
+        this.conversationUuid = conversation.getUuid()
+
         this.localStream = null;
         this.pendingCanditates = [];
 
@@ -114,7 +118,7 @@ export class VideoConversation extends HTMLElement {
 
 
         // Start a new video conversation with a remote participant
-        Model.eventHub.subscribe(`start_video_conversation_${conversationUuid}_evt`,
+        Model.eventHub.subscribe(`start_video_conversation_${this.conversationUuid}_evt`,
             (uuid) => {
 
             },
@@ -146,7 +150,7 @@ export class VideoConversation extends HTMLElement {
 
             }, true, this)
 
-        Model.eventHub.subscribe(`leave_conversation_${conversationUuid}_evt`,
+        Model.eventHub.subscribe(`leave_conversation_${this.conversationUuid}_evt`,
             (uuid) => {
                 // todo remove listeners...
             },
@@ -158,7 +162,7 @@ export class VideoConversation extends HTMLElement {
                 if (evt.participant == Application.account._id) {
                     // Here I will close all conversation connections.
                     for (let connectionId in this.connections) {
-                        if (connectionId.startsWith(conversationUuid)) {
+                        if (connectionId.startsWith(this.conversationUuid)) {
                             this.closeConnection(connectionId)
                         }
                     }
@@ -173,7 +177,7 @@ export class VideoConversation extends HTMLElement {
             false, this);
 
         // When we receive peer connection offer...
-        Model.eventHub.subscribe(`on_webrtc_offer_${conversationUuid + "_" + Application.account._id}_evt`, (uuid) => { }, (evt) => {
+        Model.eventHub.subscribe(`on_webrtc_offer_${this.conversationUuid + "_" + Application.account._id}_evt`, (uuid) => { }, (evt) => {
 
             let event = JSON.parse(evt)
             let connectionId = event.connectionId
@@ -206,7 +210,7 @@ export class VideoConversation extends HTMLElement {
         }, false, this)
 
         // When we receive peers connection answer...
-        Model.eventHub.subscribe(`on_webrtc_answer_${conversationUuid + "_" + Application.account._id}_evt`, (uuid) => { }, (evt) => {
+        Model.eventHub.subscribe(`on_webrtc_answer_${this.conversationUuid + "_" + Application.account._id}_evt`, (uuid) => { }, (evt) => {
             let event = JSON.parse(evt)
             let rtcPeerConnection = this.connections[event.connectionId]
             let answer = new RTCSessionDescription(event.answer)
@@ -215,7 +219,7 @@ export class VideoConversation extends HTMLElement {
         }, false, this)
 
         // When we receive a ace candidate answer
-        Model.eventHub.subscribe(`on_webrtc_candidate_${conversationUuid + "_" + Application.account._id}_evt`, (uuid) => { }, (event) => {
+        Model.eventHub.subscribe(`on_webrtc_candidate_${this.conversationUuid + "_" + Application.account._id}_evt`, (uuid) => { }, (event) => {
             let evt = JSON.parse(event)
             this.getConnection(evt.connectionId, rtcPeerConnection => {
                 let icecandidate = new RTCIceCandidate(evt.candidate);

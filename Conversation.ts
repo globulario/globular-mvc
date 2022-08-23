@@ -3,44 +3,52 @@ import { Conversation, ConnectRequest, Conversations, CreateConversationRequest,
 import { GetConversationsRequest, GetConversationsResponse } from "globular-web-client/conversation/conversation_pb";
 
 import { Account } from "./Account";
-import { Model } from "./Model";
+import { generatePeerToken, Model } from "./Model";
 import { v4 as uuidv4 } from "uuid";
 import { GetResourcePermissionsRsp } from "globular-web-client/rbac/rbac_pb";
 import { encode, decode } from 'uint8-to-base64';
 import { Application } from "./Application";
+import { SetStartVideoConversionHourRequest } from "globular-web-client/file/file_pb";
+import { Globular } from "globular-web-client";
 
 export class ConversationManager {
   public static uuid: string;
+  private static conversations: Map<string, Conversation> = new Map<string, Conversation>()
 
   constructor() {
 
   }
 
+  // Open conversation channels with each globule.
+  static connect(errorCallback: (err: any) => void) {
 
-  static connect(successCallback: (uuid: string) => void, errorCallback: (err: any) => void) {
     ConversationManager.uuid = uuidv4();
-    let rqst = new ConnectRequest
-    rqst.setUuid(ConversationManager.uuid)
 
-    // This will open the connection with the conversation manager.
-    let stream = Model.globular.conversationService.connect(rqst, {
-      token: localStorage.getItem("user_token"),
-      application: Model.application,
-      domain: Model.domain,
-      address: Model.address
+    Model.getGlobules().forEach(globule => {
+      generatePeerToken(globule.config.Mac, token => {
+        // This will open the connection with the conversation manager.
+        let rqst = new ConnectRequest
+        rqst.setUuid(ConversationManager.uuid)
+        let stream = globule.conversationService.connect(rqst, {
+          token: token,
+          application: Model.application,
+          domain: Model.domain,
+          address: Model.address
+        })
+
+        stream.on("data", (rsp: ConnectResponse) => {
+          /** Local event... */
+          Model.globular.eventHub.publish(`__received_message_${rsp.getMsg().getConversation()}_evt__`, rsp.getMsg(), true)
+        });
+
+        stream.on("status", (status) => {
+          if (status.code != 0) {
+            errorCallback(status.details)
+          }
+        });
+      }, errorCallback)
+
     })
-
-    stream.on("data", (rsp: ConnectResponse) => {
-      /** Local event... */
-      Model.globular.eventHub.publish(`__received_message_${rsp.getMsg().getConversation()}_evt__`, rsp.getMsg(), true)
-    });
-
-    stream.on("status", (status) => {
-      if (status.code != 0) {
-        errorCallback(status.details)
-      }
-    });
-
   }
 
   /**
@@ -73,35 +81,74 @@ export class ConversationManager {
    * @param succesCallback Return the list of conversation owned by the account.
    * @param errorCallback Error if any.
    */
-  static loadConversation(account: Account, succesCallback: (conversations: Conversations) => void, errorCallback: (err: any) => void) {
+  private static loadConversations_(globule: Globular, account: Account, succesCallback: (conversations: Conversations) => void, errorCallback: (err: any) => void) {
     let rqst = new GetConversationsRequest
     rqst.setCreator(account.id + "@" + account.domain);
 
-    Model.globular.conversationService.getConversations(rqst, {
+    globule.conversationService.getConversations(rqst, {
       token: localStorage.getItem("user_token"),
       application: Model.application,
       domain: Model.domain,
       address: Model.address
     }).then((rsp: GetConversationsResponse) => {
+
+      // Keep conversation in the map...
+      rsp.getConversations().getConversationsList().forEach((conversation: Conversation) => {
+        ConversationManager.conversations.set(conversation.getUuid(), conversation)
+      });
+
       succesCallback(rsp.getConversations())
     }).catch((err: any) => {
       // return an empty conversation array...
-      succesCallback(new  Conversations)
+      succesCallback(new Conversations)
     })
   }
 
-  static deleteConversation(conversationUuid: string, succesCallback: () => void, errorCallback: (err: any) => void) {
+
+  static loadConversations(account: Account, succesCallback: (conversations: Array<Conversation>) => void, errorCallback: (err: any) => void) {
+    let globules = Model.getGlobules()
+    let conversations = new Array<Conversation>()
+
+    let loadConversations = () => {
+      let globule = globules.pop()
+      ConversationManager.loadConversations_(globule, account, (converstions_) => {
+        conversations = conversations.concat(converstions_.getConversationsList())
+        if (globules.length > 0) {
+          loadConversations()
+        } else {
+          succesCallback(conversations)
+        }
+      }, err => {
+        if (globules.length > 0) {
+          console.log(err)
+          loadConversations()
+        } else {
+          succesCallback(conversations)
+        }
+      })
+    }
+
+    // call once
+    loadConversations()
+  }
+
+  static deleteConversation(conversation: Conversation, succesCallback: () => void, errorCallback: (err: any) => void) {
+
+    let globule = Model.getGlobule(conversation.getMac())
+    let conversationUuid = conversation.getUuid()
     let rqst = new DeleteConversationRequest
     rqst.setConversationUuid(conversationUuid)
-    
 
-    Model.globular.conversationService.deleteConversation(rqst, {
+    globule.conversationService.deleteConversation(rqst, {
       token: localStorage.getItem("user_token"),
       application: Model.application,
       domain: Model.domain,
       address: Model.address
     }).then((rsp: DeleteConversationResponse) => {
       succesCallback()
+
+      // remove it from the map...
+      ConversationManager.conversations.delete(conversation.getUuid())
 
       // Here the conversation has been deleted...
       // Model.eventHub.publish(`delete_conversation_${conversationUuid}_evt`, conversationUuid, false)
@@ -110,24 +157,28 @@ export class ConversationManager {
     }).catch((err: any) => {
       succesCallback()
       Model.eventHub.publish(`__leave_conversation_evt__`, conversationUuid, true)
-      
+
       Model.eventHub.publish(`__delete_conversation_${conversationUuid}_evt__`, conversationUuid, true)
     })
   }
 
-  static kickoutFromConversation(conversationUuid: string, account: string, succesCallback: () => void, errorCallback: (err: any) => void) {
-    let rqst = new KickoutFromConversationRequest
-    rqst.setConversationUuid(conversationUuid)
-    rqst.setAccount(account)
-    Model.globular.conversationService.kickoutFromConversation(rqst, {
-      token: localStorage.getItem("user_token"),
-      application: Model.application,
-      domain: Model.domain,
-      address: Model.address
-    }).then((rsp: DeleteConversationResponse) => {
-      succesCallback()
-      Model.publish(`kickout_conversation_${conversationUuid}_evt`, account, false)
-    }).catch(errorCallback)
+  static kickoutFromConversation(conversation: Conversation, account: string, succesCallback: () => void, errorCallback: (err: any) => void) {
+    let globule = Model.getGlobule(conversation.getMac())
+    generatePeerToken(globule.config.Mac, token => {
+      let conversationUuid = conversation.getUuid()
+      let rqst = new KickoutFromConversationRequest
+      rqst.setConversationUuid(conversationUuid)
+      rqst.setAccount(account)
+      globule.conversationService.kickoutFromConversation(rqst, {
+        token: token,
+        application: Model.application,
+        domain: Model.domain,
+        address: Model.address
+      }).then((rsp: DeleteConversationResponse) => {
+        succesCallback()
+        Model.publish(`kickout_conversation_${conversationUuid}_evt`, account, false)
+      }).catch(errorCallback)
+    }, errorCallback)
   }
 
   static findConversations(query: string, succesCallback: (conversations: Conversation[]) => void, errorCallback: (err: any) => void) {
@@ -152,106 +203,124 @@ export class ConversationManager {
 
   /**
    * Join a conversation
-   * @param conversationUuid The conversation with given uuid
+   * @param conversation The conversation with given uuid
    * @param succesCallback On success callback
    * @param errorCallback On error callback
    */
-  static joinConversation(conversationUuid: string, succesCallback: (conversation: Conversation, messages: Message[]) => void, errorCallback: (err: any) => void) {
-    let rqst = new JoinConversationRequest
-    rqst.setConnectionUuid(ConversationManager.uuid)
-    rqst.setConversationUuid(conversationUuid)
+  static joinConversation(conversation: Conversation, succesCallback: (conversation: Conversation, messages: Message[]) => void, errorCallback: (err: any) => void) {
 
-    let stream = Model.globular.conversationService.joinConversation(rqst, {
-      token: localStorage.getItem("user_token"),
-      application: Model.application,
-      domain: Model.domain,
-      address: Model.address
-    })
+    let globule = Model.getGlobule(conversation.getMac())
 
-    // Now I will get existing message from the conversation.
-    var messages = new Array<Message>();
-    let conversation: Conversation;
+    generatePeerToken(globule.config.Mac, token => {
+      let conversationUuid = conversation.getUuid()
 
-    stream.on("data", (rsp: JoinConversationResponse) => {
-      if (rsp.getConversation() != undefined) {
-        conversation = rsp.getConversation();
-      }
-      if (rsp.getMsg() != undefined) {
-        messages.push(rsp.getMsg())
-      }
-    });
+      let rqst = new JoinConversationRequest
+      rqst.setConnectionUuid(ConversationManager.uuid)
+      rqst.setConversationUuid(conversationUuid)
 
-    stream.on("status", (status) => {
+      let stream = globule.conversationService.joinConversation(rqst, {
+        token: token,
+        application: Model.application,
+        domain: Model.domain,
+        address: Model.address
+      })
 
-      if (status.code == 0) {
-        succesCallback(conversation, messages)
+      // Now I will get existing message from the conversation.
+      var messages = new Array<Message>();
 
-        let participants = conversation.getParticipantsList()
-
-        // network event.
-        Model.publish(`ready_conversation_${conversationUuid}_evt`, JSON.stringify({"participants":participants, "participant":Application.account.id + "@" + Application.account.domain}), false)
-        
-      } else {
-        // No message found...
-        if (status.details == "EOF") {
-          succesCallback(conversation, messages)
-          let participants = conversation.getParticipantsList()
-          // network event.
-          Model.publish(`leave_conversation_${conversationUuid}_evt`, JSON.stringify({"participants":participants, "participant":Application.account.id + "@" + Application.account.domain}), false)
-          return
+      stream.on("data", (rsp: JoinConversationResponse) => {
+        if (rsp.getConversation() != undefined) {
+          conversation = rsp.getConversation();
         }
-        // An error happen
-        errorCallback(status.details)
-      }
-    });
+        if (rsp.getMsg() != undefined) {
+          messages.push(rsp.getMsg())
+        }
+      });
+
+      stream.on("status", (status) => {
+
+        if (status.code == 0) {
+          succesCallback(conversation, messages)
+
+          let participants = conversation.getParticipantsList()
+
+          // network event.
+          Model.publish(`ready_conversation_${conversationUuid}_evt`, JSON.stringify({ "participants": participants, "participant": Application.account.id + "@" + Application.account.domain }), false)
+
+        } else {
+          // No message found...
+          if (status.details == "EOF") {
+            succesCallback(conversation, messages)
+            let participants = conversation.getParticipantsList()
+            // network event.
+            Model.publish(`leave_conversation_${conversationUuid}_evt`, JSON.stringify({ "participants": participants, "participant": Application.account.id + "@" + Application.account.domain }), false)
+            return
+          }
+          // An error happen
+          errorCallback(status.details)
+        }
+      })
+    }, errorCallback)
 
   }
 
 
   // leave the conversation.
-  static leaveConversation(conversationUuid: string, successCallback: () => void, errorCallback: (err: any) => void) {
-    let rqst = new LeaveConversationRequest
-    rqst.setConversationUuid(conversationUuid)
-    rqst.setConnectionUuid(ConversationManager.uuid)
+  static leaveConversation(conversation: Conversation, successCallback: () => void, errorCallback: (err: any) => void) {
 
-    Model.globular.conversationService.leaveConversation(rqst, {
-      token: localStorage.getItem("user_token"),
-      application: Model.application,
-      domain: Model.domain,
-      address: Model.address
-    }).then((rsp: LeaveConversationResponse) => {
-      successCallback();
-      let participants = rsp.getConversation().getParticipantsList()
+    let globule = Model.getGlobule(conversation.getMac())
 
-      // network event.
-      Model.publish(`leave_conversation_${conversationUuid}_evt`, JSON.stringify({"participants":participants, "participant":Application.account.id + "@" + Application.account.domain}), false)
+    generatePeerToken(globule.config.Mac, token => {
+      let conversationUuid = conversation.getUuid()
 
-    }).catch(errorCallback)
+      let rqst = new LeaveConversationRequest
+      rqst.setConversationUuid(conversationUuid)
+      rqst.setConnectionUuid(ConversationManager.uuid)
+
+      globule.conversationService.leaveConversation(rqst, {
+        token: token,
+        application: Model.application,
+        domain: Model.domain,
+        address: Model.address
+      }).then((rsp: LeaveConversationResponse) => {
+        successCallback();
+        let participants = rsp.getConversation().getParticipantsList()
+
+        // network event.
+        Model.publish(`leave_conversation_${conversationUuid}_evt`, JSON.stringify({ "participants": participants, "participant": Application.account.id + "@" + Application.account.domain }), false)
+
+      }).catch(errorCallback)
+    }, errorCallback)
   }
 
   // Send a conversation invitation to a given user.
-  static sendConversationInvitation(conversation: string, name: string, from: string, to: string, successCallback: () => void, errorCallback: (err: any) => void) {
-    let rqst = new SendInvitationRequest
-    let invitation = new Invitation
-    invitation.setFrom(from)
-    invitation.setTo(to)
-    invitation.setConversation(conversation)
-    invitation.setName(name)
-    rqst.setInvitation(invitation)
+  static sendConversationInvitation(conversation: Conversation, from: string, to: string, successCallback: () => void, errorCallback: (err: any) => void) {
 
-    Model.globular.conversationService.sendInvitation(rqst, {
-      token: localStorage.getItem("user_token"),
-      application: Model.application,
-      domain: Model.domain,
-      address: Model.address
-    }).then((rsp: SendMessageResponse) => {
-      /** Nothing to do here... */
-      successCallback()
-      const encoded = encode(invitation.serializeBinary());
-      // publish network event.
-      Model.publish(`send_conversation_invitation_${from}_evt`, encoded, false)
-      Model.publish(`receive_conversation_invitation_${to}_evt`, encoded, false)
-    }).catch(errorCallback)
+    let globule = Model.getGlobule(conversation.getMac())
+    generatePeerToken(globule.config.Mac, token => {
+      let rqst = new SendInvitationRequest
+      let invitation = new Invitation
+      invitation.setFrom(from)
+      invitation.setTo(to)
+      invitation.setConversation(conversation.getUuid())
+      invitation.setName(conversation.getName())
+      invitation.setMac(conversation.getMac())
+      rqst.setInvitation(invitation)
+
+      globule.conversationService.sendInvitation(rqst, {
+        token: token,
+        application: Model.application,
+        domain: Model.domain,
+        address: Model.address
+      }).then((rsp: SendMessageResponse) => {
+        /** Nothing to do here... */
+        successCallback()
+        const encoded = encode(invitation.serializeBinary());
+        // publish network event.
+        Model.publish(`send_conversation_invitation_${from}_evt`, encoded, false)
+        Model.publish(`receive_conversation_invitation_${to}_evt`, encoded, false)
+      }).catch(errorCallback)
+    }, errorCallback)
   }
 
   /**
@@ -260,21 +329,23 @@ export class ConversationManager {
    * @param successCallback 
    * @param errorCallback 
    */
-  static getReceivedInvitations(accountId: string, successCallback: (invitation: Array<Invitation>) => void, errorCallback: (err: any) => void) {
-    let rqst = new GetReceivedInvitationsRequest
-    rqst.setAccount(accountId);
-    Model.globular.conversationService.getReceivedInvitations(rqst, {
-      token: localStorage.getItem("user_token"),
-      application: Model.application,
-      domain: Model.domain,
-      address: Model.address
-    }).then((rsp: GetReceivedInvitationsResponse) => {
-      /** Nothing to do here... */
-      successCallback(rsp.getInvitations().getInvitationsList())
+  private static getReceivedInvitations_(globule: Globular, accountId: string, successCallback: (invitation: Array<Invitation>) => void, errorCallback: (err: any) => void) {
+    generatePeerToken(globule.config.Mac, token => {
+      let rqst = new GetReceivedInvitationsRequest
+      rqst.setAccount(accountId);
+      globule.conversationService.getReceivedInvitations(rqst, {
+        token: token,
+        application: Model.application,
+        domain: Model.domain,
+        address: Model.address
+      }).then((rsp: GetReceivedInvitationsResponse) => {
+        /** Nothing to do here... */
+        successCallback(rsp.getInvitations().getInvitationsList())
 
-    }).catch((err: any) => {
-      successCallback([])
-    })
+      }).catch((err: any) => {
+        successCallback([])
+      })
+    }, errorCallback)
   }
 
   /**
@@ -283,20 +354,22 @@ export class ConversationManager {
    * @param successCallback 
    * @param errorCallback 
    */
-  static getSentInvitations(accountId: string, successCallback: (invitation: Array<Invitation>) => void, errorCallback: (err: any) => void) {
-    let rqst = new GetSentInvitationsRequest
-    rqst.setAccount(accountId);
-    Model.globular.conversationService.getSentInvitations(rqst, {
-      token: localStorage.getItem("user_token"),
-      application: Model.application,
-      domain: Model.domain,
-      address: Model.address
-    }).then((rsp: GetSentInvitationsResponse) => {
-      /** Nothing to do here... */
-      successCallback(rsp.getInvitations().getInvitationsList())
-    }).catch((err: any) => {
-      successCallback([])
-    })
+  static getSentInvitations(globule: Globular, accountId: string, successCallback: (invitation: Array<Invitation>) => void, errorCallback: (err: any) => void) {
+    generatePeerToken(globule.config.Mac, token => {
+      let rqst = new GetSentInvitationsRequest
+      rqst.setAccount(accountId);
+      globule.conversationService.getSentInvitations(rqst, {
+        token: token,
+        application: Model.application,
+        domain: Model.domain,
+        address: Model.address
+      }).then((rsp: GetSentInvitationsResponse) => {
+        /** Nothing to do here... */
+        successCallback(rsp.getInvitations().getInvitationsList())
+      }).catch((err: any) => {
+        successCallback([])
+      })
+    }, errorCallback)
   }
 
   /**
@@ -306,18 +379,21 @@ export class ConversationManager {
    * @param errorCallback The error callback.
    */
   static acceptConversationInvitation(invitation: Invitation, successCallback: () => void, errorCallback: (err: any) => void) {
-    let rqst = new AcceptInvitationRequest
-    rqst.setInvitation(invitation);
-    Model.globular.conversationService.acceptInvitation(rqst, {
-      token: localStorage.getItem("user_token"),
-      application: Model.application,
-      domain: Model.domain,
-      address: Model.address
-    }).then((rsp: AcceptInvitationRequest) => {
-      /** Nothing to do here... */
-      successCallback()
+    let globule = Model.getGlobule(invitation.getMac())
+    generatePeerToken(globule.config.Mac, token => {
+      let rqst = new AcceptInvitationRequest
+      rqst.setInvitation(invitation);
+      globule.conversationService.acceptInvitation(rqst, {
+        token: token,
+        application: Model.application,
+        domain: Model.domain,
+        address: Model.address
+      }).then((rsp: AcceptInvitationRequest) => {
+        /** Nothing to do here... */
+        successCallback()
 
-    }).catch(errorCallback)
+      }).catch(errorCallback)
+    }, errorCallback)
   }
 
   /**
@@ -327,133 +403,156 @@ export class ConversationManager {
    * @param errorCallback The error callback
    */
   static declineConversationInvitation(invitation: Invitation, successCallback: () => void, errorCallback: (err: any) => void) {
-    let rqst = new DeclineInvitationRequest
-    rqst.setInvitation(invitation);
-    Model.globular.conversationService.declineInvitation(rqst, {
-      token: localStorage.getItem("user_token"),
-      application: Model.application,
-      domain: Model.domain,
-      address: Model.address
-    }).then((rsp: AcceptInvitationRequest) => {
-      /** Nothing to do here... */
-      successCallback()
-    }).catch(errorCallback)
+    let globule = Model.getGlobule(invitation.getMac())
+    generatePeerToken(globule.config.Mac, token => {
+      let rqst = new DeclineInvitationRequest
+      rqst.setInvitation(invitation);
+      globule.conversationService.declineInvitation(rqst, {
+        token: token,
+        application: Model.application,
+        domain: Model.domain,
+        address: Model.address
+      }).then((rsp: AcceptInvitationRequest) => {
+        /** Nothing to do here... */
+        successCallback()
+      }).catch(errorCallback)
+    }, errorCallback)
   }
 
   static revokeConversationInvitation(invitation: Invitation, successCallback: () => void, errorCallback: (err: any) => void) {
-    let rqst = new RevokeInvitationRequest
-    rqst.setInvitation(invitation);
-    Model.globular.conversationService.revokeInvitation(rqst, {
-      token: localStorage.getItem("user_token"),
-      application: Model.application,
-      domain: Model.domain,
-      address: Model.address
-    }).then((rsp: RevokeInvitationResponse) => {
-      /** Nothing to do here... */
-      successCallback()
-    }).catch(errorCallback)
-  }
-
-  static likeIt(conversation: string, message: string, account:string, successCallback: () => void, errorCallback: (err: any) => void) {
-    let rqst = new LikeMessageRqst
-    rqst.setMessage(message)
-    rqst.setConversation(conversation)
-    rqst.setAccount(account)
-
-    Model.globular.conversationService.likeMessage(rqst, {
-      token: localStorage.getItem("user_token"),
-      application: Model.application,
-      domain: Model.domain,
-      address: Model.address
-    }).then((rsp: LikeMessageResponse) => {
-      if(successCallback!=undefined){
+    let globule = Model.getGlobule(invitation.getMac())
+    generatePeerToken(globule.config.Mac, token => {
+      let rqst = new RevokeInvitationRequest
+      rqst.setInvitation(invitation);
+      globule.conversationService.revokeInvitation(rqst, {
+        token: token,
+        application: Model.application,
+        domain: Model.domain,
+        address: Model.address
+      }).then((rsp: RevokeInvitationResponse) => {
+        /** Nothing to do here... */
         successCallback()
-      }
-    }).catch(errorCallback)
-
+      }).catch(errorCallback)
+    }, errorCallback)
   }
 
-  static dislikeIt(conversation: string, message: string, account:string, successCallback: () => void, errorCallback: (err: any) => void) {
-    let rqst = new DislikeMessageRqst
-    rqst.setMessage(message)
-    rqst.setConversation(conversation)
-    rqst.setAccount(account)
+  static likeIt(conversationUuid: string, message: string, account: string, successCallback: () => void, errorCallback: (err: any) => void) {
+    let conversation = ConversationManager.conversations.get(conversationUuid)
+    let globule = Model.getGlobule(conversation.getMac())
+    generatePeerToken(globule.config.Mac, token => {
+      let rqst = new LikeMessageRqst
+      rqst.setMessage(message)
+      rqst.setConversation(conversation.getUuid())
+      rqst.setAccount(account)
 
-    Model.globular.conversationService.dislikeMessage(rqst, {
-      token: localStorage.getItem("user_token"),
-      application: Model.application,
-      domain: Model.domain,
-      address: Model.address
-    }).then((rsp: DislikeMessageResponse) => {
-      if(successCallback!=undefined){
-        successCallback()
-      }
-    }).catch(errorCallback)
+      globule.conversationService.likeMessage(rqst, {
+        token: token,
+        application: Model.application,
+        domain: Model.domain,
+        address: Model.address
+      }).then((rsp: LikeMessageResponse) => {
+        if (successCallback != undefined) {
+          successCallback()
+        }
+      }).catch(errorCallback)
+    }, errorCallback)
+  }
 
+  static dislikeIt(conversationUuid: string, message: string, account: string, successCallback: () => void, errorCallback: (err: any) => void) {
+    let conversation = ConversationManager.conversations.get(conversationUuid)
+    let globule = Model.getGlobule(conversation.getMac())
+    generatePeerToken(globule.config.Mac, token => {
+      let rqst = new DislikeMessageRqst
+      rqst.setMessage(message)
+      rqst.setConversation(conversation.getUuid())
+      rqst.setAccount(account)
+      globule.conversationService.dislikeMessage(rqst, {
+        token: token,
+        application: Model.application,
+        domain: Model.domain,
+        address: Model.address
+      }).then((rsp: DislikeMessageResponse) => {
+        if (successCallback != undefined) {
+          successCallback()
+        }
+      }).catch(errorCallback)
+    }, errorCallback)
   }
 
 
-  static deleteMessage(msg:Message, successCallback: () => void, errorCallback: (err: any) => void){
-    let rqst = new DeleteMessageRequest
-    rqst.setUuid(msg.getUuid())
-    rqst.setConversation(msg.getConversation())
+  static deleteMessage(msg: Message, successCallback: () => void, errorCallback: (err: any) => void) {
+    // Retreive the conversation from the map
+    let conversation = ConversationManager.conversations.get(msg.getConversation())
 
-    Model.globular.conversationService.deleteMessage(rqst, {
-      token: localStorage.getItem("user_token"),
-      application: Model.application,
-      domain: Model.domain,
-      address: Model.address
-    }).then((rsp: DeleteMessageResponse) => {
-      if(successCallback!=undefined){
-        successCallback()
-      }
+    // Retreive the conversation host...
+    let globule = Model.getGlobule(conversation.getMac())
 
-      // Simply send event on the network...
-      Model.publish(`delete_message_${msg.getUuid()}_evt`, null, false)
-      
-    }).catch(errorCallback)
+    generatePeerToken(globule.config.Mac, token => {
+      let rqst = new DeleteMessageRequest
+      rqst.setUuid(msg.getUuid())
+      rqst.setConversation(msg.getConversation())
+
+      globule.conversationService.deleteMessage(rqst, {
+        token: token,
+        application: Model.application,
+        domain: Model.domain,
+        address: Model.address
+      }).then((rsp: DeleteMessageResponse) => {
+        if (successCallback != undefined) {
+          successCallback()
+        }
+
+        // Simply send event on the network...
+        Model.publish(`delete_message_${msg.getUuid()}_evt`, null, false)
+
+      }).catch(errorCallback)
+    }, errorCallback)
   }
 
-  static sendMessage(conversationUuid: string, author: Account, text: string, replyTo: string, successCallback: () => void, errorCallback: (err: any) => void) {
+  static sendMessage(conversation: Conversation, author: Account, text: string, replyTo: string, successCallback: () => void, errorCallback: (err: any) => void) {
 
-    let rqst = new SendMessageRequest
-    let message = new Message
-    let uuid = uuidv4();
-    if(replyTo.length > 0){
-      uuid = replyTo + "/" + uuid
-    }
-    message.setUuid(uuid)
-    message.setConversation(conversationUuid)
-    message.setText(text)
-    message.setInReplyTo(replyTo)
-    message.setCreationTime(Math.round(Date.now() / 1000));
-    message.setAuthor(author.id + "@" + author.domain);
-    message.setLanguage(window.navigator.language.split("-")[0]);
-    message.setDislikesList(new Array<string>());
-    message.setLikesList(new Array<string>());
-    message.setReadersList([author.id + "@" + author.domain]);
-    rqst.setMsg(message)
+    let globule = Model.getGlobule(conversation.getMac())
+    let conversationUuid = conversation.getUuid()
 
-    Model.globular.conversationService.sendMessage(rqst, {
-      token: localStorage.getItem("user_token"),
-      application: Model.application,
-      domain: Model.domain,
-      address: Model.address
-    }).then((rsp: SendMessageResponse) => {
-      /** Nothing to do here... */
-      console.log("----> message was sent!", message)
+    generatePeerToken(globule.config.Mac, token => {
+      let rqst = new SendMessageRequest
+      let message = new Message
+      let uuid = uuidv4();
+      if (replyTo.length > 0) {
+        uuid = replyTo + "/" + uuid
+      }
+      message.setUuid(uuid)
+      message.setConversation(conversationUuid)
+      message.setText(text)
+      message.setInReplyTo(replyTo)
+      message.setCreationTime(Math.round(Date.now() / 1000));
+      message.setAuthor(author.id + "@" + author.domain);
+      message.setLanguage(window.navigator.language.split("-")[0]);
+      message.setDislikesList(new Array<string>());
+      message.setLikesList(new Array<string>());
+      message.setReadersList([author.id + "@" + author.domain]);
+      rqst.setMsg(message)
 
-    }).catch(errorCallback)
+      globule.conversationService.sendMessage(rqst, {
+        token: token,
+        application: Model.application,
+        domain: Model.domain,
+        address: Model.address
+      }).then((rsp: SendMessageResponse) => {
+        /** Nothing to do here... */
+        console.log("----> message was sent!", message)
 
+      }).catch(errorCallback)
+    }, errorCallback)
   }
 }
 
 /**
  * Here I will create the signaling server use in conjunction with each other.
  */
-export class SignalingServer{
+export class SignalingServer {
 
-  constructor(){
+  constructor() {
 
   }
 

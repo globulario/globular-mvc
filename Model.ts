@@ -192,6 +192,7 @@ export class Model {
             Model.globules.set(Model._globular.config.Domain + ":" + Model._globular.config.PortHttp, Model._globular)
             Model.globules.set(Model._globular.config.Domain + ":" + Model._globular.config.PortHttps, Model._globular)
             Model.globules.set(Model.address, Model._globular)
+            Model.globules.set(Model._globular.config.Mac, Model._globular)
 
             // I will also set the globule to other address...
             let alternateDomains = Model._globular.config.AlternateDomains
@@ -233,6 +234,7 @@ export class Model {
                             Model.globules.set(location.protocol + "//" + peer.getDomain() + ":" + port, globule)
                             Model.globules.set(url, globule)
                             Model.globules.set(peer.getDomain(), globule)
+                            Model.globules.set(peer.getMac(), globule)
 
                             if (index < peers.length) {
                                 connectToPeers()

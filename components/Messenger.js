@@ -398,9 +398,9 @@ export class MessengerMenu extends Menu {
             (evt) => {
 
                 // re-init the conversation list.
-                ConversationManager.loadConversation(this.account,
+                ConversationManager.loadConversations(this.account,
                     (conversations) => {
-                        Model.eventHub.publish("__load_conversations_event__", conversations.getConversationsList(), true)
+                        Model.eventHub.publish("__load_conversations_event__", conversations, true)
                     },
                     (err) => {
                         /** no conversation found... */
@@ -419,9 +419,9 @@ export class MessengerMenu extends Menu {
                     Model.publish(`accept_conversation_invitation_${invitation.getConversation()}_${invitation.getFrom()}_evt`, `{}`, false)
 
                     // re-init the conversation list.
-                    ConversationManager.loadConversation(this.account,
+                    ConversationManager.loadConversations(this.account,
                         (conversations) => {
-                            Model.eventHub.publish("__load_conversations_event__", conversations.getConversationsList(), true)
+                            Model.eventHub.publish("__load_conversations_event__", conversations, true)
                         },
                         (err) => {
                             /** no conversation found... */
@@ -723,7 +723,7 @@ export class ConversationInfos extends HTMLElement {
         this.appendChild(range.createContextualFragment(`</div><paper-button style="display:none; font-size:.85em; width: 20px;" id="leave_${this.conversation.getUuid()}_btn">Leave</paper-button>`))
 
         this.querySelector(`#leave_${this.conversation.getUuid()}_btn`).onclick = () => {
-            ConversationManager.leaveConversation(this.conversation.getUuid(),
+            ConversationManager.leaveConversation(this.conversation,
                 (messages) => {
                     if (onLeaveConversation != null) {
                         onLeaveConversation(messages);
@@ -760,7 +760,7 @@ export class ConversationInfos extends HTMLElement {
             this.shadowRoot.querySelector("paper-progress").style.display = "block"
 
 
-            ConversationManager.joinConversation(this.conversation.getUuid(),
+            ConversationManager.joinConversation(this.conversation,
                 (conversation, messages) => {
                     if (onJoinConversation != null) {
                         onJoinConversation(messages);
@@ -1084,7 +1084,7 @@ export class Messenger extends HTMLElement {
     // Here I will open the conversation.
     openConversation(conversation, messages) {
 
-        let videoConversation = new VideoConversation(conversation.getUuid())
+        let videoConversation = new VideoConversation(conversation)
         videoConversation.style.position = "fixed"
         videoConversation.style.left = "0px"
 
@@ -1105,7 +1105,7 @@ export class Messenger extends HTMLElement {
         this.shadowRoot.querySelector("#leave_conversation_btn").onclick = () => {
             // block multiple click.
             this.shadowRoot.querySelector("#leave_conversation_btn").style.display = "none"
-            ConversationManager.leaveConversation(conversationUuid,
+            ConversationManager.leaveConversation(conversation,
                 () => {
                     Model.eventHub.publish("__leave_conversation_evt__", conversationUuid, true)
                 }, err => { })
@@ -1685,7 +1685,6 @@ export class MessagesList extends HTMLElement {
         this.account = null;
         this.conversation = null;
         this.listener = null;
-        this.conversationUuid = "";
         this.previousMessage = null;
         this.previousMessageDiv = null;
         this.previousAccountDiv = null;
@@ -1727,14 +1726,14 @@ export class MessagesList extends HTMLElement {
         this.previousMessage = null;
         this.previousMessageDiv = null;
         if (this.listener != null) {
-            Model.eventHub.unSubscribe(`__received_message_${this.conversationUuid}_evt__`, this.listener)
+            Model.eventHub.unSubscribe(`__received_message_${this.conversation.getUuid()}_evt__`, this.listener)
         }
     }
 
     setConversation(conversation, messages) {
         // simply reset the messages...
         this.clear();
-        this.conversationUuid = conversation.getUuid()
+        this.conversation = conversation
         Model.eventHub.subscribe(`__received_message_${conversation.getUuid()}_evt__`,
             (uuid) => {
                 this.listener = uuid;
@@ -1839,7 +1838,7 @@ export class MessageEditor extends HTMLElement {
     constructor() {
         super();
         this.account = null;
-        this.conversationUuid = null;
+        this.conversation = null;
 
         // Reply 
         this.on_answer_message_listener = ""
@@ -2001,7 +2000,7 @@ export class MessageEditor extends HTMLElement {
 
             this.shadowRoot.querySelector("#close-answer-btn").click()
 
-            ConversationManager.sendMessage(this.conversationUuid, this.account, txt, replyTo,
+            ConversationManager.sendMessage(this.conversation, this.account, txt, replyTo,
                 () => {
                     /** Nothing here... */
                 },
@@ -2013,7 +2012,7 @@ export class MessageEditor extends HTMLElement {
     }
 
     setConversation(conversation) {
-        this.conversationUuid = conversation.getUuid()
+        this.conversation = conversation
     }
 
     setAccount(account) {

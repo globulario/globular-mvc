@@ -1259,7 +1259,7 @@ export class ApplicationView extends View {
     inviteContactInput.displayValue = (contact: Account) => {
       let card = new ContactCard(Application.account, contact);
       card.setInviteButton((a: Account) => {
-        ConversationManager.sendConversationInvitation(conversation.getUuid(), conversation.getName(), Application.account.id + "@" + Application.account.domain, a.id + "@" + a.domain,
+        ConversationManager.sendConversationInvitation(conversation, Application.account.id + "@" + Application.account.domain, a.id + "@" + a.domain,
           () => {
             Model.eventHub.publish("send_conversation_invitation_event_", { participant: a.id + "@" + a.domain, conversation: conversation.getName() }, true)
           },
@@ -1326,7 +1326,7 @@ export class ApplicationView extends View {
     // On yes
     yesBtn.onclick = () => {
 
-      ConversationManager.deleteConversation(conversation.getUuid(), () => {
+      ConversationManager.deleteConversation(conversation, () => {
         toast.dismiss();
         // Publish the list of participant with the account removed from it.
         let participants = conversation.getParticipantsList()

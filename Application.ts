@@ -17,7 +17,7 @@ import {
 import { v4 as uuidv4 } from "uuid";
 import { mergeTypedArrays, uint8arrayToStringMethod } from "./Utility";
 import { ConversationManager } from "./Conversation";
-import { Conversations } from "globular-web-client/conversation/conversation_pb";
+import { Conversation, Conversations } from "globular-web-client/conversation/conversation_pb";
 import { LogInfo, LogLevel, LogRqst, LogRsp, Occurence } from "globular-web-client/log/log_pb";
 import { Session, SessionState } from "./Session";
 import { formatBoolean } from "./components/utility";
@@ -485,9 +485,9 @@ export class Application extends Model {
               })
 
             // Retreive conversations...
-            ConversationManager.loadConversation(account,
-              (conversations: Conversations) => {
-                Model.eventHub.publish("__load_conversations_event__", conversations.getConversationsList(), true)
+            ConversationManager.loadConversations(account,
+              (conversations: Array<Conversation>) => {
+                Model.eventHub.publish("__load_conversations_event__", conversations, true)
               },
               (err: any) => {
                 /* this.displayMessage(err, 3000)*/
@@ -495,10 +495,7 @@ export class Application extends Model {
               })
 
             // Connect to to the conversation manager.
-            ConversationManager.connect(
-              () => {
-                /* Nothing to do here **/
-              }, (err: any) => {
+            ConversationManager.connect((err: any) => {
                 ApplicationView.displayMessage(err, 3000)
               })
 
@@ -991,9 +988,9 @@ export class Application extends Model {
               })
 
             // Retreive conversations...
-            ConversationManager.loadConversation(Application.account,
-              (conversations: Conversations) => {
-                Model.eventHub.publish("__load_conversations_event__", conversations.getConversationsList(), true)
+            ConversationManager.loadConversations(Application.account,
+              (conversations: Array<Conversation>) => {
+                Model.eventHub.publish("__load_conversations_event__", conversations, true)
               },
               (err: any) => {
                 /* this.displayMessage(err, 3000)*/
@@ -1001,10 +998,7 @@ export class Application extends Model {
               })
 
             // Connect to to the conversation manager.
-            ConversationManager.connect(
-              () => {
-                /* Nothing to do here **/
-              }, (err: any) => {
+            ConversationManager.connect( (err: any) => {
                 ApplicationView.displayMessage(err, 3000)
               })
 
