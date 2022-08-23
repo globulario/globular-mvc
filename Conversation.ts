@@ -181,24 +181,59 @@ export class ConversationManager {
     }, errorCallback)
   }
 
-  static findConversations(query: string, succesCallback: (conversations: Conversation[]) => void, errorCallback: (err: any) => void) {
-    let rqst = new FindConversationsRequest
-    rqst.setQuery(query)
-    rqst.setOffset(0)
-    rqst.setLanguage(window.navigator.language.split("-")[0])
-    rqst.setPagesize(500);
-    rqst.setSnippetsize(500); // not realy necessary here...
+  private static findConversations_(globule: Globular, query: string, succesCallback: (conversations: Conversation[]) => void, errorCallback: (err: any) => void) {
 
-    Model.globular.conversationService.findConversations(rqst, {
-      token: localStorage.getItem("user_token"),
-      application: Model.application,
-      domain: Model.domain,
-      address: Model.address
-    }).then((rsp: FindConversationsResponse) => {
-      succesCallback(rsp.getConversationsList())
-    }).catch((err: any) => {
-      errorCallback(err)
-    })
+    generatePeerToken(globule.config.Mac, token => {
+
+      let rqst = new FindConversationsRequest
+      rqst.setQuery(query)
+      rqst.setOffset(0)
+      rqst.setLanguage(window.navigator.language.split("-")[0])
+      rqst.setPagesize(500);
+      rqst.setSnippetsize(500); // not realy necessary here...
+
+      globule.conversationService.findConversations(rqst, {
+        token: token,
+        application: Model.application,
+        domain: Model.domain,
+        address: Model.address
+      }).then((rsp: FindConversationsResponse) => {
+        succesCallback(rsp.getConversationsList())
+      }).catch((err: any) => {
+        errorCallback(err)
+      })
+    }, errorCallback)
+  }
+
+  static findConversations(query: string, successCallback: (conversations: Conversation[]) => void, errorCallback: (err: any) => void) {
+    let globules = Model.getGlobules()
+    let findConversations = () => {
+      let globule = globules.pop()
+      let conversations = new Array<Conversation>()
+
+      ConversationManager.findConversations_(globule, query,
+        conversations_ => {
+          conversations = conversations.concat(conversations_)
+          if (globules.length > 0) {
+            findConversations()
+          } else {
+            successCallback(conversations)
+          }
+        },
+        err => {
+          if (globules.length > 0) {
+            findConversations()
+          } else {
+            if (conversations.length > 0) {
+              successCallback(conversations)
+            } else {
+              errorCallback(err)
+            }
+          }
+        })
+    }
+
+    findConversations()
   }
 
   /**
@@ -329,7 +364,7 @@ export class ConversationManager {
    * @param successCallback 
    * @param errorCallback 
    */
-  private static getReceivedInvitations_(globule: Globular, accountId: string, successCallback: (invitation: Array<Invitation>) => void, errorCallback: (err: any) => void) {
+  private static getReceivedInvitations_(globule: Globular, accountId: string, successCallback: (invitations: Array<Invitation>) => void, errorCallback: (err: any) => void) {
     generatePeerToken(globule.config.Mac, token => {
       let rqst = new GetReceivedInvitationsRequest
       rqst.setAccount(accountId);
@@ -348,13 +383,42 @@ export class ConversationManager {
     }, errorCallback)
   }
 
+
+  static getReceivedInvitations(accountId: string, successCallback: (invitations: Array<Invitation>) => void, errorCallback: (err: any) => void) {
+    let globules = Model.getGlobules()
+    let getReceivedInvitations = () => {
+      let globule = globules.pop()
+      let invitations = new Array<Invitation>()
+
+      ConversationManager.getReceivedInvitations_(globule, accountId,
+        invitations_ => {
+          invitations = invitations.concat(invitations_)
+          if (globules.length > 0) {
+            getReceivedInvitations()
+          } else {
+            successCallback(invitations)
+          }
+        },
+        err => {
+          console.log(err)
+          if (globules.length > 0) {
+            getReceivedInvitations()
+          } else {
+            successCallback(invitations)
+          }
+        })
+    }
+
+    getReceivedInvitations()
+  }
+
   /**
    * Get the list of sent invitations.
    * @param accountId The account id
    * @param successCallback 
    * @param errorCallback 
    */
-  static getSentInvitations(globule: Globular, accountId: string, successCallback: (invitation: Array<Invitation>) => void, errorCallback: (err: any) => void) {
+  private static getSentInvitations_(globule: Globular, accountId: string, successCallback: (invitation: Array<Invitation>) => void, errorCallback: (err: any) => void) {
     generatePeerToken(globule.config.Mac, token => {
       let rqst = new GetSentInvitationsRequest
       rqst.setAccount(accountId);
@@ -370,6 +434,35 @@ export class ConversationManager {
         successCallback([])
       })
     }, errorCallback)
+  }
+
+  static getSentInvitations(accountId: string, successCallback: (invitation: Array<Invitation>) => void, errorCallback: (err: any) => void) {
+    let globules = Model.getGlobules()
+
+    let getSentInvitations = () => {
+      let globule = globules.pop()
+      let invitations = new Array<Invitation>()
+
+      ConversationManager.getSentInvitations_(globule, accountId,
+        invitations_ => {
+          invitations = invitations.concat(invitations_)
+          if (globules.length > 0) {
+            getSentInvitations()
+          } else {
+            successCallback(invitations)
+          }
+        },
+        err => {
+          console.log(err)
+          if (globules.length > 0) {
+            getSentInvitations()
+          } else {
+            successCallback(invitations)
+          }
+        })
+    }
+
+    getSentInvitations()
   }
 
   /**

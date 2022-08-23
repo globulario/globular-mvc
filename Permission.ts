@@ -1,5 +1,6 @@
 import { Model } from './Model';
 import * as rbac from "globular-web-client/rbac/rbac_pb";
+import { Globular } from 'globular-web-client';
 
 /**
  * That class is use to access Resource permission.
@@ -38,11 +39,11 @@ export class PermissionManager {
      * @param resource The resource to set
      * @param permission Can be any string, it will be drive by the interface here.
      */
-    static getResourcePermissions(resource: string, successCallback: (permissions: rbac.Permissions) => void, errorCallback: (err: any) => void) {
+    static getResourcePermissions(resource: string, successCallback: (permissions: rbac.Permissions) => void, errorCallback: (err: any) => void, globule:Globular = Model.globular) {
         let rqst = new rbac.GetResourcePermissionsRqst
         rqst.setPath(resource)
-
-        Model.globular.rbacService.getResourcePermissions(rqst, {
+        
+        globule.rbacService.getResourcePermissions(rqst, {
             token: localStorage.getItem("user_token"),
             application: Model.application,
             domain: Model.domain,
@@ -58,7 +59,7 @@ export class PermissionManager {
      * @param resource The resource to set
      * @param permission Can be any string, it will be drive by the interface here.
      */
-    static setResourcePermissions(resource: string, permission: string, subject: string, successCallback: () => void, errorCallback: (err: any) => void) {
+    static setResourcePermissions(resource: string, permission: string, subject: string, successCallback: () => void, errorCallback: (err: any) => void, globule:Globular = Model.globular) {
 
         // first of all I will get the resource permissions
         PermissionManager.getResourcePermissions(resource,
@@ -71,7 +72,7 @@ export class PermissionManager {
                 }else{
                     errorCallback(err)
                 }
-            })
+            }, globule)
     }
 
     /**

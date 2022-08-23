@@ -86,7 +86,7 @@ export class MessengerMenu extends Menu {
             },
             false)
 
-        Model.eventHub.subscribe(`receive_conversation_invitation_${this.account.id  + "@" + this.account.domain}_evt`,
+        Model.eventHub.subscribe(`receive_conversation_invitation_${this.account.id + "@" + this.account.domain}_evt`,
             (uuid) => { },
             (data) => {
                 console.log(`receive event receive_conversation_invitation_${this.account.id + "@" + this.account.domain}_evt`)
@@ -194,7 +194,7 @@ export class MessengerMenu extends Menu {
         this.receivedConversationsInvitationsLst = this.shadowRoot.querySelector("#received-conversations-invitations-lst")
 
         // Setup the list of received invitations
-        ConversationManager.getReceivedInvitations(account.id  + "@" + this.account.domain,
+        ConversationManager.getReceivedInvitations(account.id + "@" + this.account.domain,
             (invitations) => {
                 /** Get initial invitation list. */
                 invitations.forEach(invitation => {
@@ -207,7 +207,7 @@ export class MessengerMenu extends Menu {
             })
 
         // Setup the list of sent invitations.
-        ConversationManager.getSentInvitations(account.id  + "@" + this.account.domain,
+        ConversationManager.getSentInvitations(account.id + "@" + this.account.domain,
             invitations => {
                 invitations.forEach(invitation => {
                     this.appendSentInvitation(invitation)
@@ -379,7 +379,7 @@ export class MessengerMenu extends Menu {
             },
             (participant) => {
                 // check for kickout...
-                if (participant == this.account.id  + "@" + this.account.domain) {
+                if (participant == this.account.id + "@" + this.account.domain) {
                     let conversationInfos = this.conversationsLst.querySelector("#conversation_" + conversationUuid + "_infos")
                     if (conversationInfos != undefined) {
                         // That's mean the user get kickout from the conversation...
@@ -617,6 +617,8 @@ export class ConversationInfos extends HTMLElement {
         this.keywords = this.shadowRoot.querySelector(".keywords")
         this.owners = this.shadowRoot.querySelector(".owners")
         this.hideBtn = this.shadowRoot.querySelector("#hide-btn")
+        this.leaveBtn = null
+        this.joinBtn = null
 
         this.hideBtn.onclick = () => {
             let button = this.shadowRoot.querySelector("#hide-btn")
@@ -639,6 +641,7 @@ export class ConversationInfos extends HTMLElement {
 
         this.conversation = conversation;
 
+
         // Set the value in the interfaces.
         this.titleDiv.innerHTML = conversation.getName();
         let creationTime = new Date(conversation.getCreationTime() * 1000)
@@ -658,7 +661,7 @@ export class ConversationInfos extends HTMLElement {
         })
 
         // Here  I will display the list of owner for that conversation.
-        PermissionManager.getResourcePermissions(conversation.getUuid(),
+        PermissionManager.getResourcePermissions(this.conversation.getUuid(),
             (permissions) => {
                 permissions.getOwners().getAccountsList().forEach(owner => {
                     let span = document.createElement("span")
@@ -666,24 +669,23 @@ export class ConversationInfos extends HTMLElement {
                     this.owners.appendChild(span)
                     this.setLeaveButton()
                     this.setJoinButton();
-                    if (owner == this.account.id  + "@" + this.account.domain) {
+                    if (owner == this.account.id + "@" + this.account.domain) {
                         this.setInviteButton();
                     }
                     this.setDeleteButton();
                 })
             },
-            (err) => { })
+            (err) => { }, Model.getGlobule(this.conversation.getMac()))
 
-        let conversationUuid = conversation.getUuid();
 
         Model.eventHub.subscribe(`__join_conversation_evt__`,
             (uuid) => {
                 this.join_conversation_listener = uuid;
             },
             (evt) => {
-                if (evt.conversation.getUuid() == conversationUuid) {
-                    this.querySelector(`#join_${conversationUuid}_btn`).style.display = "none"
-                    this.querySelector(`#leave_${conversationUuid}_btn`).style.display = "flex"
+                if (evt.conversation.getUuid() == this.conversation.getUuid()) {
+                    this.joinBtn.style.display = "none"
+                    this.leaveBtn.style.display = "flex"
                     this.shadowRoot.querySelector("paper-progress").style.display = "none"
                 }
             }, true)
@@ -693,9 +695,9 @@ export class ConversationInfos extends HTMLElement {
                 this.leave_conversation_listener = uuid;
             },
             (evt) => {
-                if (evt == conversationUuid) {
-                    this.querySelector(`#join_${conversationUuid}_btn`).style.display = "flex"
-                    this.querySelector(`#leave_${conversationUuid}_btn`).style.display = "none"
+                if (evt == this.conversation.getUuid()) {
+                    this.joinBtn.style.display = "flex"
+                    this.leaveBtn.style.display = "none"
                     this.shadowRoot.querySelector("paper-progress").style.display = "none"
                 }
             }, true)
@@ -715,14 +717,14 @@ export class ConversationInfos extends HTMLElement {
 
     /** Leave the conversation */
     setLeaveButton(onLeaveConversation) {
-        if (this.querySelector(`#leave_${this.conversation.getUuid()}_btn`) != undefined) {
+        if (this.leaveBtn) {
             return
         }
         this.innerHtml = ""
         let range = document.createRange()
         this.appendChild(range.createContextualFragment(`</div><paper-button style="display:none; font-size:.85em; width: 20px;" id="leave_${this.conversation.getUuid()}_btn">Leave</paper-button>`))
-
-        this.querySelector(`#leave_${this.conversation.getUuid()}_btn`).onclick = () => {
+        this.leaveBtn = this.querySelector(`#leave_${this.conversation.getUuid()}_btn`)
+        this.leaveBtn.onclick = () => {
             ConversationManager.leaveConversation(this.conversation,
                 (messages) => {
                     if (onLeaveConversation != null) {
@@ -732,8 +734,8 @@ export class ConversationInfos extends HTMLElement {
                     // local event
                     Model.eventHub.publish("__leave_conversation_evt__", this.conversation.getUuid(), true)
 
-                    this.querySelector(`#join_${this.conversation.getUuid()}_btn`).style.display = "flex"
-                    this.querySelector(`#leave_${this.conversation.getUuid()}_btn`).style.display = "none"
+                    this.joinBtn.style.display = "flex"
+                    this.leaveBtn.style.display = "none"
                 },
                 (err) => {
                     ApplicationView.displayMessage(err, 3000)
@@ -743,14 +745,16 @@ export class ConversationInfos extends HTMLElement {
 
     /** Display join conversation button */
     setJoinButton(onJoinConversation) {
-        if (this.querySelector(`#join_${this.conversation.getUuid()}_btn`) != undefined) {
+        if (this.joinBtn) {
             return
         }
+
         this.innerHtml = ""
         let range = document.createRange()
         this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.85em; width: 20px;" id="join_${this.conversation.getUuid()}_btn">Join</paper-button>`))
 
-        this.querySelector(`#join_${this.conversation.getUuid()}_btn`).onclick = () => {
+        this.joinBtn = this.querySelector(`#join_${this.conversation.getUuid()}_btn`)
+        this.joinBtn.onclick = () => {
 
             if (this.shadowRoot.querySelector("paper-progress").style == "block") {
                 // Block power clicker
@@ -773,8 +777,9 @@ export class ConversationInfos extends HTMLElement {
 
 
                     // network event.
-                    this.querySelector(`#join_${this.conversation.getUuid()}_btn`).style.display = "none"
-                    this.querySelector(`#leave_${this.conversation.getUuid()}_btn`).style.display = "flex"
+                    this.joinBtn.style.display = "none"
+                    this.leaveBtn.style.display = "flex"
+
                     this.shadowRoot.querySelector("paper-progress").style.display = "none"
                 },
                 (err) => {
@@ -941,7 +946,7 @@ export class Messenger extends HTMLElement {
             if (button && content) {
                 if (!content.opened) {
                     button.icon = "expand-less"
-                    var element =this.shadowRoot.querySelector("#messages-list-container");
+                    var element = this.shadowRoot.querySelector("#messages-list-container");
                     element.style.maxHeight = "58vh"
                     element.scrollTop = element.scrollHeight - element.clientHeight;
                 } else {
@@ -1168,7 +1173,7 @@ export class Messenger extends HTMLElement {
             },
             (participant) => {
                 // check for kickout...
-                if (participant == this.account.id  + "@" + this.account.domain) {
+                if (participant == this.account.id + "@" + this.account.domain) {
                     // That's mean the user get kickout from the conversation...
                     this.closeConversation(conversationUuid)
                 }
@@ -1447,7 +1452,7 @@ export class ParticipantsList extends HTMLElement {
         PermissionManager.getResourcePermissions(conversation.getUuid(),
             (permissions) => {
                 permissions.getOwners().getAccountsList().forEach(owner => {
-                    if (owner == this.account.id  + "@" + this.account.domain && !this.isOwner) {
+                    if (owner == this.account.id + "@" + this.account.domain && !this.isOwner) {
                         this.isOwner = true
                     }
                 })
@@ -1516,7 +1521,7 @@ export class ParticipantsList extends HTMLElement {
                 if (err.message.indexOf("leveldb: not found")) {
                     ApplicationView.displayMessage(err, 3000)
                 }
-            })
+            }, Model.getGlobule(conversation.getMac()))
     }
 
     setAvailableParticipantRow(p, conversation) {
@@ -1546,7 +1551,7 @@ export class ParticipantsList extends HTMLElement {
         let participantRow = this.participantList.querySelector(`#paticipant-${p._id}-row`)
 
         let startVideoBtn = participantRow.querySelector("paper-icon-button")
-        if (p.id + "@" + p.domain == Application.account.id +  + "@" + this.account.domain) {
+        if (p.id + "@" + p.domain == Application.account.id + + "@" + this.account.domain) {
             startVideoBtn.style.display = "none"
         }
 
