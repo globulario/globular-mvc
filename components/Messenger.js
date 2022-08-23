@@ -194,7 +194,7 @@ export class MessengerMenu extends Menu {
         this.receivedConversationsInvitationsLst = this.shadowRoot.querySelector("#received-conversations-invitations-lst")
 
         // Setup the list of received invitations
-        ConversationManager.getReceivedInvitations(account.id + "@" + this.account.domain,
+        ConversationManager.getReceivedInvitations(account.id + "@" + account.domain,
             (invitations) => {
                 /** Get initial invitation list. */
                 invitations.forEach(invitation => {
@@ -207,7 +207,7 @@ export class MessengerMenu extends Menu {
             })
 
         // Setup the list of sent invitations.
-        ConversationManager.getSentInvitations(account.id + "@" + this.account.domain,
+        ConversationManager.getSentInvitations(account.id + "@" + account.domain,
             invitations => {
                 invitations.forEach(invitation => {
                     this.appendSentInvitation(invitation)

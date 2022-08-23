@@ -207,9 +207,10 @@ export class ConversationManager {
 
   static findConversations(query: string, successCallback: (conversations: Conversation[]) => void, errorCallback: (err: any) => void) {
     let globules = Model.getGlobules()
+    let conversations = new Array<Conversation>()
+
     let findConversations = () => {
       let globule = globules.pop()
-      let conversations = new Array<Conversation>()
 
       ConversationManager.findConversations_(globule, query,
         conversations_ => {
@@ -386,9 +387,11 @@ export class ConversationManager {
 
   static getReceivedInvitations(accountId: string, successCallback: (invitations: Array<Invitation>) => void, errorCallback: (err: any) => void) {
     let globules = Model.getGlobules()
+    let invitations = new Array<Invitation>()
+
     let getReceivedInvitations = () => {
       let globule = globules.pop()
-      let invitations = new Array<Invitation>()
+
 
       ConversationManager.getReceivedInvitations_(globule, accountId,
         invitations_ => {
@@ -438,11 +441,10 @@ export class ConversationManager {
 
   static getSentInvitations(accountId: string, successCallback: (invitation: Array<Invitation>) => void, errorCallback: (err: any) => void) {
     let globules = Model.getGlobules()
+    let invitations = new Array<Invitation>()
 
     let getSentInvitations = () => {
       let globule = globules.pop()
-      let invitations = new Array<Invitation>()
-
       ConversationManager.getSentInvitations_(globule, accountId,
         invitations_ => {
           invitations = invitations.concat(invitations_)
