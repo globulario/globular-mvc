@@ -936,7 +936,7 @@ export class BlogPosts extends HTMLElement {
                         this.setBlog(BlogPost.deserializeBinary(Uint8Array.from(evt.split(","))), true)
                     }, false, this)
 
-                authors.push(account.id)
+                authors.push(account.id + "@" + account.domain)
 
                 this.getBlogs(authors, blogs => {
                     this.setBlogPosts(blogs)

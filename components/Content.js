@@ -25,8 +25,14 @@ import * as cssbeautifier from "cssbeautifier"
 import htmlBeautify from 'html-beautify'
 import jsBeautify from 'js-beautify'
 import nodeToDataURL from 'html-element-to-image'
-import { GetVideoConversionLogsRequest } from "globular-web-client/file/file_pb";
+import { GetThumbnailsRequest, GetThumbnailsResponse, GetVideoConversionLogsRequest } from "globular-web-client/file/file_pb";
 import { DeleteDocumentRequest, IndexJsonObjectRequest } from "globular-web-client/search/search_pb";
+import { PermissionManager } from "../Permission";
+import { Application } from "../Application";
+import { SubjectType } from "globular-web-client/rbac/rbac_pb";
+import domtoimage from 'dom-to-image';
+import { timeSince } from "./BlogPost";
+import { RemoveGroupMemberAccountRqst } from "globular-web-client/resource/resource_pb";
 
 // Test if the tag can hold text...
 function canHoldText(tagName) {
@@ -274,8 +280,8 @@ function getHtmlEditor(element) {
     return html_editor
 }
 
-function getWorkspace(){
-   return document.getElementsByTagName("globular-workspace")[0];//document.body
+function getWorkspace() {
+    return document.getElementsByTagName("globular-workspace")[0];//document.body
 }
 
 /**
@@ -631,17 +637,15 @@ export class ContentManager extends HTMLElement {
             // So here I will set the address from the address found in the token and not 
             // the address of the client itself.
             let token = localStorage.getItem("user_token")
-            let decoded = JwtDecode(token);
-            let address = decoded.address;
-            let domain = decoded.domain;
+            let domain = Application.account.session.domain
+
 
             // call persist data
-            Model.getGlobule(address).persistenceService
+            Model.getGlobule(domain).persistenceService
                 .replaceOne(rqst, {
                     token: token,
                     application: Model.application,
-                    domain: domain,
-                    address: address
+                    domain: domain
                 })
                 .then((rsp) => {
                     index += 1
@@ -688,16 +692,15 @@ export class ContentManager extends HTMLElement {
         // the address of the client itself.
         let token = localStorage.getItem("user_token")
         let decoded = JwtDecode(token);
-        let address = decoded.address;
-        let domain = decoded.domain;
+        let domain = Application.account.session.domain
+
 
         // call persist data
-        Model.getGlobule(address).persistenceService
+        Model.getGlobule(domain).persistenceService
             .deleteOne(rqst, {
                 token: token,
                 application: Model.application,
-                domain: domain,
-                address: address
+                domain: domain
             })
             .then((rsp) => {
                 // Here I will return the value with it
@@ -779,16 +782,15 @@ export class ContentManager extends HTMLElement {
             // the address of the client itself.
             let token = localStorage.getItem("user_token")
             let decoded = JwtDecode(token);
-            let address = decoded.address;
-            let domain = decoded.domain;
+            let domain = Application.account.session.domain
+
 
             // call persist data
-            Model.getGlobule(address).persistenceService
+            Model.getGlobule(domain).persistenceService
                 .replaceOne(rqst, {
                     token: token,
                     application: Model.application,
-                    domain: domain,
-                    address: address
+                    domain: domain
                 })
                 .then((rsp) => {
                     index += 1
@@ -834,17 +836,15 @@ export class ContentManager extends HTMLElement {
         // So here I will set the address from the address found in the token and not 
         // the address of the client itself.
         let token = localStorage.getItem("user_token")
-        let decoded = JwtDecode(token);
-        let address = decoded.address;
-        let domain = decoded.domain;
+        let domain = Application.account.session.domain
+
 
         // call persist data
-        Model.getGlobule(address).persistenceService
+        Model.getGlobule(domain).persistenceService
             .deleteOne(rqst, {
                 token: token,
                 application: Model.application,
-                domain: domain,
-                address: address
+                domain: domain
             })
             .then((rsp) => {
                 // Here I will return the value with it
@@ -1005,7 +1005,7 @@ export class CodeManager extends HTMLElement {
         div.innerHTML = "";
 
         // workspace must be active.
-        if(!ApplicationView.layout.workspace()){
+        if (!ApplicationView.layout.workspace()) {
             return
         }
 
@@ -1312,7 +1312,7 @@ export class Navigation extends HTMLElement {
             pages = pages.sort((a, b) => (a.index > b.index) ? 1 : ((b.index > a.index) ? -1 : 0))
 
             for (var i = 0; i < pages.length; i++) {
-                let page = new WebPage(pages[i]._id, pages[i].name, pages[i].style, pages[i].script, pages[i].index, pages[i].elements)
+                let page = new WebPage(pages[i]._id, pages[i].name, pages[i].style, pages[i].script, pages[i].index, pages[i].elements,  pages[i].thumbnail)
                 let lnk = new NavigationPageLink(page)
                 this.appendLink(lnk)
                 if (page.index == 0) {
@@ -1603,6 +1603,8 @@ export class NavigationPageLink extends HTMLElement {
         `
 
         this.id = this.webPage.id + "_lnk"
+        
+
         this.editor = this.shadowRoot.querySelector("#page-name-editor")
         this.input = this.shadowRoot.querySelector("#page-name-editor-input")
 
@@ -1729,7 +1731,7 @@ customElements.define('globular-page-link', NavigationPageLink)
 export class WebPage extends HTMLElement {
 
     // Create the applicaiton view.
-    constructor(id, name, style, script, index, elements) {
+    constructor(id, name, style, script, index, elements, thumbnail) {
         super()
 
         // Set the shadow dom.
@@ -1738,6 +1740,12 @@ export class WebPage extends HTMLElement {
         // edit mode 
         this.edit = false
 
+        // set the thumbnail.
+        this.thumbnail = ""
+        if(thumbnail){
+            this.thumbnail = thumbnail
+        }
+
         // limit the saving time...
         this.needSave = false
 
@@ -1745,16 +1753,12 @@ export class WebPage extends HTMLElement {
         this.name = name
         if (this.hasAttribute("name")) {
             this.name = this.getAttribute("name")
-        } else if (name.length > 0) {
-            this.setAttribute("name", name)
         }
 
         // set the page id.
         this.id = id;
         if (this.hasAttribute("id")) {
             this.id = this.getAttribute("id")
-        } else if (id.length > 0) {
-            this.setAttribute("id", id)
         }
 
         // The page index (use by navigation)
@@ -1924,7 +1928,7 @@ export class WebPage extends HTMLElement {
         // Now I will create the sytle element.
         this.style_ = document.createElement("style")
 
-        if (style.length == 0) {
+        if (style) {
 
             style = `
 /** Page style here */
@@ -2162,7 +2166,7 @@ export class WebPage extends HTMLElement {
         this.loadPageData(data => {
             let dataElements = getDataElements(data.elements)
             removeSearchIndex_(dataElements)
-        }, (err)=>{
+        }, (err) => {
             console.log(err)
             callback()
         })
@@ -2183,17 +2187,14 @@ export class WebPage extends HTMLElement {
         // So here I will set the address from the address found in the token and not 
         // the address of the client itself.
         let token = localStorage.getItem("user_token")
-        let decoded = JwtDecode(token);
-        let address = decoded.address;
-        let domain = decoded.domain;
+        let domain = Application.account.session.domain
 
         // call persist data
-        Model.getGlobule(address).searchService.deleteDocument(rqst,
+        Model.getGlobule(domain).searchService.deleteDocument(rqst,
             {
                 token: token,
                 application: Model.application,
-                domain: domain,
-                address: address
+                domain: domain
             }
         ).then(() => {
             console.log("remove indexation success!")
@@ -2226,21 +2227,21 @@ export class WebPage extends HTMLElement {
             // So here I will set the address from the address found in the token and not 
             // the address of the client itself.
             let token = localStorage.getItem("user_token")
-            let decoded = JwtDecode(token);
-            let address = decoded.address;
-            let domain = decoded.domain;
+            let domain = Application.account.session.domain
+
 
             // call persist data
-            Model.getGlobule(address).persistenceService
+            Model.getGlobule(domain).persistenceService
                 .deleteOne(rqst, {
                     token: token,
                     application: Model.application,
-                    domain: domain,
-                    address: address
+                    domain: domain
                 })
                 .then((rsp) => {
                     // Here I will return the value with it
-                    callback(this)
+                    PermissionManager.deleteResourcePermissions(this.id, () => {
+                        callback(this)
+                    }, errorCallback)
                 })
                 .catch((err) => {
                     errorCallback(err);
@@ -2278,17 +2279,15 @@ export class WebPage extends HTMLElement {
             rqst.setId("Id")
             rqst.setIndexsList(["PageId", "Id", "Text"])
             let token = localStorage.getItem("user_token")
-            let decoded = JwtDecode(token);
-            let address = decoded.address;
-            let domain = decoded.domain;
+            let domain = Application.account.session.domain
+
 
             // call persist data
-            Model.getGlobule(address).searchService
+            Model.getGlobule(domain).searchService
                 .indexJsonObject(rqst, {
                     token: token,
                     application: Model.application,
-                    domain: domain,
-                    address: address
+                    domain: domain
                 })
                 .then((rsp) => {
                     callback()
@@ -2315,17 +2314,14 @@ export class WebPage extends HTMLElement {
         // So here I will set the address from the address found in the token and not 
         // the address of the client itself.
         let token = localStorage.getItem("user_token")
-        let decoded = JwtDecode(token);
-        let address = decoded.address;
-        let domain = decoded.domain;
+        let domain = Application.account.session.domain
 
         // call persist data
-        Model.getGlobule(address).persistenceService
+        Model.getGlobule(domain).persistenceService
             .findOne(rqst, {
                 token: token,
                 application: Model.application,
-                domain: domain,
-                address: address
+                domain: domain
             })
             .then(rsp => {
                 // Here I will return the value with it
@@ -2334,6 +2330,8 @@ export class WebPage extends HTMLElement {
             })
             .catch(errorCallback);
     }
+
+
 
     // Save the actual content.
     save(callback, errorCallback) {
@@ -2344,6 +2342,7 @@ export class WebPage extends HTMLElement {
         }
 
         this.needSave = false
+
 
         // I will remove all highligted text..
         let highlighted = document.getElementsByClassName("highlighted")
@@ -2375,72 +2374,90 @@ export class WebPage extends HTMLElement {
                     }, errorCallback)
                 } else {
 
-                    // create a string from page information..
-                    let str = JSON.stringify({ _id: this.id, name: this.name, style: this.style_.innerText, script: this.script_.innerText, index: this.index, user_id: localStorage.getItem("user_id"), elements: elements })
+                    // Validate the access firt...
+                    PermissionManager.validateAccess(this.id, "write", Application.account.id + "@" + Application.account.domain, SubjectType.ACCOUNT, () => {
+                        // generate the thumbnail
+                        domtoimage.toJpeg(this, { quality: 0.95 })
+                            .then((dataUrl) => {
+                                this.thumbnail = dataUrl
 
-                    // save the user_data
-                    let rqst = new ReplaceOneRqst();
-                    let db = Model.application + "_db";
-
-                    // set the connection infos,
-                    rqst.setId(Model.application);
-                    rqst.setDatabase(db);
-                    let collection = "WebPages";
-
-                    // save only user data and not the how user info...
-                    rqst.setCollection(collection);
-                    rqst.setQuery(`{"_id":"${this.id}"}`);
-                    rqst.setValue(str);
-                    rqst.setOptions(`[{"upsert": true}]`);
-
-                    // So here I will set the address from the address found in the token and not 
-                    // the address of the client itself.
-                    let token = localStorage.getItem("user_token")
-                    let decoded = JwtDecode(token);
-                    let address = decoded.address;
-                    let domain = decoded.domain;
-
-                    // call persist data
-                    Model.getGlobule(address).persistenceService
-                        .replaceOne(rqst, {
-                            token: token,
-                            application: Model.application,
-                            domain: domain,
-                            address: address
-                        })
-                        .then((rsp) => {
-                            // Here I will return the value with it
-                            Model.publish(`update_page_${this.id}_evt`, str, false)
-
-                            // Eval the script to make modification effective...
-                            let scripts = this.querySelectorAll("script")
-                            for (var i = 0; i < scripts.length; i++) {
-                                let s = scripts[i]
-                                if (s.reload) {
-                                    let parent = s.parentNode
-                                    parent.removeChild(s)
-
-                                    let s_ = document.createElement("script")
-
-                                    s_.id = s.id
-                                    s_.name = s.name
-                                    s_.innerText = s.innerText.split("<br>").join("") // remove beautify...
-                                    parent.appendChild(s_)
-                                }
-                            }
-
-                            this.saveSearchIndex(this.id, this.name, elements, () => {
-                                callback(this);
-                            }, err => {
-                                console.log("err ", err)
-                                ApplicationView.displayMessage(err, 3000);
-                            })
+                                // create a string from page information..
+                                let str = JSON.stringify({ _id: this.id, name: this.name, style: this.style_.innerText, script: this.script_.innerText, index: this.index, user_id: Application.account.id + "@" + Application.account.domain, elements: elements, thumbnail: this.thumbnail })
 
 
-                        })
-                        .catch((err) => {
-                            errorCallback(err);
-                        });
+                                // save the user_data
+                                let rqst = new ReplaceOneRqst();
+                                let db = Model.application + "_db";
+
+                                // set the connection infos,
+                                rqst.setId(Model.application);
+                                rqst.setDatabase(db);
+                                let collection = "WebPages";
+
+                                // save only user data and not the how user info...
+                                rqst.setCollection(collection);
+                                rqst.setQuery(`{"_id":"${this.id}"}`);
+                                rqst.setValue(str);
+                                rqst.setOptions(`[{"upsert": true}]`);
+
+                                // So here I will set the address from the address found in the token and not 
+                                // the address of the client itself.
+                                let token = localStorage.getItem("user_token")
+                                let domain = Application.account.session.domain
+
+
+                                // call persist data
+                                Model.getGlobule(domain).persistenceService
+                                    .replaceOne(rqst, {
+                                        token: token,
+                                        application: Model.application,
+                                        domain: domain,
+                                    })
+                                    .then((rsp) => {
+
+                                        // set the resource owner...
+                                        PermissionManager.addResourceOwner(this.id, "webpage", Application.account.id + "@" + Application.account.domain, SubjectType.ACCOUNT, () => {
+                                            console.log("Web Page " + this.name, " is owned by " + Application.account.name)
+
+                                            // Here I will return the value with it
+                                            Model.publish(`update_page_${this.id}_evt`, str, false)
+
+                                            // Eval the script to make modification effective...
+                                            let scripts = this.querySelectorAll("script")
+                                            for (var i = 0; i < scripts.length; i++) {
+                                                let s = scripts[i]
+                                                if (s.reload) {
+                                                    let parent = s.parentNode
+                                                    parent.removeChild(s)
+
+                                                    let s_ = document.createElement("script")
+
+                                                    s_.id = s.id
+                                                    s_.name = s.name
+                                                    s_.innerText = s.innerText.split("<br>").join("") // remove beautify...
+                                                    parent.appendChild(s_)
+                                                }
+                                            }
+
+                                            this.saveSearchIndex(this.id, this.name, elements, () => {
+                                                callback(this);
+                                            }, err => {
+                                                console.log("err ", err)
+                                                ApplicationView.displayMessage(err, 3000);
+                                            })
+
+                                        }, err => ApplicationView.displayMessage(err, 3000))
+
+                                    })
+                                    .catch((err) => {
+                                        errorCallback(err);
+                                    });
+                            });
+
+
+                    }, err => ApplicationView.displayMessage(err))
+
+
                 }
             }
 

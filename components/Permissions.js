@@ -16,7 +16,7 @@ import '@polymer/iron-icons/editor-icons'
 import { GetApplicationsRqst, GetPackagesDescriptorRequest, Organization, RejectPeerRqst } from "globular-web-client/resource/resource_pb";
 import { GetFileInfoRequest } from "globular-web-client/file/file_pb";
 import { File } from "../File";
-import { ApplicationInfo, BlogPostInfo, ConversationInfo, DomainInfo, FileInfo, GroupInfo, OrganizationInfo, PackageInfo, RoleInfo } from "./Informations";
+import { ApplicationInfo, BlogPostInfo, ConversationInfo, DomainInfo, FileInfo, GroupInfo, OrganizationInfo, PackageInfo, RoleInfo, WebpageInfo } from "./Informations";
 import * as getUuidByString from "uuid-by-string";
 import { getAllPeers, getPeerById } from "./Peers";
 import * as JwtDecode from "jwt-decode";
@@ -24,6 +24,8 @@ import { GetConversationRequest, GetConversationsRequest } from "globular-web-cl
 import { getRoleById } from "./Role";
 import { LogRqst } from "globular-web-client/log/log_pb";
 import { GetBlogPostsRequest } from "globular-web-client/blog/blog_pb";
+import { PermissionManager } from "../Permission";
+import { FindOneRqst } from "globular-web-client/persistence/persistence_pb";
 
 /**
  * Sample empty component
@@ -34,7 +36,7 @@ export class PermissionsManager extends HTMLElement {
     // Create the applicaiton view.
     constructor() {
         super()
-        
+
         // The active globule
         this.globule = Model.globular
 
@@ -427,7 +429,7 @@ export class PermissionPanel extends HTMLElement {
     // Create the applicaiton view.
     constructor(permissionManager) {
         super()
-        
+
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
 
@@ -637,7 +639,7 @@ export class PermissionPanel extends HTMLElement {
                             index = this.permission.getOrganizationsList().indexOf(o.getId() + "@" + o.getDomain())
                         }
                         if (index == -1) {
-                            this.permission.getOrganizationsList().push(o.getId()  + "@" + o.getDomain())
+                            this.permission.getOrganizationsList().push(o.getId() + "@" + o.getDomain())
                             this.permissionManager.savePermissions()
                             organizationList.appendItem(o)
                         }
@@ -687,7 +689,7 @@ export class PermissionPanel extends HTMLElement {
                             index = this.permission.getApplicationsList().indexOf(a.getId() + "@" + a.getDomain())
                         }
                         if (index == -1) {
-                            this.permission.getApplicationsList().push(a.getId()+ "@" + a.getDomain())
+                            this.permission.getApplicationsList().push(a.getId() + "@" + a.getDomain())
                             this.permissionManager.savePermissions()
                             applicationList.appendItem(a)
                         }
@@ -1198,6 +1200,58 @@ export class PermissionsViewer extends HTMLElement {
 customElements.define('globular-permissions-viewer', PermissionsViewer)
 
 /**
+ * Return web page
+ */
+function getWebpage(id, callback, errorCallback) {
+    const collection = "WebPages";
+
+    // save the user_data
+    let rqst = new FindOneRqst();
+    let db = Model.application + "_db";
+
+    // set the connection infos,
+    rqst.setId(Model.application);
+    rqst.setDatabase(db);
+    rqst.setCollection(collection)
+    rqst.setQuery(`{"_id":"${id}"}`)
+
+    // So here I will set the address from the address found in the token and not 
+    // the address of the client itself.
+    let token = localStorage.getItem("user_token")
+    let domain = Application.account.session.domain
+
+    // call persist data
+    Model.getGlobule(domain).persistenceService
+        .findOne(rqst, {
+            token: token,
+            application: Model.application,
+            domain: domain
+        })
+        .then(rsp => {
+            // Here I will return the value with it
+            let webPage = rsp.getResult().toJavaScript();
+
+            // the path that point to the resource
+            webPage.getPath = () => {
+                return webPage._id
+            }
+
+            // The brief description.
+            webPage.getHeaderText = () => {
+                return webPage.name
+            }
+
+            // return file information panel...
+            webPage.getInfo = () => {
+                return new WebpageInfo(webPage)
+            }
+
+            callback(webPage);
+        })
+        .catch(errorCallback);
+}
+
+/**
  * Return application info.
  */
 function getApplication(id, callback, errorCallback) {
@@ -1333,7 +1387,7 @@ function getConversation(id, callback, errorCallback) {
 
     rqst.setId(id)
     let globule = Model.getGlobule(address)
-    
+
     globule.conversationService.getConversation(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
         .then(rsp => {
 
@@ -1369,7 +1423,7 @@ function getFile(path, callback, errorCallback, globule) {
     rqst.setPath(path)
     rqst.setThumnailheight(80)
     rqst.setThumnailwidth(128)
-    if(!globule){
+    if (!globule) {
         globule = Model.globular
     }
 
@@ -1580,13 +1634,14 @@ export class ResourcesPermissionsManager extends HTMLElement {
         // append list of different resources by type.
         this.appendResourcePermissions("application", getApplication)
         this.appendResourcePermissions("blog", getBlog)
-        this.appendResourcePermissions("domain", getDomain)
         this.appendResourcePermissions("conversation", getConversation)
+        this.appendResourcePermissions("domain", getDomain)
         this.appendResourcePermissions("file", getFile)
         this.appendResourcePermissions("group", getGroup)
         this.appendResourcePermissions("organization", getOrganization)
         this.appendResourcePermissions("package", getPackage)
         this.appendResourcePermissions("role", getRole)
+        this.appendResourcePermissions("webpage", getWebpage)
     }
 
     appendResourcePermissions(typeName, fct) {
@@ -1709,15 +1764,22 @@ export class ResourcesPermissionsType extends HTMLElement {
             }
         }
 
+
         this.getResourcePermissionsByResourceType(permissions => {
-            this.shadowRoot.querySelector("#counter").innerHTML = permissions.length.toString()
+            let count = 0
             permissions.forEach(p => {
                 if (this.getResource) {
                     this.getResource(p.getPath(), (r) => {
                         let r_ = new ResourcePermissions(r)
                         r_.id = "_" + getUuidByString(p.getPath())
                         this.appendChild(r_)
-                    }, err => ApplicationView.displayMessage(err, 3000))
+                        count++
+                        this.shadowRoot.querySelector("#counter").innerHTML = count
+                    }, err => {
+                        console.log(err)
+                        // delete the permissions if the resource dosent exist.
+                        PermissionManager.deleteResourcePermissions(p.getPath(), err=>ApplicationView.displayMessage(err, 3000))
+                    })
                 }
             })
         })
@@ -1753,6 +1815,7 @@ export class ResourcesPermissionsType extends HTMLElement {
 
     // Get the list of permission by type...
     getResourcePermissionsByResourceType(callback) {
+        console.log("try to find resource permissions for ", this.resource_type)
         let rqst = new GetResourcePermissionsByResourceTypeRqst
         rqst.setResourcetype(this.resource_type)
         let permissions = [];

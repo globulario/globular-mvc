@@ -1,4 +1,4 @@
-import { Model } from "./Model";
+import { generatePeerToken, Model } from "./Model";
 import * as resource from "globular-web-client/resource/resource_pb";
 import * as authentication from "globular-web-client/authentication/authentication_pb"
 //import 'source-map-support/register' // That resolve the error map and give real source name and plage in function.
@@ -496,8 +496,8 @@ export class Application extends Model {
 
             // Connect to to the conversation manager.
             ConversationManager.connect((err: any) => {
-                ApplicationView.displayMessage(err, 3000)
-              })
+              ApplicationView.displayMessage(err, 3000)
+            })
 
             this.initNotifications();
             this.startRefreshToken();
@@ -890,16 +890,21 @@ export class Application extends Model {
     onLogin: (account: Account) => void,
     onError: (err: any) => void
   ) {
+
+    let globule = Model.globular
+    if (userId.indexOf("@") != -1) {
+
+      globule = Model.getGlobule(userId.split("@")[1])
+    }
+
+
     let rqst = new authentication.AuthenticateRqst();
     rqst.setName(userId);
     rqst.setPassword(password);
     rqst.setIssuer(Model.globular.config.Mac) // The token will be issue for the current globule.
 
     ApplicationView.wait("<div>log in</div><div>" + userId + "</div><div>...</div>");
-    let globule = Model.globular
-    if (userId.indexOf("@") != -1) {
-      globule = Model.getGlobule(userId.split("@")[1])
-    }
+
 
     globule.authenticationService
       .authenticate(rqst)
@@ -926,6 +931,7 @@ export class Application extends Model {
         let rqst = new CreateConnectionRqst
         let connectionId = userName.split("@").join("_").split(".").join("_");
 
+
         // So here i will open the use database connection.
         let connection = new Connection
         connection.setId(connectionId)
@@ -935,11 +941,11 @@ export class Application extends Model {
         connection.setName(id)
         connection.setPort(27017)
         connection.setTimeout(60)
-        connection.setHost(Model.domain)
+        connection.setHost(userDomain)
         rqst.setConnection(connection)
-
+        console.log("globule: ", globule.config.Domain)
         globule.persistenceService.createConnection(rqst, {
-          token: localStorage.getItem("user_token"),
+          token: token,
           application: Model.application,
           domain: Model.domain,
           address: address
@@ -998,9 +1004,9 @@ export class Application extends Model {
               })
 
             // Connect to to the conversation manager.
-            ConversationManager.connect( (err: any) => {
-                ApplicationView.displayMessage(err, 3000)
-              })
+            ConversationManager.connect((err: any) => {
+              ApplicationView.displayMessage(err, 3000)
+            })
 
             //ApplicationView.resume();
             this.initNotifications();
@@ -1011,10 +1017,8 @@ export class Application extends Model {
             onError(err);
           })
         }).catch((err: any) => {
-          console.log(err)
+          console.log("fail to create the connection ", err)
         })
-
-
 
       })
       .catch((err) => {
@@ -1036,8 +1040,8 @@ export class Application extends Model {
     if (Application.account != undefined) {
 
       // refresh the page to be sure all variable are clear...
-      ApplicationView.wait("bye bye "+ Application.account.name+"!")
-      
+      ApplicationView.wait("bye bye " + Application.account.name + "!")
+
       // So here I will set the account session state to onlise.
       Application.account.session.state = SessionState.Offline;
 

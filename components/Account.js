@@ -913,6 +913,10 @@ export class ExternalAccountManager extends HTMLElement {
             padding-left: 8px;
             padding-bottom: 15px;
           }
+
+          .card-content{
+            padding: 0px;
+          }
       </style>
       <div id="container">
           <div class="title">Manage external accounts</div>

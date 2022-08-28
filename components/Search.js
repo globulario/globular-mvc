@@ -417,16 +417,12 @@ function searchWebpageContent(query, callback) {
     rqst.setQuery(query)
 
     let token = localStorage.getItem("user_token")
-    let decoded = JwtDecode(token);
-    let address = decoded.address;
-    let domain = decoded.domain;
     let startTime = performance.now()
 
-    let stream = Model.getGlobule(address).searchService.searchDocuments(rqst, {
+    let stream = Model.getGlobule(Application.account.session.domain).searchService.searchDocuments(rqst, {
         token: token,
         application: Model.application,
-        domain: domain,
-        address: address
+        domain: Model.application
     })
 
     let results = []
