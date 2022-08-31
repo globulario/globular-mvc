@@ -1252,12 +1252,15 @@ export class WebpageInfo extends HTMLElement {
 
             .image-box {
                 width: 120px;
+                max-height: 120px;
+                overflow: hidden;
                 height: auto;
                 
             }
 
             .image-box img {
                 width: 100%;
+
                 -o-object-fit: cover;
                 object-fit: cover;
             }
