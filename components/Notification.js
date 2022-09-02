@@ -237,7 +237,7 @@ export class NotificationMenu extends Menu {
     }
 
     init() {
-        
+
         // The logout event.
         Model.eventHub.subscribe("logout_event",
             (uuid) => {
@@ -284,13 +284,14 @@ export class NotificationMenu extends Menu {
                 this.account_notification_listener = uuid
             },
             (evt) => {
-                this.setNotificationCount()
                 let notification = Notification.fromString(evt)
                 this.appendNofication(this.userNotificationsPanel, notification)
                 if (!this.userNotificationsCollapse.opened) {
                     this.userNotificationsCollapse.toggle()
                 }
+                this.setNotificationCount()
             }, false)
+
 
     }
 

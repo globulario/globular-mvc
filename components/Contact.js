@@ -17,9 +17,13 @@ import '@polymer/paper-tabs/paper-tab.js';
 import { Menu } from './Menu';
 import { getTheme } from "./Theme";
 import { Account } from "../Account"
-import { Model } from "../Model"
+import { Model, generatePeerToken } from "../Model"
 import { ApplicationView } from '../ApplicationView';
 import "./Autocomplete"
+import { CreateNotificationRqst, SessionState, Notification, NotificationType } from 'globular-web-client/resource/resource_pb';
+import { Notification as Notification_ } from '../Notification';
+import { randomUUID } from './utility';
+import { Application } from '../Application';
 
 /**
  * Login/Register functionality.
@@ -581,6 +585,7 @@ export class ContactList extends HTMLElement {
 
         this.account = account;
         this.onDeleteContact = onDeleteContact;
+
         let globule = Model.getGlobule(account.session.domain)
 
         globule.eventHub.subscribe("accepted_" + account.id + "@" + account.domain + "_evt",
@@ -662,10 +667,15 @@ export class ContactList extends HTMLElement {
             return
         }
 
+        this.innerHtml = ""
+
         let card = new ContactCard(this.account, contact)
         card.id = id
 
+        card.setCallButton(this.onCallContact)
+
         card.setDeleteButton(this.onDeleteContact)
+
         contactLst.appendChild(card)
         this.badge.label = contactLst.children.length
         this.badge.style.display = "block"
@@ -682,6 +692,74 @@ export class ContactList extends HTMLElement {
                 this.badge.style.display = "none"
             }
         }
+    }
+
+    onCallContact(contact) {
+        console.log("call ", contact.id + "@" + contact.domain)
+        let globule = Model.getGlobule(contact.domain)
+
+        generatePeerToken(globule.config.Mac, token => {
+            // If the contact is online I will try to call it...
+            if (contact.session.state == SessionState.ONLINE) {
+
+            } else {
+                // Here I will send notification.
+                let rqst = new CreateNotificationRqst
+                let notification = new Notification
+
+                notification.setDate(parseInt(Date.now() / 1000)) // Set the unix time stamp...
+                notification.setId(randomUUID())
+                notification.setRecipient(contact.id + "@" + contact.domain)
+                notification.setSender(Application.account.id + "@" + Application.account.domain)
+                notification.setNotificationType(NotificationType.USER_NOTIFICATION)
+
+                let date = new Date()
+                let msg = `
+                <div style="display: flex; flex-direction: column; padding: 16px;">
+                    <div>
+                        ${date.toLocaleString()}
+                    </div>
+                    <div>
+                        Missed call from ${Application.account.name}
+                    </div>
+                </div>
+                `
+
+                notification.setMessage(msg)
+                rqst.setNotification(notification)
+
+                // Create the notification...
+                globule.resourceService.createNotification(rqst, {
+                    token: token,
+                    application: Model.application,
+                    domain: Model.domain,
+                    address: Model.address
+                }).then((rsp) => {
+                    let msg = `
+                    <div>
+                        ${contact.name} was notified off your call attempt.
+                    </div>
+                    `
+                    ApplicationView.displayMessage(msg, 3000)
+                }).catch(err => {
+                    ApplicationView.displayMessage(err, 3000);
+                    console.log(err)
+                })
+
+                // use the ts class to send notification...
+                let notification_ = new Notification_
+                notification_.id = notification.getId()
+                notification_.date = date
+                notification_.sender = notification.getSender()
+                notification_.recipient = notification.getRecipient()
+                notification_.text = notification.getMessage()
+                notification_.type = 0
+
+                // Send notification...
+                Model.getGlobule(contact.session.domain).eventHub.publish(contact.id + "@" + contact.domain + "_notification_event", notification_.toString(), false)
+            }
+        }, err => ApplicationView.displayMessage(err, 3000))
+
     }
 }
 
@@ -840,13 +918,24 @@ export class ContactCard extends HTMLElement {
     }
 
     setDeleteButton(onDeleteContact) {
-        this.innerHtml = ""
+
         let range = document.createRange()
         this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.85em; width: 20px; align-self: flex-end;" id="delete_btn">Delete</paper-button>`))
 
         this.querySelector("#delete_btn").onclick = () => {
             if (onDeleteContact != null) {
                 onDeleteContact(this.contact)
+            }
+        }
+    }
+
+    setCallButton(onCallContact) {
+        let range = document.createRange()
+        this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.85em; width: 20px; align-self: flex-end;" id="call_btn">Call</paper-button>`))
+
+        this.querySelector("#call_btn").onclick = () => {
+            if (onCallContact != null) {
+                onCallContact(this.contact)
             }
         }
     }

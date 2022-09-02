@@ -1178,6 +1178,7 @@ export class Application extends Model {
         ApplicationView.displayMessage(err, 4000);
       }
     );
+
   }
 
   /**
