@@ -93,7 +93,7 @@ export class SessionState extends HTMLElement {
 
         </style>
         <div class="session-state-panel">
-            <iron-icon icon="device:access-time"></iron-icon>
+            <iron-icon icon="device:access-time" style="padding-left: 8px;"></iron-icon>
             <span id="${sessionStateId}"></span>
             <span id="${sessionTimerId}"></span>
             <paper-toggle-button title="Appear away to other's" noink>Away</paper-toggle-button>

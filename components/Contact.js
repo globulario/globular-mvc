@@ -15,6 +15,7 @@ import '@polymer/paper-tabs/paper-tabs.js';
 import '@polymer/paper-tabs/paper-tab.js';
 
 import { Menu } from './Menu';
+import {Ringtone} from './Ringtone'
 import { getTheme } from "./Theme";
 import { Account } from "../Account"
 import { Model, generatePeerToken } from "../Model"
@@ -872,12 +873,9 @@ export class ContactCard extends HTMLElement {
             .actions-div{
                 display: flex;
                 justify-content: flex-end;
-                position: absolute;
-                bottom: 0px;
-                right: 0px;
             }
 
-            globular-session-state{
+            globular-session-state, globular-ringtones {
                 padding: 8px;
             }
 
@@ -893,6 +891,7 @@ export class ContactCard extends HTMLElement {
                 </div>
             </div>
             <globular-session-state account="${this.contact.id + "@" + this.contact.domain}"></globular-session-state>
+            <globular-ringtones dir="audio/ringtone" account="${this.contact.id + "@" + this.contact.domain}"> </globular-ringtones>
             <div class="actions-div">
                 <slot></slot>
             </div>
