@@ -1,6 +1,6 @@
 {
   "name": "globular-mvc",
-  "version": "1.0.80",
+  "version": "1.0.81",
   "description": "Generic template to create web-application that made use of globular as backend and materialize as css (wrap in web-component's)",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -70,7 +70,7 @@
     "dom-to-image": "^2.6.0",
     "editorjs-html": "^3.4.2",
     "emoji-picker-element": "^1.8.2",
-    "globular-web-client": "^1.1.282",
+    "globular-web-client": "^1.1.283",
     "google-charts": "^2.0.0",
     "hls.js": "^1.1.5-0.canary.8270",
     "html-beautify": "^1.0.4",

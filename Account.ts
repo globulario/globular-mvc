@@ -76,6 +76,16 @@ export class Account extends Model {
         this.profilPicture_ = value;
     }
 
+    // The ringtone for that user...
+    private ringtone_: string;
+    public get ringtone(): string {
+        return this.ringtone_;
+    }
+
+    public set ringtone(value: string) {
+        this.ringtone_ = value;
+    }
+
     // The user firt name
     private firstName_: string;
     public get firstName(): string {
@@ -455,6 +465,7 @@ export class Account extends Model {
 
                 Account.getContacts(this, `{}`,
                     (contacts: []) => {
+                        console.log(contacts)
                         // Set the list of contacts (received invitation, sent invitation and actual contact id's)
                         if (this.session != undefined) {
                             this.session.initData(() => {
@@ -622,6 +633,14 @@ export class Account extends Model {
         contact.setId(to.id + "@" + to.domain)
         contact.setStatus(status_from)
         contact.setInvitationtime(Math.round(Date.now() / 1000))
+
+        // Set optional values...
+        if (to.ringtone)
+            contact.setRingtone(to.ringtone)
+
+        if(to.profilPicture)
+            contact.setProfilepicture(to.profilPicture)
+
         rqst.setContact(contact)
         let token = localStorage.getItem("user_token")
         let globule = Model.getGlobule(from.domain)

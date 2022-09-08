@@ -6,6 +6,8 @@ import { ApplicationView } from "../ApplicationView";
 import * as getUuidByString from "uuid-by-string";
 import "@polymer/iron-icons/av-icons";
 import { Application } from "../Application";
+import { Account } from "../Account";
+import { Contact, SetAccountContactRqst } from "globular-web-client/resource/resource_pb.js";
 
 /**
  * Sample empty component
@@ -18,6 +20,8 @@ export class Ringtones extends HTMLElement {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
+
+        this.account = null;
 
 
         // Innitialisation of the layout.
@@ -82,20 +86,39 @@ export class Ringtones extends HTMLElement {
             return;
         }
 
-        let path = Model.globular.config.WebRoot + "/webroot/" + Model.application + "/" + this.getAttribute("dir")
+        // Now I will save the contact ringtone...
+        Account.getAccount(this.getAttribute("account"), contact => {
+            this.account = contact;
 
-        readDir(Model.globular, path, false, (data) => {
-            let dir = File.fromObject(data)
-            dir.files.forEach(f => {
-                this.appendChild(new Ringtone(f, this))
-            });
+            Account.getContacts(Application.account, `{"_id":"${contact.id + "@" + contact.domain}"}`, contacts => {
+                if (contacts[0].ringtone) {
+                    this.account.ringtone = contacts[0].ringtone
+                }
 
-            // set the firt ringtone by default...
-            if (this.children.length > 0) {
-                this.setRingtone(this.children[0])
-            }
+
+                // Now I will set the file...
+                let path = Model.globular.config.WebRoot + "/webroot/" + Model.application + "/" + this.getAttribute("dir")
+                readDir(Model.globular, path, false, (data) => {
+                    let dir = File.fromObject(data)
+                    dir.files.forEach(f => {
+                        let ringtone = new Ringtone(f, this)
+                        this.appendChild(ringtone)
+                    });
+
+                    // set the firt ringtone by default...
+                    if (this.children.length > 0 && !this.account.ringtone) {
+                        this.setRingtone(this.children[0])
+                    } else {
+                        let id = "_" + getUuidByString(this.account.ringtone)
+                        let ringtone = this.querySelector("#"+id)
+                        this.setRingtone(ringtone)
+                    }
+
+                }, err => ApplicationView.displayMessage(err, 3000))
+            }, err => ApplicationView.displayMessage(err, 3000))
 
         }, err => ApplicationView.displayMessage(err, 3000))
+
     }
 
     setRingtone(ringtone) {
@@ -114,6 +137,38 @@ export class Ringtones extends HTMLElement {
 
         let ringtonesDiv = this.shadowRoot.querySelector("#ringtones")
         ringtonesDiv.style.display = "none"
+
+
+        // set the file path.
+        this.account.ringtone = ringtone.file.path
+
+        // Here I will return the value with it
+        let rqst = new SetAccountContactRqst
+        rqst.setAccountid(Application.account.id + "@" + Application.account.domain)
+
+        let contact = new Contact
+        contact.setId(this.account.id + "@" + this.account.domain)
+        contact.setStatus("accepted")
+        contact.setRingtone(this.account.ringtone)
+        if(this.account.profilPicture)
+            contact.setProfilepicture(this.account.profilPicture)
+
+        contact.setInvitationtime(Math.round(Date.now() / 1000))
+        rqst.setContact(contact)
+        let token = localStorage.getItem("user_token")
+
+        // call persist data
+        Model.getGlobule(Application.account.domain).resourceService
+            .setAccountContact(rqst, {
+                token: token,
+                application: Model.application,
+                domain: Model.domain
+            })
+            .then((rsp) => {
+                // Here I will return the value with it
+                console.log("contact was save!")
+            })
+            .catch(err=>ApplicationView(err, 3000));
     }
 
 }
@@ -131,7 +186,7 @@ export class Ringtone extends HTMLElement {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
-        let id = "_" + getUuidByString(file.name)
+        this.id = "_" + getUuidByString(file.path)
 
         this.parent = parent;
 
@@ -152,7 +207,7 @@ export class Ringtone extends HTMLElement {
             <paper-icon-button id="play-button" icon="av:play-arrow"></paper-icon-button>
             <paper-icon-button id="stop-button" icon="av:stop" style="display: none;"></paper-icon-button>
 
-            <span id="${id}" style="flex-grow: 1;">${file.name}</span>
+            <span style="flex-grow: 1;">${file.name}</span>
 
             <paper-button id="set-button" style="font-size: .75em;">set</paper-button>
 
