@@ -1,5 +1,5 @@
 import { getTheme } from "./Theme.js";
-import { readDir } from "globular-web-client/api";
+import { deleteFile, readDir, uploadFiles } from "globular-web-client/api";
 import { Model } from '../Model'
 import { File } from '../File'
 import { ApplicationView } from "../ApplicationView";
@@ -57,8 +57,12 @@ export class Ringtones extends HTMLElement {
 
         <div  id="container">
             <div id="ringtone-div">
+                
                 <div id="ringtone"></div>
-                <paper-icon-button id="ringtones-buttons" icon="arrow-drop-down"></paper-icon-button>
+                <paper-icon-button id="ringtones-button" icon="arrow-drop-down"></paper-icon-button>
+                <span style="flex-grow: 1;"></span>
+                <paper-icon-button id="upload-button" icon="icons:file-upload"></paper-icon-button>
+
             </div>
             <div id="ringtones" style="display: none;">
                 <slot></slot>
@@ -70,11 +74,40 @@ export class Ringtones extends HTMLElement {
         this.container = this.shadowRoot.querySelector("#container")
         let ringtonesDiv = this.shadowRoot.querySelector("#ringtones")
 
-        this.shadowRoot.querySelector("#ringtones-buttons").onclick = () => {
+        this.shadowRoot.querySelector("#ringtones-button").onclick = () => {
             if (ringtonesDiv.style.display == "none") {
                 ringtonesDiv.style.display = "flex"
+                this.shadowRoot.querySelector("#upload-button").style.display = "flex"
             } else {
                 ringtonesDiv.style.display = "none"
+                this.shadowRoot.querySelector("#upload-button").style.display = "none"
+            }
+        }
+
+        // upload a new ringtone
+        this.shadowRoot.querySelector("#upload-button").onclick = () => {
+            console.log("upload ring tone!")
+            var input = document.createElement('input');
+            input.type = 'file';
+            input.accept = ".mp3"
+            input.click();
+
+            input.onchange = (evt) => {
+                const files = evt.target.files
+                if (files && files[0]) {
+
+                    let globule = Application.getGlobule(Application.account.session.domain)
+
+                    // set the path...
+                    let path = "/" + Model.application + "/" + this.getAttribute("dir")
+
+                    uploadFiles(globule, localStorage.getItem("user_token"), path, files, ()=>{
+                        let f = files[0]
+                        f.path = path + "/" + f.name
+                        let ringtone = new Ringtone(f, this)
+                        this.insertBefore(ringtone, this.children[0])
+                    })
+                }
             }
         }
     }
@@ -110,7 +143,7 @@ export class Ringtones extends HTMLElement {
                         this.setRingtone(this.children[0])
                     } else {
                         let id = "_" + getUuidByString(this.account.ringtone)
-                        let ringtone = this.querySelector("#"+id)
+                        let ringtone = this.querySelector("#" + id)
                         this.setRingtone(ringtone)
                     }
 
@@ -121,14 +154,77 @@ export class Ringtones extends HTMLElement {
 
     }
 
+    deleteRingtone(ringtone) {
+
+
+            let toast = ApplicationView.displayMessage(
+                `
+              <style>
+               ${getTheme()}
+                #yes-no-contact-delete-box{
+                  display: flex;
+                  flex-direction: column;
+                }
+        
+                #yes-no-contact-delete-box globular-contact-card{
+                  padding-bottom: 10px;
+                }
+        
+                #yes-no-contact-delete-box div{
+                  display: flex;
+                  padding-bottom: 10px;
+                }
+        
+                paper-button{
+                  font-size: .85rem;
+                  height: 32px;
+                }
+        
+              </style>
+              <div id="yes-no-contact-delete-box">
+                <div>Your about to delete ringtone named ${ringtone.file.name}</div>
+                <div>Is it what you want to do? </div>
+                <div style="justify-content: flex-end;">
+                  <paper-button id="yes-delete-btn">Yes</paper-button>
+                  <paper-button id="no-delete-btn">No</paper-button>
+                </div>
+              </div>
+              `,
+                15000 // 15 sec...
+            );
+    
+            let yesBtn = document.querySelector("#yes-delete-btn")
+            let noBtn = document.querySelector("#no-delete-btn")
+    
+            // On yes
+            yesBtn.onclick = () => {
+
+                let globule = Application.getGlobule(Application.account.session.domain)
+                deleteFile(globule, ringtone.file.path,
+                    () => {
+                        this.removeChild(ringtone)
+                        toast.dismiss();
+                        ApplicationView.displayMessage("the ringtone " + ringtone.file.name, " was deleted", 3000)
+                    },
+                    err => { ApplicationView.displayMessage(err, 3000) })
+
+            }
+
+            noBtn.onclick = () => {
+                toast.dismiss();
+            }
+    }
+
     setRingtone(ringtone) {
 
         // set back the actual ringtone in the list
         ringtone.hideSetButton()
+        ringtone.hideDeleteButton()
 
         if (this.shadowRoot.querySelector("#ringtone").children.length > 0) {
             let ringtone_ = this.shadowRoot.querySelector("#ringtone").children[0]
             ringtone_.showSetButton()
+            ringtone_.showDeleteButton()
             this.appendChild(ringtone_)
         }
 
@@ -137,6 +233,7 @@ export class Ringtones extends HTMLElement {
 
         let ringtonesDiv = this.shadowRoot.querySelector("#ringtones")
         ringtonesDiv.style.display = "none"
+        this.shadowRoot.querySelector("#upload-button").style.display = "none"
 
 
         // set the file path.
@@ -150,7 +247,7 @@ export class Ringtones extends HTMLElement {
         contact.setId(this.account.id + "@" + this.account.domain)
         contact.setStatus("accepted")
         contact.setRingtone(this.account.ringtone)
-        if(this.account.profilPicture)
+        if (this.account.profilPicture)
             contact.setProfilepicture(this.account.profilPicture)
 
         contact.setInvitationtime(Math.round(Date.now() / 1000))
@@ -168,7 +265,7 @@ export class Ringtones extends HTMLElement {
                 // Here I will return the value with it
                 console.log("contact was save!")
             })
-            .catch(err=>ApplicationView(err, 3000));
+            .catch(err => ApplicationView(err, 3000));
     }
 
 }
@@ -209,6 +306,7 @@ export class Ringtone extends HTMLElement {
 
             <span style="flex-grow: 1;">${file.name}</span>
 
+            <paper-button id="delete-button" style="font-size: .75em;">delete</paper-button>
             <paper-button id="set-button" style="font-size: .75em;">set</paper-button>
 
         </div>
@@ -218,6 +316,7 @@ export class Ringtone extends HTMLElement {
         this.playBtn = this.shadowRoot.querySelector("#play-button")
         this.stopBtn = this.shadowRoot.querySelector("#stop-button")
         this.setButton = this.shadowRoot.querySelector("#set-button")
+        this.deleteButton = this.shadowRoot.querySelector("#delete-button")
 
         let globule = Application.getGlobule(Application.account.session.domain)
         let url = globule.config.Protocol + "://" + globule.config.Domain
@@ -269,6 +368,15 @@ export class Ringtone extends HTMLElement {
             this.parent.setRingtone(this)
         }
 
+        this.deleteButton.onclick = () => {
+            let ringtones = this.parent.getElementsByTagName("globular-ringtone")
+            for (var i = 0; i < ringtones.length; i++) {
+                ringtones[i].stop()
+            }
+
+            this.parent.deleteRingtone(this)
+        }
+
     }
 
     // The connection callback.
@@ -282,6 +390,14 @@ export class Ringtone extends HTMLElement {
 
     showSetButton() {
         this.setButton.style.display = ""
+    }
+
+    hideDeleteButton() {
+        this.deleteButton.style.display = "none"
+    }
+
+    showDeleteButton() {
+        this.deleteButton.style.display = ""
     }
 
     // Call search event.
