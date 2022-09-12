@@ -84,12 +84,12 @@ export function getFileSizeString(f_size) {
 }
 
 // Return the size of a file at url.
-function getFileSize(url_, callback, errorcallback){
+function getFileSize(url_, callback, errorcallback) {
     let url = window.location.protocol + "//" + window.location.host + "/file_size"
 
     var xmlhttp = new XMLHttpRequest();
     xmlhttp.timeout = 1500
-    
+
     xmlhttp.onreadystatechange = function () {
         if (this.readyState == 4 && (this.status == 201 || this.status == 200)) {
             let obj = JSON.parse(this.responseText)
@@ -118,6 +118,42 @@ function copyToClipboard(text) {
     dummy.select();
     document.execCommand("copy");
     document.body.removeChild(dummy);
+}
+
+// Now I will test if imdb info are allready asscociated.
+function getTitleInfo(globule, file, callback) {
+    let rqst = new GetFileTitlesRequest
+    rqst.setIndexpath(globule.config.DataPath + "/search/titles")
+
+    rqst.setFilepath(file.path)
+
+    globule.titleService.getFileTitles(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
+        .then(rsp => {
+            callback(rsp.getTitles().getTitlesList())
+        })
+        .catch(err => {
+            // so here no title was found...
+
+            callback([])
+        })
+}
+
+
+function getVideoInfo(globule, file, callback) {
+
+    let rqst = new GetFileVideosRequest
+    console.log("read title for file ", file.path)
+    rqst.setIndexpath(globule.config.DataPath + "/search/videos")
+    rqst.setFilepath(file.path)
+
+    globule.titleService.getFileVideos(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
+        .then(rsp => {
+            let videos = rsp.getVideos().getVideosList()
+            callback(videos)
+        })
+        .catch(err => {
+            callback([])
+        })
 }
 
 function formatBytes(bytes, decimals = 2) {
@@ -260,12 +296,13 @@ function _readDir(path, callback, errorCallback, globule, force = false) {
 function getHiddenFiles(path, callback, globule) {
 
     let thumbnailPath = path.replace("/playlist.m3u8", "")
-    if (thumbnailPath.lastIndexOf(".mp4") != -1 || thumbnailPath.lastIndexOf(".mkv") != -1 || thumbnailPath.lastIndexOf(".avi") != -1 || thumbnailPath.lastIndexOf(".MP4") != -1 || thumbnailPath.lastIndexOf(".MKV") != -1 || thumbnailPath.lastIndexOf(".AVI") != -1) {
+    if (thumbnailPath.lastIndexOf(".mp3") != -1 || thumbnailPath.lastIndexOf(".mp4") != -1 || thumbnailPath.lastIndexOf(".mkv") != -1 || thumbnailPath.lastIndexOf(".avi") != -1 || thumbnailPath.lastIndexOf(".MP4") != -1 || thumbnailPath.lastIndexOf(".MKV") != -1 || thumbnailPath.lastIndexOf(".AVI") != -1) {
         thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("."))
     }
+
     thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/__preview__"
 
-    _readDir(thumbnailPath, callback, err => { console.log("------------->", err); callback(null); }, globule)
+    _readDir(thumbnailPath, callback, err => { console.log(err); callback(null); }, globule)
 }
 
 function _publishSetDirEvent(path, file_explorer_) {
@@ -380,7 +417,12 @@ export class FilesView extends HTMLElement {
                     this.toMp4MenuItem.style.display = "block"
                 }
             } else {
-                this.titleInfosMenuItem.style.display = "none"
+                if (this.menu.file.mime.startsWith("audio")) {
+                    this.titleInfosMenuItem.style.display = "block"
+                } else {
+                    this.titleInfosMenuItem.style.display = "none"
+                }
+
                 this.videMenuItem.style.display = "none"
                 this.openInNewTabItem.style.display = "none"
             }
@@ -706,57 +748,21 @@ export class FilesView extends HTMLElement {
             // So here I will create a new permission manager object and display it for the given file.
             let globule = this._file_explorer_.globule
 
-            // Now I will test if imdb info are allready asscociated.
-            let getTitleInfo = (file, callback) => {
-                let rqst = new GetFileTitlesRequest
-                rqst.setIndexpath(globule.config.DataPath + "/search/titles")
-                
-                rqst.setFilepath(file.path)
-
-                globule.titleService.getFileTitles(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
-                    .then(rsp => {
-                        callback(rsp.getTitles().getTitlesList())
-                    })
-                    .catch(err => {
-                        // so here no title was found...
-
-                        callback([])
-                    })
-            }
-
-
-            let getVideoInfo = (file, callback) => {
-                let globule = this._file_explorer_.globule
-                let rqst = new GetFileVideosRequest
-                console.log("read title for file ", file.path)
-                rqst.setIndexpath(globule.config.DataPath + "/search/videos")
-                rqst.setFilepath(file.path)
-
-                globule.titleService.getFileVideos(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
-                    .then(rsp => {
-                        let videos = rsp.getVideos().getVideosList()
-                        callback(videos)
-                    })
-                    .catch(err => {
-                        callback([])
-                    })
-            }
-
             // get the title infos...
-            getTitleInfo(this.menu.file, (titles) => {
+            getTitleInfo(globule, this.menu.file, (titles) => {
                 if (titles.length > 0) {
                     this.menu.file.titles = titles // keep in the file itself...
                     Model.eventHub.publish("display_media_infos_event", this.menu.file, true)
                 }
             })
 
-            getVideoInfo(this.menu.file, (videos) => {
+            getVideoInfo(globule, this.menu.file, (videos) => {
                 if (videos.length > 0) {
-                    console.log(videos)
                     this.menu.file.videos = videos // keep in the file itself...
                     Model.eventHub.publish("display_media_infos_event", this.menu.file, true)
                 }
             })
+
             // hide the menu...
             this.menu.parentNode.removeChild(this.menu)
         }
@@ -1372,34 +1378,65 @@ export class FilesView extends HTMLElement {
                             fileName = fileName_
 
                         } else if (rsp.getResult().startsWith("[download] 100% of ") && rsp.getResult().indexOf(" in ") != -1) {
+                            if (mp4Radio.checked) {
+                                // Now I will index the file...
+                                var xmlhttp = new XMLHttpRequest();
+                                let fileName_ = fileName
+                                xmlhttp.onreadystatechange = () => {
+                                    if (xmlhttp.status == 0) {
+                                        // give time to finish write the file on the server...
+                                        setTimeout(() => {
 
-                            // Now I will index the file...
-                            var xmlhttp = new XMLHttpRequest();
-                            let fileName_ = fileName
-                            xmlhttp.onreadystatechange = () => {
-                                if (xmlhttp.status == 0) {
-                                    // give time to finish write the file on the server...
-                                    setTimeout(()=>{
-                                    Model.eventHub.publish("__upload_link_event__", { pid: pid, path: this.__dir__.path, infos: "", done: true, lnk: lnk }, true);
+                                            // here I must send the event to 
+                                            globule.eventHub.publish("generate_video_preview_event", this.__dir__.path + "/" + fileName_, false);
 
-                                    // here I must send the event to 
-                                    globule.eventHub.publish("generate_video_preview_event", this.__dir__.path + "/" + fileName_, false);
+                                            // So there I will set the resource permission...
+                                            let rqst = new AddResourceOwnerRqst
+                                            rqst.setPath(this.__dir__.path + "/" + fileName_)
+                                            rqst.setResourcetype("file")
+                                            rqst.setSubject(Application.account.id + "@" + Application.account.domain)
+                                            rqst.setType(SubjectType.ACCOUNT)
 
-                                    // So there I will set the resource permission...
-                                    let rqst = new AddResourceOwnerRqst
-                                    rqst.setPath(this.__dir__.path + "/" + fileName_)
-                                    rqst.setResourcetype("file")
-                                    rqst.setSubject(Application.account.id + "@" + Application.account.domain)
-                                    rqst.setType(SubjectType.ACCOUNT)
+                                            globule.rbacService.addResourceOwner(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
+                                                .then(rsp => {
+                                                    console.log("Permission was set for uploaded file!");
+                                                    Model.eventHub.publish("__upload_link_event__", { pid: pid, path: this.__dir__.path, infos: "", done: true, lnk: lnk }, true);
+                                                })
+                                                .catch(err => ApplicationView.displayMessage(err, 3000))
 
-                                    globule.rbacService.addResourceOwner(rqst,  { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
-                                        .then(rsp=>{console.log("Permission was set for uploaded file!")})
-                                        .catch(err=>ApplicationView.displayMessage(err, 3000))
+                                        }, 2 * 1000)
+                                    }
+                                };
 
-                                    }, 2 * 1000)
+                                let globule = this._file_explorer_.globule
+                                let url_ = globule.config.Protocol + "://" + globule.config.Domain + ":"
+
+                                if (globule.config.Protocol == "https") {
+                                    url_ += globule.config.PortHttps
+                                } else {
+                                    url_ += globule.config.PortHttp
                                 }
-                            };
 
+                                url_ += "/index_video?domain=" + globule.config.Domain // application is not know at this time...
+                                if (localStorage.getItem("user_token") != undefined) {
+                                    url_ += "&token=" + localStorage.getItem("user_token")
+                                }
+
+                                // The file path to index.
+                                url_ += "&video-path=" + this.__dir__.path + "/" + fileName_
+                                url_ += "&video-url=" + url;
+                                url_ += "&index-path=" + globule.config.DataPath + "/search/videos"
+
+                                xmlhttp.open("GET", url_, true);
+                                xmlhttp.setRequestHeader("domain", globule.config.Domain);
+                                xmlhttp.send();
+
+                                console.log("index the url: ", url_, " file: ", this.__dir__.path + "/" + fileName_)
+                            }
+                        } else if (rsp.getResult().startsWith("[ExtractAudio] Destination: ")) {
+                            fileName = rsp.getResult().split("[ExtractAudio] Destination: ")[1].trim()
+                        } else if (rsp.getResult().startsWith("Deleting original file")) {
+                            // give time to extract the
                             let globule = this._file_explorer_.globule
                             let url_ = globule.config.Protocol + "://" + globule.config.Domain + ":"
 
@@ -1415,17 +1452,25 @@ export class FilesView extends HTMLElement {
                             }
 
                             // The file path to index.
-                            url_ += "&video-path=" + this.__dir__.path + "/" + fileName_
+                            url_ += "&video-path=" + this.__dir__.path + "/" + fileName
                             url_ += "&video-url=" + url;
                             url_ += "&index-path=" + globule.config.DataPath + "/search/videos"
+
+                            var xmlhttp = new XMLHttpRequest();
+                            xmlhttp.onreadystatechange = () => {
+                                if (xmlhttp.status == 0) {
+                                    setTimeout(() => {
+                                        Model.eventHub.publish("__upload_link_event__", { pid: pid, path: this.__dir__.path, infos: "", done: true, lnk: lnk }, true);
+                                        Model.publish("reload_dir_event", this.__dir__.path, false);
+                                    }, 2 * 1000)
+
+                                }
+                            }
 
                             xmlhttp.open("GET", url_, true);
                             xmlhttp.setRequestHeader("domain", globule.config.Domain);
                             xmlhttp.send();
                         }
-
-                        // Publish local event.
-                        Model.eventHub.publish("__upload_link_event__", { pid: pid, path: this.__dir__.path, infos: rsp.getResult(), done: false, lnk: lnk }, true);
                     });
 
                     stream.on("status", (status) => {
@@ -2013,7 +2058,7 @@ export class FilesIconView extends FilesView {
 
             // Now I will create the icon file view.
             filesByType[fileType].forEach(file => {
-                let id = "_" + getUuidByString(file.path + "/" +file.name);
+                let id = "_" + getUuidByString(file.path + "/" + file.name);
                 if (!section.querySelector("#" + id)) {
 
                     let html = `
@@ -2071,7 +2116,6 @@ export class FilesIconView extends FilesView {
                         }
                     }
 
-
                     if (fileType == "video") {
                         /** In that case I will display the vieo preview. */
                         getHiddenFiles(file.path, previewDir => {
@@ -2082,6 +2126,8 @@ export class FilesIconView extends FilesView {
                                     fileNameSpan.style.wordBreak = "break-all"
                                     fileNameSpan.style.fontSize = ".85rem"
                                     fileNameSpan.style.maxWidth = preview.width + "px"
+
+
                                 }, this._file_explorer_.globule)
 
                                 // keep the explorer link...
@@ -2128,6 +2174,7 @@ export class FilesIconView extends FilesView {
                         folderIcon.draggable = false
 
                     } else if (file.thumbnail != undefined) {
+
                         /** Display the thumbnail. */
                         let img = document.createElement("img")
                         img.src = file.thumbnail
@@ -2163,6 +2210,8 @@ export class FilesIconView extends FilesView {
                                 Model.eventHub.publish("__play_audio__", { path: file.path, file_explorer_id: this._file_explorer_.id }, true)
                             }
 
+
+
                         } else {
                             // here I will try the file viewer.
                             img.onclick = (evt) => {
@@ -2170,6 +2219,18 @@ export class FilesIconView extends FilesView {
                                 Model.eventHub.publish("__read_file__", { path: file.path, file_explorer_id: this._file_explorer_.id }, true)
                             }
                         }
+
+                        // display more readable name.
+                        getVideoInfo(this._file_explorer_.globule, file, videos => {
+                            if (videos.length > 0) {
+                                fileNameSpan.innerHTML = videos[0].getDescription()
+                                //console.log(videos[0].getPoster().getContenturl())
+                                //console.log(videos[0].getPoster().geUrl())
+                                img.src = videos[0].getPoster().getContenturl()
+                            }else{
+                                
+                            }
+                        })
                     }
 
                     fileIconDiv.draggable = true;
@@ -2217,6 +2278,7 @@ export class FilesIconView extends FilesView {
                             }
                         }
                     }
+
 
                     fileNameSpan.innerHTML = file.name;
                     fileIconDiv.parentNode.appendChild(fileNameSpan);
@@ -2508,10 +2570,10 @@ export class PathNavigator extends HTMLElement {
                 title.title = dir
             }
             title.innerHTML = dir
-            if(dir.startsWith(Application.account.id)){
+            if (dir.startsWith(Application.account.id)) {
                 title.innerHTML = dir.replace(Application.account.id, Application.account.name)
             }
-            
+
 
             // if the directory path sart with / ...
             if (index == 0) {
@@ -2815,7 +2877,7 @@ export class FileNavigator extends HTMLElement {
         let dir_ = this.div.querySelector(`#${id}`)
         if (dir_ == undefined) {
             let name = dir.path.split("/").pop();
-            if(name.startsWith(Application.account.id)){
+            if (name.startsWith(Application.account.id)) {
                 // display more readable folder name...
                 name = name.replace(Application.account.id, Application.account.name)
             }
@@ -3469,7 +3531,7 @@ export class FileExplorer extends HTMLElement {
         this.progressDiv = this.shadowRoot.querySelector("#progress-div")
         this.shadowRoot.querySelector("globular-disk-space-manager").account = Application.account;
         this.shadowRoot.querySelector("globular-disk-space-manager").globule = Model.globular
-    
+
 
         // enter full screen and exit full screen btn
         this.enterFullScreenBtn = this.shadowRoot.querySelector("#enter-full-screen-btn")
@@ -5322,7 +5384,7 @@ export class FilesUploader extends HTMLElement {
                 }
 
                 // generate a token... 
-                generatePeerToken(globule.config.Mac, token=>{
+                generatePeerToken(globule.config.Mac, token => {
                     uploadFiles(globule, token, path, [f],
                         () => {
                             if (index < files.length) {
@@ -5350,7 +5412,7 @@ export class FilesUploader extends HTMLElement {
                             console.log("abort file upload event", event);
                         },
                         port)
-                }, err=>ApplicationView.displayMessage(err, 3000))
+                }, err => ApplicationView.displayMessage(err, 3000))
 
 
             }

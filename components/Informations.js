@@ -7,6 +7,7 @@ import { VideoPreview, getFileSizeString } from "./File";
 import { ApplicationView } from "../ApplicationView";
 import { randomUUID } from "./utility";
 import { playVideo } from "./Video";
+import { playAudio } from "./Audio";
 
 function listToString(lst) {
     let str = "["
@@ -239,13 +240,26 @@ function getVideoPreview(parent, path, name, callback, globule) {
         preview.showPlayBtn()
 
         preview.onplay = (path) => {
-            playVideo(path, (video) => {
-                let titleInfoBox = document.getElementById("title-info-box")
-                if (titleInfoBox) {
-                    titleInfoBox.parentNode.removeChild(titleInfoBox)
-                }
-                //video.toggleFullscreen();
-            }, null, null, globule)
+            if(path.endsWith(".mp3")){
+                
+                playAudio(path, (video) => {
+                    let titleInfoBox = document.getElementById("title-info-box")
+                    if (titleInfoBox) {
+                        titleInfoBox.parentNode.removeChild(titleInfoBox)
+                    }
+                    //video.toggleFullscreen();
+                }, null, null, globule)
+
+            }else{
+                playVideo(path, (video) => {
+                    let titleInfoBox = document.getElementById("title-info-box")
+                    if (titleInfoBox) {
+                        titleInfoBox.parentNode.removeChild(titleInfoBox)
+                    }
+                    //video.toggleFullscreen();
+                }, null, null, globule)
+            }
+
         }
 
         // keep the explorer link...

@@ -1,5 +1,5 @@
 import { getTheme } from "./Theme.js";
-import { deleteFile, readDir, uploadFiles } from "globular-web-client/api";
+import { createDir, deleteFile, readDir, uploadFiles } from "globular-web-client/api";
 import { Model } from '../Model'
 import { File } from '../File'
 import { ApplicationView } from "../ApplicationView";
@@ -86,7 +86,7 @@ export class Ringtones extends HTMLElement {
 
         // upload a new ringtone
         this.shadowRoot.querySelector("#upload-button").onclick = () => {
-            console.log("upload ring tone!")
+
             var input = document.createElement('input');
             input.type = 'file';
             input.accept = ".mp3"
@@ -99,14 +99,15 @@ export class Ringtones extends HTMLElement {
                     let globule = Application.getGlobule(Application.account.session.domain)
 
                     // set the path...
-                    let path = "/" + Model.application + "/" + this.getAttribute("dir")
+                    let path = "/applications/" + Model.application + "/ringtones"
 
-                    uploadFiles(globule, localStorage.getItem("user_token"), path, files, ()=>{
+                    uploadFiles(globule, localStorage.getItem("user_token"), path, files, () => {
                         let f = files[0]
                         f.path = path + "/" + f.name
                         let ringtone = new Ringtone(f, this)
                         this.insertBefore(ringtone, this.children[0])
-                    })
+
+                    }, err => { console.log(err) })
                 }
             }
         }
@@ -130,26 +131,58 @@ export class Ringtones extends HTMLElement {
 
 
                 // Now I will set the file...
-                let path = Model.globular.config.WebRoot + "/webroot/" + Model.application + "/" + this.getAttribute("dir")
-                readDir(Model.globular, path, false, (data) => {
-                    let dir = File.fromObject(data)
-                    dir.files.forEach(f => {
-                        let ringtone = new Ringtone(f, this)
-                        this.appendChild(ringtone)
-                    });
+                this.loadRingTone(Model.globular.config.WebRoot + "/webroot/" + Model.application + "/" + this.getAttribute("dir"), () => {
 
-                    // set the firt ringtone by default...
-                    if (this.children.length > 0 && !this.account.ringtone) {
-                        this.setRingtone(this.children[0])
-                    } else {
-                        let id = "_" + getUuidByString(this.account.ringtone)
-                        let ringtone = this.querySelector("#" + id)
-                        this.setRingtone(ringtone)
-                    }
+                    // The dir where additional ringtone will be place.
+                    createDir(Model.globular, Model.globular.config.DataPath + "/files/applications/" + Model.application, "ringtones",
+                        () => {
+                            this.loadRingTone("/applications/" + Model.application + "/ringtones", () => this.setCurrentRingtone())
+                        },
+                        () => {
+                            this.loadRingTone("/applications/" + Model.application + "/ringtones", () => this.setCurrentRingtone())
+                        })
+                }, false)
 
-                }, err => ApplicationView.displayMessage(err, 3000))
+
+
+
+
             }, err => ApplicationView.displayMessage(err, 3000))
 
+        }, err => ApplicationView.displayMessage(err, 3000))
+
+    }
+
+    setCurrentRingtone() {
+        // set the firt ringtone by default...
+        if (this.children.length > 0 && !this.account.ringtone) {
+            this.setRingtone(this.children[0])
+        } else {
+            let values = this.account.ringtone.split("/")
+            let id = "_" + getUuidByString(values[values.length - 1])
+            let ringtone = this.querySelector("#" + id)
+            this.setRingtone(ringtone)
+        }
+    }
+
+    loadRingTone(path, callback, deletable) {
+
+        readDir(Model.globular, path, false, (data) => {
+            let dir = File.fromObject(data)
+            dir.files.forEach(f => {
+                if (f.name.indexOf(".mp3") != -1) {
+                    let ringtone = new Ringtone(f, this)
+                    this.appendChild(ringtone)
+                    if (deletable != undefined) {
+                        if (deletable == false) {
+                            ringtone.deleteButton.style.visibility = "hidden"
+                        }
+                    }
+                }
+            });
+            if (callback) {
+                callback()
+            }
         }, err => ApplicationView.displayMessage(err, 3000))
 
     }
@@ -157,8 +190,8 @@ export class Ringtones extends HTMLElement {
     deleteRingtone(ringtone) {
 
 
-            let toast = ApplicationView.displayMessage(
-                `
+        let toast = ApplicationView.displayMessage(
+            `
               <style>
                ${getTheme()}
                 #yes-no-contact-delete-box{
@@ -190,29 +223,29 @@ export class Ringtones extends HTMLElement {
                 </div>
               </div>
               `,
-                15000 // 15 sec...
-            );
-    
-            let yesBtn = document.querySelector("#yes-delete-btn")
-            let noBtn = document.querySelector("#no-delete-btn")
-    
-            // On yes
-            yesBtn.onclick = () => {
+            15000 // 15 sec...
+        );
 
-                let globule = Application.getGlobule(Application.account.session.domain)
-                deleteFile(globule, ringtone.file.path,
-                    () => {
-                        this.removeChild(ringtone)
-                        toast.dismiss();
-                        ApplicationView.displayMessage("the ringtone " + ringtone.file.name, " was deleted", 3000)
-                    },
-                    err => { ApplicationView.displayMessage(err, 3000) })
+        let yesBtn = document.querySelector("#yes-delete-btn")
+        let noBtn = document.querySelector("#no-delete-btn")
 
-            }
+        // On yes
+        yesBtn.onclick = () => {
 
-            noBtn.onclick = () => {
-                toast.dismiss();
-            }
+            let globule = Application.getGlobule(Application.account.session.domain)
+            deleteFile(globule, ringtone.file.path,
+                () => {
+                    this.removeChild(ringtone)
+                    toast.dismiss();
+                    ApplicationView.displayMessage("the ringtone " + ringtone.file.name + " was deleted", 3000)
+                },
+                err => { ApplicationView.displayMessage(err, 3000) })
+
+        }
+
+        noBtn.onclick = () => {
+            toast.dismiss();
+        }
     }
 
     setRingtone(ringtone) {
@@ -283,7 +316,7 @@ export class Ringtone extends HTMLElement {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
-        this.id = "_" + getUuidByString(file.path)
+        this.id = "_" + getUuidByString(file.name)
 
         this.parent = parent;
 
