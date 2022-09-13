@@ -22,7 +22,7 @@ import { Menu } from './Menu';
 import { PermissionsManager } from './Permissions';
 import { InformationsManager } from './Informations'
 import { playVideo } from './Video'
-import { AudioPlayer } from './Audio'
+import { playAudio } from './Audio'
 import { GlobularFileReader } from './Reader'
 import { getTheme } from "./Theme";
 import { v4 as uuidv4 } from "uuid";
@@ -1702,11 +1702,9 @@ export class FilesListView extends FilesView {
             span.onclick = (evt) => {
                 evt.stopPropagation();
                 if (f.mime.startsWith("video")) {
-                    let path = f.path
-                    Model.eventHub.publish("__play_video__", { path: path, file_explorer_id: this._file_explorer_.id }, true)
+                    Model.eventHub.publish("__play_video__", { file: f, file_explorer_id: this._file_explorer_.id }, true)
                 } else if (f.mime.startsWith("audio")) {
-                    let path = f.path
-                    Model.eventHub.publish("__play_audio__", { path: path, file_explorer_id: this._file_explorer_.id }, true)
+                    Model.eventHub.publish("__play_audio__", { file: f, file_explorer_id: this._file_explorer_.id }, true)
                 } else if (f.isDir) {
                     _publishSetDirEvent(f._path, this._file_explorer_)
                 } else if (f.mime.startsWith("image")) {
@@ -2121,8 +2119,8 @@ export class FilesIconView extends FilesView {
                         getHiddenFiles(file.path, previewDir => {
                             let h = 72;
                             if (previewDir) {
-                                let path = file.path
-                                let preview = new VideoPreview(path, previewDir._files, h, () => {
+
+                                let preview = new VideoPreview(file, previewDir._files, h, () => {
                                     fileNameSpan.style.wordBreak = "break-all"
                                     fileNameSpan.style.fontSize = ".85rem"
                                     fileNameSpan.style.maxWidth = preview.width + "px"
@@ -2207,7 +2205,7 @@ export class FilesIconView extends FilesView {
                             console.log(fileType, file.path)
                             img.onclick = (evt) => {
                                 evt.stopPropagation();
-                                Model.eventHub.publish("__play_audio__", { path: file.path, file_explorer_id: this._file_explorer_.id }, true)
+                                Model.eventHub.publish("__play_audio__", { file: file, file_explorer_id: this._file_explorer_.id }, true)
                             }
 
 
@@ -2221,16 +2219,20 @@ export class FilesIconView extends FilesView {
                         }
 
                         // display more readable name.
-                        getVideoInfo(this._file_explorer_.globule, file, videos => {
-                            if (videos.length > 0) {
-                                fileNameSpan.innerHTML = videos[0].getDescription()
-                                //console.log(videos[0].getPoster().getContenturl())
-                                //console.log(videos[0].getPoster().geUrl())
-                                img.src = videos[0].getPoster().getContenturl()
-                            }else{
-                                
-                            }
-                        })
+                        if (file.videos) {
+                            fileNameSpan.innerHTML = file.videos[0].getDescription()
+                            if (file.videos[0].getPoster())
+                                img.src = file.videos[0].getPoster().getContenturl()
+                        } else {
+                            getVideoInfo(this._file_explorer_.globule, file, videos => {
+                                if (videos.length > 0) {
+                                    file.videos = videos // keep in the file itself...
+                                    fileNameSpan.innerHTML = file.videos[0].getDescription()
+                                    if (file.videos[0].getPoster())
+                                        img.src = file.videos[0].getPoster().getContenturl()
+                                }
+                            })
+                        }
                     }
 
                     fileIconDiv.draggable = true;
@@ -3612,13 +3614,6 @@ export class FileExplorer extends HTMLElement {
         this.fileReader.style.display = "none"
         this.appendChild(this.fileReader)
 
-        // The audio player 
-        // this.audioPlayer = this.shadowRoot.querySelector("#globular-audio-player")
-        this.audioPlayer = new AudioPlayer()
-        this.audioPlayer.id = "#globular-audio-player"
-        this.audioPlayer.style.display = "none"
-        this.appendChild(this.audioPlayer)
-
         // The image viewer
         // this.imageViewer = this.shadowRoot.querySelector("#globular-image-viewer")
         this.imageViewer = new ImageViewer()
@@ -3754,8 +3749,6 @@ export class FileExplorer extends HTMLElement {
             this.filesIconView.style.display = "none"
             this.filesIconView._active_ = false
             this.filesListView._active_ = true
-            this.audioPlayer.stop();
-            this.audioPlayer.style.display = "none"
             this.fileReader.style.display = "none"
             this.filesListBtn.classList.add("active")
             this.fileIconBtn.classList.remove("active")
@@ -3772,8 +3765,6 @@ export class FileExplorer extends HTMLElement {
             this.filesListView._active_ = false
             this.filesListView.style.display = "none"
             this.filesIconView.style.display = ""
-            this.audioPlayer.stop();
-            this.audioPlayer.style.display = "none"
             this.fileReader.style.display = "none"
             this.filesListBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
             this.fileIconBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-active)")
@@ -4136,7 +4127,7 @@ export class FileExplorer extends HTMLElement {
                 this.listeners["__play_video__"] = uuid
             }, (evt) => {
                 if (this.id == evt.file_explorer_id) {
-                    this.playVideo(evt.path, evt.globule)
+                    this.playVideo(evt.file, evt.globule)
                 }
             }, true)
         }
@@ -4147,7 +4138,7 @@ export class FileExplorer extends HTMLElement {
                 this.listeners["__play_audio__"] = uuid
             }, (evt) => {
                 if (this.id == evt.file_explorer_id) {
-                    this.playAudio(evt.path, evt.globule)
+                    this.playAudio(evt.file, evt.globule)
                 }
 
             }, true)
@@ -4269,24 +4260,37 @@ export class FileExplorer extends HTMLElement {
         return "/" + values[1] + "/" + values[2]
     }
 
-    playVideo(path) {
+    playVideo(file) {
         this.style.zIndex = 1;
-        playVideo(path, null, () => {
+        let video = null
+        if (file.videos) {
+            video = file.videos[0]
+        }
 
-            console.log("------> video ", path, "is now playing")
-        }, null, this.globule)
+        if (file.titles) {
+            video = file.titles[0]
+        }
+
+        playVideo(file.path, null, () => {
+
+            console.log("------> video ", file.path, "is now playing")
+        }, video, this.globule)
     }
 
-    playAudio(path) {
+    playAudio(file) {
 
         // hide the content.
-        this.filesListView.style.display = "none"
-        this.filesIconView.style.display = "none"
+        this.style.zIndex = 1;
+        let video = null
+        if (file.videos) {
+            video = file.videos[0]
+        }
 
-        this.audioPlayer.style.display = "block"
-
+        if (file.titles) {
+            video = file.titles[0]
+        }
         // Display the video only if the path match the video player /applications vs /users
-        this.audioPlayer.play(path, this.globule)
+        playAudio(file.path, () => { }, () => { }, video, this.globule)
     }
 
     readFile(path) {
@@ -4383,10 +4387,6 @@ export class FileExplorer extends HTMLElement {
 
         // Set back the list and icon view
         this.displayView(dir)
-
-
-        this.audioPlayer.style.display = "none"
-        this.audioPlayer.stop();
 
         this.fileReader.style.display = "none"
 
@@ -4606,10 +4606,11 @@ export class VideoPreview extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor(path, previews, height, onresize, globule) {
+    constructor(file, previews, height, onresize, globule) {
         super()
 
-        this.path = path;
+        this.file = file
+        this.path = file.path;
         this.width = height;
         this.height = height;
         this.onresize = onresize;
@@ -4822,8 +4823,7 @@ export class VideoPreview extends HTMLElement {
      */
     play(globule) {
         if (this._file_explorer_ != undefined) {
-            let path = this.path
-            Model.eventHub.publish("__play_video__", { path: path, file_explorer_id: this._file_explorer_.id, globule: globule }, true)
+            Model.eventHub.publish("__play_video__", { file: this.file, file_explorer_id: this._file_explorer_.id, globule: globule }, true)
         }
 
         if (this.onplay != undefined) {

@@ -157,7 +157,7 @@ AUDIO.VISUALIZER = (function () {
         req.open('GET', this.audio.getAttribute('src'), true);
         req.responseType = 'arraybuffer';
         this.canvasCtx.fillText('Loading...', this.canvas.width / 2 + 10, this.canvas.height / 2);
-
+        this.minutes = this.seconds = "00"
         req.onload = function () {
             this.ctx.decodeAudioData(req.response, this.playSound.bind(this), this.onError.bind(this));
         }.bind(this);
@@ -260,7 +260,7 @@ AUDIO.VISUALIZER = (function () {
         this.canvasCtx.fillText( this.audio.getAttribute('data-author'), cx + correction, cy);
         this.canvasCtx.font = parseInt(this.font[0], 10) + 8 + 'px ' + this.font[1];
         this.canvasCtx.textBaseline = 'bottom';
-        this.canvasCtx.fillText(this.audio.getAttribute('data-title'), cx + correction, cy);
+        this.canvasCtx.fillText(this.audio.getAttribute('data-title'), cx + correction, 80);
         this.canvasCtx.font = this.font.join(' ');
     };
 
