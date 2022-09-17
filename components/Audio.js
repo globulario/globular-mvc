@@ -6,7 +6,7 @@ import { GetFileVideosRequest } from "globular-web-client/title/title_pb";
 import { AUDIO } from "./visualizer"
 import { setMoveable } from './moveable'
 import { setResizeable } from './rezieable'
-
+import WaveSurfer from "wavesurfer.js";
 
 function getVideoInfo(globule, path, callback) {
 
@@ -51,6 +51,10 @@ export function playAudio(path, onplay, onclose, title, globule) {
 
     return audioPlayer
 }
+
+// display the timeline and the wave of the mp3
+var wavesurfer = null;
+var visualizer = null;
 
 /**
  * Sample empty component
@@ -105,7 +109,10 @@ export class AudioPlayer extends HTMLElement {
                 <paper-icon-button id="video-close-btn" icon="icons:close" style="min-width: 40px; --iron-icon-fill-color: var(--palette-text-accent);"></paper-icon-button>
                 <span id="title-span"></span>
             </div>
+            
             <slot></slot>
+            
+            
         </paper-card>
         `
 
@@ -113,19 +120,57 @@ export class AudioPlayer extends HTMLElement {
 
         // so here I will use the ligth dom...
         let content = `
-        <div id="content" class="vz-wrapper">
-            <audio id="myAudio"></audio>
-            <div class="vz-wrapper -canvas">
+        <style>
+            #content{
+                display: flex;
+                background: #000000;
+                height: calc(100% - 40px);
+                overflow: hidden;
+            }
+
+            /** Audio vizualizer **/
+            .vz-wrapper {
+                min-width: 420px;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                background: -webkit-gradient(radial, center center, 0, center center, 460, from(#39668b), to(#000000));
+                background: -webkit-radial-gradient(circle, #39668b, #000000);
+                background: -moz-radial-gradient(circle, #39668b, #000000);
+                background: -ms-radial-gradient(circle, #39668b, #000000);
+                box-shadow: inset 0 0 160px 0 #000;
+                cursor: pointer;
+            }
+
+            .vz-wrapper.-canvas {
+                height: initial;
+                width: initial;
+                background: transparent;
+                box-shadow: none;
+            }
+
+            @media screen and (min-width: 420px) {
+                .vz-wrapper { box-shadow: inset 0 0 200px 60px #000; }
+            }
+
+        </style>
+
+        <audio id="myAudio" muted></audio>
+
+        <div id="content">
+            <globular-playlist></globular-playlist>
+
+            <div class="vz-wrapper" style="display: flex; justify-content: center;">
                 <canvas id="myCanvas" width="800" height="400"></canvas>
+                <div id="waveform"></div>
             </div>
+               
+     
         </div>
         `
 
         let range = document.createRange()
         this.appendChild(range.createContextualFragment(content))
-
-
-        this.visualizer = null;
 
         // give the focus to the input.
         this.audio = this.querySelector("audio")
@@ -150,7 +195,7 @@ export class AudioPlayer extends HTMLElement {
         if (localStorage.getItem("__audio_player_dimension__")) {
             let dimension = JSON.parse(localStorage.getItem("__audio_player_dimension__"))
             container.style.width = dimension.width + "px"
-            container.style.height =  dimension.height + "px"
+            container.style.height = dimension.height + "px"
         }
 
         setResizeable(container, (width, height) => {
@@ -178,11 +223,9 @@ export class AudioPlayer extends HTMLElement {
     // The connection callback.
     connectedCallback() {
         // create the visualizer once.
-        if (this.visualizer) {
+        if (visualizer) {
             return
         }
-
-
     }
 
     play(path, globule, title) {
@@ -193,15 +236,27 @@ export class AudioPlayer extends HTMLElement {
             return
         } else if (this.audio.paused && this.audio.currentSrc.indexOf(filename) != -1) {
             // Resume the audio...
-            this.visualizer.playSound()
+            visualizer.playSound()
             return
         }
 
+
+        if (wavesurfer == null) {
+            wavesurfer = WaveSurfer.create({
+                container: '#waveform',
+                scrollParent: true,
+                waveColor: '#93a1ad',
+                progressColor: '#172a39',
+                background: 'transparent',
+                height: 70
+            });
+        }
+
         // Now I will set the visualizer...
-        if (this.visualizer == null) {
-            this.visualizer = AUDIO.VISUALIZER.getInstance({
+        if (visualizer == null) {
+            visualizer = AUDIO.VISUALIZER.getInstance({
                 autoplay: false,
-                loop: true,
+                loop: false,
                 audio: 'myAudio',
                 canvas: 'myCanvas',
                 style: 'lounge',
@@ -214,9 +269,10 @@ export class AudioPlayer extends HTMLElement {
                 font: ['12px', 'Helvetica']
             });
         } else {
-            this.visualizer.pauseSound()
+            visualizer.pauseSound()
         }
         this.audio.setAttribute("data-author", "")
+        this.audio.setAttribute("data-featuring", "")
 
         if (title) {
 
@@ -225,9 +281,38 @@ export class AudioPlayer extends HTMLElement {
 
             if (title.getDescription().indexOf(" - ") != -1) {
                 // Try the best to get correct values...
-                this.audio.setAttribute("data-title", title.getDescription().split(" - ")[1])
-                this.shadowRoot.querySelector("#title-span").innerHTML = title.getDescription().split(" - ")[1]
-                this.audio.setAttribute("data-author", title.getDescription().split(" - ")[0].trim())
+                let title_ = title.getDescription().split(" - ")[1].replace(/FEAT./i, "ft.");
+                let feat = ""
+
+                if (title_.indexOf(" ft.") != -1) {
+                    feat = title_.split(" ft.")[1]
+                    title_ = title_.split(" ft.")[0]
+                } else if (title_.indexOf("(ft.") != -1) {
+                    feat = title_.split("(ft.")[1].replace(")", 0)
+                    title_ = title_.split(" ft.")[0]
+                }
+
+                title_ = title_.replace(/ *\([^)]*\) */g, " ").replace(/ *\[[^)]*\] */g, " ").replace(/LYRICS/i, "");
+
+                this.audio.setAttribute("data-title", title_)
+                this.shadowRoot.querySelector("#title-span").innerHTML = title_
+                let author = title.getDescription().split(" - ")[0].replace(/FEAT./i, "ft.").trim()
+
+                if (author.indexOf(" ft.") != -1) {
+                    feat = author.split(" ft.")[1]
+                    author = author.split(" ft.")[0]
+                } else if (author.indexOf("(ft.") != -1) {
+                    feat = author.split("(ft.")[1].replace(")", 0)
+                    author = author.split(" ft.")[0]
+                }
+                feat = feat.replace(/ *\([^)]*\) */g, " ").replace(/ *\[[^)]*\] */g, " ");
+
+                if (feat.length > 0) {
+                    this.audio.setAttribute("data-featuring", feat)
+                }
+                author = author.replace(/ *\([^)]*\) */g, " ").replace(/ *\[[^)]*\] */g, " ");
+
+                this.audio.setAttribute("data-author", author)
             }
 
         } else {
@@ -264,12 +349,26 @@ export class AudioPlayer extends HTMLElement {
 
         // Set the path and play.
         this.audio.src = url
-        this.visualizer.setContext()
+
+        visualizer.setContext()
             .setAnalyser()
             .setFrequencyData()
             .setBufferSourceNode()
 
-        this.visualizer.loadSound()
+
+        wavesurfer.on("ready", ()=>{
+            wavesurfer.setMute(true) // keep the sound from the visualiser...
+            wavesurfer.play();
+        })
+
+        wavesurfer.getArrayBuffer(url, data=>{
+            
+            // Share the same request...
+            visualizer.loadSound(data)
+
+            wavesurfer.loadArrayBuffer(data)
+
+        })
 
     }
 
@@ -286,8 +385,8 @@ export class AudioPlayer extends HTMLElement {
     }
 
     stop() {
-        if (this.visualizer)
-            this.visualizer.pauseSound()
+        if (visualizer)
+            visualizer.pauseSound()
     }
 }
 

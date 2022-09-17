@@ -6,8 +6,8 @@ AUDIO.VISUALIZER = (function () {
     var INTERVAL = null;
     var FFT_SIZE = 512;
     var TYPE = {
-            'lounge': 'renderLounge'
-        };
+        'lounge': 'renderLounge'
+    };
 
     /**
      * @description
@@ -16,7 +16,7 @@ AUDIO.VISUALIZER = (function () {
      * @param {Object} cfg
      */
 
-    function Visualizer (cfg) {
+    function Visualizer(cfg) {
         this.isPlaying = false;
         this.autoplay = cfg.autoplay || false;
         this.loop = cfg.loop || false;
@@ -47,10 +47,13 @@ AUDIO.VISUALIZER = (function () {
      *
      * @return {Object}
      */
-    Visualizer.prototype.setContext = function () {
+    Visualizer.prototype.setContext = function (callback) {
         try {
             window.AudioContext = window.AudioContext || window.webkitAudioContext;
             this.ctx = new window.AudioContext();
+            if (callback) {
+                callback(this.ctx)
+            }
             return this;
         } catch (e) {
             console.info('Web Audio API is not supported.', e);
@@ -152,17 +155,23 @@ AUDIO.VISUALIZER = (function () {
      * @description
      * Load sound file.
      */
-    Visualizer.prototype.loadSound = function () {
-        var req = new XMLHttpRequest();
-        req.open('GET', this.audio.getAttribute('src'), true);
-        req.responseType = 'arraybuffer';
+    Visualizer.prototype.loadSound = function (arrayBuffer) {
+
         this.canvasCtx.fillText('Loading...', this.canvas.width / 2 + 10, this.canvas.height / 2);
         this.minutes = this.seconds = "00"
-        req.onload = function () {
-            this.ctx.decodeAudioData(req.response, this.playSound.bind(this), this.onError.bind(this));
-        }.bind(this);
 
-        req.send();
+        if (arrayBuffer) {
+            let arrayBuffer_ = arrayBuffer.slice(0)
+            this.ctx.decodeAudioData(arrayBuffer_, this.playSound.bind(this), this.onError.bind(this));
+        } else {
+            var req = new XMLHttpRequest();
+            req.open('GET', this.audio.getAttribute('src'), true);
+            req.responseType = 'arraybuffer';
+            req.onload = function () {
+                this.ctx.decodeAudioData(req.response, this.playSound.bind(this), this.onError.bind(this));
+            }.bind(this);
+            req.send();
+        }
     };
 
     /**
@@ -217,7 +226,7 @@ AUDIO.VISUALIZER = (function () {
      * Reset time counter.
      */
     Visualizer.prototype.resetTimer = function () {
-        var time =  new Date(0, 0);
+        var time = new Date(0, 0);
         this.duration = time.getTime();
         clearInterval(INTERVAL)
     };
@@ -256,10 +265,24 @@ AUDIO.VISUALIZER = (function () {
         var cy = this.canvas.height / 2;
         var correction = 10;
 
+        let author = ""
+        let featuring = ""
+
+        if (this.audio.getAttribute('data-author')) {
+            author = "by " + this.audio.getAttribute('data-author')
+        }
+
+        if (this.audio.getAttribute('data-featuring')) {
+            featuring = "ft. " + this.audio.getAttribute('data-featuring')
+        }
+
         this.canvasCtx.textBaseline = 'top';
-        this.canvasCtx.fillText( this.audio.getAttribute('data-author'), cx + correction, cy);
+        this.canvasCtx.fillText(author, cx + correction, cy);
+        this.canvasCtx.fillText(featuring, cx + correction, cy + 20);
+
         this.canvasCtx.font = parseInt(this.font[0], 10) + 8 + 'px ' + this.font[1];
         this.canvasCtx.textBaseline = 'bottom';
+
         this.canvasCtx.fillText(this.audio.getAttribute('data-title'), cx + correction, 80);
         this.canvasCtx.font = this.font.join(' ');
     };
@@ -270,7 +293,15 @@ AUDIO.VISUALIZER = (function () {
      */
     Visualizer.prototype.renderTime = function () {
         var time = this.minutes + ':' + this.seconds;
-        this.canvasCtx.fillText(time, this.canvas.width / 2 + 10, this.canvas.height / 2 + 40);
+        if (this.audio.getAttribute('data-featuring')) {
+            this.canvasCtx.fillText(time, this.canvas.width / 2 + 10, this.canvas.height / 2 + 60);
+        } else {
+            if (this.audio.getAttribute('data-author')) {
+                this.canvasCtx.fillText(time, this.canvas.width / 2 + 10, this.canvas.height / 2 + 40);
+            } else {
+                this.canvasCtx.fillText(time, this.canvas.width / 2 + 10, this.canvas.height / 2 + 20);
+            }
+        }
     };
 
     /**
@@ -298,7 +329,7 @@ AUDIO.VISUALIZER = (function () {
 
         for (var i = 0; i < barNum; i++) {
             var amplitude = this.frequencyData[i * freqJump];
-            var alfa = (i * 2 * Math.PI ) / maxBarNum;
+            var alfa = (i * 2 * Math.PI) / maxBarNum;
             var beta = (3 * 45 - this.barWidth) * Math.PI / 180;
             var x = 0;
             var y = radius - (amplitude / 12 - this.barHeight);
@@ -335,7 +366,7 @@ AUDIO.VISUALIZER = (function () {
      * @return {Function}
      * @private
      */
-    function _createVisualizer (cfg) {
+    function _createVisualizer(cfg) {
         var visualizer = new Visualizer(cfg);
 
         return function () {
@@ -359,7 +390,7 @@ AUDIO.VISUALIZER = (function () {
      * @return {Object}
      * @public
      */
-    function getInstance (cfg) {
+    function getInstance(cfg) {
         return _createVisualizer(cfg)();
     }
 
