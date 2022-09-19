@@ -1,5 +1,23 @@
 export var AUDIO = AUDIO || {};
 
+
+function secondsToTime(secs) {
+    var hours = Math.floor(secs / (60 * 60));
+
+    var divisor_for_minutes = secs % (60 * 60);
+    var minutes = Math.floor(divisor_for_minutes / 60);
+
+    var divisor_for_seconds = divisor_for_minutes % 60;
+    var seconds = Math.ceil(divisor_for_seconds);
+
+    var obj = {
+        "h": hours,
+        "m": minutes,
+        "s": seconds
+    };
+    return obj;
+}
+
 AUDIO.VISUALIZER = (function () {
     'use strict';
 
@@ -15,12 +33,10 @@ AUDIO.VISUALIZER = (function () {
      *
      * @param {Object} cfg
      */
-
     function Visualizer(cfg) {
         this.isPlaying = false;
         this.autoplay = cfg.autoplay || false;
         this.loop = cfg.loop || false;
-        this.audio = document.getElementById(cfg.audio) || {};
         this.canvas = document.getElementById(cfg.canvas) || {};
         this.canvasCtx = this.canvas.getContext('2d') || null;
         this.ctx = null;
@@ -28,6 +44,7 @@ AUDIO.VISUALIZER = (function () {
         this.sourceNode = null;
         this.frequencyData = [];
         this.duration = 0;
+        this.hours = '00'
         this.minutes = '00';
         this.seconds = '00';
         this.style = cfg.style || 'lounge';
@@ -39,26 +56,20 @@ AUDIO.VISUALIZER = (function () {
         this.shadowColor = cfg.shadowColor || '#ffffff';
         this.font = cfg.font || ['12px', 'Helvetica'];
         this.gradient = null;
+        this.title = ""
+        this.featuring = ""
+        this.author = ""
+        this.url = ""
     }
 
+
     /**
-     * @description
-     * Set current audio context.
-     *
-     * @return {Object}
+     * Set the context reference
      */
-    Visualizer.prototype.setContext = function (callback) {
-        try {
-            window.AudioContext = window.AudioContext || window.webkitAudioContext;
-            this.ctx = new window.AudioContext();
-            if (callback) {
-                callback(this.ctx)
-            }
-            return this;
-        } catch (e) {
-            console.info('Web Audio API is not supported.', e);
-        }
-    };
+    Visualizer.prototype.setContext = function (ctx) {
+        this.ctx = ctx;
+        return this;
+    }
 
     /**
      * @description
@@ -90,22 +101,15 @@ AUDIO.VISUALIZER = (function () {
      *
      * @return {Object}
      */
-    Visualizer.prototype.setBufferSourceNode = function () {
-        this.sourceNode = this.ctx.createBufferSource();
-        this.sourceNode.loop = this.loop;
+    Visualizer.prototype.setBufferSourceNode = function (sourceNode) {
+        this.sourceNode = sourceNode;
         this.sourceNode.connect(this.analyser);
         this.sourceNode.connect(this.ctx.destination);
 
-        this.sourceNode.onended = function () {
-            clearInterval(INTERVAL);
-            this.sourceNode.disconnect();
-            this.resetTimer();
-            this.isPlaying = false;
-            this.sourceNode = this.ctx.createBufferSource();
-        }.bind(this);
 
         return this;
     };
+
 
     /**
      * @description
@@ -131,46 +135,11 @@ AUDIO.VISUALIZER = (function () {
      * @return {Object}
      */
     Visualizer.prototype.bindEvents = function () {
-        var _this = this;
-
-        document.addEventListener('click', function (e) {
-            if (e.target === _this.canvas) {
-                e.stopPropagation();
-                if (!_this.isPlaying) {
-                    return (_this.ctx.state === 'suspended') ? _this.playSound() : _this.loadSound();
-                } else {
-                    return _this.pauseSound();
-                }
+        this.canvas.onclick = (e) => {
+            e.stopPropagation();
+            if (this.onclick) {
+                this.onclick()
             }
-        });
-
-        if (_this.autoplay) {
-            _this.loadSound();
-        }
-
-        return this;
-    };
-
-    /**
-     * @description
-     * Load sound file.
-     */
-    Visualizer.prototype.loadSound = function (arrayBuffer) {
-
-        this.canvasCtx.fillText('Loading...', this.canvas.width / 2 + 10, this.canvas.height / 2);
-        this.minutes = this.seconds = "00"
-
-        if (arrayBuffer) {
-            let arrayBuffer_ = arrayBuffer.slice(0)
-            this.ctx.decodeAudioData(arrayBuffer_, this.playSound.bind(this), this.onError.bind(this));
-        } else {
-            var req = new XMLHttpRequest();
-            req.open('GET', this.audio.getAttribute('src'), true);
-            req.responseType = 'arraybuffer';
-            req.onload = function () {
-                this.ctx.decodeAudioData(req.response, this.playSound.bind(this), this.onError.bind(this));
-            }.bind(this);
-            req.send();
         }
     };
 
@@ -180,26 +149,34 @@ AUDIO.VISUALIZER = (function () {
      *
      * @param  {Object} buffer
      */
-    Visualizer.prototype.playSound = function (buffer) {
+    Visualizer.prototype.start = function (time) {
+        this.resetTimer();
+
         this.isPlaying = true;
 
-        if (this.ctx.state === 'suspended') {
-            return this.ctx.resume();
-        }
+        if (time)
+            this.duration = time
 
-        this.sourceNode.buffer = buffer;
-        this.sourceNode.start(0);
-        this.resetTimer();
         this.startTimer();
         this.renderFrame();
     };
 
     /**
      * @description
+     * Stop the visualiser
+     */
+    Visualizer.prototype.stop = function () {
+        this.resetTimer()
+        this.duration = 0;
+        this.isPlaying = false;
+        this.renderTime()
+    }
+
+    /**
+     * @description
      * Pause current sound.
      */
-    Visualizer.prototype.pauseSound = function () {
-        this.ctx.suspend();
+    Visualizer.prototype.pause = function () {
         this.isPlaying = false;
     };
 
@@ -208,15 +185,24 @@ AUDIO.VISUALIZER = (function () {
      * Start playing timer.
      */
     Visualizer.prototype.startTimer = function () {
+        if(INTERVAL){
+            return
+        }
+
         var _this = this;
+
         INTERVAL = setInterval(function () {
             if (_this.isPlaying) {
-                var now = new Date(_this.duration);
-                var min = now.getHours();
-                var sec = now.getMinutes();
+
+                let obj = secondsToTime(_this.duration)
+                var hours = obj.h
+                var min = obj.m
+                var sec = obj.s
+                _this.hours = (hours < 10) ? '0' + hours : hours;
                 _this.minutes = (min < 10) ? '0' + min : min;
                 _this.seconds = (sec < 10) ? '0' + sec : sec;
-                _this.duration = now.setMinutes(sec + 1);
+
+                _this.duration += 1
             }
         }, 1000);
     };
@@ -226,9 +212,9 @@ AUDIO.VISUALIZER = (function () {
      * Reset time counter.
      */
     Visualizer.prototype.resetTimer = function () {
-        var time = new Date(0, 0);
-        this.duration = time.getTime();
+        this.duration = 0;
         clearInterval(INTERVAL)
+        INTERVAL = null
     };
 
     /**
@@ -268,12 +254,12 @@ AUDIO.VISUALIZER = (function () {
         let author = ""
         let featuring = ""
 
-        if (this.audio.getAttribute('data-author')) {
-            author = "by " + this.audio.getAttribute('data-author')
+        if (this.author) {
+            author = "by " + this.author
         }
 
-        if (this.audio.getAttribute('data-featuring')) {
-            featuring = "ft. " + this.audio.getAttribute('data-featuring')
+        if (this.featuring) {
+            featuring = "ft. " + this.featuring
         }
 
         this.canvasCtx.textBaseline = 'top';
@@ -283,7 +269,7 @@ AUDIO.VISUALIZER = (function () {
         this.canvasCtx.font = parseInt(this.font[0], 10) + 8 + 'px ' + this.font[1];
         this.canvasCtx.textBaseline = 'bottom';
 
-        this.canvasCtx.fillText(this.audio.getAttribute('data-title'), cx + correction, 80);
+        this.canvasCtx.fillText(this.title, cx + correction, 80);
         this.canvasCtx.font = this.font.join(' ');
     };
 
@@ -292,11 +278,11 @@ AUDIO.VISUALIZER = (function () {
      * Render audio time.
      */
     Visualizer.prototype.renderTime = function () {
-        var time = this.minutes + ':' + this.seconds;
-        if (this.audio.getAttribute('data-featuring')) {
+        var time = this.hours + ':' + this.minutes + ':' + this.seconds;
+        if (this.featuring) {
             this.canvasCtx.fillText(time, this.canvas.width / 2 + 10, this.canvas.height / 2 + 60);
         } else {
-            if (this.audio.getAttribute('data-author')) {
+            if (this.author) {
                 this.canvasCtx.fillText(time, this.canvas.width / 2 + 10, this.canvas.height / 2 + 40);
             } else {
                 this.canvasCtx.fillText(time, this.canvas.width / 2 + 10, this.canvas.height / 2 + 20);
@@ -352,7 +338,6 @@ AUDIO.VISUALIZER = (function () {
      * {
      *     autoplay: <Bool>,
      *     loop: <Bool>,
-     *     audio: <String>,
      *     canvas: <String>,
      *     style: <String>,
      *     barWidth: <Integer>,
@@ -371,15 +356,12 @@ AUDIO.VISUALIZER = (function () {
 
         return function () {
             visualizer
-                .setContext()
-                .setAnalyser()
-                .setFrequencyData()
-                .setBufferSourceNode()
                 .setCanvasStyles()
                 .bindEvents();
 
             return visualizer;
         };
+
     }
 
     /**
@@ -404,23 +386,3 @@ AUDIO.VISUALIZER = (function () {
         getInstance: getInstance
     };
 })();
-/*
-document.addEventListener('DOMContentLoaded', function () {
-    'use strict';
-
-    AUDIO.VISUALIZER.getInstance({
-        autoplay: true,
-        loop: true,
-        audio: 'myAudio',
-        canvas: 'myCanvas',
-        style: 'lounge',
-        barWidth: 2,
-        barHeight: 2,
-        barSpacing: 7,
-        barColor: '#cafdff',
-        shadowBlur: 20,
-        shadowColor: '#ffffff',
-        font: ['12px', 'Helvetica']
-    });
-}, false);
-*/

@@ -155,8 +155,6 @@ export class AudioPlayer extends HTMLElement {
 
         </style>
 
-        <audio id="myAudio" muted></audio>
-
         <div id="content">
             <globular-playlist></globular-playlist>
 
@@ -173,8 +171,6 @@ export class AudioPlayer extends HTMLElement {
         this.appendChild(range.createContextualFragment(content))
 
         // give the focus to the input.
-        this.audio = this.querySelector("audio")
-
         let offsetTop = this.shadowRoot.querySelector(".header").offsetHeight
         if (offsetTop == 0) {
             offsetTop = 60
@@ -231,15 +227,23 @@ export class AudioPlayer extends HTMLElement {
     play(path, globule, title) {
         this.shadowRoot.querySelector("#container").style.display = "block"
         let filename = path.substring(path.lastIndexOf("/") + 1)
-        if (!this.audio.paused && this.audio.currentSrc.indexOf(filename) != -1) {
-            // Do nothing...
-            return
-        } else if (this.audio.paused && this.audio.currentSrc.indexOf(filename) != -1) {
-            // Resume the audio...
-            visualizer.playSound()
-            return
+
+        if (visualizer) {
+            if (visualizer.url.indexOf(filename) != -1 && visualizer.isPlaying) {
+                // Do nothing...
+                return
+            } else if (visualizer.url.indexOf(filename) != -1 && !visualizer.isPlaying) {
+
+                // Resume the audio...
+                wavesurfer.play()
+                visualizer.setBufferSourceNode(wavesurfer.backend.source)
+                .start(wavesurfer.getCurrentTime())
+
+                return
+            }
         }
 
+        this.stop()
 
         if (wavesurfer == null) {
             wavesurfer = WaveSurfer.create({
@@ -250,6 +254,12 @@ export class AudioPlayer extends HTMLElement {
                 background: 'transparent',
                 height: 70
             });
+
+            wavesurfer.on("seek", () => {
+                // refresh the source
+                visualizer.setBufferSourceNode(wavesurfer.backend.source)
+                .start(wavesurfer.getCurrentTime())
+            })
         }
 
         // Now I will set the visualizer...
@@ -257,7 +267,6 @@ export class AudioPlayer extends HTMLElement {
             visualizer = AUDIO.VISUALIZER.getInstance({
                 autoplay: false,
                 loop: false,
-                audio: 'myAudio',
                 canvas: 'myCanvas',
                 style: 'lounge',
                 barWidth: 2,
@@ -268,15 +277,30 @@ export class AudioPlayer extends HTMLElement {
                 shadowColor: '#ffffff',
                 font: ['12px', 'Helvetica']
             });
+
+
+            visualizer.onclick = () => {
+                wavesurfer.playPause()
+                if(visualizer.isPlaying){
+                    visualizer.pause()
+                }else{
+                    visualizer.setBufferSourceNode(wavesurfer.backend.source)
+                    .start(wavesurfer.getCurrentTime())
+                }
+            }
+
         } else {
-            visualizer.pauseSound()
+            wavesurfer.pause()
         }
-        this.audio.setAttribute("data-author", "")
-        this.audio.setAttribute("data-featuring", "")
+
+        visualizer.author = ""
+        visualizer.featuring = ""
+        visualizer.title = ""
+        visualizer.url = ""
 
         if (title) {
 
-            this.audio.setAttribute("data-title", title.getDescription())
+            visualizer.title = title.getDescription()
             this.shadowRoot.querySelector("#title-span").innerHTML = title.getDescription()
 
             if (title.getDescription().indexOf(" - ") != -1) {
@@ -294,7 +318,7 @@ export class AudioPlayer extends HTMLElement {
 
                 title_ = title_.replace(/ *\([^)]*\) */g, " ").replace(/ *\[[^)]*\] */g, " ").replace(/LYRICS/i, "");
 
-                this.audio.setAttribute("data-title", title_)
+                visualizer.title = title_
                 this.shadowRoot.querySelector("#title-span").innerHTML = title_
                 let author = title.getDescription().split(" - ")[0].replace(/FEAT./i, "ft.").trim()
 
@@ -305,19 +329,20 @@ export class AudioPlayer extends HTMLElement {
                     feat = author.split("(ft.")[1].replace(")", 0)
                     author = author.split(" ft.")[0]
                 }
+
                 feat = feat.replace(/ *\([^)]*\) */g, " ").replace(/ *\[[^)]*\] */g, " ");
 
                 if (feat.length > 0) {
-                    this.audio.setAttribute("data-featuring", feat)
+                    visualizer.featuring = feat
                 }
                 author = author.replace(/ *\([^)]*\) */g, " ").replace(/ *\[[^)]*\] */g, " ");
 
-                this.audio.setAttribute("data-author", author)
+                visualizer.author = author
             }
 
         } else {
             let values = path.split("/")
-            this.audio.setAttribute("data-title", values[values.length - 1])
+            visualizer.title = values[values.length - 1]
         }
 
         let url = globule.config.Protocol + "://" + globule.config.Domain
@@ -347,27 +372,28 @@ export class AudioPlayer extends HTMLElement {
             url += "&token=" + localStorage.getItem("user_token")
         }
 
-        // Set the path and play.
-        this.audio.src = url
+        visualizer.url = url
 
-        visualizer.setContext()
-            .setAnalyser()
-            .setFrequencyData()
-            .setBufferSourceNode()
-
-
-        wavesurfer.on("ready", ()=>{
-            wavesurfer.setMute(true) // keep the sound from the visualiser...
+        wavesurfer.on("ready", () => {
+            
             wavesurfer.play();
+
+            // start the visualization...
+            visualizer.setContext(wavesurfer.backend.ac)
+                .setAnalyser()
+                .setFrequencyData()
+                .setBufferSourceNode(wavesurfer.backend.source)
+                .start()
+                
         })
 
-        wavesurfer.getArrayBuffer(url, data=>{
-            
+        wavesurfer.on("finish", ()=>{
+            visualizer.stop()
+        })
+
+        wavesurfer.getArrayBuffer(url, data => {
             // Share the same request...
-            visualizer.loadSound(data)
-
             wavesurfer.loadArrayBuffer(data)
-
         })
 
     }
@@ -385,8 +411,8 @@ export class AudioPlayer extends HTMLElement {
     }
 
     stop() {
-        if (visualizer)
-            visualizer.pauseSound()
+        if (wavesurfer)
+            wavesurfer.stop()
     }
 }
 
