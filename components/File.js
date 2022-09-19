@@ -1845,6 +1845,8 @@ export class FilesIconView extends FilesView {
             }
 
             .file-type-section .title{
+                display: flex;
+                align-items: center;
                 font-size: 1.2rem;
                 font-weight: 400;
                 text-transform: uppercase;
@@ -1852,6 +1854,15 @@ export class FilesIconView extends FilesView {
                 border-bottom: 2px solid;
                 border-color: var(--palette-divider);
                 width: 66.66%;
+            }
+            
+            .file-type-section .title iron-icon{
+                height: 32px;
+                width: 32px;
+            }
+             
+            .file-type-section .title iron-icon:hover{
+                cursor: pointer;
             }
 
             .file-type-section .content {
@@ -2046,7 +2057,7 @@ export class FilesIconView extends FilesView {
             if (section == undefined && filesByType[fileType].length > 0) {
                 let html = `
                 <div class="file-type-section">
-                    <div class="title">${fileType} <span>(${filesByType[fileType].length})</span></div>
+                    <div class="title">${fileType} <span style="flex-grow: 1;">(${filesByType[fileType].length})</span> <iron-icon id="play-btn" style="display: none;" icon="av:play-arrow"></iron-icon></div>
                     <div class="content" id="${fileType}_section"></div>
                 </div>
                 `
@@ -2114,7 +2125,15 @@ export class FilesIconView extends FilesView {
                         }
                     }
 
+                    let playBtn = this.shadowRoot.querySelector("#play-btn")
+
+                    if(fileType == "video" || fileType == "audio") {
+                        playBtn.style.display = "block"
+                    }
+
                     if (fileType == "video") {
+                        
+
                         /** In that case I will display the vieo preview. */
                         getHiddenFiles(file.path, previewDir => {
                             let h = 72;

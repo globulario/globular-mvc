@@ -1,27 +1,8 @@
 export var AUDIO = AUDIO || {};
 
-
-function secondsToTime(secs) {
-    var hours = Math.floor(secs / (60 * 60));
-
-    var divisor_for_minutes = secs % (60 * 60);
-    var minutes = Math.floor(divisor_for_minutes / 60);
-
-    var divisor_for_seconds = divisor_for_minutes % 60;
-    var seconds = Math.ceil(divisor_for_seconds);
-
-    var obj = {
-        "h": hours,
-        "m": minutes,
-        "s": seconds
-    };
-    return obj;
-}
-
 AUDIO.VISUALIZER = (function () {
     'use strict';
 
-    var INTERVAL = null;
     var FFT_SIZE = 512;
     var TYPE = {
         'lounge': 'renderLounge'
@@ -43,10 +24,6 @@ AUDIO.VISUALIZER = (function () {
         this.analyser = null;
         this.sourceNode = null;
         this.frequencyData = [];
-        this.duration = 0;
-        this.hours = '00'
-        this.minutes = '00';
-        this.seconds = '00';
         this.style = cfg.style || 'lounge';
         this.barWidth = cfg.barWidth || 2;
         this.barHeight = cfg.barHeight || 2;
@@ -60,6 +37,7 @@ AUDIO.VISUALIZER = (function () {
         this.featuring = ""
         this.author = ""
         this.url = ""
+        this.time = "00:00:00"
     }
 
 
@@ -102,6 +80,10 @@ AUDIO.VISUALIZER = (function () {
      * @return {Object}
      */
     Visualizer.prototype.setBufferSourceNode = function (sourceNode) {
+        if(!sourceNode){
+            return
+        }
+
         this.sourceNode = sourceNode;
         this.sourceNode.connect(this.analyser);
         this.sourceNode.connect(this.ctx.destination);
@@ -150,14 +132,8 @@ AUDIO.VISUALIZER = (function () {
      * @param  {Object} buffer
      */
     Visualizer.prototype.start = function (time) {
-        this.resetTimer();
-
+ 
         this.isPlaying = true;
-
-        if (time)
-            this.duration = time
-
-        this.startTimer();
         this.renderFrame();
     };
 
@@ -166,8 +142,6 @@ AUDIO.VISUALIZER = (function () {
      * Stop the visualiser
      */
     Visualizer.prototype.stop = function () {
-        this.resetTimer()
-        this.duration = 0;
         this.isPlaying = false;
         this.renderTime()
     }
@@ -178,43 +152,6 @@ AUDIO.VISUALIZER = (function () {
      */
     Visualizer.prototype.pause = function () {
         this.isPlaying = false;
-    };
-
-    /**
-     * @description
-     * Start playing timer.
-     */
-    Visualizer.prototype.startTimer = function () {
-        if(INTERVAL){
-            return
-        }
-
-        var _this = this;
-
-        INTERVAL = setInterval(function () {
-            if (_this.isPlaying) {
-
-                let obj = secondsToTime(_this.duration)
-                var hours = obj.h
-                var min = obj.m
-                var sec = obj.s
-                _this.hours = (hours < 10) ? '0' + hours : hours;
-                _this.minutes = (min < 10) ? '0' + min : min;
-                _this.seconds = (sec < 10) ? '0' + sec : sec;
-
-                _this.duration += 1
-            }
-        }, 1000);
-    };
-
-    /**
-     * @description
-     * Reset time counter.
-     */
-    Visualizer.prototype.resetTimer = function () {
-        this.duration = 0;
-        clearInterval(INTERVAL)
-        INTERVAL = null
     };
 
     /**
@@ -278,14 +215,15 @@ AUDIO.VISUALIZER = (function () {
      * Render audio time.
      */
     Visualizer.prototype.renderTime = function () {
-        var time = this.hours + ':' + this.minutes + ':' + this.seconds;
+
+  
         if (this.featuring) {
-            this.canvasCtx.fillText(time, this.canvas.width / 2 + 10, this.canvas.height / 2 + 60);
+            this.canvasCtx.fillText(this.time, this.canvas.width / 2 + 10, this.canvas.height / 2 + 60);
         } else {
             if (this.author) {
-                this.canvasCtx.fillText(time, this.canvas.width / 2 + 10, this.canvas.height / 2 + 40);
+                this.canvasCtx.fillText(this.time, this.canvas.width / 2 + 10, this.canvas.height / 2 + 40);
             } else {
-                this.canvasCtx.fillText(time, this.canvas.width / 2 + 10, this.canvas.height / 2 + 20);
+                this.canvasCtx.fillText(this.time, this.canvas.width / 2 + 10, this.canvas.height / 2 + 20);
             }
         }
     };

@@ -8,6 +8,24 @@ import { setMoveable } from './moveable'
 import { setResizeable } from './rezieable'
 import WaveSurfer from "wavesurfer.js";
 
+export function secondsToTime(secs) {
+    var hours = Math.floor(secs / (60 * 60));
+
+    var divisor_for_minutes = secs % (60 * 60);
+    var minutes = Math.floor(divisor_for_minutes / 60);
+
+    var divisor_for_seconds = divisor_for_minutes % 60;
+    var seconds = Math.ceil(divisor_for_seconds);
+
+    var obj = {
+        "h": hours,
+        "m": minutes,
+        "s": seconds
+    };
+    return obj;
+}
+
+
 function getVideoInfo(globule, path, callback) {
 
     let rqst = new GetFileVideosRequest
@@ -149,10 +167,39 @@ export class AudioPlayer extends HTMLElement {
                 box-shadow: none;
             }
 
+            iron-icon {
+                fill: white;
+            }
+
             @media screen and (min-width: 420px) {
                 .vz-wrapper { box-shadow: inset 0 0 200px 60px #000; }
             }
 
+            .buttons{
+                display: flex;
+                justify-content: center;
+                height: 30px;
+
+            }
+
+            .buttons iron-icon{
+                transition: 0.3s;
+                height: 20px;
+                width: 20px;
+            }
+
+            .buttons span{
+                color: white;
+                font-size: .75rem;
+                padding-left: 2px;
+                padding-right: 2px;
+            }
+
+            .buttons iron-icon:hover{
+                cursor: pointer;
+                height: 24px;
+                width: 24px;
+            }
         </style>
 
         <div id="content">
@@ -161,14 +208,51 @@ export class AudioPlayer extends HTMLElement {
             <div class="vz-wrapper" style="display: flex; justify-content: center;">
                 <canvas id="myCanvas" width="800" height="400"></canvas>
                 <div id="waveform"></div>
+                <div class="buttons">
+                    <div style="display: flex; padding-left: 10px; padding-right: 10px; align-items: center;">
+                        <iron-icon id="skip-previous" title="Previous Track" icon="av:skip-previous"></iron-icon>
+                        <iron-icon id="fast-rewind" title="Rewind" icon="av:fast-rewind"></iron-icon>
+                        <iron-icon id="play-arrow" title="Play" icon="av:play-arrow"></iron-icon>
+                        <iron-icon id="pause" title="Pause" icon="av:pause"></iron-icon>
+                        <iron-icon id="stop" title="Stop" icon="av:stop"></iron-icon>
+                        <iron-icon id="fast-forward" title="Foward" icon="av:fast-forward"></iron-icon>
+                        <iron-icon id="skip-next" title="Next Track" icon="av:skip-next"></iron-icon>
+                    </div>
+                    <div style="flex-grow: 1; display: flex; align-items: center;">
+                        <paper-slider style="flex-grow: 1;"></paper-slider>
+                        <div  style="display: flex; align-items: center;">
+                            <span id="current-time"></span> <span>/</span> <span id="total-time"></span>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center;">
+                        <iron-icon title="Loop Playlist" id="repeat" icon="av:repeat"></iron-icon>
+                        <iron-icon title="Shuffle Playlist" id="shuffle" icon="av:shuffle"></iron-icon>
+                        <iron-icon id="volume-up" icon="av:volume-up"></iron-icon>
+                    </div>
+                </div>
             </div>
-               
-     
         </div>
         `
 
+
         let range = document.createRange()
         this.appendChild(range.createContextualFragment(content))
+
+
+        // Now the buttons actions.
+        this.skipPresiousBtn = this.querySelector("#skip-previous")
+        this.fastRewindBtn = this.querySelector("#fast-rewind")
+        this.playBtn = this.querySelector("#play-arrow")
+        this.pauseBtn = this.querySelector("#pause")
+        this.stopBtn = this.querySelector("#stop")
+        this.fastForwardBtn = this.querySelector("#fast-forward")
+        this.skipNextBtn = this.querySelector("#skip-next")
+        this.playSlider = this.querySelector("paper-slider")
+        this.loopBtn = this.querySelector("#repeat")
+        this.shuffleBtn = this.querySelector("#shuffle")
+        this.volumeBtn = this.querySelector("#volume-up")
+        this.currentTimeSpan = this.querySelector("#current-time")
+        this.totalTimeSpan = this.querySelector("#total-time")
 
         // give the focus to the input.
         let offsetTop = this.shadowRoot.querySelector(".header").offsetHeight
@@ -214,6 +298,7 @@ export class AudioPlayer extends HTMLElement {
             this.close()
         }
 
+
     }
 
     // The connection callback.
@@ -237,13 +322,19 @@ export class AudioPlayer extends HTMLElement {
                 // Resume the audio...
                 wavesurfer.play()
                 visualizer.setBufferSourceNode(wavesurfer.backend.source)
-                .start(wavesurfer.getCurrentTime())
+                    .start(wavesurfer.getCurrentTime())
+
+
+                this.playBtn.style.display = "none"
+                this.pauseBtn.style.display = "block"
 
                 return
             }
         }
 
         this.stop()
+        this.playBtn.style.display = "block"
+        this.pauseBtn.style.display = "none"
 
         if (wavesurfer == null) {
             wavesurfer = WaveSurfer.create({
@@ -252,13 +343,18 @@ export class AudioPlayer extends HTMLElement {
                 waveColor: '#93a1ad',
                 progressColor: '#172a39',
                 background: 'transparent',
-                height: 70
+                height: 70,
+                cursorColor: "#1976d2",
+                hideScrollbar: true
             });
 
             wavesurfer.on("seek", () => {
                 // refresh the source
                 visualizer.setBufferSourceNode(wavesurfer.backend.source)
-                .start(wavesurfer.getCurrentTime())
+                    .start(wavesurfer.getCurrentTime())
+
+                this.playBtn.style.display = "none"
+                this.pauseBtn.style.display = "block"
             })
         }
 
@@ -281,11 +377,15 @@ export class AudioPlayer extends HTMLElement {
 
             visualizer.onclick = () => {
                 wavesurfer.playPause()
-                if(visualizer.isPlaying){
+                if (visualizer.isPlaying) {
                     visualizer.pause()
-                }else{
+                    this.playBtn.style.display = "block"
+                    this.pauseBtn.style.display = "none"
+                } else {
                     visualizer.setBufferSourceNode(wavesurfer.backend.source)
-                    .start(wavesurfer.getCurrentTime())
+                        .start(wavesurfer.getCurrentTime())
+                    this.playBtn.style.display = "none"
+                    this.pauseBtn.style.display = "block"
                 }
             }
 
@@ -375,7 +475,20 @@ export class AudioPlayer extends HTMLElement {
         visualizer.url = url
 
         wavesurfer.on("ready", () => {
-            
+
+            this.playSlider.max = wavesurfer.getDuration();
+
+            // display the track lenght...
+            let obj = secondsToTime(wavesurfer.getDuration())
+            var hours = obj.h
+            var min = obj.m
+            var sec = obj.s
+            let hours_ = (hours < 10) ? '0' + hours : hours;
+            let minutes_ = (min < 10) ? '0' + min : min;
+            let seconds_ = (sec < 10) ? '0' + sec : sec;
+
+            this.totalTimeSpan.innerHTML = hours_ + ":" + minutes_ + ":" + seconds_;
+
             wavesurfer.play();
 
             // start the visualization...
@@ -384,10 +497,36 @@ export class AudioPlayer extends HTMLElement {
                 .setFrequencyData()
                 .setBufferSourceNode(wavesurfer.backend.source)
                 .start()
-                
+
+            this.playBtn.style.display = "none"
+            this.pauseBtn.style.display = "block"
+
         })
 
-        wavesurfer.on("finish", ()=>{
+        // Connect the play process...
+        wavesurfer.on("audioprocess", (position) => {
+
+            
+
+            let percent = position / wavesurfer.getDuration();
+            this.playSlider.value = position
+
+            this.playSlider.title = parseFloat(percent * 100).toFixed(2) + "%"
+
+            // display the track lenght...
+            let obj = secondsToTime(position)
+            var hours = obj.h
+            var min = obj.m
+            var sec = obj.s
+            let hours_ = (hours < 10) ? '0' + hours : hours;
+            let minutes_ = (min < 10) ? '0' + min : min;
+            let seconds_ = (sec < 10) ? '0' + sec : sec;
+
+            visualizer.time = this.currentTimeSpan.innerHTML = hours_ + ":" + minutes_ + ":" + seconds_;
+
+        })
+
+        wavesurfer.on("finish", () => {
             visualizer.stop()
         })
 
@@ -396,6 +535,21 @@ export class AudioPlayer extends HTMLElement {
             wavesurfer.loadArrayBuffer(data)
         })
 
+        // Actions...
+        this.playBtn.onclick = () => {
+            wavesurfer.playPause()
+            visualizer.setBufferSourceNode(wavesurfer.backend.source)
+                .start(wavesurfer.getCurrentTime())
+            this.playBtn.style.display = "none"
+            this.pauseBtn.style.display = "block"
+        }
+
+        this.pauseBtn.onclick = () => {
+            visualizer.pause()
+            wavesurfer.playPause()
+            this.playBtn.style.display = "block"
+            this.pauseBtn.style.display = "none"
+        }
     }
 
 
@@ -413,6 +567,9 @@ export class AudioPlayer extends HTMLElement {
     stop() {
         if (wavesurfer)
             wavesurfer.stop()
+
+        this.playBtn.style.display = "block"
+        this.pauseBtn.style.display = "none"
     }
 }
 
