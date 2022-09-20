@@ -2057,7 +2057,7 @@ export class FilesIconView extends FilesView {
             if (section == undefined && filesByType[fileType].length > 0) {
                 let html = `
                 <div class="file-type-section">
-                    <div class="title">${fileType} <span style="flex-grow: 1;">(${filesByType[fileType].length})</span> <iron-icon id="play-btn" style="display: none;" icon="av:play-arrow"></iron-icon></div>
+                    <div class="title">${fileType} <span style="flex-grow: 1;">(${filesByType[fileType].length})</span> </div>
                     <div class="content" id="${fileType}_section"></div>
                 </div>
                 `
@@ -2123,12 +2123,6 @@ export class FilesIconView extends FilesView {
                         for (var i = 0; i < fileIconDivs.length; i++) {
                             fileIconDivs[i].classList.remove("active")
                         }
-                    }
-
-                    let playBtn = this.shadowRoot.querySelector("#play-btn")
-
-                    if(fileType == "video" || fileType == "audio") {
-                        playBtn.style.display = "block"
                     }
 
                     if (fileType == "video") {

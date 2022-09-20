@@ -275,6 +275,7 @@ export class Application extends Model {
             evt.email,
             evt.pwd,
             evt.repwd,
+            evt.domain,
             (data: any) => {
               console.log("--> register succeed!", data);
             },
@@ -727,6 +728,7 @@ export class Application extends Model {
     email: string,
     password: string,
     confirmPassord: string,
+    domain:string,
     onRegister: (account: Account) => void,
     onError: (err: any) => void
   ): Account {
@@ -739,7 +741,7 @@ export class Application extends Model {
     account.setEmail(email);
     account.setName(name);
     account.setId(name)
-    account.setDomain(Application.domain)
+    account.setDomain(domain)
     rqst.setAccount(account);
 
     ApplicationView.wait(
@@ -759,6 +761,8 @@ export class Application extends Model {
         localStorage.setItem("user_name", (<any>decoded).username);
         localStorage.setItem("token_expired", (<any>decoded).exp);
         localStorage.setItem("user_email", (<any>decoded).email);
+        localStorage.setItem("user_domain", (<any>decoded).user_domain);
+        
 
         let rqst = new CreateConnectionRqst
         let connectionId = name.split("@").join("_").split(".").join("_");

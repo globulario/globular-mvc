@@ -82,12 +82,13 @@ AUDIO.VISUALIZER = (function () {
     Visualizer.prototype.setBufferSourceNode = function (sourceNode) {
         if(!sourceNode){
             return
+        }else{
+            this.analyser.disconnect()
         }
-
+        
+        
         this.sourceNode = sourceNode;
         this.sourceNode.connect(this.analyser);
-        this.sourceNode.connect(this.ctx.destination);
-
 
         return this;
     };
@@ -215,8 +216,6 @@ AUDIO.VISUALIZER = (function () {
      * Render audio time.
      */
     Visualizer.prototype.renderTime = function () {
-
-  
         if (this.featuring) {
             this.canvasCtx.fillText(this.time, this.canvas.width / 2 + 10, this.canvas.height / 2 + 60);
         } else {

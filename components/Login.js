@@ -322,11 +322,12 @@ export class RegisterBox extends HTMLElement {
             let pwd = passwordInput.value
             let repwd = retypePasswordInput.value
             let email = emailInput.value
+            let domain = Model.domain
 
             this.parentNode.removeChild(this)
 
             // so here I will throw a event.
-            Model.eventHub.publish("register_event_", { userId: userId, email: email, pwd: pwd, repwd: repwd }, true)
+            Model.eventHub.publish("register_event_", { userId: userId, email: email, pwd: pwd, repwd: repwd, domain:domain }, true)
         }
     }
 

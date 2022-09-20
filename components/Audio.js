@@ -176,10 +176,11 @@ export class AudioPlayer extends HTMLElement {
             }
 
             .buttons{
+                margin-top: 20px;
                 display: flex;
                 justify-content: center;
-                height: 30px;
-
+                align-items: center;
+                flex-direction: column;
             }
 
             .buttons iron-icon{
@@ -200,6 +201,56 @@ export class AudioPlayer extends HTMLElement {
                 height: 24px;
                 width: 24px;
             }
+
+            .toolbar iron-icon{
+                transition: 0.3s;
+                height: 28px;
+                width: 28px;
+            }
+
+            .toolbar iron-icon:hover{
+                cursor: pointer;
+                height: 32px;
+                width: 32px;
+            }
+
+            .toolbar #pause, #play-arrow{
+                transition: 0.3s;
+                height: 40px;
+                width: 40px;
+            }
+
+            .toolbar #pause:hover, #play-arrow:hover{
+                cursor: pointer;
+                height: 42px;
+                width: 42px;
+            }
+
+            #shuffle, #skip-previous{
+                padding-right: 20px;
+            }
+
+            #repeat, #skip-next{
+                padding-left: 20px;
+            }
+
+            #skip-previous{
+                padding-right: 10px;
+            }
+
+            #skip-next{
+                padding-left: 10px;
+            }
+
+            #volume-up{
+                
+            }
+
+            #waveform{
+                width: 90%;
+                align-self: center;
+            }
+
         </style>
 
         <div id="content">
@@ -209,25 +260,25 @@ export class AudioPlayer extends HTMLElement {
                 <canvas id="myCanvas" width="800" height="400"></canvas>
                 <div id="waveform"></div>
                 <div class="buttons">
-                    <div style="display: flex; padding-left: 10px; padding-right: 10px; align-items: center;">
+                    <div class="toolbar" style="display: flex; padding-left: 10px; padding-right: 10px; align-items: center;  height: 40px;">
+                        <iron-icon title="Shuffle Playlist" id="shuffle" icon="av:shuffle"></iron-icon>
                         <iron-icon id="skip-previous" title="Previous Track" icon="av:skip-previous"></iron-icon>
                         <iron-icon id="fast-rewind" title="Rewind" icon="av:fast-rewind"></iron-icon>
-                        <iron-icon id="play-arrow" title="Play" icon="av:play-arrow"></iron-icon>
-                        <iron-icon id="pause" title="Pause" icon="av:pause"></iron-icon>
-                        <iron-icon id="stop" title="Stop" icon="av:stop"></iron-icon>
+                        <iron-icon id="play-arrow" title="Play" icon="av:play-circle-outline"></iron-icon>
+                        <iron-icon id="pause" title="Pause" icon="av:pause-circle-outline"></iron-icon>
                         <iron-icon id="fast-forward" title="Foward" icon="av:fast-forward"></iron-icon>
                         <iron-icon id="skip-next" title="Next Track" icon="av:skip-next"></iron-icon>
+                        <iron-icon id="stop" title="Stop" icon="av:stop"></iron-icon>
+                        <iron-icon title="Loop Playlist" id="repeat" icon="av:repeat"></iron-icon>
                     </div>
-                    <div style="flex-grow: 1; display: flex; align-items: center;">
+                    <div style="flex-grow: 1; display: flex; align-items: center; width: 100%;">
                         <paper-slider style="flex-grow: 1;"></paper-slider>
-                        <div  style="display: flex; align-items: center;">
+                        <div  style="display: flex; align-items: center; padding-right: 10px;">
                             <span id="current-time"></span> <span>/</span> <span id="total-time"></span>
                         </div>
-                    </div>
-                    <div style="display: flex; align-items: center;">
-                        <iron-icon title="Loop Playlist" id="repeat" icon="av:repeat"></iron-icon>
-                        <iron-icon title="Shuffle Playlist" id="shuffle" icon="av:shuffle"></iron-icon>
-                        <iron-icon id="volume-up" icon="av:volume-up"></iron-icon>
+                        <div style="position: relative;">
+                            <iron-icon id="volume-up" icon="av:volume-up"></iron-icon>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -299,6 +350,14 @@ export class AudioPlayer extends HTMLElement {
         }
 
 
+        this.querySelector("#content").onclick = () => {
+
+            let volumePanel = this.volumeBtn.parentNode.querySelector("#volume-panel")
+            if (volumePanel) {
+                volumePanel.parentNode.removeChild(volumePanel)
+            }
+        }
+
     }
 
     // The connection callback.
@@ -320,13 +379,14 @@ export class AudioPlayer extends HTMLElement {
             } else if (visualizer.url.indexOf(filename) != -1 && !visualizer.isPlaying) {
 
                 // Resume the audio...
-                wavesurfer.play()
                 visualizer.setBufferSourceNode(wavesurfer.backend.source)
                     .start(wavesurfer.getCurrentTime())
 
 
                 this.playBtn.style.display = "none"
                 this.pauseBtn.style.display = "block"
+
+                wavesurfer.play()
 
                 return
             }
@@ -353,8 +413,13 @@ export class AudioPlayer extends HTMLElement {
                 visualizer.setBufferSourceNode(wavesurfer.backend.source)
                     .start(wavesurfer.getCurrentTime())
 
-                this.playBtn.style.display = "none"
-                this.pauseBtn.style.display = "block"
+                if (wavesurfer.isPlaying()) {
+                    this.playBtn.style.display = "none"
+                    this.pauseBtn.style.display = "block"
+                } else {
+                    this.playBtn.style.display = "block"
+                    this.pauseBtn.style.display = "none"
+                }
             })
         }
 
@@ -376,23 +441,26 @@ export class AudioPlayer extends HTMLElement {
 
 
             visualizer.onclick = () => {
-                wavesurfer.playPause()
-                if (visualizer.isPlaying) {
+
+                if (wavesurfer.isPlaying()) {
                     visualizer.pause()
                     this.playBtn.style.display = "block"
                     this.pauseBtn.style.display = "none"
+                    wavesurfer.pause()
                 } else {
+                    wavesurfer.play()
                     visualizer.setBufferSourceNode(wavesurfer.backend.source)
                         .start(wavesurfer.getCurrentTime())
                     this.playBtn.style.display = "none"
                     this.pauseBtn.style.display = "block"
-                }
-            }
 
-        } else {
-            wavesurfer.pause()
+                }
+
+            }
         }
 
+
+        // reset visualiser values.
         visualizer.author = ""
         visualizer.featuring = ""
         visualizer.title = ""
@@ -503,13 +571,49 @@ export class AudioPlayer extends HTMLElement {
 
         })
 
+        this.fastForwardBtn.onclick = () => {
+            if (!visualizer.isPlaying) {
+                return
+            }
+
+            let position = this.playSlider.value / this.playSlider.max;
+            position += .1
+            if (position < 1) {
+                wavesurfer.seekAndCenter(position)
+            } else {
+                this.stop()
+            }
+        }
+
+        this.fastRewindBtn.onclick = () => {
+            if (!visualizer.isPlaying) {
+                return
+            }
+
+            let position = this.playSlider.value / this.playSlider.max;
+            position -= .1
+            if (position > 0) {
+                wavesurfer.seekAndCenter(position)
+            } else {
+                this.stop()
+            }
+        }
+
+        this.playSlider.onmousedown = () => {
+            this.playSlider.busy = true
+        }
+
+        this.playSlider.onmouseup = () => {
+            wavesurfer.seekTo(this.playSlider.value / this.playSlider.max)
+            this.playSlider.busy = false
+        }
+
         // Connect the play process...
         wavesurfer.on("audioprocess", (position) => {
 
-            
-
             let percent = position / wavesurfer.getDuration();
-            this.playSlider.value = position
+            if (!this.playSlider.busy)
+                this.playSlider.value = position
 
             this.playSlider.title = parseFloat(percent * 100).toFixed(2) + "%"
 
@@ -527,17 +631,12 @@ export class AudioPlayer extends HTMLElement {
         })
 
         wavesurfer.on("finish", () => {
-            visualizer.stop()
-        })
-
-        wavesurfer.getArrayBuffer(url, data => {
-            // Share the same request...
-            wavesurfer.loadArrayBuffer(data)
+            this.stop()
         })
 
         // Actions...
         this.playBtn.onclick = () => {
-            wavesurfer.playPause()
+            wavesurfer.play()
             visualizer.setBufferSourceNode(wavesurfer.backend.source)
                 .start(wavesurfer.getCurrentTime())
             this.playBtn.style.display = "none"
@@ -546,10 +645,99 @@ export class AudioPlayer extends HTMLElement {
 
         this.pauseBtn.onclick = () => {
             visualizer.pause()
-            wavesurfer.playPause()
+            wavesurfer.pause()
             this.playBtn.style.display = "block"
             this.pauseBtn.style.display = "none"
         }
+
+        // stop the audio player....
+        this.stopBtn.onclick = () => {
+            this.stop()
+        }
+
+        // The volume button...
+        this.volumeBtn.onclick = (evt) => {
+            evt.stopPropagation()
+
+            let volumePanel = this.volumeBtn.parentNode.querySelector("#volume-panel")
+            if (volumePanel) {
+                volumePanel.parentNode.removeChild(volumePanel)
+                return
+            }
+
+            let html = `
+                <paper-card id="volume-panel" style="position: absolute; top:-42px; right: 0px;">
+                    <div style="display: flex; align-items: center;">
+                        <iron-icon id="volume-down-btn" icon="av:volume-down" style="fill: black;" ></iron-icon>
+                        <paper-slider style=""></paper-slider>
+                        <iron-icon id="volume-up-btn" icon="av:volume-up" style="fill: black;"></iron-icon>
+                    </div>
+                </paper-card>
+            `
+
+            let range = document.createRange()
+            this.volumeBtn.parentNode.appendChild(range.createContextualFragment(html))
+            volumePanel = this.volumeBtn.parentNode.querySelector("#volume-panel")
+            volumePanel.querySelector("paper-slider").max = 100
+
+            if (wavesurfer.getVolume() == 0) {
+                volumePanel.querySelector("#volume-down-btn").icon = "av:volume-off"
+            } else {
+                volumePanel.querySelector("#volume-down-btn").icon = "av:volume-down"
+            }
+
+
+            // set the slider position.
+            volumePanel.querySelector("paper-slider").value = wavesurfer.getVolume() * 100
+
+            volumePanel.querySelector("paper-slider").onclick = (evt) => {
+                evt.stopPropagation()
+            }
+
+            volumePanel.querySelector("paper-slider").onchange = () => {
+                let volume = Number(volumePanel.querySelector("paper-slider").value / 100)
+                wavesurfer.setVolume(volume)
+
+                if (volume == 0) {
+                    volumePanel.querySelector("#volume-down-btn").icon = "av:volume-off"
+                } else {
+                    volumePanel.querySelector("#volume-down-btn").icon = "av:volume-down"
+                }
+            }
+
+            volumePanel.querySelector("#volume-down-btn").onclick = (evt) => {
+                evt.stopPropagation()
+
+                let volume = volumePanel.querySelector("paper-slider").value
+
+
+                if (volume == 0) {
+                    volumePanel.querySelector("#volume-down-btn").icon = "av:volume-off"
+                    wavesurfer.setVolume(0)
+                    volumePanel.querySelector("paper-slider").value = 0
+                } else {
+                    volume -= 10
+                    volumePanel.querySelector("#volume-down-btn").icon = "av:volume-down"
+                    volumePanel.querySelector("paper-slider").value = volume
+                    wavesurfer.setVolume(Number(volume / 100))
+                }
+            }
+
+            volumePanel.querySelector("#volume-up-btn").onclick = (evt) => {
+                evt.stopPropagation()
+
+                let volume = volumePanel.querySelector("paper-slider").value
+
+                if (volume < 100) {
+                    volume += 10
+                    volumePanel.querySelector("paper-slider").value = volume
+                    wavesurfer.setVolume(Number(volume / 100))
+                }
+            }
+        }
+
+        wavesurfer.load(url)
+
     }
 
 
@@ -565,8 +753,19 @@ export class AudioPlayer extends HTMLElement {
     }
 
     stop() {
-        if (wavesurfer)
+
+        this.playSlider.value = 0;
+
+        if (wavesurfer) {
             wavesurfer.stop()
+            wavesurfer.seekAndCenter(0)
+        }
+
+        if (visualizer) {
+            visualizer.stop()
+            visualizer.isPlaying = false
+            visualizer.time = "00:00:00"
+        }
 
         this.playBtn.style.display = "block"
         this.pauseBtn.style.display = "none"

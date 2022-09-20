@@ -332,7 +332,12 @@ export class SentContactInvitations extends HTMLElement {
             ApplicationView.displayMessage(err, 3000)
         })
 
-        let globule = Model.getGlobule(account.session.domain)
+        let domain = Application.domain
+        if(account.session){
+            domain = account.session.domain
+        }
+
+        let globule = Model.getGlobule(domain)
 
         globule.eventHub.subscribe("revoked_" + account.id + "@" + account.domain + "_evt",
             (uuid) => { },
@@ -435,7 +440,12 @@ export class ReceivedContactInvitations extends HTMLElement {
         this.onAcceptContact = onAcceptContact;
         this.onDeclineContact = onDeclineContact;
 
-        let globule = Model.getGlobule(account.session.domain) // connect to the local event hub...
+        let domain = Application.domain
+        if(account.session){
+            domain = account.session.domain
+        }
+        
+        let globule = Model.getGlobule(domain) // connect to the local event hub...
 
         globule.eventHub.subscribe("received_" + account.id + "@" + account.domain + "_evt",
             (uuid) => { },
@@ -586,8 +596,12 @@ export class ContactList extends HTMLElement {
 
         this.account = account;
         this.onDeleteContact = onDeleteContact;
+        let domain = Application.domain
+        if(account.session){
+            domain = account.session.domain
+        }
 
-        let globule = Model.getGlobule(account.session.domain)
+        let globule = Model.getGlobule(domain)
 
         globule.eventHub.subscribe("accepted_" + account.id + "@" + account.domain + "_evt",
             (uuid) => { },
