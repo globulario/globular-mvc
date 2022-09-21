@@ -1471,6 +1471,10 @@ export class FilesView extends HTMLElement {
                             xmlhttp.setRequestHeader("domain", globule.config.Domain);
                             xmlhttp.send();
                         }
+
+
+                        // Publish local event.
+                        Model.eventHub.publish("__upload_link_event__", { pid: pid, path: this.__dir__.path, infos: rsp.getResult(), done: false, lnk: lnk }, true);
                     });
 
                     stream.on("status", (status) => {

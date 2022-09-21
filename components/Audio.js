@@ -545,6 +545,9 @@ export class AudioPlayer extends HTMLElement {
         wavesurfer.on("ready", () => {
 
             this.playSlider.max = wavesurfer.getDuration();
+            if (localStorage.getItem("audio_volume")) {
+                wavesurfer.setVolume(parseFloat(localStorage.getItem("audio_volume")))
+            }
 
             // display the track lenght...
             let obj = secondsToTime(wavesurfer.getDuration())
@@ -697,11 +700,12 @@ export class AudioPlayer extends HTMLElement {
             volumePanel.querySelector("paper-slider").onchange = () => {
                 let volume = Number(volumePanel.querySelector("paper-slider").value / 100)
                 wavesurfer.setVolume(volume)
-
+                localStorage.setItem("audio_volume", volume)
                 if (volume == 0) {
-                    volumePanel.querySelector("#volume-down-btn").icon = "av:volume-off"
+                    this.volumeBtn.icon = volumePanel.querySelector("#volume-down-btn").icon = "av:volume-off"
                 } else {
                     volumePanel.querySelector("#volume-down-btn").icon = "av:volume-down"
+                    this.volumeBtn.icon = "av:volume-up"
                 }
             }
 
@@ -710,14 +714,14 @@ export class AudioPlayer extends HTMLElement {
 
                 let volume = volumePanel.querySelector("paper-slider").value
 
-
-                if (volume == 0) {
-                    volumePanel.querySelector("#volume-down-btn").icon = "av:volume-off"
+                volume -= 10
+                if (volume <= 0) {
+                    this.volumeBtn.icon = volumePanel.querySelector("#volume-down-btn").icon = "av:volume-off"
                     wavesurfer.setVolume(0)
                     volumePanel.querySelector("paper-slider").value = 0
                 } else {
-                    volume -= 10
                     volumePanel.querySelector("#volume-down-btn").icon = "av:volume-down"
+                    this.volumeBtn.icon = "av:volume-up"
                     volumePanel.querySelector("paper-slider").value = volume
                     wavesurfer.setVolume(Number(volume / 100))
                 }
@@ -727,6 +731,8 @@ export class AudioPlayer extends HTMLElement {
                 evt.stopPropagation()
 
                 let volume = volumePanel.querySelector("paper-slider").value
+                volumePanel.querySelector("#volume-down-btn").icon = "av:volume-down"
+                this.volumeBtn.icon = "av:volume-up"
 
                 if (volume < 100) {
                     volume += 10
