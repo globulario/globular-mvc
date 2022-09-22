@@ -76,6 +76,7 @@
     "html-beautify": "^1.0.4",
     "html-element-to-image": "^2.1.1",
     "html2canvas": "^1.4.1",
+    "iptv-playlist-parser": "^0.12.1",
     "js-beautify": "^1.14.4",
     "materialize-css": "^1.0.0",
     "namesgenerator": "0.0.1",

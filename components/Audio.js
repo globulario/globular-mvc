@@ -7,6 +7,7 @@ import { AUDIO } from "./visualizer"
 import { setMoveable } from './moveable'
 import { setResizeable } from './rezieable'
 import WaveSurfer from "wavesurfer.js";
+import {PlayList} from "./Playlist"
 
 export function secondsToTime(secs) {
     var hours = Math.floor(secs / (60 * 60));
@@ -44,6 +45,7 @@ function getVideoInfo(globule, path, callback) {
 }
 
 export function playAudio(path, onplay, onclose, title, globule) {
+
     let audioPlayer = document.getElementById("audio-player-x")
 
     if (audioPlayer == null) {
@@ -65,7 +67,12 @@ export function playAudio(path, onplay, onclose, title, globule) {
     }
 
     // play a given title.
-    audioPlayer.play(path, globule, title)
+    if (path.endsWith("audio.m3u")) {
+        audioPlayer.loadPlaylist(path, globule)
+    } else {
+        audioPlayer.play(path, globule, title)
+    }
+
 
     return audioPlayer
 }
@@ -304,6 +311,7 @@ export class AudioPlayer extends HTMLElement {
         this.volumeBtn = this.querySelector("#volume-up")
         this.currentTimeSpan = this.querySelector("#current-time")
         this.totalTimeSpan = this.querySelector("#total-time")
+        this.playlist = this.querySelector("globular-playlist")
 
         // give the focus to the input.
         let offsetTop = this.shadowRoot.querySelector(".header").offsetHeight
@@ -701,6 +709,7 @@ export class AudioPlayer extends HTMLElement {
                 let volume = Number(volumePanel.querySelector("paper-slider").value / 100)
                 wavesurfer.setVolume(volume)
                 localStorage.setItem("audio_volume", volume)
+
                 if (volume == 0) {
                     this.volumeBtn.icon = volumePanel.querySelector("#volume-down-btn").icon = "av:volume-off"
                 } else {
@@ -743,9 +752,12 @@ export class AudioPlayer extends HTMLElement {
         }
 
         wavesurfer.load(url)
-
     }
 
+    // load the playlist...
+    loadPlaylist(path, globule) {
+        this.playlist.load(path, globule)
+    }
 
     /**
      * Close the player...
