@@ -37,7 +37,7 @@ AUDIO.VISUALIZER = (function () {
         this.featuring = ""
         this.author = ""
         this.url = ""
-        this.time = "00:00:00"
+        this.time = "--:--:--"
     }
 
 
@@ -45,6 +45,9 @@ AUDIO.VISUALIZER = (function () {
      * Set the context reference
      */
     Visualizer.prototype.setContext = function (ctx) {
+        if(this.ctx){
+            return this
+        }
         this.ctx = ctx;
         return this;
     }
@@ -56,6 +59,10 @@ AUDIO.VISUALIZER = (function () {
      * @return {Object}
      */
     Visualizer.prototype.setAnalyser = function () {
+        if(this.analyser){
+            return this
+        }
+
         this.analyser = this.ctx.createAnalyser();
         this.analyser.smoothingTimeConstant = 0.6;
         this.analyser.fftSize = FFT_SIZE;
@@ -69,6 +76,10 @@ AUDIO.VISUALIZER = (function () {
      * @return {Object}
      */
     Visualizer.prototype.setFrequencyData = function () {
+        if(!this.analyser){
+            return this
+        }
+
         this.frequencyData = new Uint8Array(this.analyser.frequencyBinCount);
         return this;
     };
@@ -85,7 +96,6 @@ AUDIO.VISUALIZER = (function () {
         }else{
             this.analyser.disconnect()
         }
-        
         
         this.sourceNode = sourceNode;
         this.sourceNode.connect(this.analyser);
@@ -170,6 +180,14 @@ AUDIO.VISUALIZER = (function () {
      * Render frame on canvas.
      */
     Visualizer.prototype.renderFrame = function () {
+        if(!this.frequencyData){
+            return
+        }
+
+        if(!this.canvasCtx){
+            return
+        }
+
         requestAnimationFrame(this.renderFrame.bind(this));
         this.analyser.getByteFrequencyData(this.frequencyData);
 

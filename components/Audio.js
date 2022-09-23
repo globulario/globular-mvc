@@ -33,6 +33,8 @@ export function playAudio(path, onplay, onclose, title, globule) {
     if (audioPlayer == null) {
         audioPlayer = new AudioPlayer()
         audioPlayer.id = "audio-player-x"
+    }else{
+        audioPlayer.stop()
     }
 
     audioPlayer.style.height = "0px"
@@ -48,9 +50,10 @@ export function playAudio(path, onplay, onclose, title, globule) {
         audioPlayer.onclose = onclose
     }
 
+   
+
     // play a given title.
     if (path.endsWith("audio.m3u")) {
-        audioPlayer.stop()
         audioPlayer.loadPlaylist(path, globule)
         audioPlayer.showPlaylist()
     } else {
@@ -359,9 +362,15 @@ export class AudioPlayer extends HTMLElement {
                 .start(this.wavesurfer.getCurrentTime())
             this.playBtn.style.display = "none"
             this.pauseBtn.style.display = "block"
+            if(this.playlist){
+                this.playlist.resumePlaying()
+            }
         }
 
         this.pauseBtn.onclick = () => {
+            if(this.playlist){
+                this.playlist.pausePlaying()
+            }
             this.pause()
         }
 
@@ -566,13 +575,18 @@ export class AudioPlayer extends HTMLElement {
                 this.playBtn.style.display = "block"
                 this.pauseBtn.style.display = "none"
                 this.wavesurfer.pause()
+                if(this.playlist){
+                    this.playlist.pausePlaying()
+                }
             } else {
                 this.wavesurfer.play()
                 this.visualizer.setBufferSourceNode(this.wavesurfer.backend.source)
                     .start(this.wavesurfer.getCurrentTime())
                 this.playBtn.style.display = "none"
                 this.pauseBtn.style.display = "block"
-
+                if(this.playlist){
+                    this.playlist.resumePlaying()
+                }
             }
 
         }
@@ -599,6 +613,7 @@ export class AudioPlayer extends HTMLElement {
             this.wavesurfer.play();
 
             // start the visualization...
+            
             this.visualizer.setContext(this.wavesurfer.backend.ac)
                 .setAnalyser()
                 .setFrequencyData()
@@ -674,7 +689,9 @@ export class AudioPlayer extends HTMLElement {
         this.visualizer.featuring = ""
         this.visualizer.title = ""
         this.visualizer.url = ""
-
+        this.visualizer.time = "loading..."
+        this.visualizer.renderTime();
+        
         if (title) {
 
             this.visualizer.title = title.getDescription().replaceAll("|", " - ")
@@ -755,6 +772,7 @@ export class AudioPlayer extends HTMLElement {
             }
         }
 
+        this.visualizer.time = "loading..."
         this.visualizer.url = url
         this.wavesurfer.load(url)
     }
@@ -795,7 +813,7 @@ export class AudioPlayer extends HTMLElement {
         if (this.visualizer) {
             this.visualizer.stop()
             this.visualizer.isPlaying = false
-            this.visualizer.time = "00:00:00"
+            this.visualizer.time = "--:--:--"
         }
 
         this.playBtn.style.display = "block"

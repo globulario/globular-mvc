@@ -3,6 +3,7 @@ import parser from 'iptv-playlist-parser'
 import { Model } from "../Model";
 import { GetVideoByIdRequest } from "globular-web-client/title/title_pb.js";
 import { Application } from "../Application";
+import { fireResize } from "./utility.js";
 
 // retreive video with a given id.
 function getVideoInfo(globule, id, callback) {
@@ -44,39 +45,62 @@ export class PlayList extends HTMLElement {
                 display: table;
                 border-collapse: separate;
                 border-spacing: 10px;
+                flex-flow: 1;
+
             }
 
             #container {
+                position: relative;
                 display: flex;
                 flex-direction: column;
+                height: 100%;
+                overflow: auto;
             }
 
             ::slotted(globular-playlist-item) {
                 display: table-row;
+                padding: 2px;
+            }
+
+            #playing{
+                position: absolute;
+            }
+
+            ::slotted(.playing) {
+                -webkit-box-shadow: inset 5px 5px 15px 5px #152635; 
+                box-shadow: inset 5px 5px 15px 5px #152635;
             }
 
         </style>
+        <div id="playing"></div>
         <div id="container">
-            <div id="playing">
-            </div>
             <div id="items">
                 <slot></slot>
             </div>
         </div>
         `
 
+
         // give the focus to the input.
-        let container = this.shadowRoot.querySelector("#container")
         this.style.display = "table"
         this.playlist = null;
         this.audioPlayer = null;
         this.globule = null;
         this.items = []
+
+        window.addEventListener("resize", () => {
+            let playingDiv = this.shadowRoot.querySelector("#playing")
+            let container = this.shadowRoot.querySelector("#container")
+            container.style.marginTop = playingDiv.offsetHeight + "px"
+
+            // set the container height.
+            container.style.height = this.offsetHeight - playingDiv.offsetHeight + 10 + "px"
+        })
     }
 
     // The connection callback.
     connectedCallback() {
-
+        fireResize()
     }
 
     play(item) {
@@ -106,10 +130,10 @@ export class PlayList extends HTMLElement {
     }
 
     load(path, globule, audioPlayer) {
-
         // keep refrence to the audio player.
         this.audioPlayer = audioPlayer;
         this.globule = globule
+        this.itmes = []
 
         let url = globule.config.Protocol + "://" + globule.config.Domain
         if (window.location != globule.config.Domain) {
@@ -159,8 +183,7 @@ export class PlayList extends HTMLElement {
         this.playlist.items.forEach(item => {
             let item_ = new PlayListItem(item, this, this.items.length)
 
-            item_.onmouseenter = () => {
-                //item_.style.cursor = "pointer"
+            item_.onmouseover = () => {
                 if (item_.isPlaying) {
                     item_.showPauseButton()
                     item_.hidePlayButton()
@@ -171,7 +194,6 @@ export class PlayList extends HTMLElement {
             }
 
             item_.onmouseleave = () => {
-                //item_.style.cursor = "default"
                 if (item_.isPlaying) {
                     item_.showPlayButton()
                     item_.hidePauseButton()
@@ -189,16 +211,54 @@ export class PlayList extends HTMLElement {
         if (this.items.length > 0) {
             this.setPlaying(this.items[0])
         }
+
+        fireResize()
+
+    }
+
+
+    displayPlaying(item) {
+        let playingDiv = this.shadowRoot.querySelector("#playing")
+
+        let html = `
+            <div style="display: flex;justify-content: center;padding: 15px;">
+                <img style="width: 300px; /**/" src="${item.item.tvg.logo}"></img>
+            </div>
+        `
+        playingDiv.innerHTML = html;
+
+        fireResize()
+
+        this.shadowRoot.querySelector("#container").scrollTop = item.offsetTop;
     }
 
     setPlaying(item) {
         console.log("display the playing item...")
+        this.displayPlaying(item)
+
         this.items.forEach(item => {
             item.stopPlaying()
+            item.classList.remove("playing")
         })
         this.index = item.index;
         item.setPlaying()
         this.play(item)
+        item.classList.add("playing")
+    }
+
+    pausePlaying() {
+        let item = this.items[this.index]
+        if (item)
+            item.pausePlaying()
+    }
+
+    resumePlaying() {
+        let item = this.items[this.index]
+        if (item)
+            item.setPlaying()
+
+        fireResize()
+
     }
 }
 
@@ -250,6 +310,7 @@ export class PlayListItem extends HTMLElement {
             .cell {
                 display: table-cell;
                 vertical-align: middle;
+                padding: 5px;
             }
 
             iron-icon:hover {
@@ -282,6 +343,8 @@ export class PlayListItem extends HTMLElement {
 
         this.playBtn.onclick = () => {
             this.parent.setPlaying(this)
+            this.hidePlayButton()
+            this.showPauseButton()
         }
 
         this.pauseBtn.onclick = () => {
@@ -343,6 +406,12 @@ export class PlayListItem extends HTMLElement {
         this.playBtn.style.visibility = "visible"
         this.pauseBtn.style.visibility = "hidden"
         this.isPlaying = true;
+    }
+
+    pausePlaying() {
+        this.playBtn.style.visibility = "visible"
+        this.pauseBtn.style.visibility = "hidden"
+        this.isPlaying = false;
     }
 
     stopPlaying() {
