@@ -363,7 +363,8 @@ export class FilesView extends HTMLElement {
         this.paperTray = null;
 
         // The function will be call in case of error.
-        this.onerror = undefined;
+        this.onerror = err=>ApplicationView.displayMessage(err, 3000);
+
         // Innitialisation of the layout.
         let id = "_" + uuidv4().split("-").join("_").split("@").join("_");
 
@@ -2630,7 +2631,7 @@ export class PathNavigator extends HTMLElement {
         this.path = undefined
 
         // The function will be call in case of error.
-        this.onerror = undefined;
+        this.onerror = err=>ApplicationView.displayMessage(err, 3000);
 
         // List of listeners...
         this.navigationListener = ""
@@ -2886,7 +2887,7 @@ export class FileNavigator extends HTMLElement {
         this.path = undefined
 
         // The function will be call in case of error.
-        this.onerror = undefined;
+        this.onerror = err=>ApplicationView.displayMessage(err, 3000);
 
         // List of listeners...
         this.navigationListener = ""
@@ -3452,7 +3453,7 @@ export class FileExplorer extends HTMLElement {
         this.navigations = []
 
         // The function will be call in case of error.
-        this.onerror = undefined;
+        this.onerror = err=>ApplicationView.displayMessage(err, 3000);
 
         // The function is call when the explorer is call
         this.onclose = undefined;

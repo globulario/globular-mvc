@@ -331,7 +331,7 @@ function searchTitles(globule, query, indexPath, callback) {
     rqst.setIndexpath(indexPath)
     rqst.setQuery(query)
     rqst.setOffset(0)
-    rqst.setSize(100)
+    rqst.setSize(500)
 
     let stream = globule.titleService.searchTitles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
     stream.on("data", (rsp) => {
@@ -370,7 +370,7 @@ function searchBlogPosts(globule, query, indexPath, callback) {
     rqst.setIndexpath(indexPath)
     rqst.setQuery(query)
     rqst.setOffset(0)
-    rqst.setSize(100)
+    rqst.setSize(500)
 
     let stream = globule.blogService.searchBlogPosts(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
     stream.on("data", (rsp) => {
@@ -414,7 +414,7 @@ function searchWebpageContent(query, callback) {
     rqst.setLanguage("en")
     rqst.setFieldsList(["Text"])
     rqst.setOffset(0)
-    rqst.setPagesize(100)
+    rqst.setPagesize(500)
     rqst.setQuery(query)
 
     let token = localStorage.getItem("user_token")
@@ -1109,7 +1109,7 @@ export class SearchResultsPage extends HTMLElement {
 
         let titleName = ""
         let uuid = ""
-        if (hit.hasTitle) {
+        if (hit.hasTitle ||  hit.hasVideo  || hit.hasAudio )  {
             if (hit.hasTitle()) {
                 titleName = hit.getTitle().getName()
                 uuid = getUuidByString(hit.getIndex() + "_title")
@@ -1196,7 +1196,10 @@ export class SearchResultsPage extends HTMLElement {
                 infoDisplay.setAudiosInformation([hit.getAudio()])
                 hitDiv.classList.add("filterable")
                 let audio = hit.getAudio()
-                hitDiv.classList.add(getUuidByString(audio.getGenre().toLowerCase()))
+                audio.getGenresList().forEach(g =>{
+                    g.split(" ").forEach(g_=>hitDiv.classList.add(getUuidByString(g_.toLowerCase())))
+                    
+                })
             }
 
             infoDisplay.hideHeader()
@@ -1315,6 +1318,12 @@ export class SearchAudioCard extends HTMLElement {
 
     // Call search event.
     setAudio(audio, globule) {
+
+        this.classList.add("filterable")
+        audio.getGenresList().forEach(g =>{
+            g.split(" ").forEach(g_=>this.classList.add(getUuidByString(g_.toLowerCase())))
+            
+        })
 
         this.shadowRoot.querySelector("img").src = audio.getPoster().getContenturl()
 
@@ -2237,7 +2246,7 @@ export class SearchFacetPanel extends HTMLElement {
 
     setFacet(facet) {
         this.id = "_" + getUuidByString(facet.getField())
-        this.total += facet.getTotal()
+        this.total +=  this.page.getElementsByClassName("filterable").length / 2// facet.getTotal()
 
         this.shadowRoot.querySelector("#total_span").innerHTML = "(" + this.total + ")"
         this.shadowRoot.querySelector("#field_span").innerHTML = facet.getField()

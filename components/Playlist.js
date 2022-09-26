@@ -411,7 +411,9 @@ export class PlayListItem extends HTMLElement {
             if (audio == null) {
                 getVideoInfo(globule, this.id, video => {
                     this.video = video
-                    console.log("video retreived!")
+                    if(video == null){
+                        console.log("no information found for item ", item)
+                    }
                 })
             }
         })

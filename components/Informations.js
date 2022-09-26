@@ -638,7 +638,7 @@ export class AudioInfo extends HTMLElement {
         this.shadowRoot.querySelector("#artist-div").innerHTML = audio.getArtist()
         this.shadowRoot.querySelector("#album-div").innerHTML = audio.getAlbum()
         this.shadowRoot.querySelector("#album-artist-div").innerHTML = audio.getAlbumartist()
-        this.shadowRoot.querySelector("#genre-div").innerHTML = audio.getGenre()
+        this.shadowRoot.querySelector("#genre-div").innerHTML = audio.getGenresList().join(" / ")
         this.shadowRoot.querySelector("#year-div").innerHTML = audio.getYear() + ""
         this.shadowRoot.querySelector("#track-div").innerHTML = audio.getTracknumber() + ""
     }
