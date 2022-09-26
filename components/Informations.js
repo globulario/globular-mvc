@@ -240,8 +240,8 @@ function getVideoPreview(parent, path, name, callback, globule) {
         preview.showPlayBtn()
 
         preview.onplay = (path) => {
-            if(path.endsWith(".mp3")){
-                
+            if (path.endsWith(".mp3")) {
+
                 playAudio(path, (video) => {
                     let titleInfoBox = document.getElementById("title-info-box")
                     if (titleInfoBox) {
@@ -250,7 +250,7 @@ function getVideoPreview(parent, path, name, callback, globule) {
                     //video.toggleFullscreen();
                 }, null, null, globule)
 
-            }else{
+            } else {
                 playVideo(path, (video) => {
                     let titleInfoBox = document.getElementById("title-info-box")
                     if (titleInfoBox) {
@@ -478,8 +478,23 @@ export class InformationsManager extends HTMLElement {
     }
 
     hideHeader() {
-        this.shadowRoot.querySelector("paper-icon-button").style.display = "none"
-        this.shadowRoot.querySelector("#title-name").style.display = "none"
+        if (this.shadowRoot.querySelector("paper-icon-button"))
+            this.shadowRoot.querySelector("paper-icon-button").style.display = "none"
+        if (this.shadowRoot.querySelector("#title-name"))
+            this.shadowRoot.querySelector("#title-name").style.display = "none"
+    }
+
+    /**
+     * Display video informations.
+     * @param {*} videos 
+     */
+    setAudiosInformation(audios) {
+        this.innerHTML = "" // remove previous content.
+        this.shadowRoot.querySelector(".title-div").innerHTML = ""
+        let audio = audios[0]
+        let audioInfo = new AudioInfo(this.shadowRoot.querySelector(".title-div"), this.hasAttribute("short"))
+        audioInfo.setAudio(audio)
+        this.appendChild(audioInfo)
     }
 
     /**
@@ -497,7 +512,7 @@ export class InformationsManager extends HTMLElement {
 
     /**
      * Display video informations.
-     * @param {*} videos 
+     * @param {*} blog post 
      */
     setBlogPostInformation(blogPost) {
         this.innerHTML = "" // remove previous content.
@@ -553,7 +568,84 @@ export class InformationsManager extends HTMLElement {
 
 customElements.define('globular-informations-manager', InformationsManager)
 
+/**
+ * Display basic file informations.
+ */
+export class AudioInfo extends HTMLElement {
 
+    // Create the applicaiton view.
+    constructor() {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+            ${getTheme()}
+
+            #container {
+                display: flex;
+            }
+
+            img {
+                width: 256px;
+            }
+
+        </style>
+        <div id="container">
+            <div>
+                <img id="image"></img>
+            </div>
+            <div style="display: table; flex-grow: 1; padding-left: 20px;">
+                <div style="display: table-row;">
+                    <div style="display: table-cell; font-weight: 450;">Title:</div>
+                    <div id="title-div" style="display: table-cell;"></div>
+                </div>
+                <div style="display: table-row;">
+                    <div style="display: table-cell; font-weight: 450;">Artist:</div>
+                    <div id="artist-div" style="display: table-cell;"></div>
+                </div>
+                <div style="display: table-row;">
+                    <div style="display: table-cell; font-weight: 450;">Album:</div>
+                    <div id="album-div" style="display: table-cell;"></div>
+                </div>
+                <div style="display: table-row;">
+                    <div style="display: table-cell; font-weight: 450;">Album Artist:</div>
+                    <div id="album-artist-div" style="display: table-cell;"></div>
+                </div>
+                <div style="display: table-row;">
+                    <div style="display: table-cell; font-weight: 450;">Genre:</div>
+                    <div  id="genre-div" style="display: table-cell;"></div>
+                </div>
+                <div style="display: table-row;">
+                    <div style="display: table-cell; font-weight: 450;">Year:</div>
+                    <div id="year-div" style="display: table-cell;"></div>
+                </div>
+                <div style="display: table-row;">
+                    <div style="display: table-cell; font-weight: 450;">Track:</div>
+                    <div id="track-div" style="display: table-cell;"></div>
+                </div>
+            </div>
+        </div>
+        `
+    }
+
+    setAudio(audio) {
+        console.log("set audio informations: ", audio)
+        this.shadowRoot.querySelector("#image").src = audio.getPoster().getContenturl()
+        this.shadowRoot.querySelector("#title-div").innerHTML = audio.getTitle()
+        this.shadowRoot.querySelector("#artist-div").innerHTML = audio.getArtist()
+        this.shadowRoot.querySelector("#album-div").innerHTML = audio.getAlbum()
+        this.shadowRoot.querySelector("#album-artist-div").innerHTML = audio.getAlbumartist()
+        this.shadowRoot.querySelector("#genre-div").innerHTML = audio.getGenre()
+        this.shadowRoot.querySelector("#year-div").innerHTML = audio.getYear() + ""
+        this.shadowRoot.querySelector("#track-div").innerHTML = audio.getTracknumber() + ""
+    }
+
+}
+
+customElements.define('globular-audio-info', AudioInfo)
 
 /**
  * Video information

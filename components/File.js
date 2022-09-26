@@ -38,7 +38,7 @@ import { AddResourceOwnerRqst, GetSharedResourceRqst, SubjectType } from 'globul
 import { randomUUID } from './utility';
 import * as getUuidByString from 'uuid-by-string';
 import { ImageViewer } from './Image';
-import { AssociateFileWithTitleRequest, CreateTitleRequest, GetFileTitlesRequest, GetFileVideosRequest, Person, Poster, Title } from 'globular-web-client/title/title_pb';
+import { AssociateFileWithTitleRequest, CreateTitleRequest, GetFileAudiosRequest, GetFileTitlesRequest, GetFileVideosRequest, Person, Poster, Title } from 'globular-web-client/title/title_pb';
 import { DownloadTorrentRequest, DropTorrentRequest, GetTorrentInfosRequest } from 'globular-web-client/torrent/torrent_pb';
 import { getImdbInfo } from './Search';
 import { setMoveable } from './moveable'
@@ -142,7 +142,7 @@ function getTitleInfo(globule, file, callback) {
 function getVideoInfo(globule, file, callback) {
 
     let rqst = new GetFileVideosRequest
-    console.log("read title for file ", file.path)
+    console.log("read videos for file ", file.path)
     rqst.setIndexpath(globule.config.DataPath + "/search/videos")
     rqst.setFilepath(file.path)
 
@@ -150,6 +150,25 @@ function getVideoInfo(globule, file, callback) {
         .then(rsp => {
             let videos = rsp.getVideos().getVideosList()
             callback(videos)
+        })
+        .catch(err => {
+            callback([])
+        })
+}
+
+
+function getAudioInfo(globule, file, callback) {
+
+    let rqst = new GetFileAudiosRequest
+    console.log("read title for file ", file.path)
+    rqst.setIndexpath(globule.config.DataPath + "/search/audios")
+    rqst.setFilepath(file.path)
+
+    globule.titleService.getFileAudios(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
+        .then(rsp => {
+            let audios = rsp.getAudios().getAudiosList()
+            console.log(audios)
+            callback(audios)
         })
         .catch(err => {
             callback([])
@@ -763,6 +782,13 @@ export class FilesView extends HTMLElement {
                 }
             })
 
+            getAudioInfo(globule, this.menu.file, (audios) => {
+                if (audios.length > 0) {
+                    this.menu.file.audios = audios // keep in the file itself...
+                    Model.eventHub.publish("display_media_infos_event", this.menu.file, true)
+                }
+            })
+
             // hide the menu...
             this.menu.parentNode.removeChild(this.menu)
         }
@@ -1349,9 +1375,9 @@ export class FilesView extends HTMLElement {
                     let dest = `%(id)s.%(ext)s`
 
                     if (mp3Radio.checked) {
-                        rqst.setArgsList(["-f", "bestaudio", "--extract-audio", "--audio-format", "mp3", "--audio-quality", "0", "-o", dest, url]);
+                        rqst.setArgsList(["-f", "bestaudio", "--extract-audio", "--audio-format", "mp3", "--audio-quality", "0", "--embed-thumbnail", "--embed-metadata", "-o", dest, url]);
                     } else {
-                        rqst.setArgsList(["-f", "mp4", "-o", dest, url])
+                        rqst.setArgsList(["-f", "mp4", "--embed-thumbnail", "--embed-metadata", "-o", dest, url])
                     }
 
                     rqst.setBlocking(true)
@@ -1446,15 +1472,15 @@ export class FilesView extends HTMLElement {
                                 url_ += globule.config.PortHttp
                             }
 
-                            url_ += "/index_video?domain=" + globule.config.Domain // application is not know at this time...
+                            url_ += "/index_audio?domain=" + globule.config.Domain // application is not know at this time...
                             if (localStorage.getItem("user_token") != undefined) {
                                 url_ += "&token=" + localStorage.getItem("user_token")
                             }
 
                             // The file path to index.
-                            url_ += "&video-path=" + this.__dir__.path + "/" + fileName
-                            url_ += "&video-url=" + url;
-                            url_ += "&index-path=" + globule.config.DataPath + "/search/videos"
+                            url_ += "&audio-path=" + this.__dir__.path + "/" + fileName
+                            url_ += "&audio-url=" + url;
+                            url_ += "&index-path=" + globule.config.DataPath + "/search/audios"
 
                             var xmlhttp = new XMLHttpRequest();
                             xmlhttp.onreadystatechange = () => {
@@ -4176,6 +4202,8 @@ export class FileExplorer extends HTMLElement {
                         this.informationManager.setTitlesInformation(file.titles)
                     } else if (file.videos != undefined) {
                         this.informationManager.setVideosInformation(file.videos)
+                    }else if (file.audios != undefined) {
+                        this.informationManager.setAudiosInformation(file.audios)
                     }
 
                     // I will display the permission manager.

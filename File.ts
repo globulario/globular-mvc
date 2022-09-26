@@ -10,6 +10,14 @@ export class File extends Model {
     // If the file does not really exist on the server It can be keep in that map.
     private static _local_files: any = {}
 
+    private _metadata: any = {};
+    public get metadata(): any {
+        return this._metadata;
+    }
+    public set metadata(value: any) {
+        this._metadata = value;
+    }
+
     /** A file image preview */
     private _thumbnail: string
     public get thumbnail(): string {
@@ -120,6 +128,13 @@ export class File extends Model {
         file.mode = obj.Mode
         file.size = obj.Size
         file.thumbnail = obj.Thumbnail
+        file.metadata = obj.Metadata
+
+        if (obj.Metadata) {
+            if (obj.Metadata.Picture) {
+                file.thumbnail = obj.Metadata.ImageUrl
+            }
+        }
 
         // Now the sub-file.
         if (file.isDir && obj.Files != null) {

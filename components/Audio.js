@@ -8,6 +8,7 @@ import { setMoveable } from './moveable'
 import { setResizeable } from './rezieable'
 import WaveSurfer from "wavesurfer.js";
 import { PlayList } from "./Playlist"
+import { fireResize } from "./utility";
 
 export function secondsToTime(secs) {
     var hours = Math.floor(secs / (60 * 60));
@@ -33,7 +34,7 @@ export function playAudio(path, onplay, onclose, title, globule) {
     if (audioPlayer == null) {
         audioPlayer = new AudioPlayer()
         audioPlayer.id = "audio-player-x"
-    }else{
+    } else {
         audioPlayer.stop()
     }
 
@@ -50,7 +51,7 @@ export function playAudio(path, onplay, onclose, title, globule) {
         audioPlayer.onclose = onclose
     }
 
-   
+
 
     // play a given title.
     if (path.endsWith("audio.m3u")) {
@@ -172,7 +173,6 @@ export class AudioPlayer extends HTMLElement {
             }
 
             .buttons{
-                margin-top: 20px;
                 display: flex;
                 justify-content: center;
                 align-items: center;
@@ -256,7 +256,16 @@ export class AudioPlayer extends HTMLElement {
                 <canvas id="myCanvas" width="800" height="400"></canvas>
                 <div id="waveform"></div>
                 <div class="buttons">
-                    <div class="toolbar" style="display: flex; padding-left: 10px; padding-right: 10px; align-items: center;  height: 40px;">
+                    <div style="flex-grow: 1; display: flex; align-items: center; width: 95%;">
+                        <paper-slider style="flex-grow: 1;"></paper-slider>
+                        <div  style="display: flex; align-items: center; padding-right: 10px;">
+                            <span id="current-time"></span> <span>/</span> <span id="total-time"></span>
+                        </div>
+                        <div style="position: relative;">
+                            <iron-icon id="volume-up" icon="av:volume-up"></iron-icon>
+                        </div>
+                    </div>
+                    <div class="toolbar" style="display: flex; padding-left: 10px; padding-right: 10px; align-items: center; height: 40px; margin-top: 20px;">
                         <iron-icon title="Shuffle Playlist" id="shuffle" icon="av:shuffle"></iron-icon>
                         <iron-icon id="skip-previous" title="Previous Track" icon="av:skip-previous"></iron-icon>
                         <iron-icon id="fast-rewind" title="Rewind" icon="av:fast-rewind"></iron-icon>
@@ -267,15 +276,7 @@ export class AudioPlayer extends HTMLElement {
                         <iron-icon id="stop" title="Stop" icon="av:stop"></iron-icon>
                         <iron-icon title="Loop Playlist" id="repeat" icon="av:repeat"></iron-icon>
                     </div>
-                    <div style="flex-grow: 1; display: flex; align-items: center; width: 95%;">
-                        <paper-slider style="flex-grow: 1;"></paper-slider>
-                        <div  style="display: flex; align-items: center; padding-right: 10px;">
-                            <span id="current-time"></span> <span>/</span> <span id="total-time"></span>
-                        </div>
-                        <div style="position: relative;">
-                            <iron-icon id="volume-up" icon="av:volume-up"></iron-icon>
-                        </div>
-                    </div>
+
                 </div>
             </div>
         </div>
@@ -301,6 +302,11 @@ export class AudioPlayer extends HTMLElement {
         this.currentTimeSpan = this.querySelector("#current-time")
         this.totalTimeSpan = this.querySelector("#total-time")
         this.playlist = this.querySelector("globular-playlist")
+
+        this.loop = false
+        if (localStorage.getItem("audio_loop")) {
+            this.loop = localStorage.getItem("audio_loop") == "true"
+        }
 
         // give the focus to the input.
         let offsetTop = this.shadowRoot.querySelector(".header").offsetHeight
@@ -362,13 +368,13 @@ export class AudioPlayer extends HTMLElement {
                 .start(this.wavesurfer.getCurrentTime())
             this.playBtn.style.display = "none"
             this.pauseBtn.style.display = "block"
-            if(this.playlist){
+            if (this.playlist) {
                 this.playlist.resumePlaying()
             }
         }
 
         this.pauseBtn.onclick = () => {
-            if(this.playlist){
+            if (this.playlist) {
                 this.playlist.pausePlaying()
             }
             this.pause()
@@ -393,6 +399,19 @@ export class AudioPlayer extends HTMLElement {
             }
         }
 
+        // loop...
+        this.loopBtn.onclick = () => {
+
+            if (this.loop) {
+                localStorage.setItem("audio_loop", "false");
+                this.loop = false;
+            } else {
+                localStorage.setItem("audio_loop", "true")
+                this.loop = true;
+            }
+
+        }
+
         // The volume button...
         this.volumeBtn.onclick = (evt) => {
             evt.stopPropagation()
@@ -404,7 +423,7 @@ export class AudioPlayer extends HTMLElement {
             }
 
             let html = `
-            <paper-card id="volume-panel" style="position: absolute; top:-42px; right: 0px;">
+            <paper-card id="volume-panel" style="position: absolute; top:42px; right: 0px;">
                 <div style="display: flex; align-items: center;">
                     <iron-icon id="volume-down-btn" icon="av:volume-down" style="fill: black;" ></iron-icon>
                     <paper-slider style=""></paper-slider>
@@ -575,7 +594,7 @@ export class AudioPlayer extends HTMLElement {
                 this.playBtn.style.display = "block"
                 this.pauseBtn.style.display = "none"
                 this.wavesurfer.pause()
-                if(this.playlist){
+                if (this.playlist) {
                     this.playlist.pausePlaying()
                 }
             } else {
@@ -584,7 +603,7 @@ export class AudioPlayer extends HTMLElement {
                     .start(this.wavesurfer.getCurrentTime())
                 this.playBtn.style.display = "none"
                 this.pauseBtn.style.display = "block"
-                if(this.playlist){
+                if (this.playlist) {
                     this.playlist.resumePlaying()
                 }
             }
@@ -613,7 +632,7 @@ export class AudioPlayer extends HTMLElement {
             this.wavesurfer.play();
 
             // start the visualization...
-            
+
             this.visualizer.setContext(this.wavesurfer.backend.ac)
                 .setAnalyser()
                 .setFrequencyData()
@@ -622,7 +641,7 @@ export class AudioPlayer extends HTMLElement {
 
             this.playBtn.style.display = "none"
             this.pauseBtn.style.display = "block"
-
+            fireResize()
         })
 
 
@@ -655,9 +674,12 @@ export class AudioPlayer extends HTMLElement {
                 this.playlist.playNext()
             }
         })
+
+        fireResize()
     }
 
-    play(path, globule, title) {
+    play(path, globule, audio) {
+
         this.shadowRoot.querySelector("#container").style.display = "block"
         let filename = path.substring(path.lastIndexOf("/") + 1)
 
@@ -691,52 +713,19 @@ export class AudioPlayer extends HTMLElement {
         this.visualizer.url = ""
         this.visualizer.time = "loading..."
         this.visualizer.renderTime();
-        
-        if (title) {
 
-            this.visualizer.title = title.getDescription().replaceAll("|", " - ")
-            this.shadowRoot.querySelector("#title-span").innerHTML = title.getDescription()
-
-            if (title.getDescription().replaceAll("|", " - ").indexOf(" - ") != -1) {
-                // Try the best to get correct values...
-                let title_ = title.getDescription().replaceAll("|", " - ").split(" - ")[1].replace(/FEAT./i, "ft.");
-                let feat = ""
-
-                if (title_.indexOf(" ft.") != -1) {
-                    feat = title_.split(" ft.")[1]
-                    title_ = title_.split(" ft.")[0]
-                } else if (title_.indexOf("(ft.") != -1) {
-                    feat = title_.split("(ft.")[1].replace(")", 0)
-                    title_ = title_.split(" ft.")[0]
-                }
-
-                title_ = title_.replace(/ *\([^)]*\) */g, " ").replace(/ *\[[^)]*\] */g, " ").replace(/LYRICS/i, "");
-
-                this.visualizer.title = title_
-                this.shadowRoot.querySelector("#title-span").innerHTML = title_
-                let author = title.getDescription().replaceAll("|", " - ").split(" - ")[0].replace(/FEAT./i, "ft.").trim()
-
-                if (author.indexOf(" ft.") != -1) {
-                    feat = author.split(" ft.")[1]
-                    author = author.split(" ft.")[0]
-                } else if (author.indexOf("(ft.") != -1) {
-                    feat = author.split("(ft.")[1].replace(")", 0)
-                    author = author.split(" ft.")[0]
-                }
-
-                feat = feat.replace(/ *\([^)]*\) */g, " ").replace(/ *\[[^)]*\] */g, " ");
-
-                if (feat.length > 0) {
-                    this.visualizer.featuring = feat
-                }
-                author = author.replace(/ *\([^)]*\) */g, " ").replace(/ *\[[^)]*\] */g, " ");
-
-                this.visualizer.author = author
-            }
-
+        if (audio) {
+            // TODO see how to get the featuring info...
+            this.visualizer.author = audio.getArtist()
+            this.visualizer.title = audio.getTitle()
+            this.shadowRoot.querySelector("#title-span").innerHTML = audio.getAlbum() + " (" + audio.getYear() + ")"
         } else {
-            let values = path.split("/")
-            this.visualizer.title = values[values.length - 1]
+            let end = path.lastIndexOf("?")
+            if (end == -1) {
+                end = path.length
+            }
+            this.visualizer.title = path.substring(path.lastIndexOf("/") + 1, end)
+            this.shadowRoot.querySelector("#title-span").innerHTML =  this.visualizer.title
         }
 
         let url = ""
@@ -779,6 +768,7 @@ export class AudioPlayer extends HTMLElement {
 
     // load the playlist...
     loadPlaylist(path, globule) {
+        this.playlist.clear()
         this.playlist.load(path, globule, this)
     }
 

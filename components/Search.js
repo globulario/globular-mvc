@@ -3,7 +3,7 @@ import '@polymer/iron-icons/av-icons'
 import '@polymer/paper-icon-button/paper-icon-button.js';
 
 import { Application } from '../Application';
-import { CreateVideoRequest, DeleteVideoRequest, GetTitleFilesRequest, SearchTitlesRequest } from 'globular-web-client/title/title_pb';
+import { CreateVideoRequest, DeleteVideoRequest, GetFileAudiosRequest, GetFileTitlesRequest, GetTitleFilesRequest, SearchTitlesRequest } from 'globular-web-client/title/title_pb';
 import { Model } from '../Model';
 import { getTheme } from "./Theme";
 import * as getUuid from 'uuid-by-string'
@@ -15,6 +15,7 @@ import { SearchBlogPostsRequest } from 'globular-web-client/blog/blog_pb';
 import { SearchDocumentsRequest } from 'globular-web-client/search/search_pb';
 import * as JwtDecode from 'jwt-decode';
 import { getCoords, randomUUID } from './utility';
+import { playAudio } from './Audio';
 
 
 // keep values in memorie to speedup...
@@ -538,6 +539,7 @@ export class SearchBar extends HTMLElement {
                 <paper-checkbox checked name="blogPosts" id="context-search-selector-blog-posts">Blog Posts</paper-checkbox>
                 <paper-checkbox checked name="titles" id="context-search-selector-movies">Movies</paper-checkbox>
                 <paper-checkbox checked name="videos" id="context-search-selector-videos">Videos</paper-checkbox>
+                <paper-checkbox checked name="audios" id="context-search-selector-audios">Audios</paper-checkbox>
             </paper-card>
         </div>
         `
@@ -888,11 +890,13 @@ export class SearchResultsPage extends HTMLElement {
                 <slot name="mosaic_blogPosts" style="display: flex; flex-wrap: wrap;"></slot>
                 <slot name="mosaic_videos" style="display: flex; flex-wrap: wrap;"></slot>
                 <slot name="mosaic_titles" style="display: flex; flex-wrap: wrap;"></slot>
+                <slot name="mosaic_audios" style="display: flex; flex-wrap: wrap;"></slot>
             </div>
             <div id="list-view" style="display: none;">
                 <slot name="list_blogPosts" style="display: flex; flex-wrap: wrap;"> </slot>
                 <slot name="list_videos" style="display: flex; flex-wrap: wrap;"> </slot>
                 <slot name="list_titles" style="display: flex; flex-wrap: wrap;"> </slot>
+                <slot name="list_audios" style="display: flex; flex-wrap: wrap;"> </slot>
             </div>
 
         </div>
@@ -1038,7 +1042,7 @@ export class SearchResultsPage extends HTMLElement {
     // Display a mosaic vue of the result. If the result is a title I will use a flit card
     // if is a video well a video card.
     displayMosaicHit(hit, context) {
-        if (hit.hasTitle || hit.hasVideo) {
+        if (hit.hasTitle || hit.hasVideo || hit.hasAudio) {
             if (hit.hasTitle()) {
                 let id = "_flip_card_" + getUuidByString(hit.getTitle().getName())
                 let flipCard = this.querySelector("#" + id)
@@ -1061,6 +1065,17 @@ export class SearchResultsPage extends HTMLElement {
                     this.appendChild(videoCard)
                 }
                 return videoCard
+            } else if (hit.hasAudio()) {
+                let id = "_audio_card_" + hit.getAudio().getId()
+                let audioCard = this.querySelector("#" + id)
+                if (!audioCard) {
+                    audioCard = new SearchAudioCard();
+                    audioCard.id = id
+                    audioCard.slot = "mosaic_" + context
+                    audioCard.setAudio(hit.getAudio(), hit.globule)
+                    this.appendChild(audioCard)
+                }
+                return audioCard
             }
         } else {
             let blogPost = hit.getBlog()
@@ -1098,8 +1113,10 @@ export class SearchResultsPage extends HTMLElement {
             if (hit.hasTitle()) {
                 titleName = hit.getTitle().getName()
                 uuid = getUuidByString(hit.getIndex() + "_title")
-            } else {
+            } else if (hit.hasVideo()) {
                 uuid = getUuidByString(hit.getIndex() + "_video")
+            } else if (hit.hasAudio()) {
+                uuid = getUuidByString(hit.getIndex() + "_audio")
             }
         } else {
             uuid = getUuidByString(hit.getIndex() + "_blog")
@@ -1143,7 +1160,7 @@ export class SearchResultsPage extends HTMLElement {
 
         let hitDiv = this.querySelector(`#hit-div-${uuid}`)
 
-        if (hit.hasTitle || hit.hasVideo) {
+        if (hit.hasTitle || hit.hasVideo || hit.hasAudio) {
             if (hit.hasTitle()) {
                 infoDisplay.setTitlesInformation([hit.getTitle()], hit.globule)
                 hitDiv.classList.add("filterable")
@@ -1175,6 +1192,11 @@ export class SearchResultsPage extends HTMLElement {
                 } else {
                     hitDiv.classList.add(getUuidByString("high"))
                 }
+            } else if (hit.hasAudio()) {
+                infoDisplay.setAudiosInformation([hit.getAudio()])
+                hitDiv.classList.add("filterable")
+                let audio = hit.getAudio()
+                hitDiv.classList.add(getUuidByString(audio.getGenre().toLowerCase()))
             }
 
             infoDisplay.hideHeader()
@@ -1210,6 +1232,142 @@ export class SearchResultsPage extends HTMLElement {
 }
 
 customElements.define('globular-search-results-page', SearchResultsPage)
+
+/**
+ * Sample empty component
+ */
+export class SearchAudioCard extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor() {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+            ${getTheme()}
+            #container{
+                padding: 2px;
+                position: relative;
+
+            }
+
+            .audio-card{
+                display: flex;
+                flex-direction: column;
+                border-radius: 3.5px;
+                border: 1px solid var(--palette-divider);
+                height: 100%;
+                max-width: 320px;
+                margin: 10px;
+                max-width: 320px;
+                height: 285px;
+                margin: 10px;
+                overflow: hidden;
+            }
+
+            .audio-card:hover{
+                box-shadow: rgba(0, 0, 0, 0.16) 0px 3px 6px, rgba(0, 0, 0, 0.23) 0px 3px 6px;
+            }
+
+            .audio-card img{
+                max-width: 320px;
+                min-width: 320px;
+                max-height: 180px;
+                border-top-left-radius: 3.5px;
+                border-top-right-radius: 3.5px;
+            }
+
+            #artist, #album {
+                font-weight: 500;
+                font-size: 1.2rem;
+            }
+
+            #title{
+                font-size: 1.25rem;
+                font-weight: 350;
+            }
+
+             #album{
+                color: white;
+            }
+
+
+        </style>
+
+        <div id="container" class="audio-card">
+            <img></img>
+            <span id="artist"></span>
+            <div style="display: flex; position: absolute; background-color: black; top: 0px; left: 0px; right: 0px; padding: 5px;">
+                <span id="album" style="flex-grow: 1;"></span> 
+                <paper-icon-button id="play-album-btn" title="play album" icon="av:play-arrow"></paper-icon-button> 
+            </div>
+            <div style="display: flex; justify-items: center;">
+                <span id="title" style="flex-grow: 1;"></span>
+                <paper-icon-button id="play-title-btn" title="play title" icon="av:play-arrow"></paper-icon-button> 
+            </div>
+        </div>
+        `
+    }
+
+    // Call search event.
+    setAudio(audio, globule) {
+
+        this.shadowRoot.querySelector("img").src = audio.getPoster().getContenturl()
+
+        // I will display the album and year info...
+        this.shadowRoot.querySelector("#artist").innerHTML = audio.getArtist()
+        this.shadowRoot.querySelector("#title").innerHTML = audio.getTitle()
+        this.shadowRoot.querySelector("#album").innerHTML = audio.getAlbum()
+
+        if (audio.getAlbum().length == 0) {
+            this.shadowRoot.querySelector("#album").parentNode.style.display = "none";
+        }
+
+
+        // Now the action...
+        this.shadowRoot.querySelector("#play-title-btn").onclick = () => {
+            // paly only the first file...
+            let rqst = new GetTitleFilesRequest
+            rqst.setTitleid(audio.getId())
+            let indexPath = globule.config.DataPath + "/search/audios"
+            rqst.setIndexpath(indexPath)
+
+            globule.titleService.getTitleFiles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+                .then(rsp => {
+
+                    if (rsp.getFilepathsList().length > 0) {
+                        let path = rsp.getFilepathsList().pop()
+                        playAudio(path, null, null, audio, globule)
+                    }
+
+                }).catch(err => ApplicationView.displayMessage(err, 3000))
+        }
+
+        this.shadowRoot.querySelector("#play-album-btn").onclick = () => {
+
+            let rqst = new GetTitleFilesRequest
+            rqst.setTitleid(audio.getId())
+            let indexPath = globule.config.DataPath + "/search/audios"
+            rqst.setIndexpath(indexPath)
+
+            globule.titleService.getTitleFiles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+                .then(rsp => {
+                    if (rsp.getFilepathsList().length > 0) {
+                        let path = rsp.getFilepathsList().pop()
+                        let playlist = path.substring(0, path.lastIndexOf("/")) + "/audio.m3u"
+                        playAudio( playlist , null, null, null, globule)
+                    }
+
+                }).catch(err => ApplicationView.displayMessage(err, 3000))
+        }
+    }
+}
+
+customElements.define('globular-search-audio-card', SearchAudioCard)
 
 /**
  * Search Box
@@ -1984,7 +2142,9 @@ export class FacetSearchFilter extends HTMLElement {
 
     // Set the facets...
     setFacets(facets) {
+
         facets.getFacetsList().forEach(facet => {
+            
             let p = this.querySelector("#_" + getUuidByString(facet.getField()))
             if (!p) {
                 p = new SearchFacetPanel(this.page)
@@ -1994,7 +2154,6 @@ export class FacetSearchFilter extends HTMLElement {
                 p.slot = "facets"
                 p.setFacet(facet)
                 this.appendChild(p)
-
             }
         })
     }

@@ -1,13 +1,13 @@
 import { getTheme } from "./Theme.js";
 import parser from 'iptv-playlist-parser'
 import { Model } from "../Model";
-import { GetVideoByIdRequest } from "globular-web-client/title/title_pb.js";
+import { GetAudioByIdRequest, GetVideoByIdRequest } from "globular-web-client/title/title_pb.js";
 import { Application } from "../Application";
-import { fireResize } from "./utility.js";
+import { fireResize, formatBoolean } from "./utility.js";
 
 // retreive video with a given id.
 function getVideoInfo(globule, id, callback) {
-
+    console.log("get video with id: ", id)
     let rqst = new GetVideoByIdRequest
     rqst.setIndexpath(globule.config.DataPath + "/search/videos")
     rqst.setVidoeid(id)
@@ -17,8 +17,22 @@ function getVideoInfo(globule, id, callback) {
             callback(rsp.getVideo())
         })
         .catch(err => {
-            console.log(err)
-            callback([])
+            callback(null)
+        })
+}
+
+function getAudioInfo(globule, id, callback) {
+
+    let rqst = new GetAudioByIdRequest
+    rqst.setIndexpath(globule.config.DataPath + "/search/audios")
+    rqst.setAudioid(id)
+
+    globule.titleService.getAudioById(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
+        .then(rsp => {
+            callback(rsp.getAudio())
+        })
+        .catch(err => {
+            callback(null)
         })
 }
 
@@ -89,12 +103,18 @@ export class PlayList extends HTMLElement {
         this.items = []
 
         window.addEventListener("resize", () => {
+
             let playingDiv = this.shadowRoot.querySelector("#playing")
             let container = this.shadowRoot.querySelector("#container")
-            container.style.marginTop = playingDiv.offsetHeight + "px"
+            let h = 225
+            if(playingDiv.offsetHeight>0){
+                h = playingDiv.offsetHeight
+            }
+
+            container.style.marginTop = h + "px"
 
             // set the container height.
-            container.style.height = this.offsetHeight - playingDiv.offsetHeight + 10 + "px"
+            container.style.height = this.offsetHeight - h + "px"
         })
     }
 
@@ -103,11 +123,34 @@ export class PlayList extends HTMLElement {
         fireResize()
     }
 
+    clear(){
+        this.items = []
+        this.index = 0
+    }
+
     play(item) {
         this.index = item.index;
         // this.audioPlayer.play(path, globule, title)
+        console.log("---------> play item : ", item)
+        let url = decodeURIComponent(item.url)
+
+        url = url.split("?")[0]
+        url += "?application=" + Model.application
+        if (localStorage.getItem("user_token") != undefined) {
+            url += "&token=" + localStorage.getItem("user_token")
+        }
+
         getVideoInfo(this.globule, item.id, video => {
-            this.audioPlayer.play(item.url, this.globule, video)
+
+            if(video){
+                this.videoPlayer.play(url, this.globule, video)
+            }else{
+                getAudioInfo(this.globule, item.id, audio=>{
+                    this.audioPlayer.play(url, this.globule, audio)
+                })
+            }
+
+            
         })
     }
 
@@ -117,6 +160,10 @@ export class PlayList extends HTMLElement {
             this.setPlaying(this.items[this.index])
         } else {
             console.log("no more item to play!")
+            if(this.audioPlayer.loop){
+                this.index = 0
+                this.setPlaying(this.items[this.index])
+            }
         }
     }
 
@@ -166,11 +213,11 @@ export class PlayList extends HTMLElement {
         var xhr = new XMLHttpRequest();
         xhr.open("GET", url);
         xhr.overrideMimeType("audio/x-mpegurl"); // Needed, see below.
-
         xhr.onload = (evt) => {
             const result = parser.parse(evt.target.response)
             this.playlist = result;
             this.refresh()
+            fireResize()
         };
 
         xhr.send();
@@ -211,9 +258,6 @@ export class PlayList extends HTMLElement {
         if (this.items.length > 0) {
             this.setPlaying(this.items[0])
         }
-
-        fireResize()
-
     }
 
 
@@ -221,7 +265,7 @@ export class PlayList extends HTMLElement {
         let playingDiv = this.shadowRoot.querySelector("#playing")
 
         let html = `
-            <div style="display: flex;justify-content: center;padding: 15px;">
+            <div style="display: flex; justify-content: center;padding: 15px;">
                 <img style="width: 300px; /**/" src="${item.item.tvg.logo}"></img>
             </div>
         `
@@ -256,9 +300,6 @@ export class PlayList extends HTMLElement {
         let item = this.items[this.index]
         if (item)
             item.setPlaying()
-
-        fireResize()
-
     }
 }
 

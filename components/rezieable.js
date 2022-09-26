@@ -1,3 +1,5 @@
+import { fireResize } from "./utility";
+
 /**
  * That propertie take a div and append resizeable capabilities.
  */
@@ -191,7 +193,9 @@ export function setResizeable(div, onresize, side, zIndex) {
             div.style.width = w + "px"
             div.style.height = h + "px"
             if (onresize) {
+               
                 onresize(div.offsetWidth, div.offsetHeight)
+                fireResize()
             }
         } else if (div.isResizeWidth) {
             if (div.offsetWidth > w) {
@@ -204,6 +208,7 @@ export function setResizeable(div, onresize, side, zIndex) {
             div.style.width = w + "px"
             if (onresize) {
                 onresize(div.offsetWidth, div.offsetHeight)
+                fireResize()
             }
         } else if (div.isResizeHeigth) {
             if (div.offsetHeight > h) {
@@ -216,6 +221,7 @@ export function setResizeable(div, onresize, side, zIndex) {
             div.style.height = h + "px"
             if (onresize) {
                 onresize(div.offsetWidth, div.offsetHeight)
+                fireResize()
             }
         }
 

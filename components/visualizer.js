@@ -23,7 +23,7 @@ AUDIO.VISUALIZER = (function () {
         this.ctx = null;
         this.analyser = null;
         this.sourceNode = null;
-        this.frequencyData = [];
+        this.frequencyData = null;
         this.style = cfg.style || 'lounge';
         this.barWidth = cfg.barWidth || 2;
         this.barHeight = cfg.barHeight || 2;
@@ -79,7 +79,9 @@ AUDIO.VISUALIZER = (function () {
         if(!this.analyser){
             return this
         }
-
+        if( this.frequencyData){
+            return this
+        }
         this.frequencyData = new Uint8Array(this.analyser.frequencyBinCount);
         return this;
     };
