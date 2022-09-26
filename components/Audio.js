@@ -718,7 +718,7 @@ export class AudioPlayer extends HTMLElement {
             // TODO see how to get the featuring info...
             this.visualizer.author = audio.getArtist()
             this.visualizer.title = audio.getTitle()
-            this.shadowRoot.querySelector("#title-span").innerHTML = audio.getAlbum() + " (" + audio.getYear() + ")"
+            this.shadowRoot.querySelector("#title-span").innerHTML = audio.getAlbum()
         } else {
             let end = path.lastIndexOf("?")
             if (end == -1) {
@@ -748,12 +748,13 @@ export class AudioPlayer extends HTMLElement {
                     url += ":" + globule.config.PortHttp
             }
 
-            path.split("/").forEach(item => {
+            /*path.split("/").forEach(item => {
                 item = item.trim()
                 if (item.length > 0) {
                     url += "/" + encodeURIComponent(item)
                 }
-            })
+            })*/
+            url += path
 
             url += "?application=" + Model.application
             if (localStorage.getItem("user_token") != undefined) {

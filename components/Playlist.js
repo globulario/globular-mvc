@@ -106,8 +106,8 @@ export class PlayList extends HTMLElement {
 
             let playingDiv = this.shadowRoot.querySelector("#playing")
             let container = this.shadowRoot.querySelector("#container")
-            let h = 225
-            if(playingDiv.offsetHeight>0){
+            let h = 300
+            if (playingDiv.offsetHeight > 0) {
                 h = playingDiv.offsetHeight
             }
 
@@ -123,7 +123,7 @@ export class PlayList extends HTMLElement {
         fireResize()
     }
 
-    clear(){
+    clear() {
         this.items = []
         this.index = 0
     }
@@ -131,7 +131,6 @@ export class PlayList extends HTMLElement {
     play(item) {
         this.index = item.index;
         // this.audioPlayer.play(path, globule, title)
-        console.log("---------> play item : ", item)
         let url = decodeURIComponent(item.url)
 
         url = url.split("?")[0]
@@ -142,15 +141,15 @@ export class PlayList extends HTMLElement {
 
         getVideoInfo(this.globule, item.id, video => {
 
-            if(video){
+            if (video) {
                 this.videoPlayer.play(url, this.globule, video)
-            }else{
-                getAudioInfo(this.globule, item.id, audio=>{
+            } else {
+                getAudioInfo(this.globule, item.id, audio => {
                     this.audioPlayer.play(url, this.globule, audio)
                 })
             }
 
-            
+
         })
     }
 
@@ -160,7 +159,7 @@ export class PlayList extends HTMLElement {
             this.setPlaying(this.items[this.index])
         } else {
             console.log("no more item to play!")
-            if(this.audioPlayer.loop){
+            if (this.audioPlayer.loop) {
                 this.index = 0
                 this.setPlaying(this.items[this.index])
             }
@@ -197,12 +196,13 @@ export class PlayList extends HTMLElement {
                 url += ":" + globule.config.PortHttp
         }
 
-        path.split("/").forEach(item => {
+        /*path.split("/").forEach(item => {
             item = item.trim()
             if (item.length > 0) {
                 url += "/" + encodeURIComponent(item)
             }
-        })
+        })*/
+        url += path
 
         url += "?application=" + Model.application
         if (localStorage.getItem("user_token") != undefined) {
@@ -228,7 +228,7 @@ export class PlayList extends HTMLElement {
         this.shadowRoot.querySelector("#playing").innerHTML = ""
         this.innerHTML = ""
         this.playlist.items.forEach(item => {
-            let item_ = new PlayListItem(item, this, this.items.length)
+            let item_ = new PlayListItem(item, this, this.items.length, this.globule)
 
             item_.onmouseover = () => {
                 if (item_.isPlaying) {
@@ -262,18 +262,22 @@ export class PlayList extends HTMLElement {
 
 
     displayPlaying(item) {
-        let playingDiv = this.shadowRoot.querySelector("#playing")
+        item.getImage(imageUrl => {
+            let playingDiv = this.shadowRoot.querySelector("#playing")
 
-        let html = `
-            <div style="display: flex; justify-content: center;padding: 15px;">
-                <img style="width: 300px; /**/" src="${item.item.tvg.logo}"></img>
-            </div>
-        `
-        playingDiv.innerHTML = html;
+            let html = `
+                <div style="display: flex; justify-content: center;padding: 15px;">
+                    <img style="width: 300px;" src="${imageUrl}"></img>
+                </div>
+            `
 
-        fireResize()
+            playingDiv.innerHTML = html;
 
-        this.shadowRoot.querySelector("#container").scrollTop = item.offsetTop;
+            fireResize()
+
+            this.shadowRoot.querySelector("#container").scrollTop = item.offsetTop;
+        })
+
     }
 
     setPlaying(item) {
@@ -312,7 +316,7 @@ export class PlayListItem extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor(item, parent, index) {
+    constructor(item, parent, index, globule) {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
@@ -320,9 +324,9 @@ export class PlayListItem extends HTMLElement {
         this.item = item;
         this.parent = parent;
         this.index = index;
+        this.audio = null;
+        this.video = null;
 
-        // extract info from the name.
-        let titleInfo = this.parseName(item.name)
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -365,20 +369,18 @@ export class PlayListItem extends HTMLElement {
             <iron-icon id="pause" title="Pause" style="visibility: hidden; display: none;" icon="av:pause"></iron-icon>
         </div>
         <div class="cell">
-            <img src="${this.item.tvg.logo}"></img>
+            <img id="title-image"></img>
         </div>
         <div class="cell">
             <div style="display: flex; flex-direction: column; padding-left: 10px; padding-rigth: 10px;">
-                <div class="title">${titleInfo.title}</div>
+                <div id="title-div" class="title"></div>
                 <div style="font-size: .85rem">
-                    <span class="author">${titleInfo.author.length > 0 ? " by " + titleInfo.author : ""}</span>
-                    <span class="featuring"> ${titleInfo.featuring.length > 0 ? " ft. " + titleInfo.featuring : ""}</span>
+                    <span id="title-artist-span" class="author"></span>
                 </div>
             </div>
         </div>
         `
         // give the focus to the input.
-        let container = this.shadowRoot.querySelector("#container")
         this.playBtn = this.shadowRoot.querySelector("#play-arrow")
         this.pauseBtn = this.shadowRoot.querySelector("#pause")
 
@@ -398,6 +400,49 @@ export class PlayListItem extends HTMLElement {
         this.id = item.tvg.id;
         this.url = item.url
         this.src = item.tvg.url
+        this.globule = globule
+
+        // init the uderlying info...
+        getAudioInfo(globule, this.id, audio => {
+            this.audio = audio;
+            this.shadowRoot.querySelector("#title-div").innerHTML = audio.getTitle()
+            this.shadowRoot.querySelector("#title-artist-span").innerHTML = audio.getArtist()
+            this.shadowRoot.querySelector("#title-image").src = audio.getPoster().getContenturl()
+            if (audio == null) {
+                getVideoInfo(globule, this.id, video => {
+                    this.video = video
+                    console.log("video retreived!")
+                })
+            }
+        })
+    }
+
+
+    // load item if not already loaded and get it image url...
+    getImage(callback) {
+        if (this.audio) {
+            callback(this.audio.getPoster().getContenturl())
+            return
+        }
+
+        if (this.video) {
+            callback(this.video.getPoster().getContenturl())
+            return
+        }
+
+        getAudioInfo(this.globule, this.id, audio => {
+            if (audio == null) {
+                getVideoInfo(this.globule, this.id, video => {
+                    if (video != null) {
+                        this.video = video
+                        callback(this.video.getPoster().getContenturl())
+                    }
+                })
+            } else {
+                this.audio = audio
+                callback(this.audio.getPoster().getContenturl())
+            }
+        })
     }
 
     // extract the duration info from the raw data.
