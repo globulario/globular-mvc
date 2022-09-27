@@ -29,7 +29,7 @@ import { v4 as uuidv4 } from "uuid";
 
 // Menu to set action on files.
 import { DropdownMenu } from './dropdownMenu.js';
-import { AddPublicDirRequest, ConvertVideoToHlsRequest, ConvertVideoToMpeg4H264Request, CopyRequest, CreateDirRequest, CreateVideoPreviewRequest, CreateVideoTimeLineRequest, GetFileInfoRequest, GetPublicDirsRequest, MoveRequest, RemovePublicDirRequest } from 'globular-web-client/file/file_pb';
+import { AddPublicDirRequest, ConvertVideoToHlsRequest, ConvertVideoToMpeg4H264Request, CopyRequest, CreateDirRequest, CreateVideoPreviewRequest, CreateVideoTimeLineRequest, GeneratePlaylistRequest, GetFileInfoRequest, GetPublicDirsRequest, MoveRequest, RemovePublicDirRequest } from 'globular-web-client/file/file_pb';
 import { createArchive, deleteDir, deleteFile, downloadFileHttp, renameFile, uploadFiles } from 'globular-web-client/api';
 import { ApplicationView } from '../ApplicationView';
 import { Application } from '../Application';
@@ -1658,10 +1658,8 @@ export class FilesListView extends FilesView {
             let icon = "icons:folder"
 
             if (f.name == "audio.m3u") {
-                console.log("-------->", f)
                 dir.__audioPlaylist__ = f
             } else if (f.name == "video.m3u") {
-                console.log("-------->", f)
                 dir.__videoPlaylist__ = f
             } else {
 
@@ -2055,10 +2053,8 @@ export class FilesIconView extends FilesView {
         // get the info div that will contain the information.
         for (let f of dir.files) {
             if (f.name == "audio.m3u") {
-                console.log("-------->", f)
                 dir.__audioPlaylist__ = f
             } else if (f.name == "video.m3u") {
-                console.log("-------->", f)
                 dir.__videoPlaylist__ = f
             } else {
                 if (!f.isDir) {
@@ -2174,7 +2170,16 @@ export class FilesIconView extends FilesView {
 
                             playAudiosBtn.onclick = () => {
                                 let globule = this._file_explorer_.globule
-                                playAudio(dir.__audioPlaylist__.path, () => { }, () => { }, null, globule)
+                                // I will refresh the playlist on the server before playing it...
+                                let rqst = new GeneratePlaylistRequest
+                                rqst.setDir(dir.path)
+                                globule.fileService.generatePlaylist(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
+                                .then(rsp => {
+                                    playAudio(dir.__audioPlaylist__.path, () => { }, () => { }, null, globule)
+                                })
+                                .catch(err => ApplicationView.displayMessage(err, 3000))
+
+                                
                             }
 
                         } else if (fileType == "video" && dir.__videoPlaylist__) {

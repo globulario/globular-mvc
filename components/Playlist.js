@@ -76,17 +76,12 @@ export class PlayList extends HTMLElement {
                 padding: 2px;
             }
 
-            #playing{
-                position: absolute;
-            }
-
             ::slotted(.playing) {
                 -webkit-box-shadow: inset 5px 5px 15px 5px #152635; 
                 box-shadow: inset 5px 5px 15px 5px #152635;
             }
 
         </style>
-        <div id="playing"></div>
         <div id="container">
             <div id="items">
                 <slot></slot>
@@ -101,21 +96,6 @@ export class PlayList extends HTMLElement {
         this.audioPlayer = null;
         this.globule = null;
         this.items = []
-
-        window.addEventListener("resize", () => {
-
-            let playingDiv = this.shadowRoot.querySelector("#playing")
-            let container = this.shadowRoot.querySelector("#container")
-            let h = 300
-            if (playingDiv.offsetHeight > 0) {
-                h = playingDiv.offsetHeight
-            }
-
-            container.style.marginTop = h + "px"
-
-            // set the container height.
-            container.style.height = this.offsetHeight - h + "px"
-        })
     }
 
     // The connection callback.
@@ -228,7 +208,6 @@ export class PlayList extends HTMLElement {
 
     refresh() {
         // clear the content...
-        this.shadowRoot.querySelector("#playing").innerHTML = ""
         this.innerHTML = ""
         this.playlist.items.forEach(item => {
             let item_ = new PlayListItem(item, this, this.items.length, this.globule)
@@ -263,30 +242,7 @@ export class PlayList extends HTMLElement {
         }
     }
 
-
-    displayPlaying(item) {
-        item.getImage(imageUrl => {
-            let playingDiv = this.shadowRoot.querySelector("#playing")
-
-            let html = `
-                <div style="display: flex; justify-content: center;padding: 15px;">
-                    <img style="max-width: 300px; max-height: 300px;" src="${imageUrl}"></img>
-                </div>
-            `
-
-            playingDiv.innerHTML = html;
-
-            fireResize()
-
-            this.shadowRoot.querySelector("#container").scrollTop = item.offsetTop;
-        })
-
-    }
-
     setPlaying(item) {
-        console.log("display the playing item...")
-        this.displayPlaying(item)
-
         this.items.forEach(item => {
             item.stopPlaying()
             item.classList.remove("playing")

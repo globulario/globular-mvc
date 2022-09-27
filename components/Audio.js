@@ -3,9 +3,7 @@ import { Model } from '../Model';
 import { Application } from "../Application";
 import { ApplicationView } from "../ApplicationView";
 import { GetFileVideosRequest } from "globular-web-client/title/title_pb";
-import { AUDIO } from "./visualizer"
 import { setMoveable } from './moveable'
-import { setResizeable } from './rezieable'
 import WaveSurfer from "wavesurfer.js";
 import { PlayList } from "./Playlist"
 import { fireResize } from "./utility";
@@ -36,6 +34,7 @@ export function playAudio(path, onplay, onclose, title, globule) {
         audioPlayer.id = "audio-player-x"
     } else {
         audioPlayer.stop()
+        audioPlayer.playlist.clear()
     }
 
     audioPlayer.style.height = "0px"
@@ -80,17 +79,13 @@ export class AudioPlayer extends HTMLElement {
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
         let hideheader = this.getAttribute("hideheader") != undefined
-
         this.wavesurfer = null;
-        this.visualizer = null;
-
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
             ${getTheme()}
             #container{
-                width: 720px;
                 position: fixed;
             }
 
@@ -137,24 +132,32 @@ export class AudioPlayer extends HTMLElement {
         let content = `
         <style>
             #content{
+                height: 600px;
                 display: flex;
                 background: #000000;
-                height: calc(100% - 40px);
+                justify-items: center;
                 overflow: hidden;
             }
 
             /** Audio vizualizer **/
             .vz-wrapper {
-                min-width: 420px;
+                width: 600px;
+                height: 600px;
                 display: flex;
                 flex-direction: column;
                 justify-content: center;
+                align-items: center;
                 background: -webkit-gradient(radial, center center, 0, center center, 460, from(#39668b), to(#000000));
                 background: -webkit-radial-gradient(circle, #39668b, #000000);
                 background: -moz-radial-gradient(circle, #39668b, #000000);
                 background: -ms-radial-gradient(circle, #39668b, #000000);
                 box-shadow: inset 0 0 160px 0 #000;
                 cursor: pointer;
+            }
+
+            .vz-wrapper img {
+                max-width: 300px;
+                max-height: 300px;
             }
 
             .vz-wrapper.-canvas {
@@ -173,6 +176,7 @@ export class AudioPlayer extends HTMLElement {
             }
 
             .buttons{
+                width: 100%;
                 display: flex;
                 justify-content: center;
                 align-items: center;
@@ -247,13 +251,39 @@ export class AudioPlayer extends HTMLElement {
                 align-self: center;
             }
 
-        </style>
+            audio {
+                display: none;
+            }
 
+            .album-name {
+                font-size: 1.5rem;
+                font-weight: 500;
+            }
+
+            .album-year {
+                font-size: 1.5rem;
+                padding-left: 20px;
+            }
+
+            .track-title {
+                font-size: 1.6rem;
+            }
+
+        </style>
+        <audio></audio>
         <div id="content">
             <globular-playlist></globular-playlist>
 
             <div class="vz-wrapper" style="display: flex; justify-content: center;">
-                <canvas id="myCanvas" width="800" height="400"></canvas>
+               
+                <div style="display: flex;">
+                    <span class="album-name"></span>
+                    <span class="album-year"></span>
+                </div>
+
+                <img class="album-cover"> </img>
+                <span class="track-title"> </span>
+
                 <div id="waveform"></div>
                 <div class="buttons">
                     <div style="flex-grow: 1; display: flex; align-items: center; width: 95%;">
@@ -286,6 +316,14 @@ export class AudioPlayer extends HTMLElement {
         let range = document.createRange()
         this.appendChild(range.createContextualFragment(content))
 
+        // The audio element.
+        this.audio = this.querySelector("audio")
+
+        // The presentation elements...
+        this.albumName = this.querySelector(".album-name")
+        this.albumYear = this.querySelector(".album-year")
+        this.ablumCover = this.querySelector(".album-cover")
+        this.trackTitle = this.querySelector(".track-title")
 
         // Now the buttons actions.
         this.skipPresiousBtn = this.querySelector("#skip-previous")
@@ -326,19 +364,6 @@ export class AudioPlayer extends HTMLElement {
             container.style.top = "80px"
         }
 
-        if (localStorage.getItem("__audio_player_dimension__")) {
-            let dimension = JSON.parse(localStorage.getItem("__audio_player_dimension__"))
-            container.style.width = dimension.width + "px"
-            container.style.height = dimension.height + "px"
-        }
-
-        setResizeable(container, (width, height) => {
-            localStorage.setItem("__audio_player_dimension__", JSON.stringify({ width: width, height: height }))
-            container.style.height = height + "px"
-        })
-        container.resizeHeightDiv.style.display = "none"
-
-
         // toggle full screen when the user double click on the header.
         this.shadowRoot.querySelector(".header").ondblclick = () => {
 
@@ -364,8 +389,6 @@ export class AudioPlayer extends HTMLElement {
         // Actions...
         this.playBtn.onclick = () => {
             this.wavesurfer.play()
-            this.visualizer.setBufferSourceNode(this.wavesurfer.backend.source)
-                .start(this.wavesurfer.getCurrentTime())
             this.playBtn.style.display = "none"
             this.pauseBtn.style.display = "block"
             if (this.playlist) {
@@ -498,7 +521,7 @@ export class AudioPlayer extends HTMLElement {
         }
 
         this.fastForwardBtn.onclick = () => {
-            if (!this.visualizer.isPlaying) {
+            if (!this.wavesurfer.isPlaying()) {
                 return
             }
 
@@ -512,7 +535,7 @@ export class AudioPlayer extends HTMLElement {
         }
 
         this.fastRewindBtn.onclick = () => {
-            if (!this.visualizer.isPlaying) {
+            if (!this.wavesurfer.isPlaying()) {
                 return
             }
 
@@ -537,7 +560,7 @@ export class AudioPlayer extends HTMLElement {
 
     // The connection callback.
     connectedCallback() {
-        // create the this.visualizer once.
+
         if (this.wavesurfer) {
             return
         }
@@ -558,10 +581,6 @@ export class AudioPlayer extends HTMLElement {
                 return
             }
 
-            // refresh the source
-            this.visualizer.setBufferSourceNode(this.wavesurfer.backend.source)
-                .start(this.wavesurfer.getCurrentTime())
-
             if (this.wavesurfer.isPlaying()) {
                 this.playBtn.style.display = "none"
                 this.pauseBtn.style.display = "block"
@@ -570,45 +589,6 @@ export class AudioPlayer extends HTMLElement {
                 this.pauseBtn.style.display = "none"
             }
         })
-
-
-        // Now I will set the this.visualizer...
-        this.visualizer = AUDIO.VISUALIZER.getInstance({
-            autoplay: false,
-            loop: false,
-            canvas: 'myCanvas',
-            style: 'lounge',
-            barWidth: 2,
-            barHeight: 2,
-            barSpacing: 7,
-            barColor: '#ffffff',
-            shadowBlur: 20,
-            shadowColor: '#ffffff',
-            font: ['12px', 'Helvetica']
-        });
-
-
-        this.visualizer.onclick = () => {
-            if (this.wavesurfer.isPlaying()) {
-                this.visualizer.pause()
-                this.playBtn.style.display = "block"
-                this.pauseBtn.style.display = "none"
-                this.wavesurfer.pause()
-                if (this.playlist) {
-                    this.playlist.pausePlaying()
-                }
-            } else {
-                this.wavesurfer.play()
-                this.visualizer.setBufferSourceNode(this.wavesurfer.backend.source)
-                    .start(this.wavesurfer.getCurrentTime())
-                this.playBtn.style.display = "none"
-                this.pauseBtn.style.display = "block"
-                if (this.playlist) {
-                    this.playlist.resumePlaying()
-                }
-            }
-
-        }
 
 
         this.wavesurfer.on("ready", () => {
@@ -631,14 +611,6 @@ export class AudioPlayer extends HTMLElement {
 
             this.wavesurfer.play();
 
-            // start the visualization...
-
-            this.visualizer.setContext(this.wavesurfer.backend.ac)
-                .setAnalyser()
-                .setFrequencyData()
-                .setBufferSourceNode(this.wavesurfer.backend.source)
-                .start()
-
             this.playBtn.style.display = "none"
             this.pauseBtn.style.display = "block"
             fireResize()
@@ -655,17 +627,6 @@ export class AudioPlayer extends HTMLElement {
 
             this.playSlider.title = parseFloat(percent * 100).toFixed(2) + "%"
 
-            // display the track lenght...
-            let obj = secondsToTime(position)
-            var hours = obj.h
-            var min = obj.m
-            var sec = obj.s
-            let hours_ = (hours < 10) ? '0' + hours : hours;
-            let minutes_ = (min < 10) ? '0' + min : min;
-            let seconds_ = (sec < 10) ? '0' + sec : sec;
-
-            this.visualizer.time = this.currentTimeSpan.innerHTML = hours_ + ":" + minutes_ + ":" + seconds_;
-
         })
 
         this.wavesurfer.on("finish", () => {
@@ -681,51 +642,25 @@ export class AudioPlayer extends HTMLElement {
     play(path, globule, audio) {
 
         this.shadowRoot.querySelector("#container").style.display = "block"
-        let filename = path.substring(path.lastIndexOf("/") + 1)
-
-        if (this.visualizer) {
-            if (this.visualizer.url.indexOf(filename) != -1 && this.visualizer.isPlaying) {
-                // Do nothing...
-                return
-            } else if (this.visualizer.url.indexOf(filename) != -1 && !this.visualizer.isPlaying) {
-
-                this.wavesurfer.play()
-
-                // Resume the audio...
-                this.visualizer.setBufferSourceNode(this.wavesurfer.backend.source)
-                    .start(this.wavesurfer.getCurrentTime())
-
-                this.playBtn.style.display = "none"
-                this.pauseBtn.style.display = "block"
-
-                return
-            }
-        }
 
         this.stop()
         this.playBtn.style.display = "block"
         this.pauseBtn.style.display = "none"
 
-        // reset visualiser values.
-        this.visualizer.author = ""
-        this.visualizer.featuring = ""
-        this.visualizer.title = ""
-        this.visualizer.url = ""
-        this.visualizer.time = "loading..."
-        this.visualizer.renderTime();
-
         if (audio) {
             // TODO see how to get the featuring info...
-            this.visualizer.author = audio.getArtist()
-            this.visualizer.title = audio.getTitle()
             this.shadowRoot.querySelector("#title-span").innerHTML = audio.getAlbum()
+
+            this.albumName.innerHTML = audio.getAlbum()
+            this.albumYear.innerHTML = audio.getYear()
+            this.ablumCover.src = audio.getPoster().getContenturl()
+            this.trackTitle.innerHTML = audio.getTitle()
+
         } else {
             let end = path.lastIndexOf("?")
             if (end == -1) {
                 end = path.length
             }
-            this.visualizer.title = path.substring(path.lastIndexOf("/") + 1, end)
-            this.shadowRoot.querySelector("#title-span").innerHTML =  this.visualizer.title
         }
 
         let url = ""
@@ -748,13 +683,6 @@ export class AudioPlayer extends HTMLElement {
                     url += ":" + globule.config.PortHttp
             }
 
-            /*path.split("/").forEach(item => {
-                item = item.trim()
-                if (item.length > 0) {
-                    url += "/" + encodeURIComponent(item)
-                }
-            })*/
-            
             url += path
 
             url += "?application=" + Model.application
@@ -763,9 +691,8 @@ export class AudioPlayer extends HTMLElement {
             }
         }
 
-        this.visualizer.time = "loading..."
-        this.visualizer.url = url
-        this.wavesurfer.load(url)
+        this.audio.src = url
+        this.wavesurfer.load(this.audio)
     }
 
     // load the playlist...
@@ -776,7 +703,6 @@ export class AudioPlayer extends HTMLElement {
 
     // Pause the player...
     pause() {
-        this.visualizer.pause()
         this.wavesurfer.pause()
         this.playBtn.style.display = "block"
         this.pauseBtn.style.display = "none"
@@ -800,12 +726,6 @@ export class AudioPlayer extends HTMLElement {
         if (this.wavesurfer) {
             this.wavesurfer.stop()
             this.wavesurfer.seekAndCenter(0)
-        }
-
-        if (this.visualizer) {
-            this.visualizer.stop()
-            this.visualizer.isPlaying = false
-            this.visualizer.time = "--:--:--"
         }
 
         this.playBtn.style.display = "block"
