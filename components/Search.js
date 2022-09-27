@@ -17,6 +17,8 @@ import * as JwtDecode from 'jwt-decode';
 import { getCoords, randomUUID } from './utility';
 import { playAudio } from './Audio';
 
+// Maximum number of results.
+var MAX_RESULTS = 1000;
 
 // keep values in memorie to speedup...
 var titles = {}
@@ -331,7 +333,7 @@ function searchTitles(globule, query, indexPath, callback) {
     rqst.setIndexpath(indexPath)
     rqst.setQuery(query)
     rqst.setOffset(0)
-    rqst.setSize(500)
+    rqst.setSize(MAX_RESULTS)
 
     let stream = globule.titleService.searchTitles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
     stream.on("data", (rsp) => {
@@ -370,7 +372,7 @@ function searchBlogPosts(globule, query, indexPath, callback) {
     rqst.setIndexpath(indexPath)
     rqst.setQuery(query)
     rqst.setOffset(0)
-    rqst.setSize(500)
+    rqst.setSize(MAX_RESULTS)
 
     let stream = globule.blogService.searchBlogPosts(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
     stream.on("data", (rsp) => {
@@ -414,7 +416,7 @@ function searchWebpageContent(query, callback) {
     rqst.setLanguage("en")
     rqst.setFieldsList(["Text"])
     rqst.setOffset(0)
-    rqst.setPagesize(500)
+    rqst.setPagesize(MAX_RESULTS)
     rqst.setQuery(query)
 
     let token = localStorage.getItem("user_token")
@@ -1109,7 +1111,7 @@ export class SearchResultsPage extends HTMLElement {
 
         let titleName = ""
         let uuid = ""
-        if (hit.hasTitle ||  hit.hasVideo  || hit.hasAudio )  {
+        if (hit.hasTitle || hit.hasVideo || hit.hasAudio) {
             if (hit.hasTitle()) {
                 titleName = hit.getTitle().getName()
                 uuid = getUuidByString(hit.getIndex() + "_title")
@@ -1196,9 +1198,9 @@ export class SearchResultsPage extends HTMLElement {
                 infoDisplay.setAudiosInformation([hit.getAudio()])
                 hitDiv.classList.add("filterable")
                 let audio = hit.getAudio()
-                audio.getGenresList().forEach(g =>{
-                    g.split(" ").forEach(g_=>hitDiv.classList.add(getUuidByString(g_.toLowerCase())))
-                    
+                audio.getGenresList().forEach(g => {
+                    g.split(" ").forEach(g_ => hitDiv.classList.add(getUuidByString(g_.toLowerCase())))
+
                 })
             }
 
@@ -1247,6 +1249,7 @@ export class SearchAudioCard extends HTMLElement {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
+        this.audio = null;
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -1316,13 +1319,21 @@ export class SearchAudioCard extends HTMLElement {
         `
     }
 
+    // return the audio element...
+    getAudio() {
+        return this.audio;
+    }
+
     // Call search event.
     setAudio(audio, globule) {
 
+        this.audio = audio
+        audio.globule = globule
+
         this.classList.add("filterable")
-        audio.getGenresList().forEach(g =>{
-            g.split(" ").forEach(g_=>this.classList.add(getUuidByString(g_.toLowerCase())))
-            
+        audio.getGenresList().forEach(g => {
+            g.split(" ").forEach(g_ => this.classList.add(getUuidByString(g_.toLowerCase())))
+
         })
 
         this.shadowRoot.querySelector("img").src = audio.getPoster().getContenturl()
@@ -1368,7 +1379,7 @@ export class SearchAudioCard extends HTMLElement {
                     if (rsp.getFilepathsList().length > 0) {
                         let path = rsp.getFilepathsList().pop()
                         let playlist = path.substring(0, path.lastIndexOf("/")) + "/audio.m3u"
-                        playAudio( playlist , null, null, null, globule)
+                        playAudio(playlist, null, null, null, globule)
                     }
 
                 }).catch(err => ApplicationView.displayMessage(err, 3000))
@@ -2153,7 +2164,7 @@ export class FacetSearchFilter extends HTMLElement {
     setFacets(facets) {
 
         facets.getFacetsList().forEach(facet => {
-            
+
             let p = this.querySelector("#_" + getUuidByString(facet.getField()))
             if (!p) {
                 p = new SearchFacetPanel(this.page)
@@ -2203,7 +2214,8 @@ export class SearchFacetPanel extends HTMLElement {
         </style>
 
         <div style="display: flex; flex-direction: column;">
-            <div class="facet-label">
+            <div class="facet-label" style="display: flex; justify-items: center; align-items: baseline;">
+                <paper-icon-button id="play_facet_btn" icon="av:play-arrow"></paper-icon-button>
                 <paper-checkbox checked> <span id='field_span'></span> <span id='total_span'></span></paper-checkbox checked>
             </div>
             <div class="facet-list">
@@ -2244,12 +2256,99 @@ export class SearchFacetPanel extends HTMLElement {
 
     }
 
+    // get files associated with the titles, audios or videos...
+    getTitleFiles(id, indexPath, globule, callback) {
+        let rqst = new GetTitleFilesRequest
+        rqst.setTitleid(id)
+        rqst.setIndexpath(indexPath)
+        globule.titleService.getTitleFiles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+            .then(rsp => {
+                callback(rsp.getFilepathsList())
+            }).catch(err => {
+                callback([])
+            })
+    }
+
+    playAudios(audios, name) {
+
+        // here I will get the audi
+        let audio_playList = "#EXTM3U\n"
+        audio_playList += "#PLAYLIST: " + name + "\n\n"
+
+        // Generate the playlist with found audio items.
+        let generateAudioPlaylist = () => {
+            let audio = audios.pop();
+            let globule = audio.globule;
+
+            // set the audio info
+            let indexPath = globule.config.DataPath + "/search/audios"
+
+            // get the title file path...
+            this.getTitleFiles(audio.getId(), indexPath, globule, files => {
+                if (files.length > 0) {
+                    audio_playList += `#EXTINF:${audio.getDuration()}, ${audio.getTitle()}, tvg-id="${audio.getId()}"\n`
+
+                    let url = globule.config.Protocol + "://" + globule.config.Domain
+                    if (window.location != globule.config.Domain) {
+                        if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
+                            url = globule.config.Protocol + "://" + window.location.host
+                        }
+                    }
+
+                    if (globule.config.Protocol == "https") {
+                        if (globule.config.PortHttps != 443)
+                            url += ":" + globule.config.PortHttps
+                    } else {
+                        if (globule.config.PortHttps != 80)
+                            url += ":" + globule.config.PortHttp
+                    }
+
+                    let path = files[0].split("/")
+                    path.forEach(item => {
+                        item = item.trim()
+                        if (item.length > 0)
+                            url += "/" + encodeURIComponent(item)
+                    })
+
+                    url += "?application=" + Model.application
+                    if (localStorage.getItem("user_token") != undefined) {
+                        url += "&token=" + localStorage.getItem("user_token")
+                    }
+
+                    audio_playList += url + "\n\n"
+                }
+                if (audios.length > 0) {
+                    generateAudioPlaylist()
+                } else {
+                    console.log(audio_playList)
+                    playAudio(audio_playList, null, null, null, globule)
+                }
+            })
+        }
+
+        generateAudioPlaylist()
+    }
+
     setFacet(facet) {
         this.id = "_" + getUuidByString(facet.getField())
-        this.total +=  this.page.getElementsByClassName("filterable").length / 2// facet.getTotal()
+        this.total += this.page.getElementsByClassName("filterable").length / 2
 
         this.shadowRoot.querySelector("#total_span").innerHTML = "(" + this.total + ")"
         this.shadowRoot.querySelector("#field_span").innerHTML = facet.getField()
+
+        /** Play all results found... */
+        this.shadowRoot.querySelector("#play_facet_btn").onclick = () => {
+            let filtrables = this.page.getElementsByClassName("filterable");
+            let audios = []
+            for (var i = 0; i < filtrables.length; i++) {
+                if (filtrables[i].getAudio != undefined) {
+                    audios.push(filtrables[i].getAudio())
+                }
+            }
+
+            // Play the audios found...
+            this.playAudios(audios, facet.getField())
+        }
 
         let range = document.createRange()
         let terms = facet.getTermsList().sort((a, b) => {
@@ -2276,8 +2375,9 @@ export class SearchFacetPanel extends HTMLElement {
                 let uuid = "_" + getUuidByString(className)
                 if (!facetList.querySelector("#" + uuid)) {
                     let html = `
-                    <div style="margin-left: 25px;">
-                        <paper-checkbox class=${className} id=${uuid} checked> <div  class="facet-label"> ${term + "<span id='" + uuid + "_total'>(" + count + ")</span>"} </div></paper-checkbox> 
+                    <div style="margin-left: 25px; display: flex; justify-items: center; align-items: baseline;">
+                        <paper-icon-button id="${uuid}_play_btn" icon="av:play-arrow"></paper-icon-button>
+                        <paper-checkbox class="${className}" id="${uuid}" checked> <div  class="facet-label"> ${term + "<span id='" + uuid + "_total'>(" + count + ")</span>"} </div></paper-checkbox> 
                     <div>
                 `
                     // The facet list.
@@ -2285,6 +2385,19 @@ export class SearchFacetPanel extends HTMLElement {
                 } else {
                     let countDiv = facetList.querySelector("#" + uuid + "_total")
                     countDiv.innerHTML = "(" + count + ")"
+                }
+
+                this.shadowRoot.querySelector("#" + uuid + "_play_btn" ).onclick = () => {
+                    let filtrables = this.page.getElementsByClassName(getUuidByString(className));
+                    let audios = []
+                    for (var i = 0; i < filtrables.length; i++) {
+                        if (filtrables[i].getAudio != undefined) {
+                            audios.push(filtrables[i].getAudio())
+                        }
+                    }
+        
+                    // Play the audios found...
+                    this.playAudios(audios, term)
                 }
 
                 let filterables = this.page.querySelectorAll(".filterable")

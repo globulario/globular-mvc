@@ -54,7 +54,7 @@ export function playAudio(path, onplay, onclose, title, globule) {
 
 
     // play a given title.
-    if (path.endsWith("audio.m3u")) {
+    if (path.endsWith("audio.m3u") || path.startsWith("#EXTM3U")) {
         audioPlayer.loadPlaylist(path, globule)
         audioPlayer.showPlaylist()
     } else {

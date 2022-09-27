@@ -175,52 +175,55 @@ export class PlayList extends HTMLElement {
         }
     }
 
-    load(path, globule, audioPlayer) {
+    load(txt, globule, audioPlayer) {
         // keep refrence to the audio player.
         this.audioPlayer = audioPlayer;
         this.globule = globule
         this.itmes = []
 
-        let url = globule.config.Protocol + "://" + globule.config.Domain
-        if (window.location != globule.config.Domain) {
-            if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
-                url = globule.config.Protocol + "://" + window.location.host
-            }
-        }
-
-        if (globule.config.Protocol == "https") {
-            if (globule.config.PortHttps != 443)
-                url += ":" + globule.config.PortHttps
-        } else {
-            if (globule.config.PortHttps != 80)
-                url += ":" + globule.config.PortHttp
-        }
-
-        /*path.split("/").forEach(item => {
-            item = item.trim()
-            if (item.length > 0) {
-                url += "/" + encodeURIComponent(item)
-            }
-        })*/
-        url += path
-
-        url += "?application=" + Model.application
-        if (localStorage.getItem("user_token") != undefined) {
-            url += "&token=" + localStorage.getItem("user_token")
-        }
-
-        // Fetch the playlist file, using xhr for example
-        var xhr = new XMLHttpRequest();
-        xhr.open("GET", url);
-        xhr.overrideMimeType("audio/x-mpegurl"); // Needed, see below.
-        xhr.onload = (evt) => {
-            const result = parser.parse(evt.target.response)
+        // if a playlist is given directly...
+        if(txt.startsWith("#EXTM3U")){
+            const result = parser.parse(txt) 
             this.playlist = result;
             this.refresh()
             fireResize()
-        };
+        }else{
+            let url = globule.config.Protocol + "://" + globule.config.Domain
+            if (window.location != globule.config.Domain) {
+                if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
+                    url = globule.config.Protocol + "://" + window.location.host
+                }
+            }
+    
+            if (globule.config.Protocol == "https") {
+                if (globule.config.PortHttps != 443)
+                    url += ":" + globule.config.PortHttps
+            } else {
+                if (globule.config.PortHttps != 80)
+                    url += ":" + globule.config.PortHttp
+            }
+    
+            url += txt
+    
+            url += "?application=" + Model.application
+            if (localStorage.getItem("user_token") != undefined) {
+                url += "&token=" + localStorage.getItem("user_token")
+            }
+    
+            // Fetch the playlist file, using xhr for example
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", url);
+            xhr.overrideMimeType("audio/x-mpegurl"); // Needed, see below.
+            xhr.onload = (evt) => {
+                const result = parser.parse(evt.target.response)
+                this.playlist = result;
+                this.refresh()
+                fireResize()
+            };
+    
+            xhr.send();
+        }
 
-        xhr.send();
     }
 
     refresh() {
@@ -267,7 +270,7 @@ export class PlayList extends HTMLElement {
 
             let html = `
                 <div style="display: flex; justify-content: center;padding: 15px;">
-                    <img style="width: 300px;" src="${imageUrl}"></img>
+                    <img style="max-width: 300px; max-height: 300px;" src="${imageUrl}"></img>
                 </div>
             `
 
@@ -405,16 +408,17 @@ export class PlayListItem extends HTMLElement {
         // init the uderlying info...
         getAudioInfo(globule, this.id, audio => {
             this.audio = audio;
-            this.shadowRoot.querySelector("#title-div").innerHTML = audio.getTitle()
-            this.shadowRoot.querySelector("#title-artist-span").innerHTML = audio.getArtist()
-            this.shadowRoot.querySelector("#title-image").src = audio.getPoster().getContenturl()
             if (audio == null) {
                 getVideoInfo(globule, this.id, video => {
                     this.video = video
-                    if(video == null){
+                    if (video == null) {
                         console.log("no information found for item ", item)
                     }
                 })
+            } else {
+                this.shadowRoot.querySelector("#title-div").innerHTML = audio.getTitle()
+                this.shadowRoot.querySelector("#title-artist-span").innerHTML = audio.getArtist()
+                this.shadowRoot.querySelector("#title-image").src = audio.getPoster().getContenturl()
             }
         })
     }
