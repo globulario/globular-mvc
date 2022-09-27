@@ -4,6 +4,7 @@ import { Model } from "../Model";
 import { GetAudioByIdRequest, GetVideoByIdRequest } from "globular-web-client/title/title_pb.js";
 import { Application } from "../Application";
 import { fireResize, formatBoolean } from "./utility.js";
+import { secondsToTime } from "./Audio.js";
 
 // retreive video with a given id.
 function getVideoInfo(globule, id, callback) {
@@ -162,19 +163,19 @@ export class PlayList extends HTMLElement {
         this.itmes = []
 
         // if a playlist is given directly...
-        if(txt.startsWith("#EXTM3U")){
-            const result = parser.parse(txt) 
+        if (txt.startsWith("#EXTM3U")) {
+            const result = parser.parse(txt)
             this.playlist = result;
             this.refresh()
             fireResize()
-        }else{
+        } else {
             let url = globule.config.Protocol + "://" + globule.config.Domain
             if (window.location != globule.config.Domain) {
                 if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
                     url = globule.config.Protocol + "://" + window.location.host
                 }
             }
-    
+
             if (globule.config.Protocol == "https") {
                 if (globule.config.PortHttps != 443)
                     url += ":" + globule.config.PortHttps
@@ -182,14 +183,14 @@ export class PlayList extends HTMLElement {
                 if (globule.config.PortHttps != 80)
                     url += ":" + globule.config.PortHttp
             }
-    
+
             url += txt
-    
+
             url += "?application=" + Model.application
             if (localStorage.getItem("user_token") != undefined) {
                 url += "&token=" + localStorage.getItem("user_token")
             }
-    
+
             // Fetch the playlist file, using xhr for example
             var xhr = new XMLHttpRequest();
             xhr.open("GET", url);
@@ -200,7 +201,7 @@ export class PlayList extends HTMLElement {
                 this.refresh()
                 fireResize()
             };
-    
+
             xhr.send();
         }
 
@@ -251,6 +252,8 @@ export class PlayList extends HTMLElement {
         item.setPlaying()
         this.play(item)
         item.classList.add("playing")
+
+        this.shadowRoot.querySelector("#container").scrollTop = item.offsetTop;
     }
 
     pausePlaying() {
@@ -335,13 +338,16 @@ export class PlayListItem extends HTMLElement {
                 <div id="title-div" class="title"></div>
                 <div style="font-size: .85rem">
                     <span id="title-artist-span" class="author"></span>
+                    <span id="title-duration-span"> </span>
                 </div>
             </div>
         </div>
         `
+
         // give the focus to the input.
         this.playBtn = this.shadowRoot.querySelector("#play-arrow")
         this.pauseBtn = this.shadowRoot.querySelector("#pause")
+        this.titleDuration = this.shadowRoot.querySelector("#title-duration-span")
 
         this.playBtn.onclick = () => {
             this.parent.setPlaying(this)
@@ -375,6 +381,8 @@ export class PlayListItem extends HTMLElement {
                 this.shadowRoot.querySelector("#title-div").innerHTML = audio.getTitle()
                 this.shadowRoot.querySelector("#title-artist-span").innerHTML = audio.getArtist()
                 this.shadowRoot.querySelector("#title-image").src = audio.getPoster().getContenturl()
+                if (this.audio.getDuration())
+                    this.titleDuration.innerHTML = this.parseDuration(this.audio.getDuration())
             }
         })
     }
@@ -403,13 +411,23 @@ export class PlayListItem extends HTMLElement {
             } else {
                 this.audio = audio
                 callback(this.audio.getPoster().getContenturl())
+
             }
         })
     }
 
     // extract the duration info from the raw data.
-    parseDuration(raw) {
+    parseDuration(duration) {
+        // display the track lenght...
+        let obj = secondsToTime(duration)
+        var hours = obj.h
+        var min = obj.m
+        var sec = obj.s
+        let hours_ = (hours < 10) ? '0' + hours : hours;
+        let minutes_ = (min < 10) ? '0' + min : min;
+        let seconds_ = (sec < 10) ? '0' + sec : sec;
 
+        return hours_ + ":" + minutes_ + ":" + seconds_;
     }
 
     // Parse the name and split the information from it...

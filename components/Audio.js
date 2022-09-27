@@ -181,6 +181,7 @@ export class AudioPlayer extends HTMLElement {
                 justify-content: center;
                 align-items: center;
                 flex-direction: column;
+                margin-bottom: 10px;
             }
 
             .buttons iron-icon{
@@ -265,8 +266,18 @@ export class AudioPlayer extends HTMLElement {
                 padding-left: 20px;
             }
 
+            .album-cover {
+                margin-top: 10px;
+                margin-bottom: 10px;
+                border: 1px solid black;
+                -webkit-box-shadow: 5px 5px 15px 5px #152635;
+                box-shadow: 5px 5px 15px 5px #152635;
+            }
+
             .track-title {
+                margin-top: 10px;
                 font-size: 1.6rem;
+                flex-grow: 1;
             }
 
         </style>
@@ -276,7 +287,7 @@ export class AudioPlayer extends HTMLElement {
 
             <div class="vz-wrapper" style="display: flex; justify-content: center;">
                
-                <div style="display: flex;">
+                <div style="display: flex; margin-top: 10px;">
                     <span class="album-name"></span>
                     <span class="album-year"></span>
                 </div>
@@ -318,6 +329,9 @@ export class AudioPlayer extends HTMLElement {
 
         // The audio element.
         this.audio = this.querySelector("audio")
+
+        // The current file path
+        this.path = ""
 
         // The presentation elements...
         this.albumName = this.querySelector(".album-name")
@@ -627,6 +641,16 @@ export class AudioPlayer extends HTMLElement {
 
             this.playSlider.title = parseFloat(percent * 100).toFixed(2) + "%"
 
+            // display the track lenght...
+            let obj = secondsToTime(position)
+            var hours = obj.h
+            var min = obj.m
+            var sec = obj.s
+            let hours_ = (hours < 10) ? '0' + hours : hours;
+            let minutes_ = (min < 10) ? '0' + min : min;
+            let seconds_ = (sec < 10) ? '0' + sec : sec;
+
+            this.currentTimeSpan.innerHTML = hours_ + ":" + minutes_ + ":" + seconds_;
         })
 
         this.wavesurfer.on("finish", () => {
@@ -641,18 +665,36 @@ export class AudioPlayer extends HTMLElement {
 
     play(path, globule, audio) {
 
+        if (this.path == path && this.wavesurfer.isPlaying()) {
+            // Do nothing...
+            return
+        } else if (this.path == path && !this.wavesurfer.isPlaying()) {
+
+            this.wavesurfer.play()
+
+            // Resume the audio...
+            this.playBtn.style.display = "none"
+            this.pauseBtn.style.display = "block"
+
+            return
+        }
+
         this.shadowRoot.querySelector("#container").style.display = "block"
 
         this.stop()
         this.playBtn.style.display = "block"
         this.pauseBtn.style.display = "none"
 
+
         if (audio) {
             // TODO see how to get the featuring info...
-            this.shadowRoot.querySelector("#title-span").innerHTML = audio.getAlbum()
+            this.shadowRoot.querySelector("#title-span").innerHTML = audio.getArtist() + " : " + audio.getTitle()
 
             this.albumName.innerHTML = audio.getAlbum()
-            this.albumYear.innerHTML = audio.getYear()
+            this.albumYear.innerHTML = ""
+
+            if (audio.getYear() > 0)
+                this.albumYear.innerHTML = audio.getYear()
             this.ablumCover.src = audio.getPoster().getContenturl()
             this.trackTitle.innerHTML = audio.getTitle()
 
@@ -691,6 +733,7 @@ export class AudioPlayer extends HTMLElement {
             }
         }
 
+        this.path = path;
         this.audio.src = url
         this.wavesurfer.load(this.audio)
     }
@@ -713,6 +756,7 @@ export class AudioPlayer extends HTMLElement {
      */
     close() {
         this.stop()
+        this.path = ""
         this.shadowRoot.querySelector("#container").style.display = "none"
         if (this.onclose) {
             this.onclose()
@@ -722,6 +766,7 @@ export class AudioPlayer extends HTMLElement {
     stop() {
 
         this.playSlider.value = 0;
+        this.path = ""
 
         if (this.wavesurfer) {
             this.wavesurfer.stop()
