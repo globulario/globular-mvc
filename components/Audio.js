@@ -444,6 +444,7 @@ export class AudioPlayer extends HTMLElement {
         // stop the audio player....
         this.stopBtn.onclick = () => {
             this.stop()
+            this.playlist.stop()
         }
 
         this.skipNextBtn.onclick = () => {
@@ -826,6 +827,7 @@ export class AudioPlayer extends HTMLElement {
 
         this.playBtn.style.display = "block"
         this.pauseBtn.style.display = "none"
+        
     }
 
     hidePlaylist() {

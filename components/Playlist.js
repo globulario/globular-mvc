@@ -160,6 +160,18 @@ export class PlayList extends HTMLElement {
         }
     }
 
+    stop(){
+        console.log("stop was call")
+        this.index = 0
+        this.items.forEach(item => {
+            item.stopPlaying()
+            item.classList.remove("playing")
+        })
+        
+        let item = this.items[this.index]
+        this.shadowRoot.querySelector("#container").scrollTo({ top: item.offsetTop - 10, behavior: 'smooth' });
+    }
+
     playPrevious() {
         if (this.index > 0) {
             this.index--
@@ -282,7 +294,7 @@ export class PlayList extends HTMLElement {
     resumePlaying() {
         let item = this.items[this.index]
         if (item)
-            item.setPlaying()
+            this.setPlaying(item)
     }
 
     orderItems() {
