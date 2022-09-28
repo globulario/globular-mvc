@@ -357,6 +357,10 @@ export class PlayListItem extends HTMLElement {
 
             .cell img {
                 height: 48px;
+                border-left: 1px solid black;
+                border-bottom: 1px solid black;
+                border-right: 1px solid #424242;
+                border-top: 1px solid #424242;
             }
 
             .cell {
