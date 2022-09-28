@@ -259,11 +259,13 @@ export class AudioPlayer extends HTMLElement {
             .album-name {
                 font-size: 1.5rem;
                 font-weight: 500;
+                color: white;
             }
 
             .album-year {
                 font-size: 1.5rem;
                 padding-left: 20px;
+                color: white;
             }
 
             .album-cover {
@@ -278,7 +280,10 @@ export class AudioPlayer extends HTMLElement {
                 margin-top: 10px;
                 font-size: 1.6rem;
                 flex-grow: 1;
+                color: white;
             }
+
+
 
         </style>
         <audio></audio>
@@ -354,12 +359,31 @@ export class AudioPlayer extends HTMLElement {
         this.currentTimeSpan = this.querySelector("#current-time")
         this.totalTimeSpan = this.querySelector("#total-time")
         this.playlist = this.querySelector("globular-playlist")
+        this.playlist.audioPlayer = this
 
         this.loop = false
         if (localStorage.getItem("audio_loop")) {
             this.loop = localStorage.getItem("audio_loop") == "true"
         }
 
+        if(this.loop){
+            this.loopBtn.style.fill = "white"
+        }else{
+            this.loopBtn.style.fill = "gray"
+        }
+        
+        this.shuffle = false
+        if (localStorage.getItem("audio_shuffle")) {
+            this.shuffle = localStorage.getItem("audio_shuffle") == "true"
+        }
+
+        if(this.shuffle){
+            this.shuffleBtn.style.fill = "white"
+        }else{
+            this.shuffleBtn.style.fill = "#424242"
+        }
+
+  
         // give the focus to the input.
         let offsetTop = this.shadowRoot.querySelector(".header").offsetHeight
         if (offsetTop == 0) {
@@ -447,6 +471,30 @@ export class AudioPlayer extends HTMLElement {
                 this.loop = true;
             }
 
+            if(this.loop){
+                this.loopBtn.style.fill = "white"
+            }else{
+                this.loopBtn.style.fill = "#424242"
+            }
+    
+        }
+
+        this.shuffleBtn.onclick = ()=>{
+            if (this.shuffle) {
+                localStorage.setItem("audio_shuffle", "false");
+                this.shuffle = false;
+            } else {
+                localStorage.setItem("audio_shuffle", "true")
+                this.shuffle = true;
+            }
+
+            if(this.shuffle){
+                this.shuffleBtn.style.fill = "white"
+            }else{
+                this.shuffleBtn.style.fill = "#424242"
+            }
+
+            this.playlist.orderItems()
         }
 
         // The volume button...
@@ -576,6 +624,7 @@ export class AudioPlayer extends HTMLElement {
     connectedCallback() {
 
         if (this.wavesurfer) {
+        
             return
         }
 
@@ -661,6 +710,8 @@ export class AudioPlayer extends HTMLElement {
         })
 
         fireResize()
+
+
     }
 
     play(path, globule, audio) {

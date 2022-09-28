@@ -37,6 +37,17 @@ function getAudioInfo(globule, id, callback) {
         })
 }
 
+function shuffleArray(array) {
+    for (var i = array.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var temp = array[i];
+        array[i] = array[j];
+        array[j] = temp;
+    }
+
+    return array;
+}
+
 /**
  * A play list is accociated with a directory. So you must specify the path
  * where media files can be read...
@@ -110,7 +121,7 @@ export class PlayList extends HTMLElement {
     }
 
     play(item) {
-        this.index = item.index;
+        this.index = this.items.indexOf(item);
         // this.audioPlayer.play(path, globule, title)
         let url = decodeURIComponent(item.url)
 
@@ -130,7 +141,6 @@ export class PlayList extends HTMLElement {
                 })
             }
 
-
         })
     }
 
@@ -139,9 +149,12 @@ export class PlayList extends HTMLElement {
             this.index++
             this.setPlaying(this.items[this.index])
         } else {
-            console.log("no more item to play!")
+            this.index = 0
+            this.items.forEach(item => {
+                item.stopPlaying()
+                item.classList.remove("playing")
+            })
             if (this.audioPlayer.loop) {
-                this.index = 0
                 this.setPlaying(this.items[this.index])
             }
         }
@@ -237,6 +250,8 @@ export class PlayList extends HTMLElement {
             this.appendChild(item_)
         })
 
+        this.orderItems()
+
         // play the first item...
         if (this.items.length > 0) {
             this.setPlaying(this.items[0])
@@ -248,12 +263,14 @@ export class PlayList extends HTMLElement {
             item.stopPlaying()
             item.classList.remove("playing")
         })
-        this.index = item.index;
+
+        this.index = this.items.indexOf(item);
         item.setPlaying()
         this.play(item)
         item.classList.add("playing")
 
-        this.shadowRoot.querySelector("#container").scrollTop = item.offsetTop;
+        // set the scoll position...
+        this.shadowRoot.querySelector("#container").scrollTo({ top: item.offsetTop - 10, behavior: 'smooth' });
     }
 
     pausePlaying() {
@@ -266,6 +283,20 @@ export class PlayList extends HTMLElement {
         let item = this.items[this.index]
         if (item)
             item.setPlaying()
+    }
+
+    orderItems() {
+        // sort by items index...
+        this.innerHTML = ""
+        if (this.audioPlayer.shuffle) {
+            this.items = shuffleArray(this.items)
+        } else {
+            this.items = this.items.sort((a, b) => {
+                return a.index - b.index
+            })
+        }
+
+        this.items.forEach(item => this.appendChild(item))
     }
 }
 
@@ -304,6 +335,7 @@ export class PlayListItem extends HTMLElement {
 
             .title{
                 font-size: 1rem;
+                color: white;
             }
 
             :host-context(globular-playlist) {
@@ -318,6 +350,7 @@ export class PlayListItem extends HTMLElement {
                 display: table-cell;
                 vertical-align: middle;
                 padding: 5px;
+                color: white;
             }
 
             iron-icon:hover {
