@@ -289,15 +289,21 @@ export class AudioPlayer extends HTMLElement {
                 text-align: center;
             }
 
-
+            #track-info{
+                position: absolute;
+                bottom: 10px;
+                left: 20px;
+                color: white;
+                font-size: 1.6rem;
+            }
 
         </style>
         <audio></audio>
         <div id="content">
             <globular-playlist></globular-playlist>
 
-            <div class="vz-wrapper" style="display: flex; justify-content: center;">
-               
+            <div class="vz-wrapper" style="display: flex; justify-content: center; position: relative;">
+                <div id="track-info"> </div>
                 <div style="display: flex; margin-top: 10px;">
                     <span class="album-name"></span>
                     <span class="album-year"></span>
@@ -349,6 +355,7 @@ export class AudioPlayer extends HTMLElement {
         this.albumYear = this.querySelector(".album-year")
         this.ablumCover = this.querySelector(".album-cover")
         this.trackTitle = this.querySelector(".track-title")
+        this.trackInfo = this.querySelector("#track-info")
 
         // Now the buttons actions.
         this.skipPresiousBtn = this.querySelector("#skip-previous")
@@ -451,6 +458,7 @@ export class AudioPlayer extends HTMLElement {
         this.stopBtn.onclick = () => {
             this.stop()
             this.playlist.stop()
+            this.trackInfo.innerHTML = ""
         }
 
         this.skipNextBtn.onclick = () => {
@@ -721,6 +729,10 @@ export class AudioPlayer extends HTMLElement {
 
     }
 
+    setTarckInfo(index, total){
+        this.trackInfo.innerHTML = `${index + 1} / ${total}`
+    }
+
     play(path, globule, audio) {
 
         if (this.path == path && this.wavesurfer.isPlaying()) {
@@ -825,7 +837,7 @@ export class AudioPlayer extends HTMLElement {
 
         this.playSlider.value = 0;
         this.path = ""
-
+  
         if (this.wavesurfer) {
             this.wavesurfer.stop()
             this.wavesurfer.seekAndCenter(0)

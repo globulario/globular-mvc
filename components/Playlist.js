@@ -281,6 +281,8 @@ export class PlayList extends HTMLElement {
         this.play(item)
         item.classList.add("playing")
 
+        this.audioPlayer.setTarckInfo(this.index, this.items.length)
+
         // set the scoll position...
         this.shadowRoot.querySelector("#container").scrollTo({ top: item.offsetTop - 10, behavior: 'smooth' });
     }
@@ -386,8 +388,8 @@ export class PlayListItem extends HTMLElement {
         <div class="cell">
             <div style="display: flex; flex-direction: column; padding-left: 10px; padding-rigth: 10px;">
                 <div id="title-div" class="title"></div>
-                <div style="font-size: .85rem">
-                    <span id="title-artist-span" class="author"></span>
+                <div style="font-size: .85rem; display: flex;">
+                    <span id="title-artist-span" style="flex-grow: 1;" class="author"></span>
                     <span id="title-duration-span"> </span>
                 </div>
             </div>
@@ -477,7 +479,13 @@ export class PlayListItem extends HTMLElement {
         let minutes_ = (min < 10) ? '0' + min : min;
         let seconds_ = (sec < 10) ? '0' + sec : sec;
 
-        return hours_ + ":" + minutes_ + ":" + seconds_;
+        if(hours > 0)
+            return hours_ + ":" + minutes_ + ":" + seconds_;
+
+        if(min > 0)
+            return  minutes_ + ":" + seconds_;
+
+            return   seconds_ + "'s";
     }
 
     // Parse the name and split the information from it...
