@@ -1282,6 +1282,7 @@ export class SearchAudioCard extends HTMLElement {
             .audio-card img{
                 max-width: 320px;
                 min-width: 320px;
+                min-height: 100px;
                 max-height: 180px;
                 border-top-left-radius: 3.5px;
                 border-top-right-radius: 3.5px;

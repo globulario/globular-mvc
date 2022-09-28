@@ -281,6 +281,12 @@ export class AudioPlayer extends HTMLElement {
                 font-size: 1.6rem;
                 flex-grow: 1;
                 color: white;
+                display: inline-block;
+                width: 500px;
+                white-space: nowrap;
+                overflow: hidden !important;
+                text-overflow: ellipsis;
+                text-align: center;
             }
 
 

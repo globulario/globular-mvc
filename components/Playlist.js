@@ -167,7 +167,7 @@ export class PlayList extends HTMLElement {
             item.stopPlaying()
             item.classList.remove("playing")
         })
-        
+
         let item = this.items[this.index]
         this.shadowRoot.querySelector("#container").scrollTo({ top: item.offsetTop - 10, behavior: 'smooth' });
     }
@@ -348,6 +348,7 @@ export class PlayListItem extends HTMLElement {
             .title{
                 font-size: 1rem;
                 color: white;
+                max-width: 400px;
             }
 
             :host-context(globular-playlist) {
