@@ -2343,12 +2343,18 @@ export class SearchFacetPanel extends HTMLElement {
             let audios = []
             for (var i = 0; i < filtrables.length; i++) {
                 if (filtrables[i].getAudio != undefined) {
-                    audios.push(filtrables[i].getAudio())
+                    if (filtrables[i].style.display != "none")
+                        audios.push(filtrables[i].getAudio())
                 }
             }
 
             // Play the audios found...
-            this.playAudios(audios, facet.getField())
+            if(audios.length > 0) {
+                this.playAudios(audios, facet.getField())
+            }else{
+                ApplicationView.displayMessage("no item to play!", 3000)
+            }
+           
         }
 
         let range = document.createRange()
@@ -2388,7 +2394,7 @@ export class SearchFacetPanel extends HTMLElement {
                     countDiv.innerHTML = "(" + count + ")"
                 }
 
-                this.shadowRoot.querySelector("#" + uuid + "_play_btn" ).onclick = () => {
+                this.shadowRoot.querySelector("#" + uuid + "_play_btn").onclick = () => {
                     let filtrables = this.page.getElementsByClassName(getUuidByString(className));
                     let audios = []
                     for (var i = 0; i < filtrables.length; i++) {
@@ -2396,7 +2402,7 @@ export class SearchFacetPanel extends HTMLElement {
                             audios.push(filtrables[i].getAudio())
                         }
                     }
-        
+
                     // Play the audios found...
                     this.playAudios(audios, term)
                 }

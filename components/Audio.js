@@ -523,7 +523,7 @@ export class AudioPlayer extends HTMLElement {
             }
 
             let html = `
-            <paper-card id="volume-panel" style="position: absolute; top:42px; right: 0px;">
+            <paper-card id="volume-panel" style="position: absolute; top:42px; right: 0px; z-index:100">
                 <div style="display: flex; align-items: center;">
                     <iron-icon id="volume-down-btn" icon="av:volume-down" style="fill: black;" ></iron-icon>
                     <paper-slider style=""></paper-slider>
@@ -718,15 +718,16 @@ export class AudioPlayer extends HTMLElement {
         })
 
         this.wavesurfer.on("finish", () => {
-            this.stop()
-            if (this.playlist) {
+           
+            if (this.playlist.items.length > 1) {
                 this.playlist.playNext()
+            }else if(this.loop){
+                this.play(this.path, this._audio_.globule, this._audio_ )
+                this._audio_
+            }else{
+                this.stop()
             }
         })
-
-        fireResize()
-
-
     }
 
     setTarckInfo(index, total){
@@ -777,6 +778,7 @@ export class AudioPlayer extends HTMLElement {
 
         let url = ""
 
+
         if (path.startsWith("http")) {
             url = path;
         } else {
@@ -804,6 +806,8 @@ export class AudioPlayer extends HTMLElement {
         }
 
         this.path = path;
+        this._audio_ = audio
+        this._audio_.globule = globule
         this.audio.src = url
         this.wavesurfer.load(this.audio)
     }
@@ -836,8 +840,11 @@ export class AudioPlayer extends HTMLElement {
     stop() {
 
         this.playSlider.value = 0;
-        this.path = ""
-  
+
+        // do not remove those infos, require by loop option...
+        //this.path = "";
+        //this._audio_ = null;
+
         if (this.wavesurfer) {
             this.wavesurfer.stop()
             this.wavesurfer.seekAndCenter(0)
@@ -853,6 +860,7 @@ export class AudioPlayer extends HTMLElement {
         this.shuffleBtn.style.display = "none"
         this.skipNextBtn.style.display = "none"
         this.skipPresiousBtn.style.display = "none"
+        this.trackInfo.style.display = "none"
     }
 
     showPlaylist() {
@@ -860,6 +868,7 @@ export class AudioPlayer extends HTMLElement {
         this.shuffleBtn.style.display = ""
         this.skipNextBtn.style.display = ""
         this.skipPresiousBtn.style.display = ""
+        this.trackInfo.style.display = ""
     }
 }
 

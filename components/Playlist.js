@@ -389,7 +389,7 @@ export class PlayListItem extends HTMLElement {
             <div style="display: flex; flex-direction: column; padding-left: 10px; padding-rigth: 10px;">
                 <div id="title-div" class="title"></div>
                 <div style="font-size: .85rem; display: flex;">
-                    <span id="title-artist-span" style="flex-grow: 1;" class="author"></span>
+                    <span id="title-artist-span" style="flex-grow: 1; max-width: 400px;" class="author"></span>
                     <span id="title-duration-span"> </span>
                 </div>
             </div>
