@@ -990,6 +990,9 @@ export class ApplicationView extends View {
 
     this.isLogin = true;
 
+    // create the workspace...
+    this.getWorkspace()
+
     window.dispatchEvent(new Event("resize"));
   }
 

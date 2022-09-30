@@ -260,6 +260,11 @@ export class AudioPlayer extends HTMLElement {
                 font-size: 1.5rem;
                 font-weight: 500;
                 color: white;
+                width: 500px;
+                white-space: nowrap;
+                overflow: hidden !important;
+                text-overflow: ellipsis;
+                text-align: center;
             }
 
             .album-year {

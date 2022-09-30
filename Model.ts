@@ -24,7 +24,9 @@ import { View } from "./View";
 
     Model.globular.authenticationService.generatePeerToken(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: localStorage.getItem("user_token") })
         .then(rsp => {
+            console.log("generated token for audience ", mac, ":",  rsp.getToken())
             callback(rsp.getToken())
+
         })
         .catch(errorCallback)
 }

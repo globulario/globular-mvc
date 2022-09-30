@@ -1378,7 +1378,7 @@ export class FilesView extends HTMLElement {
                     if (mp3Radio.checked) {
                         rqst.setArgsList(["-f", "bestaudio", "--extract-audio", "--audio-format", "mp3", "--audio-quality", "0", "--embed-thumbnail", "--embed-metadata", "-o", dest, url]);
                     } else {
-                        rqst.setArgsList(["-f", "mp4", "--embed-thumbnail", "--embed-metadata", "-o", dest, url])
+                        rqst.setArgsList(["-f", "mp4", "-o", dest, url])
                     }
 
                     rqst.setBlocking(true)
@@ -1472,6 +1472,7 @@ export class FilesView extends HTMLElement {
                             } else {
                                 url_ += globule.config.PortHttp
                             }
+
 
                             url_ += "/index_audio?domain=" + globule.config.Domain // application is not know at this time...
                             if (localStorage.getItem("user_token") != undefined) {
@@ -4437,16 +4438,14 @@ export class FileExplorer extends HTMLElement {
 
         // hide the content.
         this.style.zIndex = 1;
-        let video = null
-        if (file.videos) {
-            video = file.videos[0]
-        }
 
-        if (file.titles) {
-            video = file.titles[0]
-        }
-        // Display the video only if the path match the video player /applications vs /users
-        playAudio(file.path, () => { }, () => { }, video, this.globule)
+        getAudioInfo(this.globule, file, audios=>{
+            if(audios){
+                audios[0].globule = this.globule
+                playAudio(file.path, () => { }, () => { }, audios[0], this.globule)
+            }
+        })
+
     }
 
     readFile(path) {
@@ -4983,7 +4982,7 @@ export class VideoPreview extends HTMLElement {
         }
 
         if (this.onplay != undefined) {
-            this.onplay(this.path)
+            this.onplay(this.file)
         }
     }
 

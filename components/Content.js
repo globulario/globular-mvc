@@ -1398,6 +1398,11 @@ export class Navigation extends HTMLElement {
 
         this.appendLink(pageLnk)
         pageLnk.setEditMode()
+
+
+        getWorkspace().appendChild(page)
+        page.setEditMode()
+        
     }
 
     appendLink(lnk) {

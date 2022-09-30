@@ -1,7 +1,8 @@
-import { Model } from './Model';
+import { generatePeerToken, Model } from './Model';
 import { readDir } from "globular-web-client/api";
 import * as jwt from "jwt-decode";
 import { Globular } from 'globular-web-client';
+import { ApplicationView } from './ApplicationView';
 
 /**
  * Server side file accessor. That 
@@ -200,22 +201,27 @@ export class File extends Model {
      */
     static readDir(path: string, recursive: boolean, callback: (dir: File) => void, errorCallback: (err: any) => void, globule?: Globular) {
         // So here I will get the dir of the current user...
-        let token = localStorage.getItem("user_token")
-        let decoded = jwt(token);
-        let address = (<any>decoded).address;
-        if (!globule) {
-            globule = Model.getGlobule(address)
-        }
-
-        let id = globule.config.Domain + "@" + path
-        if (File._local_files[id] != undefined) {
-            callback(File._local_files[id])
-            return
-        }
-
-        readDir(globule, path, recursive, (data: any) => {
-            callback(File.fromObject(data))
+        //let token = localStorage.getItem("user_token")
+        generatePeerToken(globule.config.Mac, token => {
+            
+            let decoded = jwt(token);
+            let address = (<any>decoded).address;
+            if (!globule) {
+                globule = Model.getGlobule(address)
+            }
+    
+            let id = globule.config.Domain + "@" + path
+            if (File._local_files[id] != undefined) {
+                callback(File._local_files[id])
+                return
+            }
+    
+            readDir(globule, path, recursive, (data: any) => {
+                callback(File.fromObject(data))
+            }, errorCallback, 80, 80, token)
         }, errorCallback)
+        
+
     }
 
 }

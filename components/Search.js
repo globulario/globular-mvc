@@ -1046,41 +1046,48 @@ export class SearchResultsPage extends HTMLElement {
     displayMosaicHit(hit, context) {
         if (hit.hasTitle || hit.hasVideo || hit.hasAudio) {
             if (hit.hasTitle()) {
-                let id = "_flip_card_" + getUuidByString(hit.getTitle().getName())
+                let title = hit.getTitle()
+                title.globule = hit.globule
+                let id = "_flip_card_" + getUuidByString(title.getName())
                 let flipCard = this.querySelector("#" + id)
                 if (!flipCard) {
                     flipCard = new SearchFlipCard();
                     flipCard.id = id
                     flipCard.slot = "mosaic_" + context
-                    flipCard.setTitle(hit.getTitle(), hit.globule)
+                    flipCard.setTitle(title, hit.globule)
                     this.appendChild(flipCard)
                 }
                 return flipCard
             } else if (hit.hasVideo()) {
                 let id = "_video_card_" + getUuidByString(hit.getVideo().getId())
                 let videoCard = this.querySelector("#" + id)
+                let video = hit.getVideo()
+                video.globule = hit.globule;
                 if (!videoCard) {
                     videoCard = new SearchVideoCard();
                     videoCard.id = id
                     videoCard.slot = "mosaic_" + context
-                    videoCard.setVideo(hit.getVideo(), hit.globule)
+                    videoCard.setVideo(video, hit.globule)
                     this.appendChild(videoCard)
                 }
                 return videoCard
             } else if (hit.hasAudio()) {
-                let id = "_audio_card_" + hit.getAudio().getId()
+                let audio = hit.getAudio()
+                audio.globule = hit.globule
+                let id = "_audio_card_" + audio.getId()
                 let audioCard = this.querySelector("#" + id)
                 if (!audioCard) {
                     audioCard = new SearchAudioCard();
                     audioCard.id = id
                     audioCard.slot = "mosaic_" + context
-                    audioCard.setAudio(hit.getAudio(), hit.globule)
+                    audioCard.setAudio(audio, hit.globule)
                     this.appendChild(audioCard)
                 }
                 return audioCard
             }
         } else {
             let blogPost = hit.getBlog()
+            blogPost.globule = hit.globule;
             let id = "_" + blogPost.getUuid() + "_info"
             let blogPostInfo = this.querySelector("#" + id);
             if (!blogPostInfo) {
@@ -1108,7 +1115,7 @@ export class SearchResultsPage extends HTMLElement {
     }
 
     displayListHit(hit, context) {
-
+        let globule = hit.globule
         let titleName = ""
         let uuid = ""
         if (hit.hasTitle || hit.hasVideo || hit.hasAudio) {
@@ -1167,6 +1174,7 @@ export class SearchResultsPage extends HTMLElement {
                 infoDisplay.setTitlesInformation([hit.getTitle()], hit.globule)
                 hitDiv.classList.add("filterable")
                 let title = hit.getTitle()
+                title.globule = hit.globule;
                 title.getGenresList().forEach(g => hitDiv.classList.add(getUuidByString(g.toLowerCase())))
                 hitDiv.classList.add(getUuidByString(title.getType().toLowerCase()))
 
@@ -1183,6 +1191,7 @@ export class SearchResultsPage extends HTMLElement {
                 infoDisplay.setVideosInformation([hit.getVideo()])
                 hitDiv.classList.add("filterable")
                 let video = hit.getVideo()
+                video.globule = hit.globule
                 video.getGenresList().forEach(g => hitDiv.classList.add(getUuidByString(g.toLowerCase())))
                 video.getTagsList().forEach(tag => hitDiv.classList.add(getUuidByString(tag.toLowerCase())))
 
@@ -1198,6 +1207,7 @@ export class SearchResultsPage extends HTMLElement {
                 infoDisplay.setAudiosInformation([hit.getAudio()])
                 hitDiv.classList.add("filterable")
                 let audio = hit.getAudio()
+                audio.globule = hit.globule
                 audio.getGenresList().forEach(g => {
                     g.split(" ").forEach(g_ => hitDiv.classList.add(getUuidByString(g_.toLowerCase())))
 
@@ -1207,6 +1217,7 @@ export class SearchResultsPage extends HTMLElement {
             infoDisplay.hideHeader()
         } else {
             let blogPost = hit.getBlog()
+            blogPost.globule = hit.globule;
             hitDiv.classList.add("filterable")
             infoDisplay.setBlogPostInformation(blogPost)
             blogPost.getKeywordsList().forEach(kw => hitDiv.classList.add(getUuidByString(kw.toLowerCase())))
