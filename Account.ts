@@ -202,8 +202,6 @@ export class Account extends Model {
                     return
                 }
 
-                console.log("receive account data: ", data)
-
                 let account = new Account(data.getId(), data.getEmail(), data.getName(), data.getDomain())
                 account.session = new Session(account)
                 Account.accounts[accountId] = account;
@@ -219,7 +217,6 @@ export class Account extends Model {
                 }, errorCallback)
 
             } else {
-                console.log("fail to retreive account ", accountId, status.details)
                 errorCallback(status.details);
             }
         })
@@ -465,7 +462,6 @@ export class Account extends Model {
 
                 Account.getContacts(this, `{}`,
                     (contacts: []) => {
-                        console.log(contacts)
                         // Set the list of contacts (received invitation, sent invitation and actual contact id's)
                         if (this.session != undefined) {
                             this.session.initData(() => {

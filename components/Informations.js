@@ -424,7 +424,7 @@ export class InformationsManager extends HTMLElement {
             }
 
             #header h1, h2, h3 {
-                margin: 0px;
+                margin: 5px;
             }
 
             .title-div{
@@ -632,7 +632,6 @@ export class AudioInfo extends HTMLElement {
     }
 
     setAudio(audio) {
-        console.log("set audio informations: ", audio)
         this.shadowRoot.querySelector("#image").src = audio.getPoster().getContenturl()
         this.shadowRoot.querySelector("#title-div").innerHTML = audio.getTitle()
         this.shadowRoot.querySelector("#artist-div").innerHTML = audio.getArtist()
@@ -869,7 +868,11 @@ export class VideoInfoEditor extends HTMLElement {
         </div>
         `
 
-        // test create offer...
+        this.setVideo()
+    }
+
+    setVideo(video){
+
     }
 
 

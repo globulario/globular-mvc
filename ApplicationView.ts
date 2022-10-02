@@ -641,7 +641,6 @@ export class ApplicationView extends View {
 
         if (this._searchResults != undefined) {
           if (this.getWorkspace().querySelectorAll("globular-search-results").length == 1) {
-            console.log("the search results are already visible.")
             return
           }
         }

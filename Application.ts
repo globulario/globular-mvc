@@ -210,7 +210,7 @@ export class Application extends Model {
           domain: Model.domain,
           address: Model.address
         }).then((rsp: LogRsp) => {
-          console.log("info was log!")
+          
         })
           .catch((err: any) => {
             ApplicationView.displayMessage(err, 3000)
@@ -277,7 +277,7 @@ export class Application extends Model {
             evt.repwd,
             evt.domain,
             (data: any) => {
-              console.log("--> register succeed!", data);
+        
             },
             (err: any) => {
               ApplicationView.displayMessage(err, 4000);
@@ -829,9 +829,6 @@ export class Application extends Model {
   addContactListener(contact: any) {
     Account.getAccount(contact._id, (account: Account) => {
 
-      console.log("contact: ", contact)
-      console.log("contact account ", account)
-      console.log("contact session ", account.session)
       let globule = Model.globular
       if (globule) {
         // subscribe to session event change.
@@ -947,7 +944,6 @@ export class Application extends Model {
         connection.setTimeout(60)
         connection.setHost(userDomain)
         rqst.setConnection(connection)
-        console.log("globule: ", globule.config.Domain)
         globule.persistenceService.createConnection(rqst, {
           token: token,
           application: Model.application,
@@ -1223,8 +1219,6 @@ export class Application extends Model {
         address: Model.address
       })
       .then(() => {
-
-        console.log("-----------> publish notification: ", notification.recipient + "_notification_event")
 
         // Here I will throw a network event...
         // Publish the notification

@@ -440,7 +440,6 @@ export class WatchingMenu extends Menu {
             }, true)
 
             Model.eventHub.subscribe("remove_video_player_evt_", uuid => { }, evt => {
-                console.log("remove ", evt)
                 this.removeWacthingTitle(evt)
             }, true)
 
@@ -465,7 +464,6 @@ export class WatchingMenu extends Menu {
                         }
                     },
                         err => {
-                            console.log(err)
                             if (titles.length > 0) {
                                 appendTitle()
                             } else {
@@ -502,8 +500,6 @@ export class WatchingMenu extends Menu {
 
         let token = localStorage.getItem("user_token")
         let globule =  Model.getGlobule(userDomain)
-        console.log(globule)
-
         const stream = globule.persistenceService.find(rqst, {
             application: Model.application.length > 0 ? Model.application : Model.globular.config.IndexApplication,
             domain: Model.domain, token
@@ -548,10 +544,8 @@ export class WatchingMenu extends Menu {
         // So here I will set the address from the address found in the token and not 
         // the address of the client itself.
         let token = localStorage.getItem("user_token")
-
         let globule =  Model.getGlobule(userDomain)
-        console.log(globule)
-
+  
         // call persist data
         globule.persistenceService
             .findOne(rqst, {

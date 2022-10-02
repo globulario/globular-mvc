@@ -133,8 +133,6 @@ export class SessionState extends HTMLElement {
         // The account can be the actual object or a string...
         if (this.hasAttribute("account")) {
             let accountId = this.getAttribute("account")
-            console.log("get account ", accountId)
-
             Account.getAccount(accountId, (val) => {
                 this.account = val;
                 this.init();

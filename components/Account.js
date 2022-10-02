@@ -932,7 +932,7 @@ export class ExternalAccountManager extends HTMLElement {
     let container = this.shadowRoot.querySelector("#container")
 
     getAllAccountsInfo(accounts => {
-      console.log(accounts)
+
       accounts.forEach(a => {
         // I will manage only regular user account
         if (a.getId() != "sa") {

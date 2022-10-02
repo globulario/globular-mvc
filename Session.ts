@@ -168,8 +168,6 @@ export class Session extends Model {
                         ApplicationView.displayMessage(err, 3000)
                     })
                 }, true, this)
-
-            console.log("session ", session)
             Account.getAccount(this._id,
                 (account: Account) => {
                     // Here I will connect local event to react with interface element...
@@ -177,7 +175,6 @@ export class Session extends Model {
                     initCallback()
                 }, errorCallback)
         }, (err: any) => {
-            console.log("fail to get session ", err)
             // In that case I will save defaut session values...
             this.save(() => {
                 initCallback()
@@ -244,7 +241,6 @@ export class Session extends Model {
             })
             .then((rsp: resource.UpdateSessionResponse) => {
                 // Here I will return the value with it
-                console.log("-------------------> session change ", this)
                 Model.publish(`session_state_${this._id}_change_event`, this.toString(), false)
                 onSave();
             })

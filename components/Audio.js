@@ -50,7 +50,8 @@ export function playAudio(path, onplay, onclose, title, globule) {
         audioPlayer.onclose = onclose
     }
 
-
+    if (audioPlayer.playlist)
+        audioPlayer.playlist.clear()
 
     // play a given title.
     if (path.endsWith("audio.m3u") || path.startsWith("#EXTM3U")) {
@@ -384,24 +385,24 @@ export class AudioPlayer extends HTMLElement {
             this.loop = localStorage.getItem("audio_loop") == "true"
         }
 
-        if(this.loop){
+        if (this.loop) {
             this.loopBtn.style.fill = "white"
-        }else{
+        } else {
             this.loopBtn.style.fill = "gray"
         }
-        
+
         this.shuffle = false
         if (localStorage.getItem("audio_shuffle")) {
             this.shuffle = localStorage.getItem("audio_shuffle") == "true"
         }
 
-        if(this.shuffle){
+        if (this.shuffle) {
             this.shuffleBtn.style.fill = "white"
-        }else{
+        } else {
             this.shuffleBtn.style.fill = "#424242"
         }
 
-  
+
         // give the focus to the input.
         let offsetTop = this.shadowRoot.querySelector(".header").offsetHeight
         if (offsetTop == 0) {
@@ -491,15 +492,15 @@ export class AudioPlayer extends HTMLElement {
                 this.loop = true;
             }
 
-            if(this.loop){
+            if (this.loop) {
                 this.loopBtn.style.fill = "white"
-            }else{
+            } else {
                 this.loopBtn.style.fill = "#424242"
             }
-    
+
         }
 
-        this.shuffleBtn.onclick = ()=>{
+        this.shuffleBtn.onclick = () => {
             if (this.shuffle) {
                 localStorage.setItem("audio_shuffle", "false");
                 this.shuffle = false;
@@ -508,9 +509,9 @@ export class AudioPlayer extends HTMLElement {
                 this.shuffle = true;
             }
 
-            if(this.shuffle){
+            if (this.shuffle) {
                 this.shuffleBtn.style.fill = "white"
-            }else{
+            } else {
                 this.shuffleBtn.style.fill = "#424242"
             }
 
@@ -644,7 +645,7 @@ export class AudioPlayer extends HTMLElement {
     connectedCallback() {
 
         if (this.wavesurfer) {
-        
+
             return
         }
 
@@ -723,19 +724,19 @@ export class AudioPlayer extends HTMLElement {
         })
 
         this.wavesurfer.on("finish", () => {
-           
+
             if (this.playlist.items.length > 1) {
                 this.playlist.playNext()
-            }else if(this.loop){
-                this.play(this.path, this._audio_.globule, this._audio_ )
+            } else if (this.loop) {
+                this.play(this.path, this._audio_.globule, this._audio_)
                 this._audio_
-            }else{
+            } else {
                 this.stop()
             }
         })
     }
 
-    setTarckInfo(index, total){
+    setTarckInfo(index, total) {
         this.trackInfo.innerHTML = `${index + 1} / ${total}`
     }
 
@@ -857,7 +858,7 @@ export class AudioPlayer extends HTMLElement {
 
         this.playBtn.style.display = "block"
         this.pauseBtn.style.display = "none"
-        
+
     }
 
     hidePlaylist() {

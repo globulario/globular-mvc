@@ -1,40 +1,45 @@
 import { getTheme } from "./Theme.js";
 import parser from 'iptv-playlist-parser'
-import { Model } from "../Model";
 import { GetAudioByIdRequest, GetVideoByIdRequest } from "globular-web-client/title/title_pb.js";
 import { Application } from "../Application";
 import { fireResize, formatBoolean } from "./utility.js";
 import { secondsToTime } from "./Audio.js";
+import { generatePeerToken, Model } from '../Model';
 
 // retreive video with a given id.
 function getVideoInfo(globule, id, callback) {
     console.log("get video with id: ", id)
-    let rqst = new GetVideoByIdRequest
-    rqst.setIndexpath(globule.config.DataPath + "/search/videos")
-    rqst.setVidoeid(id)
+    generatePeerToken(globule.config.Mac, token => {
+        let rqst = new GetVideoByIdRequest
+        rqst.setIndexpath(globule.config.DataPath + "/search/videos")
+        rqst.setVidoeid(id)
 
-    globule.titleService.getVideoById(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
-        .then(rsp => {
-            callback(rsp.getVideo())
-        })
-        .catch(err => {
-            callback(null)
-        })
+        globule.titleService.getVideoById(rqst, { application: Application.application, domain: globule.config.Domain, token: token })
+            .then(rsp => {
+                callback(rsp.getVideo(), token)
+            })
+            .catch(err => {
+                callback(null, null)
+            })
+    })
+
 }
 
 function getAudioInfo(globule, id, callback) {
 
-    let rqst = new GetAudioByIdRequest
-    rqst.setIndexpath(globule.config.DataPath + "/search/audios")
-    rqst.setAudioid(id)
+    generatePeerToken(globule.config.Mac, token => {
+        let rqst = new GetAudioByIdRequest
+        rqst.setIndexpath(globule.config.DataPath + "/search/audios")
+        rqst.setAudioid(id)
 
-    globule.titleService.getAudioById(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
-        .then(rsp => {
-            callback(rsp.getAudio())
-        })
-        .catch(err => {
-            callback(null)
-        })
+        globule.titleService.getAudioById(rqst, { application: Application.application, domain: globule.config.Domain, token: token })
+            .then(rsp => {
+                callback(rsp.getAudio(), token)
+            })
+            .catch(err => {
+                callback(null, null)
+            })
+    })
 }
 
 function shuffleArray(array) {
@@ -122,21 +127,24 @@ export class PlayList extends HTMLElement {
 
     play(item) {
         this.index = this.items.indexOf(item);
-        // this.audioPlayer.play(path, globule, title)
-        let url = decodeURIComponent(item.url)
 
-        url = url.split("?")[0]
-        url += "?application=" + Model.application
-        if (localStorage.getItem("user_token") != undefined) {
-            url += "&token=" + localStorage.getItem("user_token")
-        }
+        getVideoInfo(this.globule, item.id, (video, token) => {
 
-        getVideoInfo(this.globule, item.id, video => {
+            let url = decodeURIComponent(item.url)
+            url = url.split("?")[0]
+            url += "?application=" + Model.application
 
             if (video) {
+                if (token) {
+                    url += "&token=" + token
+                }
                 this.videoPlayer.play(url, this.globule, video)
             } else {
-                getAudioInfo(this.globule, item.id, audio => {
+
+                getAudioInfo(this.globule, item.id, (audio, token) => {
+                    if (token) {
+                        url += "&token=" + token
+                    }
                     this.audioPlayer.play(url, this.globule, audio)
                 })
             }
@@ -160,7 +168,7 @@ export class PlayList extends HTMLElement {
         }
     }
 
-    stop(){
+    stop() {
         console.log("stop was call")
         this.index = 0
         this.items.forEach(item => {
@@ -187,48 +195,51 @@ export class PlayList extends HTMLElement {
         this.globule = globule
         this.itmes = []
 
-        // if a playlist is given directly...
-        if (txt.startsWith("#EXTM3U")) {
-            const result = parser.parse(txt)
-            this.playlist = result;
-            this.refresh()
-            fireResize()
-        } else {
-            let url = globule.config.Protocol + "://" + globule.config.Domain
-            if (window.location != globule.config.Domain) {
-                if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
-                    url = globule.config.Protocol + "://" + window.location.host
-                }
-            }
-
-            if (globule.config.Protocol == "https") {
-                if (globule.config.PortHttps != 443)
-                    url += ":" + globule.config.PortHttps
-            } else {
-                if (globule.config.PortHttps != 80)
-                    url += ":" + globule.config.PortHttp
-            }
-
-            url += txt
-
-            url += "?application=" + Model.application
-            if (localStorage.getItem("user_token") != undefined) {
-                url += "&token=" + localStorage.getItem("user_token")
-            }
-
-            // Fetch the playlist file, using xhr for example
-            var xhr = new XMLHttpRequest();
-            xhr.open("GET", url);
-            xhr.overrideMimeType("audio/x-mpegurl"); // Needed, see below.
-            xhr.onload = (evt) => {
-                const result = parser.parse(evt.target.response)
+        generatePeerToken(globule.config.Mac, token => {
+            // if a playlist is given directly...
+            if (txt.startsWith("#EXTM3U")) {
+                const result = parser.parse(txt)
                 this.playlist = result;
                 this.refresh()
                 fireResize()
-            };
+            } else {
+                let url = globule.config.Protocol + "://" + globule.config.Domain
+                if (window.location != globule.config.Domain) {
+                    if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
+                        url = globule.config.Protocol + "://" + window.location.host
+                    }
+                }
 
-            xhr.send();
-        }
+                if (globule.config.Protocol == "https") {
+                    if (globule.config.PortHttps != 443)
+                        url += ":" + globule.config.PortHttps
+                } else {
+                    if (globule.config.PortHttps != 80)
+                        url += ":" + globule.config.PortHttp
+                }
+
+                url += txt
+
+                url += "?application=" + Model.application
+                if (token) {
+                    url += "&token=" + token
+                }
+
+                // Fetch the playlist file, using xhr for example
+                var xhr = new XMLHttpRequest();
+                xhr.open("GET", url);
+                xhr.overrideMimeType("audio/x-mpegurl"); // Needed, see below.
+                xhr.onload = (evt) => {
+                    const result = parser.parse(evt.target.response)
+                    this.playlist = result;
+                    this.refresh()
+                    fireResize()
+                };
+
+                xhr.send();
+            }
+        })
+
 
     }
 
@@ -479,13 +490,13 @@ export class PlayListItem extends HTMLElement {
         let minutes_ = (min < 10) ? '0' + min : min;
         let seconds_ = (sec < 10) ? '0' + sec : sec;
 
-        if(hours > 0)
+        if (hours > 0)
             return hours_ + ":" + minutes_ + ":" + seconds_;
 
-        if(min > 0)
-            return  minutes_ + ":" + seconds_;
+        if (min > 0)
+            return minutes_ + ":" + seconds_;
 
-            return   seconds_ + "'s";
+        return seconds_ + "'s";
     }
 
     // Parse the name and split the information from it...

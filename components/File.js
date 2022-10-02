@@ -294,7 +294,6 @@ let dirs = {}
  * @param {*} force If set the dir will be read from the server.
  */
 function _readDir(path, callback, errorCallback, globule, force = false) {
-    console.log("read dir ", path, " force ", force)
     let key = getUuidByString(globule.config.Domain + "@" + path)
     if (!force || path == "/public" || path == "/shared") {
         if (dirs[key] != null) {
@@ -305,7 +304,6 @@ function _readDir(path, callback, errorCallback, globule, force = false) {
 
     // Here I will keep the dir info in the cache...
     File.readDir(path, false, (dir) => {
-        console.log("read dir from the server ", path)
         callback(dir)
         dirs[key] = dir
     }, errorCallback, globule)
@@ -363,7 +361,7 @@ export class FilesView extends HTMLElement {
         this.paperTray = null;
 
         // The function will be call in case of error.
-        this.onerror = err=>ApplicationView.displayMessage(err, 3000);
+        this.onerror = err => ApplicationView.displayMessage(err, 3000);
 
         // Innitialisation of the layout.
         let id = "_" + uuidv4().split("-").join("_").split("@").join("_");
@@ -573,21 +571,24 @@ export class FilesView extends HTMLElement {
             }
             let globule = this._file_explorer_.globule
             if (files.length > 0) {
-                // Create a tempory name...
-                let uuid = "_" + uuidv4().split("-").join("_").split("@").join("_");
-                createArchive(globule, files, uuid,
-                    path => {
-                        // Download the file...
-                        downloadFileHttp(path, uuid + ".tgz",
-                            () => {
-                                // Now I will remove the file from the server....
-                                deleteFile(globule, path,
-                                    () => {
-                                        console.log("file removed")
-                                    },
-                                    err => { ApplicationView.displayMessage(err, 3000) })
-                            }, err => { ApplicationView.displayMessage(err, 3000) })
-                    }, err => { ApplicationView.displayMessage(err, 3000) })
+                generatePeerToken(globule.config.Mac, token => {
+                    // Create a tempory name...
+                    let uuid = "_" + uuidv4().split("-").join("_").split("@").join("_");
+                    createArchive(globule, files, uuid,
+                        path => {
+                            // Download the file...
+                            downloadFileHttp(path, uuid + ".tgz",
+                                () => {
+                                    // Now I will remove the file from the server....
+                                    deleteFile(globule, path,
+                                        () => {
+                                            console.log("file removed")
+                                        },
+                                        err => { ApplicationView.displayMessage(err, 3000) }, token)
+                                }, err => { ApplicationView.displayMessage(err, 3000) }, token)
+                        }, err => { ApplicationView.displayMessage(err, 3000) }, token)
+                })
+
             } else {
 
                 let path = this.menu.file.path
@@ -595,26 +596,30 @@ export class FilesView extends HTMLElement {
 
                 // if the file is a directory I will create archive and download it.
                 if (this.menu.file.isDir) {
-                    createArchive(globule, [path], name,
-                        path_ => {
-                            // Download the file...
-                            downloadFileHttp(path_, name + ".tgz",
-                                () => {
-                                    // Now I will remove the file from the server....
-                                    deleteFile(globule, path_,
-                                        () => {
-                                            console.log("file removed")
-                                        },
-                                        err => { ApplicationView.displayMessage(err, 3000) })
-                                }, err => { ApplicationView.displayMessage(err, 3000) })
-                        }, err => { ApplicationView.displayMessage(err, 3000) })
+                    generatePeerToken(globule.config.Mac, token => {
+                        createArchive(globule, [path], name,
+                            path_ => {
+                                // Download the file...
+                                downloadFileHttp(path_, name + ".tgz",
+                                    () => {
+                                        // Now I will remove the file from the server....
+                                        deleteFile(globule, path_,
+                                            () => {
+                                                console.log("file removed")
+                                            },
+                                            err => { ApplicationView.displayMessage(err, 3000) }, token)
+                                    }, err => { ApplicationView.displayMessage(err, 3000) }, token)
+                            }, err => { ApplicationView.displayMessage(err, 3000) }, token)
+                    })
                 } else {
                     // simply download the file.
-                    downloadFileHttp(path, name,
-                        () => {
-                            // Now I will remove the file from the server....
+                    generatePeerToken(globule.config.Mac, token => {
+                        downloadFileHttp(path, name,
+                            () => {
+                                // Now I will remove the file from the server....
 
-                        }, err => { ApplicationView.displayMessage(err, 3000) })
+                            }, err => { ApplicationView.displayMessage(err, 3000) }), token
+                    })
                 }
 
             }
@@ -711,17 +716,20 @@ export class FilesView extends HTMLElement {
                                         })
                                         .catch(err => { ApplicationView.displayMessage(err, 3000) })
                                 } else {
-                                    deleteDir(globule, f.path,
-                                        () => {
-                                            delete dirs[getUuidByString(this._file_explorer_.globule.config.Domain + "@" + path)]
-                                            Model.eventHub.publish("reload_dir_event", path, false);
-                                            if (index < Object.keys(this.selected).length) {
-                                                deleteFile_()
-                                            } else {
-                                                success()
-                                            }
-                                        },
-                                        err => { ApplicationView.displayMessage(err, 3000) })
+                                    generatePeerToken(globule.config.Mac, token => {
+                                        deleteDir(globule, f.path,
+                                            () => {
+                                                delete dirs[getUuidByString(this._file_explorer_.globule.config.Domain + "@" + path)]
+                                                Model.eventHub.publish("reload_dir_event", path, false);
+                                                if (index < Object.keys(this.selected).length) {
+                                                    deleteFile_()
+                                                } else {
+                                                    success()
+                                                }
+                                            },
+                                            err => { ApplicationView.displayMessage(err, 3000) }, token)
+                                    })
+
                                 }
                             })
 
@@ -1255,12 +1263,15 @@ export class FilesView extends HTMLElement {
             let path = f.path.substring(0, f.path.lastIndexOf("/"))
 
             // Now I will rename the file or directory...
-            renameFile(this._file_explorer_.globule, path, input.value, f.name,
-                () => {
-                    // Refresh the parent folder...
-                    delete dirs[getUuidByString(this._file_explorer_.globule.config.Domain + "@" + path)]
-                    Model.eventHub.publish("reload_dir_event", path, false);
-                }, err => { ApplicationView.displayMessage(err, 3000) })
+            generatePeerToken(this._file_explorer_.globule.config.Mac, token => {
+                renameFile(this._file_explorer_.globule, path, input.value, f.name,
+                    () => {
+                        // Refresh the parent folder...
+                        delete dirs[getUuidByString(this._file_explorer_.globule.config.Domain + "@" + path)]
+                        Model.eventHub.publish("reload_dir_event", path, false);
+                    }, err => { ApplicationView.displayMessage(err, 3000) }, token)
+            })
+
         }
     }
 
@@ -1320,10 +1331,11 @@ export class FilesView extends HTMLElement {
                 };
 
                 getFileObject(url, (fileObject) => {
-                    uploadFiles(this._file_explorer_.globule, this.__dir__.path, [fileObject], () => {
-                        Model.eventHub.publish("__upload_files_event__", { path: this.__dir__.path, files: [fileObject], lnk: lnk }, true)
-                    }, err => ApplicationView.displayMessage(err, 3000))
-
+                    generatePeerToken(this._file_explorer_.globule.config.Mac, token => {
+                        uploadFiles(this._file_explorer_.globule, token, this.__dir__.path, [fileObject], () => {
+                            Model.eventHub.publish("__upload_files_event__", { path: this.__dir__.path, files: [fileObject], lnk: lnk }, true)
+                        }, err => ApplicationView.displayMessage(err, 3000))
+                    })
                 });
             } else {
 
@@ -1392,14 +1404,14 @@ export class FilesView extends HTMLElement {
                         if (rsp.getPid() != null) {
                             pid = rsp.getPid()
                         }
-                        console.log(rsp.getResult())
+
                         if (rsp.getResult().startsWith("[download] Destination:")) {
                             let fileName_ = rsp.getResult().split(":")[1].trim()
                             if (fileName.length > 0) {
                                 url = url.replace(fileName.split(".")[0], fileName_.split(".")[0])
 
                             }
-                            console.log("start processing file: ", fileName_)
+
                             // generate preview for the previous file...
 
                             fileName = fileName_
@@ -1426,7 +1438,7 @@ export class FilesView extends HTMLElement {
 
                                             globule.rbacService.addResourceOwner(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
                                                 .then(rsp => {
-                                                    console.log("Permission was set for uploaded file!");
+
                                                     Model.eventHub.publish("__upload_link_event__", { pid: pid, path: this.__dir__.path, infos: "", done: true, lnk: lnk }, true);
                                                 })
                                                 .catch(err => ApplicationView.displayMessage(err, 3000))
@@ -1457,8 +1469,6 @@ export class FilesView extends HTMLElement {
                                 xmlhttp.open("GET", url_, true);
                                 xmlhttp.setRequestHeader("domain", globule.config.Domain);
                                 xmlhttp.send();
-
-                                console.log("index the url: ", url_, " file: ", this.__dir__.path + "/" + fileName_)
                             }
                         } else if (rsp.getResult().startsWith("[ExtractAudio] Destination: ")) {
                             fileName = rsp.getResult().split("[ExtractAudio] Destination: ")[1].trim()
@@ -2171,16 +2181,19 @@ export class FilesIconView extends FilesView {
 
                             playAudiosBtn.onclick = () => {
                                 let globule = this._file_explorer_.globule
-                                // I will refresh the playlist on the server before playing it...
-                                let rqst = new GeneratePlaylistRequest
-                                rqst.setDir(dir.path)
-                                globule.fileService.generatePlaylist(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
-                                .then(rsp => {
-                                    playAudio(dir.__audioPlaylist__.path, () => { }, () => { }, null, globule)
+                                generatePeerToken(globule.config.Mac, token => {
+                                    // I will refresh the playlist on the server before playing it...
+                                    let rqst = new GeneratePlaylistRequest
+                                    rqst.setDir(dir.path)
+                                    globule.fileService.generatePlaylist(rqst, { application: Application.application, domain: globule.config.Domain, token: token })
+                                        .then(rsp => {
+                                            playAudio(dir.__audioPlaylist__.path, () => { }, () => { }, null, globule)
+                                        })
+                                        .catch(err => ApplicationView.displayMessage(err, 3000))
                                 })
-                                .catch(err => ApplicationView.displayMessage(err, 3000))
 
-                                
+
+
                             }
 
                         } else if (fileType == "video" && dir.__videoPlaylist__) {
@@ -2268,7 +2281,6 @@ export class FilesIconView extends FilesView {
 
                         if (fileType == "video") {
 
-
                             /** In that case I will display the vieo preview. */
                             getHiddenFiles(file.path, previewDir => {
                                 let h = 72;
@@ -2278,7 +2290,10 @@ export class FilesIconView extends FilesView {
                                         fileNameSpan.style.wordBreak = "break-all"
                                         fileNameSpan.style.fontSize = ".85rem"
                                         fileNameSpan.style.maxWidth = preview.width + "px"
-
+                                        if (file.videos) {
+                                            if (file.videos.length > 0)
+                                                fileNameSpan.innerHTML = file.videos[0].getDescription()
+                                        }
 
                                     }, this._file_explorer_.globule)
 
@@ -2307,6 +2322,18 @@ export class FilesIconView extends FilesView {
                                             this.setImdbTitleInfo(url, file)
                                         }
                                     }
+                                }
+
+                                // Retreive the video title to display more readable file name...
+                                if (file.video) {
+                                    fileNameSpan.innerHTML = file.video[0].getDescription()
+                                } else {
+                                    getVideoInfo(this._file_explorer_.globule, file, videos => {
+                                        if (videos.length > 0) {
+                                            file.videos = videos // keep in the file itself...
+                                            fileNameSpan.innerHTML = file.videos[0].getDescription()
+                                        }
+                                    })
                                 }
                             }, this._file_explorer_.globule)
 
@@ -2341,6 +2368,11 @@ export class FilesIconView extends FilesView {
                                         fileNameSpan.style.maxWidth = w + "px"
                                         fileNameSpan.style.wordBreak = "break-all"
                                         fileNameSpan.style.fontSize = ".85rem"
+                                        if (file.audios) {
+                                            if (file.audios.length > 0)
+                                                fileNameSpan.innerHTML = file.audios[0].getTitle()
+                                        }
+
                                     }
                                 };
                                 img.src = url;
@@ -2356,7 +2388,6 @@ export class FilesIconView extends FilesView {
                                     Model.eventHub.publish("__show_image__", { path: file.path, file_explorer_id: this._file_explorer_.id }, true)
                                 }
                             } else if (fileType == "audio") {
-                                console.log(fileType, file.path)
                                 img.onclick = (evt) => {
                                     evt.stopPropagation();
                                     Model.eventHub.publish("__play_audio__", { file: file, file_explorer_id: this._file_explorer_.id }, true)
@@ -2373,17 +2404,17 @@ export class FilesIconView extends FilesView {
                             }
 
                             // display more readable name.
-                            if (file.videos) {
-                                fileNameSpan.innerHTML = file.videos[0].getDescription()
-                                if (file.videos[0].getPoster())
-                                    img.src = file.videos[0].getPoster().getContenturl()
+                            if (file.audios) {
+                                fileNameSpan.innerHTML = file.audios[0].getTitle()
+                                if (file.audios[0].getPoster())
+                                    img.src = file.audios[0].getPoster().getContenturl()
                             } else {
-                                getVideoInfo(this._file_explorer_.globule, file, videos => {
-                                    if (videos.length > 0) {
-                                        file.videos = videos // keep in the file itself...
-                                        fileNameSpan.innerHTML = file.videos[0].getDescription()
-                                        if (file.videos[0].getPoster())
-                                            img.src = file.videos[0].getPoster().getContenturl()
+                                getAudioInfo(this._file_explorer_.globule, file, audios => {
+                                    if (audios.length > 0) {
+                                        file.audios = audios // keep in the file itself...
+                                        fileNameSpan.innerHTML = file.audios[0].getTitle()
+                                        if (file.audios[0].getPoster())
+                                            img.src = file.audios[0].getPoster().getContenturl()
                                     }
                                 })
                             }
@@ -2559,7 +2590,6 @@ export class FilesIconView extends FilesView {
 
                 this._file_explorer_.globule.titleService.associateFileWithTitle(rqst_, { application: Application.application, domain: this._file_explorer_.globule.config.Domain, token: localStorage.getItem("user_token") })
                     .then(rsp => {
-                        console.log("file " + file.path + " and title " + title.getName() + " are asscociated")
                     }).catch(err => ApplicationView.displayMessage(err, 3000))
 
             }).catch(err => ApplicationView.displayMessage(err, 3000))
@@ -2637,7 +2667,7 @@ export class PathNavigator extends HTMLElement {
         this.path = undefined
 
         // The function will be call in case of error.
-        this.onerror = err=>ApplicationView.displayMessage(err, 3000);
+        this.onerror = err => ApplicationView.displayMessage(err, 3000);
 
         // List of listeners...
         this.navigationListener = ""
@@ -2863,7 +2893,6 @@ export class PathNavigator extends HTMLElement {
             title.onclick = (evt) => {
                 evt.stopPropagation();
                 this._file_explorer_.displayWaitMessage("load " + path__)
-                console.log(path__)
                 _readDir(path__, (dir) => {
                     this._file_explorer_.resume()
                     // Send read dir event.
@@ -2893,7 +2922,7 @@ export class FileNavigator extends HTMLElement {
         this.path = undefined
 
         // The function will be call in case of error.
-        this.onerror = err=>ApplicationView.displayMessage(err, 3000);
+        this.onerror = err => ApplicationView.displayMessage(err, 3000);
 
         // List of listeners...
         this.navigationListener = ""
@@ -3334,7 +3363,6 @@ export class FileNavigator extends HTMLElement {
                     callback()
                 }
             }, err => {
-                console.log(err)
                 // The file is not a directory so the file will simply put in the share.
                 if (err.message.indexOf("is a directory") != -1) {
                     this.getFileInfo(share.getPath(),
@@ -3459,7 +3487,7 @@ export class FileExplorer extends HTMLElement {
         this.navigations = []
 
         // The function will be call in case of error.
-        this.onerror = err=>ApplicationView.displayMessage(err, 3000);
+        this.onerror = err => ApplicationView.displayMessage(err, 3000);
 
         // The function is call when the explorer is call
         this.onclose = undefined;
@@ -4209,7 +4237,7 @@ export class FileExplorer extends HTMLElement {
                         this.informationManager.setTitlesInformation(file.titles)
                     } else if (file.videos != undefined) {
                         this.informationManager.setVideosInformation(file.videos)
-                    }else if (file.audios != undefined) {
+                    } else if (file.audios != undefined) {
                         this.informationManager.setAudiosInformation(file.audios)
                     }
 
@@ -4249,7 +4277,6 @@ export class FileExplorer extends HTMLElement {
                         this.fileNavigator.reload(dir, () => {
                             // reload dir to be sure if it's public that change will be applied.
                             _readDir(path, (dir) => {
-                                console.log("-----> path ", this.path, path, dir.path)
                                 if (dir.path == this.path) {
                                     Model.eventHub.publish("__set_dir_event__", { path: dir, file_explorer_id: this.id }, true)
 
@@ -4430,7 +4457,6 @@ export class FileExplorer extends HTMLElement {
 
         playVideo(file.path, null, () => {
 
-            console.log("------> video ", file.path, "is now playing")
         }, video, this.globule)
     }
 
@@ -4439,8 +4465,8 @@ export class FileExplorer extends HTMLElement {
         // hide the content.
         this.style.zIndex = 1;
 
-        getAudioInfo(this.globule, file, audios=>{
-            if(audios){
+        getAudioInfo(this.globule, file, audios => {
+            if (audios) {
                 audios[0].globule = this.globule
                 playAudio(file.path, () => { }, () => { }, audios[0], this.globule)
             }

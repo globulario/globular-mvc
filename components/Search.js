@@ -94,7 +94,6 @@ export function getCoverDataUrl(callback, videoId, videoUrl, videoPath, globule)
     xhr.setRequestHeader("domain", Model.domain);
 
     // Set responseType to 'arraybuffer', we want raw binary data buffer
-    console.log("try to get video cover ", url)
     xhr.responseType = 'text';
     xhr.onload = (rsp) => {
         if (rsp.currentTarget.status == 200) {
@@ -244,7 +243,7 @@ function playTitleListener(player, title, indexPath, globule) {
                             let path = rsp.getFilepathsList().pop()
                             playVideo(path, (player, title) => {
                                 playTitleListener(player, title, indexPath, globule)
-                            }, null, globule)
+                            }, null, null, globule)
                         }
                     })
                 toast.dismiss();
@@ -285,7 +284,7 @@ function search(query, contexts_) {
                 if (context == "blogPosts") {
                     if (contexts.length == 0) {
                         searchBlogPosts(g, query, indexPath, () => {
-                            console.log("done!")
+
                         })
                     } else {
                         searchBlogPosts(g, query, indexPath, () => {
@@ -293,10 +292,10 @@ function search(query, contexts_) {
                         })
                     }
                 } else if (context == "webPages") {
-                    console.log("search webpages... ", query)
+
                     if (contexts.length == 0) {
                         searchWebpageContent(query, () => {
-                            console.log("done!")
+
                         })
                     } else {
                         searchWebpageContent(query, () => {
@@ -306,7 +305,7 @@ function search(query, contexts_) {
                 } else {
                     if (contexts.length == 0) {
                         searchTitles(g, query, indexPath, () => {
-                            console.log("done!")
+
                         })
                     } else {
                         searchTitles(g, query, indexPath, () => {
@@ -326,7 +325,7 @@ function search(query, contexts_) {
 /** 
  * Search titles...
  */
-function searchTitles(globule, query, indexPath, callback) {
+function searchTitles(globule, query, indexPath, callback, fields) {
 
     // This is a simple test...
     let rqst = new SearchTitlesRequest
@@ -334,6 +333,11 @@ function searchTitles(globule, query, indexPath, callback) {
     rqst.setQuery(query)
     rqst.setOffset(0)
     rqst.setSize(MAX_RESULTS)
+    if(fields){
+        rqst.setFieldsList(fields)
+    }
+
+    let hits = []
 
     let stream = globule.titleService.searchTitles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
     stream.on("data", (rsp) => {
@@ -352,6 +356,9 @@ function searchTitles(globule, query, indexPath, callback) {
                 let uuid = "_" + getUuid(query)
                 Model.eventHub.publish(`${uuid}_search_hit_event__`, { hit: hit, context: indexPath.substring(indexPath.lastIndexOf("/") + 1) }, true)
             })
+
+            // keep it
+            hits.push(hit)
         }
     });
 
@@ -360,7 +367,7 @@ function searchTitles(globule, query, indexPath, callback) {
             // In case of error I will return an empty array
             console.log(status.details)
         } else {
-            callback()
+            callback(hits)
         }
     });
 }
@@ -441,7 +448,6 @@ function searchWebpageContent(query, callback) {
             let took = performance.now() - startTime
             Model.eventHub.publish("__new_search_event__", { query: query, summary: { getTotal: () => { return results.length }, getTook: () => { return took } } }, true)
             Model.eventHub.publish("display_webpage_search_result_" + query, results, true)
-            console.log(results)
             callback()
         }
     });
@@ -1336,6 +1342,79 @@ export class SearchAudioCard extends HTMLElement {
         return this.audio;
     }
 
+
+    // get files associated with the titles, audios or videos...
+    getTitleFiles(id, indexPath, globule, callback) {
+        let rqst = new GetTitleFilesRequest
+        rqst.setTitleid(id)
+        rqst.setIndexpath(indexPath)
+        globule.titleService.getTitleFiles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+            .then(rsp => {
+                callback(rsp.getFilepathsList())
+            }).catch(err => {
+                callback([])
+            })
+    }
+
+    playAudios(audios, name, globule) {
+
+        // here I will get the audi
+        let audio_playList = "#EXTM3U\n"
+        audio_playList += "#PLAYLIST: " + name + "\n\n"
+
+        // Generate the playlist with found audio items.
+        let generateAudioPlaylist = () => {
+            let audio = audios.pop();
+
+            // set the audio info
+            let indexPath = globule.config.DataPath + "/search/audios"
+
+            // get the title file path...
+            this.getTitleFiles(audio.getId(), indexPath, globule, files => {
+                if (files.length > 0) {
+                    audio_playList += `#EXTINF:${audio.getDuration()}, ${audio.getTitle()}, tvg-id="${audio.getId()}"\n`
+
+                    let url = globule.config.Protocol + "://" + globule.config.Domain
+                    if (window.location != globule.config.Domain) {
+                        if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
+                            url = globule.config.Protocol + "://" + window.location.host
+                        }
+                    }
+
+                    if (globule.config.Protocol == "https") {
+                        if (globule.config.PortHttps != 443)
+                            url += ":" + globule.config.PortHttps
+                    } else {
+                        if (globule.config.PortHttps != 80)
+                            url += ":" + globule.config.PortHttp
+                    }
+
+                    let path = files[0].split("/")
+                    path.forEach(item => {
+                        item = item.trim()
+                        if (item.length > 0)
+                            url += "/" + encodeURIComponent(item)
+                    })
+
+                    url += "?application=" + Model.application
+                    if (localStorage.getItem("user_token") != undefined) {
+                        url += "&token=" + localStorage.getItem("user_token")
+                    }
+
+                    audio_playList += url + "\n\n"
+                }
+                if (audios.length > 0) {
+                    generateAudioPlaylist()
+                } else {
+                    console.log(audio_playList)
+                    playAudio(audio_playList, null, null, null, globule)
+                }
+            })
+        }
+
+        generateAudioPlaylist()
+    }
+
     // Call search event.
     setAudio(audio, globule) {
 
@@ -1380,23 +1459,30 @@ export class SearchAudioCard extends HTMLElement {
         }
 
         this.shadowRoot.querySelector("#play-album-btn").onclick = () => {
-
-            let rqst = new GetTitleFilesRequest
-            rqst.setTitleid(audio.getId())
-            let indexPath = globule.config.DataPath + "/search/audios"
-            rqst.setIndexpath(indexPath)
-
-            globule.titleService.getTitleFiles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
-                .then(rsp => {
-                    if (rsp.getFilepathsList().length > 0) {
-                        let path = rsp.getFilepathsList().pop()
-                        let playlist = path.substring(0, path.lastIndexOf("/")) + "/audio.m3u"
-                        playAudio(playlist, null, null, null, globule)
+            searchTitles(globule, audio.getAlbum(),  globule.config.DataPath + "/search/audios", hits=>{
+                let audios = []
+                hits.forEach(hit=>{
+                    if(hit.hasAudio){
+                        let a = hit.getAudio()
+                        if(a.getAlbum() == audio.getAlbum()){
+                            audios.push(a)
+                        }
+                        
                     }
+                })
+                if(audios.length>0){
+                    audios = audios.sort( (a,b)=>{
+                        return a.getTracknumber() - b.getTracknumber()
+                    })
+                    this.playAudios(audios, audio.getAlbum(), globule)
+                }
+            }, ["album"])
 
-                }).catch(err => ApplicationView.displayMessage(err, 3000))
+   
         }
     }
+
+
 }
 
 customElements.define('globular-search-audio-card', SearchAudioCard)
@@ -1974,7 +2060,7 @@ export class SearchTitleDetail extends HTMLElement {
                             this.shadowRoot.querySelector("#epsiode-preview").onclick = this.shadowRoot.querySelector("#play-episode-video-button").onclick = () => {
                                 playVideo(path, (player, title) => {
                                     playTitleListener(player, title, indexPath, globule)
-                                }, null, globule)
+                                }, null, null, globule)
                             }
 
                             this.shadowRoot.querySelector("#episode-info-button").onclick = () => {
@@ -2360,12 +2446,12 @@ export class SearchFacetPanel extends HTMLElement {
             }
 
             // Play the audios found...
-            if(audios.length > 0) {
+            if (audios.length > 0) {
                 this.playAudios(audios, facet.getField())
-            }else{
+            } else {
                 ApplicationView.displayMessage("no item to play!", 3000)
             }
-           
+
         }
 
         let range = document.createRange()

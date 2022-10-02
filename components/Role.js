@@ -102,7 +102,6 @@ export class RoleManager extends HTMLElement {
                 (roles) => {
                     roles.forEach(r => {
                         if (r.getId() != "admin" && r.getId() != "guest") {
-                            console.log("role ", r)
                             let panel = new RolePanel(r)
                             content.appendChild(panel)
                         }
