@@ -333,7 +333,7 @@ function searchTitles(globule, query, indexPath, callback, fields) {
     rqst.setQuery(query)
     rqst.setOffset(0)
     rqst.setSize(MAX_RESULTS)
-    if(fields){
+    if (fields) {
         rqst.setFieldsList(fields)
     }
 
@@ -342,21 +342,32 @@ function searchTitles(globule, query, indexPath, callback, fields) {
     let stream = globule.titleService.searchTitles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
     stream.on("data", (rsp) => {
 
-        if (rsp.hasSummary()) {
+        if (rsp.hasSummary() && !fields) {
             Model.eventHub.publish("_display_search_results_", {}, true)
             Model.eventHub.publish("__new_search_event__", { query: query, summary: rsp.getSummary() }, true)
-        } else if (rsp.hasFacets()) {
+        } else if (rsp.hasFacets() && !fields) {
             let uuid = "_" + getUuid(query)
             Model.eventHub.publish(`${uuid}_search_facets_event__`, { facets: rsp.getFacets() }, true)
         } else if (rsp.hasHit()) {
             let hit = rsp.getHit()
             hit.globule = globule // keep track where the hit was found...
-            // display the value in the console...
-            hit.getSnippetsList().forEach(val => {
-                let uuid = "_" + getUuid(query)
-                Model.eventHub.publish(`${uuid}_search_hit_event__`, { hit: hit, context: indexPath.substring(indexPath.lastIndexOf("/") + 1) }, true)
-            })
+            if (hit.hasAudio()) {
+                hit.getAudio().globule = globule
+            } else if (hit.hasTitle()) {
+                hit.getTitle().globule = globule
+            } else if (hit.hasVideo()) {
+                hit.getVideo().globule = globule
+            } else if (hit.hasBlog()) {
+                hit.getBlog().globule = globule
+            }
 
+            if (!fields) {
+                // display the value in the console...
+                hit.getSnippetsList().forEach(val => {
+                    let uuid = "_" + getUuid(query)
+                    Model.eventHub.publish(`${uuid}_search_hit_event__`, { hit: hit, context: indexPath.substring(indexPath.lastIndexOf("/") + 1) }, true)
+                })
+            }
             // keep it
             hits.push(hit)
         }
@@ -1459,26 +1470,27 @@ export class SearchAudioCard extends HTMLElement {
         }
 
         this.shadowRoot.querySelector("#play-album-btn").onclick = () => {
-            searchTitles(globule, audio.getAlbum(),  globule.config.DataPath + "/search/audios", hits=>{
+            searchTitles(globule, audio.getAlbum(), globule.config.DataPath + "/search/audios", hits => {
                 let audios = []
-                hits.forEach(hit=>{
-                    if(hit.hasAudio){
+                hits.forEach(hit => {
+                    if (hit.hasAudio) {
                         let a = hit.getAudio()
-                        if(a.getAlbum() == audio.getAlbum()){
+                        if (a.getAlbum() == audio.getAlbum()) {
                             audios.push(a)
                         }
-                        
+
                     }
                 })
-                if(audios.length>0){
-                    audios = audios.sort( (a,b)=>{
-                        return a.getTracknumber() - b.getTracknumber()
-                    })
+                if (audios.length > 0) {
+                    if (audios[0].getTracknumber())
+                        audios = audios.sort((a, b) => {
+                            return b.getTracknumber() - a.getTracknumber()
+                        })
                     this.playAudios(audios, audio.getAlbum(), globule)
                 }
             }, ["album"])
 
-   
+
         }
     }
 
@@ -2309,11 +2321,15 @@ export class SearchFacetPanel extends HTMLElement {
                 margin-left: 10px;
             }
 
+            paper-checkbox{
+                margin-top: 15px;
+            }
+
         </style>
 
         <div style="display: flex; flex-direction: column;">
             <div class="facet-label" style="display: flex; justify-items: center; align-items: baseline;">
-                <paper-icon-button id="play_facet_btn" icon="av:play-arrow"></paper-icon-button>
+                <paper-icon-button id="play_facet_btn"  style="display: none"  icon="av:play-arrow"></paper-icon-button>
                 <paper-checkbox checked> <span id='field_span'></span> <span id='total_span'></span></paper-checkbox checked>
             </div>
             <div class="facet-list">
@@ -2427,6 +2443,18 @@ export class SearchFacetPanel extends HTMLElement {
         generateAudioPlaylist()
     }
 
+    getAudios(className){
+        let filtrables = this.page.getElementsByClassName(getUuidByString(className));
+        let audios = []
+        for (var i = 0; i < filtrables.length; i++) {
+            if (filtrables[i].getAudio != undefined) {
+                audios.push(filtrables[i].getAudio())
+            }
+        }
+
+        return audios
+    }
+
     setFacet(facet) {
         this.id = "_" + getUuidByString(facet.getField())
         this.total += this.page.getElementsByClassName("filterable").length / 2
@@ -2480,7 +2508,7 @@ export class SearchFacetPanel extends HTMLElement {
                 if (!facetList.querySelector("#" + uuid)) {
                     let html = `
                     <div style="margin-left: 25px; display: flex; justify-items: center; align-items: baseline;">
-                        <paper-icon-button id="${uuid}_play_btn" icon="av:play-arrow"></paper-icon-button>
+                        <paper-icon-button  style="display: none"  id="${uuid}_play_btn" icon="av:play-arrow"></paper-icon-button>
                         <paper-checkbox class="${className}" id="${uuid}" checked> <div  class="facet-label"> ${term + "<span id='" + uuid + "_total'>(" + count + ")</span>"} </div></paper-checkbox> 
                     <div>
                 `
@@ -2491,17 +2519,18 @@ export class SearchFacetPanel extends HTMLElement {
                     countDiv.innerHTML = "(" + count + ")"
                 }
 
+                if(this.getAudios(className).length > 0){
+                    this.shadowRoot.querySelector("#" + uuid + "_play_btn").style.display = "block"
+                    this.shadowRoot.querySelector("#play_facet_btn").style.display = "block"
+                }else{
+                    this.shadowRoot.querySelector("#" + uuid + "_play_btn").style.display = "none"
+                }
+
                 this.shadowRoot.querySelector("#" + uuid + "_play_btn").onclick = () => {
-                    let filtrables = this.page.getElementsByClassName(getUuidByString(className));
-                    let audios = []
-                    for (var i = 0; i < filtrables.length; i++) {
-                        if (filtrables[i].getAudio != undefined) {
-                            audios.push(filtrables[i].getAudio())
-                        }
-                    }
+
 
                     // Play the audios found...
-                    this.playAudios(audios, term)
+                    this.playAudios(this.getAudios(className), term)
                 }
 
                 let filterables = this.page.querySelectorAll(".filterable")

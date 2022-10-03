@@ -39,6 +39,7 @@ export function playAudio(path, onplay, onclose, title, globule) {
 
     audioPlayer.style.height = "0px"
     audioPlayer.style.width = "0px"
+    audioPlayer.style.zIndex = 100
 
     ApplicationView.layout.workspace().appendChild(audioPlayer)
 
@@ -463,7 +464,9 @@ export class AudioPlayer extends HTMLElement {
         // stop the audio player....
         this.stopBtn.onclick = () => {
             this.stop()
-            this.playlist.stop()
+            if (this.playlist) {
+                this.playlist.stop()
+            }
             this.trackInfo.innerHTML = ""
         }
 

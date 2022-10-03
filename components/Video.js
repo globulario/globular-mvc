@@ -36,6 +36,7 @@ export function playVideo(path, onplay, onclose, title, globule) {
 
     videoPlayer.style.height = "0px"
     videoPlayer.style.width = "0px"
+    videoPlayer.style.zIndex = 100
 
     ApplicationView.layout.workspace().appendChild(videoPlayer)
 
