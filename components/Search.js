@@ -16,6 +16,7 @@ import { SearchDocumentsRequest } from 'globular-web-client/search/search_pb';
 import * as JwtDecode from 'jwt-decode';
 import { getCoords, randomUUID } from './utility';
 import { playAudio } from './Audio';
+import { setAudio } from './Playlist';
 
 // Maximum number of results.
 var MAX_RESULTS = 1000;
@@ -2394,6 +2395,9 @@ export class SearchFacetPanel extends HTMLElement {
             let audio = audios.pop();
             let globule = audio.globule;
 
+            // keep the info in memory for further use...
+            setAudio(audio)
+
             // set the audio info
             let indexPath = globule.config.DataPath + "/search/audios"
 
@@ -2443,7 +2447,7 @@ export class SearchFacetPanel extends HTMLElement {
         generateAudioPlaylist()
     }
 
-    getAudios(className){
+    getAudios(className) {
         let filtrables = this.page.getElementsByClassName(getUuidByString(className));
         let audios = []
         for (var i = 0; i < filtrables.length; i++) {
@@ -2519,10 +2523,10 @@ export class SearchFacetPanel extends HTMLElement {
                     countDiv.innerHTML = "(" + count + ")"
                 }
 
-                if(this.getAudios(className).length > 0){
+                if (this.getAudios(className).length > 0) {
                     this.shadowRoot.querySelector("#" + uuid + "_play_btn").style.display = "block"
                     this.shadowRoot.querySelector("#play_facet_btn").style.display = "block"
-                }else{
+                } else {
                     this.shadowRoot.querySelector("#" + uuid + "_play_btn").style.display = "none"
                 }
 

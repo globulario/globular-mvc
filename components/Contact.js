@@ -15,16 +15,17 @@ import '@polymer/paper-tabs/paper-tabs.js';
 import '@polymer/paper-tabs/paper-tab.js';
 
 import { Menu } from './Menu';
-import {Ringtone} from './Ringtone'
+import { Ringtone } from './Ringtone'
 import { getTheme } from "./Theme";
 import { Account } from "../Account"
 import { Model, generatePeerToken } from "../Model"
 import { ApplicationView } from '../ApplicationView';
 import "./Autocomplete"
-import { CreateNotificationRqst, SessionState, Notification, NotificationType } from 'globular-web-client/resource/resource_pb';
+import { CreateNotificationRqst, SessionState, Notification, NotificationType, Call, SetCallRqst } from 'globular-web-client/resource/resource_pb';
 import { Notification as Notification_ } from '../Notification';
 import { randomUUID } from './utility';
 import { Application } from '../Application';
+import { LogRqst } from 'globular-web-client/log/log_pb';
 
 /**
  * Login/Register functionality.
@@ -333,7 +334,7 @@ export class SentContactInvitations extends HTMLElement {
         })
 
         let domain = Application.domain
-        if(account.session){
+        if (account.session) {
             domain = account.session.domain
         }
 
@@ -441,10 +442,10 @@ export class ReceivedContactInvitations extends HTMLElement {
         this.onDeclineContact = onDeclineContact;
 
         let domain = Application.domain
-        if(account.session){
+        if (account.session) {
             domain = account.session.domain
         }
-        
+
         let globule = Model.getGlobule(domain) // connect to the local event hub...
 
         globule.eventHub.subscribe("received_" + account.id + "@" + account.domain + "_evt",
@@ -597,7 +598,7 @@ export class ContactList extends HTMLElement {
         this.account = account;
         this.onDeleteContact = onDeleteContact;
         let domain = Application.domain
-        if(account.session){
+        if (account.session) {
             domain = account.session.domain
         }
 
@@ -711,70 +712,28 @@ export class ContactList extends HTMLElement {
 
     onCallContact(contact) {
         console.log("call ", contact.id + "@" + contact.domain)
-        let globule = Model.getGlobule(contact.domain)
+       
+        let call = new Call()
+        call.setUuid(randomUUID())
+        call.setCallee(contact.id + "@" + contact.domain)
+        call.setCaller(Application.account.id + "@" + Application.account.domain)
+        call.setStarttime(Math.floor(Date.now() / 1000)) // set unix timestamp...
+        let rqst = new SetCallRqst
+        rqst.setCall(call)
 
+        // Set value on the callee...
+        let globule = Model.getGlobule(Application.account.domain)
         generatePeerToken(globule.config.Mac, token => {
-            // If the contact is online I will try to call it...
-            if (contact.session.state == SessionState.ONLINE) {
+            globule.resourceService.setCall(rqst,  { application: Application.application, domain: globule.config.Domain, token: token })
 
-            } else {
-                // Here I will send notification.
-                let rqst = new CreateNotificationRqst
-                let notification = new Notification
-
-                notification.setDate(parseInt(Date.now() / 1000)) // Set the unix time stamp...
-                notification.setId(randomUUID())
-                notification.setRecipient(contact.id + "@" + contact.domain)
-                notification.setSender(Application.account.id + "@" + Application.account.domain)
-                notification.setNotificationType(NotificationType.USER_NOTIFICATION)
-
-                let date = new Date()
-                let msg = `
-                <div style="display: flex; flex-direction: column; padding: 16px;">
-                    <div>
-                        ${date.toLocaleString()}
-                    </div>
-                    <div>
-                        Missed call from ${Application.account.name}
-                    </div>
-                </div>
-                `
-
-                notification.setMessage(msg)
-                rqst.setNotification(notification)
-
-                // Create the notification...
-                globule.resourceService.createNotification(rqst, {
-                    token: token,
-                    application: Model.application,
-                    domain: Model.domain,
-                    address: Model.address
-                }).then((rsp) => {
-                    let msg = `
-                    <div>
-                        ${contact.name} was notified off your call attempt.
-                    </div>
-                    `
-                    ApplicationView.displayMessage(msg, 3000)
-                }).catch(err => {
-                    ApplicationView.displayMessage(err, 3000);
-                    console.log(err)
-                })
-
-                // use the ts class to send notification...
-                let notification_ = new Notification_
-                notification_.id = notification.getId()
-                notification_.date = date
-                notification_.sender = notification.getSender()
-                notification_.recipient = notification.getRecipient()
-                notification_.text = notification.getMessage()
-                notification_.type = 0
-
-                // Send notification...
-                Model.getGlobule(contact.session.domain).eventHub.publish(contact.id + "@" + contact.domain + "_notification_event", notification_.toString(), false)
-            }
         }, err => ApplicationView.displayMessage(err, 3000))
 
+        if(contact.domain != Application.account.domain){
+            let globule = Model.getGlobule(contact.domain)
+            generatePeerToken(globule.config.Mac, token => {
+                globule.resourceService.setCall(rqst,  { application: Application.application, domain: globule.config.Domain, token: token })
+            }, err => ApplicationView.displayMessage(err, 3000))
+        }
     }
 }
 

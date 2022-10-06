@@ -416,7 +416,7 @@ export class VideoPlayer extends HTMLElement {
      */
     close() {
         this.stop()
-        this.shadowRoot.querySelector("#container").style.display = "none"
+        this.parentElement.removeChild(this)
         if (this.onclose) {
             this.onclose()
         }

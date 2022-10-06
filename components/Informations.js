@@ -8,6 +8,7 @@ import { ApplicationView } from "../ApplicationView";
 import { randomUUID } from "./utility";
 import { playVideo } from "./Video";
 import { playAudio } from "./Audio";
+import '@polymer/iron-autogrow-textarea/iron-autogrow-textarea.js';
 
 function listToString(lst) {
     let str = "["
@@ -859,19 +860,56 @@ export class VideoInfoEditor extends HTMLElement {
         this.attachShadow({ mode: 'open' });
 
         // Innitialisation of the layout.
+
+        // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
             ${getTheme()}
+
+            #container {
+                display: flex;
+            }
+
         </style>
-        <div>
-            edit the video information here...
+        <div id="container">
+            <div style="display: flex; flex-direction: column; justify-content: flex-start;  padding-left: 15px;">
+                <img id="video-thumbnail" src="${video.getPoster().getContenturl()}" style="height: 64px;"></iron-icon>
+            </div>
+            <div style="display: table; flex-grow: 1; padding-left: 20px;">
+                <div style="display: table-row;">
+                    <div style="display: table-cell; font-weight: 450;">Id:</div>
+                    <div style="display: table-cell;"  id="video-id-div">${video.getId()}</div>
+                    <paper-input style="display: none;" value="${video.getId()}" id="video-id-input" no-label-float></paper-input>
+                    <paper-icon-button id="edit-video-id-btn" icon="image:edit"></paper-icon-button>
+                </div>
+                <div style="display: table-row;">
+                    <div style="display: table-cell; font-weight: 450;">URL:</div>
+                    <div style="display: table-cell;">${video.getUrl()}</div>
+                    <paper-input no-label-float style="display: none;" value="${video.getUrl()}"></paper-input>
+                    <paper-icon-button icon="image:edit"></paper-icon-button>
+                </div>
+                <div style="display: table-row;">
+                    <div style="display: table-cell; font-weight: 450;">Version:</div>
+                    <div style="display: table-cell;" >${video.getDescription()}</div>
+                    <iron-autogrow-textarea  style="display: none;" value="${video.getDescription()}"></iron-autogrow-textarea>
+                    <paper-icon-button icon="image:edit"></paper-icon-button>
+                </div>
+            </div>
         </div>
         `
 
-        this.setVideo()
+        // Here I will set the interaction...
+        let editVideoIdBtn = this.shadowRoot.querySelector("#edit-video-id-btn")
+        let videoIdInput = this.shadowRoot.querySelector("#video-id-input")
+        let videoIdDiv = this.shadowRoot.querySelector("#video-id-div")
+        editVideoIdBtn.onclick = () => {
+            videoIdInput.style.display = "table-cell"
+            videoIdDiv.style.display = "none"
+        }
+
     }
 
-    setVideo(video){
+    setVideo(video) {
 
     }
 

@@ -776,27 +776,33 @@ export class FilesView extends HTMLElement {
             // So here I will create a new permission manager object and display it for the given file.
             let globule = this._file_explorer_.globule
 
-            // get the title infos...
-            getTitleInfo(globule, this.menu.file, (titles) => {
-                if (titles.length > 0) {
-                    this.menu.file.titles = titles // keep in the file itself...
-                    Model.eventHub.publish("display_media_infos_event", this.menu.file, true)
-                }
-            })
+            if (this.menu.file.mime.startsWith("video")) {
 
-            getVideoInfo(globule, this.menu.file, (videos) => {
-                if (videos.length > 0) {
-                    this.menu.file.videos = videos // keep in the file itself...
-                    Model.eventHub.publish("display_media_infos_event", this.menu.file, true)
-                }
-            })
+                getVideoInfo(globule, this.menu.file, (videos) => {
+                    if (videos.length > 0) {
+                        this.menu.file.videos = videos // keep in the file itself...
+                        Model.eventHub.publish("display_media_infos_event", this.menu.file, true)
+                    } else {
+                        // get the title infos...
+                        getTitleInfo(globule, this.menu.file, (titles) => {
+                            if (titles.length > 0) {
+                                this.menu.file.titles = titles // keep in the file itself...
+                                Model.eventHub.publish("display_media_infos_event", this.menu.file, true)
+                            }
+                        })
+                    }
+                })
+            } else if (this.menu.file.mime.startsWith("audio")) {
+                getAudioInfo(globule, this.menu.file, (audios) => {
+                    if (audios.length > 0) {
+                        this.menu.file.audios = audios // keep in the file itself...
+                        Model.eventHub.publish("display_media_infos_event", this.menu.file, true)
+                    }
+                })
+            }
 
-            getAudioInfo(globule, this.menu.file, (audios) => {
-                if (audios.length > 0) {
-                    this.menu.file.audios = audios // keep in the file itself...
-                    Model.eventHub.publish("display_media_infos_event", this.menu.file, true)
-                }
-            })
+
+
 
             // hide the menu...
             this.menu.parentNode.removeChild(this.menu)
@@ -5411,7 +5417,7 @@ export class FilesUploader extends HTMLElement {
             row.querySelector(".file-path").onclick = () => {
                 _readDir(torrent.getDestination(), dir => {
                     Model.eventHub.publish("__set_dir_event__", { path: dir, file_explorer_id: this._file_explorer_.id }, true)
-                }, err => ApplicationView.displayMessage(err, 3000), this.globule)
+                }, err => ApplicationView.displayMessage(err, 3000), this._file_explorer_.globule)
 
             }
 

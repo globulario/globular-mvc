@@ -36,9 +36,7 @@ export function playAudio(path, onplay, onclose, title, globule) {
         audioPlayer.stop()
         audioPlayer.playlist.clear()
     }
-
-    audioPlayer.style.height = "0px"
-    audioPlayer.style.width = "0px"
+    
     audioPlayer.style.zIndex = 100
 
     ApplicationView.layout.workspace().appendChild(audioPlayer)
@@ -745,18 +743,21 @@ export class AudioPlayer extends HTMLElement {
 
     play(path, globule, audio) {
 
-        if (this.path == path && this.wavesurfer.isPlaying()) {
-            // Do nothing...
-            return
-        } else if (this.path == path && !this.wavesurfer.isPlaying()) {
 
-            this.wavesurfer.play()
+        if (this._audio_ && audio) {
+            if (this._audio_.getId() == audio.getId() && this.wavesurfer.isPlaying()) {
+                // be sure the audio player is visible...
+                return
+            } else if (this._audio_.getId() == audio.getId()) {
 
-            // Resume the audio...
-            this.playBtn.style.display = "none"
-            this.pauseBtn.style.display = "block"
+                this.wavesurfer.play()
 
-            return
+                // Resume the audio...
+                this.playBtn.style.display = "none"
+                this.pauseBtn.style.display = "block"
+
+                return
+            }
         }
 
         this.shadowRoot.querySelector("#container").style.display = "block"
@@ -840,7 +841,8 @@ export class AudioPlayer extends HTMLElement {
     close() {
         this.stop()
         this.path = ""
-        this.shadowRoot.querySelector("#container").style.display = "none"
+        this._audio_ = null;
+        this.parentElement.removeChild(this)
         if (this.onclose) {
             this.onclose()
         }

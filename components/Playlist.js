@@ -5,10 +5,28 @@ import { Application } from "../Application";
 import { fireResize, formatBoolean } from "./utility.js";
 import { secondsToTime } from "./Audio.js";
 import { generatePeerToken, Model } from '../Model';
+import { SetVideoConversionRequest } from "globular-web-client/file/file_pb.js";
+
+
+ let __videos__ = {}
+ let __audios__ = {}
+
+export function setVideo(video){
+    __videos__[video.getId()] = video
+}
+
+export function setAudio(audio){
+    __audios__[audio.getId()] = audio
+}
+
 
 // retreive video with a given id.
 function getVideoInfo(globule, id, callback) {
     console.log("get video with id: ", id)
+    if(__videos__[id]){
+        callback(__videos__[id])
+        return 
+    }
     generatePeerToken(globule.config.Mac, token => {
         let rqst = new GetVideoByIdRequest
         rqst.setIndexpath(globule.config.DataPath + "/search/videos")
@@ -26,7 +44,10 @@ function getVideoInfo(globule, id, callback) {
 }
 
 function getAudioInfo(globule, id, callback) {
-
+    if(__audios__[id]){
+        callback(__audios__[id])
+        return 
+    }
     generatePeerToken(globule.config.Mac, token => {
         let rqst = new GetAudioByIdRequest
         rqst.setIndexpath(globule.config.DataPath + "/search/audios")
@@ -145,7 +166,8 @@ export class PlayList extends HTMLElement {
                     if (token) {
                         url += "&token=" + token
                     }
-                    this.audioPlayer.play(url, this.globule, audio)
+                    if(audio)
+                        this.audioPlayer.play(url, this.globule, audio)
                 })
             }
 
