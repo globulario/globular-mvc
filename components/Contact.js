@@ -649,7 +649,7 @@ export class ContactList extends HTMLElement {
             Account.getAccount(call.getCaller(), caller => {
                 Account.getAccount(call.getCallee(), callee => {
 
-                    let globule = Application.getGlobule(caller.domain)
+                    let globule = Application.getGlobule(callee.domain)
 
                     let url = globule.config.Protocol + "://" + globule.config.Domain
                     if (window.location != globule.config.Domain) {
@@ -708,7 +708,7 @@ export class ContactList extends HTMLElement {
                             <paper-icon-button id="cancel-button"  style="background-color: red;" icon="communication:call-end">Dismiss</paper-button>
                         </div>
                     </div>
-                    `, 60 * 1000)
+                    `)
 
 
                     let timeout = setTimeout(() => {
@@ -928,7 +928,7 @@ export class ContactList extends HTMLElement {
                                 <paper-icon-button id="cancel-button" style="background-color: red " icon="communication:call-end"></paper-icon-button>
                             </div>
                         </div>
-                        `, 60 * 1000)
+                        `)
 
 
                         // set timeout...
@@ -1015,7 +1015,7 @@ export class ContactList extends HTMLElement {
                                     address: Model.address
                                 }).then((rsp) => {
                                     /** nothing here... */
-                                    
+
                                 }).catch(err => {
                                     ApplicationView.displayMessage(err, 3000);
                                     console.log(err)
@@ -1250,6 +1250,7 @@ export class ContactCard extends HTMLElement {
         this.querySelector("#call_btn").onclick = () => {
             if (onCallContact != null) {
                 onCallContact(this.contact)
+                document.body.click()
             }
         }
     }
