@@ -122,7 +122,7 @@ export class Account extends Model {
         return name + " " + this.lastName;
     }
 
-    constructor(id: string, email: string, name: string, domain: string) {
+    constructor(id: string, email: string, name: string, domain: string, firstName: string, lastName: string, middleName: string, profilePicture: string) {
         super();
 
         this._id = id;
@@ -130,9 +130,10 @@ export class Account extends Model {
         this.domain = domain;
         this.email_ = email;
         this.hasData = false;
-        this.firstName_ = "";
-        this.lastName_ = "";
-        this.middleName_ = "";
+        this.firstName_ = firstName;
+        this.lastName_ = lastName;
+        this.middleName_ = middleName;
+        this.profilPicture_ = profilePicture
     }
 
     /**
@@ -202,7 +203,7 @@ export class Account extends Model {
                     return
                 }
 
-                let account = new Account(data.getId(), data.getEmail(), data.getName(), data.getDomain())
+                let account = new Account(data.getId(), data.getEmail(), data.getName(), data.getDomain(), data.getFirstname(), data.getLastname(), data.getMiddle(), data.getProfilepicture())
                 account.session = new Session(account)
                 Account.accounts[accountId] = account;
 
@@ -460,26 +461,13 @@ export class Account extends Model {
                 // Keep in the local map...
                 Account.setAccount(this)
 
+                // Init list of contacts.
                 Account.getContacts(this, `{}`,
                     (contacts: []) => {
                         // Set the list of contacts (received invitation, sent invitation and actual contact id's)
-                        if (this.session != undefined) {
-                            this.session.initData(() => {
-                                callback(this);
-                            }, onError)
-                        } else {
-                            callback(this);
-                        }
-                    },
-                    (err: any) => {
-                        if (this.session != undefined) {
-                            this.session.initData(() => {
-                                callback(this);
-                            }, onError)
-                        } else {
-                            callback(this);
-                        }
-                    })
+                        callback(this);
+
+                    }, onError)
 
 
             },
@@ -634,7 +622,7 @@ export class Account extends Model {
         if (to.ringtone)
             contact.setRingtone(to.ringtone)
 
-        if(to.profilPicture)
+        if (to.profilPicture)
             contact.setProfilepicture(to.profilPicture)
 
         rqst.setContact(contact)
@@ -740,7 +728,7 @@ export class Account extends Model {
                         if (Account.accounts[a_.getId() + "@" + a_.getDomain()] != undefined) {
                             accounts.push(Account.accounts[a_.getId() + "@" + a_.getDomain()])
                         } else {
-                            accounts.push(new Account(a_.getId(), a_.getEmail(), a_.getName(), a_.getDomain()))
+                            accounts.push(new Account(a_.getId(), a_.getEmail(), a_.getName(), a_.getDomain(), a_.getFirstname(), a_.getLastname(), a_.getMiddle(), a_.getProfilepicture()))
                         }
                     })
                     callback(accounts)
@@ -750,7 +738,7 @@ export class Account extends Model {
                 let initAccountData = () => {
                     let a_ = accounts_.pop()
                     if (Account.accounts[a_.getId() + "@" + a_.getDomain()] == undefined) {
-                        let a = new Account(a_.getId(), a_.getEmail(), a_.getName(), a_.getDomain())
+                        let a = new Account(a_.getId(), a_.getEmail(), a_.getName(), a_.getDomain(), a_.getFirstname(), a_.getLastname(), a_.getMiddle(), a_.getProfilepicture())
 
                         if (accounts_.length > 0) {
                             a.initData(() => {

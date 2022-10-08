@@ -31,13 +31,14 @@ export class VideoConversation extends HTMLElement {
     // attributes.
 
 
-    // Create the applicaiton view.
-    constructor(conversation) {
+    // Create conversation view.
+    constructor(conversationUuid, domain) {
         super()
 
         // Keep reference to the conversation
-        this.conversation = conversation
-        this.conversationUuid = conversation.getUuid()
+        this.conversationUuid = conversationUuid
+        this.domain = domain
+        this.eventHub = Model.getGlobule(this.domain).eventHub
 
         this.localStream = null;
         this.pendingCanditates = [];
@@ -125,9 +126,9 @@ export class VideoConversation extends HTMLElement {
             (participant) => {
 
                 // Create offer to each participants
-                if (participant != Application.account._id) {
+                if (participant.id != Application.account._id) {
 
-                    let connectionId = this.conversationUuid + "_" + participant
+                    let connectionId = this.conversationUuid + "_" + participant.id
 
                     // That will set the on iceconnection ready callback to create offer.
                     this.getConnection(connectionId, rtcPeerConnection => {
@@ -137,7 +138,7 @@ export class VideoConversation extends HTMLElement {
                                 .createOffer(offerOptions)
                                 .then((offer) => {
                                     rtcPeerConnection.setLocalDescription(offer).then(() => {
-                                        Model.publish(`on_webrtc_offer_${connectionId}_evt`, JSON.stringify({ "offer": offer, "connectionId": this.conversationUuid + "_" + Application.account._id }), false);
+                                        this.eventHub.publish(`on_webrtc_offer_${connectionId}_evt`, JSON.stringify({ "offer": offer, "connectionId": this.conversationUuid + "_" + Application.account._id }), false);
                                     })
                                 })
                                 .catch((err) => {
@@ -150,7 +151,7 @@ export class VideoConversation extends HTMLElement {
 
             }, true, this)
 
-        Model.eventHub.subscribe(`leave_conversation_${this.conversationUuid}_evt`,
+        this.eventHub.subscribe(`leave_conversation_${this.conversationUuid}_evt`,
             (uuid) => {
                 // todo remove listeners...
             },
@@ -177,7 +178,7 @@ export class VideoConversation extends HTMLElement {
             false, this);
 
         // When we receive peer connection offer...
-        Model.eventHub.subscribe(`on_webrtc_offer_${this.conversationUuid + "_" + Application.account._id}_evt`, (uuid) => { }, (evt) => {
+        this.eventHub.subscribe(`on_webrtc_offer_${this.conversationUuid + "_" + Application.account._id}_evt`, (uuid) => { }, (evt) => {
 
             let event = JSON.parse(evt)
             let connectionId = event.connectionId
@@ -195,7 +196,7 @@ export class VideoConversation extends HTMLElement {
                         .createAnswer()
                         .then(answer => {
                             rtcPeerConnection.setLocalDescription(answer).then(() => {
-                                Model.publish(`on_webrtc_answer_${connectionId}_evt`, JSON.stringify({ "answer": answer, "connectionId": this.conversationUuid + "_" + Application.account._id }), false);
+                                this.eventHub.publish(`on_webrtc_answer_${connectionId}_evt`, JSON.stringify({ "answer": answer, "connectionId": this.conversationUuid + "_" + Application.account._id }), false);
                             })
                         })
                         .catch((err) => {
@@ -210,7 +211,7 @@ export class VideoConversation extends HTMLElement {
         }, false, this)
 
         // When we receive peers connection answer...
-        Model.eventHub.subscribe(`on_webrtc_answer_${this.conversationUuid + "_" + Application.account._id}_evt`, (uuid) => { }, (evt) => {
+        this.eventHub.subscribe(`on_webrtc_answer_${this.conversationUuid + "_" + Application.account._id}_evt`, (uuid) => { }, (evt) => {
             let event = JSON.parse(evt)
             let rtcPeerConnection = this.connections[event.connectionId]
             let answer = new RTCSessionDescription(event.answer)
@@ -219,7 +220,7 @@ export class VideoConversation extends HTMLElement {
         }, false, this)
 
         // When we receive a ace candidate answer
-        Model.eventHub.subscribe(`on_webrtc_candidate_${this.conversationUuid + "_" + Application.account._id}_evt`, (uuid) => { }, (event) => {
+        this.eventHub.subscribe(`on_webrtc_candidate_${this.conversationUuid + "_" + Application.account._id}_evt`, (uuid) => { }, (event) => {
             let evt = JSON.parse(event)
             this.getConnection(evt.connectionId, rtcPeerConnection => {
                 let icecandidate = new RTCIceCandidate(evt.candidate);
@@ -270,8 +271,8 @@ export class VideoConversation extends HTMLElement {
             this.startShareScreenBtn.style.display = "none"
         }
 
-        Model.publish(`video_conversation_close_${connectionId}_evt`, {}, false);
-        Model.publish(`video_conversation_close_${this.conversationUuid + "_" + Application.account._id}_evt`, {}, false);
+        this.eventHub.publish(`video_conversation_close_${connectionId}_evt`, {}, false);
+        this.eventHub.publish(`video_conversation_close_${this.conversationUuid + "_" + Application.account._id}_evt`, {}, false);
     }
 
     // init a new peer connections.
@@ -299,7 +300,7 @@ export class VideoConversation extends HTMLElement {
 
             rtcPeerConnection.onicecandidate = (evt) => {
                 if (evt.candidate) {
-                    Model.publish(`on_webrtc_candidate_${connectionId}_evt`, JSON.stringify({ "candidate": evt.candidate.toJSON(), "connectionId": this.conversationUuid + "_" + Application.account._id }), false);
+                    this.eventHub.publish(`on_webrtc_candidate_${connectionId}_evt`, JSON.stringify({ "candidate": evt.candidate.toJSON(), "connectionId": this.conversationUuid + "_" + Application.account._id }), false);
                 }
             }
 
@@ -318,8 +319,8 @@ export class VideoConversation extends HTMLElement {
                             onconnected(rtcPeerConnection)
                         }
 
-                        Model.publish(`video_conversation_open_${connectionId}_evt`, {}, false);
-                        Model.publish(`video_conversation_open_${this.conversationUuid + "_" + Application.account._id}_evt`, {}, false);
+                        this.eventHub.publish(`video_conversation_open_${connectionId}_evt`, {}, false);
+                        this.eventHub.publish(`video_conversation_open_${this.conversationUuid + "_" + Application.account._id}_evt`, {}, false);
     
                         break;
                     case "disconnected":

@@ -40,7 +40,9 @@ export class Model {
     // That function will return a 
     public static getGlobule(address: string): GlobularWebClient.Globular {
         let globule = Model.globules.get(address);
-
+        if(globule==undefined){
+            console.log("-----------> globules: ", Model.globules, address)
+        }
         return globule;
     }
 

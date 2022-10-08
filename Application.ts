@@ -443,11 +443,24 @@ export class Application extends Model {
         let userName = localStorage.getItem("user_name");
         let userDomain = localStorage.getItem("user_domain");
 
+        let userInfo =  localStorage.getItem(userId);
+        let userFirstName = ""
+        let userLastName = ""
+        let userMiddleName = ""
+        let userProfilePicture = ""
+        if(userInfo){
+            let userInfo_ = JSON.parse(userInfo)
+            userFirstName = userInfo_["firstName_"]
+            userLastName = userInfo_["lastName_"]
+            userMiddleName = userInfo_["middleName_"]
+            userProfilePicture = userInfo_["profilPicture_"]
+        }
+
         ApplicationView.wait(
           "<div>log in</div><div>" + userName + "</div><div>...</div>"
         );
 
-        Application.account = new Account(userId, userEmail, userName, userDomain)
+        Application.account = new Account(userId, userEmail, userName, userDomain, userFirstName, userLastName, userMiddleName, userProfilePicture)
 
         this.refreshToken(
           (account: Account) => {
@@ -790,7 +803,7 @@ export class Application extends Model {
           address: address
         }).then(() => {
           // Callback on login.
-          Application.account = new Account(name, email, name, domain);
+          Application.account = new Account(name, email, name, domain, "", "", "", "");
           Application.account.initData(
             (account: Account) => {
               // Here I will send a login success.
@@ -950,7 +963,20 @@ export class Application extends Model {
           domain: Model.domain,
           address: address
         }).then(() => {
-          Application.account = new Account(id, email, userName, userDomain);
+          let userInfo =  localStorage.getItem(id);
+          let userFirstName = ""
+          let userLastName = ""
+          let userMiddleName = ""
+          let userProfilePicture = ""
+          if(userInfo){
+              let userInfo_ = JSON.parse(userInfo)
+              userFirstName = userInfo_["firstName_"]
+              userLastName = userInfo_["lastName_"]
+              userMiddleName = userInfo_["middleName_"]
+              userProfilePicture = userInfo_["profilPicture_"]
+          }
+
+          Application.account = new Account(id, email, userName, userDomain, userFirstName, userLastName, userMiddleName, userProfilePicture);
           Account.getAccount(userId + "@" + userDomain, (account: Account) => {
             Application.account = account;
 

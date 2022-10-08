@@ -1088,8 +1088,9 @@ export class Messenger extends HTMLElement {
 
     // Here I will open the conversation.
     openConversation(conversation, messages) {
+        let conversationUuid = conversation.getUuid()
 
-        let videoConversation = new VideoConversation(conversation)
+        let videoConversation = new VideoConversation(conversationUuid, Model.domain) // TODO set the conversation owner domain here...
         videoConversation.style.position = "fixed"
         videoConversation.style.left = "0px"
 
@@ -1098,7 +1099,6 @@ export class Messenger extends HTMLElement {
 
         // Display the messenger panel.
         this.shadowRoot.querySelector(".container").style.display = "flex";
-        let conversationUuid = conversation.getUuid()
 
         // Set the listener's for that conversation
         this.listeners[conversationUuid] = []
@@ -1556,7 +1556,7 @@ export class ParticipantsList extends HTMLElement {
         }
 
         startVideoBtn.onclick = () => {
-            Model.eventHub.publish("start_video_conversation_" + conversation.getUuid() + "_evt", p._id, true)
+            Model.eventHub.publish("start_video_conversation_" + conversation.getUuid() + "_evt", p, true)
             // hide the video button...
             startVideoBtn.style.display = "none"
         }

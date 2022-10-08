@@ -2,6 +2,7 @@
 // layout because materialyse dosen't react to well with the shadow doom.
 import '@polymer/iron-icon/iron-icon.js';
 import '@polymer/iron-icons/social-icons'
+import '@polymer/iron-icons/communication-icons'
 import '@polymer/iron-icons/editor-icons'
 import '@polymer/iron-icons/iron-icons.js';
 import '@polymer/paper-icon-button/paper-icon-button.js';
@@ -26,6 +27,7 @@ import { Notification as Notification_ } from '../Notification';
 import { randomUUID } from './utility';
 import { Application } from '../Application';
 import { LogRqst } from 'globular-web-client/log/log_pb';
+import { VideoConversation } from './WebRTC';
 
 /**
  * Login/Register functionality.
@@ -394,7 +396,7 @@ export class SentContactInvitations extends HTMLElement {
 
     appendContact(contact) {
         let contactLst = this.shadowRoot.querySelector(".contact-invitations-list")
-        let id = "_" + contact.id.split("-").join("_") + "_pending_invitation"
+        let id = "_" + contact.id.split("-").join("_") + "@" + contact.domain + "_pending_invitation"
         if (contactLst.querySelector("#" + id) != undefined) {
             return;
         }
@@ -411,7 +413,7 @@ export class SentContactInvitations extends HTMLElement {
     removeContact(contact) {
         // simply remove it.
         let contactLst = this.shadowRoot.querySelector(".contact-invitations-list")
-        let id = "_" + contact.id.split("-").join("_") + "_pending_invitation"
+        let id = "_" + contact.id.split("-").join("_") + "_" + contact.domain + "_pending_invitation"
         let card = contactLst.querySelector("#" + id)
         if (card != undefined) {
             contactLst.removeChild(card)
@@ -549,7 +551,7 @@ export class ReceivedContactInvitations extends HTMLElement {
 
     appendContact(contact) {
         let contactLst = this.shadowRoot.querySelector(".contact-invitations-list")
-        let id = "_" + contact.id.split("-").join("_") + "_pending_invitation"
+        let id = "_" + contact.id.split("-").join("_") + "_" + contact.domain + "_pending_invitation"
         if (contactLst.querySelector("#" + id) != undefined) {
             return;
         }
@@ -564,7 +566,7 @@ export class ReceivedContactInvitations extends HTMLElement {
     removeContact(contact) {
         // simply remove it.
         let contactLst = this.shadowRoot.querySelector(".contact-invitations-list")
-        let card = contactLst.querySelector("#" + "_" + contact.id.split("-").join("_") + "_pending_invitation")
+        let card = contactLst.querySelector("#" + "_" + contact.id.split("-").join("_") + "_" + contact.domain + "_pending_invitation")
 
         if (card != undefined) {
             contactLst.removeChild(card)
@@ -610,6 +612,9 @@ export class ContactList extends HTMLElement {
                 let invitation = JSON.parse(evt);
                 Account.getAccount(invitation._id,
                     (contact) => {
+                        if (invitation.profilePicture)
+                            contact.profilPicture = invitation.profilePicture
+                        contact.ringtone = invitation.ringtone
                         this.appendContact(contact);
                     },
                     err => {
@@ -634,6 +639,117 @@ export class ContactList extends HTMLElement {
             },
             false, this)
 
+        // calling events...
+        globule.eventHub.subscribe("calling_" + account.id + "@" + account.domain + "_evt", uuid => { }, evt => {
+
+            // The contact has answer the call!
+            let call = Call.deserializeBinary(Uint8Array.from(evt.split(",")))
+            Account.getAccount(call.getCaller(), caller => {
+                Account.getAccount(call.getCallee(), callee => {
+
+                    let globule = Application.getGlobule(caller.domain)
+
+                    let url = globule.config.Protocol + "://" + globule.config.Domain
+                    if (window.location != globule.config.Domain) {
+                        if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
+                            url = globule.config.Protocol + "://" + window.location.host
+                        }
+                    }
+
+                    if (globule.config.Protocol == "https") {
+                        if (globule.config.PortHttps != 443)
+                            url += ":" + globule.config.PortHttps
+                    } else {
+                        if (globule.config.PortHttps != 80)
+                            url += ":" + globule.config.PortHttp
+                    }
+
+                    // so here I will found the caller ringtone...
+                    let path = caller.ringtone
+                    path = path.replace(globule.config.WebRoot, "")
+
+                    path.split("/").forEach(item => {
+                        item = item.trim()
+                        if (item.length > 0) {
+                            url += "/" + encodeURIComponent(item)
+                        }
+                    })
+
+                    url += "?application=" + Model.application
+                    if (localStorage.getItem("user_token") != undefined) {
+                        url += "&token=" + localStorage.getItem("user_token")
+                    }
+
+                    let audio = new Audio(url)
+                    audio.setAttribute("loop", "true")
+                    audio.setAttribute("autoplay", "true")
+
+                    // So now I will display the interface the user to ask...
+                    // So here I will get the information from imdb and propose to assciate it with the file.
+                    let toast = ApplicationView.displayMessage(`
+                    <style>
+                        ${getTheme()}
+                    </style>
+                    <div id="select-media-dialog">
+                        <div>Incomming Call from <span style="max-width: 300px; font-size: 1.5rem;">${caller.name}</span></div>
+                        <div style="display: flex; flex-direction: column; justify-content: center;">
+                            <img style="width: 185.31px; align-self: center; padding-top: 10px; padding-bottom: 15px;" src="${caller.profilPicture}"> </img>
+                        </div>
+                        <div style="display: flex; justify-content: flex-end;">
+                            <paper-icon-button id="ok-button" icon="communication:call"></paper-icon-button>
+                            <paper-icon-button id="cancel-button" icon="communication:call-end">Dismiss</paper-button>
+                        </div>
+                    </div>
+                    `, 60 * 1000)
+
+
+                    let timeout = setTimeout(() => {
+                        audio.pause()
+                        toast.dismiss();
+                        Model.getGlobule(caller.domain).eventHub.publish(call.getUuid() + "_miss_call_evt", call.serializeBinary(), false)
+                        Model.getGlobule(callee.domain).eventHub.publish(call.getUuid() + "_miss_call_evt", call.serializeBinary(), false)
+
+                    }, 30 * 1000)
+
+                    let cancelBtn = toast.el.querySelector("#cancel-button")
+                    cancelBtn.onclick = () => {
+                        toast.dismiss();
+                        audio.pause()
+                        clearTimeout(timeout)
+
+                        // Here I will send miss call event...
+                        Model.getGlobule(caller.domain).eventHub.publish(call.getUuid() + "_miss_call_evt", call.serializeBinary(), false)
+                        Model.getGlobule(callee.domain).eventHub.publish(call.getUuid() + "_miss_call_evt", call.serializeBinary(), false)
+
+                    }
+
+                    let okBtn = toast.el.querySelector("#ok-button")
+                    okBtn.onclick = () => {
+
+                        toast.dismiss();
+                        audio.pause()
+                        clearTimeout(timeout)
+
+                        // The contact has answer the call!
+                        let videoConversation = new VideoConversation(call.getUuid(), caller.domain)
+                        videoConversation.style.position = "fixed"
+                        videoConversation.style.left = "0px"
+                        videoConversation.style.top = "0px"
+
+
+                        // append it to the workspace.
+                        ApplicationView.layout.workspace().appendChild(videoConversation)
+
+                        Model.getGlobule(caller.domain).eventHub.publish(call.getUuid() + "_answering_call_evt", call.serializeBinary(), false)
+                        Model.getGlobule(callee.domain).eventHub.publish(call.getUuid() + "_answering_call_evt", call.serializeBinary(), false)
+                    }
+
+
+                })
+
+            }, err => ApplicationView.displayMessage(err, 3000))
+        }, false)
+
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -656,8 +772,12 @@ export class ContactList extends HTMLElement {
         Account.getContacts(this.account, `{"status":"accepted"}`, (invitations) => {
 
             for (var i = 0; i < invitations.length; i++) {
-                Account.getAccount(invitations[i]._id,
+                let invitation = invitations[i]
+                Account.getAccount(invitation._id,
                     (contact) => {
+                        if (invitation.profilePicture)
+                            contact.profilPicture = invitation.profilePicture
+                        contact.ringtone = invitation.ringtone
                         this.appendContact(contact);
                     },
                     err => {
@@ -672,13 +792,13 @@ export class ContactList extends HTMLElement {
     }
 
     getContactCard(contact) {
-        let card = contactLst.querySelector("#" + "_" + contact.id.split("-").join("_") + "_accepted_invitation")
+        let card = this.querySelector("#" + "_" + contact.id.split("-").join("_") + "_" + contact.domain + "_accepted_invitation")
         return card;
     }
 
     appendContact(contact) {
         let contactLst = this.shadowRoot.querySelector(".contact-invitations-list")
-        let id = "_" + contact.id.split("-").join("_") + "_accepted_invitation"
+        let id = "_" + contact.id.split("-").join("_") + "_" + contact.domain + "_accepted_invitation"
         if (contactLst.querySelector("#" + id) != undefined) {
             return
         }
@@ -700,7 +820,7 @@ export class ContactList extends HTMLElement {
     removeContact(contact) {
         // simply remove it.
         let contactLst = this.shadowRoot.querySelector(".contact-invitations-list")
-        let card = contactLst.querySelector("#" + "_" + contact.id.split("-").join("_") + "_accepted_invitation")
+        let card = contactLst.querySelector("#" + "_" + contact.id.split("-").join("_") + "_" + contact.domain + "_accepted_invitation")
         if (card != undefined) {
             contactLst.removeChild(card)
             this.badge.label = contactLst.children.length
@@ -712,7 +832,7 @@ export class ContactList extends HTMLElement {
 
     onCallContact(contact) {
         console.log("call ", contact.id + "@" + contact.domain)
-       
+
         let call = new Call()
         call.setUuid(randomUUID())
         call.setCallee(contact.id + "@" + contact.domain)
@@ -720,21 +840,195 @@ export class ContactList extends HTMLElement {
         call.setStarttime(Math.floor(Date.now() / 1000)) // set unix timestamp...
         let rqst = new SetCallRqst
         rqst.setCall(call)
+        let token = localStorage.getItem("user_token")
 
         // Set value on the callee...
         let globule = Model.getGlobule(Application.account.domain)
-        generatePeerToken(globule.config.Mac, token => {
-            globule.resourceService.setCall(rqst,  { application: Application.application, domain: globule.config.Domain, token: token })
+        globule.resourceService.setCall(rqst, { application: Application.application, domain: globule.config.Domain, token: token })
+            .then(rsp => {
 
-        }, err => ApplicationView.displayMessage(err, 3000))
+                Account.getAccount(call.getCaller(), caller => {
+                    Account.getAccount(call.getCallee(), callee => {
 
-        if(contact.domain != Application.account.domain){
+                        let globule = Application.getGlobule(caller.domain)
+
+                        let url = globule.config.Protocol + "://" + globule.config.Domain
+                        if (window.location != globule.config.Domain) {
+                            if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
+                                url = globule.config.Protocol + "://" + window.location.host
+                            }
+                        }
+
+                        if (globule.config.Protocol == "https") {
+                            if (globule.config.PortHttps != 443)
+                                url += ":" + globule.config.PortHttps
+                        } else {
+                            if (globule.config.PortHttps != 80)
+                                url += ":" + globule.config.PortHttp
+                        }
+
+                        // so here I will found the caller ringtone...
+                        let path = callee.ringtone
+                        path = path.replace(globule.config.WebRoot, "")
+
+                        path.split("/").forEach(item => {
+                            item = item.trim()
+                            if (item.length > 0) {
+                                url += "/" + encodeURIComponent(item)
+                            }
+                        })
+
+                        url += "?application=" + Model.application
+                        if (localStorage.getItem("user_token") != undefined) {
+                            url += "&token=" + localStorage.getItem("user_token")
+                        }
+
+                        let audio = new Audio(url)
+                        audio.setAttribute("loop", "true")
+                        audio.setAttribute("autoplay", "true")
+
+                        // So now I will display the interface the user to ask...
+                        // So here I will get the information from imdb and propose to assciate it with the file.
+                        let toast = ApplicationView.displayMessage(`
+                        <style>
+                            ${getTheme()}
+                        </style>
+                        <div id="select-media-dialog">
+                            <div>Outgoing Call to <span style="max-width: 300px; font-size: 1.5rem;">${callee.name}</span></div>
+                            <div style="display: flex; flex-direction: column; justify-content: center;">
+                                <img style="width: 185.31px; align-self: center; padding-top: 10px; padding-bottom: 15px;" src="${callee.profilPicture}"> </img>
+                            </div>
+                            <div style="display: flex; justify-content: flex-end;">
+                                <paper-icon-button id="cancel-button" icon="communication:call-end"></paper-icon-button>
+                            </div>
+                        </div>
+                        `, 60 * 1000)
+
+
+                        let timeout = setTimeout(() => {
+                            audio.pause()
+                            toast.dismiss();
+                            Model.getGlobule(caller.domain).eventHub.publish(call.getUuid() + "_miss_call_evt", call.serializeBinary(), false)
+                            Model.getGlobule(callee.domain).eventHub.publish(call.getUuid() + "_miss_call_evt", call.serializeBinary(), false)
+
+                        }, 30 * 1000)
+
+                        let cancelBtn = toast.el.querySelector("#cancel-button")
+                        cancelBtn.onclick = () => {
+                            toast.dismiss();
+                            audio.pause()
+                            clearTimeout(timeout)
+
+                            // Here I will send miss call event...
+                            Model.getGlobule(caller.domain).eventHub.publish(call.getUuid() + "_miss_call_evt", call.serializeBinary(), false)
+                            Model.getGlobule(callee.domain).eventHub.publish(call.getUuid() + "_miss_call_evt", call.serializeBinary(), false)
+                        }
+
+                        // Here the call succeed...
+                        Model.getGlobule(contact.domain).eventHub.subscribe(call.getUuid() + "_answering_call_evt", uuid => { }, evt => {
+                            // The contact has answer the call!
+                            audio.pause()
+                            toast.dismiss();
+
+                            let call = Call.deserializeBinary(Uint8Array.from(evt.split(",")))
+                            // The contact has answer the call!
+                            let videoConversation = new VideoConversation(call.getUuid(), Application.account.domain)
+                            videoConversation.style.position = "fixed"
+                            videoConversation.style.left = "0px"
+                            videoConversation.style.top = "0px"
+
+                            // append it to the workspace.
+                            ApplicationView.layout.workspace().appendChild(videoConversation)
+
+                            // start the video conversation.
+                            globule.eventHub.publish("start_video_conversation_" + call.getUuid() + "_evt", contact, true)
+
+                        }, false)
+
+                        // Here the call was miss...
+                        Model.getGlobule(contact.domain).eventHub.subscribe(call.getUuid() + "_miss_call_evt", uuid => { }, evt => {
+
+                            // The contact has answer the call!
+                            audio.pause()
+                            toast.dismiss();
+                            
+                            generatePeerToken(Model.getGlobule(contact.domain).config.Mac, token => {
+                                let rqst = new CreateNotificationRqst
+                                let notification = new Notification
+
+                                notification.setDate(parseInt(Date.now() / 1000)) // Set the unix time stamp...
+                                notification.setId(randomUUID())
+                                notification.setRecipient(contact.id + "@" + contact.domain)
+                                notification.setSender(Application.account.id + "@" + Application.account.domain)
+                                notification.setNotificationType(NotificationType.USER_NOTIFICATION)
+
+                                let date = new Date()
+                                let msg = `
+                                <div style="display: flex; flex-direction: column; padding: 16px;">
+                                    <div>
+                                        ${date.toLocaleString()}
+                                    </div>
+                                    <div>
+                                        Missed call from ${Application.account.name}
+                                    </div>
+                                </div>
+                                `
+
+                                notification.setMessage(msg)
+                                rqst.setNotification(notification)
+
+                                // Create the notification...
+                                Model.getGlobule(contact.domain).resourceService.createNotification(rqst, {
+                                    token: token,
+                                    application: Model.application,
+                                    domain: Model.domain,
+                                    address: Model.address
+                                }).then((rsp) => {
+                                    let msg = `
+                                <div>
+                                    ${contact.name} was notified off your call attempt.
+                                </div>
+                                `
+                                    ApplicationView.displayMessage(msg, 3000)
+                                }).catch(err => {
+                                    ApplicationView.displayMessage(err, 3000);
+                                    console.log(err)
+                                })
+
+                                // use the ts class to send notification...
+                                let notification_ = new Notification_
+                                notification_.id = notification.getId()
+                                notification_.date = date
+                                notification_.sender = notification.getSender()
+                                notification_.recipient = notification.getRecipient()
+                                notification_.text = notification.getMessage()
+                                notification_.type = 0
+
+                                // Send notification...
+                                Model.getGlobule(contact.domain).eventHub.publish(contact.id + "@" + contact.domain + "_notification_event", notification_.toString(), false)
+                            })
+
+                        }, false)
+
+                        // so here I will play the audio of the contact util it respond or the delay was done...
+                        Model.getGlobule(contact.domain).eventHub.publish("calling_" + contact.id + "@" + contact.domain + "_evt", call.serializeBinary(), false)
+
+                    })
+
+
+
+                }, err => ApplicationView.displayMessage(err, 3000))
+
+            }, err => ApplicationView.displayMessage(err, 3000))
+
+        if (contact.domain != Application.account.domain) {
             let globule = Model.getGlobule(contact.domain)
             generatePeerToken(globule.config.Mac, token => {
-                globule.resourceService.setCall(rqst,  { application: Application.application, domain: globule.config.Domain, token: token })
+                globule.resourceService.setCall(rqst, { application: Application.application, domain: globule.config.Domain, token: token })
             }, err => ApplicationView.displayMessage(err, 3000))
         }
     }
+
 }
 
 customElements.define('globular-contact-list', ContactList)
@@ -864,7 +1158,7 @@ export class ContactCard extends HTMLElement {
                 </div>
             </div>
             <globular-session-state account="${this.contact.id + "@" + this.contact.domain}"></globular-session-state>
-            <globular-ringtones dir="audio/ringtone" account="${this.contact.id + "@" + this.contact.domain}"> </globular-ringtones>
+            <globular-ringtones dir="audio/ringtone" id="${this.contact.id + "_" + this.contact.domain + "_ringtone"}" account="${this.contact.id + "@" + this.contact.domain}"> </globular-ringtones>
             <div class="actions-div">
                 <slot></slot>
             </div>
@@ -874,6 +1168,8 @@ export class ContactCard extends HTMLElement {
         if (this.children.length > 0 || this.actionable) {
             this.shadowRoot.querySelector(".contact-invitation-div").classList.add("actionable")
         }
+
+        this.contact._ringtone_ = this.shadowRoot.querySelector("globular-ringtones")
     }
 
     // Set the invite button...

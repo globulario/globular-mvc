@@ -264,6 +264,7 @@ export class Ringtones extends HTMLElement {
         // set the new ringtone.
         this.shadowRoot.querySelector("#ringtone").appendChild(ringtone)
 
+
         let ringtonesDiv = this.shadowRoot.querySelector("#ringtones")
         ringtonesDiv.style.display = "none"
         this.shadowRoot.querySelector("#upload-button").style.display = "none"
@@ -301,6 +302,14 @@ export class Ringtones extends HTMLElement {
             .catch(err => ApplicationView(err, 3000));
     }
 
+    play(loop){
+        this.shadowRoot.querySelector("#ringtone").children[0].play(loop)
+    }
+
+
+    stop(){
+        this.shadowRoot.querySelector("#ringtone").children[0].stop()
+    }
 }
 
 customElements.define('globular-ringtones', Ringtones)
@@ -434,7 +443,7 @@ export class Ringtone extends HTMLElement {
     }
 
     // Call search event.
-    play() {
+    play(loop) {
 
         // stop currently selected ringtone...
         let ringtones = this.parent.getElementsByTagName("globular-ringtone")
@@ -448,7 +457,15 @@ export class Ringtone extends HTMLElement {
             this.audio = new Audio(this.url)
         }
 
+        if(loop){
+            this.audio.setAttribute("loop", "true")
+        }
+
         this.audio.play()
+
+        this.audio.onended = ()=>{
+            this.stop()
+        }
     }
 
     stop() {
