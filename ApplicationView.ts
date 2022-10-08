@@ -1260,7 +1260,7 @@ export class ApplicationView extends View {
 
     inviteContactInput.displayValue = (contact: Account) => {
       let card = new ContactCard(Application.account, contact);
-      card.hideRingtone()
+
       card.setInviteButton((a: Account) => {
         ConversationManager.sendConversationInvitation(conversation, Application.account.id + "@" + Application.account.domain, a.id + "@" + a.domain,
           () => {

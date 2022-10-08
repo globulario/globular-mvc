@@ -162,7 +162,7 @@ export class ContactsMenu extends Menu {
         inviteContactInput.displayValue = (contact) => {
 
             let card = new ContactCard(account, contact, true);
-            card.hideRingtone()
+
             // Here depending if the contact is in contact list, in received invitation list or in sent invitation
             // list displayed action will be different.
             Account.getContacts(account, "{}",
@@ -402,7 +402,7 @@ export class SentContactInvitations extends HTMLElement {
         }
 
         let card = new ContactCard(this.account, contact)
-        card.hideRingtone()
+
         card.id = id
         card.setRevokeButton(this.onRevokeContact)
         contactLst.appendChild(card)
@@ -557,7 +557,7 @@ export class ReceivedContactInvitations extends HTMLElement {
             return;
         }
         let card = new ContactCard(this.account, contact)
-        card.hideRingtone()
+
         card.id = id
         card.setAcceptDeclineButton(this.onAcceptContact, this.onDeclineContact)
         contactLst.appendChild(card)
@@ -691,6 +691,11 @@ export class ContactList extends HTMLElement {
                     let toast = ApplicationView.displayMessage(`
                     <style>
                         ${getTheme()}
+                        paper-icon-button {
+                            width: 40px;
+                            height: 40px;
+                            border-radius: 50%;
+                          }
                     </style>
                     <div id="select-media-dialog">
                         <div>Incomming Call from</div>
@@ -699,8 +704,8 @@ export class ContactList extends HTMLElement {
                         </div>
                         <span style="max-width: 300px; font-size: 1.5rem;">${caller.name}</span>
                         <div style="display: flex; justify-content: flex-end;">
-                            <paper-icon-button id="ok-button" icon="communication:call"></paper-icon-button>
-                            <paper-icon-button id="cancel-button" icon="communication:call-end">Dismiss</paper-button>
+                            <paper-icon-button id="ok-button" style="background-color: green; margin-right: 16px;" icon="communication:call"></paper-icon-button>
+                            <paper-icon-button id="cancel-button"  style="background-color: red;" icon="communication:call-end">Dismiss</paper-button>
                         </div>
                     </div>
                     `, 60 * 1000)
@@ -749,7 +754,7 @@ export class ContactList extends HTMLElement {
 
                     // Here the call was miss...
                     Model.getGlobule(caller.domain).eventHub.subscribe(call.getUuid() + "_miss_call_evt", uuid => { }, evt => {
-                        
+
                         clearTimeout(timeout)
 
                         // The contact has answer the call!
@@ -823,8 +828,10 @@ export class ContactList extends HTMLElement {
         card.setCallButton(this.onCallContact)
 
         card.setDeleteButton(this.onDeleteContact)
-
+        card.showRingtone()
         contactLst.appendChild(card)
+
+
         this.badge.label = contactLst.children.length
         this.badge.style.display = "block"
     }
@@ -904,6 +911,12 @@ export class ContactList extends HTMLElement {
                         let toast = ApplicationView.displayMessage(`
                         <style>
                             ${getTheme()}
+                            paper-icon-button {
+                                width: 40px;
+                                height: 40px;
+                                border-radius: 50%;
+                              }
+
                         </style>
                         <div id="select-media-dialog">
                             <div>Outgoing Call to </div>
@@ -912,7 +925,7 @@ export class ContactList extends HTMLElement {
                             </div>
                             <span style="max-width: 300px; font-size: 1.5rem;">${callee.name}</span>
                             <div style="display: flex; justify-content: flex-end;">
-                                <paper-icon-button id="cancel-button" icon="communication:call-end"></paper-icon-button>
+                                <paper-icon-button id="cancel-button" style="background-color: red " icon="communication:call-end"></paper-icon-button>
                             </div>
                         </div>
                         `, 60 * 1000)
@@ -1001,15 +1014,8 @@ export class ContactList extends HTMLElement {
                                     domain: Model.domain,
                                     address: Model.address
                                 }).then((rsp) => {
-                                    let msg = `
-                                    <div style="display: flex;">
-                                        <img style="width: 64px; height: 64px; margin-left: 15px;" src=${contact.profilPicture}></img>
-                                        <div>
-                                            ${contact.name} was notified of your calling attempt.
-                                        </div>
-                                    </div>
-                                    `
-                                    ApplicationView.displayMessage(msg)
+                                    /** nothing here... */
+                                    
                                 }).catch(err => {
                                     ApplicationView.displayMessage(err, 3000);
                                     console.log(err)
@@ -1117,6 +1123,7 @@ export class ContactCard extends HTMLElement {
         this.account = account;
         this.contact = contact;
         this.actionable = actionable
+        this.showRingTone = false;
 
         if (this.hasAttribute("contact")) {
             Account.getAccount(this.getAttribute("contact"), (val) => {
@@ -1178,7 +1185,7 @@ export class ContactCard extends HTMLElement {
                 </div>
             </div>
             <globular-session-state account="${this.contact.id + "@" + this.contact.domain}"></globular-session-state>
-            <globular-ringtones dir="audio/ringtone" id="${this.contact.id + "_" + this.contact.domain + "_ringtone"}" account="${this.contact.id + "@" + this.contact.domain}"> </globular-ringtones>
+            <globular-ringtones style="display: none;" dir="audio/ringtone" id="${this.contact.id + "_" + this.contact.domain + "_ringtone"}" account="${this.contact.id + "@" + this.contact.domain}"> </globular-ringtones>
             <div class="actions-div">
                 <slot></slot>
             </div>
@@ -1187,13 +1194,28 @@ export class ContactCard extends HTMLElement {
         /** only element with actions will have illuminated background... */
         if (this.children.length > 0 || this.actionable) {
             this.shadowRoot.querySelector(".contact-invitation-div").classList.add("actionable")
-            
+
+        }
+
+        if (this.showRingTone) {
+            this.shadowRoot.querySelector("globular-ringtones").style.display = "block"
+        } else {
+            this.shadowRoot.querySelector("globular-ringtones").style.display = "none"
         }
 
     }
 
-    hideRingtone(){
-        this.shadowRoot.querySelector("globular-ringtones").style.display = "none"
+    hideRingtone() {
+        this.showRingTone = false
+        if (this.shadowRoot.querySelector("globular-ringtones"))
+            this.shadowRoot.querySelector("globular-ringtones").style.display = "none"
+    }
+
+
+    showRingtone() {
+        this.showRingTone = true
+        if (this.shadowRoot.querySelector("globular-ringtones"))
+            this.shadowRoot.querySelector("globular-ringtones").style.display = "block"
     }
 
     // Set the invite button...
