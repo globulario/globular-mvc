@@ -744,6 +744,13 @@ export class ContactList extends HTMLElement {
                         Model.getGlobule(callee.domain).eventHub.publish(call.getUuid() + "_answering_call_evt", call.serializeBinary(), false)
                     }
 
+                    // Here the call was miss...
+                    Model.getGlobule(caller.domain).eventHub.subscribe(call.getUuid() + "_miss_call_evt", uuid => { }, evt => {
+
+                        // The contact has answer the call!
+                        audio.pause()
+                        toast.dismiss();
+                    }, false)
 
                 })
 
@@ -905,6 +912,7 @@ export class ContactList extends HTMLElement {
                         `, 60 * 1000)
 
 
+                        // set timeout...
                         let timeout = setTimeout(() => {
                             audio.pause()
                             toast.dismiss();
@@ -951,7 +959,7 @@ export class ContactList extends HTMLElement {
                             // The contact has answer the call!
                             audio.pause()
                             toast.dismiss();
-                            
+
                             generatePeerToken(Model.getGlobule(contact.domain).config.Mac, token => {
                                 let rqst = new CreateNotificationRqst
                                 let notification = new Notification
