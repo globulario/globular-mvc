@@ -519,10 +519,10 @@ export class NotificationMenu extends Menu {
             let ico = this.shadowRoot.getElementById(`div_${notification._id}_ico`)
             let span = this.shadowRoot.getElementById(`div_${notification._id}_span`)
             Account.getAccount(notification._sender, (account) => {
-                if (account.profilPicture_ != undefined) {
+                if (account.profilPicture) {
                     img.style.display = "block"
                     ico.style.display = "none"
-                    img.src = account.profilPicture_
+                    img.src = account.profilPicture
                     img.style.maxWidth = "64px"
                     img.style.maxHeight = "64px"
                 } else {

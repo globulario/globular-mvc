@@ -162,7 +162,7 @@ export class ContactsMenu extends Menu {
         inviteContactInput.displayValue = (contact) => {
 
             let card = new ContactCard(account, contact, true);
-
+            card.hideRingtone()
             // Here depending if the contact is in contact list, in received invitation list or in sent invitation
             // list displayed action will be different.
             Account.getContacts(account, "{}",
@@ -402,6 +402,7 @@ export class SentContactInvitations extends HTMLElement {
         }
 
         let card = new ContactCard(this.account, contact)
+        card.hideRingtone()
         card.id = id
         card.setRevokeButton(this.onRevokeContact)
         contactLst.appendChild(card)
@@ -556,6 +557,7 @@ export class ReceivedContactInvitations extends HTMLElement {
             return;
         }
         let card = new ContactCard(this.account, contact)
+        card.hideRingtone()
         card.id = id
         card.setAcceptDeclineButton(this.onAcceptContact, this.onDeclineContact)
         contactLst.appendChild(card)
@@ -691,10 +693,11 @@ export class ContactList extends HTMLElement {
                         ${getTheme()}
                     </style>
                     <div id="select-media-dialog">
-                        <div>Incomming Call from <span style="max-width: 300px; font-size: 1.5rem;">${caller.name}</span></div>
+                        <div>Incomming Call from</div>
                         <div style="display: flex; flex-direction: column; justify-content: center;">
                             <img style="width: 185.31px; align-self: center; padding-top: 10px; padding-bottom: 15px;" src="${caller.profilPicture}"> </img>
                         </div>
+                        <span style="max-width: 300px; font-size: 1.5rem;">${caller.name}</span>
                         <div style="display: flex; justify-content: flex-end;">
                             <paper-icon-button id="ok-button" icon="communication:call"></paper-icon-button>
                             <paper-icon-button id="cancel-button" icon="communication:call-end">Dismiss</paper-button>
@@ -746,6 +749,8 @@ export class ContactList extends HTMLElement {
 
                     // Here the call was miss...
                     Model.getGlobule(caller.domain).eventHub.subscribe(call.getUuid() + "_miss_call_evt", uuid => { }, evt => {
+                        
+                        clearTimeout(timeout)
 
                         // The contact has answer the call!
                         audio.pause()
@@ -901,10 +906,11 @@ export class ContactList extends HTMLElement {
                             ${getTheme()}
                         </style>
                         <div id="select-media-dialog">
-                            <div>Outgoing Call to <span style="max-width: 300px; font-size: 1.5rem;">${callee.name}</span></div>
+                            <div>Outgoing Call to </div>
                             <div style="display: flex; flex-direction: column; justify-content: center;">
                                 <img style="width: 185.31px; align-self: center; padding-top: 10px; padding-bottom: 15px;" src="${callee.profilPicture}"> </img>
                             </div>
+                            <span style="max-width: 300px; font-size: 1.5rem;">${callee.name}</span>
                             <div style="display: flex; justify-content: flex-end;">
                                 <paper-icon-button id="cancel-button" icon="communication:call-end"></paper-icon-button>
                             </div>
@@ -937,6 +943,8 @@ export class ContactList extends HTMLElement {
                             // The contact has answer the call!
                             audio.pause()
                             toast.dismiss();
+                            clearTimeout(timeout)
+
 
                             let call = Call.deserializeBinary(Uint8Array.from(evt.split(",")))
                             // The contact has answer the call!
@@ -959,6 +967,7 @@ export class ContactList extends HTMLElement {
                             // The contact has answer the call!
                             audio.pause()
                             toast.dismiss();
+                            clearTimeout(timeout)
 
                             generatePeerToken(Model.getGlobule(contact.domain).config.Mac, token => {
                                 let rqst = new CreateNotificationRqst
@@ -993,11 +1002,14 @@ export class ContactList extends HTMLElement {
                                     address: Model.address
                                 }).then((rsp) => {
                                     let msg = `
-                                <div>
-                                    ${contact.name} was notified off your call attempt.
-                                </div>
-                                `
-                                    ApplicationView.displayMessage(msg, 3000)
+                                    <div style="display: flex;">
+                                        <img style="width: 64px; height: 64px; margin-left: 15px;" src=${contact.profilPicture}></img>
+                                        <div>
+                                            ${contact.name} was notified of your calling attempt.
+                                        </div>
+                                    </div>
+                                    `
+                                    ApplicationView.displayMessage(msg)
                                 }).catch(err => {
                                     ApplicationView.displayMessage(err, 3000);
                                     console.log(err)
@@ -1175,9 +1187,13 @@ export class ContactCard extends HTMLElement {
         /** only element with actions will have illuminated background... */
         if (this.children.length > 0 || this.actionable) {
             this.shadowRoot.querySelector(".contact-invitation-div").classList.add("actionable")
+            
         }
 
-        this.contact._ringtone_ = this.shadowRoot.querySelector("globular-ringtones")
+    }
+
+    hideRingtone(){
+        this.shadowRoot.querySelector("globular-ringtones").style.display = "none"
     }
 
     // Set the invite button...

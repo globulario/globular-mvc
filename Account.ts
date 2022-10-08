@@ -208,13 +208,17 @@ export class Account extends Model {
                 Account.accounts[accountId] = account;
 
                 account.session.initData(() => {
-
-                    account.initData(() => {
-
-                        // here I will initialyse groups...
-                        account.groups_ = data.getGroupsList();
+                    // here I will initialyse groups...
+                    account.groups_ = data.getGroupsList();
+                    
+                    if (account.id == Application.account.id) {
+                        account.initData(() => {
+                            successCallback(account)
+                        }, errorCallback)
+                    } else {
                         successCallback(account)
-                    }, errorCallback)
+                    }
+
                 }, errorCallback)
 
             } else {

@@ -45,7 +45,7 @@ export function playVideo(path, onplay, onclose, title, globule) {
     }
 
     // keep the title
-    videoPlayer.title = title;
+    videoPlayer.titleInfo = title;
 
     if (onclose && !videoPlayer.onclose) {
         videoPlayer.onclose = onclose
