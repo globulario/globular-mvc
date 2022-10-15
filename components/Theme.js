@@ -1,8 +1,8 @@
 
-let theme = `
+/** Color, shadow properties. */
+let visual_properties  =  `
   :host {
-    --toolbar-height: 64px;
-    --searchbox-height: 44px;
+
     /** Material design (default theme is light)  */
     /** colors **/
     --palette-primary-accent: #fff;
@@ -58,7 +58,7 @@ let theme = `
     --paper-checkbox-unchecked-color: var(--palette-action-disabled);
     --paper-checkbox-unchecked-ink-color: var(--palette-action-disabled);
 
-   
+  
     /**/
     --paper-checkbox-checkmark-color: var(--palette-text-accent);
     --paper-checkbox-label-color: rgb(195, 195, 195));
@@ -99,16 +99,9 @@ let theme = `
     --palette-divider: rgba(255, 255, 255, 0.12);
 
   }
-  
+
   paper-radio-button[checked]{
     --paper-radio-button-label-color: var(--palette-text-accent);
-  }
-  
-  :host-context(globular-login-box, globular-register-box){
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
   }
 
   :host-context(#toolbar) {
@@ -154,14 +147,8 @@ let theme = `
 
   paper-card {
     background-color: transparent;
-    font-size: 1rem;
-    text-align: left;
-    border-radius: 2px;
   }
 
-  paper-button {
-    font-size: 1rem;
-  }
 
   paper-button iron-icon {
     --iron-icon-fill-color: var(--palette-text-primary);
@@ -170,13 +157,6 @@ let theme = `
   paper-card .card-content{
     background-color: var(--palette-background-paper);
     color: var(--palette-text-primary);
-  }
-
-  ::-webkit-scrollbar {
-    width: 8px;
-    /* for vertical scrollbars */
-    height: 8px;
-    /* for horizontal scrollbars */
   }
 
   ::-webkit-scrollbar-track {
@@ -188,142 +168,72 @@ let theme = `
   }
 
   .setting {
-    display: flex;
     color: var(--cr-primary-text-color);
-    align-items: center;
     padding: 15px 16px 16px 16px;
   }
 
 
   .card-title {
-    position: absolute;
-    top: -40px;
-    font-size: 1.25rem;
-    text-transform: uppercase;
     color: var(--cr-primary-text-color);
-    font-weight: 400;
-    letter-spacing: .25px;
-    margin-bottom: 12px;
     margin-top: var(--cr-section-vertical-margin);
     outline: none;
-    padding-bottom: 4px;
-    padding-top: 8px;
-    padding-left: 8px;
   }
 
   .card-actions {
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    font-size: 1rem;
     border-color: var(--palette-divider);
     background-color: var(--palette-background-paper);
   }
 
   .card-subtitle {
-    padding: 48px;
-    letter-spacing: .01428571em;
-    font-family: Roboto, Arial, sans-serif;
-    font-size: .875rem;
-    font-weight: 400;
-    line-height: 1.25rem;
-    hyphens: auto;
-    word-break: break-word;
-    word-wrap: break-word;
     color: var(--cr-primary-text-color);
-    flex-grow: 1;
   }
 
   /** Table element **/
   /** Simple table style **/
   table-element{
-      /** Set max heigth to display the scroll**/
-      max-height: 500px;
-  
       /** Border */
       border-bottom: 1px solid var(--palette-divider);
       border-right: 1px solid var(--palette-divider);
   }
-  
-  .table-item{
-      text-align: center;
-      vertical-align: middle;
-  }
-  
+
+
   table-header-cell-element{
     border-right: 1px solid var(--palette-text-accent);
   }
-  
+
   table-header-cell-element:last-child{
     border-right:none;
   }
-  
+
   table-header-element{
       background-color: var(--palette-primary-accent);
       color: var(--palette-text-accent);
-      font-size: 1rem;
   }
-  
-  table-header-cell-element{
-      padding: 5px 10px 5px 10px;
-      font-weight: 500;
-      font-size: 1.1rem;
-  }
-  
-  dropdown-menu-element{
-    font-size: 1rem;
-  }
-  
+
   /** Sample style example. **/
-  
+
   /** Tiles are grids **/
   .table-tile{
-      /** Align item in table **/
-      justify-items: center;
-      align-items: center;
       border-left: 1px solid var(--palette-divider);
   }
-  
-  /** The cell container **/
-  .table-item{
-      width: 100%;
-      height: 100%;
-      padding: 0px;
-      margin: 0px;
-      font-size: 1rem;
-  }
-  
-  
+
+
   /** The cell value div **/
   .table-item-value {
-      
       border-right: 1px solid var(--palette-divider);
       border-top: 1px solid var(--palette-divider);
-      /** Text align center and at middle by default **/
-      text-align: center;
-      vertical-align: middle;
-      display: table-cell;
-      height: 100%;
   }
-  
+
   .inner-triangle{
-      border-left: 10px solid transparent;
       border-right: 10px solid var(--palette-primary-accent);
       border-bottom: 10px solid transparent;
-      height: 0;
-      width: 0;
-      position: absolute;
-      right: 0px;
   }
-  
+
   .inner-triangle:hover{
       cursor: pointer;
   }
 
   emoji-picker {
-    width: 400px;
-    height: 300px;
-
     --background:var(--palette-background-default);
     --button-hover-background:var(--palette-background-paper);
     --border-color: var(--palette-background-paper);
@@ -338,19 +248,67 @@ let theme = `
     background-color: var(--palette-background-paper);
     color: var(--palette-text-primary);
   }
+`
 
-  .no-select {
-    user-select: none;
+let typography_properties =`
+
+  div,span,h1,h2,h3 {
+    font-family: var(--font-family);
   }
 
-  #search-bar iron-icon {
-    --iron-icon-width: 36px;
+  paper-card {
+    border-radius: 2px;
   }
 
-  #title img {
-    height: 24px;
-    margin-right: 10px;
-    margin-left: 10px;
+  paper-button {
+    font-size: 1rem;
+  }
+
+  .card-title {
+    font-size: 1.25rem;
+    text-transform: uppercase;
+    font-weight: 400;
+    letter-spacing: .25px;
+    outline: none;
+  }
+
+  .card-actions {
+    font-size: 1rem;
+  }
+
+  .card-subtitle {
+    letter-spacing: .01428571em;
+    font-family: Roboto, Arial, sans-serif;
+    font-size: .875rem;
+    font-weight: 400;
+    line-height: 1.25rem;
+    hyphens: auto;
+    word-break: break-word;
+    word-wrap: break-word;
+  }
+
+  /** Table element **/
+  table-element{
+      /** Set max heigth to display the scroll**/
+      max-height: 500px;
+  }
+
+  table-header-element{
+      font-size: 1rem;
+  }
+
+  table-header-cell-element{
+      font-weight: 500;
+      font-size: 1.1rem;
+  }
+
+  dropdown-menu-element{
+    font-size: 1rem;
+  }
+
+  /** The cell container **/
+  .table-item{
+      font-size: 1rem;
   }
 
   paper-button{
@@ -361,6 +319,176 @@ let theme = `
     --paper-tooltip: {
       font-size: .95rem;
     }
+  }
+`
+
+let dimensional_properties =`
+  :host {
+    --toolbar-height: 64px;
+    --searchbox-height: 44px;
+  }
+
+  paper-card {
+    border-radius: 2px;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  /** Table element **/
+  table-element{
+      /** Set max heigth to display the scroll**/
+      max-height: 500px;
+  }
+
+  /** The cell container **/
+  .table-item{
+      width: 100%;
+      height: 100%;
+  }
+
+  /** The cell value div **/
+  .table-item-value {
+      height: 100%;
+  }
+
+  .inner-triangle{
+      height: 0;
+      width: 0;
+  }
+
+  emoji-picker {
+    width: 400px;
+    height: 300px;
+  }
+
+  #search-bar iron-icon {
+    --iron-icon-width: 36px;
+  }
+
+  #title img {
+    height: 24px;
+  }
+`
+
+let layout_properties = `
+
+  :host-context(globular-login-box, globular-register-box){
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  paper-card {
+    text-align: left;
+  }
+
+  .setting {
+    display: flex;
+    align-items: center;
+    padding: 15px 16px 16px 16px;
+  }
+
+  .card-title {
+    position: absolute;
+    top: -40px;
+    margin-bottom: 12px;
+    margin-top: var(--cr-section-vertical-margin);
+    padding-bottom: 4px;
+    padding-top: 8px;
+    padding-left: 8px;
+  }
+
+  .card-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+  }
+
+  .card-subtitle {
+    padding: 48px;
+    flex-grow: 1;
+  }
+
+  /** Table element **/
+  /** Simple table style **/
+  table-element{
+      /** Set max heigth to display the scroll**/
+      max-height: 500px;
+  }
+  
+  .table-item{
+      text-align: center;
+      vertical-align: middle;
+  }
+
+  table-header-cell-element:last-child{
+    border-right:none;
+  }
+  
+  table-header-cell-element{
+      padding: 5px 10px 5px 10px;
+  }
+  
+  dropdown-menu-element{
+    font-size: 1rem;
+  }
+  
+  /** Sample style example. **/
+  
+  /** Tiles are grids **/
+  .table-tile{
+      /** Align item in table **/
+      justify-items: center;
+      align-items: center;
+  }
+  
+  /** The cell container **/
+  .table-item{
+      width: 100%;
+      height: 100%;
+      padding: 0px;
+      margin: 0px;
+  }
+  
+  
+  /** The cell value div **/
+  .table-item-value {
+      /** Text align center and at middle by default **/
+      text-align: center;
+      vertical-align: middle;
+      display: table-cell;
+      height: 100%;
+  }
+  
+  .inner-triangle{
+      height: 0;
+      width: 0;
+      position: absolute;
+      right: 0px;
+  }
+  
+  .inner-triangle:hover{
+      cursor: pointer;
+  }
+
+  emoji-picker {
+    width: 400px;
+    height: 300px;
+  }
+
+  .no-select {
+    user-select: none;
+  }
+
+
+  #title img {
+    height: 24px;
+    margin-right: 10px;
+    margin-left: 10px;
   }
 
 `
@@ -387,9 +515,8 @@ paper-tooltip {
     font-size: 1rem;
   }
 }
-
-
 `
+
 // Append the mobile check function into the window object.
 window.mobileCheck = function () {
   let check = false;
@@ -400,9 +527,9 @@ window.mobileCheck = function () {
 // Return the theme...
 export let getTheme = () => {
   if (!window.mobileCheck()) {
-    return theme
+    return layout_properties + visual_properties + typography_properties + dimensional_properties
   }
 
   // append 
-  return theme + theme_mobile
+  return layout_properties + theme_mobile
 }

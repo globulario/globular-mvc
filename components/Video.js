@@ -131,6 +131,7 @@ export class VideoPlayer extends HTMLElement {
             offsetTop = 60
         }
         this.appendChild(this.video)
+
         if (localStorage.getItem("__video_player_position__")) {
             let position = JSON.parse(localStorage.getItem("__video_player_position__"))
             if(position.top < offsetTop){
@@ -153,6 +154,7 @@ export class VideoPlayer extends HTMLElement {
             localStorage.setItem("__video_player_dimension__", JSON.stringify({ width: width, height: height }))
             container.style.height = "auto"
         })
+        
         container.resizeHeightDiv.style.display = "none"
 
 

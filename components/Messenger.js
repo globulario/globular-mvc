@@ -26,7 +26,6 @@ import { decode } from 'uint8-to-base64';
 import { v4 as uuidv4 } from "uuid";
 import { ApplicationView } from '../ApplicationView';
 import { getCoords } from "./utility.js"
-import { VideoConversation } from "./WebRTC.js"
 import { Application } from '../Application';
 
 /**
@@ -1090,12 +1089,16 @@ export class Messenger extends HTMLElement {
     openConversation(conversation, messages) {
         let conversationUuid = conversation.getUuid()
 
+        /* TODO use ion-sfu to have support to many to many
+        
         let videoConversation = new VideoConversation(conversationUuid, Model.domain) // TODO set the conversation owner domain here...
         videoConversation.style.position = "fixed"
         videoConversation.style.left = "0px"
 
         // append it to the workspace.
         ApplicationView.layout.workspace().appendChild(videoConversation)
+        
+        */
 
         // Display the messenger panel.
         this.shadowRoot.querySelector(".container").style.display = "flex";
@@ -1488,12 +1491,10 @@ export class ParticipantsList extends HTMLElement {
                             }
 
                             // Here if the session state change...
-                            console.log("---------------> subscribe to ", `session_state_${p._id + "@" + p.domain}_change_event`, p.session.domain)
                             Model.getGlobule(p.session.domain).eventHub.subscribe(`session_state_${p._id + "@" + p.domain}_change_event`,
                                 (uuid) => {
                                 },
                                 (evt) => {
-                                    console.log("---------------> event recived: ", `session_state_${p._id + "@" + p.domain}_change_event`, p.session.domain)
                                     // Set the value here...
                                     let obj = JSON.parse(evt)
                                     p.session.lastStateTime_ = new Date(obj.lastStateTime * 1000)
@@ -1542,7 +1543,7 @@ export class ParticipantsList extends HTMLElement {
                         <span><span style="font-style: italic;">${p.name_}</span> ${p.firstName_} ${p.lastName_}</span>
                         <globular-session-state account=${p._id + "@" + p.domain}></globular-session-state>
                     </div>
-                    <paper-icon-button icon="av:videocam"> </paper-icon-button>
+                    <paper-icon-button style="display: none;" icon="av:videocam"> </paper-icon-button>
                 </div>
                 `
         this.participantList.insertBefore(document.createRange().createContextualFragment(html), this.participantList.firstChild)
@@ -1556,20 +1557,9 @@ export class ParticipantsList extends HTMLElement {
         }
 
         startVideoBtn.onclick = () => {
-            Model.eventHub.publish("start_video_conversation_" + conversation.getUuid() + "_evt", p, true)
-            // hide the video button...
-            startVideoBtn.style.display = "none"
+           /** Todo use ion-sfu */
         }
 
-        // Here the video conversation is ended I will redisplay the start button
-        Model.eventHub.subscribe(`video_conversation_close_${conversation.getUuid() + "_" + p._id}_evt`, uuid => { }, evt => {
-            startVideoBtn.style.display = "block"
-        }, false)
-
-        // Disable start.
-        Model.eventHub.subscribe(`video_conversation_open_${conversation.getUuid() + "_" + p._id}_evt`, uuid => { }, evt => {
-            startVideoBtn.style.display = "none"
-        }, false)
 
         // TODO add stop video button.
 
