@@ -176,55 +176,59 @@ export class Account extends Model {
         rqst.setOptions(`[{"Projection":{"_id":1, "email":1, "name":1, "groups":1, "organizations":1, "roles":1, "domain":1}}]`);
 
         let globule = Model.getGlobule(domain)
-        let stream = globule.resourceService.getAccounts(rqst, { domain: domain, application: Model.application, token: token })
-        let data: ResourceService.Account;
+        if (globule) {
 
-        stream.on("data", (rsp) => {
-            if (!data) {
-                data = rsp.getAccountsList().pop()
-            }
-        });
 
-        stream.on("status", (status) => {
-            if (status.code == 0) {
+            let stream = globule.resourceService.getAccounts(rqst, { domain: domain, application: Model.application, token: token })
+            let data: ResourceService.Account;
 
-                // so here I will get the session for the account...
-                if (Account.accounts[accountId] != null) {
-                    if (Account.accounts[accountId].session != null) {
-                        successCallback(Account.accounts[accountId]);
+            stream.on("data", (rsp) => {
+                if (!data) {
+                    data = rsp.getAccountsList().pop()
+                }
+            });
+
+            stream.on("status", (status) => {
+                if (status.code == 0) {
+
+                    // so here I will get the session for the account...
+                    if (Account.accounts[accountId] != null) {
+                        if (Account.accounts[accountId].session != null) {
+                            successCallback(Account.accounts[accountId]);
+                            return
+                        }
+
+                    }
+
+                    // Initialyse the data...
+                    if (!data) {
+                        errorCallback("no account found with id " + accountId)
                         return
                     }
 
-                }
+                    let account = new Account(data.getId(), data.getEmail(), data.getName(), data.getDomain(), data.getFirstname(), data.getLastname(), data.getMiddle(), data.getProfilepicture())
+                    account.session = new Session(account)
+                    Account.accounts[accountId] = account;
 
-                // Initialyse the data...
-                if (!data) {
-                    errorCallback("no account found with id " + accountId)
-                    return
-                }
+                    account.session.initData(() => {
+                        // here I will initialyse groups...
+                        account.groups_ = data.getGroupsList();
 
-                let account = new Account(data.getId(), data.getEmail(), data.getName(), data.getDomain(), data.getFirstname(), data.getLastname(), data.getMiddle(), data.getProfilepicture())
-                account.session = new Session(account)
-                Account.accounts[accountId] = account;
-
-                account.session.initData(() => {
-                    // here I will initialyse groups...
-                    account.groups_ = data.getGroupsList();
-                    
-                    if (account.id == Application.account.id) {
-                        account.initData(() => {
+                        if (account.id == Application.account.id) {
+                            account.initData(() => {
+                                successCallback(account)
+                            }, errorCallback)
+                        } else {
                             successCallback(account)
-                        }, errorCallback)
-                    } else {
-                        successCallback(account)
-                    }
+                        }
 
-                }, errorCallback)
+                    }, errorCallback)
 
-            } else {
-                errorCallback(status.details);
-            }
-        })
+                } else {
+                    errorCallback(status.details);
+                }
+            })
+        }
     }
 
     /**

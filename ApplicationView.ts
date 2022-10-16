@@ -689,6 +689,10 @@ export class ApplicationView extends View {
      * The resize listener.
      */
     window.addEventListener("resize", (evt: any) => {
+      if(!ApplicationView){
+        return;
+      }
+
       let w = ApplicationView.layout.width();
 
       if (w <= 500) {
@@ -777,7 +781,9 @@ export class ApplicationView extends View {
       }
     });
 
-    ApplicationView.layout.navigation().appendChild(this.contentManager)
+    if(ApplicationView.layout.navigation()){
+      ApplicationView.layout.navigation().appendChild(this.contentManager)
+    }
 
     window.dispatchEvent(new Event("resize"));
 

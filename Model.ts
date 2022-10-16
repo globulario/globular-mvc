@@ -12,7 +12,7 @@ import { View } from "./View";
  * @param {*} callback The callback
  * @param {*} errorCallback 
  */
- export function generatePeerToken(mac:string, callback:(token:string)=>void, errorCallback:(err:any)=>void) {
+export function generatePeerToken(mac: string, callback: (token: string) => void, errorCallback: (err: any) => void) {
 
     if (Model.globular.config.Mac == mac) {
         callback(localStorage.getItem("user_token"))
@@ -40,7 +40,7 @@ export class Model {
     // That function will return a 
     public static getGlobule(address: string): GlobularWebClient.Globular {
         let globule = Model.globules.get(address);
-        if(globule==undefined){
+        if (globule == undefined) {
             console.log("-----------> globules: ", Model.globules, address)
         }
         return globule;
@@ -76,17 +76,21 @@ export class Model {
 
     // The name of the applicaition where the model is use.
     public static get application(): string {
-        let app = window.location.pathname.split('/')[1]
-        if (app.length == 0) {
-            app = Model._globular.config.IndexApplication;
+        if (window.location.protocol.toLocaleLowerCase() == "file:") {
+            return ""
+        } else {
+            let app = window.location.pathname.split('/')[1]
+            if (app.length == 0) {
+                app = Model._globular.config.IndexApplication;
+            }
+            return app;
         }
-        return app;
     }
 
     // Pulish event on all globules...
-    public static publish(name:string, data:any, local:boolean): void{
+    public static publish(name: string, data: any, local: boolean): void {
         let globules = Model.getGlobules()
-        globules.forEach(g=>{
+        globules.forEach(g => {
             g.eventHub.publish(name, data, local)
         })
     }
@@ -106,13 +110,15 @@ export class Model {
 
         // Set the application name.
         // The domain will be set with the hostname.
-        Model.domain = window.location.hostname
-        Model.address = Model.domain + ":" + window.location.port
-        if (Model.address.endsWith(":")) {
-            if (window.location.protocol.toLocaleLowerCase() == "https:") {
-                Model.address += "443"
-            } else {
-                Model.address += "80"
+        if (window.location.protocol != "files:") {
+            Model.domain = window.location.hostname
+            Model.address = Model.domain + ":" + window.location.port
+            if (Model.address.endsWith(":")) {
+                if (window.location.protocol.toLocaleLowerCase() == "https:") {
+                    Model.address += "443"
+                } else {
+                    Model.address += "80"
+                }
             }
         }
 
@@ -172,6 +178,7 @@ export class Model {
     init(url: string, initCallback: () => void, errorCallback: (err: any) => void) {
         // So here I will initilyse the server connection.
         Model._globular = new GlobularWebClient.Globular(url, () => {
+
             // set the event hub.
             Model.eventHub = Model._globular.eventHub;
 
@@ -181,13 +188,23 @@ export class Model {
 
             // Use when globular is not the http server.
             let domain = Model._globular.config.Name
-            if (domain.length > 0) {
+            if (domain.length > 0 && !Model._globular.config.Domain.startsWith(Model._globular.config.Name)) {
                 if (Model._globular.config.Domain.length > 0) {
                     domain += "." + Model._globular.config.Domain;
                 }
             } else {
                 domain = Model._globular.config.Domain;
             }
+
+
+            Model.domain = domain;
+
+            if (Model._globular.config.Protocol == "https") {
+                Model.address = Model._globular.config.Protocol + ":" + Model._globular.config.PortHttps
+            } else {
+                Model.address = Model._globular.config.Protocol + ":" + Model._globular.config.PortHttp
+            }
+
 
             Model.globules.set(domain, Model._globular)
             Model.globules.set(domain + ":" + Model._globular.config.PortHttp, Model._globular)
@@ -203,7 +220,7 @@ export class Model {
                 Model.globules.set(domain, Model._globular)
                 let address = domain + ":" + window.location.port
                 if (address.endsWith(":")) {
-                    if (window.location.protocol.toLocaleLowerCase() == "https:") {
+                    if (Model._globular.config.Protocol == "https") {
                         address += "443"
                     } else {
                         address += "80"
@@ -220,7 +237,7 @@ export class Model {
                     if (index < peers.length) {
                         index++
                         let port = 80
-                        if (location.protocol == "https:") {
+                        if (Model._globular.config.Protocol == "https") {
                             port = 443
                             if (peer.getProtocol() == "https") {
                                 port = peer.getPorthttps()
@@ -230,11 +247,11 @@ export class Model {
                         }
 
 
-                        let url = location.protocol + "//" + peer.getDomain() + ":" + port + "/config"
+                        let url = Model._globular.config.Protocol + "//" + peer.getDomain() + ":" + port + "/config"
 
                         let globule = new GlobularWebClient.Globular(url, () => {
                             // append the globule to the list.
-                            Model.globules.set(location.protocol + "//" + peer.getDomain() + ":" + port, globule)
+                            Model.globules.set(Model._globular.config.Protocol + "//" + peer.getDomain() + ":" + port, globule)
                             Model.globules.set(url, globule)
                             Model.globules.set(peer.getDomain(), globule)
                             Model.globules.set(peer.getMac(), globule)

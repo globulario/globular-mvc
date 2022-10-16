@@ -5,10 +5,8 @@ import { GetConversationsRequest, GetConversationsResponse } from "globular-web-
 import { Account } from "./Account";
 import { generatePeerToken, Model } from "./Model";
 import { v4 as uuidv4 } from "uuid";
-import { GetResourcePermissionsRsp } from "globular-web-client/rbac/rbac_pb";
-import { encode, decode } from 'uint8-to-base64';
+import { encode } from 'uint8-to-base64';
 import { Application } from "./Application";
-import { SetStartVideoConversionHourRequest } from "globular-web-client/file/file_pb";
 import { Globular } from "globular-web-client";
 
 export class ConversationManager {
