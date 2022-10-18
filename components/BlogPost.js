@@ -832,6 +832,8 @@ export class BlogPosts extends HTMLElement {
             ${getTheme()}
 
             #container{
+                width: 95%;
+                margin-left: 2.5%;
                 display: flex;
                 flex-direction: column;
                 margin-top: 10px;

@@ -748,7 +748,7 @@ export class VideoInfo extends HTMLElement {
         <h3 class="title-sub-title-div"> 
             <h1 id="title-name" class="title" style="${this.isShort ? "font-size: 1rem; padding-bottom: 10px;" : ""}"> ${publisherName} </h1>
             <div style="display: flex; align-items: baseline;">
-                <h3 class="title-sub-title-div">          
+                <h3 class="title-sub-title-div" style="${this.isShort ? "font-size: 1rem;" : ""}">          
                     <span id="title-type"><span>Genre: </span>${genres}</span>
                 </h3>    
                 <span id="title-duration" style="padding-left: 10px;"><span>Duration: </span> ${video.getDuration()}</span>
@@ -1011,7 +1011,7 @@ export class TitleInfo extends HTMLElement {
         // Set the title div.
         this.titleDiv.innerHTML = `
            <h1 id="title-name" class="title" style="${this.isShort ? "font-size: 1.2rem;text-align: left; margin-bottom: 10px;" : ""}"> </h1>
-           <h3 class="title-sub-title-div">             
+           <h3 class="title-sub-title-div" style="${this.isShort ? "font-size: 1rem;" : ""}">             
                <span id="title-type"></span>
                <span id="title-year"></span>
                <span id="title-duration"></span>
@@ -1677,10 +1677,8 @@ export class BlogPostInfo extends HTMLElement {
                     border-radius: 3.5px;
                     border: 1px solid var(--palette-divider);
                     height: 100%;
-                    max-width: 450px;
-                    width: 450px;
+                    width: 350px;
                     margin: 10px;
-                    max-width: 450px;
                     height: 285px;
                     margin: 10px;
                     overflow: hidden;
@@ -1738,7 +1736,7 @@ export class BlogPostInfo extends HTMLElement {
                     position: relative;
                     margin: auto;
                     overflow: hidden;
-                    width: 450px;
+                    width: 100%;
                     height:50%;
                 }
 

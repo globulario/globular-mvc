@@ -656,7 +656,8 @@ export class SearchResults extends HTMLElement {
             ${getTheme()}
 
             #container{
-                width: 100%;
+                width: 95%;
+                margin-left: 2.5%;
                 height: 100%;
                 flex-direction: column;
                 margin-top: 15px;

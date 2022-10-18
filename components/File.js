@@ -296,15 +296,24 @@ let dirs = {}
 function _readDir(path, callback, errorCallback, globule, force = false) {
     let key = getUuidByString(globule.config.Domain + "@" + path)
     if (!force || path == "/public" || path == "/shared") {
-        if (dirs[key] != null) {
-            callback(dirs[key])
-            return
+        let dir = dirs[key] 
+        if (dir != null) {
+            if(dir.files.length > 0){
+                callback(dirs[key])
+                return
+            }
         }
     }
 
     // Here I will keep the dir info in the cache...
     File.readDir(path, false, (dir) => {
         callback(dir)
+
+        let parent = dir.path.substring(0, dir.path.lastIndexOf("/"))
+        if(public_[parent]){
+            markAsPublic(dir, parent)
+        }
+
         dirs[key] = dir
     }, errorCallback, globule)
 
@@ -370,6 +379,7 @@ export class FilesView extends HTMLElement {
         <globular-dropdown-menu-item  id="file-infos-menu-item" icon="icons:info" text="File Infos" action=""> </globular-dropdown-menu-item>
         <globular-dropdown-menu-item  id="title-infos-menu-item" icon="icons:info" text="Title Infos" action="" style="display: none;"> </globular-dropdown-menu-item>
         <globular-dropdown-menu-item  id="manage-acess-menu-item" icon="folder-shared" text="Manage access"action=""></globular-dropdown-menu-item>
+        <globular-dropdown-menu-item  id="keep-file-local-menu-item" icon="play-for-work" text="save file localy"action=""></globular-dropdown-menu-item>
          <globular-dropdown-menu-item separator="true" id="video-menu-item" icon="maps:local-movies" text="Movies" action="" style="display: none;"> 
             <globular-dropdown-menu>
                 <globular-dropdown-menu-item id="generate-timeline-menu-item" icon="maps:local-movies" text="generate timeline" action=""> </globular-dropdown-menu-item>

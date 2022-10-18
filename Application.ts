@@ -33,6 +33,7 @@ function getFileConfig(url: string, callback: (obj: any) => void, errorcallback:
       var obj = JSON.parse(this.responseText);
       callback(obj);
     } else if (this.readyState == 4) {
+      // Here no configuration was found... so I will ask the user give the 
       errorcallback("fail to get the configuration file at url " + url + " status " + this.status)
     }
   };
@@ -117,6 +118,9 @@ export class Application extends Model {
   constructor(name: string, title: string, view: ApplicationView) {
     super();
 
+    // set the application name.
+    Model.application = name;
+
     // The map of contact listener.
     this.contactsListener = {}
 
@@ -158,7 +162,6 @@ export class Application extends Model {
     url = url.replace("index.html", "")
     getFileConfig(url + "config.json",
       (config: any) => {
-
         callback(config)
       }, errorCallback)
   }
@@ -546,7 +549,7 @@ export class Application extends Model {
         super.init(url, init_, errorCallback);
       }
     },
-      () => {
+      err => {
         this.appConfig = {};
         super.init(url, init_, errorCallback);
       })
@@ -673,6 +676,7 @@ export class Application extends Model {
         let id = (<any>decoded).id;
         let userName = (<any>decoded).username;
         let email = (<any>decoded).email;
+        let domain = (<any>decoded).user_domain;
 
         // here I will save the user token and user_name in the local storage.
         localStorage.setItem("user_token", token);
@@ -682,7 +686,7 @@ export class Application extends Model {
         localStorage.setItem("user_email", email);
 
         // Set the account
-        Account.getAccount(userName, (account: Account) => {
+        Account.getAccount(userName + "@" + domain, (account: Account) => {
           Application.account = account;
           initCallback(Application.account);
         }, onError);

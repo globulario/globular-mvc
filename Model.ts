@@ -74,18 +74,8 @@ export class Model {
     // The address...
     public static address: string;
 
-    // The name of the applicaition where the model is use.
-    public static get application(): string {
-        if (window.location.protocol.toLocaleLowerCase() == "file:") {
-            return ""
-        } else {
-            let app = window.location.pathname.split('/')[1]
-            if (app.length == 0) {
-                app = Model._globular.config.IndexApplication;
-            }
-            return app;
-        }
-    }
+    // The application name.
+    public static application: string;
 
     // Pulish event on all globules...
     public static publish(name: string, data: any, local: boolean): void {

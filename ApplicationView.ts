@@ -42,8 +42,13 @@ import "./style.css"
 import { ServerGeneralSettings } from "./serverGeneralSettings";
 import { ServicesSettings } from "./ServicesSettings";
 import * as getUuid from 'uuid-by-string'
-import { getTheme } from "./components/Theme";
+import { getTheme, mobileCheck } from "./components/Theme";
 import { GetBlogPostsRequest } from "globular-web-client/blog/blog_pb";
+
+// The kind of application...
+export enum ApplicationType {
+  WEB, DESKTOP, MOBILE
+}
 
 /**
  * Application view made use of Web-component and Materialyse to create a basic application
@@ -62,6 +67,15 @@ export class ApplicationView extends View {
   }
   public set application(value: Application) {
     this._application = value;
+  }
+
+  /** The application type */
+  private _type: ApplicationType;
+  public get type(): ApplicationType {
+    return this._type;
+  }
+  public set type(value: ApplicationType) {
+    this._type = value;
   }
 
   /** The application view component. */
@@ -84,6 +98,7 @@ export class ApplicationView extends View {
 
   /** The applications menu */
   private applicationsMenu: ApplicationsMenu;
+  protected hasApplicationsMenu: boolean;
 
   /** The contact menu */
   private contactsMenu: ContactsMenu;
@@ -114,6 +129,8 @@ export class ApplicationView extends View {
 
   /** The content editor... */
   private contentManager: ContentManager;
+
+  /** The type of application... */
 
   /** The camera */
   private _camera: Camera;
@@ -181,8 +198,8 @@ export class ApplicationView extends View {
     this.overFlowMenu = new OverflowMenu();
 
     // The applicaiton menu
+    this.hasApplicationsMenu = true;
     this.applicationsMenu = new ApplicationsMenu();
-
 
     // The concact menu
     this.contactsMenu = new ContactsMenu();
@@ -233,6 +250,12 @@ export class ApplicationView extends View {
     this._workspace_childnodes = new Array<any>();
   }
 
+  hideApplicationsMenu() {
+    this.hasApplicationsMenu = false;
+    if (this.applicationsMenu.parentNode)
+      this.applicationsMenu.parentNode.removeChild(this.applicationsMenu)
+  }
+
   hideContent() {
 
     if (this._workspace_childnodes.length != 0) {
@@ -246,7 +269,7 @@ export class ApplicationView extends View {
     while (i > 0) {
       let node = this.getWorkspace().childNodes[this.getWorkspace().childNodes.length - 1]
       if (!node.classList.contains("draggable")) {
-        if (node.tagName != "GLOBULAR-WEB-PAGE"){
+        if (node.tagName != "GLOBULAR-WEB-PAGE") {
           this._workspace_childnodes.push(node)
         }
         this.getWorkspace().removeChild(node)
@@ -256,13 +279,13 @@ export class ApplicationView extends View {
 
     // I will also remove the search filter...
     let searchFacetFilters = document.getElementsByTagName("globular-facet-search-filter")
-    for(var index=0; index < searchFacetFilters.length; index++){
+    for (var index = 0; index < searchFacetFilters.length; index++) {
       let parentNode = searchFacetFilters[index].parentNode
-      if(parentNode){
+      if (parentNode) {
         parentNode.removeChild(searchFacetFilters[index])
       }
     }
-    
+
   }
 
   restoreContent() {
@@ -580,11 +603,11 @@ export class ApplicationView extends View {
         let globule = b.globule
         let stream = globule.blogService.getBlogPosts(rqst, { application: Application.application, domain: globule.config.Domain, token: token })
 
-        stream.on("data", (rsp:any) => {
+        stream.on("data", (rsp: any) => {
           b.blogPost = rsp.getBlogPost()
         });
 
-        stream.on("status", (status:any) => {
+        stream.on("status", (status: any) => {
           if (status.code == 0) {
             Model.eventHub.publish("_hide_search_results_", null, true)
             displayBlog()
@@ -648,7 +671,7 @@ export class ApplicationView extends View {
 
         this.hideContent()
 
-    // The logout event.
+        // The logout event.
 
         // The search result panel where the result will be displayed.
         if (this._searchResults == null) {
@@ -689,21 +712,25 @@ export class ApplicationView extends View {
      * The resize listener.
      */
     window.addEventListener("resize", (evt: any) => {
-      if(!ApplicationView){
+      if (!ApplicationView) {
         return;
       }
 
       let w = ApplicationView.layout.width();
 
-      if (w <= 500) {
-        this.overFlowMenu
-          .getMenuDiv()
-          .insertBefore(
-            this.applicationsMenu,
-            this.overFlowMenu.getMenuDiv().firstChild
-          );
-        this.applicationsMenu.getMenuDiv().classList.remove("bottom");
-        this.applicationsMenu.getMenuDiv().classList.add("left");
+      if (w <= 500 || mobileCheck()) {
+
+        if (this.hasApplicationsMenu) {
+          this.overFlowMenu
+            .getMenuDiv()
+            .insertBefore(
+              this.applicationsMenu,
+              this.overFlowMenu.getMenuDiv().firstChild
+            );
+
+          this.applicationsMenu.getMenuDiv().classList.remove("bottom");
+          this.applicationsMenu.getMenuDiv().classList.add("left");
+        }
 
         if (this.isLogin) {
           this.overFlowMenu.show();
@@ -737,16 +764,17 @@ export class ApplicationView extends View {
           this.accountMenu.getMenuDiv().classList.add("left");
         }
       } else {
-        ApplicationView.layout
-          .toolbar()
-          .insertBefore(
-            this.applicationsMenu,
-            ApplicationView.layout.toolbar().firstChild
-          );
+        if (this.hasApplicationsMenu) {
+          ApplicationView.layout
+            .toolbar()
+            .insertBefore(
+              this.applicationsMenu,
+              ApplicationView.layout.toolbar().firstChild
+            );
 
-        this.applicationsMenu.getMenuDiv().classList.remove("left");
-        this.applicationsMenu.getMenuDiv().classList.add("bottom");
-
+          this.applicationsMenu.getMenuDiv().classList.remove("left");
+          this.applicationsMenu.getMenuDiv().classList.add("bottom");
+        }
         if (this.isLogin) {
           this.overFlowMenu.hide();
 
@@ -781,7 +809,7 @@ export class ApplicationView extends View {
       }
     });
 
-    if(ApplicationView.layout.navigation()){
+    if (ApplicationView.layout.navigation()) {
       ApplicationView.layout.navigation().appendChild(this.contentManager)
     }
 
@@ -1340,7 +1368,7 @@ export class ApplicationView extends View {
         // Publish the list of participant with the account removed from it.
         let participants = conversation.getParticipantsList()
         participants.splice(participants.indexOf(Application.account.id + "@" + Application.account.domain), 1)
-        Model.publish(`leave_conversation_${conversation.getUuid()}_evt`, JSON.stringify({ "participants": participants, "participant": Application.account.id + "@" + Application.account.domain}), false)
+        Model.publish(`leave_conversation_${conversation.getUuid()}_evt`, JSON.stringify({ "participants": participants, "participant": Application.account.id + "@" + Application.account.domain }), false)
         ApplicationView.displayMessage(
           "<iron-icon icon='communication:message' style='margin-right: 10px;'></iron-icon><div>Conversation named " +
           conversation.getName() +
