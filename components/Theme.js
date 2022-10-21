@@ -258,6 +258,20 @@ let typography_properties =`
 
   paper-card {
     border-radius: 2px;
+    
+  }
+
+  
+  paper-card h1{
+    font-size: 1.85rem;
+  }
+
+  paper-card h2{
+    font-size: 1.75rem;
+  }
+
+  paper-card h2{
+    font-size: 1.65rem;
   }
 
   paper-button {

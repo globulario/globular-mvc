@@ -164,126 +164,129 @@ function getHiddenFiles(path, callback, globule) {
 
 // Create the video preview...
 function getVideoPreview(parent, path, name, callback, globule) {
-    getHiddenFiles(path, previewDir => {
-        let h = 85;
-        let w = 128;
-        let files = []
-        if (previewDir) {
-            if (previewDir._files) {
-                files = previewDir._files
+    File.getFile(globule, path, file => {
+        getHiddenFiles(path, previewDir => {
+            let h = 85;
+            let w = 128;
+            let files = []
+            if (previewDir) {
+                if (previewDir._files) {
+                    files = previewDir._files
+                }
             }
-        }
 
-        let fileNameSpan = document.createElement("span")
+            let fileNameSpan = document.createElement("span")
 
-        let preview = new VideoPreview(path, files, 85, () => {
-            if (preview.width > 0 && preview.height > 0) {
-                w = (preview.width / preview.height) * h
-            }
-            fileNameSpan.style.wordBreak = "break-all"
-            fileNameSpan.style.fontSize = ".85rem"
-            fileNameSpan.style.maxWidth = w + "px";
-            fileNameSpan.innerHTML = path.substring(path.lastIndexOf("/") + 1)
-        }, globule)
+            let preview = new VideoPreview(file, files, 85, () => {
+                if (preview.width > 0 && preview.height > 0) {
+                    w = (preview.width / preview.height) * h
+                }
+                fileNameSpan.style.wordBreak = "break-all"
+                fileNameSpan.style.fontSize = ".85rem"
+                fileNameSpan.style.maxWidth = w + "px";
+                fileNameSpan.innerHTML = path.substring(path.lastIndexOf("/") + 1)
+            }, globule)
 
-        let range = document.createRange()
-        let uuid = randomUUID()
-        preview.appendChild(range.createContextualFragment(`<paper-icon-button icon="icons:remove-circle" id="_${uuid}" style="position: absolute;"> </paper-icon-button>`))
-        let unlinkBtn = preview.querySelector(`#_${uuid}`)
+            let range = document.createRange()
+            let uuid = randomUUID()
+            preview.appendChild(range.createContextualFragment(`<paper-icon-button icon="icons:remove-circle" id="_${uuid}" style="position: absolute;"> </paper-icon-button>`))
+            let unlinkBtn = preview.querySelector(`#_${uuid}`)
 
-        // When the file will be unlink...
-        unlinkBtn.onclick = (evt) => {
-            evt.stopPropagation();
+            // When the file will be unlink...
+            unlinkBtn.onclick = (evt) => {
+                evt.stopPropagation();
 
-            let toast = ApplicationView.displayMessage(`
-            <style>
-                ${getTheme()}
-            </style>
-            <div id="select-media-dialog">
-                <div>Your about to delete file association</div>
-                <p style="font-style: italic;  max-width: 300px;" id="file-name"></p>
-                <div>Is that what you want to do? </div>
-                <div style="display: flex; justify-content: flex-end;">
-                    <paper-button id="imdb-lnk-ok-button">Ok</paper-button>
-                    <paper-button id="imdb-lnk-cancel-button">Cancel</paper-button>
+                let toast = ApplicationView.displayMessage(`
+                <style>
+                    ${getTheme()}
+                </style>
+                <div id="select-media-dialog">
+                    <div>Your about to delete file association</div>
+                    <p style="font-style: italic;  max-width: 300px;" id="file-name"></p>
+                    <div>Is that what you want to do? </div>
+                    <div style="display: flex; justify-content: flex-end;">
+                        <paper-button id="imdb-lnk-ok-button">Ok</paper-button>
+                        <paper-button id="imdb-lnk-cancel-button">Cancel</paper-button>
+                    </div>
                 </div>
-            </div>
-            `, 60 * 1000)
+                `, 60 * 1000)
 
-            let cancelBtn = toast.el.querySelector("#imdb-lnk-cancel-button")
-            cancelBtn.onclick = () => {
-                toast.dismiss();
+                let cancelBtn = toast.el.querySelector("#imdb-lnk-cancel-button")
+                cancelBtn.onclick = () => {
+                    toast.dismiss();
+                }
+
+                toast.el.querySelector("#file-name").innerHTML = path.substring(path.lastIndexOf("/") + 1)
+
+                let okBtn = toast.el.querySelector("#imdb-lnk-ok-button")
+                okBtn.onclick = () => {
+                    let rqst = new DissociateFileWithTitleRequest
+                    rqst.setFilepath(path)
+                    rqst.setTitleid(name)
+                    if (name.startsWith("tt")) {
+                        rqst.setIndexpath(globule.config.DataPath + "/search/titles")
+                    } else {
+                        rqst.setIndexpath(globule.config.DataPath + "/search/videos")
+                    }
+
+                    globule.titleService.dissociateFileWithTitle(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+                        .then(rsp => {
+                            preview.parentNode.removeChild(preview)
+                            ApplicationView.displayMessage("association was delete", 3000)
+                            toast.dismiss();
+                        }).catch(err => ApplicationView.displayMessage(err, 3000))
+                }
+
             }
 
-            toast.el.querySelector("#file-name").innerHTML = path.substring(path.lastIndexOf("/") + 1)
+            preview.showPlayBtn()
 
-            let okBtn = toast.el.querySelector("#imdb-lnk-ok-button")
-            okBtn.onclick = () => {
-                let rqst = new DissociateFileWithTitleRequest
-                rqst.setFilepath(path)
-                rqst.setTitleid(name)
-                if (name.startsWith("tt")) {
-                    rqst.setIndexpath(globule.config.DataPath + "/search/titles")
+            preview.onplay = (path) => {
+                if (path.endsWith(".mp3")) {
+
+                    playAudio(path, (video) => {
+                        let titleInfoBox = document.getElementById("title-info-box")
+                        if (titleInfoBox) {
+                            titleInfoBox.parentNode.removeChild(titleInfoBox)
+                        }
+                        //video.toggleFullscreen();
+                    }, null, null, globule)
+
                 } else {
-                    rqst.setIndexpath(globule.config.DataPath + "/search/videos")
+                    playVideo(path, (video) => {
+                        let titleInfoBox = document.getElementById("title-info-box")
+                        if (titleInfoBox) {
+                            titleInfoBox.parentNode.removeChild(titleInfoBox)
+                        }
+                        //video.toggleFullscreen();
+                    }, null, null, globule)
                 }
 
-                globule.titleService.dissociateFileWithTitle(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
-                    .then(rsp => {
-                        preview.parentNode.removeChild(preview)
-                        ApplicationView.displayMessage("association was delete", 3000)
-                        toast.dismiss();
-                    }).catch(err => ApplicationView.displayMessage(err, 3000))
             }
 
-        }
-
-        preview.showPlayBtn()
-
-        preview.onplay = (path) => {
-            if (path.endsWith(".mp3")) {
-
-                playAudio(path, (video) => {
-                    let titleInfoBox = document.getElementById("title-info-box")
-                    if (titleInfoBox) {
-                        titleInfoBox.parentNode.removeChild(titleInfoBox)
+            // keep the explorer link...
+            preview.name = name
+            preview.onpreview = () => {
+                let previews = parent.querySelectorAll("globular-video-preview")
+                previews.forEach(p => {
+                    // stop all other preview...
+                    if (preview.name != p.name) {
+                        p.stopPreview()
                     }
-                    //video.toggleFullscreen();
-                }, null, null, globule)
-
-            } else {
-                playVideo(path, (video) => {
-                    let titleInfoBox = document.getElementById("title-info-box")
-                    if (titleInfoBox) {
-                        titleInfoBox.parentNode.removeChild(titleInfoBox)
-                    }
-                    //video.toggleFullscreen();
-                }, null, null, globule)
+                })
             }
 
-        }
+            // Here I will set the filename 
+            let previewDiv = document.createElement("div")
+            previewDiv.style.display = "flex"
+            previewDiv.style.flexDirection = "column"
+            previewDiv.appendChild(preview)
+            previewDiv.appendChild(fileNameSpan)
+            callback(previewDiv)
 
-        // keep the explorer link...
-        preview.name = name
-        preview.onpreview = () => {
-            let previews = parent.querySelectorAll("globular-video-preview")
-            previews.forEach(p => {
-                // stop all other preview...
-                if (preview.name != p.name) {
-                    p.stopPreview()
-                }
-            })
-        }
+        }, globule)
+    }, err => ApplicationView.displayMessage(err, 3000))
 
-        // Here I will set the filename 
-        let previewDiv = document.createElement("div")
-        previewDiv.style.display = "flex"
-        previewDiv.style.flexDirection = "column"
-        previewDiv.appendChild(preview)
-        previewDiv.appendChild(fileNameSpan)
-        callback(previewDiv)
-
-    }, globule)
 }
 
 function GetTitleFiles(indexPath, title, parent, callback) {
@@ -413,7 +416,7 @@ export class InformationsManager extends HTMLElement {
             #container{
                 display: flex;
                 flex-direction: column;
-                padding: 8px;
+                padding: 0px 8px;
                 overflow: auto;
                 z-index: 100;
             }
@@ -436,7 +439,7 @@ export class InformationsManager extends HTMLElement {
                 border-bottom: 2px solid;
                 border-color: var(--palette-divider);
                 width: 66.66%;
-                margin-bottom: 10px;
+                margin-bottom: 0px;
             }
 
             .title-sub-title-div{

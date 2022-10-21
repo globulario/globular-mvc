@@ -3,11 +3,18 @@ import { readDir } from "globular-web-client/api";
 import * as jwt from "jwt-decode";
 import { Globular } from 'globular-web-client';
 import { ApplicationView } from './ApplicationView';
+import { getTheme } from './components/Theme';
+import { GetFileInfoRequest } from 'globular-web-client/file/file_pb';
+import { Application } from './Application';
 
 /**
  * Server side file accessor. That 
  */
 export class File extends Model {
+
+    // Must be implemented by the application level.
+    public static saveLocal: (f: File, b: Blob) => void
+
     // If the file does not really exist on the server It can be keep in that map.
     private static _local_files: any = {}
 
@@ -197,31 +204,160 @@ export class File extends Model {
     }
 
     /**
+     * Retrun the file from a given path.
+     * @param globule 
+     * @param path 
+     * @param callback 
+     * @param errorCallback 
+     */
+    static getFile(globule: Globular, path: string, callback: (f: File) => void, errorCallback: (err: string) => void) {
+        let rqst = new GetFileInfoRequest()
+        rqst.setPath(path)
+        globule.fileService.getFileInfo(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
+            .then(rsp => {
+                let f = File.fromString(rsp.getData())
+                callback(f);
+
+            })
+            .catch(e => errorCallback(e))
+    }
+
+    /**
      * Static function's
      */
     static readDir(path: string, recursive: boolean, callback: (dir: File) => void, errorCallback: (err: any) => void, globule?: Globular) {
         // So here I will get the dir of the current user...
         //let token = localStorage.getItem("user_token")
         generatePeerToken(globule.config.Mac, token => {
-            
+
             let decoded = jwt(token);
             let address = (<any>decoded).address;
             if (!globule) {
                 globule = Model.getGlobule(address)
             }
-    
+
             let id = globule.config.Domain + "@" + path
             if (File._local_files[id] != undefined) {
                 callback(File._local_files[id])
                 return
             }
-    
+
             readDir(globule, path, recursive, (data: any) => {
                 callback(File.fromObject(data))
             }, errorCallback, 80, 80, token)
         }, errorCallback)
-        
+    }
 
+    /**
+     * Save file local copy
+     */
+    keepLocalyCopy(globule: Globular) {
+        console.log("keep file localy")
+        let toast = ApplicationView.displayMessage(`
+        <style>
+            ${getTheme()}
+        </style>
+        <div id="create-file-local-copy">
+            <div>Your about to create a local copy of file </div>
+            <span style="font-style: italic;" id="file-path"></span>
+            <div style="display: flex; flex-direction: column; justify-content: center;">
+                <img style="width: 185.31px; align-self: center; padding-top: 10px; padding-bottom: 15px;" id="thumbnail"> </img>
+            </div>
+            <div>Is that what you want to do? </div>
+            <div style="display: flex; justify-content: flex-end;">
+                <paper-button id="ok-button">Ok</paper-button>
+                <paper-button id="cancel-button">Cancel</paper-button>
+            </div>
+        </div>
+        `, 60 * 1000)
+
+
+        let cancelBtn = <any>(toast.el.querySelector("#cancel-button"))
+        cancelBtn.onclick = () => {
+            toast.dismiss();
+        }
+
+        let thumbnailImg = <any>(toast.el.querySelector("#thumbnail"))
+        thumbnailImg.src = this.thumbnail
+
+        toast.el.querySelector("#file-path").innerHTML = this.name
+
+        let okBtn = <any>(toast.el.querySelector("#ok-button"))
+        okBtn.onclick = () => {
+
+            // simply download the file.
+            generatePeerToken(globule.config.Mac, (token: string) => {
+                let path = this.path
+                let url = globule.config.Protocol + "://" + globule.config.Domain
+
+                if (globule.config.Protocol == "https") {
+                    if (globule.config.PortHttps != 443)
+                        url += ":" + globule.config.PortHttps
+                } else {
+                    if (globule.config.PortHttps != 80)
+                        url += ":" + globule.config.PortHttp
+                }
+
+                path.split("/").forEach(item => {
+                    item = item.trim()
+                    if (item.length > 0) {
+                        url += "/" + encodeURIComponent(item)
+                    }
+                })
+
+                url += "?application=" + Model.application
+                if (localStorage.getItem("user_token") != undefined) {
+                    url += "&token=" + localStorage.getItem("user_token")
+                }
+
+
+                const req = new XMLHttpRequest();
+                req.timeout = 1500;
+
+                // Set the values also as parameters...
+                url += "?domain=" + globule.config.Domain
+                url += "&application=" + Model.application
+                if (localStorage.getItem("user_token") != undefined) {
+                    url += "&token=" + localStorage.getItem("user_token")
+                }
+
+                req.open("GET", url, true);
+
+                // Set the token to manage downlaod access.
+                req.setRequestHeader("token", token);
+                req.setRequestHeader("application", globule.config.Domain);
+                req.setRequestHeader("domain", globule.config.Domain);
+
+                req.responseType = "blob";
+                req.onload = (event: any) => {
+                    const blob = req.response;
+
+                    console.log("blob was download! ", blob.size)
+                    if (File.saveLocal)
+                        File.saveLocal(this, blob)
+
+                };
+
+                req.send();
+
+            }, err => ApplicationView.displayMessage(err, 3000))
+
+            toast.dismiss();
+        }
+    }
+
+    /**
+     * remove file local copy
+     */
+    removeLocalCopy() {
+        console.log("remove local copy")
+    }
+
+    /**
+     * test if a file has a local copy
+     */
+    hasLocalCopy() {
+        console.log("has local copy")
     }
 
 }

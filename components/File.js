@@ -45,6 +45,7 @@ import { setMoveable } from './moveable'
 import { setResizeable } from './rezieable'
 import { SplitView } from './Splitter'
 
+
 // keep track of shared directory
 var shared = {}
 var public_ = {}
@@ -129,6 +130,9 @@ function getTitleInfo(globule, file, callback) {
 
     globule.titleService.getFileTitles(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
         .then(rsp => {
+            if (rsp.getTitles().getTitlesList().length > 0) {
+                file.thumbnail = rsp.getTitles().getTitlesList()[0].getPoster().getContenturl()
+            }
             callback(rsp.getTitles().getTitlesList())
         })
         .catch(err => {
@@ -148,6 +152,9 @@ function getVideoInfo(globule, file, callback) {
 
     globule.titleService.getFileVideos(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
         .then(rsp => {
+            if (rsp.getVideos().getVideosList().length > 0) {
+                file.thumbnail = rsp.getVideos().getVideosList()[0].getPoster().getContenturl()
+            }
             let videos = rsp.getVideos().getVideosList()
             callback(videos)
         })
@@ -156,6 +163,18 @@ function getVideoInfo(globule, file, callback) {
         })
 }
 
+// Get the file info and hidden file if the file has hidden 
+function getFileInfo(globule, path, callback, errorCallback) {
+    let rqst = new GetFileInfoRequest()
+    rqst.setPath(path)
+    globule.fileService.getFileInfo(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
+        .then(rsp => {
+            let f = File.fromString(rsp.getData())
+            callback(f);
+
+        })
+        .catch(e => errorCallback(e))
+}
 
 function getAudioInfo(globule, file, callback) {
 
@@ -296,9 +315,9 @@ let dirs = {}
 function _readDir(path, callback, errorCallback, globule, force = false) {
     let key = getUuidByString(globule.config.Domain + "@" + path)
     if (!force || path == "/public" || path == "/shared") {
-        let dir = dirs[key] 
+        let dir = dirs[key]
         if (dir != null) {
-            if(dir.files.length > 0){
+            if (dir.files.length > 0) {
                 callback(dirs[key])
                 return
             }
@@ -310,7 +329,8 @@ function _readDir(path, callback, errorCallback, globule, force = false) {
         callback(dir)
 
         let parent = dir.path.substring(0, dir.path.lastIndexOf("/"))
-        if(public_[parent]){
+        if (public_[parent]) {
+            console.log("---------> is public: ", path)
             markAsPublic(dir, parent)
         }
 
@@ -379,8 +399,7 @@ export class FilesView extends HTMLElement {
         <globular-dropdown-menu-item  id="file-infos-menu-item" icon="icons:info" text="File Infos" action=""> </globular-dropdown-menu-item>
         <globular-dropdown-menu-item  id="title-infos-menu-item" icon="icons:info" text="Title Infos" action="" style="display: none;"> </globular-dropdown-menu-item>
         <globular-dropdown-menu-item  id="manage-acess-menu-item" icon="folder-shared" text="Manage access"action=""></globular-dropdown-menu-item>
-        <globular-dropdown-menu-item  id="keep-file-local-menu-item" icon="play-for-work" text="save file localy"action=""></globular-dropdown-menu-item>
-         <globular-dropdown-menu-item separator="true" id="video-menu-item" icon="maps:local-movies" text="Movies" action="" style="display: none;"> 
+          <globular-dropdown-menu-item separator="true" id="video-menu-item" icon="maps:local-movies" text="Movies" action="" style="display: none;"> 
             <globular-dropdown-menu>
                 <globular-dropdown-menu-item id="generate-timeline-menu-item" icon="maps:local-movies" text="generate timeline" action=""> </globular-dropdown-menu-item>
                 <globular-dropdown-menu-item id="generate-preview-menu-item" icon="maps:local-movies" text="generate preview" action=""> </globular-dropdown-menu-item>
@@ -595,7 +614,7 @@ export class FilesView extends HTMLElement {
                                             console.log("file removed")
                                         },
                                         err => { ApplicationView.displayMessage(err, 3000) }, token)
-                                }, err => { ApplicationView.displayMessage(err, 3000) }, token)
+                                }, token)
                         }, err => { ApplicationView.displayMessage(err, 3000) }, token)
                 })
 
@@ -618,7 +637,7 @@ export class FilesView extends HTMLElement {
                                                 console.log("file removed")
                                             },
                                             err => { ApplicationView.displayMessage(err, 3000) }, token)
-                                    }, err => { ApplicationView.displayMessage(err, 3000) }, token)
+                                    }, token)
                             }, err => { ApplicationView.displayMessage(err, 3000) }, token)
                     })
                 } else {
@@ -628,7 +647,7 @@ export class FilesView extends HTMLElement {
                             () => {
                                 // Now I will remove the file from the server....
 
-                            }, err => { ApplicationView.displayMessage(err, 3000) }), token
+                            },token), err => { ApplicationView.displayMessage(err, 3000) }
                     })
                 }
 
@@ -1421,6 +1440,8 @@ export class FilesView extends HTMLElement {
                             pid = rsp.getPid()
                         }
 
+                        console.log(rsp.getResult())
+
                         if (rsp.getResult().startsWith("[download] Destination:")) {
                             let fileName_ = rsp.getResult().split(":")[1].trim()
                             if (fileName.length > 0) {
@@ -1432,22 +1453,29 @@ export class FilesView extends HTMLElement {
 
                             fileName = fileName_
 
-                        } else if (rsp.getResult().startsWith("[download] 100% of ") && rsp.getResult().indexOf(" in ") != -1) {
-                            if (mp4Radio.checked) {
-                                // Now I will index the file...
-                                var xmlhttp = new XMLHttpRequest();
-                                let fileName_ = fileName
-                                xmlhttp.onreadystatechange = () => {
-                                    if (xmlhttp.status == 0) {
-                                        // give time to finish write the file on the server...
-                                        setTimeout(() => {
+                        } else if (rsp.getResult().startsWith("[download] 100% of ") && rsp.getResult().indexOf(" in ") != -1 && mp4Radio.checked) {
+
+                            // try to get the file info...
+
+
+                            // Now I will index the file...
+                            var xmlhttp = new XMLHttpRequest();
+                            let fileName_ = fileName
+
+                            let path = this.__dir__.path + "/" + fileName_
+                            let globule = this._file_explorer_.globule
+                            // get the file info...
+                            getFileInfo(globule, path,
+                                info => {
+                                    xmlhttp.onreadystatechange = () => {
+                                        if (xmlhttp.status == 0) {
 
                                             // here I must send the event to 
-                                            globule.eventHub.publish("generate_video_preview_event", this.__dir__.path + "/" + fileName_, false);
+                                            globule.eventHub.publish("generate_video_preview_event", path, false);
 
                                             // So there I will set the resource permission...
                                             let rqst = new AddResourceOwnerRqst
-                                            rqst.setPath(this.__dir__.path + "/" + fileName_)
+                                            rqst.setPath(path)
                                             rqst.setResourcetype("file")
                                             rqst.setSubject(Application.account.id + "@" + Application.account.domain)
                                             rqst.setType(SubjectType.ACCOUNT)
@@ -1455,40 +1483,48 @@ export class FilesView extends HTMLElement {
                                             globule.rbacService.addResourceOwner(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
                                                 .then(rsp => {
 
-                                                    Model.eventHub.publish("__upload_link_event__", { pid: pid, path: this.__dir__.path, infos: "", done: true, lnk: lnk }, true);
+                                                    setTimeout(() => {
+                                                        Model.eventHub.publish("__upload_link_event__", { pid: pid, path: this.__dir__.path, infos: "", done: true, lnk: lnk }, true);
+                                                    }, 2 * 1000);
+
                                                 })
                                                 .catch(err => ApplicationView.displayMessage(err, 3000))
+                                        }
+                                    };
 
-                                        }, 2 * 1000)
+
+                                    let url_ = globule.config.Protocol + "://" + globule.config.Domain + ":"
+
+                                    if (globule.config.Protocol == "https") {
+                                        url_ += globule.config.PortHttps
+                                    } else {
+                                        url_ += globule.config.PortHttp
                                     }
-                                };
 
-                                let globule = this._file_explorer_.globule
-                                let url_ = globule.config.Protocol + "://" + globule.config.Domain + ":"
+                                    url_ += "/index_video?domain=" + globule.config.Domain // application is not know at this time...
+                                    if (localStorage.getItem("user_token") != undefined) {
+                                        url_ += "&token=" + localStorage.getItem("user_token")
+                                    }
 
-                                if (globule.config.Protocol == "https") {
-                                    url_ += globule.config.PortHttps
-                                } else {
-                                    url_ += globule.config.PortHttp
-                                }
+                                    // The file path to index.
+                                    url_ += "&video-path=" + this.__dir__.path + "/" + fileName_
+                                    url_ += "&video-url=" + url;
+                                    url_ += "&index-path=" + globule.config.DataPath + "/search/videos"
 
-                                url_ += "/index_video?domain=" + globule.config.Domain // application is not know at this time...
-                                if (localStorage.getItem("user_token") != undefined) {
-                                    url_ += "&token=" + localStorage.getItem("user_token")
-                                }
+                                    xmlhttp.open("GET", url_, true);
+                                    xmlhttp.setRequestHeader("domain", globule.config.Domain);
+                                    xmlhttp.send();
 
-                                // The file path to index.
-                                url_ += "&video-path=" + this.__dir__.path + "/" + fileName_
-                                url_ += "&video-url=" + url;
-                                url_ += "&index-path=" + globule.config.DataPath + "/search/videos"
 
-                                xmlhttp.open("GET", url_, true);
-                                xmlhttp.setRequestHeader("domain", globule.config.Domain);
-                                xmlhttp.send();
-                            }
-                        } else if (rsp.getResult().startsWith("[ExtractAudio] Destination: ")) {
+                                }, err => {
+                                    err => ApplicationView.displayMessage(err, 3000)
+                                    console.log("fail to get file ", path, err)
+                                })
+
+
+                        } else if (rsp.getResult().startsWith("[ExtractAudio] Destination: ") && mp3Radio.checked) {
                             fileName = rsp.getResult().split("[ExtractAudio] Destination: ")[1].trim()
-                        } else if (rsp.getResult().startsWith("Deleting original file")) {
+                        } else if (rsp.getResult().startsWith("Deleting original file") && mp3Radio.checked) {
                             // give time to extract the
                             let globule = this._file_explorer_.globule
                             let url_ = globule.config.Protocol + "://" + globule.config.Domain + ":"
@@ -1952,6 +1988,7 @@ export class FilesIconView extends FilesView {
                 width: 24px;
             }
 
+
            
             /** Display icon div */
             .file-icon-div{
@@ -1970,6 +2007,16 @@ export class FilesIconView extends FilesView {
                 justify-content: center;
                 align-items: center;
                 position: relative;
+            }
+
+            .file-icon-div svg {
+                height: 12px;
+                fill: var(--palette-action-disabled);
+                position: absolute;
+                top: 8px;
+                left: 32px;
+                display: none;
+                visibility: hidden;
             }
 
             .file-icon-div paper-checkbox{
@@ -2241,14 +2288,16 @@ export class FilesIconView extends FilesView {
                     if (!section.querySelector("#" + id)) {
 
                         let html = `
-                    <div class="file-div" >
-                        <div class="file-icon-div" id="${id}">
-                            <paper-checkbox></paper-checkbox>
-                            <div class="menu-div"></div>
-                            <paper-ripple recenters></<paper-ripple>
+                        <div class="file-div" >
+                            <div class="file-icon-div" id="${id}">
+                                <paper-checkbox></paper-checkbox>
+                                <div class="menu-div"></div>
+                                <paper-ripple recenters></paper-ripple>
+                                <svg title="keep file local" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><path d="M32 32C32 14.3 46.3 0 64 0H320c17.7 0 32 14.3 32 32s-14.3 32-32 32H290.5l11.4 148.2c36.7 19.9 65.7 53.2 79.5 94.7l1 3c3.3 9.8 1.6 20.5-4.4 28.8s-15.7 13.3-26 13.3H32c-10.3 0-19.9-4.9-26-13.3s-7.7-19.1-4.4-28.8l1-3c13.8-41.5 42.8-74.8 79.5-94.7L93.5 64H64C46.3 64 32 49.7 32 32zM160 384h64v96c0 17.7-14.3 32-32 32s-32-14.3-32-32V384z"/></svg>
+                            </div>
+                            
                         </div>
-                    </div>
-                    `
+                        `
 
                         section.appendChild(range.createContextualFragment(html))
                         let fileIconDiv = section.querySelector(`#${id}`)
@@ -2275,10 +2324,18 @@ export class FilesIconView extends FilesView {
                             }
                         }, true, this)
 
+                        let thumbtack = fileIconDiv.querySelector("svg")
+                        thumbtack.onclick = (evt) => {
+                            evt.stopPropagation()
+                            // Do stuff here...
+                            file.keepLocalyCopy(this._file_explorer_.globule)
+                        }
+
                         // Here I will append the interation.
                         fileIconDiv.onmouseover = (evt) => {
                             evt.stopPropagation();
                             checkbox.style.display = "block"
+                            thumbtack.style.display = "block"
                             fileIconDiv.classList.add("active")
                         }
 
@@ -2293,6 +2350,13 @@ export class FilesIconView extends FilesView {
                             for (var i = 0; i < fileIconDivs.length; i++) {
                                 fileIconDivs[i].classList.remove("active")
                             }
+
+                            thumbtack.style.display = "none"
+                        }
+
+                        // video or audio file can be keep localy
+                        if (file.mime.startsWith("video") || file.mime.startsWith("audio")) {
+                            thumbtack.style.visibility = "visible"
                         }
 
                         if (fileType == "video") {
@@ -2424,6 +2488,7 @@ export class FilesIconView extends FilesView {
                                 fileNameSpan.innerHTML = file.audios[0].getTitle()
                                 if (file.audios[0].getPoster())
                                     img.src = file.audios[0].getPoster().getContenturl()
+                                file.thumbnail = img.src
                             } else {
                                 getAudioInfo(this._file_explorer_.globule, file, audios => {
                                     if (audios.length > 0) {
@@ -2431,6 +2496,7 @@ export class FilesIconView extends FilesView {
                                         fileNameSpan.innerHTML = file.audios[0].getTitle()
                                         if (file.audios[0].getPoster())
                                             img.src = file.audios[0].getPoster().getContenturl()
+                                        file.thumbnail = img.src
                                     }
                                 })
                             }
@@ -2488,6 +2554,16 @@ export class FilesIconView extends FilesView {
 
                         fileIconDiv.onmouseenter = (evt) => {
                             evt.stopPropagation();
+
+                            let thumbtacks = this.div.querySelectorAll("svg")
+                            for (var i = 0; i < thumbtacks.length; i++) {
+                                //if (!thumbtacks[i].checked) {
+                                thumbtacks[i].style.display = "none"
+                                // }
+                            }
+
+                            thumbtack.style.display = "block";
+
                             let checkboxs = this.div.querySelectorAll("paper-checkbox")
                             for (var i = 0; i < checkboxs.length; i++) {
                                 if (!checkboxs[i].checked) {
@@ -3069,6 +3145,10 @@ export class FileNavigator extends HTMLElement {
             return;
         }
 
+        if (div == undefined) {
+            return
+        }
+
         // old id value was dir.path.split("/").join("_").split("@").join("_")
         let id = "_" + getUuid(dir.path).split("-").join("_")
 
@@ -3381,7 +3461,7 @@ export class FileNavigator extends HTMLElement {
             }, err => {
                 // The file is not a directory so the file will simply put in the share.
                 if (err.message.indexOf("is a directory") != -1) {
-                    this.getFileInfo(share.getPath(),
+                    this.getFileInfo(this._file_explorer_.globule, share.getPath(),
                         (f) => {
                             if (f.path.indexOf(".hidden") != -1) {
                                 // In that case I need to append the file in a local dir named hidden.
@@ -3451,19 +3531,7 @@ export class FileNavigator extends HTMLElement {
             .catch(e => ApplicationView.displayMessage(e, 3000))
     }
 
-    // Get the file info and hidden file if the file has hidden 
-    getFileInfo(path, callback, errorCallback) {
-        let rqst = new GetFileInfoRequest()
-        rqst.setPath(path)
-        let globule = this._file_explorer_.globule
-        globule.fileService.getFileInfo(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
-            .then(rsp => {
-                let f = File.fromString(rsp.getData())
-                callback(f);
 
-            })
-            .catch(e => errorCallback(e))
-    }
 }
 
 customElements.define('globular-file-navigator', FileNavigator)
@@ -4879,6 +4947,7 @@ export class VideoPreview extends HTMLElement {
             getImage((images) => {
                 this.images = images
                 if (this.images.length > 0) {
+
                     this.firstImage = images[0]
                     this.firstImage.onload = () => {
                         this.width = this.firstImage.width;
@@ -4889,7 +4958,15 @@ export class VideoPreview extends HTMLElement {
                             this.onresize()
                         }
                     }
+
+                    // set the thumbnail if is not already set...
+                    if (!this.file.thumbnail) {
+                        this.file.thumbnail = this.firstImage.src
+                    }
+
+
                     this.container.appendChild(this.firstImage)
+
                 }
             }, this.images, [previews[0]], index, globule) // Download the first image only...
         }
