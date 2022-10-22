@@ -6,6 +6,7 @@ import { fireResize, formatBoolean } from "./utility.js";
 import { secondsToTime } from "./Audio.js";
 import { generatePeerToken, Model } from '../Model';
 import { SetVideoConversionRequest } from "globular-web-client/file/file_pb.js";
+import { File } from "../File";
 
 
  let __videos__ = {}
@@ -167,7 +168,21 @@ export class PlayList extends HTMLElement {
                         url += "&token=" + token
                     }
                     if(audio)
+                    if (File.hasLocal) {
+                        // Get the file path part from the url and test if a local copy exist, if so I will use it.
+                        let url_ = url.replace("://", "")
+                        let path = url_.substring(url_.indexOf("/"), url_.indexOf("?"))
+                        File.hasLocal(path, exists => {
+                            if (exists) {
+                                this.audioPlayer.play(path, this.globule, audio, true)
+                            } else {
+                                this.audioPlayer.play(url, this.globule, audio)
+                            }
+                        })
+                    } else {
                         this.audioPlayer.play(url, this.globule, audio)
+                    }
+                       
                 })
             }
 

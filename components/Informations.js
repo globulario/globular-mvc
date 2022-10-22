@@ -1347,7 +1347,7 @@ export class FileInfo extends HTMLElement {
         </style>
         <div id="container">
             <div>
-                <img src="${file.thumbnail}"></img>
+                <img style="max-height: 180px;" src="${file.thumbnail}"></img>
             </div>
             <div style="display: table; flex-grow: 1; padding-left: 20px;">
                 <div style="display: table-row;">

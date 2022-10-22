@@ -15,8 +15,16 @@ export class File extends Model {
     // Must be implemented by the application level.
     public static saveLocal: (f: File, b: Blob) => void
 
+    // Test if a local copy exist for the file.
+    public static hasLocal: (path: String, callback: (exists: boolean) => void) => void;
+
+    // Remove the local file copy
+    public static removeLocal: (path: String, callback:()=>void) => void;
+
     // If the file does not really exist on the server It can be keep in that map.
     private static _local_files: any = {}
+
+    private globule: Globular;
 
     private _metadata: any = {};
     public get metadata(): any {
@@ -110,6 +118,9 @@ export class File extends Model {
     /** The file  */
     constructor(name: string, path: string, local: boolean = false, globule = Model.globular) {
         super();
+
+        // keep track of the origine
+        this.globule = globule;
 
         this._name = name;
         this._path = path.split("//").join("/");
@@ -251,8 +262,9 @@ export class File extends Model {
     /**
      * Save file local copy
      */
-    keepLocalyCopy(globule: Globular) {
-        console.log("keep file localy")
+    keepLocalyCopy(callback:()=>void) {
+
+        let globule = this.globule
         let toast = ApplicationView.displayMessage(`
         <style>
             ${getTheme()}
@@ -312,7 +324,6 @@ export class File extends Model {
 
 
                 const req = new XMLHttpRequest();
-                req.timeout = 1500;
 
                 // Set the values also as parameters...
                 url += "?domain=" + globule.config.Domain
@@ -333,8 +344,10 @@ export class File extends Model {
                     const blob = req.response;
 
                     console.log("blob was download! ", blob.size)
-                    if (File.saveLocal)
+                    if (File.saveLocal){
                         File.saveLocal(this, blob)
+                        callback()
+                    }
 
                 };
 
@@ -349,15 +362,47 @@ export class File extends Model {
     /**
      * remove file local copy
      */
-    removeLocalCopy() {
-        console.log("remove local copy")
-    }
+    removeLocalCopy(callback:()=>void) {
 
-    /**
-     * test if a file has a local copy
-     */
-    hasLocalCopy() {
-        console.log("has local copy")
+        let toast = ApplicationView.displayMessage(`
+        <style>
+            ${getTheme()}
+        </style>
+        <div id="create-file-local-copy">
+            <div>Your about to remove a local copy of file </div>
+            <span style="font-style: italic;" id="file-path"></span>
+            <div style="display: flex; flex-direction: column; justify-content: center;">
+                <img style="width: 185.31px; align-self: center; padding-top: 10px; padding-bottom: 15px;" id="thumbnail"> </img>
+            </div>
+            <div>Is that what you want to do? </div>
+            <div style="display: flex; justify-content: flex-end;">
+                <paper-button id="ok-button">Ok</paper-button>
+                <paper-button id="cancel-button">Cancel</paper-button>
+            </div>
+        </div>
+        `, 60 * 1000)
+
+
+        let cancelBtn = <any>(toast.el.querySelector("#cancel-button"))
+        cancelBtn.onclick = () => {
+            toast.dismiss();
+        }
+
+        let thumbnailImg = <any>(toast.el.querySelector("#thumbnail"))
+        thumbnailImg.src = this.thumbnail
+
+        toast.el.querySelector("#file-path").innerHTML = this.name
+
+        let okBtn = <any>(toast.el.querySelector("#ok-button"))
+        okBtn.onclick = () => {
+            if(File.removeLocal){
+                File.removeLocal(this.path, ()=>{
+                    ApplicationView.displayMessage(`local copy of ${this.path} was removed`, 3000)
+                    callback()
+                })
+            }
+            toast.dismiss();
+        }
     }
 
 }

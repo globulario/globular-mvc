@@ -383,8 +383,8 @@ export class ContentManager extends HTMLElement {
 
     init() {
         this.navigation = new Navigation()
-
         this.appendChild(this.navigation)
+        
         this.navigation.init()
 
         // load style...
@@ -1301,7 +1301,9 @@ export class Navigation extends HTMLElement {
                         lnks[i].de_emphasis()
                     }
 
-                    lnks[page.index].emphasis()
+                    if (lnks.length > 0) {
+                         lnks[page.index].emphasis()
+                    }
 
                 }, true)
 
@@ -1311,6 +1313,7 @@ export class Navigation extends HTMLElement {
             ApplicationView.resume()
             pages = pages.sort((a, b) => (a.index > b.index) ? 1 : ((b.index > a.index) ? -1 : 0))
 
+            // Test if the element is in the context...
             for (var i = 0; i < pages.length; i++) {
                 let page = new WebPage(pages[i]._id, pages[i].name, pages[i].style, pages[i].script, pages[i].index, pages[i].elements,  pages[i].thumbnail)
                 let lnk = new NavigationPageLink(page)

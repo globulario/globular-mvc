@@ -7,6 +7,7 @@ import { setMoveable } from './moveable'
 import WaveSurfer from "wavesurfer.js";
 import { PlayList } from "./Playlist"
 import { fireResize } from "./utility";
+import { File } from "../File";
 
 export function secondsToTime(secs) {
     var hours = Math.floor(secs / (60 * 60));
@@ -36,7 +37,7 @@ export function playAudio(path, onplay, onclose, title, globule) {
         audioPlayer.stop()
         audioPlayer.playlist.clear()
     }
-    
+
     audioPlayer.style.zIndex = 100
 
     ApplicationView.layout.workspace().appendChild(audioPlayer)
@@ -57,7 +58,18 @@ export function playAudio(path, onplay, onclose, title, globule) {
         audioPlayer.loadPlaylist(path, globule)
         audioPlayer.showPlaylist()
     } else {
-        audioPlayer.play(path, globule, title)
+        if (File.hasLocal) {
+            File.hasLocal(path, exists => {
+                if (exists) {
+                    audioPlayer.play(path, globule, title, true)
+                } else {
+                    audioPlayer.play(path, globule, title, false)
+                }
+            })
+        } else {
+            audioPlayer.play(path, globule, title, false)
+        }
+
         audioPlayer.hidePlaylist()
     }
 
@@ -658,7 +670,8 @@ export class AudioPlayer extends HTMLElement {
             background: 'transparent',
             height: 70,
             cursorColor: "#1976d2",
-            hideScrollbar: true
+            hideScrollbar: true,
+            xhr: { cache: 'default', mode: 'no-cors' }
         });
 
         this.wavesurfer.on("seek", () => {
@@ -729,7 +742,18 @@ export class AudioPlayer extends HTMLElement {
             if (this.playlist.items.length > 1) {
                 this.playlist.playNext()
             } else if (this.loop) {
-                this.play(this.path, this._audio_.globule, this._audio_)
+                if (File.hasLocal) {
+                    File.hasLocal(this.path, exists => {
+                        if (exists) {
+                            this.play(this.path, this._audio_.globule, this._audio_, true)
+                        } else {
+                            this.play(this.path, this._audio_.globule, this._audio_, false)
+                        }
+                    })
+                } else {
+                    this.play(this.path, this._audio_.globule, this._audio_)
+                }
+
                 this._audio_
             } else {
                 this.stop()
@@ -741,7 +765,7 @@ export class AudioPlayer extends HTMLElement {
         this.trackInfo.innerHTML = `${index + 1} / ${total}`
     }
 
-    play(path, globule, audio) {
+    play(path, globule, audio, local = false) {
 
 
         if (this._audio_ && audio) {
@@ -815,11 +839,27 @@ export class AudioPlayer extends HTMLElement {
             }
         }
 
+        if (local) {
+            url = "local-media://" + path
+        }
+
         this.path = path;
         this._audio_ = audio
         this._audio_.globule = globule
         this.audio.src = url
-        this.wavesurfer.load(this.audio)
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('get', url, true);
+        
+        // Load the data directly as a Blob.
+        xhr.responseType = 'blob';
+        
+        xhr.onload = (evt) => {
+            console.log(evt)
+            this.wavesurfer.loadBlob(evt.target.response); 
+        };
+        
+        xhr.send(); 
     }
 
     // load the playlist...

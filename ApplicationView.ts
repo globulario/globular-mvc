@@ -339,9 +339,12 @@ export class ApplicationView extends View {
 
     // init listener's in the layout.
     ApplicationView.layout.init();
+
     this.login_.init();
     this.accountMenu.init();
     this.applicationsMenu.init();
+
+    ApplicationView.layout.navigation().appendChild(this.contentManager)
     this.contentManager.init();
 
     // Set the current webpage...
@@ -808,10 +811,6 @@ export class ApplicationView extends View {
         }
       }
     });
-
-    if (ApplicationView.layout.navigation()) {
-      ApplicationView.layout.navigation().appendChild(this.contentManager)
-    }
 
     window.dispatchEvent(new Event("resize"));
 

@@ -26,131 +26,131 @@ export class Layout extends HTMLElement {
     super();
     // Set the shadow dom.
     this.attachShadow({ mode: "open" });
-  }
-  // The connection callback.
-  connectedCallback() {
+
+    this.onready = null;
+
     // Innitialisation of the layout.
     this.shadowRoot.innerHTML = `
-          <style>
-            ${getTheme()}
+        <style>
+          ${getTheme()}
 
-            app-header {
-              background-color: var(--palette-primary-accent);
-              color: var(--palette-text-accent);
-              border-bottom: 1px solid var(--palette-divider);
-            }
+          app-header {
+            background-color: var(--palette-primary-accent);
+            color: var(--palette-text-accent);
+            border-bottom: 1px solid var(--palette-divider);
+          }
 
-            #content{
+          #content{
+            background-color: var(--palette-background-default);
+            color: var(--palette-text-primary);
+            heigth: 100%;
+            min-height: calc(100vh - var(--toolbar-height)-1);
+          }
+          
+          app-drawer app-toolbar{ 
               background-color: var(--palette-background-default);
+              
               color: var(--palette-text-primary);
-              heigth: 100%;
-              min-height: calc(100vh - var(--toolbar-height)-1);
-            }
-            
-            app-drawer app-toolbar{ 
-                background-color: var(--palette-background-default);
-                
-                color: var(--palette-text-primary);
-                height: 100vh;
-                display: flex;
-                align-items: center;
-                flex-direction: column;
-                overflow-y: auto;
-            }
-
-            app-drawer-layout:not([narrow]) [drawer-toggle] {
-              display: none;
-            }
-
-            ::slotted(#header-toolbar){
-              height: var(--toolbar-height);
-            }
-           
-            #main-title {
-              display: flex;
-              width: 100%;
-              align-items: center;
-            }
-
-            #waiting_div_text div{
-              text-align: center;
-            }
-
-            #menu-btn{
-              min-width: 40px;
-              --iron-icon-fill-color: var(--palette-text-accent);
-            }
-
-            ::slotted(.application_icon) {
-              width: 24px;
-              height: 24px;
-            }
-
-            ::slotted(#toolbar) {
-              display: flex;
-              align-self: center;
-              justify-self: flex-end;
-              justify-content: flex-end;
-              color: var(--palette-text-accent);
-            }
-
-            ::slotted(#navigation) {
-              width: 100%;
-              color: var(--palette-text-accent);
-            }
-            
-            ::slotted(#title) {
+              height: 100vh;
               display: flex;
               align-items: center;
-              font-family: var(--font-familly);
-              font-weight: 400;
-              line-height: 1.5;
-              text-transform: uppercase;
-              color: var(--palette-text-accent);
-            }
-            
-            ::slotted(#title:hover) {
-              cursor: pointer;
-            }
+              flex-direction: column;
+              overflow-y: auto;
+          }
 
-            ::slotted(#workspace) {
-              width: 100%;
-            }
+          app-drawer-layout:not([narrow]) [drawer-toggle] {
+            display: none;
+          }
+
+          ::slotted(#header-toolbar){
+            height: var(--toolbar-height);
+          }
+         
+          #main-title {
+            display: flex;
+            width: 100%;
+            align-items: center;
+          }
+
+          #waiting_div_text div{
+            text-align: center;
+          }
+
+          #menu-btn{
+            min-width: 40px;
+            --iron-icon-fill-color: var(--palette-text-accent);
+          }
+
+          ::slotted(.application_icon) {
+            width: 24px;
+            height: 24px;
+          }
+
+          ::slotted(#toolbar) {
+            display: flex;
+            align-self: center;
+            justify-self: flex-end;
+            justify-content: flex-end;
+            color: var(--palette-text-accent);
+          }
+
+          ::slotted(#navigation) {
+            width: 100%;
+            color: var(--palette-text-accent);
+          }
+          
+          ::slotted(#title) {
+            display: flex;
+            align-items: center;
+            font-family: var(--font-familly);
+            font-weight: 400;
+            line-height: 1.5;
+            text-transform: uppercase;
+            color: var(--palette-text-accent);
+          }
+          
+          ::slotted(#title:hover) {
+            cursor: pointer;
+          }
+
+          ::slotted(#workspace) {
+            width: 100%;
+          }
+  
+          ::slotted(paper-card){
+            background-color: var(--palette-background-paper);
+            color: var(--palette-text-primary);
+          }
+
+
+        </style>
     
-            ::slotted(paper-card){
-              background-color: var(--palette-background-paper);
-              color: var(--palette-text-primary);
-            }
-
-
-          </style>
-      
-          <app-drawer-layout id="layout" fullbleed force-narrow>
-            <app-drawer id="app-drawer" slot="drawer">
-              <app-toolbar id="app-toolbar-side-menu">
-                  <slot id="side-menu" name="side-menu"></slot>
+        <app-drawer-layout id="layout" fullbleed force-narrow>
+          <app-drawer id="app-drawer" slot="drawer">
+            <app-toolbar id="app-toolbar-side-menu">
+                <slot id="side-menu" name="side-menu"></slot>
+            </app-toolbar>
+          </app-drawer>
+          <app-header-layout>
+            <app-header slot="header" fixed effects="waterfall">
+              <app-toolbar id="header-toolbar">
+                <paper-icon-button id="menu-btn" icon="menu" drawer-toggle>
+                  <paper-ripple class="circle" recenters></paper-ripple>
+                </paper-icon-button>
+                <div id="main-title">
+                  <slot id="title" name="title"></slot>
+                  <slot id="navigation" name="navigation"></slot>
+                  <slot id="toolbar" name="toolbar">
+                  </slot>
+                </div>
               </app-toolbar>
-            </app-drawer>
-            <app-header-layout>
-              <app-header slot="header" fixed effects="waterfall">
-                <app-toolbar id="header-toolbar">
-                  <paper-icon-button id="menu-btn" icon="menu" drawer-toggle>
-                    <paper-ripple class="circle" recenters></paper-ripple>
-                  </paper-icon-button>
-                  <div id="main-title">
-                    <slot id="title" name="title"></slot>
-                    <slot id="navigation" name="navigation"></slot>
-                    <slot id="toolbar" name="toolbar">
-                    </slot>
-                  </div>
-                </app-toolbar>
-              </app-header>
-              <div id="content">
-                <slot id="workspace" name="workspace"></slot>
-              </div>
-            </app-header-layout>
-          </app-drawer-layout>
-      `;
+            </app-header>
+            <div id="content">
+              <slot id="workspace" name="workspace"></slot>
+            </div>
+          </app-header-layout>
+        </app-drawer-layout>
+    `;
     // keep reference of left
     this.appDrawer = this.shadowRoot.getElementById("app-drawer");
     this.appToolbar = this.shadowRoot.getElementById("app-toolbar-side-menu");
@@ -212,7 +212,7 @@ export class Layout extends HTMLElement {
         sideMenu_.style.marginRight = "40px";
 
         let title = this.querySelector("#title")
-        if(mobileCheck()){
+        if (mobileCheck()) {
           title.style.flexGrow = "1";
         }
         // put the navigation in the the side menu...
@@ -223,8 +223,17 @@ export class Layout extends HTMLElement {
           contentManager.setVertical()
       }
 
-      
+
     });
+
+  }
+  // The connection callback.
+  connectedCallback() {
+
+    if (this.onready) {
+
+      this.onready()
+    }
 
     window.dispatchEvent(new Event("resize"));
   }
@@ -298,7 +307,9 @@ export class Layout extends HTMLElement {
    * The navigation div
    */
   navigation() {
-    return this.querySelector(`[slot="navigation"]`)
+    
+    let navigation = this.querySelector(`#navigation`)
+    return navigation
   }
 
   /**

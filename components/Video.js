@@ -9,6 +9,7 @@ import { applicationView, ApplicationView } from "../ApplicationView";
 import { GetFileTitlesRequest, GetFileVideosRequest } from "globular-web-client/title/title_pb";
 import { setMoveable } from './moveable'
 import { setResizeable } from './rezieable'
+import { File } from "../File"
 
 Object.defineProperty(HTMLMediaElement.prototype, 'playing', {
     get: function () {
@@ -134,7 +135,7 @@ export class VideoPlayer extends HTMLElement {
 
         if (localStorage.getItem("__video_player_position__")) {
             let position = JSON.parse(localStorage.getItem("__video_player_position__"))
-            if(position.top < offsetTop){
+            if (position.top < offsetTop) {
                 position.top = offsetTop
             }
             container.style.top = position.top + "px"
@@ -154,7 +155,7 @@ export class VideoPlayer extends HTMLElement {
             localStorage.setItem("__video_player_dimension__", JSON.stringify({ width: width, height: height }))
             container.style.height = "auto"
         })
-        
+
         container.resizeHeightDiv.style.display = "none"
 
 
@@ -235,7 +236,18 @@ export class VideoPlayer extends HTMLElement {
                     throw new Error(response.status)
 
                 } else {
-                    this.play_(path, globule)
+                    if (File.hasLocal) {
+                        File.hasLocal(path, exists=>{
+                            if(exists){
+                                // local-media
+                                this.play_(path, globule, true)
+                            }else{
+                                this.play_(path, globule, false)
+                            }
+                        })
+                    } else {
+                        this.play_(path, globule, false)
+                    }
                 }
             })
             .catch((error) => {
@@ -246,7 +258,7 @@ export class VideoPlayer extends HTMLElement {
 
     }
 
-    play_(path, globule) {
+    play_(path, globule, local=false) {
 
         this.style.zIndex = 100
         // Set the title...
@@ -345,11 +357,11 @@ export class VideoPlayer extends HTMLElement {
         }
 
         thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/__timeline__/thumbnails.vtt"
-        //thumbnailPath = encodeURIComponent(thumbnailPath);
 
         // set the complete url.
         // Get image from the globule.
         let url = globule.config.Protocol + "://" + globule.config.Domain
+
         if (window.location != globule.config.Domain) {
             if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
                 url = globule.config.Protocol + "://" + window.location.host
@@ -393,6 +405,11 @@ export class VideoPlayer extends HTMLElement {
         if (localStorage.getItem("user_token") != undefined) {
             url += "&token=" + localStorage.getItem("user_token")
         }
+
+        if(local){
+            url = "local-media://" + path
+        }
+
         // Set the path and play.
         this.video.src = url
 

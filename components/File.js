@@ -647,7 +647,7 @@ export class FilesView extends HTMLElement {
                             () => {
                                 // Now I will remove the file from the server....
 
-                            },token), err => { ApplicationView.displayMessage(err, 3000) }
+                            }, token), err => { ApplicationView.displayMessage(err, 3000) }
                     })
                 }
 
@@ -2328,7 +2328,23 @@ export class FilesIconView extends FilesView {
                         thumbtack.onclick = (evt) => {
                             evt.stopPropagation()
                             // Do stuff here...
-                            file.keepLocalyCopy(this._file_explorer_.globule)
+                            File.hasLocal(file.path, exists=>{
+                                if(exists){
+                                    file.removeLocalCopy(()=>{
+                                        thumbtack.style.fill = ""
+                                        thumbtack.style.display = "none";
+                                        thumbtack.style.left = ""
+                                    })
+                                }else{
+                                    file.keepLocalyCopy(()=>{
+                                        thumbtack.style.display = "block";
+                                        thumbtack.style.left = "8px"
+                                        thumbtack.style.fill = "var(--palette-primary-main)"
+                                    })
+                                }
+                            })
+
+                            
                         }
 
                         // Here I will append the interation.
@@ -2336,6 +2352,14 @@ export class FilesIconView extends FilesView {
                             evt.stopPropagation();
                             checkbox.style.display = "block"
                             thumbtack.style.display = "block"
+                            if (File.hasLocal)
+                                File.hasLocal(file.path, exist => {
+                                    if (exist) {
+                                        thumbtack.style.display = "block";
+                                        thumbtack.style.left = ""
+                                        thumbtack.style.fill = "var(--palette-primary-main)"
+                                    }
+                                })
                             fileIconDiv.classList.add("active")
                         }
 
@@ -2352,11 +2376,31 @@ export class FilesIconView extends FilesView {
                             }
 
                             thumbtack.style.display = "none"
+
+                            if (File.hasLocal)
+                                File.hasLocal(file.path, exist => {
+                                    if (exist) {
+                                        thumbtack.style.display = "block";
+                                        thumbtack.style.left = "8px"
+                                        thumbtack.style.fill = "var(--palette-primary-main)"
+                                    }
+                                })
                         }
 
                         // video or audio file can be keep localy
-                        if (file.mime.startsWith("video") || file.mime.startsWith("audio")) {
-                            thumbtack.style.visibility = "visible"
+                        if ((file.mime.startsWith("video") || file.mime.startsWith("audio")) && file.mime != "video/hls-stream") {
+
+
+                            if (File.hasLocal) {
+                                thumbtack.style.visibility = "visible"
+                                File.hasLocal(file.path, exist => {
+                                    if (exist) {
+                                        thumbtack.style.display = "block";
+                                        thumbtack.style.left = "8px"
+                                        thumbtack.style.fill = "var(--palette-primary-main)"
+                                    }
+                                })
+                            }
                         }
 
                         if (fileType == "video") {
@@ -2555,14 +2599,28 @@ export class FilesIconView extends FilesView {
                         fileIconDiv.onmouseenter = (evt) => {
                             evt.stopPropagation();
 
+
                             let thumbtacks = this.div.querySelectorAll("svg")
                             for (var i = 0; i < thumbtacks.length; i++) {
-                                //if (!thumbtacks[i].checked) {
-                                thumbtacks[i].style.display = "none"
-                                // }
+                                if (thumbtacks[i].style.fill == "var(--palette-primary-main)"){
+                                    thumbtacks[i].style.left = "8px"
+                                }else{
+                                    thumbtacks[i].style.display = "none"
+                                    thumbtacks[i].style.left = ""
+                                }
                             }
 
-                            thumbtack.style.display = "block";
+            
+                            if (File.hasLocal){
+                                thumbtack.style.display = "block";
+                                File.hasLocal(file.path, exist => {
+                                    if (exist) {
+                                        thumbtack.style.display = "block";
+                                        thumbtack.style.left = ""
+                                        thumbtack.style.fill = "var(--palette-primary-main)"
+                                    }
+                                })
+                            }
 
                             let checkboxs = this.div.querySelectorAll("paper-checkbox")
                             for (var i = 0; i < checkboxs.length; i++) {
