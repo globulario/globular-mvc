@@ -1149,6 +1149,8 @@ export class ContactCard extends HTMLElement {
             return
         }
 
+        console.log(this.contact)
+
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>

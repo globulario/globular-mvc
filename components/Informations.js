@@ -164,10 +164,12 @@ function getHiddenFiles(path, callback, globule) {
 
 // Create the video preview...
 function getVideoPreview(parent, path, name, callback, globule) {
-    File.getFile(globule, path, file => {
+    let h = 85;
+    let w = 128;
+
+    File.getFile(globule, path, w, h, file => {
         getHiddenFiles(path, previewDir => {
-            let h = 85;
-            let w = 128;
+            
             let files = []
             if (previewDir) {
                 if (previewDir._files) {

@@ -5,7 +5,7 @@ import { Application } from "../Application";
 import Plyr from 'plyr';
 import "./plyr.css"
 import Hls from "hls.js";
-import { applicationView, ApplicationView } from "../ApplicationView";
+import { ApplicationView } from "../ApplicationView";
 import { GetFileTitlesRequest, GetFileVideosRequest } from "globular-web-client/title/title_pb";
 import { setMoveable } from './moveable'
 import { setResizeable } from './rezieable'

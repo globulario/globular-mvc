@@ -19,7 +19,7 @@ export class File extends Model {
     public static hasLocal: (path: String, callback: (exists: boolean) => void) => void;
 
     // Remove the local file copy
-    public static removeLocal: (path: String, callback:()=>void) => void;
+    public static removeLocal: (path: String, callback: () => void) => void;
 
     // If the file does not really exist on the server It can be keep in that map.
     private static _local_files: any = {}
@@ -221,16 +221,24 @@ export class File extends Model {
      * @param callback 
      * @param errorCallback 
      */
-    static getFile(globule: Globular, path: string, callback: (f: File) => void, errorCallback: (err: string) => void) {
-        let rqst = new GetFileInfoRequest()
-        rqst.setPath(path)
-        globule.fileService.getFileInfo(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
-            .then(rsp => {
-                let f = File.fromString(rsp.getData())
-                callback(f);
+    static getFile(globule: Globular, path: string, thumbnailWith: number, thumbnailHeight: number, callback: (f: File) => void, errorCallback: (err: string) => void) {
 
-            })
-            .catch(e => errorCallback(e))
+        generatePeerToken(globule.config.Mac, token => {
+
+            let rqst = new GetFileInfoRequest()
+            rqst.setPath(path)
+            rqst.setThumnailheight(thumbnailHeight)
+            rqst.setThumnailwidth(thumbnailWith)
+            globule.fileService.getFileInfo(rqst, { application: Application.application, domain: globule.config.Domain, token: token })
+                .then(rsp => {
+                    let f = File.fromString(rsp.getData())
+                    callback(f);
+
+                })
+                .catch(e => {
+                    console.log(`failt to get file ${path} info with error:`, e)
+                    errorCallback(e)})
+        }, errorCallback)
     }
 
     /**
@@ -262,7 +270,7 @@ export class File extends Model {
     /**
      * Save file local copy
      */
-    keepLocalyCopy(callback:()=>void) {
+    keepLocalyCopy(callback: () => void) {
 
         let globule = this.globule
         let toast = ApplicationView.displayMessage(`
@@ -344,7 +352,7 @@ export class File extends Model {
                     const blob = req.response;
 
                     console.log("blob was download! ", blob.size)
-                    if (File.saveLocal){
+                    if (File.saveLocal) {
                         File.saveLocal(this, blob)
                         callback()
                     }
@@ -362,7 +370,7 @@ export class File extends Model {
     /**
      * remove file local copy
      */
-    removeLocalCopy(callback:()=>void) {
+    removeLocalCopy(callback: () => void) {
 
         let toast = ApplicationView.displayMessage(`
         <style>
@@ -395,8 +403,8 @@ export class File extends Model {
 
         let okBtn = <any>(toast.el.querySelector("#ok-button"))
         okBtn.onclick = () => {
-            if(File.removeLocal){
-                File.removeLocal(this.path, ()=>{
+            if (File.removeLocal) {
+                File.removeLocal(this.path, () => {
                     ApplicationView.displayMessage(`local copy of ${this.path} was removed`, 3000)
                     callback()
                 })

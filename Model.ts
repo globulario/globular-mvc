@@ -237,11 +237,11 @@ export class Model {
                         }
 
 
-                        let url = Model._globular.config.Protocol + "//" + peer.getDomain() + ":" + port + "/config"
+                        let url = Model._globular.config.Protocol + "://" + peer.getDomain() + ":" + port + "/config"
 
                         let globule = new GlobularWebClient.Globular(url, () => {
                             // append the globule to the list.
-                            Model.globules.set(Model._globular.config.Protocol + "//" + peer.getDomain() + ":" + port, globule)
+                            Model.globules.set(Model._globular.config.Protocol + "://" + peer.getDomain() + ":" + port, globule)
                             Model.globules.set(url, globule)
                             Model.globules.set(peer.getDomain(), globule)
                             Model.globules.set(peer.getMac(), globule)

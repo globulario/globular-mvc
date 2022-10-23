@@ -29,7 +29,7 @@ import { v4 as uuidv4 } from "uuid";
 
 // Menu to set action on files.
 import { DropdownMenu } from './dropdownMenu.js';
-import { AddPublicDirRequest, ConvertVideoToHlsRequest, ConvertVideoToMpeg4H264Request, CopyRequest, CreateDirRequest, CreateVideoPreviewRequest, CreateVideoTimeLineRequest, GeneratePlaylistRequest, GetFileInfoRequest, GetPublicDirsRequest, MoveRequest, RemovePublicDirRequest } from 'globular-web-client/file/file_pb';
+import { AddPublicDirRequest, ConvertVideoToHlsRequest, ConvertVideoToMpeg4H264Request, CopyRequest, CreateDirRequest, CreateVideoPreviewRequest, CreateVideoTimeLineRequest, GeneratePlaylistRequest, GetPublicDirsRequest, MoveRequest, RemovePublicDirRequest } from 'globular-web-client/file/file_pb';
 import { createArchive, deleteDir, deleteFile, downloadFileHttp, renameFile, uploadFiles } from 'globular-web-client/api';
 import { ApplicationView } from '../ApplicationView';
 import { Application } from '../Application';
@@ -161,19 +161,6 @@ function getVideoInfo(globule, file, callback) {
         .catch(err => {
             callback([])
         })
-}
-
-// Get the file info and hidden file if the file has hidden 
-function getFileInfo(globule, path, callback, errorCallback) {
-    let rqst = new GetFileInfoRequest()
-    rqst.setPath(path)
-    globule.fileService.getFileInfo(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
-        .then(rsp => {
-            let f = File.fromString(rsp.getData())
-            callback(f);
-
-        })
-        .catch(e => errorCallback(e))
 }
 
 function getAudioInfo(globule, file, callback) {
@@ -1465,7 +1452,7 @@ export class FilesView extends HTMLElement {
                             let path = this.__dir__.path + "/" + fileName_
                             let globule = this._file_explorer_.globule
                             // get the file info...
-                            getFileInfo(globule, path,
+                            File.getFile(globule, path, 128, 80,
                                 info => {
                                     xmlhttp.onreadystatechange = () => {
                                         if (xmlhttp.status == 0) {
@@ -3519,7 +3506,7 @@ export class FileNavigator extends HTMLElement {
             }, err => {
                 // The file is not a directory so the file will simply put in the share.
                 if (err.message.indexOf("is a directory") != -1) {
-                    this.getFileInfo(this._file_explorer_.globule, share.getPath(),
+                    File.getFile(this._file_explorer_.globule, share.getPath(), 128, 85,
                         (f) => {
                             if (f.path.indexOf(".hidden") != -1) {
                                 // In that case I need to append the file in a local dir named hidden.

@@ -1,6 +1,7 @@
 
 import { GetFileInfoRequest, RunCmdRequest } from "globular-web-client/admin/admin_pb";
 import { Application } from "../Application";
+import { File } from "../File";
 import { getTheme } from "./Theme";
 
 
@@ -167,7 +168,7 @@ export class Terminal extends HTMLElement {
             this.style.left = ""
             this.shadowRoot.querySelector("#container").style.height = "50vh "
             document.querySelector("globular-console").style.display = ""
-            if(this.onexitfullscreen){
+            if (this.onexitfullscreen) {
                 this.onexitfullscreen()
             }
         }
@@ -180,8 +181,8 @@ export class Terminal extends HTMLElement {
             this.style.left = "0px"
             this.enterFullScreenBtn.style.display = "none"
             this.exitFullScreenBtn.style.display = "block"
-            
-            if(this.onenterfullscreen){
+
+            if (this.onenterfullscreen) {
                 this.onenterfullscreen()
             }
         }
@@ -220,13 +221,9 @@ export class Terminal extends HTMLElement {
      * @param {*} onErrorCallback 
      */
     getFiles(path, callback, errorCallback) {
-        const rqst = new GetFileInfoRequest();
-        rqst.setPath(path);
-        Application.globular.adminService.getFileInfo(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
-            .then(rsp => {
-                callback(rsp.getInfo())
-            })
-            .catch(errorCallback)
+        File.getFile(Application.globular, path, 128, 85, f => {
+            callback(f)
+        }, errorCallback)
     }
 
     /**
@@ -287,7 +284,7 @@ export class Terminal extends HTMLElement {
                             }
                         }
                     }
-                    if(path.length == 0){
+                    if (path.length == 0) {
                         path = "/"
                     }
                 }

@@ -14,7 +14,6 @@ import { Group } from "../Group";
 import '@polymer/iron-icons/av-icons'
 import '@polymer/iron-icons/editor-icons'
 import { GetApplicationsRqst, GetPackagesDescriptorRequest, Organization, RejectPeerRqst } from "globular-web-client/resource/resource_pb";
-import { GetFileInfoRequest } from "globular-web-client/file/file_pb";
 import { File } from "../File";
 import { ApplicationInfo, BlogPostInfo, ConversationInfo, DomainInfo, FileInfo, GroupInfo, OrganizationInfo, PackageInfo, RoleInfo, WebpageInfo } from "./Informations";
 import * as getUuidByString from "uuid-by-string";
@@ -1419,36 +1418,26 @@ function getConversation(id, callback, errorCallback) {
  * Return file info.
  */
 function getFile(path, callback, errorCallback, globule) {
-    let rqst = new GetFileInfoRequest
-    rqst.setPath(path)
-    rqst.setThumnailheight(80)
-    rqst.setThumnailwidth(128)
-    if (!globule) {
-        globule = Model.globular
-    }
 
-    globule.fileService.getFileInfo(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
-        .then(rsp => {
-            let f = File.fromString(rsp.getData())
-            // the path that point to the resource
-            f.getPath = () => {
-                return f.path
-            }
+    File.getFile(globule, share.getPath(), 128, 85, f=>{
 
-            // The brief description.
-            f.getHeaderText = () => {
-                return f.path
-            }
+        // the path that point to the resource
+        f.getPath = () => {
+            return f.path
+        }
 
-            // return file information panel...
-            f.getInfo = () => {
-                return new FileInfo(f)
-            }
+        // The brief description.
+        f.getHeaderText = () => {
+            return f.path
+        }
 
-            callback(f);
+        // return file information panel...
+        f.getInfo = () => {
+            return new FileInfo(f)
+        }
 
-        })
-        .catch(errorCallback)
+        callback(f);
+    }, errorCallback)
 }
 
 /**
