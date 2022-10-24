@@ -175,7 +175,7 @@ function playTitleListener(player, title, indexPath, globule) {
         return
     }
 
-    searchEpisodes(title.getSerie(), indexPath, (episodes) => {
+    searchEpisodes(globule, title.serie, indexPath, (episodes) => {
         let index = -1;
         episodes.forEach((e, i) => {
             if (e.getId() == title.getId()) {
@@ -1073,7 +1073,7 @@ export class SearchResultsPage extends HTMLElement {
                     flipCard = new SearchFlipCard();
                     flipCard.id = id
                     flipCard.slot = "mosaic_" + context
-                    flipCard.setTitle(title, hit.globule)
+                    flipCard.setTitle(title)
                     this.appendChild(flipCard)
                 }
                 return flipCard
@@ -1340,7 +1340,7 @@ export class SearchAudioCard extends HTMLElement {
             <span id="artist"></span>
             <div style="display: flex; position: absolute; background-color: black; top: 0px; left: 0px; right: 0px; padding: 5px;">
                 <span id="album" style="flex-grow: 1;"></span> 
-                <paper-icon-button id="play-album-btn" stlye="color: white;" title="play album" icon="av:play-arrow"></paper-icon-button> 
+                <paper-icon-button id="play-album-btn" style=" --iron-icon-fill-color: white;" title="play album" icon="av:play-arrow"></paper-icon-button> 
             </div>
             <div style="display: flex; justify-items: center;">
                 <span id="title" style="flex-grow: 1;"></span>
@@ -1858,7 +1858,9 @@ export class SearchFlipCard extends HTMLElement {
         `
     }
 
-    setTitle(title, globule) {
+    setTitle(title) {
+
+        let globule = title.globule
 
         // so here i will use the class list to set genre and type...
         this.classList.add("filterable")
@@ -1876,7 +1878,7 @@ export class SearchFlipCard extends HTMLElement {
 
         // test create offer...
         title.globule = globule
-        this.shadowRoot.querySelector(`#search-title`).setTitle(title, globule)
+        this.shadowRoot.querySelector(`#search-title`).setTitle(title)
         if (title.getType() == "TVEpisode") {
             // So here I will get the series info If I can found it...
             let seriesInfos = this.shadowRoot.querySelector(`#hit-div-mosaic-episode-name`)
@@ -2006,11 +2008,8 @@ export class SearchTitleDetail extends HTMLElement {
     }
 
 
-    setTitle(title, globule) {
-        if (!globule) {
-            globule = Model.globular
-        }
-
+    setTitle(title) {
+        let globule = title.globule;
         // Display the episode informations.
         title.onLoadEpisodes = (episodes) => {
             if (this.shadowRoot.querySelector("#loading-episodes-infos").style.display == "none") {
@@ -2033,6 +2032,7 @@ export class SearchTitleDetail extends HTMLElement {
 
 
             let setEpisodeOption = (episode) => {
+                console.log("globule: ", globule.config.Domain)
                 let rqst = new GetTitleFilesRequest
                 rqst.setTitleid(episode.getId())
                 let indexPath = globule.config.DataPath + "/search/titles"
@@ -2044,7 +2044,7 @@ export class SearchTitleDetail extends HTMLElement {
                             let path = rsp.getFilepathsList().pop()
                             let url = globule.config.Protocol + "://" + globule.config.Domain
                             if (window.location != globule.config.Domain != -1) {
-                                if (globule.config.AlternateDomains.indexOf(window.location.host)) {
+                                if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
                                     url = globule.config.Protocol + "://" + window.location.host
                                 }
                             }

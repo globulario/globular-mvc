@@ -143,37 +143,18 @@ export class VideoConversation extends HTMLElement {
         this.peersVideo = this.shadowRoot.querySelector(".peers-video")
         this.startShareScreenBtn = this.shadowRoot.querySelector("#start-share-screen")
 
+        container.resizeHeightDiv.style.display = "none"
 
-        if (localStorage.getItem("__webrtc_panel_position__")) {
-            let position = JSON.parse(localStorage.getItem("__webrtc_panel_position__"))
-            if (position.top < offsetTop) {
-                position.top = offsetTop
-            }
-            container.style.top = position.top + "px"
-            container.style.left = position.left + "px"
-        } else {
-            container.style.left = ((document.body.offsetWidth - 720) / 2) + "px"
-            container.style.top = "80px"
-        }
-
-        if (localStorage.getItem("__webrtc_panel_position__")) {
-            let dimension = JSON.parse(localStorage.getItem("__webrtc_panel_position__"))
-            container.style.width = dimension.width + "px"
-            container.style.height = "auto"
-        }
+        container.name = "webrtc_window"
 
         setResizeable(container, (width, height) => {
             localStorage.setItem("__webrtc_panel_position__", JSON.stringify({ width: width, height: height }))
             container.style.height = "auto"
         })
 
-        container.resizeHeightDiv.style.display = "none"
-
-
         setMoveable(this.shadowRoot.querySelector(".header"), container, (left, top) => {
-            localStorage.setItem("__webrtc_panel_position__", JSON.stringify({ top: top, left: left }))
+            /** */
         }, this, offsetTop)
-
 
         // This will replace all sender video withe the screen capture.
         this.startShareScreenBtn.onclick = () => {

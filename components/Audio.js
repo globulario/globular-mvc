@@ -420,25 +420,14 @@ export class AudioPlayer extends HTMLElement {
             offsetTop = 60
         }
 
-        if (localStorage.getItem("__audio_player_position__")) {
-            let position = JSON.parse(localStorage.getItem("__audio_player_position__"))
-            if (position.top < offsetTop) {
-                position.top = offsetTop
-            }
-            container.style.top = position.top + "px"
-            container.style.left = position.left + "px"
-        } else {
-            container.style.left = ((document.body.offsetWidth - 720) / 2) + "px"
-            container.style.top = "80px"
-        }
-
         // toggle full screen when the user double click on the header.
         this.shadowRoot.querySelector(".header").ondblclick = () => {
 
         }
 
+        container.name = "audio_player"
         setMoveable(this.shadowRoot.querySelector(".header"), container, (left, top) => {
-            localStorage.setItem("__audio_player_position__", JSON.stringify({ top: top, left: left }))
+           /** */
         }, this, offsetTop)
 
         this.shadowRoot.querySelector("#video-close-btn").onclick = () => {

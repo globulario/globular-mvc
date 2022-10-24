@@ -427,8 +427,8 @@ export class PlayListItem extends HTMLElement {
         </style>
 
         <div class="cell">
-            <iron-icon id="play-arrow" title="Play" style="visibility: hidden;" icon="av:play-arrow"></iron-icon>
-            <iron-icon id="pause" title="Pause" style="visibility: hidden; display: none;" icon="av:pause"></iron-icon>
+            <iron-icon id="play-arrow" style="--iron-icon-fill-color: white;" title="Play" style="visibility: hidden;" icon="av:play-arrow"></iron-icon>
+            <iron-icon id="pause" style="--iron-icon-fill-color: white;" title="Pause" style="visibility: hidden; display: none;" icon="av:pause"></iron-icon>
         </div>
         <div class="cell">
             <img id="title-image"></img>

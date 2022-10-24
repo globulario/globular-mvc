@@ -3860,22 +3860,10 @@ export class FileExplorer extends HTMLElement {
             offsetTop = 60
         }
 
-        if (localStorage.getItem("__file_explorer_position__")) {
-            let position = JSON.parse(localStorage.getItem("__file_explorer_position__"))
-            if (!position) {
-                position = { top: 0, left: 0 }
-            }
-            if (position.top < offsetTop) {
-                position.top = offsetTop
-            }
-            this.style.top = position.top + "px"
-            this.style.left = position.left + "px"
-        } else {
-            this.style.top = offsetTop + "px"
-        }
+        this.name = "file_explorer"
 
         setMoveable(this.shadowRoot.querySelector(".card-header"), this, (left, top) => {
-            localStorage.setItem("__file_explorer_position__", JSON.stringify({ top: top, left: left }))
+            /** */
         }, this, offsetTop)
 
         if (localStorage.getItem("__file_explorer_dimension__")) {
@@ -3886,7 +3874,8 @@ export class FileExplorer extends HTMLElement {
             this.shadowRoot.querySelector("#file-explorer-box").style.width = dimension.width + "px"
             this.shadowRoot.querySelector("#file-explorer-box").style.height = dimension.height + "px"
         }
-
+        
+        this.shadowRoot.querySelector("#file-explorer-box").name = "file_explorer"
         setResizeable(this.shadowRoot.querySelector("#file-explorer-box"), (width, height) => {
             localStorage.setItem("__file_explorer_dimension__", JSON.stringify({ width: width, height: height }))
         })

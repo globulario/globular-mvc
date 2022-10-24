@@ -5,6 +5,13 @@ import { fireResize } from "./utility";
  */
 export function setResizeable(div, onresize, side, zIndex) {
 
+    let id = div.name
+    if (localStorage.getItem(`__${id}_dimension__`)) {
+        let dimension = JSON.parse(localStorage.getItem(`__${id}_dimension__`))
+        div.style.width = dimension.width + "px"
+        div.style.height = dimension.height + "px"
+    }
+
     // resizeable by right side...
     if(side == undefined){
         side = "right"

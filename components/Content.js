@@ -3128,29 +3128,11 @@ export class CodeEditor extends HTMLElement {
             offsetTop = 60
         }
 
-        if (localStorage.getItem("__code_editor_position__")) {
-            let position = JSON.parse(localStorage.getItem("__code_editor_position__"))
-            if (position.top < offsetTop) {
-                position.top = offsetTop
-            }
-            container.style.top = position.top + "px"
-            container.style.left = position.left + "px"
-        } else {
-            container.style.left = ((document.body.offsetWidth - 720) / 2) + "px"
-            container.style.top = "80px"
-        }
-
+        container.name = "code_editor"
 
         setMoveable(this.shadowRoot.querySelector(".header"), container, (left, top) => {
-            localStorage.setItem("__code_editor_position__", JSON.stringify({ top: top, left: left }))
+            /** */
         }, this, offsetTop)
-
-
-        if (localStorage.getItem("__code_editor_dimension__")) {
-            let dimension = JSON.parse(localStorage.getItem("__code_editor_dimension__"))
-            container.style.width = dimension.width + "px"
-            container.style.height = dimension.height + "px"
-        }
 
         // Set resizable properties...
         setResizeable(container, (width, height) => {

@@ -345,7 +345,7 @@ function __getTitleFiles__(globule, indexPath, title, parent, callback) {
         .catch(err => { callback([]) })
 }
 
-export function searchEpisodes(serie, indexPath, callback) {
+export function searchEpisodes(globule, serie, indexPath, callback) {
 
     // This is a simple test...
     let rqst = new SearchTitlesRequest
@@ -354,7 +354,7 @@ export function searchEpisodes(serie, indexPath, callback) {
     rqst.setOffset(0)
     rqst.setSize(1000)
     let episodes = []
-    let stream = Model.globular.titleService.searchTitles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+    let stream = globule.titleService.searchTitles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
     stream.on("data", (rsp) => {
         if (rsp.hasHit()) {
             let hit = rsp.getHit()
@@ -393,7 +393,7 @@ export function GetEpisodes(indexPath, title, callback) {
         callback(title.__episodes__)
         return
     }
-    searchEpisodes(title.getId(), indexPath, episodes => {
+    searchEpisodes(title.globule, title.getId(), indexPath, episodes => {
         title.__episodes__ = episodes
         callback(title.__episodes__)
     })

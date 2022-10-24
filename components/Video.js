@@ -133,24 +133,7 @@ export class VideoPlayer extends HTMLElement {
         }
         this.appendChild(this.video)
 
-        if (localStorage.getItem("__video_player_position__")) {
-            let position = JSON.parse(localStorage.getItem("__video_player_position__"))
-            if (position.top < offsetTop) {
-                position.top = offsetTop
-            }
-            container.style.top = position.top + "px"
-            container.style.left = position.left + "px"
-        } else {
-            container.style.left = ((document.body.offsetWidth - 720) / 2) + "px"
-            container.style.top = "80px"
-        }
-
-        if (localStorage.getItem("__video_player_dimension__")) {
-            let dimension = JSON.parse(localStorage.getItem("__video_player_dimension__"))
-            container.style.width = dimension.width + "px"
-            container.style.height = "auto"
-        }
-
+        container.name = "video_player"
         setResizeable(container, (width, height) => {
             localStorage.setItem("__video_player_dimension__", JSON.stringify({ width: width, height: height }))
             container.style.height = "auto"
@@ -171,7 +154,7 @@ export class VideoPlayer extends HTMLElement {
         }
 
         setMoveable(this.shadowRoot.querySelector(".header"), container, (left, top) => {
-            localStorage.setItem("__video_player_position__", JSON.stringify({ top: top, left: left }))
+           /** */
         }, this, offsetTop)
 
         // Plyr give a nice visual to the video player.
