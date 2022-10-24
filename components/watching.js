@@ -128,6 +128,13 @@ export class MediaWatching extends HTMLElement {
 
         Model.eventHub.subscribe("remove_video_player_evt_", uuid => { }, evt => {
             if (title._id == evt._id) {
+                if(!card){
+                    return
+                }
+                if(!card.parentNode){
+                    return
+                }
+                
                 card.parentNode.removeChild(card)
                 let video_count = this.querySelectorAll(`[slot="video"]`).length
                 if (video_count > 0) {
