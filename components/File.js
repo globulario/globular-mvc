@@ -131,7 +131,8 @@ function getTitleInfo(globule, file, callback) {
     globule.titleService.getFileTitles(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
         .then(rsp => {
             if (rsp.getTitles().getTitlesList().length > 0) {
-                file.thumbnail = rsp.getTitles().getTitlesList()[0].getPoster().getContenturl()
+                if(rsp.getTitles().getTitlesList()[0].getPoster().getContenturl().length > 0)
+                    file.thumbnail = rsp.getTitles().getTitlesList()[0].getPoster().getContenturl()
             }
             callback(rsp.getTitles().getTitlesList())
         })
@@ -153,6 +154,7 @@ function getVideoInfo(globule, file, callback) {
     globule.titleService.getFileVideos(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
         .then(rsp => {
             if (rsp.getVideos().getVideosList().length > 0) {
+                if(rsp.getVideos().getVideosList()[0].getPoster().getContenturl().length > 0)
                 file.thumbnail = rsp.getVideos().getVideosList()[0].getPoster().getContenturl()
             }
             let videos = rsp.getVideos().getVideosList()
@@ -2315,15 +2317,15 @@ export class FilesIconView extends FilesView {
                         thumbtack.onclick = (evt) => {
                             evt.stopPropagation()
                             // Do stuff here...
-                            File.hasLocal(file.path, exists=>{
-                                if(exists){
-                                    file.removeLocalCopy(()=>{
+                            File.hasLocal(file.path, exists => {
+                                if (exists) {
+                                    file.removeLocalCopy(() => {
                                         thumbtack.style.fill = ""
                                         thumbtack.style.display = "none";
                                         thumbtack.style.left = ""
                                     })
-                                }else{
-                                    file.keepLocalyCopy(()=>{
+                                } else {
+                                    file.keepLocalyCopy(() => {
                                         thumbtack.style.display = "block";
                                         thumbtack.style.left = "8px"
                                         thumbtack.style.fill = "var(--palette-primary-main)"
@@ -2331,7 +2333,7 @@ export class FilesIconView extends FilesView {
                                 }
                             })
 
-                            
+
                         }
 
                         // Here I will append the interation.
@@ -2518,16 +2520,20 @@ export class FilesIconView extends FilesView {
                             if (file.audios) {
                                 fileNameSpan.innerHTML = file.audios[0].getTitle()
                                 if (file.audios[0].getPoster())
-                                    img.src = file.audios[0].getPoster().getContenturl()
-                                file.thumbnail = img.src
+                                    if (file.audios[0].getPoster().getContenturl().length > 0) {
+                                        img.src = file.audios[0].getPoster().getContenturl()
+                                        file.thumbnail = img.src
+                                    }
                             } else {
                                 getAudioInfo(this._file_explorer_.globule, file, audios => {
                                     if (audios.length > 0) {
                                         file.audios = audios // keep in the file itself...
                                         fileNameSpan.innerHTML = file.audios[0].getTitle()
                                         if (file.audios[0].getPoster())
-                                            img.src = file.audios[0].getPoster().getContenturl()
-                                        file.thumbnail = img.src
+                                            if (file.audios[0].getPoster().getContenturl().length > 0) {
+                                                img.src = file.audios[0].getPoster().getContenturl()
+                                                file.thumbnail = img.src
+                                            }
                                     }
                                 })
                             }
@@ -2589,16 +2595,16 @@ export class FilesIconView extends FilesView {
 
                             let thumbtacks = this.div.querySelectorAll("svg")
                             for (var i = 0; i < thumbtacks.length; i++) {
-                                if (thumbtacks[i].style.fill == "var(--palette-primary-main)"){
+                                if (thumbtacks[i].style.fill == "var(--palette-primary-main)") {
                                     thumbtacks[i].style.left = "8px"
-                                }else{
+                                } else {
                                     thumbtacks[i].style.display = "none"
                                     thumbtacks[i].style.left = ""
                                 }
                             }
 
-            
-                            if (File.hasLocal){
+
+                            if (File.hasLocal) {
                                 thumbtack.style.display = "block";
                                 File.hasLocal(file.path, exist => {
                                     if (exist) {
@@ -3874,7 +3880,7 @@ export class FileExplorer extends HTMLElement {
             this.shadowRoot.querySelector("#file-explorer-box").style.width = dimension.width + "px"
             this.shadowRoot.querySelector("#file-explorer-box").style.height = dimension.height + "px"
         }
-        
+
         this.shadowRoot.querySelector("#file-explorer-box").name = "file_explorer"
         setResizeable(this.shadowRoot.querySelector("#file-explorer-box"), (width, height) => {
             localStorage.setItem("__file_explorer_dimension__", JSON.stringify({ width: width, height: height }))

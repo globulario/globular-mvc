@@ -175,7 +175,7 @@ function playTitleListener(player, title, indexPath, globule) {
         return
     }
 
-    searchEpisodes(globule, title.serie, indexPath, (episodes) => {
+    searchEpisodes(globule, title.getSerie(), indexPath, (episodes) => {
         let index = -1;
         episodes.forEach((e, i) => {
             if (e.getId() == title.getId()) {
