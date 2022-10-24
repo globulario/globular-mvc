@@ -1340,7 +1340,7 @@ export class SearchAudioCard extends HTMLElement {
             <span id="artist"></span>
             <div style="display: flex; position: absolute; background-color: black; top: 0px; left: 0px; right: 0px; padding: 5px;">
                 <span id="album" style="flex-grow: 1;"></span> 
-                <paper-icon-button id="play-album-btn" title="play album" icon="av:play-arrow"></paper-icon-button> 
+                <paper-icon-button id="play-album-btn" stlye="color: white;" title="play album" icon="av:play-arrow"></paper-icon-button> 
             </div>
             <div style="display: flex; justify-items: center;">
                 <span id="title" style="flex-grow: 1;"></span>

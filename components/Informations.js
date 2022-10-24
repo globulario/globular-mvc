@@ -243,10 +243,11 @@ function getVideoPreview(parent, path, name, callback, globule) {
 
             preview.showPlayBtn()
 
-            preview.onplay = (path) => {
+            preview.onplay = (f) => {
+                path = f.path
                 if (path.endsWith(".mp3")) {
 
-                    playAudio(path, (video) => {
+                    playAudio(path, (audio) => {
                         let titleInfoBox = document.getElementById("title-info-box")
                         if (titleInfoBox) {
                             titleInfoBox.parentNode.removeChild(titleInfoBox)
@@ -260,7 +261,7 @@ function getVideoPreview(parent, path, name, callback, globule) {
                         if (titleInfoBox) {
                             titleInfoBox.parentNode.removeChild(titleInfoBox)
                         }
-                        //video.toggleFullscreen();
+                        video.toggleFullscreen();
                     }, null, null, globule)
                 }
 
