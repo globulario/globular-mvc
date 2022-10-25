@@ -33,6 +33,11 @@ export function setMoveable(handle, draggable, onmove, element, offsetTop = 0) {
 
   // be sure the window stay visible.
   window.addEventListener('resize', () => {
+    
+    if (draggable.offsetTop < offsetTop) {
+      draggable.top = offsetTop + "px"
+    }
+
     // be sure the window open at visible position
     if(draggable.offsetLeft  > document.body.offsetWidth){
       draggable.style.left  = (document.body.offsetWidth - 80) + "px";

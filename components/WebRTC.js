@@ -151,6 +151,9 @@ export class VideoConversation extends HTMLElement {
             localStorage.setItem("__webrtc_panel_position__", JSON.stringify({ width: width, height: height }))
             container.style.height = "auto"
         })
+        
+        container.resizeHeightDiv.style.display = "none"
+        container.style.height = "auto"
 
         setMoveable(this.shadowRoot.querySelector(".header"), container, (left, top) => {
             /** */

@@ -140,7 +140,7 @@ export class VideoPlayer extends HTMLElement {
         })
 
         container.resizeHeightDiv.style.display = "none"
-
+        container.style.height = "auto"
 
         // toggle full screen when the user double click on the header.
         this.shadowRoot.querySelector(".header").ondblclick = () => {

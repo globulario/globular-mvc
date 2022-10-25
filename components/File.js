@@ -3964,13 +3964,8 @@ export class FileExplorer extends HTMLElement {
         // I will use the resize event to set the size of the file explorer.
         this.exitFullScreenBtn.onclick = () => {
 
-            let position = JSON.parse(localStorage.getItem("__file_explorer_position__"))
-            if (!position) {
-                position = { top: 0, left: 0 }
-            }
-
-            this.style.top = position.top + "px"
-            this.style.left = position.left + "px"
+            this.style.top = this.__top__ + "px"
+            this.style.left = this.__left__+ "px"
 
             this.enterFullScreenBtn.style.display = "block"
             this.exitFullScreenBtn.style.display = "none"
@@ -3984,9 +3979,16 @@ export class FileExplorer extends HTMLElement {
             box.style.width = this.width_ + "px";
             box.style.height = this.height_ + "px";
             this.isFullScreen = false
+
+            window.dispatchEvent(new Event('resize'));
         }
 
         this.enterFullScreenBtn.onclick = () => {
+
+            //
+            this.__top__ = this.offsetTop
+            this.__left__ = this.offsetLeft
+
             this.isFullScreen = true
             this.style.top = "60px"
             this.style.bottom = "0px"
@@ -4843,6 +4845,7 @@ export class FileExplorer extends HTMLElement {
 
     maximize() {
         this._file_explorer_OpenBtn.click();
+
     }
 
     hideActions() {
