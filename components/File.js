@@ -4984,34 +4984,20 @@ export class VideoPreview extends HTMLElement {
         this.playBtn = this.shadowRoot.querySelector("#play-btn")
 
         let index = 0;
-
-        if (previews[0] != undefined) {
-            // Get the preview image...
-            getImage((images) => {
-                this.images = images
-                if (this.images.length > 0) {
-
-                    this.firstImage = images[0]
-                    this.firstImage.onload = () => {
-                        this.width = this.firstImage.width;
-                        this.height = this.firstImage.height;
-                        this.playBtn.style.top = this.height / 2 + "px"
-                        this.playBtn.style.left = this.width / 2 + "px"
-                        if (this.onresize != undefined) {
-                            this.onresize()
-                        }
-                    }
-
-                    // set the thumbnail if is not already set...
-                    if (!this.file.thumbnail) {
-                        this.file.thumbnail = this.firstImage.src
-                    }
-
-
-                    this.container.appendChild(this.firstImage)
-
+        if(this.file.thumbnail.length > 0){
+            this.firstImage = document.createElement("img")
+            this.firstImage.src = this.file.thumbnail
+            this.firstImage.onload = () => {
+                this.width = this.firstImage.width;
+                this.height = this.firstImage.height;
+                this.playBtn.style.top = this.height / 2 + "px"
+                this.playBtn.style.left = this.width / 2 + "px"
+                if (this.onresize != undefined) {
+                    this.onresize()
                 }
-            }, this.images, [previews[0]], index, globule) // Download the first image only...
+                this.container.appendChild(this.firstImage)
+                this.images.push(this.firstImage)
+            }
         }
 
         // Play the video
@@ -5039,6 +5025,7 @@ export class VideoPreview extends HTMLElement {
         this.container.onmouseenter = (evt) => {
             evt.stopPropagation();
             if (this.images.length == 1) {
+                
                 getImage((images) => {
                     this.images = images
                     if (this.images.length > 0) {
