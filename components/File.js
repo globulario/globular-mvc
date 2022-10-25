@@ -4583,7 +4583,8 @@ export class FileExplorer extends HTMLElement {
 
         getAudioInfo(this.globule, file, audios => {
             if (audios) {
-                audios[0].globule = this.globule
+                if(audios[0])
+                    audios[0].globule = this.globule
                 playAudio(file.path, () => { }, () => { }, audios[0], this.globule)
             }
         })

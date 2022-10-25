@@ -427,7 +427,7 @@ export class AudioPlayer extends HTMLElement {
 
         container.name = "audio_player"
         setMoveable(this.shadowRoot.querySelector(".header"), container, (left, top) => {
-           /** */
+            /** */
         }, this, offsetTop)
 
         this.shadowRoot.querySelector("#video-close-btn").onclick = () => {
@@ -833,22 +833,24 @@ export class AudioPlayer extends HTMLElement {
         }
 
         this.path = path;
-        this._audio_ = audio
-        this._audio_.globule = globule
-        this.audio.src = url
+        if (audio) {
+            this._audio_ = audio
+            this._audio_.globule = globule
+            this.audio.src = url
+        }
 
         var xhr = new XMLHttpRequest();
         xhr.open('get', url, true);
-        
+
         // Load the data directly as a Blob.
         xhr.responseType = 'blob';
-        
+
         xhr.onload = (evt) => {
             console.log(evt)
-            this.wavesurfer.loadBlob(evt.target.response); 
+            this.wavesurfer.loadBlob(evt.target.response);
         };
-        
-        xhr.send(); 
+
+        xhr.send();
     }
 
     // load the playlist...
