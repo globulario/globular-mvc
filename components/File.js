@@ -130,10 +130,6 @@ function getTitleInfo(globule, file, callback) {
 
     globule.titleService.getFileTitles(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
         .then(rsp => {
-            if (rsp.getTitles().getTitlesList().length > 0) {
-                if(rsp.getTitles().getTitlesList()[0].getPoster().getContenturl().length > 0)
-                    file.thumbnail = rsp.getTitles().getTitlesList()[0].getPoster().getContenturl()
-            }
             callback(rsp.getTitles().getTitlesList())
         })
         .catch(err => {
@@ -153,10 +149,6 @@ function getVideoInfo(globule, file, callback) {
 
     globule.titleService.getFileVideos(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
         .then(rsp => {
-            if (rsp.getVideos().getVideosList().length > 0) {
-                if(rsp.getVideos().getVideosList()[0].getPoster().getContenturl().length > 0)
-                file.thumbnail = rsp.getVideos().getVideosList()[0].getPoster().getContenturl()
-            }
             let videos = rsp.getVideos().getVideosList()
             callback(videos)
         })
@@ -2522,7 +2514,6 @@ export class FilesIconView extends FilesView {
                                 if (file.audios[0].getPoster())
                                     if (file.audios[0].getPoster().getContenturl().length > 0) {
                                         img.src = file.audios[0].getPoster().getContenturl()
-                                        file.thumbnail = img.src
                                     }
                             } else {
                                 getAudioInfo(this._file_explorer_.globule, file, audios => {
@@ -2532,7 +2523,6 @@ export class FilesIconView extends FilesView {
                                         if (file.audios[0].getPoster())
                                             if (file.audios[0].getPoster().getContenturl().length > 0) {
                                                 img.src = file.audios[0].getPoster().getContenturl()
-                                                file.thumbnail = img.src
                                             }
                                     }
                                 })
@@ -4919,7 +4909,6 @@ export class VideoPreview extends HTMLElement {
 
         this.file = file
         this.path = file.path;
-        this.width = height;
         this.height = height;
         this.onresize = onresize;
         this.previews = previews;
@@ -4988,8 +4977,8 @@ export class VideoPreview extends HTMLElement {
             this.firstImage = document.createElement("img")
             this.firstImage.src = this.file.thumbnail
             this.firstImage.onload = () => {
-                this.width = this.firstImage.width;
-                this.height = this.firstImage.height;
+                let ratio = this.height / this.firstImage.height
+                this.width = this.firstImage.width * ratio;
                 this.playBtn.style.top = this.height / 2 + "px"
                 this.playBtn.style.left = this.width / 2 + "px"
                 if (this.onresize != undefined) {
