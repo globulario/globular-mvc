@@ -39,7 +39,7 @@ import { randomUUID } from './utility';
 import * as getUuidByString from 'uuid-by-string';
 import { ImageViewer } from './Image';
 import { AssociateFileWithTitleRequest, CreateTitleRequest, GetFileAudiosRequest, GetFileTitlesRequest, GetFileVideosRequest, Person, Poster, Title } from 'globular-web-client/title/title_pb';
-import { DownloadTorrentRequest, DropTorrentRequest, GetTorrentInfosRequest } from 'globular-web-client/torrent/torrent_pb';
+import { DownloadTorrentRequest, DropTorrentRequest, GetTorrentInfosRequest, GetTorrentLnksRequest } from 'globular-web-client/torrent/torrent_pb';
 import { getImdbInfo } from './Search';
 import { setMoveable } from './moveable'
 import { setResizeable } from './rezieable'
@@ -1789,7 +1789,7 @@ export class FilesListView extends FilesView {
                     } else if (f.isDir) {
                         _publishSetDirEvent(f._path, this._file_explorer_)
                     } else if (f.mime.startsWith("image")) {
-                        Model.eventHub.publish("__show_image__", { path: f.path, file_explorer_id: this._file_explorer_.id }, true)
+                        Model.eventHub.publish("__show_image__", { file: f, file_explorer_id: this._file_explorer_.id }, true)
                     }
                     this.menu.close()
                 }
@@ -2490,7 +2490,7 @@ export class FilesIconView extends FilesView {
                             if (fileType == "image") {
                                 img.onclick = (evt) => {
                                     evt.stopPropagation();
-                                    Model.eventHub.publish("__show_image__", { path: file.path, file_explorer_id: this._file_explorer_.id }, true)
+                                    Model.eventHub.publish("__show_image__", { file: file, file_explorer_id: this._file_explorer_.id }, true)
                                 }
                             } else if (fileType == "audio") {
                                 img.onclick = (evt) => {
@@ -2504,7 +2504,7 @@ export class FilesIconView extends FilesView {
                                 // here I will try the file viewer.
                                 img.onclick = (evt) => {
                                     evt.stopPropagation();
-                                    Model.eventHub.publish("__read_file__", { path: file.path, file_explorer_id: this._file_explorer_.id }, true)
+                                    Model.eventHub.publish("__read_file__", { file: file, file_explorer_id: this._file_explorer_.id }, true)
                                 }
                             }
 
@@ -3955,7 +3955,7 @@ export class FileExplorer extends HTMLElement {
         this.exitFullScreenBtn.onclick = () => {
 
             this.style.top = this.__top__ + "px"
-            this.style.left = this.__left__+ "px"
+            this.style.left = this.__left__ + "px"
 
             this.enterFullScreenBtn.style.display = "block"
             this.exitFullScreenBtn.style.display = "none"
@@ -4450,7 +4450,7 @@ export class FileExplorer extends HTMLElement {
                 this.listeners["__read_file__"] = uuid
             }, (evt) => {
                 if (this.id == evt.file_explorer_id) {
-                    this.readFile(evt.path)
+                    this.readFile(evt.file)
                 }
             }, true, this)
         }
@@ -4461,7 +4461,7 @@ export class FileExplorer extends HTMLElement {
                 this.listeners["__show_image__"] = uuid
             }, (evt) => {
                 if (this.id == evt.file_explorer_id) {
-                    this.showImage(evt.path)
+                    this.showImage(evt.file)
                 }
 
             }, true)
@@ -4583,7 +4583,7 @@ export class FileExplorer extends HTMLElement {
 
         getAudioInfo(this.globule, file, audios => {
             if (audios) {
-                if(audios[0])
+                if (audios[0])
                     audios[0].globule = this.globule
                 playAudio(file.path, () => { }, () => { }, audios[0], this.globule)
             }
@@ -4591,7 +4591,7 @@ export class FileExplorer extends HTMLElement {
 
     }
 
-    readFile(path) {
+    readFile(file) {
 
         // hide the content.
         this.filesListView.style.display = "none"
@@ -4599,10 +4599,10 @@ export class FileExplorer extends HTMLElement {
         this.fileReader.style.display = "block"
 
         // Display the video only if the path match the video player /applications vs /users
-        this.fileReader.read(path)
+        this.fileReader.read(file)
     }
 
-    showImage(path) {
+    showImage(file) {
 
         // hide the content.
         this.filesListView.style.display = "none"
@@ -4613,7 +4613,7 @@ export class FileExplorer extends HTMLElement {
 
         // Here I will set the active image.
         for (var i = 0; this.imageViewer.children.length; i++) {
-            if (this.imageViewer.children[i].name == path) {
+            if (this.imageViewer.children[i].name == file.path) {
                 this.imageViewer.activeImage(getElementIndex(this.imageViewer.children[i]))
                 break
             }
@@ -4974,7 +4974,7 @@ export class VideoPreview extends HTMLElement {
         this.playBtn = this.shadowRoot.querySelector("#play-btn")
 
         let index = 0;
-        if(this.file.thumbnail.length > 0){
+        if (this.file.thumbnail.length > 0) {
             this.firstImage = document.createElement("img")
             this.firstImage.src = this.file.thumbnail
             this.firstImage.onload = () => {
@@ -5015,7 +5015,7 @@ export class VideoPreview extends HTMLElement {
         this.container.onmouseenter = (evt) => {
             evt.stopPropagation();
             if (this.images.length == 1) {
-                
+
                 getImage((images) => {
                     this.images = images
                     if (this.images.length > 0) {
@@ -5388,8 +5388,10 @@ export class FilesUploader extends HTMLElement {
 
 
         // Start display torrent infos...
+        this.getTorrentLnks(this._file_explorer_.globule, lnks=>{
+            console.log("------------------> ", lnks)
+        })
         this.getTorrentsInfo(this._file_explorer_.globule)
-
     }
 
 
@@ -5721,26 +5723,39 @@ export class FilesUploader extends HTMLElement {
 
     }
 
+    /** Get the list of torrent */
+    getTorrentLnks(globule, callback) {
+        generatePeerToken(globule.Mac, token => {
+            let rqst = new GetTorrentLnksRequest
+            globule.torrentService.getTorrentLnks(rqst, { application: Application.application, domain: globule.config.Domain, token: token })
+                .then(lnks => callback(lnks))
+        }, err => ApplicationView.displayMessage(err, 3000))
+
+    }
+
     /**
     * A loop that get torrent info from the server...
     */
     getTorrentsInfo(globule) {
 
-        let rqst = new GetTorrentInfosRequest
+        generatePeerToken(globule.Mac, token => {
+            let rqst = new GetTorrentInfosRequest
 
-        let stream = globule.torrentService.getTorrentInfos(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
-        stream.on("data", (rsp) => {
-            /** Local event... */
-            rsp.getInfosList().forEach(torrent => {
-                Model.eventHub.publish("__upload_torrent_event__", torrent, true);
-            })
-        });
+            let stream = globule.torrentService.getTorrentInfos(rqst, { application: Application.application, domain: globule.config.Domain, token: token })
+            stream.on("data", (rsp) => {
+                /** Local event... */
+                rsp.getInfosList().forEach(torrent => {
+                    Model.eventHub.publish("__upload_torrent_event__", torrent, true);
+                })
+            });
 
-        stream.on("status", (status) => {
-            if (status.code != 0) {
-                console.log(status.details)
-            }
-        });
+            stream.on("status", (status) => {
+                if (status.code != 0) {
+                    console.log(status.details)
+                }
+            });
+        }, err => ApplicationView.displayMessage(err, 3000))
+
 
     }
 

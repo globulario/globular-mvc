@@ -26,27 +26,26 @@ export class GlobularFileReader extends HTMLElement {
         this.frame = this.shadowRoot.querySelector("#frame")
     }
 
-    read(path) {
+    read(file) {
         // Read the file...
-        let url = window.location.protocol + "//" + window.location.hostname  + ":"
-        if(Application.globular.config.Protocol == "https"){
-            url += Application.globular.config.PortHttps
-        }else{
-            url += Application.globular.config.PortHttp
+        let url = file.globule.config.Protocol + "://" + file.globule.config.Domain + ":"
+        if (file.globule.config.Protocol == "https") {
+            url += file.globule.config.PortHttps
+        } else {
+            url += file.globule.config.PortHttp
         }
 
-        path.split("/").forEach(item=>{
-            url += "/" +  encodeURIComponent(item.trim())
+        file.path.split("/").forEach(item => {
+            url += "/" + encodeURIComponent(item.trim())
         })
 
-    
         // Set the file location.
-        this.frame.src =url
+        this.frame.src = url
         this.frame.src += "?application=" + Model.application
-        if(localStorage.getItem("user_token")!=undefined){
+        if (localStorage.getItem("user_token") != undefined) {
             this.frame.src += "&token=" + localStorage.getItem("user_token")
         }
-        
+
         // must be white...
         this.frame.style.background = "white";
         this.frame.contentWindow.document.body.style.backgroundColor = "white";
