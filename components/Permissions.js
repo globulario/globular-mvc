@@ -1417,9 +1417,10 @@ function getConversation(id, callback, errorCallback) {
 /**
  * Return file info.
  */
-function getFile(path, callback, errorCallback, globule) {
+function getFile(path, callback, errorCallback) {
+    
 
-    File.getFile(globule, share.getPath(), 128, 85, f=>{
+    File.getFile(Model.globular, path, 128, 85, f=>{
 
         // the path that point to the resource
         f.getPath = () => {

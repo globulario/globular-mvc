@@ -3421,8 +3421,8 @@ export class FileNavigator extends HTMLElement {
 
                                 this.public_.files.push(dir)
                                 index++
-                                initPublicDir(callback, errorCallback)
-                            }, errorCallback, this._file_explorer_.globule, true)
+                                initPublicDir(callback, err=> ApplicationView.displayMessage(err, 3000))
+                            }, err=> ApplicationView.displayMessage(err, 3000), this._file_explorer_.globule, true)
 
                         } else {
                             callback()
