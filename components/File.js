@@ -1296,6 +1296,8 @@ export class FilesView extends HTMLElement {
         evt.stopPropagation()
 
         let lnk = evt.dataTransfer.getData('text/html');
+        let done = false;
+
         if (evt.dataTransfer.getData("Url").length > 0) {
             let url = evt.dataTransfer.getData("Url")
             // Here we got an url...
@@ -1434,10 +1436,10 @@ export class FilesView extends HTMLElement {
 
                             fileName = fileName_
 
-                        } else if (rsp.getResult().startsWith("[download] 100% of ") && rsp.getResult().indexOf(" in ") != -1 && mp4Radio.checked) {
+                        } else if (rsp.getResult().startsWith("[download] 100% of ") && rsp.getResult().indexOf(" in ") != -1 && mp4Radio.checked && !done) {
 
                             // try to get the file info...
-
+                            done = true;
 
                             // Now I will index the file...
                             var xmlhttp = new XMLHttpRequest();
@@ -1505,42 +1507,49 @@ export class FilesView extends HTMLElement {
 
                         } else if (rsp.getResult().startsWith("[ExtractAudio] Destination: ") && mp3Radio.checked) {
                             fileName = rsp.getResult().split("[ExtractAudio] Destination: ")[1].trim()
-                        } else if (rsp.getResult().startsWith("Deleting original file") && mp3Radio.checked) {
-                            // give time to extract the
-                            let globule = this._file_explorer_.globule
-                            let url_ = globule.config.Protocol + "://" + globule.config.Domain + ":"
+                        } else if (rsp.getResult().startsWith("Deleting original file") && mp3Radio.checked && !done) {
+                            done = true;
 
-                            if (globule.config.Protocol == "https") {
-                                url_ += globule.config.PortHttps
-                            } else {
-                                url_ += globule.config.PortHttp
-                            }
+                            // wait to be sure all temporary files are deleted before creating title informations...
+                            setTimeout(() => {
+                                // give time to extract the
+                                let globule = this._file_explorer_.globule
+                                let url_ = globule.config.Protocol + "://" + globule.config.Domain + ":"
 
-
-                            url_ += "/index_audio?domain=" + globule.config.Domain // application is not know at this time...
-                            if (localStorage.getItem("user_token") != undefined) {
-                                url_ += "&token=" + localStorage.getItem("user_token")
-                            }
-
-                            // The file path to index.
-                            url_ += "&audio-path=" + this.__dir__.path + "/" + fileName
-                            url_ += "&audio-url=" + url;
-                            url_ += "&index-path=" + globule.config.DataPath + "/search/audios"
-
-                            var xmlhttp = new XMLHttpRequest();
-                            xmlhttp.onreadystatechange = () => {
-                                if (xmlhttp.status == 0) {
-                                    setTimeout(() => {
-                                        Model.eventHub.publish("__upload_link_event__", { pid: pid, path: this.__dir__.path, infos: "", done: true, lnk: lnk }, true);
-                                        Model.publish("reload_dir_event", this.__dir__.path, false);
-                                    }, 2 * 1000)
-
+                                if (globule.config.Protocol == "https") {
+                                    url_ += globule.config.PortHttps
+                                } else {
+                                    url_ += globule.config.PortHttp
                                 }
-                            }
 
-                            xmlhttp.open("GET", url_, true);
-                            xmlhttp.setRequestHeader("domain", globule.config.Domain);
-                            xmlhttp.send();
+
+                                url_ += "/index_audio?domain=" + globule.config.Domain // application is not know at this time...
+                                if (localStorage.getItem("user_token") != undefined) {
+                                    url_ += "&token=" + localStorage.getItem("user_token")
+                                }
+
+                                // The file path to index.
+                                url_ += "&audio-path=" + this.__dir__.path + "/" + fileName
+                                url_ += "&audio-url=" + url;
+                                url_ += "&index-path=" + globule.config.DataPath + "/search/audios"
+
+                                var xmlhttp = new XMLHttpRequest();
+                                xmlhttp.onreadystatechange = () => {
+                                    if (xmlhttp.status == 0) {
+                                        setTimeout(() => {
+                                            Model.eventHub.publish("__upload_link_event__", { pid: pid, path: this.__dir__.path, infos: "", done: true, lnk: lnk }, true);
+                                            Model.publish("reload_dir_event", this.__dir__.path, false);
+                                        }, 2 * 1000)
+
+                                    }
+                                }
+
+                                xmlhttp.open("GET", url_, true);
+                                xmlhttp.setRequestHeader("domain", globule.config.Domain);
+                                xmlhttp.send();
+                            }, 2 * 1000)
+
+
                         }
 
 
@@ -3421,8 +3430,8 @@ export class FileNavigator extends HTMLElement {
 
                                 this.public_.files.push(dir)
                                 index++
-                                initPublicDir(callback, err=> ApplicationView.displayMessage(err, 3000))
-                            }, err=> ApplicationView.displayMessage(err, 3000), this._file_explorer_.globule, true)
+                                initPublicDir(callback, err => ApplicationView.displayMessage(err, 3000))
+                            }, err => ApplicationView.displayMessage(err, 3000), this._file_explorer_.globule, true)
 
                         } else {
                             callback()
@@ -5388,7 +5397,7 @@ export class FilesUploader extends HTMLElement {
 
 
         // Start display torrent infos...
-        this.getTorrentLnks(this._file_explorer_.globule, lnks=>{
+        this.getTorrentLnks(this._file_explorer_.globule, lnks => {
             console.log("------------------> ", lnks)
         })
         this.getTorrentsInfo(this._file_explorer_.globule)

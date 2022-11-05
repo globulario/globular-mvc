@@ -820,7 +820,13 @@ export class AudioPlayer extends HTMLElement {
                     url += ":" + globule.config.PortHttp
             }
 
-            url += path
+            //url += path
+            path.split("/").forEach(item => {
+                item = item.trim()
+                if (item.length > 0) {
+                    url += "/" + encodeURIComponent(item)
+                }
+            })
 
             url += "?application=" + Model.application
             if (localStorage.getItem("user_token") != undefined) {

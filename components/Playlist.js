@@ -9,14 +9,14 @@ import { SetVideoConversionRequest } from "globular-web-client/file/file_pb.js";
 import { File } from "../File";
 
 
- let __videos__ = {}
- let __audios__ = {}
+let __videos__ = {}
+let __audios__ = {}
 
-export function setVideo(video){
+export function setVideo(video) {
     __videos__[video.getId()] = video
 }
 
-export function setAudio(audio){
+export function setAudio(audio) {
     __audios__[audio.getId()] = audio
 }
 
@@ -24,9 +24,9 @@ export function setAudio(audio){
 // retreive video with a given id.
 function getVideoInfo(globule, id, callback) {
     console.log("get video with id: ", id)
-    if(__videos__[id]){
+    if (__videos__[id]) {
         callback(__videos__[id])
-        return 
+        return
     }
     generatePeerToken(globule.config.Mac, token => {
         let rqst = new GetVideoByIdRequest
@@ -45,9 +45,9 @@ function getVideoInfo(globule, id, callback) {
 }
 
 function getAudioInfo(globule, id, callback) {
-    if(__audios__[id]){
+    if (__audios__[id]) {
         callback(__audios__[id])
-        return 
+        return
     }
     generatePeerToken(globule.config.Mac, token => {
         let rqst = new GetAudioByIdRequest
@@ -167,22 +167,22 @@ export class PlayList extends HTMLElement {
                     if (token) {
                         url += "&token=" + token
                     }
-                    if(audio)
-                    if (File.hasLocal) {
-                        // Get the file path part from the url and test if a local copy exist, if so I will use it.
-                        let url_ = url.replace("://", "")
-                        let path = url_.substring(url_.indexOf("/"), url_.indexOf("?"))
-                        File.hasLocal(path, exists => {
-                            if (exists) {
-                                this.audioPlayer.play(path, this.globule, audio, true)
-                            } else {
-                                this.audioPlayer.play(url, this.globule, audio)
-                            }
-                        })
-                    } else {
-                        this.audioPlayer.play(url, this.globule, audio)
-                    }
-                       
+                    if (audio)
+                        if (File.hasLocal) {
+                            // Get the file path part from the url and test if a local copy exist, if so I will use it.
+                            let url_ = url.replace("://", "")
+                            let path = url_.substring(url_.indexOf("/"), url_.indexOf("?"))
+                            File.hasLocal(path, exists => {
+                                if (exists) {
+                                    this.audioPlayer.play(path, this.globule, audio, true)
+                                } else {
+                                    this.audioPlayer.play(url, this.globule, audio)
+                                }
+                            })
+                        } else {
+                            this.audioPlayer.play(url, this.globule, audio)
+                        }
+
                 })
             }
 
@@ -255,7 +255,14 @@ export class PlayList extends HTMLElement {
                         url += ":" + globule.config.PortHttp
                 }
 
-                url += txt
+                // url += txt
+                //url += path
+                txt.split("/").forEach(item => {
+                    item = item.trim()
+                    if (item.length > 0) {
+                        url += "/" + encodeURIComponent(item)
+                    }
+                })
 
                 url += "?application=" + Model.application
                 if (token) {
