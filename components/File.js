@@ -29,7 +29,7 @@ import { v4 as uuidv4 } from "uuid";
 
 // Menu to set action on files.
 import { DropdownMenu } from './dropdownMenu.js';
-import { AddPublicDirRequest, ConvertVideoToHlsRequest, ConvertVideoToMpeg4H264Request, CopyRequest, CreateDirRequest, CreateVideoPreviewRequest, CreateVideoTimeLineRequest, GeneratePlaylistRequest, GetPublicDirsRequest, MoveRequest, RemovePublicDirRequest } from 'globular-web-client/file/file_pb';
+import { AddPublicDirRequest, ConvertVideoToHlsRequest, ConvertVideoToMpeg4H264Request, CopyRequest, CreateDirRequest, CreateVideoPreviewRequest, CreateVideoTimeLineRequest, GeneratePlaylistRequest, GetPublicDirsRequest, MoveRequest, RemovePublicDirRequest, UploadVideoRequest } from 'globular-web-client/file/file_pb';
 import { createArchive, deleteDir, deleteFile, downloadFileHttp, renameFile, uploadFiles } from 'globular-web-client/api';
 import { ApplicationView } from '../ApplicationView';
 import { Application } from '../Application';
@@ -1392,179 +1392,40 @@ export class FilesView extends HTMLElement {
 
                 let okBtn = toast.el.querySelector("#upload-lnk-ok-button")
                 okBtn.onclick = () => {
-                    let rqst = new RunCmdRequest
-                    rqst.setCmd("youtube-dl")
 
-                    let path = this.__dir__.path
-                    if (path.startsWith("/users/") || path.startsWith("/applications/")) {
-                        path = this._file_explorer_.globule.config.DataPath + "/files" + path
-                    }
-
-                    // The path will be set at the command level, not at file level.
-                    rqst.setPath(path)
-
-                    let dest = `%(id)s.%(ext)s`
+                    let rqst = new UploadVideoRequest
+                    rqst.setDest(this.__dir__.path )
 
                     if (mp3Radio.checked) {
-                        rqst.setArgsList(["-f", "bestaudio", "--extract-audio", "--audio-format", "mp3", "--audio-quality", "0", "--embed-thumbnail", "--embed-metadata", "-o", dest, url]);
+                        rqst.setFormat("mp3")
                     } else {
-                        rqst.setArgsList(["-f", "mp4", "-o", dest, url])
+                        rqst.setFormat("mp4")
                     }
+                    rqst.setUrl(url)
 
-                    rqst.setBlocking(true)
-                    let stream = this._file_explorer_.globule.adminService.runCmd(rqst, { application: Application.application, domain: this._file_explorer_.globule.config.Domain, token: localStorage.getItem("user_token") })
-                    let pid = -1;
-                    let fileName = ""
+                    generatePeerToken(this._file_explorer_.globule.config.Mac, token => {
 
+                        let stream = this._file_explorer_.globule.fileService.uploadVideo(rqst, { application: Application.application, domain: this._file_explorer_.globule.config.Domain, token: token })
+                        let pid = -1;
 
-                    // Here I will create a local event to be catch by the file uploader...
-                    stream.on("data", (rsp) => {
-                        if (rsp.getPid() != null) {
-                            pid = rsp.getPid()
-                        }
-
-                        console.log(rsp.getResult())
-
-                        if (rsp.getResult().startsWith("[download] Destination:")) {
-                            let fileName_ = rsp.getResult().split(":")[1].trim()
-                            if (fileName.length > 0) {
-                                url = url.replace(fileName.split(".")[0], fileName_.split(".")[0])
-
+                        // Here I will create a local event to be catch by the file uploader...
+                        stream.on("data", (rsp) => {
+                            if (rsp.getPid() != null) {
+                                pid = rsp.getPid()
                             }
 
-                            // generate preview for the previous file...
+                            // Publish local event.
+                            Model.eventHub.publish("__upload_link_event__", { pid: pid, path: this.__dir__.path, infos: rsp.getResult(), done: false, lnk: lnk }, true);
+                        })
 
-                            fileName = fileName_
-
-                        } else if (rsp.getResult().startsWith("[download] 100% of ") && rsp.getResult().indexOf(" in ") != -1 && mp4Radio.checked && !done) {
-
-                            // try to get the file info...
-                            done = true;
-
-                            // Now I will index the file...
-                            var xmlhttp = new XMLHttpRequest();
-                            let fileName_ = fileName
-
-                            let path = this.__dir__.path + "/" + fileName_
-                            let globule = this._file_explorer_.globule
-                            // get the file info...
-                            File.getFile(globule, path, 128, 80,
-                                info => {
-                                    xmlhttp.onreadystatechange = () => {
-                                        if (xmlhttp.status == 0) {
-
-                                            // here I must send the event to 
-                                            globule.eventHub.publish("generate_video_preview_event", path, false);
-
-                                            // So there I will set the resource permission...
-                                            let rqst = new AddResourceOwnerRqst
-                                            rqst.setPath(path)
-                                            rqst.setResourcetype("file")
-                                            rqst.setSubject(Application.account.id + "@" + Application.account.domain)
-                                            rqst.setType(SubjectType.ACCOUNT)
-
-                                            globule.rbacService.addResourceOwner(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
-                                                .then(rsp => {
-
-                                                    setTimeout(() => {
-                                                        Model.eventHub.publish("__upload_link_event__", { pid: pid, path: this.__dir__.path, infos: "", done: true, lnk: lnk }, true);
-                                                    }, 2 * 1000);
-
-                                                })
-                                                .catch(err => ApplicationView.displayMessage(err, 3000))
-                                        }
-                                    };
-
-
-                                    let url_ = globule.config.Protocol + "://" + globule.config.Domain + ":"
-
-                                    if (globule.config.Protocol == "https") {
-                                        url_ += globule.config.PortHttps
-                                    } else {
-                                        url_ += globule.config.PortHttp
-                                    }
-
-                                    url_ += "/index_video?domain=" + globule.config.Domain // application is not know at this time...
-                                    if (localStorage.getItem("user_token") != undefined) {
-                                        url_ += "&token=" + localStorage.getItem("user_token")
-                                    }
-
-                                    // The file path to index.
-                                    url_ += "&video-path=" + this.__dir__.path + "/" + fileName_
-                                    url_ += "&video-url=" + url;
-                                    url_ += "&index-path=" + globule.config.DataPath + "/search/videos"
-
-                                    xmlhttp.open("GET", url_, true);
-                                    xmlhttp.setRequestHeader("domain", globule.config.Domain);
-                                    xmlhttp.send();
-
-
-                                }, err => {
-                                    err => ApplicationView.displayMessage(err, 3000)
-                                    console.log("fail to get file ", path, err)
-                                })
-
-
-                        } else if (rsp.getResult().startsWith("[ExtractAudio] Destination: ") && mp3Radio.checked) {
-                            fileName = rsp.getResult().split("[ExtractAudio] Destination: ")[1].trim()
-                        } else if (rsp.getResult().startsWith("Deleting original file") && mp3Radio.checked && !done) {
-                            done = true;
-
-                            // wait to be sure all temporary files are deleted before creating title informations...
-                            setTimeout(() => {
-                                // give time to extract the
-                                let globule = this._file_explorer_.globule
-                                let url_ = globule.config.Protocol + "://" + globule.config.Domain + ":"
-
-                                if (globule.config.Protocol == "https") {
-                                    url_ += globule.config.PortHttps
-                                } else {
-                                    url_ += globule.config.PortHttp
-                                }
-
-
-                                url_ += "/index_audio?domain=" + globule.config.Domain // application is not know at this time...
-                                if (localStorage.getItem("user_token") != undefined) {
-                                    url_ += "&token=" + localStorage.getItem("user_token")
-                                }
-
-                                // The file path to index.
-                                url_ += "&audio-path=" + this.__dir__.path + "/" + fileName
-                                url_ += "&audio-url=" + url;
-                                url_ += "&index-path=" + globule.config.DataPath + "/search/audios"
-
-                                var xmlhttp = new XMLHttpRequest();
-                                xmlhttp.onreadystatechange = () => {
-                                    if (xmlhttp.status == 0) {
-                                        setTimeout(() => {
-                                            Model.eventHub.publish("__upload_link_event__", { pid: pid, path: this.__dir__.path, infos: "", done: true, lnk: lnk }, true);
-                                            Model.publish("reload_dir_event", this.__dir__.path, false);
-                                        }, 2 * 1000)
-
-                                    }
-                                }
-
-                                xmlhttp.open("GET", url_, true);
-                                xmlhttp.setRequestHeader("domain", globule.config.Domain);
-                                xmlhttp.send();
-                            }, 2 * 1000)
-
-
-                        }
-
-
-                        // Publish local event.
-                        Model.eventHub.publish("__upload_link_event__", { pid: pid, path: this.__dir__.path, infos: rsp.getResult(), done: false, lnk: lnk }, true);
-                    });
-
-                    stream.on("status", (status) => {
-                        if (status.code === 0) {
-
-
-                        }
-                    });
-
+                        stream.on("status", (status) => {
+                            if (status.code === 0) {
+                                Model.eventHub.publish("__upload_link_event__", { pid: pid, path: this.__dir__.path, infos: "", done: true, lnk: lnk }, true);
+                            }
+                        });
+                    }, err => ApplicationView.displayMessage(err, 3000))
                     toast.dismiss();
+
                 }
 
                 let cancelBtn = toast.el.querySelector("#upload-lnk-cancel-button")
@@ -4395,7 +4256,7 @@ export class FileExplorer extends HTMLElement {
                 (uuid) => {
                     this.listeners[`reload_dir_${this.globule.config.Domain}_event`] = uuid
                 }, (path) => {
-
+                    console.log("event receive for dir ", path)
                     // remove existing...
                     this.displayWaitMessage("load " + path)
                     _readDir(path, (dir) => {
