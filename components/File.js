@@ -213,6 +213,10 @@ function getElementIndex(element) {
 
 export function getImage(callback, images, files, index, globule) {
     let f = files[index];
+    if (!f) {
+        callback([])
+    }
+    
     index++
 
     // set the url for the image.
@@ -236,6 +240,10 @@ export function getImage(callback, images, files, index, globule) {
             if (globule.config.PortHttps != 80)
                 url += ":" + globule.config.PortHttp
         }
+    }
+
+    if (!f.path) {
+        callback([])
     }
 
     let path = f.path.split("/")
@@ -646,6 +654,7 @@ export class FilesView extends HTMLElement {
                 files.push(this.selected[fileName])
             }
 
+
             // if not checked but selected with menu...
             if (fileList.length == 0) {
                 let file = this.menu.file
@@ -701,6 +710,7 @@ export class FilesView extends HTMLElement {
                     </div>`,
                         3000
                     );
+                    this.selected = {}
                 }
 
                 let index = 0;
@@ -3084,6 +3094,12 @@ export class FileNavigator extends HTMLElement {
                     .directory-lnk{
                         display: flex;
                         align-items: center;
+                        overflow: hidden;
+                    }
+
+                    .directory-lnk iron-icon {
+                        height: 24px;
+                        width: 24px;
                     }
 
                     .folder-name-span{

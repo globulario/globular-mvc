@@ -14,12 +14,12 @@ import * as getUuidByString from 'uuid-by-string';
 import { SearchBlogPostsRequest } from 'globular-web-client/blog/blog_pb';
 import { SearchDocumentsRequest } from 'globular-web-client/search/search_pb';
 import * as JwtDecode from 'jwt-decode';
-import { getCoords, randomUUID } from './utility';
+import { base64toBlob, getCoords, randomUUID } from './utility';
 import { playAudio } from './Audio';
 import { setAudio } from './Playlist';
 
-// Maximum number of results.
-var MAX_RESULTS = 1000;
+// Maximum number of results displayed...
+var MAX_RESULTS = 20; // the maximum results display per page per globule...
 
 // keep values in memorie to speedup...
 var titles = {}
@@ -268,10 +268,13 @@ function playTitleListener(player, title, indexPath, globule) {
 }
 
 // Search over multiple peers...
-function search(query, contexts_) {
+function search(query, contexts_, offset) {
 
     // Connections can contain many time the same address....
     let globules = Model.getGlobules()
+    if(offset == undefined){
+        offset = 0;
+    }
 
     globules.forEach(g => {
         let contexts = [...contexts_];
@@ -284,32 +287,32 @@ function search(query, contexts_) {
                 let indexPath = g.config.DataPath + "/search/" + context
                 if (context == "blogPosts") {
                     if (contexts.length == 0) {
-                        searchBlogPosts(g, query, indexPath, () => {
+                        searchBlogPosts(g, query, contexts_, indexPath, offset, () => {
 
                         })
                     } else {
-                        searchBlogPosts(g, query, indexPath, () => {
+                        searchBlogPosts(g, query, contexts_, indexPath, offset, () => {
                             search_(contexts)
                         })
                     }
                 } else if (context == "webPages") {
 
                     if (contexts.length == 0) {
-                        searchWebpageContent(query, () => {
+                        searchWebpageContent(g, query, contexts_, offset, () => {
 
                         })
                     } else {
-                        searchWebpageContent(query, () => {
+                        searchWebpageContent(g, query, contexts_, offset, () => {
                             search_(contexts)
                         })
                     }
                 } else {
                     if (contexts.length == 0) {
-                        searchTitles(g, query, indexPath, () => {
+                        searchTitles(g, query, contexts_, indexPath, offset, MAX_RESULTS, () => {
 
                         })
                     } else {
-                        searchTitles(g, query, indexPath, () => {
+                        searchTitles(g, query, contexts_, indexPath, offset, MAX_RESULTS, () => {
                             search_(contexts)
                         })
                     }
@@ -326,14 +329,14 @@ function search(query, contexts_) {
 /** 
  * Search titles...
  */
-function searchTitles(globule, query, indexPath, callback, fields) {
+function searchTitles(globule, query, contexts, indexPath, offset, max, callback, fields) {
 
     // This is a simple test...
     let rqst = new SearchTitlesRequest
     rqst.setIndexpath(indexPath)
     rqst.setQuery(query)
-    rqst.setOffset(0)
-    rqst.setSize(MAX_RESULTS)
+    rqst.setOffset(offset)
+    rqst.setSize(max)
     if (fields) {
         rqst.setFieldsList(fields)
     }
@@ -345,7 +348,7 @@ function searchTitles(globule, query, indexPath, callback, fields) {
 
         if (rsp.hasSummary() && !fields) {
             Model.eventHub.publish("_display_search_results_", {}, true)
-            Model.eventHub.publish("__new_search_event__", { query: query, summary: rsp.getSummary() }, true)
+            Model.eventHub.publish("__new_search_event__", { query: query, summary: rsp.getSummary(), contexts:contexts, offset:offset}, true)
         } else if (rsp.hasFacets() && !fields) {
             let uuid = "_" + getUuid(query)
             Model.eventHub.publish(`${uuid}_search_facets_event__`, { facets: rsp.getFacets() }, true)
@@ -384,13 +387,13 @@ function searchTitles(globule, query, indexPath, callback, fields) {
     });
 }
 
-function searchBlogPosts(globule, query, indexPath, callback) {
+function searchBlogPosts(globule, query, contexts, indexPath, offset, callback) {
 
     // This is a simple test...
     let rqst = new SearchBlogPostsRequest
     rqst.setIndexpath(indexPath)
     rqst.setQuery(query)
-    rqst.setOffset(0)
+    rqst.setOffset(offset)
     rqst.setSize(MAX_RESULTS)
 
     let stream = globule.blogService.searchBlogPosts(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
@@ -398,7 +401,7 @@ function searchBlogPosts(globule, query, indexPath, callback) {
 
         if (rsp.hasSummary()) {
             Model.eventHub.publish("_display_search_results_", {}, true)
-            Model.eventHub.publish("__new_search_event__", { query: query, summary: rsp.getSummary() }, true)
+            Model.eventHub.publish("__new_search_event__", { query: query, summary: rsp.getSummary(), contexts:contexts, offset:offset }, true)
         } else if (rsp.hasFacets()) {
             let uuid = "_" + getUuid(query)
             Model.eventHub.publish(`${uuid}_search_facets_event__`, { facets: rsp.getFacets() }, true)
@@ -427,21 +430,21 @@ function searchBlogPosts(globule, query, indexPath, callback) {
  * Search document...
  * @param {*} query 
  */
-function searchWebpageContent(query, callback) {
+function searchWebpageContent(globule, query, contexts,  offset, callback) {
 
     // Search over web-content.
     let rqst = new SearchDocumentsRequest
-    rqst.setPathsList([Model.globular.config.DataPath + "/search/applications/" + Model.application])
+    rqst.setPathsList([globule.config.DataPath + "/search/applications/" + Model.application])
     rqst.setLanguage("en")
     rqst.setFieldsList(["Text"])
-    rqst.setOffset(0)
+    rqst.setOffset(offset)
     rqst.setPagesize(MAX_RESULTS)
     rqst.setQuery(query)
 
     let token = localStorage.getItem("user_token")
     let startTime = performance.now()
 
-    let stream = Model.getGlobule(Application.account.session.domain).searchService.searchDocuments(rqst, {
+    let stream = globule.searchService.searchDocuments(rqst, {
         token: token,
         application: Model.application,
         domain: Model.application
@@ -458,7 +461,7 @@ function searchWebpageContent(query, callback) {
             console.log("fail to retreive ", query, status.details)
         } else {
             let took = performance.now() - startTime
-            Model.eventHub.publish("__new_search_event__", { query: query, summary: { getTotal: () => { return results.length }, getTook: () => { return took } } }, true)
+            Model.eventHub.publish("__new_search_event__", { query: query, summary: { getTotal: () => { return results.length }, getTook: () => { return took } }, contexts:contexts, offset:offset}, true)
             Model.eventHub.publish("display_webpage_search_result_" + query, results, true)
             callback()
         }
@@ -587,7 +590,7 @@ export class SearchBar extends HTMLElement {
                 }
 
                 if (contexts.length > 0) {
-                    search(searchInput.value, contexts)
+                    search(searchInput.value, contexts, 0)
                     searchInput.value = ""
                     Model.eventHub.publish("_display_search_results_", {}, true)
                 } else {
@@ -735,20 +738,25 @@ export class SearchResults extends HTMLElement {
                 if (tab == null) {
                     let html = `
                     <paper-tab id="${uuid}-tab">
-                        <span>${evt.query} (<span id="${uuid}-total-span">${evt.summary.getTotal()}</span>)</span>
+                        <span>${evt.query} (<span id="${uuid}-total-span"></span>)</span>
                         <paper-icon-button id="${uuid}-close-btn" icon="icons:close"></paper-icon-button>
                     </paper-tab>
                     `
+
                     let range = document.createRange()
                     this.tabs.appendChild(range.createContextualFragment(html))
                     tab = this.tabs.querySelector(`#${uuid}-tab`)
 
-                    tab.onclick = () => {
-                        let page = this.querySelector(`#${uuid}-results-page`)
 
+                    tab.onclick = () => {
+
+                        
+                        let page = this.querySelector(`#${uuid}-results-page`)
                         if (page == undefined) {
                             return
                         }
+
+
                         let index = 0
                         for (var i = 0; i < this.children.length; i++) {
                             this.children[i].style.display = "none";
@@ -784,23 +792,23 @@ export class SearchResults extends HTMLElement {
 
                 } else {
                     tab.click()
-                    let totalSpan = tab.querySelector(`#${uuid}-total-span`)
-                    let total = parseInt(totalSpan.innerHTML) + evt.summary.getTotal()
-                    totalSpan.innerHTML = total
+
                 }
 
                 // Create a new page...
                 let resultsPage = this.querySelector(`#${uuid}-results-page`)
                 if (resultsPage == null) {
-                    resultsPage = new SearchResultsPage(uuid, evt.summary)
+                    resultsPage = new SearchResultsPage(uuid, evt.summary, evt.contexts)
                     for (var i = 0; i < this.children.length; i++) {
                         this.children[i].style.display = "none";
                     }
                     this.appendChild(resultsPage)
                     this.shadowRoot.querySelector("#empty-search-msg").style.display = "none";
                     ApplicationView.layout.sideMenu().appendChild(resultsPage.facetFilter)
-                } else {
+                } else if (evt.summary) {
                     resultsPage.updateSummary(evt.summary)
+                    let totalSpan = tab.querySelector(`#${uuid}-total-span`)
+                    totalSpan.innerHTML = resultsPage.total + ""
                 }
 
             }, true)
@@ -864,11 +872,15 @@ export class SearchResultsPage extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor(uuid, summary) {
+    constructor(uuid, summary, contexts) {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
         this.id = `${uuid}-results-page`
+        this.offset = 0;
+        this.total = 0;
+        this.query = summary.getQuery();
+        this.contexts = contexts;
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -906,6 +918,7 @@ export class SearchResultsPage extends HTMLElement {
                 <paper-icon-button class="disable"  id="search-result-lst-view-btn" icon="icons:view-list"></paper-icon-button>
             </div>
             <div id="webpage-search-results">
+                <globular-search-results-pages-navigator></globular-search-results-pages-navigator>
             </div>
             <div id="mosaic-view" style="display: block;">
                 <slot name="mosaic_blogPosts" style="display: flex; flex-wrap: wrap;"></slot>
@@ -922,6 +935,9 @@ export class SearchResultsPage extends HTMLElement {
 
         </div>
         `
+
+        this.navigator = this.shadowRoot.querySelector("globular-search-results-pages-navigator")
+        this.navigator.setSearchResultsPage(this)
 
         // left or right side filter...
         this.facetFilter = new FacetSearchFilter(this)
@@ -966,6 +982,7 @@ export class SearchResultsPage extends HTMLElement {
 
         // Append the webpage  search result...
         Model.eventHub.subscribe("display_webpage_search_result_" + summary.getQuery(), uuid => this.display_webpage_search_result_page = uuid, results => {
+            // Set the search results navigator.
             let range = document.createRange()
             let webpageSearchResults = this.shadowRoot.querySelector("#webpage-search-results")
             results.forEach(r => {
@@ -1060,6 +1077,12 @@ export class SearchResultsPage extends HTMLElement {
         this.hits = []
     }
 
+    setSearchResultsNavigator(){
+                         
+        this.shadowRoot.querySelector("globular-search-results-pages-navigator").setSearchResultsPage(this)
+
+    }
+
     // Display a mosaic vue of the result. If the result is a title I will use a flit card
     // if is a video well a video card.
     displayMosaicHit(hit, context) {
@@ -1123,18 +1146,24 @@ export class SearchResultsPage extends HTMLElement {
     }
 
     updateSummary(summary) {
+        if(!summary.getQuery){
+            return
+        }
+
         let totalSpan = this.shadowRoot.querySelector("#total-span")
-        let total = parseInt(totalSpan.innerText) + summary.getTotal()
-        totalSpan.innerText = total + ""
+        this.total += summary.getTotal()
+        totalSpan.innerText = this.total + ""
 
         let tookSpan = this.shadowRoot.querySelector("#took-span")
         let took = parseFloat(tookSpan.innerText)
         took += summary.getTook()
         tookSpan.innerText = took.toFixed(3) + ""
+
+        this.query = summary.getQuery()
+        this.navigator.setTotal(this.total )
     }
 
     displayListHit(hit, context) {
-        let globule = hit.globule
         let titleName = ""
         let uuid = ""
         if (hit.hasTitle || hit.hasVideo || hit.hasAudio) {
@@ -1472,7 +1501,8 @@ export class SearchAudioCard extends HTMLElement {
         }
 
         this.shadowRoot.querySelector("#play-album-btn").onclick = () => {
-            searchTitles(globule, audio.getAlbum(), globule.config.DataPath + "/search/audios", hits => {
+
+            searchTitles(globule, audio.getAlbum(), [], globule.config.DataPath + "/search/audios", offset, 500, hits => {
                 let audios = []
                 hits.forEach(hit => {
                     if (hit.hasAudio) {
@@ -2570,3 +2600,107 @@ export class SearchFacetPanel extends HTMLElement {
 }
 
 customElements.define('globular-facet', SearchFacetPanel)
+
+
+export class SearchResultsPagesNavigator extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor() {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+
+        this.page = null;
+
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+            ${getTheme()}
+            #container{
+                display: flex;
+                padding: 10px;
+                flex-wrap: wrap;
+            }
+
+            .pagination-btn{
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 40px;
+                width: 40px;
+                margin: 5px;
+                
+                transition: background 0.2s ease,padding 0.8s linear;
+                border: 1px solid var(--palette-text-disabled);
+                border-radius: 5px;
+            }
+
+            .pagination-btn:hover{
+                cursor: pointer;
+                -webkit-filter: invert(30%);
+            }
+
+            .pagination-btn.active {
+                border-color: var(--palette-error-dark);
+            }
+
+        </style>
+        <div id="container">
+            
+        </div>
+        `
+        // give the focus to the input.
+        this.container = this.shadowRoot.querySelector("#container")
+
+    }
+
+    // The connection callback.
+    connectedCallback() {
+        // When the component is set on the page and ready...
+
+    }
+
+    // Set the page reuslts...
+    setSearchResultsPage(page){
+        this.page = page;
+    }
+
+    setIndex(index, btn){
+        let actives = this.shadowRoot.querySelectorAll(".active")
+        for(var i=0; i < actives.length; i++){
+            actives[i].classList.remove("active")
+        }
+
+        // so here I will get the new search...
+        this.page.offset = index
+        this.page.innerHTML = "";
+        this.page.total = 0;
+        search( this.page.query, this.page.contexts, index * MAX_RESULTS)
+        Model.eventHub.publish("_display_search_results_", {}, true)
+    }
+
+    setTotal(total){
+        console.log("------------> total search is: ", total)
+        this.container.innerHTML = ""
+        let nb_pages = Math.ceil(total / MAX_RESULTS)
+        if(nb_pages > 1){
+            for(var i =0; i < nb_pages; i++){
+                let btn = document.createElement("div")
+                btn.innerHTML = i + 1
+                btn.classList.add("pagination-btn")
+                if(i == this.page.offset){
+                    btn.classList.add("active")
+                }
+                let index = i
+                btn.onclick = ()=>{
+                    this.setIndex(index, btn)
+                }
+                this.container.appendChild(btn)
+            }
+        }
+    }
+}
+
+customElements.define('globular-search-results-pages-navigator', SearchResultsPagesNavigator)

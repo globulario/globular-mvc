@@ -113,12 +113,24 @@ export class VideoPlayer extends HTMLElement {
             <div class="header" style="${hideheader ? "display:none;" : ""}">
                 <paper-icon-button id="video-close-btn" icon="icons:close" style="min-width: 40px; --iron-icon-fill-color: var(--palette-text-accent);"></paper-icon-button>
                 <span id="title-span"></span>
+                <paper-icon-button id="title-info-button" icon="icons:arrow-drop-down-circle"></paper-icon-button>
             </div>
             <slot></slot>
         </paper-card>
         `
 
         let container = this.shadowRoot.querySelector("#container")
+
+
+        this.shadowRoot.querySelector("#title-info-button").onclick = () => {
+            console.log(this.titleInfo.constructor.name)
+            if(this.titleInfo.clearActorsList !=undefined){
+                this.showTitleInfo(this.titleInfo)
+            }else{
+                this.showVideoInfo(this.titleInfo)
+            }   
+           
+        }
 
         // give the focus to the input.
         this.video = document.createElement("video")
@@ -154,7 +166,7 @@ export class VideoPlayer extends HTMLElement {
         }
 
         setMoveable(this.shadowRoot.querySelector(".header"), container, (left, top) => {
-           /** */
+            /** */
         }, this, offsetTop)
 
         // Plyr give a nice visual to the video player.
@@ -181,6 +193,72 @@ export class VideoPlayer extends HTMLElement {
 
     connectedCallback() {
 
+    }
+
+    showVideoInfo(video) {
+        //let uuid = randomUUID()
+        let html = `
+        <style>
+            ${getTheme()}
+            paper-card {
+                background-color: var(--palette-background-paper);
+            }
+        </style>
+
+        <paper-card>
+            <globular-informations-manager id="video-info-box"></globular-informations-manager>
+        </paper-card>
+        `
+        let videoInfoBox = document.getElementById("video-info-box")
+
+
+        if (videoInfoBox == undefined) {
+            let range = document.createRange()
+            document.body.appendChild(range.createContextualFragment(html))
+            videoInfoBox = document.getElementById("video-info-box")
+            let parent =  videoInfoBox.parentNode
+            parent.style.position = "fixed"
+            parent.style.top = "50%"
+            parent.style.left = "50%"
+            parent.style.transform = "translate(-50%, -50%)"
+            videoInfoBox.onclose = ()=>{
+                parent.parentNode.removeChild(parent)
+            }
+        }
+        videoInfoBox.setVideosInformation([video])
+    }
+
+    showTitleInfo(title) {
+        //let uuid = randomUUID()
+        let html = `
+        <style>
+            ${getTheme()}
+            paper-card {
+                background-color: var(--palette-background-paper);
+                padding: 15px;
+            }
+        </style>
+
+        <paper-card>
+            <globular-informations-manager id="title-info-box"></globular-informations-manager>
+        </paper-card>
+        `
+        let titleInfoBox = document.getElementById("title-info-box")
+        if (titleInfoBox == undefined) {
+            let range = document.createRange()
+            document.body.appendChild(range.createContextualFragment(html))
+            titleInfoBox = document.getElementById("title-info-box")
+            let parent =  titleInfoBox.parentNode
+            parent.style.position = "fixed"
+            parent.style.top = "50%"
+            parent.style.left = "50%"
+            parent.style.transform = "translate(-50%, -50%)"
+            
+            titleInfoBox.onclose = ()=>{
+                parent.parentNode.removeChild(parent)
+            }
+        }
+        titleInfoBox.setTitlesInformation([title])
     }
 
     play(path, globule) {
@@ -220,11 +298,11 @@ export class VideoPlayer extends HTMLElement {
 
                 } else {
                     if (File.hasLocal) {
-                        File.hasLocal(path, exists=>{
-                            if(exists){
+                        File.hasLocal(path, exists => {
+                            if (exists) {
                                 // local-media
                                 this.play_(path, globule, true)
-                            }else{
+                            } else {
                                 this.play_(path, globule, false)
                             }
                         })
@@ -241,7 +319,7 @@ export class VideoPlayer extends HTMLElement {
 
     }
 
-    play_(path, globule, local=false) {
+    play_(path, globule, local = false) {
 
         this.style.zIndex = 100
         // Set the title...
@@ -389,7 +467,7 @@ export class VideoPlayer extends HTMLElement {
             url += "&token=" + localStorage.getItem("user_token")
         }
 
-        if(local){
+        if (local) {
             url = "local-media://" + path
         }
 

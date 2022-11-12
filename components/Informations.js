@@ -411,6 +411,8 @@ export class InformationsManager extends HTMLElement {
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
         let isShort = this.hasAttribute("short")
+        this.onclose = null;
+
         // Innitialisation of the layout.
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -480,6 +482,9 @@ export class InformationsManager extends HTMLElement {
         closeButton.onclick = () => {
             // remove it from it parent.
             this.parentNode.removeChild(this)
+            if(this.onclose!=null){
+                this.onclose()
+            }
 
         }
     }
