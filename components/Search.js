@@ -2516,12 +2516,10 @@ export class SearchFacetPanel extends HTMLElement {
                 if (!checkbox_.checked) {
                     if (checkbox.checked) {
                         checkbox.checked = false
-                        //checkbox.onclick()
                     }
                 } else {
                     if (!checkbox.checked) {
                         checkbox.checked = true
-                        //checkbox.onclick() // do not set it...
                     }
                 }
             }
