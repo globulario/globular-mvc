@@ -115,7 +115,10 @@ export class VideoPlayer extends HTMLElement {
                 <span id="title-span"></span>
                 <paper-icon-button id="title-info-button" icon="icons:arrow-drop-down-circle"></paper-icon-button>
             </div>
-            <slot></slot>
+            <div style="display: flex; flex-direction: column;">
+                <globular-playlist></globular-playlist>
+                <slot></slot>
+            </div>
         </paper-card>
         `
 

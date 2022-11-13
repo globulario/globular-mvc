@@ -1113,7 +1113,7 @@ export class SearchResultsPage extends HTMLElement {
         this.innerHTML = ""
         this.contexts.forEach(context => {
             if (this.hits_by_context[context]) {
-                for (var i = this.offset * MAX_DISPLAY_RESULTS; this.querySelectorAll(".filterable").length/2 < MAX_DISPLAY_RESULTS && i < this.hits_by_context[context].length; i++) {
+                for (var i = this.offset * MAX_DISPLAY_RESULTS; this.querySelectorAll("." + context).length < MAX_DISPLAY_RESULTS && i < this.hits_by_context[context].length; i++) {
                     let hit = this.hits_by_context[context][i]
                     if(!hit.hidden){
                         this.displayListHit(hit, context)
@@ -1216,6 +1216,7 @@ export class SearchResultsPage extends HTMLElement {
                     flipCard.id = id
                     flipCard.slot = "mosaic_" + context
                     flipCard.setTitle(title)
+                    flipCard.classList.add(context)
                 }
                 return flipCard
             } else if (hit.hasVideo()) {
@@ -1228,6 +1229,7 @@ export class SearchResultsPage extends HTMLElement {
                     videoCard.id = id
                     videoCard.slot = "mosaic_" + context
                     videoCard.setVideo(video, hit.globule)
+                    videoCard.classList.add(context)
                 }
                 return videoCard
             } else if (hit.hasAudio()) {
@@ -1240,6 +1242,7 @@ export class SearchResultsPage extends HTMLElement {
                     audioCard.id = id
                     audioCard.slot = "mosaic_" + context
                     audioCard.setAudio(audio, hit.globule)
+                    audioCard.classList.add(context)
                 }
                 return audioCard
             }
@@ -1254,6 +1257,7 @@ export class SearchResultsPage extends HTMLElement {
                 blogPost.getKeywordsList().forEach(kw => blogPostInfo.classList.add(getUuidByString(kw.toLowerCase())))
                 blogPostInfo.id = id
                 blogPostInfo.slot = "mosaic_" + context
+                blogPostInfo.classList.add(context)
             }
             return blogPostInfo
         }
@@ -1616,7 +1620,7 @@ export class SearchAudioCard extends HTMLElement {
 
         this.shadowRoot.querySelector("#play-album-btn").onclick = () => {
 
-            searchTitles(globule, audio.getAlbum(), [], globule.config.DataPath + "/search/audios", offset, 500, hits => {
+            searchTitles(globule, audio.getAlbum(), [], globule.config.DataPath + "/search/audios", 0, 500, hits => {
                 let audios = []
                 hits.forEach(hit => {
                     if (hit.hasAudio) {
