@@ -14,12 +14,13 @@ import * as getUuidByString from 'uuid-by-string';
 import { SearchBlogPostsRequest } from 'globular-web-client/blog/blog_pb';
 import { SearchDocumentsRequest } from 'globular-web-client/search/search_pb';
 import * as JwtDecode from 'jwt-decode';
-import { base64toBlob, getCoords, randomUUID } from './utility';
+import { base64toBlob, formatBoolean, getCoords, randomUUID } from './utility';
 import { playAudio } from './Audio';
 import { setAudio } from './Playlist';
 
 // Maximum number of results displayed...
-var MAX_RESULTS = 20; // the maximum results display per page per globule...
+var MAX_DISPLAY_RESULTS = 30; // the maximum results display per page per globule...
+var MAX_RESULTS = 5000; // The total number of result search...
 
 // keep values in memorie to speedup...
 var titles = {}
@@ -272,7 +273,7 @@ function search(query, contexts_, offset) {
 
     // Connections can contain many time the same address....
     let globules = Model.getGlobules()
-    if(offset == undefined){
+    if (offset == undefined) {
         offset = 0;
     }
 
@@ -287,22 +288,22 @@ function search(query, contexts_, offset) {
                 let indexPath = g.config.DataPath + "/search/" + context
                 if (context == "blogPosts") {
                     if (contexts.length == 0) {
-                        searchBlogPosts(g, query, contexts_, indexPath, offset, () => {
+                        searchBlogPosts(g, query, contexts_, indexPath, offset, MAX_RESULTS, () => {
 
                         })
                     } else {
-                        searchBlogPosts(g, query, contexts_, indexPath, offset, () => {
+                        searchBlogPosts(g, query, contexts_, indexPath, offset, MAX_RESULTS, () => {
                             search_(contexts)
                         })
                     }
                 } else if (context == "webPages") {
 
                     if (contexts.length == 0) {
-                        searchWebpageContent(g, query, contexts_, offset, () => {
+                        searchWebpageContent(g, query, contexts_, offset, MAX_RESULTS, () => {
 
                         })
                     } else {
-                        searchWebpageContent(g, query, contexts_, offset, () => {
+                        searchWebpageContent(g, query, contexts_, offset, MAX_RESULTS, () => {
                             search_(contexts)
                         })
                     }
@@ -348,7 +349,7 @@ function searchTitles(globule, query, contexts, indexPath, offset, max, callback
 
         if (rsp.hasSummary() && !fields) {
             Model.eventHub.publish("_display_search_results_", {}, true)
-            Model.eventHub.publish("__new_search_event__", { query: query, summary: rsp.getSummary(), contexts:contexts, offset:offset}, true)
+            Model.eventHub.publish("__new_search_event__", { query: query, summary: rsp.getSummary(), contexts: contexts, offset: offset }, true)
         } else if (rsp.hasFacets() && !fields) {
             let uuid = "_" + getUuid(query)
             Model.eventHub.publish(`${uuid}_search_facets_event__`, { facets: rsp.getFacets() }, true)
@@ -387,21 +388,21 @@ function searchTitles(globule, query, contexts, indexPath, offset, max, callback
     });
 }
 
-function searchBlogPosts(globule, query, contexts, indexPath, offset, callback) {
+function searchBlogPosts(globule, query, contexts, indexPath, offset, max, callback) {
 
     // This is a simple test...
     let rqst = new SearchBlogPostsRequest
     rqst.setIndexpath(indexPath)
     rqst.setQuery(query)
     rqst.setOffset(offset)
-    rqst.setSize(MAX_RESULTS)
+    rqst.setSize(max)
 
     let stream = globule.blogService.searchBlogPosts(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
     stream.on("data", (rsp) => {
 
         if (rsp.hasSummary()) {
             Model.eventHub.publish("_display_search_results_", {}, true)
-            Model.eventHub.publish("__new_search_event__", { query: query, summary: rsp.getSummary(), contexts:contexts, offset:offset }, true)
+            Model.eventHub.publish("__new_search_event__", { query: query, summary: rsp.getSummary(), contexts: contexts, offset: offset }, true)
         } else if (rsp.hasFacets()) {
             let uuid = "_" + getUuid(query)
             Model.eventHub.publish(`${uuid}_search_facets_event__`, { facets: rsp.getFacets() }, true)
@@ -430,7 +431,7 @@ function searchBlogPosts(globule, query, contexts, indexPath, offset, callback) 
  * Search document...
  * @param {*} query 
  */
-function searchWebpageContent(globule, query, contexts,  offset, callback) {
+function searchWebpageContent(globule, query, contexts, offset, max, callback) {
 
     // Search over web-content.
     let rqst = new SearchDocumentsRequest
@@ -438,7 +439,7 @@ function searchWebpageContent(globule, query, contexts,  offset, callback) {
     rqst.setLanguage("en")
     rqst.setFieldsList(["Text"])
     rqst.setOffset(offset)
-    rqst.setPagesize(MAX_RESULTS)
+    rqst.setPagesize(max)
     rqst.setQuery(query)
 
     let token = localStorage.getItem("user_token")
@@ -461,7 +462,7 @@ function searchWebpageContent(globule, query, contexts,  offset, callback) {
             console.log("fail to retreive ", query, status.details)
         } else {
             let took = performance.now() - startTime
-            Model.eventHub.publish("__new_search_event__", { query: query, summary: { getTotal: () => { return results.length }, getTook: () => { return took } }, contexts:contexts, offset:offset}, true)
+            Model.eventHub.publish("__new_search_event__", { query: query, summary: { getTotal: () => { return results.length }, getTook: () => { return took } }, contexts: contexts, offset: offset }, true)
             Model.eventHub.publish("display_webpage_search_result_" + query, results, true)
             callback()
         }
@@ -750,7 +751,7 @@ export class SearchResults extends HTMLElement {
 
                     tab.onclick = () => {
 
-                        
+
                         let page = this.querySelector(`#${uuid}-results-page`)
                         if (page == undefined) {
                             return
@@ -808,7 +809,7 @@ export class SearchResults extends HTMLElement {
                 } else if (evt.summary) {
                     resultsPage.updateSummary(evt.summary)
                     let totalSpan = tab.querySelector(`#${uuid}-total-span`)
-                    totalSpan.innerHTML = resultsPage.total + ""
+                    totalSpan.innerHTML = resultsPage.getTotal() + ""
                 }
 
             }, true)
@@ -878,7 +879,6 @@ export class SearchResultsPage extends HTMLElement {
         this.attachShadow({ mode: 'open' });
         this.id = `${uuid}-results-page`
         this.offset = 0;
-        this.total = 0;
         this.query = summary.getQuery();
         this.contexts = contexts;
 
@@ -946,7 +946,8 @@ export class SearchResultsPage extends HTMLElement {
         this.searchReusltLstViewBtn = this.shadowRoot.querySelector("#search-result-lst-view-btn")
         this.searchReusltIconViewBtn = this.shadowRoot.querySelector("#search-result-icon-view-btn")
         this.viewType = "icon"
-        this.hits = [] // keep the current list in memory...
+        this.hits = {} // keep the current list in memory...
+        this.hits_by_context = {}
 
         this.searchReusltLstViewBtn.onclick = () => {
             this.searchReusltLstViewBtn.classList.remove("disable")
@@ -973,11 +974,44 @@ export class SearchResultsPage extends HTMLElement {
         // Append it to the results.
         Model.eventHub.subscribe(`${uuid}_search_hit_event__`, listner_uuid => { },
             evt => {
-                this.hits.push(evt.hit)
-                Model.eventHub.publish("_display_search_results_", {}, true)
 
-                this.displayListHit(evt.hit, evt.context)
-                this.displayMosaicHit(evt.hit, evt.context)
+                Model.eventHub.publish("_display_search_results_", {}, true)
+                if (this.hits_by_context[evt.context] == null) {
+                    this.hits_by_context[evt.context] = []
+                }
+
+                // get the uuid from the hit content object.
+                let getHitUuid = (hit) => {
+                    if (hit.hasTitle || hit.hasVideo || hit.hasAudio) {
+                        if (hit.hasTitle()) {
+                            return getUuidByString(hit.getTitle().getName())
+                        } else if (hit.hasVideo()) {
+                            return getUuidByString(hit.getVideo().getId())
+                        } else if (hit.hasAudio()) {
+                            return getUuidByString(hit.getAudio().getId())
+                        }
+                    } else {
+                        return hit.getBlog().getUuid()
+                    }
+                }
+
+                let hit = evt.hit
+                let uuid = getHitUuid(hit)
+
+                if (this.hits[uuid] == undefined) {
+
+                    this.hits[uuid] = hit
+                    this.hits_by_context[evt.context].push(hit)
+                    hit.card = this.displayMosaicHit(hit, evt.context)
+                    hit.hidden = false;
+
+                    // Display first results...
+                    if (this.hits_by_context[evt.context].length < MAX_DISPLAY_RESULTS) {
+                        this.displayListHit(evt.hit, evt.context)
+                        this.appendChild(hit.card)
+                    }
+                }
+
             }, true)
 
         // Append the webpage  search result...
@@ -985,6 +1019,7 @@ export class SearchResultsPage extends HTMLElement {
             // Set the search results navigator.
             let range = document.createRange()
             let webpageSearchResults = this.shadowRoot.querySelector("#webpage-search-results")
+
             results.forEach(r => {
                 let doc = JSON.parse(r.getData())
                 let snippet = JSON.parse(r.getSnippet());
@@ -1001,7 +1036,6 @@ export class SearchResultsPage extends HTMLElement {
                 </div>
                 `
 
-
                 if (snippet.Text) {
                     if (snippet.Text.length > 0) {
                         webpageSearchResults.appendChild(range.createContextualFragment(html))
@@ -1016,8 +1050,6 @@ export class SearchResultsPage extends HTMLElement {
 
                     let lnk = webpageSearchResults.querySelector(`#page-${uuid}-lnk`)
                     lnk.onclick = () => {
-                        console.log(doc, snippet)
-
                         let pageLnks = document.getElementsByTagName("globular-page-link")
                         for (var i = 0; i < pageLnks.length; i++) {
                             if (pageLnks[i].id.startsWith(doc.PageId)) {
@@ -1074,13 +1106,100 @@ export class SearchResultsPage extends HTMLElement {
     }
 
     clear() {
-        this.hits = []
+        this.hits = {}
     }
 
-    setSearchResultsNavigator(){
-                         
-        this.shadowRoot.querySelector("globular-search-results-pages-navigator").setSearchResultsPage(this)
+    refresh() {
+        this.innerHTML = ""
+        this.contexts.forEach(context => {
+            if (this.hits_by_context[context]) {
+                for (var i = this.offset * MAX_DISPLAY_RESULTS; this.querySelectorAll(".filterable").length/2 < MAX_DISPLAY_RESULTS && i < this.hits_by_context[context].length; i++) {
+                    let hit = this.hits_by_context[context][i]
+                    if(!hit.hidden){
+                        this.displayListHit(hit, context)
+                        this.appendChild(hit.card) // append the mosaic card (blog, title, video, audio...)
+                    }
+                }
+            }
+        })
 
+    }
+
+    // Return the number of visible element (not filter)
+    getTotal() {
+        let count = 0
+        for (var id in this.hits) {
+            let hit = this.hits[id]
+            if (!hit.hidden) {
+                count++
+            }
+        }
+
+        return count;
+    }
+
+    hideAll(className) {
+        for (var id in this.hits) {
+            let hit = this.hits[id]
+            if (hit.card) {
+                if( className == undefined){
+                    hit.hidden = true
+                } else if (hit.card.classList.contains(getUuidByString(className))) {
+                    hit.hidden = true
+                }
+            }
+        }
+    }
+
+    showAll(className){
+       
+        let count = 0;
+        for (var id in this.hits) {
+            let hit = this.hits[id]
+            if (hit.card) {
+                if(className == undefined){
+                    hit.hidden = false
+                } else if (hit.card.classList.contains(getUuidByString(className))) {
+                    hit.hidden = false
+                    count++
+                }
+            }
+        }
+        console.log("---> show ", className, count)
+    }
+
+    countElementByClassName(className) {
+        let count = 0
+        for (var id in this.hits) {
+            let hit = this.hits[id]
+            if (hit.card) {
+                if (hit.card.classList.contains(getUuidByString(className))) {
+                    count++
+                }
+            }
+        }
+        return count;
+    }
+
+    // Return all audio from cards...
+    getAudios(className) {
+        let audios = []
+        for (var id in this.hits) {
+            let hit = this.hits[id]
+            if (hit.card) {
+                if (hit.card.getAudio) {
+                    if (hit.card.classList.contains(getUuidByString(className)) || className == undefined) {
+                        audios.push(hit.card.getAudio())
+                    }
+                }
+            }
+        }
+
+        return audios
+    }
+
+    setSearchResultsNavigator() {
+        this.shadowRoot.querySelector("globular-search-results-pages-navigator").setSearchResultsPage(this)
     }
 
     // Display a mosaic vue of the result. If the result is a title I will use a flit card
@@ -1097,7 +1216,6 @@ export class SearchResultsPage extends HTMLElement {
                     flipCard.id = id
                     flipCard.slot = "mosaic_" + context
                     flipCard.setTitle(title)
-                    this.appendChild(flipCard)
                 }
                 return flipCard
             } else if (hit.hasVideo()) {
@@ -1110,7 +1228,6 @@ export class SearchResultsPage extends HTMLElement {
                     videoCard.id = id
                     videoCard.slot = "mosaic_" + context
                     videoCard.setVideo(video, hit.globule)
-                    this.appendChild(videoCard)
                 }
                 return videoCard
             } else if (hit.hasAudio()) {
@@ -1123,7 +1240,6 @@ export class SearchResultsPage extends HTMLElement {
                     audioCard.id = id
                     audioCard.slot = "mosaic_" + context
                     audioCard.setAudio(audio, hit.globule)
-                    this.appendChild(audioCard)
                 }
                 return audioCard
             }
@@ -1138,7 +1254,6 @@ export class SearchResultsPage extends HTMLElement {
                 blogPost.getKeywordsList().forEach(kw => blogPostInfo.classList.add(getUuidByString(kw.toLowerCase())))
                 blogPostInfo.id = id
                 blogPostInfo.slot = "mosaic_" + context
-                this.appendChild(blogPostInfo)
             }
             return blogPostInfo
         }
@@ -1146,13 +1261,12 @@ export class SearchResultsPage extends HTMLElement {
     }
 
     updateSummary(summary) {
-        if(!summary.getQuery){
+        if (!summary.getQuery) {
             return
         }
 
         let totalSpan = this.shadowRoot.querySelector("#total-span")
-        this.total += summary.getTotal()
-        totalSpan.innerText = this.total + ""
+        totalSpan.innerText = this.getTotal() + ""
 
         let tookSpan = this.shadowRoot.querySelector("#took-span")
         let took = parseFloat(tookSpan.innerText)
@@ -1160,7 +1274,7 @@ export class SearchResultsPage extends HTMLElement {
         tookSpan.innerText = took.toFixed(3) + ""
 
         this.query = summary.getQuery()
-        this.navigator.setTotal(this.total )
+        this.navigator.setTotal(this.getTotal())
     }
 
     displayListHit(hit, context) {
@@ -1540,6 +1654,9 @@ export class SearchVideoCard extends HTMLElement {
     // Create the applicaiton view.
     constructor() {
         super()
+
+        this.video = null;
+
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
 
@@ -1649,11 +1766,97 @@ export class SearchVideoCard extends HTMLElement {
         videoInfoBox.setVideosInformation([video])
     }
 
+    connectedCallback() {
+
+        // test if the gif image is initialysed...
+        let preview = this.shadowRoot.querySelector("#preview-image")
+        // paly only the first file...
+        if (preview.src.length == 0) {
+            let video = this.video
+            let globule = this.video.globule
+            let rqst = new GetTitleFilesRequest
+            rqst.setTitleid(video.getId())
+            let indexPath = globule.config.DataPath + "/search/videos"
+            rqst.setIndexpath(indexPath)
+
+            globule.titleService.getTitleFiles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+                .then(rsp => {
+                    if (rsp.getFilepathsList().length > 0) {
+                        let path = rsp.getFilepathsList().pop()
+                        let thumbnail = this.shadowRoot.querySelector("#thumbnail-image")
+                        let thumbnailPath = path
+                        if (thumbnailPath.lastIndexOf(".mp4") != -1 || thumbnailPath.lastIndexOf(".MP4") != -1) {
+                            thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("."))
+                        }
+                        thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/preview.gif"
+
+                        let url = globule.config.Protocol + "://" + globule.config.Domain
+                        if (window.location != globule.config.Domain) {
+                            if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
+                                url = globule.config.Protocol + "://" + window.location.host
+                            }
+                        }
+
+                        if (globule.config.Protocol == "https") {
+                            if (globule.config.PortHttps != 443)
+                                url += ":" + globule.config.PortHttps
+                        } else {
+                            if (globule.config.PortHttps != 80)
+                                url += ":" + globule.config.PortHttp
+                        }
+
+
+                        thumbnailPath.split("/").forEach(item => {
+                            item = item.trim()
+                            if (item.length > 0) {
+                                url += "/" + encodeURIComponent(item)
+                            }
+                        })
+
+                        preview.src = url
+                        preview.onclick = () => {
+                            playVideo(path, null, null, null, globule)
+                        }
+
+                        if (!thumbnail.src.startsWith("data:image")) {
+                            getCoverDataUrl(dataUrl => {
+                                thumbnail.src = dataUrl
+                                video.getPoster().setContenturl(thumbnail.src)
+                                let rqst = new CreateVideoRequest
+                                rqst.setIndexpath(globule.config.DataPath + "/search/videos")
+                                rqst.setVideo(video)
+                                globule.titleService.createVideo(rqst).then(
+                                    () => {
+                                        console.log("video was saved!", video)
+                                    }
+                                )
+                            }, video.getId(), video.getUrl(), path)
+
+                        }
+
+                    }
+                }).catch(err => {
+                    // TODO append broken link image and propose the user to delete the file.
+                    console.log("no video file found", err)
+                    let rqst = new DeleteVideoRequest
+                    rqst.setVideoid(video.getId())
+                    rqst.setIndexpath(indexPath)
+                    globule.titleService.deleteVideo(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+                        .then(() => {
+                            console.log("video ", video.getId(), " was deleted")
+                        })
+                })
+        }
+    }
+
     setVideo(video, globule) {
 
         if (!globule) {
             globule = Application.globular
         }
+
+        this.video = video
+        this.video.globule = globule
 
         this.classList.add("filterable")
         video.getGenresList().forEach(g => this.classList.add(getUuidByString(g.toLowerCase())))
@@ -1692,80 +1895,6 @@ export class SearchVideoCard extends HTMLElement {
         // Here I will get the file asscociated with the video...
         this.shadowRoot.querySelector("#description").innerHTML = video.getDescription()
         this.shadowRoot.querySelector("#rating-span").innerHTML = video.getRating().toFixed(1)
-
-        // paly only the first file...
-        let rqst = new GetTitleFilesRequest
-        rqst.setTitleid(video.getId())
-        let indexPath = globule.config.DataPath + "/search/videos"
-        rqst.setIndexpath(indexPath)
-
-        globule.titleService.getTitleFiles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
-            .then(rsp => {
-                if (rsp.getFilepathsList().length > 0) {
-                    let path = rsp.getFilepathsList().pop()
-
-                    let thumbnailPath = path
-                    if (thumbnailPath.lastIndexOf(".mp4") != -1 || thumbnailPath.lastIndexOf(".MP4") != -1) {
-                        thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("."))
-                    }
-                    thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/preview.gif"
-
-                    let url = globule.config.Protocol + "://" + globule.config.Domain
-                    if (window.location != globule.config.Domain) {
-                        if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
-                            url = globule.config.Protocol + "://" + window.location.host
-                        }
-                    }
-
-                    if (globule.config.Protocol == "https") {
-                        if (globule.config.PortHttps != 443)
-                            url += ":" + globule.config.PortHttps
-                    } else {
-                        if (globule.config.PortHttps != 80)
-                            url += ":" + globule.config.PortHttp
-                    }
-
-
-                    thumbnailPath.split("/").forEach(item => {
-                        item = item.trim()
-                        if (item.length > 0) {
-                            url += "/" + encodeURIComponent(item)
-                        }
-                    })
-
-                    preview.src = url
-                    preview.onclick = () => {
-                        playVideo(path, null, null, null, globule)
-                    }
-
-                    if (!thumbnail.src.startsWith("data:image")) {
-                        getCoverDataUrl(dataUrl => {
-                            thumbnail.src = dataUrl
-                            video.getPoster().setContenturl(thumbnail.src)
-                            let rqst = new CreateVideoRequest
-                            rqst.setIndexpath(globule.config.DataPath + "/search/videos")
-                            rqst.setVideo(video)
-                            globule.titleService.createVideo(rqst).then(
-                                () => {
-                                    console.log("video was saved!", video)
-                                }
-                            )
-                        }, video.getId(), video.getUrl(), path)
-
-                    }
-
-                }
-            }).catch(err => {
-                // TODO append broken link image and propose the user to delete the file.
-                console.log("no video file found", err)
-                let rqst = new DeleteVideoRequest
-                rqst.setVideoid(video.getId())
-                rqst.setIndexpath(indexPath)
-                globule.titleService.deleteVideo(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
-                    .then(() => {
-                        console.log("video ", video.getId(), " was deleted")
-                    })
-            })
     }
 }
 
@@ -2334,7 +2463,6 @@ export class SearchFacetPanel extends HTMLElement {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
-        this.total = 0
         this.page = page
 
         // Innitialisation of the layout.
@@ -2370,17 +2498,17 @@ export class SearchFacetPanel extends HTMLElement {
         </div>
         `
 
-        // test create offer...
         let facetList = this.shadowRoot.querySelector(".facet-list")
         let checkbox_ = this.shadowRoot.querySelector("paper-checkbox")
 
         checkbox_.onclick = () => {
-            let filterables = page.querySelectorAll(".filterable")
-            filterables.forEach(f => f.style.display = "none") // hide all
-
+            this.page.hideAll()
             if (checkbox_.checked) {
-                filterables.forEach(f => f.style.display = "block") // hide all
+                this.page.showAll()
             }
+
+            this.page.refresh()
+            this.page.navigator.setTotal(this.page.getTotal())
 
             let checkboxs = facetList.querySelectorAll("paper-checkbox")
             for (var i = 0; i < checkboxs.length; i++) {
@@ -2388,8 +2516,7 @@ export class SearchFacetPanel extends HTMLElement {
                 if (!checkbox_.checked) {
                     if (checkbox.checked) {
                         checkbox.checked = false
-                        checkbox.onclick()
-
+                        //checkbox.onclick()
                     }
                 } else {
                     if (!checkbox.checked) {
@@ -2479,35 +2606,18 @@ export class SearchFacetPanel extends HTMLElement {
     }
 
     getAudios(className) {
-        let filtrables = this.page.getElementsByClassName(getUuidByString(className));
-        let audios = []
-        for (var i = 0; i < filtrables.length; i++) {
-            if (filtrables[i].getAudio != undefined) {
-                audios.push(filtrables[i].getAudio())
-            }
-        }
-
-        return audios
+        return this.page.getAudios(className)
     }
 
     setFacet(facet) {
         this.id = "_" + getUuidByString(facet.getField())
-        this.total += this.page.getElementsByClassName("filterable").length / 2
 
-        this.shadowRoot.querySelector("#total_span").innerHTML = "(" + this.total + ")"
+        this.shadowRoot.querySelector("#total_span").innerHTML = "(" + this.page.getTotal() + ")"
         this.shadowRoot.querySelector("#field_span").innerHTML = facet.getField()
 
         /** Play all results found... */
         this.shadowRoot.querySelector("#play_facet_btn").onclick = () => {
-            let filtrables = this.page.getElementsByClassName("filterable");
-            let audios = []
-            for (var i = 0; i < filtrables.length; i++) {
-                if (filtrables[i].getAudio != undefined) {
-                    if (filtrables[i].style.display != "none")
-                        audios.push(filtrables[i].getAudio())
-                }
-            }
-
+            let audios = this.page.getAudios()
             // Play the audios found...
             if (audios.length > 0) {
                 this.playAudios(audios, facet.getField())
@@ -2537,7 +2647,7 @@ export class SearchFacetPanel extends HTMLElement {
                 className = obj.name
             }
 
-            let count = this.page.getElementsByClassName(getUuidByString(className)).length / 2 // list-view and mosaic-view will be count
+            let count = this.page.countElementByClassName(className)// list-view and mosaic-view will be count
             if (count > 0) {
                 let uuid = "_" + getUuidByString(className)
                 if (!facetList.querySelector("#" + uuid)) {
@@ -2546,7 +2656,7 @@ export class SearchFacetPanel extends HTMLElement {
                         <paper-icon-button  style="display: none"  id="${uuid}_play_btn" icon="av:play-arrow"></paper-icon-button>
                         <paper-checkbox class="${className}" id="${uuid}" checked> <div  class="facet-label"> ${term + "<span id='" + uuid + "_total'>(" + count + ")</span>"} </div></paper-checkbox> 
                     <div>
-                `
+                    `
                     // The facet list.
                     facetList.appendChild(range.createContextualFragment(html))
                 } else {
@@ -2568,23 +2678,24 @@ export class SearchFacetPanel extends HTMLElement {
                     this.playAudios(this.getAudios(className), term)
                 }
 
-                let filterables = this.page.querySelectorAll(".filterable")
 
                 let checkbox = this.shadowRoot.querySelector("#" + uuid)
                 checkbox.onclick = () => {
-                    filterables.forEach(f => f.style.display = "none") // hide all
+                    this.page.hideAll()
+                    // Get all checkboxs of a facet...
                     let checkboxs = facetList.querySelectorAll("paper-checkbox")
 
                     for (var i = 0; i < checkboxs.length; i++) {
                         let checkbox = checkboxs[i]
                         if (checkbox.checked) {
-                            filterables.forEach(f => {
-                                if (f.classList.contains(getUuidByString(checkbox.className))) {
-                                    f.style.display = ""
-                                }
-                            })
+                            this.page.showAll(checkbox.className)
                         }
                     }
+
+                    this.page.offset = 0;
+                    this.page.navigator.setTotal(this.page.getTotal())
+                    this.page.refresh()
+                   
                 }
 
                 checkbox.onchange = () => {
@@ -2663,38 +2774,39 @@ export class SearchResultsPagesNavigator extends HTMLElement {
     }
 
     // Set the page reuslts...
-    setSearchResultsPage(page){
+    setSearchResultsPage(page) {
         this.page = page;
     }
 
-    setIndex(index, btn){
-        let actives = this.shadowRoot.querySelectorAll(".active")
-        for(var i=0; i < actives.length; i++){
-            actives[i].classList.remove("active")
-        }
+    setIndex(index, btn) {
 
         // so here I will get the new search...
         this.page.offset = index
-        this.page.innerHTML = "";
-        this.page.total = 0;
-        search( this.page.query, this.page.contexts, index * MAX_RESULTS)
+
         Model.eventHub.publish("_display_search_results_", {}, true)
+        this.page.refresh()
+
+        let actives = this.shadowRoot.querySelectorAll(".active")
+        for (var i = 0; i < actives.length; i++) {
+            actives[i].classList.remove("active")
+        }
+
+        btn.classList.add("active")
     }
 
-    setTotal(total){
-        console.log("------------> total search is: ", total)
+    setTotal(total) {
         this.container.innerHTML = ""
-        let nb_pages = Math.ceil(total / MAX_RESULTS)
-        if(nb_pages > 1){
-            for(var i =0; i < nb_pages; i++){
+        let nb_pages = Math.ceil(total / MAX_DISPLAY_RESULTS)
+        if (nb_pages > 1) {
+            for (var i = 0; i < nb_pages; i++) {
                 let btn = document.createElement("div")
                 btn.innerHTML = i + 1
                 btn.classList.add("pagination-btn")
-                if(i == this.page.offset){
+                if (i == this.page.offset) {
                     btn.classList.add("active")
                 }
                 let index = i
-                btn.onclick = ()=>{
+                btn.onclick = () => {
                     this.setIndex(index, btn)
                 }
                 this.container.appendChild(btn)
