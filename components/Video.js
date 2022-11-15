@@ -10,6 +10,7 @@ import { GetFileTitlesRequest, GetFileVideosRequest } from "globular-web-client/
 import { setMoveable } from './moveable'
 import { setResizeable } from './rezieable'
 import { File } from "../File"
+import { randomUUID } from "./utility";
 
 Object.defineProperty(HTMLMediaElement.prototype, 'playing', {
     get: function () {
@@ -199,16 +200,9 @@ export class VideoPlayer extends HTMLElement {
     }
 
     showVideoInfo(video) {
-        //let uuid = randomUUID()
+        let uuid = randomUUID()
         let html = `
-        <style>
-            ${getTheme()}
-            paper-card {
-                background-color: var(--palette-background-paper);
-            }
-        </style>
-
-        <paper-card>
+        <paper-card id="video-info-box-dialog-${uuid}" style="background-color: var(--palette-background-paper);">
             <globular-informations-manager id="video-info-box"></globular-informations-manager>
         </paper-card>
         `
@@ -219,7 +213,7 @@ export class VideoPlayer extends HTMLElement {
             let range = document.createRange()
             document.body.appendChild(range.createContextualFragment(html))
             videoInfoBox = document.getElementById("video-info-box")
-            let parent =  videoInfoBox.parentNode
+            let parent =   document.getElementById("video-info-box-dialog-"+uuid)
             parent.style.position = "fixed"
             parent.style.top = "50%"
             parent.style.left = "50%"
@@ -232,17 +226,9 @@ export class VideoPlayer extends HTMLElement {
     }
 
     showTitleInfo(title) {
-        //let uuid = randomUUID()
+        let uuid = randomUUID()
         let html = `
-        <style>
-            ${getTheme()}
-            paper-card {
-                background-color: var(--palette-background-paper);
-                padding: 15px;
-            }
-        </style>
-
-        <paper-card>
+        <paper-card id="video-info-box-dialog-${uuid}" style="background-color: var(--palette-background-paper); padding: 15px;">
             <globular-informations-manager id="title-info-box"></globular-informations-manager>
         </paper-card>
         `
@@ -251,7 +237,7 @@ export class VideoPlayer extends HTMLElement {
             let range = document.createRange()
             document.body.appendChild(range.createContextualFragment(html))
             titleInfoBox = document.getElementById("title-info-box")
-            let parent =  titleInfoBox.parentNode
+            let parent =   document.getElementById("video-info-box-dialog-" + uuid)
             parent.style.position = "fixed"
             parent.style.top = "50%"
             parent.style.left = "50%"

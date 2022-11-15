@@ -1110,12 +1110,13 @@ export class SearchResultsPage extends HTMLElement {
     }
 
     refresh() {
+        console.log("page refresh call...")
         this.innerHTML = ""
         this.contexts.forEach(context => {
             if (this.hits_by_context[context]) {
                 for (var i = this.offset * MAX_DISPLAY_RESULTS; this.querySelectorAll("." + context).length < MAX_DISPLAY_RESULTS && i < this.hits_by_context[context].length; i++) {
                     let hit = this.hits_by_context[context][i]
-                    if(!hit.hidden){
+                    if (!hit.hidden) {
                         this.displayListHit(hit, context)
                         this.appendChild(hit.card) // append the mosaic card (blog, title, video, audio...)
                     }
@@ -1142,7 +1143,7 @@ export class SearchResultsPage extends HTMLElement {
         for (var id in this.hits) {
             let hit = this.hits[id]
             if (hit.card) {
-                if( className == undefined){
+                if (className == undefined) {
                     hit.hidden = true
                 } else if (hit.card.classList.contains(getUuidByString(className))) {
                     hit.hidden = true
@@ -1151,13 +1152,13 @@ export class SearchResultsPage extends HTMLElement {
         }
     }
 
-    showAll(className){
-       
+    showAll(className) {
+
         let count = 0;
         for (var id in this.hits) {
             let hit = this.hits[id]
             if (hit.card) {
-                if(className == undefined){
+                if (className == undefined) {
                     hit.hidden = false
                 } else if (hit.card.classList.contains(getUuidByString(className))) {
                     hit.hidden = false
@@ -1435,7 +1436,6 @@ export class SearchAudioCard extends HTMLElement {
             #container{
                 padding: 2px;
                 position: relative;
-
             }
 
             .audio-card{
@@ -1496,6 +1496,12 @@ export class SearchAudioCard extends HTMLElement {
         </div>
         `
     }
+
+    
+    connectedCallback(){
+        
+    }
+
 
     // return the audio element...
     getAudio() {
@@ -1639,12 +1645,8 @@ export class SearchAudioCard extends HTMLElement {
                     this.playAudios(audios, audio.getAlbum(), globule)
                 }
             }, ["album"])
-
-
         }
     }
-
-
 }
 
 customElements.define('globular-search-audio-card', SearchAudioCard)
@@ -2081,6 +2083,7 @@ export class SearchTitleDetail extends HTMLElement {
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
         this.title_ = null;
+        this.isLoaded = false;
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -2155,7 +2158,7 @@ export class SearchTitleDetail extends HTMLElement {
                 </div>
                 <div id="episodes-select-div" style="display:none;">
                     <select id="season-select" style="max-width: 80px;"></select>
-                    <select id="episode-select" style="max-width: 82px;"></select>
+                    <select id="episode-select" style="max-width: 102px;"></select>
                     <span style="flex-grow: 1;"></span>
                     <paper-icon-button id="play-episode-video-button" icon="av:play-circle-filled"></paper-icon-button>
                     <paper-icon-button id="episode-info-button" icon="icons:arrow-drop-down-circle"></paper-icon-button>
@@ -2170,9 +2173,17 @@ export class SearchTitleDetail extends HTMLElement {
         this.episodePreview = this.shadowRoot.querySelector("#epsiode-preview")
     }
 
+    connectedCallback() {
+        if(this.isLoaded){
+            return
+        }
 
-    setTitle(title) {
+        let title = this.title_
         let globule = title.globule;
+        this.shadowRoot.querySelector("globular-informations-manager").setTitlesInformation([title])
+
+        this.isLoaded = true;
+
         // Display the episode informations.
         title.onLoadEpisodes = (episodes) => {
             if (this.shadowRoot.querySelector("#loading-episodes-infos").style.display == "none") {
@@ -2296,9 +2307,6 @@ export class SearchTitleDetail extends HTMLElement {
             }
         }
 
-        this.shadowRoot.querySelector("globular-informations-manager").setTitlesInformation([title])
-        this.title_ = title;
-
         if (this.title_.getType() == "TVSeries") {
             this.shadowRoot.querySelector("#title-preview").style.display = "none"
             this.shadowRoot.querySelector("#play-video-button").style.display = "none"
@@ -2362,6 +2370,13 @@ export class SearchTitleDetail extends HTMLElement {
 
     }
 
+
+    setTitle(title) {
+
+        this.title_ = title;
+
+    }
+
     showTitleInfo(title) {
         //let uuid = randomUUID()
         let html = `
@@ -2387,10 +2402,6 @@ export class SearchTitleDetail extends HTMLElement {
             titleInfoBox.parentNode.style.transform = "translate(-50%, -50%)"
         }
         titleInfoBox.setTitlesInformation([title])
-    }
-
-    setVideo(video) {
-
     }
 
 }
@@ -2528,7 +2539,6 @@ export class SearchFacetPanel extends HTMLElement {
                 }
             }
         }
-
     }
 
     // get files associated with the titles, audios or videos...
@@ -2697,7 +2707,7 @@ export class SearchFacetPanel extends HTMLElement {
                     this.page.offset = 0;
                     this.page.navigator.setTotal(this.page.getTotal())
                     this.page.refresh()
-                   
+
                 }
 
                 checkbox.onchange = () => {

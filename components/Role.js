@@ -400,7 +400,7 @@ export class RolePanel extends HTMLElement {
                                             actionDiv.parentNode.removeChild(actionDiv)
                                             actionsList.appendItem(a)
 
-                                            // call the onadditem.
+                                            // call the onadditem.f
                                             actionsList.onadditem(a)
                                         }).catch(err => {
                                             ApplicationView.displayMessage(err, 3000)

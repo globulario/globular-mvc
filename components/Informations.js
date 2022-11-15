@@ -1,5 +1,5 @@
 import { getTheme } from "./Theme";
-import { Model } from '../Model';
+import { generatePeerToken, Model } from '../Model';
 import { Application } from "../Application";
 import { DeleteTitleRequest, DeleteVideoRequest, DissociateFileWithTitleRequest, GetTitleFilesRequest, SearchTitlesRequest } from "globular-web-client/title/title_pb";
 import { File } from "../File";
@@ -388,11 +388,12 @@ export function searchEpisodes(globule, serie, indexPath, callback) {
  * @param {*} callback The callback with the list of episodes.
  */
 export function GetEpisodes(indexPath, title, callback) {
+    // return the existing list...
     if (title.__episodes__ != undefined) {
-
         callback(title.__episodes__)
         return
     }
+
     searchEpisodes(title.globule, title.getId(), indexPath, episodes => {
         title.__episodes__ = episodes
         callback(title.__episodes__)
@@ -1085,7 +1086,8 @@ export class TitleInfo extends HTMLElement {
             })
         } else {
             // Here the title is a series...
-            let indexPath = Application.globular.config.DataPath + "/search/titles"
+            let globule = title.globule
+            let indexPath = globule.config.DataPath + "/search/titles"
             GetEpisodes(indexPath, title, (episodes) => {
                 if (title.onLoadEpisodes != null) {
                     title.onLoadEpisodes(episodes)
@@ -1129,14 +1131,18 @@ export class TitleInfo extends HTMLElement {
             let okBtn = toast.el.querySelector("#imdb-lnk-ok-button")
             okBtn.onclick = () => {
                 let rqst = new DeleteTitleRequest()
-                rqst.setTitleid(title.getId())
-                rqst.setIndexpath(globule.config.DataPath + "/search/titles")
-                globule.titleService.deleteTitle(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
-                    .then(() => {
-                        ApplicationView.displayMessage(`file indexation was deleted`, 3000)
-                        this.parentNode.removeChild(this)
-                    })
-                    .catch(err => ApplicationView.displayMessage(err, 3000))
+                let globule = title.globule
+                generatePeerToken(globule.config.Mac, token=>{
+                    rqst.setTitleid(title.getId())
+                    rqst.setIndexpath(globule.config.DataPath + "/search/titles")
+                    globule.titleService.deleteTitle(rqst, { application: Application.application, domain: Application.domain, token: token })
+                        .then(() => {
+                            ApplicationView.displayMessage(`file indexation was deleted`, 3000)
+                            this.parentNode.removeChild(this)
+                        })
+                        .catch(err => ApplicationView.displayMessage(err, 3000))
+    
+                })
 
                 toast.dismiss();
             }
