@@ -223,7 +223,7 @@ export class File extends Model {
      */
     static getFile(globule: Globular, path: string, thumbnailWith: number, thumbnailHeight: number, callback: (f: File) => void, errorCallback: (err: string) => void) {
 
-        generatePeerToken(globule.config.Mac, token => {
+        generatePeerToken(globule, token => {
 
             let rqst = new GetFileInfoRequest()
             rqst.setPath(path)
@@ -247,7 +247,7 @@ export class File extends Model {
     static readDir(path: string, recursive: boolean, callback: (dir: File) => void, errorCallback: (err: any) => void, globule?: Globular) {
         // So here I will get the dir of the current user...
         //let token = localStorage.getItem("user_token")
-        generatePeerToken(globule.config.Mac, token => {
+        generatePeerToken(globule, token => {
 
             let decoded = jwt(token);
             let address = (<any>decoded).address;
@@ -306,7 +306,7 @@ export class File extends Model {
         okBtn.onclick = () => {
 
             // simply download the file.
-            generatePeerToken(globule.config.Mac, (token: string) => {
+            generatePeerToken(globule, (token: string) => {
                 let path = this.path
                 let url = globule.config.Protocol + "://" + globule.config.Domain
 

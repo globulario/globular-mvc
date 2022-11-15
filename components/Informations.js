@@ -1132,7 +1132,7 @@ export class TitleInfo extends HTMLElement {
             okBtn.onclick = () => {
                 let rqst = new DeleteTitleRequest()
                 let globule = title.globule
-                generatePeerToken(globule.config.Mac, token=>{
+                generatePeerToken(globule, token=>{
                     rqst.setTitleid(title.getId())
                     rqst.setIndexpath(globule.config.DataPath + "/search/titles")
                     globule.titleService.deleteTitle(rqst, { application: Application.application, domain: Application.domain, token: token })

@@ -6,16 +6,24 @@ import { Peer } from "globular-web-client/resource/resource_pb";
 import { View } from "./View";
 
 
+// Keep the token in the map...
+let tokens:any = {}
+
 /**
  * 
  * @param {*} mac The mac address
  * @param {*} callback The callback
  * @param {*} errorCallback 
  */
-export function generatePeerToken(mac: string, callback: (token: string) => void, errorCallback: (err: any) => void) {
-
+export function generatePeerToken(globule: GlobularWebClient.Globular, callback: (token: string) => void, errorCallback: (err: any) => void) {
+    let mac = globule.config.Mac
     if (Model.globular.config.Mac == mac) {
         callback(localStorage.getItem("user_token"))
+        return
+    }
+
+    if (tokens[mac]){
+        callback(tokens[mac])
         return
     }
 
@@ -24,7 +32,12 @@ export function generatePeerToken(mac: string, callback: (token: string) => void
 
     Model.globular.authenticationService.generatePeerToken(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: localStorage.getItem("user_token") })
         .then(rsp => {
-            callback(rsp.getToken())
+            let token = rsp.getToken()
+            tokens[mac] = token
+            setTimeout(()=>{
+                delete tokens[mac]
+            }, (globule.config.SessionTimeout * 60 * 1000) - 15000) // remove the token before it get invalid...
+            callback(token)
 
         })
         .catch(errorCallback)

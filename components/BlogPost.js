@@ -393,7 +393,7 @@ export class BlogPostElement extends HTMLElement {
             rqst.setIndexpath(globule.config.DataPath + "/search/blogPosts")
 
             // Delete the blog...
-            generatePeerToken(globule.config.Mac, token => {
+            generatePeerToken(globule, token => {
                 globule.blogService.deleteBlogPost(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: token })
                     .then(rsp => {
                         Model.publish(this.blog.getUuid() + "_blog_delete_event", {}, false)
@@ -737,7 +737,7 @@ export class BlogPostElement extends HTMLElement {
                 }
 
                 let createBlog = () => {
-                    generatePeerToken(globule.config.Mac, token => {
+                    generatePeerToken(globule, token => {
                         globule.blogService.createBlogPost(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: token })
                             .then(rsp => {
                                 this.blog = rsp.getBlogPost();
@@ -783,7 +783,7 @@ export class BlogPostElement extends HTMLElement {
                 rqst.setBlogPost(this.blog)
 
                 let saveBlog = () => {
-                    generatePeerToken(globule.config.Mac, token => {
+                    generatePeerToken(globule, token => {
                         globule.blogService.saveBlogPost(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: token })
                             .then(rsp => {
                                 ApplicationView.displayMessage("Your post was updated!", 3000)
@@ -984,7 +984,7 @@ export class BlogPosts extends HTMLElement {
     // Get the list of blogs.
     _getBlogs(globule, authors, callback) {
 
-        generatePeerToken(globule.config.Mac, token => {
+        generatePeerToken(globule, token => {
             let rqst = new GetBlogPostsByAuthorsRequest
             rqst.setAuthorsList(authors)
             rqst.setMax(100)
@@ -1367,7 +1367,7 @@ export class BlogCommentEditor extends HTMLElement {
         emojiPicker.addEventListener('emoji-click', event => {
             this.collapse_btn.icon = "editor:insert-emoticon"
             this.collapse_panel.toggle();
-            generatePeerToken(this.globule.config.Mac, token => {
+            generatePeerToken(this.globule, token => {
                 let rqst = new AddEmojiRequest
                 let emoji = new Emoji
                 emoji.setAccountId(Application.account.getId() + "@" + Application.account.getDomain())
@@ -1471,7 +1471,7 @@ export class BlogCommentEditor extends HTMLElement {
         publishCommentButton.onclick = () => {
             this.editor.save().then((outputData) => {
 
-                generatePeerToken(this.globule.config.Mac, token => {
+                generatePeerToken(this.globule, token => {
                     let rqst = new AddCommentRequest
                     let comment = new Comment
                     rqst.setUuid(this.blog.getUuid())

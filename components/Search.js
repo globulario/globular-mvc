@@ -19,7 +19,7 @@ import { playAudio } from './Audio';
 import { setAudio } from './Playlist';
 
 // Maximum number of results displayed...
-var MAX_DISPLAY_RESULTS = 30; // the maximum results display per page per globule...
+var MAX_DISPLAY_RESULTS = 20; // the maximum results display per page per globule...
 var MAX_RESULTS = 5000; // The total number of result search...
 
 // keep values in memorie to speedup...
@@ -559,7 +559,7 @@ export class SearchBar extends HTMLElement {
             <input id='search_input' placeholder="Search"></input>
             <paper-icon-button id="change-search-context" icon="icons:expand-more" style="--iron-icon-fill-color: var(--palette-text-accent); margin-right: 2px; height: 36px;" ></paper-icon-button>
             <paper-card id="context-search-selector">
-                <paper-checkbox checked name="webPages" id="context-search-selector-webpages">Webpages</paper-checkbox>
+                <!--paper-checkbox checked name="webPages" id="context-search-selector-webpages">Webpages</paper-checkbox-->
                 <paper-checkbox checked name="blogPosts" id="context-search-selector-blog-posts">Blog Posts</paper-checkbox>
                 <paper-checkbox checked name="titles" id="context-search-selector-movies">Movies</paper-checkbox>
                 <paper-checkbox checked name="videos" id="context-search-selector-videos">Videos</paper-checkbox>
@@ -917,7 +917,8 @@ export class SearchResultsPage extends HTMLElement {
                 <paper-icon-button id="search-result-icon-view-btn" style="" icon="icons:view-module"></paper-icon-button>
                 <paper-icon-button class="disable"  id="search-result-lst-view-btn" icon="icons:view-list"></paper-icon-button>
             </div>
-            <div id="webpage-search-results">
+            <div id="webpage-search-results" style="display: flex; flex-direction: column;">
+                <globular-search-results-page-contexts-selector></globular-search-results-page-contexts-selector>
                 <globular-search-results-pages-navigator></globular-search-results-pages-navigator>
             </div>
             <div id="mosaic-view" style="display: block;">
@@ -938,6 +939,10 @@ export class SearchResultsPage extends HTMLElement {
 
         this.navigator = this.shadowRoot.querySelector("globular-search-results-pages-navigator")
         this.navigator.setSearchResultsPage(this)
+
+        this.contextsSelector = this.shadowRoot.querySelector("globular-search-results-page-contexts-selector")
+        this.contextsSelector.setSearchResultsPage(this)
+        this.contextsSelector.setContexts(contexts)
 
         // left or right side filter...
         this.facetFilter = new FacetSearchFilter(this)
@@ -1004,12 +1009,16 @@ export class SearchResultsPage extends HTMLElement {
                     this.hits_by_context[evt.context].push(hit)
                     hit.card = this.displayMosaicHit(hit, evt.context)
                     hit.hidden = false;
+                    hit.enable = true;
 
                     // Display first results...
                     if (this.hits_by_context[evt.context].length < MAX_DISPLAY_RESULTS) {
                         this.displayListHit(evt.hit, evt.context)
                         this.appendChild(hit.card)
                     }
+
+                    this.refreshNavigatorAndContextSelector()
+
                 }
 
             }, true)
@@ -1116,7 +1125,7 @@ export class SearchResultsPage extends HTMLElement {
             if (this.hits_by_context[context]) {
                 for (var i = this.offset * MAX_DISPLAY_RESULTS; this.querySelectorAll("." + context).length < MAX_DISPLAY_RESULTS && i < this.hits_by_context[context].length; i++) {
                     let hit = this.hits_by_context[context][i]
-                    if (!hit.hidden) {
+                    if (!hit.hidden && hit.enable) {
                         this.displayListHit(hit, context)
                         this.appendChild(hit.card) // append the mosaic card (blog, title, video, audio...)
                     }
@@ -1126,17 +1135,61 @@ export class SearchResultsPage extends HTMLElement {
 
     }
 
+    refreshNavigatorAndContextSelector() {
+        // count the number of search results to be displayed by the naviagtor...
+        let count = 0
+
+        this.contexts.forEach(context => {
+            if (this.hits_by_context[context]) {
+                let count__ = 0;
+                let count_ = 0;
+                this.hits_by_context[context].forEach(hit => {
+                    if (!hit.hidden) {
+                        count_++
+                    }
+                    if (!hit.hidden && hit.enable) {
+                        count__++
+                    }
+                })
+                if (count__ > count) {
+                    count = count__
+                }
+
+                // display the number of results by context.
+                this.contextsSelector.setContextTotal(context, count_)
+            }
+        })
+        this.navigator.setTotal(count)
+    }
+
     // Return the number of visible element (not filter)
     getTotal() {
         let count = 0
         for (var id in this.hits) {
             let hit = this.hits[id]
-            if (!hit.hidden) {
+            if (!hit.hidden && hit.enable) {
                 count++
             }
         }
 
         return count;
+    }
+
+    // Show or hide visual.
+    setContextState(context, state) {
+        console.log("set context ", context, "state to", state)
+        if (this.hits_by_context[context]) {
+            this.hits_by_context[context].forEach((hit) => {
+                hit.enable = state;
+            })
+
+            // refresh the visual.
+            this.refresh()
+            this.refreshNavigatorAndContextSelector()
+
+            // refresh the number of results...
+            this.facetFilter.refresh()
+        }
     }
 
     hideAll(className) {
@@ -1173,7 +1226,7 @@ export class SearchResultsPage extends HTMLElement {
         let count = 0
         for (var id in this.hits) {
             let hit = this.hits[id]
-            if (hit.card) {
+            if (hit.card && hit.enable) {
                 if (hit.card.classList.contains(getUuidByString(className))) {
                     count++
                 }
@@ -1279,7 +1332,6 @@ export class SearchResultsPage extends HTMLElement {
         tookSpan.innerText = took.toFixed(3) + ""
 
         this.query = summary.getQuery()
-        this.navigator.setTotal(this.getTotal())
     }
 
     displayListHit(hit, context) {
@@ -1497,9 +1549,9 @@ export class SearchAudioCard extends HTMLElement {
         `
     }
 
-    
-    connectedCallback(){
-        
+
+    connectedCallback() {
+
     }
 
 
@@ -2174,7 +2226,7 @@ export class SearchTitleDetail extends HTMLElement {
     }
 
     connectedCallback() {
-        if(this.isLoaded){
+        if (this.isLoaded) {
             return
         }
 
@@ -2416,6 +2468,7 @@ export class FacetSearchFilter extends HTMLElement {
         super()
 
         this.page = page
+        this.panels = [];
 
         // hide existing facet filters...
         let facetFilters = ApplicationView.layout.sideMenu().getElementsByTagName("globular-facet-search-filter")
@@ -2446,20 +2499,28 @@ export class FacetSearchFilter extends HTMLElement {
         `
     }
 
+    // Refresh the facets...
+    refresh() {
+        this.panels.forEach(p => p.refresh())
+    }
+
     // Set the facets...
     setFacets(facets) {
+
+        this.facets = facets;
 
         facets.getFacetsList().forEach(facet => {
 
             let p = this.querySelector("#_" + getUuidByString(facet.getField()))
             if (!p) {
                 p = new SearchFacetPanel(this.page)
-
             }
+
             if (facet.getTotal() > 0) {
                 p.slot = "facets"
                 p.setFacet(facet)
                 this.appendChild(p)
+                this.panels.push(p)
             }
         })
     }
@@ -2522,8 +2583,9 @@ export class SearchFacetPanel extends HTMLElement {
                 this.page.showAll()
             }
 
+            // refresh the page
             this.page.refresh()
-            this.page.navigator.setTotal(this.page.getTotal())
+            this.page.refreshNavigatorAndContextSelector()
 
             let checkboxs = facetList.querySelectorAll("paper-checkbox")
             for (var i = 0; i < checkboxs.length; i++) {
@@ -2539,6 +2601,12 @@ export class SearchFacetPanel extends HTMLElement {
                 }
             }
         }
+    }
+
+    refresh() {
+        // refresh the panels....
+        console.log(this.facet)
+        this.setFacet(this.facet)
     }
 
     // get files associated with the titles, audios or videos...
@@ -2622,6 +2690,7 @@ export class SearchFacetPanel extends HTMLElement {
     }
 
     setFacet(facet) {
+        this.facet = facet;
         this.id = "_" + getUuidByString(facet.getField())
 
         this.shadowRoot.querySelector("#total_span").innerHTML = "(" + this.page.getTotal() + ")"
@@ -2647,6 +2716,10 @@ export class SearchFacetPanel extends HTMLElement {
         })
 
         let facetList = this.shadowRoot.querySelector(".facet-list")
+        for(var i=0; i < facetList.children.length; i++){
+            facetList.children[i].style.display = "none"
+        }
+        
         let checkbox_ = this.shadowRoot.querySelector("paper-checkbox")
 
         terms.forEach(t => {
@@ -2660,21 +2733,17 @@ export class SearchFacetPanel extends HTMLElement {
             }
 
             let count = this.page.countElementByClassName(className)// list-view and mosaic-view will be count
-            if (count > 0) {
-                let uuid = "_" + getUuidByString(className)
-                if (!facetList.querySelector("#" + uuid)) {
-                    let html = `
-                    <div style="margin-left: 25px; display: flex; justify-items: center; align-items: baseline;">
+            let uuid = "_" + getUuidByString(className)
+
+            if (!facetList.querySelector("#" + uuid)) {
+                let html = `
+                    <div id="${uuid}_div" style="margin-left: 25px; display: flex; justify-items: center; align-items: baseline;">
                         <paper-icon-button  style="display: none"  id="${uuid}_play_btn" icon="av:play-arrow"></paper-icon-button>
                         <paper-checkbox class="${className}" id="${uuid}" checked> <div  class="facet-label"> ${term + "<span id='" + uuid + "_total'>(" + count + ")</span>"} </div></paper-checkbox> 
                     <div>
                     `
-                    // The facet list.
-                    facetList.appendChild(range.createContextualFragment(html))
-                } else {
-                    let countDiv = facetList.querySelector("#" + uuid + "_total")
-                    countDiv.innerHTML = "(" + count + ")"
-                }
+                // The facet list.
+                facetList.appendChild(range.createContextualFragment(html))
 
                 if (this.getAudios(className).length > 0) {
                     this.shadowRoot.querySelector("#" + uuid + "_play_btn").style.display = "block"
@@ -2682,39 +2751,46 @@ export class SearchFacetPanel extends HTMLElement {
                 } else {
                     this.shadowRoot.querySelector("#" + uuid + "_play_btn").style.display = "none"
                 }
-
+    
                 this.shadowRoot.querySelector("#" + uuid + "_play_btn").onclick = () => {
-
-
                     // Play the audios found...
                     this.playAudios(this.getAudios(className), term)
                 }
-
-
+    
+    
                 let checkbox = this.shadowRoot.querySelector("#" + uuid)
                 checkbox.onclick = () => {
                     this.page.hideAll()
                     // Get all checkboxs of a facet...
                     let checkboxs = facetList.querySelectorAll("paper-checkbox")
-
+    
                     for (var i = 0; i < checkboxs.length; i++) {
                         let checkbox = checkboxs[i]
                         if (checkbox.checked) {
                             this.page.showAll(checkbox.className)
                         }
                     }
-
+    
                     this.page.offset = 0;
                     this.page.navigator.setTotal(this.page.getTotal())
                     this.page.refresh()
-
+                    this.page.refreshNavigatorAndContextSelector()
+    
                 }
-
+    
                 checkbox.onchange = () => {
                     if (checkbox.checked) {
                         checkbox_.checked = true
                     }
                 }
+            }
+
+            if (count > 0) {
+                facetList.querySelector("#" + uuid + "_div").style.display = "flex"
+                let countDiv = facetList.querySelector("#" + uuid + "_total")
+                countDiv.innerHTML = "(" + count + ")"
+            } else {
+                facetList.querySelector("#" + uuid + "_div").style.display = "none"
             }
 
         })
@@ -2791,7 +2867,6 @@ export class SearchResultsPagesNavigator extends HTMLElement {
     }
 
     setIndex(index, btn) {
-
         // so here I will get the new search...
         this.page.offset = index
 
@@ -2828,3 +2903,81 @@ export class SearchResultsPagesNavigator extends HTMLElement {
 }
 
 customElements.define('globular-search-results-pages-navigator', SearchResultsPagesNavigator)
+
+
+/**
+ * Sample empty component
+ */
+export class SearchResultsPageContextsSelector extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor() {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+        this.page = null;
+        this.contexts = [];
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+                <style>
+                    ${getTheme()}
+                    #container{
+                        display: flex;
+                        margin: 5px;
+                        margin-left: 20px;
+                    }
+
+                    #container div{
+                        margin-right: 35px;
+                        align-items: center;
+                    }
+
+                </style>
+                <div id="container">
+                </div>
+                `
+        // give the focus to the input.
+        this.container = this.shadowRoot.querySelector("#container")
+    }
+
+    // The connection callback.
+    connectedCallback() {
+
+    }
+
+    // Set the page reuslts...
+    setSearchResultsPage(page) {
+        this.page = page;
+    }
+
+    // Set the context...
+    setContexts(contexts) {
+        contexts.forEach(context => {
+            let html = `
+                <div id="${context}_div" style="display: none;">
+                    <paper-checkbox checked id="${context}_checkbox"></paper-checkbox>
+                    <span >${context}</span>
+                    <span id="${context}_total" style="font-size: 1rem;margin-left: 5px;"></span>
+                </div>
+            `
+            let range = document.createRange()
+            this.container.appendChild(range.createContextualFragment(html))
+
+            let checkbox = this.container.querySelector(`#${context}_checkbox`);
+            checkbox.onclick = () => {
+                this.page.setContextState(context, checkbox.checked)
+            }
+        })
+    }
+
+    // Set context total.
+    setContextTotal(context, total) {
+        this.container.querySelector(`#${context}_div`).style.display = "flex";
+        this.container.querySelector(`#${context}_total`).innerHTML = `(${total})`
+    }
+
+}
+
+customElements.define('globular-search-results-page-contexts-selector', SearchResultsPageContextsSelector)

@@ -981,8 +981,8 @@ export class ContactList extends HTMLElement {
                             audio.pause()
                             toast.dismiss();
                             clearTimeout(timeout)
-
-                            generatePeerToken(Model.getGlobule(contact.domain).config.Mac, token => {
+                            
+                            generatePeerToken(Model.getGlobule(contact.domain), token => {
                                 let rqst = new CreateNotificationRqst
                                 let notification = new Notification
 
@@ -1049,7 +1049,7 @@ export class ContactList extends HTMLElement {
 
         if (contact.domain != Application.account.domain) {
             let globule = Model.getGlobule(contact.domain)
-            generatePeerToken(globule.config.Mac, token => {
+            generatePeerToken(globule, token => {
                 globule.resourceService.setCall(rqst, { application: Application.application, domain: globule.config.Domain, token: token })
             }, err => ApplicationView.displayMessage(err, 3000))
         }

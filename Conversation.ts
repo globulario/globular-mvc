@@ -23,7 +23,7 @@ export class ConversationManager {
     ConversationManager.uuid = uuidv4();
 
     Model.getGlobules().forEach(globule => {
-      generatePeerToken(globule.config.Mac, token => {
+      generatePeerToken(globule, token => {
         // This will open the connection with the conversation manager.
         let rqst = new ConnectRequest
         rqst.setUuid(ConversationManager.uuid)
@@ -162,7 +162,7 @@ export class ConversationManager {
 
   static kickoutFromConversation(conversation: Conversation, account: string, succesCallback: () => void, errorCallback: (err: any) => void) {
     let globule = Model.getGlobule(conversation.getMac())
-    generatePeerToken(globule.config.Mac, token => {
+    generatePeerToken(globule, token => {
       let conversationUuid = conversation.getUuid()
       let rqst = new KickoutFromConversationRequest
       rqst.setConversationUuid(conversationUuid)
@@ -181,7 +181,7 @@ export class ConversationManager {
 
   private static findConversations_(globule: Globular, query: string, succesCallback: (conversations: Conversation[]) => void, errorCallback: (err: any) => void) {
 
-    generatePeerToken(globule.config.Mac, token => {
+    generatePeerToken(globule, token => {
 
       let rqst = new FindConversationsRequest
       rqst.setQuery(query)
@@ -245,7 +245,7 @@ export class ConversationManager {
 
     let globule = Model.getGlobule(conversation.getMac())
 
-    generatePeerToken(globule.config.Mac, token => {
+    generatePeerToken(globule, token => {
       let conversationUuid = conversation.getUuid()
 
       let rqst = new JoinConversationRequest
@@ -304,7 +304,7 @@ export class ConversationManager {
 
     let globule = Model.getGlobule(conversation.getMac())
 
-    generatePeerToken(globule.config.Mac, token => {
+    generatePeerToken(globule, token => {
       let conversationUuid = conversation.getUuid()
 
       let rqst = new LeaveConversationRequest
@@ -331,7 +331,7 @@ export class ConversationManager {
   static sendConversationInvitation(conversation: Conversation, from: string, to: string, successCallback: () => void, errorCallback: (err: any) => void) {
 
     let globule = Model.getGlobule(conversation.getMac())
-    generatePeerToken(globule.config.Mac, token => {
+    generatePeerToken(globule, token => {
       let rqst = new SendInvitationRequest
       let invitation = new Invitation
       invitation.setFrom(from)
@@ -364,7 +364,7 @@ export class ConversationManager {
    * @param errorCallback 
    */
   private static getReceivedInvitations_(globule: Globular, accountId: string, successCallback: (invitations: Array<Invitation>) => void, errorCallback: (err: any) => void) {
-    generatePeerToken(globule.config.Mac, token => {
+    generatePeerToken(globule, token => {
       let rqst = new GetReceivedInvitationsRequest
       rqst.setAccount(accountId);
       globule.conversationService.getReceivedInvitations(rqst, {
@@ -420,7 +420,7 @@ export class ConversationManager {
    * @param errorCallback 
    */
   private static getSentInvitations_(globule: Globular, accountId: string, successCallback: (invitation: Array<Invitation>) => void, errorCallback: (err: any) => void) {
-    generatePeerToken(globule.config.Mac, token => {
+    generatePeerToken(globule, token => {
       let rqst = new GetSentInvitationsRequest
       rqst.setAccount(accountId);
       globule.conversationService.getSentInvitations(rqst, {
@@ -473,7 +473,7 @@ export class ConversationManager {
    */
   static acceptConversationInvitation(invitation: Invitation, successCallback: () => void, errorCallback: (err: any) => void) {
     let globule = Model.getGlobule(invitation.getMac())
-    generatePeerToken(globule.config.Mac, token => {
+    generatePeerToken(globule, token => {
       let rqst = new AcceptInvitationRequest
       rqst.setInvitation(invitation);
       globule.conversationService.acceptInvitation(rqst, {
@@ -497,7 +497,7 @@ export class ConversationManager {
    */
   static declineConversationInvitation(invitation: Invitation, successCallback: () => void, errorCallback: (err: any) => void) {
     let globule = Model.getGlobule(invitation.getMac())
-    generatePeerToken(globule.config.Mac, token => {
+    generatePeerToken(globule, token => {
       let rqst = new DeclineInvitationRequest
       rqst.setInvitation(invitation);
       globule.conversationService.declineInvitation(rqst, {
@@ -514,7 +514,7 @@ export class ConversationManager {
 
   static revokeConversationInvitation(invitation: Invitation, successCallback: () => void, errorCallback: (err: any) => void) {
     let globule = Model.getGlobule(invitation.getMac())
-    generatePeerToken(globule.config.Mac, token => {
+    generatePeerToken(globule, token => {
       let rqst = new RevokeInvitationRequest
       rqst.setInvitation(invitation);
       globule.conversationService.revokeInvitation(rqst, {
@@ -532,7 +532,7 @@ export class ConversationManager {
   static likeIt(conversationUuid: string, message: string, account: string, successCallback: () => void, errorCallback: (err: any) => void) {
     let conversation = ConversationManager.conversations.get(conversationUuid)
     let globule = Model.getGlobule(conversation.getMac())
-    generatePeerToken(globule.config.Mac, token => {
+    generatePeerToken(globule, token => {
       let rqst = new LikeMessageRqst
       rqst.setMessage(message)
       rqst.setConversation(conversation.getUuid())
@@ -554,7 +554,7 @@ export class ConversationManager {
   static dislikeIt(conversationUuid: string, message: string, account: string, successCallback: () => void, errorCallback: (err: any) => void) {
     let conversation = ConversationManager.conversations.get(conversationUuid)
     let globule = Model.getGlobule(conversation.getMac())
-    generatePeerToken(globule.config.Mac, token => {
+    generatePeerToken(globule, token => {
       let rqst = new DislikeMessageRqst
       rqst.setMessage(message)
       rqst.setConversation(conversation.getUuid())
@@ -580,7 +580,7 @@ export class ConversationManager {
     // Retreive the conversation host...
     let globule = Model.getGlobule(conversation.getMac())
 
-    generatePeerToken(globule.config.Mac, token => {
+    generatePeerToken(globule, token => {
       let rqst = new DeleteMessageRequest
       rqst.setUuid(msg.getUuid())
       rqst.setConversation(msg.getConversation())
@@ -607,7 +607,7 @@ export class ConversationManager {
     let globule = Model.getGlobule(conversation.getMac())
     let conversationUuid = conversation.getUuid()
 
-    generatePeerToken(globule.config.Mac, token => {
+    generatePeerToken(globule, token => {
       let rqst = new SendMessageRequest
       let message = new Message
       let uuid = uuidv4();

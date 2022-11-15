@@ -589,7 +589,7 @@ export class FilesView extends HTMLElement {
             }
             let globule = this._file_explorer_.globule
             if (files.length > 0) {
-                generatePeerToken(globule.config.Mac, token => {
+                generatePeerToken(globule, token => {
                     // Create a tempory name...
                     let uuid = "_" + uuidv4().split("-").join("_").split("@").join("_");
                     createArchive(globule, files, uuid,
@@ -614,7 +614,7 @@ export class FilesView extends HTMLElement {
 
                 // if the file is a directory I will create archive and download it.
                 if (this.menu.file.isDir) {
-                    generatePeerToken(globule.config.Mac, token => {
+                    generatePeerToken(globule, token => {
                         createArchive(globule, [path], name,
                             path_ => {
                                 // Download the file...
@@ -631,7 +631,7 @@ export class FilesView extends HTMLElement {
                     })
                 } else {
                     // simply download the file.
-                    generatePeerToken(globule.config.Mac, token => {
+                    generatePeerToken(globule, token => {
                         downloadFileHttp(path, name,
                             () => {
                                 // Now I will remove the file from the server....
@@ -736,7 +736,7 @@ export class FilesView extends HTMLElement {
                                         })
                                         .catch(err => { ApplicationView.displayMessage(err, 3000) })
                                 } else {
-                                    generatePeerToken(globule.config.Mac, token => {
+                                    generatePeerToken(globule, token => {
                                         deleteDir(globule, f.path,
                                             () => {
                                                 delete dirs[getUuidByString(this._file_explorer_.globule.config.Domain + "@" + path)]
@@ -1289,7 +1289,7 @@ export class FilesView extends HTMLElement {
             let path = f.path.substring(0, f.path.lastIndexOf("/"))
 
             // Now I will rename the file or directory...
-            generatePeerToken(this._file_explorer_.globule.config.Mac, token => {
+            generatePeerToken(this._file_explorer_.globule, token => {
                 renameFile(this._file_explorer_.globule, path, input.value, f.name,
                     () => {
                         // Refresh the parent folder...
@@ -1359,7 +1359,7 @@ export class FilesView extends HTMLElement {
                 };
 
                 getFileObject(url, (fileObject) => {
-                    generatePeerToken(this._file_explorer_.globule.config.Mac, token => {
+                    generatePeerToken(this._file_explorer_.globule, token => {
                         uploadFiles(this._file_explorer_.globule, token, this.__dir__.path, [fileObject], () => {
                             Model.eventHub.publish("__upload_files_event__", { path: this.__dir__.path, files: [fileObject], lnk: lnk }, true)
                         }, err => ApplicationView.displayMessage(err, 3000))
@@ -1413,7 +1413,7 @@ export class FilesView extends HTMLElement {
                     }
                     rqst.setUrl(url)
 
-                    generatePeerToken(this._file_explorer_.globule.config.Mac, token => {
+                    generatePeerToken(this._file_explorer_.globule, token => {
 
                         let stream = this._file_explorer_.globule.fileService.uploadVideo(rqst, { application: Application.application, domain: this._file_explorer_.globule.config.Domain, token: token })
                         let pid = -1;
@@ -2105,7 +2105,7 @@ export class FilesIconView extends FilesView {
 
                             playAudiosBtn.onclick = () => {
                                 let globule = this._file_explorer_.globule
-                                generatePeerToken(globule.config.Mac, token => {
+                                generatePeerToken(globule, token => {
                                     // I will refresh the playlist on the server before playing it...
                                     let rqst = new GeneratePlaylistRequest
                                     rqst.setDir(dir.path)
@@ -5566,7 +5566,7 @@ export class FilesUploader extends HTMLElement {
                 }
 
                 // generate a token... 
-                generatePeerToken(globule.config.Mac, token => {
+                generatePeerToken(globule, token => {
                     uploadFiles(globule, token, path, [f],
                         () => {
                             if (index < files.length) {
@@ -5611,7 +5611,7 @@ export class FilesUploader extends HTMLElement {
 
     /** Get the list of torrent */
     getTorrentLnks(globule, callback) {
-        generatePeerToken(globule.Mac, token => {
+        generatePeerToken(globule, token => {
             let rqst = new GetTorrentLnksRequest
             globule.torrentService.getTorrentLnks(rqst, { application: Application.application, domain: globule.config.Domain, token: token })
                 .then(lnks => callback(lnks))
@@ -5624,7 +5624,7 @@ export class FilesUploader extends HTMLElement {
     */
     getTorrentsInfo(globule) {
 
-        generatePeerToken(globule.Mac, token => {
+        generatePeerToken(globule, token => {
             let rqst = new GetTorrentInfosRequest
 
             let stream = globule.torrentService.getTorrentInfos(rqst, { application: Application.application, domain: globule.config.Domain, token: token })

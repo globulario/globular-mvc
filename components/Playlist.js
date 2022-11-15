@@ -28,7 +28,7 @@ function getVideoInfo(globule, id, callback) {
         callback(__videos__[id])
         return
     }
-    generatePeerToken(globule.config.Mac, token => {
+    generatePeerToken(globule, token => {
         let rqst = new GetVideoByIdRequest
         rqst.setIndexpath(globule.config.DataPath + "/search/videos")
         rqst.setVidoeid(id)
@@ -49,7 +49,7 @@ function getAudioInfo(globule, id, callback) {
         callback(__audios__[id])
         return
     }
-    generatePeerToken(globule.config.Mac, token => {
+    generatePeerToken(globule, token => {
         let rqst = new GetAudioByIdRequest
         rqst.setIndexpath(globule.config.DataPath + "/search/audios")
         rqst.setAudioid(id)
@@ -232,7 +232,7 @@ export class PlayList extends HTMLElement {
         this.globule = globule
         this.itmes = []
 
-        generatePeerToken(globule.config.Mac, token => {
+        generatePeerToken(globule, token => {
             // if a playlist is given directly...
             if (txt.startsWith("#EXTM3U")) {
                 const result = parser.parse(txt)
