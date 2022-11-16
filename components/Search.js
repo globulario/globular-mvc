@@ -2468,7 +2468,7 @@ export class FacetSearchFilter extends HTMLElement {
         super()
 
         this.page = page
-        this.panels = [];
+        this.panels = {};
 
         // hide existing facet filters...
         let facetFilters = ApplicationView.layout.sideMenu().getElementsByTagName("globular-facet-search-filter")
@@ -2501,26 +2501,26 @@ export class FacetSearchFilter extends HTMLElement {
 
     // Refresh the facets...
     refresh() {
-        this.panels.forEach(p => p.refresh())
+        for (var key in this.panels) {
+            this.panels[key].refresh()
+        }
     }
 
     // Set the facets...
     setFacets(facets) {
 
-        this.facets = facets;
-
         facets.getFacetsList().forEach(facet => {
-
-            let p = this.querySelector("#_" + getUuidByString(facet.getField()))
-            if (!p) {
+            let id = "_" + getUuidByString(facet.getField())
+            let p = this.panels[id]
+            if (p == undefined) {
                 p = new SearchFacetPanel(this.page)
+                this.panels[id] = p
             }
 
             if (facet.getTotal() > 0) {
                 p.slot = "facets"
                 p.setFacet(facet)
                 this.appendChild(p)
-                this.panels.push(p)
             }
         })
     }
@@ -2540,6 +2540,7 @@ export class SearchFacetPanel extends HTMLElement {
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
         this.page = page
+        this.terms = {}
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -2605,8 +2606,20 @@ export class SearchFacetPanel extends HTMLElement {
 
     refresh() {
         // refresh the panels....
-        console.log(this.facet)
-        this.setFacet(this.facet)
+        this.shadowRoot.querySelector("#total_span").innerHTML = "(" + this.page.getTotal() + ")"
+        let facetList = this.shadowRoot.querySelector(".facet-list")
+
+        for (var key in this.terms) {
+            let term = this.terms[key]
+            let count = this.page.countElementByClassName(term.className)
+            if (count > 0) {
+                term.countDiv.innerHTML = "(" + count + ")"
+                facetList.appendChild(term)
+            } else if (term.parentNode) {
+                term.parentNode.removeChild(term)
+            }
+        }
+
     }
 
     // get files associated with the titles, audios or videos...
@@ -2620,6 +2633,115 @@ export class SearchFacetPanel extends HTMLElement {
             }).catch(err => {
                 callback([])
             })
+    }
+
+    setFacet(facet) {
+        this.facet = facet;
+        this.id = "_" + getUuidByString(facet.getField())
+
+        this.shadowRoot.querySelector("#total_span").innerHTML = "(" + this.page.getTotal() + ")"
+        this.shadowRoot.querySelector("#field_span").innerHTML = facet.getField()
+
+        /** Play all results found... */
+        this.shadowRoot.querySelector("#play_facet_btn").onclick = () => {
+            let audios = this.page.getAudios()
+            // Play the audios found...
+            if (audios.length > 0) {
+                this.playAudios(audios, facet.getField())
+            } else {
+                ApplicationView.displayMessage("no item to play!", 3000)
+            }
+
+        }
+
+        let range = document.createRange()
+        let terms = facet.getTermsList().sort((a, b) => {
+            if (a.getTerm() < b.getTerm()) { return -1; }
+            if (a.getTerm() > b.getTerm()) { return 1; }
+            return 0;
+        })
+
+        let facetList = this.shadowRoot.querySelector(".facet-list")
+        let checkbox_ = this.shadowRoot.querySelector("paper-checkbox")
+
+        terms.forEach(t => {
+
+            let term = t.getTerm()
+            let className = t.getTerm()
+            if (term.startsWith("{")) {
+                let obj = JSON.parse(term)
+                term = obj.name + "  " + obj.min + "-" + obj.max
+                className = obj.name
+            }
+
+            let uuid = "_" + getUuidByString(className)
+            if (this.terms[uuid] == undefined) {
+                let html = `
+                    <div id="${uuid}_div" style="margin-left: 25px; display: flex; justify-items: center; align-items: baseline;">
+                        <paper-icon-button  style="display: none"  id="${uuid}_play_btn" icon="av:play-arrow"></paper-icon-button>
+                        <paper-checkbox class="${className}" id="${uuid}" checked> <div  class="facet-label"> ${term + "<span id='" + uuid + "_total'></span>"} </div></paper-checkbox> 
+                    <div>
+                    `
+                // The facet list.
+                facetList.appendChild(range.createContextualFragment(html))
+
+                if (this.getAudios(className).length > 0) {
+                    this.shadowRoot.querySelector("#" + uuid + "_play_btn").style.display = "block"
+                    this.shadowRoot.querySelector("#play_facet_btn").style.display = "block"
+                } else {
+                    this.shadowRoot.querySelector("#" + uuid + "_play_btn").style.display = "none"
+                }
+
+                this.shadowRoot.querySelector("#" + uuid + "_play_btn").onclick = () => {
+                    // Play the audios found...
+                    this.playAudios(this.getAudios(className), term)
+                }
+
+                // keep track of the terms...
+                this.terms[uuid] = this.shadowRoot.querySelector("#" + uuid + "_div")
+
+                let checkbox = this.shadowRoot.querySelector("#" + uuid)
+                checkbox.onclick = () => {
+                    this.page.hideAll()
+                    // Get all checkboxs of a facet...
+                    let checkboxs = facetList.querySelectorAll("paper-checkbox")
+
+                    for (var i = 0; i < checkboxs.length; i++) {
+                        let checkbox = checkboxs[i]
+                        if (checkbox.checked) {
+                            this.page.showAll(checkbox.className)
+                        }
+                    }
+
+                    this.page.offset = 0;
+                    this.page.navigator.setTotal(this.page.getTotal())
+                    this.page.refresh()
+                    this.page.refreshNavigatorAndContextSelector()
+                }
+
+
+                checkbox.onchange = () => {
+                    if (checkbox.checked) {
+                        checkbox_.checked = true
+                    }
+                }
+
+                // keep reference into the object.
+                this.terms[uuid].countDiv = facetList.querySelector("#" + uuid + "_total")
+                this.terms[uuid].className = className
+            }
+
+            let count = this.page.countElementByClassName(className)
+            if (this.terms[uuid]) {
+                if (count > 0) {
+                    this.terms[uuid].countDiv.innerHTML = "(" + count + ")"
+                } else if (this.terms[uuid].parentNode) {
+                    // remove it from the dom...
+                    this.terms[uuid].parentNode.removeChild(this.terms[uuid])
+                }
+            }
+
+        })
     }
 
     playAudios(audios, name) {
@@ -2687,113 +2809,6 @@ export class SearchFacetPanel extends HTMLElement {
 
     getAudios(className) {
         return this.page.getAudios(className)
-    }
-
-    setFacet(facet) {
-        this.facet = facet;
-        this.id = "_" + getUuidByString(facet.getField())
-
-        this.shadowRoot.querySelector("#total_span").innerHTML = "(" + this.page.getTotal() + ")"
-        this.shadowRoot.querySelector("#field_span").innerHTML = facet.getField()
-
-        /** Play all results found... */
-        this.shadowRoot.querySelector("#play_facet_btn").onclick = () => {
-            let audios = this.page.getAudios()
-            // Play the audios found...
-            if (audios.length > 0) {
-                this.playAudios(audios, facet.getField())
-            } else {
-                ApplicationView.displayMessage("no item to play!", 3000)
-            }
-
-        }
-
-        let range = document.createRange()
-        let terms = facet.getTermsList().sort((a, b) => {
-            if (a.getTerm() < b.getTerm()) { return -1; }
-            if (a.getTerm() > b.getTerm()) { return 1; }
-            return 0;
-        })
-
-        let facetList = this.shadowRoot.querySelector(".facet-list")
-        for(var i=0; i < facetList.children.length; i++){
-            facetList.children[i].style.display = "none"
-        }
-        
-        let checkbox_ = this.shadowRoot.querySelector("paper-checkbox")
-
-        terms.forEach(t => {
-
-            let term = t.getTerm()
-            let className = t.getTerm()
-            if (term.startsWith("{")) {
-                let obj = JSON.parse(term)
-                term = obj.name + "  " + obj.min + "-" + obj.max
-                className = obj.name
-            }
-
-            let count = this.page.countElementByClassName(className)// list-view and mosaic-view will be count
-            let uuid = "_" + getUuidByString(className)
-
-            if (!facetList.querySelector("#" + uuid)) {
-                let html = `
-                    <div id="${uuid}_div" style="margin-left: 25px; display: flex; justify-items: center; align-items: baseline;">
-                        <paper-icon-button  style="display: none"  id="${uuid}_play_btn" icon="av:play-arrow"></paper-icon-button>
-                        <paper-checkbox class="${className}" id="${uuid}" checked> <div  class="facet-label"> ${term + "<span id='" + uuid + "_total'>(" + count + ")</span>"} </div></paper-checkbox> 
-                    <div>
-                    `
-                // The facet list.
-                facetList.appendChild(range.createContextualFragment(html))
-
-                if (this.getAudios(className).length > 0) {
-                    this.shadowRoot.querySelector("#" + uuid + "_play_btn").style.display = "block"
-                    this.shadowRoot.querySelector("#play_facet_btn").style.display = "block"
-                } else {
-                    this.shadowRoot.querySelector("#" + uuid + "_play_btn").style.display = "none"
-                }
-    
-                this.shadowRoot.querySelector("#" + uuid + "_play_btn").onclick = () => {
-                    // Play the audios found...
-                    this.playAudios(this.getAudios(className), term)
-                }
-    
-    
-                let checkbox = this.shadowRoot.querySelector("#" + uuid)
-                checkbox.onclick = () => {
-                    this.page.hideAll()
-                    // Get all checkboxs of a facet...
-                    let checkboxs = facetList.querySelectorAll("paper-checkbox")
-    
-                    for (var i = 0; i < checkboxs.length; i++) {
-                        let checkbox = checkboxs[i]
-                        if (checkbox.checked) {
-                            this.page.showAll(checkbox.className)
-                        }
-                    }
-    
-                    this.page.offset = 0;
-                    this.page.navigator.setTotal(this.page.getTotal())
-                    this.page.refresh()
-                    this.page.refreshNavigatorAndContextSelector()
-    
-                }
-    
-                checkbox.onchange = () => {
-                    if (checkbox.checked) {
-                        checkbox_.checked = true
-                    }
-                }
-            }
-
-            if (count > 0) {
-                facetList.querySelector("#" + uuid + "_div").style.display = "flex"
-                let countDiv = facetList.querySelector("#" + uuid + "_total")
-                countDiv.innerHTML = "(" + count + ")"
-            } else {
-                facetList.querySelector("#" + uuid + "_div").style.display = "none"
-            }
-
-        })
     }
 
 }
