@@ -263,7 +263,7 @@ let typography_properties =`
 
   
   paper-card h1{
-    font-size: 1.85rem;
+    font-size: 1.65rem;
   }
 
   paper-card h2{

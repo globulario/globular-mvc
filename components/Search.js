@@ -159,12 +159,6 @@ export function getImdbInfo(id, callback, errorcallback, globule) {
         }
     };
 
-    /* TODO see if we protected it...
-      query += "?domain=" + Model.domain // application is not know at this time...
-      if (localStorage.getItem("user_token") != undefined) {
-          query += "&token=" + localStorage.getItem("user_token")
-      }
-    */
     xmlhttp.open("GET", url, true);
     xmlhttp.setRequestHeader("domain", globule.config.Domain);
 
@@ -799,7 +793,7 @@ export class SearchResults extends HTMLElement {
                 // Create a new page...
                 let resultsPage = this.querySelector(`#${uuid}-results-page`)
                 if (resultsPage == null) {
-                    resultsPage = new SearchResultsPage(uuid, evt.summary, evt.contexts)
+                    resultsPage = new SearchResultsPage(uuid, evt.summary, evt.contexts, tab)
                     for (var i = 0; i < this.children.length; i++) {
                         this.children[i].style.display = "none";
                     }
@@ -808,8 +802,8 @@ export class SearchResults extends HTMLElement {
                     ApplicationView.layout.sideMenu().appendChild(resultsPage.facetFilter)
                 } else if (evt.summary) {
                     resultsPage.updateSummary(evt.summary)
-                    let totalSpan = tab.querySelector(`#${uuid}-total-span`)
-                    totalSpan.innerHTML = resultsPage.getTotal() + ""
+                    tab.totalSpan = tab.querySelector(`#${uuid}-total-span`)
+                    tab.totalSpan.innerHTML = resultsPage.getTotal() + ""
                 }
 
             }, true)
@@ -873,7 +867,7 @@ export class SearchResultsPage extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor(uuid, summary, contexts) {
+    constructor(uuid, summary, contexts, tab) {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
@@ -881,6 +875,7 @@ export class SearchResultsPage extends HTMLElement {
         this.offset = 0;
         this.query = summary.getQuery();
         this.contexts = contexts;
+        this.tab = tab;
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -957,6 +952,7 @@ export class SearchResultsPage extends HTMLElement {
         this.viewType = "icon"
         this.hits = {} // keep the current list in memory...
         this.hits_by_context = {}
+        this.hits_by_className = {}
 
         this.searchReusltLstViewBtn.onclick = () => {
             this.searchReusltLstViewBtn.classList.remove("disable")
@@ -1011,18 +1007,100 @@ export class SearchResultsPage extends HTMLElement {
 
                     this.hits[uuid] = hit
                     this.hits_by_context[evt.context].push(hit)
-                    hit.card = this.displayMosaicHit(hit, evt.context)
+
                     hit.hidden = false;
                     hit.enable = true;
 
+                    // here I will keep track of hit classes...
+                    if (hit.hasTitle()) {
+                        hit.getTitle().getGenresList().forEach(g => {
+                            let className = getUuidByString(g.toLowerCase())
+                            if (this.hits_by_className[className] == undefined) {
+                                this.hits_by_className[className] = []
+                            }
+                            if (this.hits_by_className[className].indexOf(uuid) == -1) {
+                                this.hits_by_className[className].push(uuid)
+                            }
+                        })
+                        // now the term..
+                        let className = getUuidByString("high")
+                        if (hit.getTitle().getRating() < 3.5) {
+                            className = getUuidByString("low")
+                        } else if (hit.getTitle().getRating() < 7.0) {
+                            className = getUuidByString("medium")
+                        }
+
+                        if (this.hits_by_className[className] == undefined) {
+                            this.hits_by_className[className] = []
+                        }
+
+                        if (this.hits_by_className[className].indexOf(uuid) == -1) {
+                            this.hits_by_className[className].push(uuid)
+                        }
+
+                    } else if (hit.hasVideo()) {
+                        hit.getVideo().getGenresList().forEach(g => {
+                            let className = getUuidByString(g.toLowerCase())
+                            if (this.hits_by_className[className] == undefined) {
+                                this.hits_by_className[className] = []
+                            }
+                            if (this.hits_by_className[className].indexOf(uuid) == -1) {
+                                this.hits_by_className[className].push(uuid)
+                            }
+                        })
+
+                        hit.getVideo().getTagsList().forEach(g => {
+                            let className = getUuidByString(g.toLowerCase())
+                            if (this.hits_by_className[className] == undefined) {
+                                this.hits_by_className[className] = []
+                            }
+                            if (this.hits_by_className[className].indexOf(uuid) == -1) {
+                                this.hits_by_className[className].push(uuid)
+                            }
+                        })
+
+                        // now the term..
+                        let className = getUuidByString("high")
+                        if (hit.getVideo().getRating() < 3.5) {
+                            className = getUuidByString("low")
+                        } else if (hit.getVideo().getRating() < 7.0) {
+                            className = getUuidByString("medium")
+                        }
+
+                        if (this.hits_by_className[className] == undefined) {
+                            this.hits_by_className[className] = []
+                        }
+
+                        if (this.hits_by_className[className].indexOf(uuid) == -1) {
+                            this.hits_by_className[className].push(uuid)
+                        }
+                    } else if (hit.hasAudio()) {
+    
+                        hit.getAudio().getGenresList().forEach(g => {
+                            g.split(" ").forEach(g_ => {
+                                let className = getUuidByString(g_.toLowerCase())
+
+                                if (this.hits_by_className[className] == undefined) {
+                                    this.hits_by_className[className] = []
+                                }
+                                if (this.hits_by_className[className].indexOf(uuid) == -1) {
+                                    this.hits_by_className[className].push(uuid)
+                                }
+                            })
+  
+                        })
+                    }
+
                     // Display first results...
                     if (this.hits_by_context[evt.context].length < MAX_DISPLAY_RESULTS) {
-                        this.displayListHit(evt.hit, evt.context)
+                        hit.card = this.displayMosaicHit(hit, evt.context)
                         this.appendChild(hit.card)
                     }
 
                     this.refreshNavigatorAndContextSelector()
 
+                    // set the total...
+                    this.tab.totalSpan.innerHTML = this.getTotal() + ""
                 }
 
             }, true)
@@ -1130,6 +1208,10 @@ export class SearchResultsPage extends HTMLElement {
                 for (var i = this.offset * MAX_DISPLAY_RESULTS; this.querySelectorAll("." + context).length < MAX_DISPLAY_RESULTS && i < this.hits_by_context[context].length; i++) {
                     let hit = this.hits_by_context[context][i]
                     if (!hit.hidden && hit.enable) {
+                        // Initialyse the card...
+                        if (!hit.card) {
+                            hit.card = this.displayMosaicHit(hit, context)
+                        }
                         this.displayListHit(hit, context)
                         this.appendChild(hit.card) // append the mosaic card (blog, title, video, audio...)
                     }
@@ -1197,12 +1279,15 @@ export class SearchResultsPage extends HTMLElement {
     }
 
     hideAll(className) {
+        if(className != undefined){
+            className = getUuidByString(className)
+        }
         for (var id in this.hits) {
             let hit = this.hits[id]
-            if (hit.card) {
-                if (className == undefined) {
-                    hit.hidden = true
-                } else if (hit.card.classList.contains(getUuidByString(className))) {
+            if (className == undefined) {
+                hit.hidden = true
+            } else if (this.hits_by_className[className]) {
+                if (this.hits_by_className[className].indexOf(id) != -1) {
                     hit.hidden = true
                 }
             }
@@ -1210,29 +1295,32 @@ export class SearchResultsPage extends HTMLElement {
     }
 
     showAll(className) {
-
-        let count = 0;
+        if(className != undefined){
+            className = getUuidByString(className)
+        }
         for (var id in this.hits) {
             let hit = this.hits[id]
-            if (hit.card) {
-                if (className == undefined) {
+            if (className == undefined) {
+                hit.hidden = false
+            } else if (this.hits_by_className[className]) {
+                /*hit.card.classList.contains(getUuidByString(className))*/
+                if (this.hits_by_className[className].indexOf(id) != -1) {
                     hit.hidden = false
-                } else if (hit.card.classList.contains(getUuidByString(className))) {
-                    hit.hidden = false
-                    count++
                 }
             }
         }
-        console.log("---> show ", className, count)
     }
 
     countElementByClassName(className) {
         let count = 0
+        className = getUuidByString(className)
         for (var id in this.hits) {
             let hit = this.hits[id]
-            if (hit.card && hit.enable) {
-                if (hit.card.classList.contains(getUuidByString(className))) {
-                    count++
+            if (hit.enable) {
+                if (this.hits_by_className[className]) {
+                    if (this.hits_by_className[className].indexOf(id) != -1) {
+                        count++
+                    }
                 }
             }
         }
@@ -1242,17 +1330,23 @@ export class SearchResultsPage extends HTMLElement {
     // Return all audio from cards...
     getAudios(className) {
         let audios = []
-        for (var id in this.hits) {
-            let hit = this.hits[id]
-            if (hit.card) {
-                if (hit.card.getAudio) {
-                    if (hit.card.classList.contains(getUuidByString(className)) || className == undefined) {
-                        audios.push(hit.card.getAudio())
-                    }
+    
+        if (this.hits_by_context["audios"]) {
+            this.hits_by_context["audios"].forEach(hit => {
+                let audio = hit.getAudio()
+                if(className == undefined){
+                    audios.push(hit.getAudio())
+                }else{
+                    audio.getGenresList().forEach(g => {
+                        g.split(" ").forEach(g_ => {
+                            if(g_.toLowerCase() == className){
+                                audios.push(hit.getAudio())
+                            }
+                        })
+                    })
                 }
-            }
+            })
         }
-
         return audios
     }
 
@@ -2812,7 +2906,8 @@ export class SearchFacetPanel extends HTMLElement {
     }
 
     getAudios(className) {
-        return this.page.getAudios(className)
+        let audios = this.page.getAudios(className)
+        return audios
     }
 
 }
@@ -2871,7 +2966,7 @@ export class SearchResultsPagesNavigator extends HTMLElement {
         `
         // give the focus to the input.
         this.container = this.shadowRoot.querySelector("#container")
-
+        this.nb_pages = 0;
     }
 
     // The connection callback.
@@ -2901,10 +2996,14 @@ export class SearchResultsPagesNavigator extends HTMLElement {
     }
 
     setTotal(total) {
+        if(this.nb_pages ==  Math.ceil(total / MAX_DISPLAY_RESULTS)){
+            return
+        }
+        
         this.container.innerHTML = ""
-        let nb_pages = Math.ceil(total / MAX_DISPLAY_RESULTS)
-        if (nb_pages > 1) {
-            for (var i = 0; i < nb_pages; i++) {
+        this.nb_pages = Math.ceil(total / MAX_DISPLAY_RESULTS)
+        if (this.nb_pages > 1) {
+            for (var i = 0; i < this.nb_pages; i++) {
                 let btn = document.createElement("div")
                 btn.innerHTML = i + 1
                 btn.classList.add("pagination-btn")
