@@ -739,7 +739,7 @@ export class SearchResults extends HTMLElement {
                 if (tab == null) {
                     let html = `
                     <paper-tab id="${uuid}-tab">
-                        <span>${evt.query} (<span id="${uuid}-total-span"></span>)</span>
+                        <span>${evt.query} (<span id="${uuid}-total-span" style="font-size: 1rem;"></span>)</span>
                         <paper-icon-button id="${uuid}-close-btn" icon="icons:close"></paper-icon-button>
                     </paper-tab>
                     `
@@ -908,6 +908,10 @@ export class SearchResultsPage extends HTMLElement {
             #webpage-search-results{
                 display: flex;
                 flex-direction: column;
+            }
+
+            #summary span{
+                font-size: 1rem;
             }
 
         </style>
