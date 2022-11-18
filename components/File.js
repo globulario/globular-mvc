@@ -800,12 +800,19 @@ export class FilesView extends HTMLElement {
 
                 getVideoInfo(globule, this.menu.file, (videos) => {
                     if (videos.length > 0) {
+                        videos.forEach(video=>{
+                            video.globule = globule
+                        })
                         this.menu.file.videos = videos // keep in the file itself...
                         Model.eventHub.publish("display_media_infos_event", this.menu.file, true)
                     } else {
+
                         // get the title infos...
                         getTitleInfo(globule, this.menu.file, (titles) => {
                             if (titles.length > 0) {
+                                titles.forEach(title=>{
+                                    title.globule = globule
+                                })
                                 this.menu.file.titles = titles // keep in the file itself...
                                 Model.eventHub.publish("display_media_infos_event", this.menu.file, true)
                             }
@@ -815,6 +822,9 @@ export class FilesView extends HTMLElement {
             } else if (this.menu.file.mime.startsWith("audio")) {
                 getAudioInfo(globule, this.menu.file, (audios) => {
                     if (audios.length > 0) {
+                        audios.forEach(audio=>{
+                            audio.globule = globule
+                        })
                         this.menu.file.audios = audios // keep in the file itself...
                         Model.eventHub.publish("display_media_infos_event", this.menu.file, true)
                     }
@@ -4236,6 +4246,7 @@ export class FileExplorer extends HTMLElement {
                 }, (file) => {
 
                     if (file.titles != undefined) {
+
                         this.informationManager.setTitlesInformation(file.titles)
                     } else if (file.videos != undefined) {
                         this.informationManager.setVideosInformation(file.videos)

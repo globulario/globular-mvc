@@ -293,20 +293,13 @@ function getVideoPreview(parent, path, name, callback, globule) {
 }
 
 function GetTitleFiles(indexPath, title, parent, callback) {
-    let globules = Model.getGlobules()
-    let previews = []
-    let index = 0
 
+    let previews = []
     let titleFiles = () => {
-        let globule = globules[index]
-        index += 1
+        let globule = title.globule
         __getTitleFiles__(globule, globule.config.DataPath + indexPath, title, parent, previews_ => {
             previews = previews.concat(previews_)
-            if (index < globules.length) {
-                titleFiles()
-            } else {
-                callback(previews)
-            }
+            callback(previews)
         })
     }
 

@@ -3,7 +3,7 @@ import '@polymer/iron-icons/av-icons'
 import '@polymer/paper-icon-button/paper-icon-button.js';
 
 import { Application } from '../Application';
-import { CreateVideoRequest, DeleteVideoRequest, GetFileAudiosRequest, GetFileTitlesRequest, GetTitleFilesRequest, SearchTitlesRequest } from 'globular-web-client/title/title_pb';
+import { CreateVideoRequest, DeleteVideoRequest, GetFileAudiosRequest, GetFileTitlesRequest, GetTitleByIdRequest, GetTitleFilesRequest, SearchTitlesRequest } from 'globular-web-client/title/title_pb';
 import { Model } from '../Model';
 import { getTheme } from "./Theme";
 import * as getUuid from 'uuid-by-string'
@@ -21,6 +21,12 @@ import { setAudio } from './Playlist';
 // Maximum number of results displayed...
 var MAX_DISPLAY_RESULTS = 20; // the maximum results display per page per globule...
 var MAX_RESULTS = 5000; // The total number of result search...
+
+window.onerror = function (msg, url, line) {
+    alert("Message : " + msg );
+    alert("url : " + url );
+    alert("Line number : " + line );
+ }
 
 // keep values in memorie to speedup...
 var titles = {}
@@ -49,6 +55,7 @@ function toDataURL(url, callback) {
 }
 
 export function getCoverDataUrl(callback, videoId, videoUrl, videoPath, globule) {
+
     if (!globule) {
         globule = Application.globular
     }
@@ -111,6 +118,7 @@ export function getCoverDataUrl(callback, videoId, videoUrl, videoPath, globule)
 
 // That function will be use to asscociate file with imdb information.
 export function getImdbInfo(id, callback, errorcallback, globule) {
+   
     if (titles[id]) {
         if (titles[id].ID) {
             callback(titles[id])
@@ -141,8 +149,10 @@ export function getImdbInfo(id, callback, errorcallback, globule) {
 
     url += "/imdb_title?id=" + id
 
+    console.log("call imdb_title ", id)
+
     var xmlhttp = new XMLHttpRequest();
-    xmlhttp.timeout = 10000
+    xmlhttp.timeout = 10 * 1000
     xmlhttp.onreadystatechange = function () {
         if (this.readyState == 4 && (this.status == 201 || this.status == 200)) {
             var obj = JSON.parse(this.responseText);
@@ -366,9 +376,11 @@ function searchTitles(globule, query, contexts, indexPath, offset, max, callback
                     let uuid = "_" + getUuid(query)
                     Model.eventHub.publish(`${uuid}_search_hit_event__`, { hit: hit, context: indexPath.substring(indexPath.lastIndexOf("/") + 1) }, true)
                 })
+            }else{
+                // keep it
+                hits.push(hit)
             }
-            // keep it
-            hits.push(hit)
+
         }
     });
 
@@ -741,7 +753,7 @@ export class SearchResults extends HTMLElement {
                     let range = document.createRange()
                     this.tabs.appendChild(range.createContextualFragment(html))
                     tab = this.tabs.querySelector(`#${uuid}-tab`)
-
+                    tab.totalSpan = tab.querySelector(`#${uuid}-total-span`)
 
                     tab.onclick = () => {
 
@@ -802,7 +814,6 @@ export class SearchResults extends HTMLElement {
                     ApplicationView.layout.sideMenu().appendChild(resultsPage.facetFilter)
                 } else if (evt.summary) {
                     resultsPage.updateSummary(evt.summary)
-                    tab.totalSpan = tab.querySelector(`#${uuid}-total-span`)
                     tab.totalSpan.innerHTML = resultsPage.getTotal() + ""
                 }
 
@@ -1075,7 +1086,7 @@ export class SearchResultsPage extends HTMLElement {
                             this.hits_by_className[className].push(uuid)
                         }
                     } else if (hit.hasAudio()) {
-    
+
                         hit.getAudio().getGenresList().forEach(g => {
                             g.split(" ").forEach(g_ => {
                                 let className = getUuidByString(g_.toLowerCase())
@@ -1087,20 +1098,24 @@ export class SearchResultsPage extends HTMLElement {
                                     this.hits_by_className[className].push(uuid)
                                 }
                             })
-  
+
                         })
                     }
 
                     // Display first results...
                     if (this.hits_by_context[evt.context].length < MAX_DISPLAY_RESULTS) {
-                        hit.card = this.displayMosaicHit(hit, evt.context)
-                        this.appendChild(hit.card)
+                        this.appendChild(this.displayMosaicHit(hit, evt.context))
+                        this.appendChild(this.displayListHit(hit, evt.context))
                     }
 
                     this.refreshNavigatorAndContextSelector()
 
                     // set the total...
-                    this.tab.totalSpan.innerHTML = this.getTotal() + ""
+                    if (this.tab) {
+                        if (this.tab.totalSpan) {
+                            this.tab.totalSpan.innerHTML = this.getTotal() + ""
+                        }
+                    }
                 }
 
             }, true)
@@ -1202,18 +1217,19 @@ export class SearchResultsPage extends HTMLElement {
 
     refresh() {
         console.log("page refresh call...")
-        this.innerHTML = ""
+        // this.innerHTML = ""
+        while(this.children.length > 0){
+            this.removeChild(this.children[0])
+        }
+
         this.contexts.forEach(context => {
             if (this.hits_by_context[context]) {
                 for (var i = this.offset * MAX_DISPLAY_RESULTS; this.querySelectorAll("." + context).length < MAX_DISPLAY_RESULTS && i < this.hits_by_context[context].length; i++) {
                     let hit = this.hits_by_context[context][i]
                     if (!hit.hidden && hit.enable) {
-                        // Initialyse the card...
-                        if (!hit.card) {
-                            hit.card = this.displayMosaicHit(hit, context)
-                        }
-                        this.displayListHit(hit, context)
-                        this.appendChild(hit.card) // append the mosaic card (blog, title, video, audio...)
+                        // append the mosaic card (blog, title, video, audio...)
+                        this.appendChild(this.displayMosaicHit(hit, context)) 
+                        this.appendChild( this.displayListHit(hit, context) )
                     }
                 }
             }
@@ -1279,7 +1295,7 @@ export class SearchResultsPage extends HTMLElement {
     }
 
     hideAll(className) {
-        if(className != undefined){
+        if (className != undefined) {
             className = getUuidByString(className)
         }
         for (var id in this.hits) {
@@ -1295,7 +1311,7 @@ export class SearchResultsPage extends HTMLElement {
     }
 
     showAll(className) {
-        if(className != undefined){
+        if (className != undefined) {
             className = getUuidByString(className)
         }
         for (var id in this.hits) {
@@ -1330,16 +1346,16 @@ export class SearchResultsPage extends HTMLElement {
     // Return all audio from cards...
     getAudios(className) {
         let audios = []
-    
+
         if (this.hits_by_context["audios"]) {
             this.hits_by_context["audios"].forEach(hit => {
                 let audio = hit.getAudio()
-                if(className == undefined){
+                if (className == undefined) {
                     audios.push(hit.getAudio())
-                }else{
+                } else {
                     audio.getGenresList().forEach(g => {
                         g.split(" ").forEach(g_ => {
-                            if(g_.toLowerCase() == className){
+                            if (g_.toLowerCase() == className) {
                                 audios.push(hit.getAudio())
                             }
                         })
@@ -1450,7 +1466,7 @@ export class SearchResultsPage extends HTMLElement {
 
         // insert one time...
         if (this.querySelector(`#hit-div-${uuid}`)) {
-            return
+            return this.querySelector(`#hit-div-${uuid}`)
         }
 
         let html = `
@@ -1476,57 +1492,56 @@ export class SearchResultsPage extends HTMLElement {
 
 
         let range = document.createRange()
-        this.appendChild(range.createContextualFragment(html))
+        //this.appendChild()
+        let hitDiv = range.createContextualFragment(html)
 
-        let snippetDiv = this.children[this.children.length - 1].children[1]
+        let snippetDiv =  hitDiv.querySelector(`.snippets-div`)
 
-        let titleInfoDiv = this.children[this.children.length - 1].children[2]
+        let titleInfoDiv = hitDiv.querySelector(`.title-info-div`)
 
         let infoDisplay = new InformationsManager()
-
-        let hitDiv = this.querySelector(`#hit-div-${uuid}`)
 
         if (hit.hasTitle || hit.hasVideo || hit.hasAudio) {
             if (hit.hasTitle()) {
                 infoDisplay.setTitlesInformation([hit.getTitle()], hit.globule)
-                hitDiv.classList.add("filterable")
+                hitDiv.children[0].classList.add("filterable")
                 let title = hit.getTitle()
                 title.globule = hit.globule;
-                title.getGenresList().forEach(g => hitDiv.classList.add(getUuidByString(g.toLowerCase())))
-                hitDiv.classList.add(getUuidByString(title.getType().toLowerCase()))
+                title.getGenresList().forEach(g => hitDiv.children[0].classList.add(getUuidByString(g.toLowerCase())))
+                hitDiv.children[0].classList.add(getUuidByString(title.getType().toLowerCase()))
 
                 // now the term..
                 if (title.getRating() < 3.5) {
-                    hitDiv.classList.add(getUuidByString("low"))
+                    hitDiv.children[0].classList.add(getUuidByString("low"))
                 } else if (title.getRating() < 7.0) {
-                    hitDiv.classList.add(getUuidByString("medium"))
+                    hitDiv.children[0].classList.add(getUuidByString("medium"))
                 } else {
-                    hitDiv.classList.add(getUuidByString("high"))
+                    hitDiv.children[0].classList.add(getUuidByString("high"))
                 }
 
             } else if (hit.hasVideo()) {
                 infoDisplay.setVideosInformation([hit.getVideo()])
-                hitDiv.classList.add("filterable")
+                hitDiv.children[0].classList.add("filterable")
                 let video = hit.getVideo()
                 video.globule = hit.globule
-                video.getGenresList().forEach(g => hitDiv.classList.add(getUuidByString(g.toLowerCase())))
-                video.getTagsList().forEach(tag => hitDiv.classList.add(getUuidByString(tag.toLowerCase())))
+                video.getGenresList().forEach(g => hitDiv.children[0].classList.add(getUuidByString(g.toLowerCase())))
+                video.getTagsList().forEach(tag => hitDiv.children[0].classList.add(getUuidByString(tag.toLowerCase())))
 
                 // now the term..
                 if (video.getRating() < 3.5) {
-                    hitDiv.classList.add(getUuidByString("low"))
+                    hitDiv.children[0].classList.add(getUuidByString("low"))
                 } else if (video.getRating() < 7.0) {
-                    hitDiv.classList.add(getUuidByString("medium"))
+                    hitDiv.children[0].classList.add(getUuidByString("medium"))
                 } else {
-                    hitDiv.classList.add(getUuidByString("high"))
+                    hitDiv.children[0].classList.add(getUuidByString("high"))
                 }
             } else if (hit.hasAudio()) {
                 infoDisplay.setAudiosInformation([hit.getAudio()])
-                hitDiv.classList.add("filterable")
+                hitDiv.children[0].classList.add("filterable")
                 let audio = hit.getAudio()
                 audio.globule = hit.globule
                 audio.getGenresList().forEach(g => {
-                    g.split(" ").forEach(g_ => hitDiv.classList.add(getUuidByString(g_.toLowerCase())))
+                    g.split(" ").forEach(g_ => hitDiv.children[0].classList.add(getUuidByString(g_.toLowerCase())))
 
                 })
             }
@@ -1535,9 +1550,9 @@ export class SearchResultsPage extends HTMLElement {
         } else {
             let blogPost = hit.getBlog()
             blogPost.globule = hit.globule;
-            hitDiv.classList.add("filterable")
+            hitDiv.children[0].classList.add("filterable")
             infoDisplay.setBlogPostInformation(blogPost)
-            blogPost.getKeywordsList().forEach(kw => hitDiv.classList.add(getUuidByString(kw.toLowerCase())))
+            blogPost.getKeywordsList().forEach(kw => hitDiv.children[0].classList.add(getUuidByString(kw.toLowerCase())))
         }
 
 
@@ -1561,6 +1576,8 @@ export class SearchResultsPage extends HTMLElement {
                 fragmentDiv.appendChild(div)
             })
         })
+
+        return hitDiv
     }
 }
 
@@ -1831,6 +1848,9 @@ export class SearchVideoCard extends HTMLElement {
                 height: 285px;
                 margin: 10px;
                 overflow: hidden;
+                display: flex;
+                justify-content: center;
+                flex-direction: column;
             }
 
             .video-card:hover{
@@ -1873,11 +1893,15 @@ export class SearchVideoCard extends HTMLElement {
                 color: var(--palette-text-secondery);
                 font-size: 1rem;
             }
+
+            #preview-image{
+                max-height: 180px;
+            }
             
         </style>
         <div class="video-card">
             <img id="thumbnail-image"></img>
-            <img id="preview-image" style="display: none;"></img>
+            <video autoplay muted loop id="preview-image" style="display: none;"></video>
             <p id="description"></p>
             <div style="display: flex;">
                 <div class="title-rating-div">
@@ -1944,7 +1968,7 @@ export class SearchVideoCard extends HTMLElement {
                         if (thumbnailPath.lastIndexOf(".mp4") != -1 || thumbnailPath.lastIndexOf(".MP4") != -1) {
                             thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("."))
                         }
-                        thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/preview.gif"
+                        thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/preview.webm"
 
                         let url = globule.config.Protocol + "://" + globule.config.Domain
                         if (window.location != globule.config.Domain) {
@@ -1974,6 +1998,7 @@ export class SearchVideoCard extends HTMLElement {
                             playVideo(path, null, null, null, globule)
                         }
 
+                        /*
                         if (!thumbnail.src.startsWith("data:image")) {
                             getCoverDataUrl(dataUrl => {
                                 thumbnail.src = dataUrl
@@ -1989,6 +2014,7 @@ export class SearchVideoCard extends HTMLElement {
                             }, video.getId(), video.getUrl(), path)
 
                         }
+                        */
 
                     }
                 }).catch(err => {
@@ -2199,20 +2225,37 @@ export class SearchFlipCard extends HTMLElement {
             let seriesInfos = this.shadowRoot.querySelector(`#hit-div-mosaic-episode-name`)
             if (title.getSerie().length > 0) {
                 let serieName = this.shadowRoot.querySelector(`#hit-div-mosaic-series-name`)
-                getImdbInfo(title.getSerie(), serie => {
-                    let url = serie.Poster.ContentURL
-                    toDataURL(url, (dataUrl) => {
-                        this.shadowRoot.querySelector(`#hit-div-mosaic-front`).style.backgroundImage = `url(${dataUrl})`
-                        serieName.innerHTML = serie.Name
+                let rqst = new GetTitleByIdRequest
+                rqst.setTitleid(title.getSerie())
+                let indexPath = globule.config.DataPath + "/search/titles"
+                rqst.setIndexpath(indexPath)
+                globule.titleService.getTitleById(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+                    .then(rsp => {
+                        let serie = rsp.getTitle()
+                        let url = serie.getPoster().getContenturl()
+                        /*toDataURL(url, (dataUrl) => {*/
+                            this.shadowRoot.querySelector(`#hit-div-mosaic-front`).style.backgroundImage = `url(${url})`
+                            serieName.innerHTML = serie.getName()
+                        /*})*/
                     })
-                }, err => ApplicationView.displayMessage(err, 3000), globule)
+                    .catch(err => {
+                        // in that case I will try with imdb...
+                        
+                        getImdbInfo(title.getSerie(), serie => {
+                            let url = serie.Poster.ContentURL
+                            /*toDataURL(url, (dataUrl) => {*/
+                                this.shadowRoot.querySelector(`#hit-div-mosaic-front`).style.backgroundImage = `url(${url})`
+                                serieName.innerHTML = serie.Name
+                            /*})*/
+                        }, err => ApplicationView.displayMessage(err, 3000), globule)
+                    })
             }
             seriesInfos.innerHTML = title.getName() + " S" + title.getSeason() + "E" + title.getEpisode()
         } else {
             let url = title.getPoster().getContenturl()
-            toDataURL(url, (dataUrl) => {
-                this.shadowRoot.querySelector(`#hit-div-mosaic-front`).style.backgroundImage = `url(${dataUrl})`
-            })
+            /*toDataURL(url, (dataUrl) => {*/
+                this.shadowRoot.querySelector(`#hit-div-mosaic-front`).style.backgroundImage = `url(${url})`
+            /*})*/
         }
 
     }
@@ -2265,7 +2308,6 @@ export class SearchTitleDetail extends HTMLElement {
             .preview{
                 max-width: 256px;
                 max-height: 130px;
-                background-color: black;
             }
 
             .season-episodes-lst{
@@ -2289,7 +2331,7 @@ export class SearchTitleDetail extends HTMLElement {
         <div class="search-title-detail">
             <div class="video-div">
                 <div class="title-title-div"></div>
-                <img class="preview" id="title-preview"></img>
+                <video muted autoplay loop class="preview" id="title-preview"></video>
             </div>
 
             <div class="title-interaction-div" style="display: flex;">
@@ -2313,7 +2355,7 @@ export class SearchTitleDetail extends HTMLElement {
                     <paper-icon-button id="play-episode-video-button" icon="av:play-circle-filled"></paper-icon-button>
                     <paper-icon-button id="episode-info-button" icon="icons:arrow-drop-down-circle"></paper-icon-button>
                 </div>
-                <img class="preview" id="epsiode-preview"></img>
+                <video autoplay muted loop class="preview" id="epsiode-preview"></video>
             </div>
         </div>
         `
@@ -2385,7 +2427,7 @@ export class SearchTitleDetail extends HTMLElement {
                             if (thumbnailPath.lastIndexOf(".mp4") != -1 || thumbnailPath.lastIndexOf(".MP4") != -1) {
                                 thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("."))
                             }
-                            thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/preview.gif"
+                            thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/preview.webm"
 
                             thumbnailPath.split("/").forEach(item => {
                                 item = item.trim()
@@ -2498,7 +2540,7 @@ export class SearchTitleDetail extends HTMLElement {
                     if (thumbnailPath.lastIndexOf(".mp4") != -1 || thumbnailPath.lastIndexOf(".MP4") != -1) {
                         thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("."))
                     }
-                    thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/preview.gif"
+                    thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/preview.webm"
 
                     thumbnailPath.split("/").forEach(item => {
                         item = item.trim()
@@ -2577,7 +2619,6 @@ export class FacetSearchFilter extends HTMLElement {
 
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
-
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -2996,10 +3037,10 @@ export class SearchResultsPagesNavigator extends HTMLElement {
     }
 
     setTotal(total) {
-        if(this.nb_pages ==  Math.ceil(total / MAX_DISPLAY_RESULTS)){
+        if (this.nb_pages == Math.ceil(total / MAX_DISPLAY_RESULTS)) {
             return
         }
-        
+
         this.container.innerHTML = ""
         this.nb_pages = Math.ceil(total / MAX_DISPLAY_RESULTS)
         if (this.nb_pages > 1) {

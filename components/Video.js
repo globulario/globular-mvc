@@ -329,6 +329,7 @@ export class VideoPlayer extends HTMLElement {
 
             globule.titleService.getFileTitles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
                 .then(rsp => {
+                    rsp.getTitles().getTitlesList().forEach(t=>t.globule = globule)
                     callback(rsp.getTitles().getTitlesList())
                 })
         }
@@ -341,6 +342,7 @@ export class VideoPlayer extends HTMLElement {
 
             globule.titleService.getFileVideos(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
                 .then(rsp => {
+                    rsp.getVideos().getVideosList().forEach(v=>v.globule = globule)
                     callback(rsp.getVideos().getVideosList())
                 })
         }
@@ -485,7 +487,9 @@ export class VideoPlayer extends HTMLElement {
      */
     close() {
         this.stop()
-        this.parentElement.removeChild(this)
+        if(this.parentNode)
+            this.parentElement.removeChild(this)
+            
         if (this.onclose) {
             this.onclose()
         }
