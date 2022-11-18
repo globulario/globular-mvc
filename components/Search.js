@@ -1925,7 +1925,9 @@ export class SearchVideoCard extends HTMLElement {
         <style>
             ${getTheme()}
             paper-card {
-                background-color: var(--palette-background-paper);
+                background: var(--palette-background-default);
+                border-top: 1px solid var(--palette-background-paper);
+                border-left: 1px solid var(--palette-background-paper);
             }
         </style>
 
@@ -1939,7 +1941,7 @@ export class SearchVideoCard extends HTMLElement {
             document.body.appendChild(range.createContextualFragment(html))
             videoInfoBox = document.getElementById("video-info-box")
             videoInfoBox.parentNode.style.position = "fixed"
-            videoInfoBox.parentNode.style.top = "50%"
+            videoInfoBox.parentNode.style.top = "70px"
             videoInfoBox.parentNode.style.left = "50%"
             videoInfoBox.parentNode.style.transform = "translate(-50%, -50%)"
         }

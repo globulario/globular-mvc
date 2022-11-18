@@ -37,7 +37,7 @@ const __style__ = `
 
 .title-informations-div {
     font-size: 1em;
-    /*max-width: 450px;*/
+    max-width: 450px;
   
 }
 
