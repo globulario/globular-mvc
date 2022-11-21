@@ -202,7 +202,7 @@ export class VideoPlayer extends HTMLElement {
     showVideoInfo(video) {
         let uuid = randomUUID()
         let html = `
-        <paper-card id="video-info-box-dialog-${uuid}" style="background-color: var(--palette-background-paper);">
+        <paper-card id="video-info-box-dialog-${uuid}" style="padding: 15px; background: var(--palette-background-default); border-top: 1px solid var(--palette-background-paper); border-left: 1px solid var(--palette-background-paper);">
             <globular-informations-manager id="video-info-box"></globular-informations-manager>
         </paper-card>
         `
@@ -215,9 +215,9 @@ export class VideoPlayer extends HTMLElement {
             videoInfoBox = document.getElementById("video-info-box")
             let parent =   document.getElementById("video-info-box-dialog-"+uuid)
             parent.style.position = "fixed"
-            parent.style.top = "50%"
+            parent.style.top = "75px"
             parent.style.left = "50%"
-            parent.style.transform = "translate(-50%, -50%)"
+            parent.style.transform = "translate(-50%)"
             videoInfoBox.onclose = ()=>{
                 parent.parentNode.removeChild(parent)
             }
@@ -228,7 +228,7 @@ export class VideoPlayer extends HTMLElement {
     showTitleInfo(title) {
         let uuid = randomUUID()
         let html = `
-        <paper-card id="video-info-box-dialog-${uuid}" style="background-color: var(--palette-background-paper); padding: 15px;">
+        <paper-card id="video-info-box-dialog-${uuid}" style="padding: 15px; background: var(--palette-background-default); border-top: 1px solid var(--palette-background-paper); border-left: 1px solid var(--palette-background-paper);">
             <globular-informations-manager id="title-info-box"></globular-informations-manager>
         </paper-card>
         `
@@ -239,9 +239,9 @@ export class VideoPlayer extends HTMLElement {
             titleInfoBox = document.getElementById("title-info-box")
             let parent =   document.getElementById("video-info-box-dialog-" + uuid)
             parent.style.position = "fixed"
-            parent.style.top = "50%"
+            parent.style.top = "75px"
             parent.style.left = "50%"
-            parent.style.transform = "translate(-50%, -50%)"
+            parent.style.transform = "translate(-50%)"
             
             titleInfoBox.onclose = ()=>{
                 parent.parentNode.removeChild(parent)

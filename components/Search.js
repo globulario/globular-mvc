@@ -1857,7 +1857,7 @@ export class SearchVideoCard extends HTMLElement {
                 box-shadow: rgba(0, 0, 0, 0.16) 0px 3px 6px, rgba(0, 0, 0, 0.23) 0px 3px 6px;
             }
 
-            .video-card img{
+            .video-card video{
                 max-width: 320px;
                 min-width: 320px;
                 max-height: 180px;
@@ -1865,7 +1865,7 @@ export class SearchVideoCard extends HTMLElement {
                 border-top-right-radius: 3.5px;
             }
 
-            .video-card img:hover{
+            .video-card video:hover{
                 cursor: pointer;
             }
 
@@ -1941,9 +1941,9 @@ export class SearchVideoCard extends HTMLElement {
             document.body.appendChild(range.createContextualFragment(html))
             videoInfoBox = document.getElementById("video-info-box")
             videoInfoBox.parentNode.style.position = "fixed"
-            videoInfoBox.parentNode.style.top = "70px"
+            videoInfoBox.parentNode.style.top = "75px"
             videoInfoBox.parentNode.style.left = "50%"
-            videoInfoBox.parentNode.style.transform = "translate(-50%, -50%)"
+            videoInfoBox.parentNode.style.transform = "translate(-50%)"
         }
         videoInfoBox.setVideosInformation([video])
     }
@@ -1970,7 +1970,7 @@ export class SearchVideoCard extends HTMLElement {
                         if (thumbnailPath.lastIndexOf(".mp4") != -1 || thumbnailPath.lastIndexOf(".MP4") != -1) {
                             thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("."))
                         }
-                        thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/preview.webm"
+                        thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/preview.mp4"
 
                         let url = globule.config.Protocol + "://" + globule.config.Domain
                         if (window.location != globule.config.Domain) {
@@ -2429,7 +2429,7 @@ export class SearchTitleDetail extends HTMLElement {
                             if (thumbnailPath.lastIndexOf(".mp4") != -1 || thumbnailPath.lastIndexOf(".MP4") != -1) {
                                 thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("."))
                             }
-                            thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/preview.webm"
+                            thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/preview.mp4"
 
                             thumbnailPath.split("/").forEach(item => {
                                 item = item.trim()
@@ -2542,7 +2542,7 @@ export class SearchTitleDetail extends HTMLElement {
                     if (thumbnailPath.lastIndexOf(".mp4") != -1 || thumbnailPath.lastIndexOf(".MP4") != -1) {
                         thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("."))
                     }
-                    thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/preview.webm"
+                    thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/preview.mp4"
 
                     thumbnailPath.split("/").forEach(item => {
                         item = item.trim()
@@ -2577,7 +2577,9 @@ export class SearchTitleDetail extends HTMLElement {
         <style>
             ${getTheme()}
             paper-card {
-                background-color: var(--palette-background-paper);
+                background: var(--palette-background-default);
+                border-top: 1px solid var(--palette-background-paper);
+                border-left: 1px solid var(--palette-background-paper);
             }
         </style>
 
@@ -2591,9 +2593,9 @@ export class SearchTitleDetail extends HTMLElement {
             document.body.appendChild(range.createContextualFragment(html))
             titleInfoBox = document.getElementById("title-info-box")
             titleInfoBox.parentNode.style.position = "fixed"
-            titleInfoBox.parentNode.style.top = "50%"
+            titleInfoBox.parentNode.style.top = "75px"
             titleInfoBox.parentNode.style.left = "50%"
-            titleInfoBox.parentNode.style.transform = "translate(-50%, -50%)"
+            titleInfoBox.parentNode.style.transform = "translate(-50%)"
         }
         titleInfoBox.setTitlesInformation([title])
     }

@@ -300,6 +300,7 @@ export class RegisterBox extends HTMLElement {
 
         setTimeout(()=>{
             userInput.focus()
+            userInput.setSelectionRange(0, userInput.value.length)
         }, 100)
   
         let emailInput = this.shadowRoot.getElementById("email_input")

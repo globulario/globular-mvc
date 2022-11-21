@@ -415,7 +415,7 @@ export class InformationsManager extends HTMLElement {
             #container{
                 display: flex;
                 flex-direction: column;
-                padding: 0px 8px;
+                padding: 8px;
                 overflow: auto;
                 z-index: 100;
             }
@@ -425,6 +425,19 @@ export class InformationsManager extends HTMLElement {
                 line-height: 20px;
                 padding-bottom: 10px;
             }
+
+            h1 {
+                font-size: 30px;
+            }
+
+            h2 {
+                font-size: 25px;
+            }
+
+            h3 {
+                font-size: 20px;
+            }
+
 
             #header h1, h2, h3 {
                 margin: 5px;
@@ -750,7 +763,7 @@ export class VideoInfo extends HTMLElement {
 
         // Set the header section.
         this.titleDiv.innerHTML = `
-        <h3 class="title-sub-title-div"> 
+        <div class="title-sub-title-div" style="display: flex; flex-direction: column;"> 
             <h1 id="title-name" class="title" style="${this.isShort ? "font-size: 1rem; padding-bottom: 10px;" : ""}"> ${publisherName} </h1>
             <div style="display: flex; align-items: baseline;">
                 <h3 class="title-sub-title-div" style="${this.isShort ? "font-size: 1rem;" : ""}">          
@@ -758,7 +771,7 @@ export class VideoInfo extends HTMLElement {
                 </h3>    
                 <span id="title-duration" style="padding-left: 10px;"><span>Duration: </span> ${video.getDuration()}</span>
             </span>
-        </h3>
+        </div>
         `
 
         // Here I will display the list of categories.
@@ -875,43 +888,117 @@ export class VideoInfoEditor extends HTMLElement {
                 display: flex;
             }
 
+            .button-div{
+                display: table-cell;
+                vertical-align: top;
+            }
+
+            .label{
+                font-size: 1rem;
+                padding-right: 10px;
+            }
+
+            div, paper-input, iron-autogrow-textarea {
+                font-size: 1rem;
+            }
+
         </style>
         <div id="container">
-            <div style="display: flex; flex-direction: column; justify-content: flex-start;  padding-left: 15px;">
-                <img id="video-thumbnail" src="${video.getPoster().getContenturl()}" style="height: 64px;"></iron-icon>
+            <div style="display: flex; flex-direction: column; justify-content: flex-start;  margin-left: 15px;">
+                <img id="video-thumbnail" src="${video.getPoster().getContenturl()}" style="max-height: 180px; max-width: 300px;"></iron-icon>
             </div>
-            <div style="display: table; flex-grow: 1; padding-left: 20px;">
+            <div style="display: table; flex-grow: 1; margin-left: 20px;">
                 <div style="display: table-row;">
-                    <div style="display: table-cell; font-weight: 450;">Id:</div>
-                    <div style="display: table-cell;"  id="video-id-div">${video.getId()}</div>
-                    <paper-input style="display: none;" value="${video.getId()}" id="video-id-input" no-label-float></paper-input>
-                    <paper-icon-button id="edit-video-id-btn" icon="image:edit"></paper-icon-button>
+                    <div class="label" style="display: table-cell; font-weight: 450;">Id:</div>
+                    <div style="display: table-cell; width: 350px;"  id="video-id-div">${video.getId()}</div>
+                    <paper-input style="display: none; width: 350px;" value="${video.getId()}" id="video-id-input" no-label-float></paper-input>
+                    <div class="button-div">
+                        <paper-icon-button id="edit-video-id-btn" icon="image:edit"></paper-icon-button>
+                    </div>
                 </div>
                 <div style="display: table-row;">
-                    <div style="display: table-cell; font-weight: 450;">URL:</div>
-                    <div style="display: table-cell;">${video.getUrl()}</div>
-                    <paper-input no-label-float style="display: none;" value="${video.getUrl()}"></paper-input>
-                    <paper-icon-button icon="image:edit"></paper-icon-button>
+                    <div class="label" style="display: table-cell; font-weight: 450;">URL:</div>
+                    <div id="video-url-div" style="display: table-cell; width: 350px;">${video.getUrl()}</div>
+                    <paper-input id="video-url-input" no-label-float style="display: none; width: 350px;" value="${video.getUrl()}"></paper-input>
+                    <div class="button-div">
+                        <paper-icon-button id="edit-video-url-btn" icon="image:edit"></paper-icon-button>
+                    </div>
                 </div>
                 <div style="display: table-row;">
-                    <div style="display: table-cell; font-weight: 450;">Version:</div>
-                    <div style="display: table-cell;" >${video.getDescription()}</div>
-                    <iron-autogrow-textarea  style="display: none;" value="${video.getDescription()}"></iron-autogrow-textarea>
-                    <paper-icon-button icon="image:edit"></paper-icon-button>
+                    <div class="label" style="display: table-cell; font-weight: 450; vertical-align: top;">Description:</div>
+                    <div id="video-description-div" style="display: table-cell;width: 350px;" >${video.getDescription()}</div>
+                    <iron-autogrow-textarea id="video-description-input"  style="display: none; border: none; width: 350px;" value="${video.getDescription()}"></iron-autogrow-textarea>
+                    <div class="button-div">
+                        <paper-icon-button id="edit-video-description-btn" style="vertical-align: top;" icon="image:edit"></paper-icon-button>
+                    </div>
                 </div>
             </div>
         </div>
         `
 
         // Here I will set the interaction...
+
+        // The video id
         let editVideoIdBtn = this.shadowRoot.querySelector("#edit-video-id-btn")
         let videoIdInput = this.shadowRoot.querySelector("#video-id-input")
         let videoIdDiv = this.shadowRoot.querySelector("#video-id-div")
+
         editVideoIdBtn.onclick = () => {
             videoIdInput.style.display = "table-cell"
             videoIdDiv.style.display = "none"
+            setTimeout(()=>{
+                videoIdInput.focus()
+                videoIdInput.inputElement.inputElement.select()
+            }, 100)
         }
 
+        videoIdInput.onblur = () => {
+            videoIdInput.style.display = "none"
+            videoIdDiv.style.display = "table-cell"
+            videoIdDiv.innerHTML = videoIdInput.value
+        }
+
+        // The original url link...
+        let editVideoUrlBtn = this.shadowRoot.querySelector("#edit-video-url-btn")
+        let videoUrlInput = this.shadowRoot.querySelector("#video-url-input")
+        let videoUrlDiv = this.shadowRoot.querySelector("#video-url-div")
+
+        editVideoUrlBtn.onclick = () => {
+            videoUrlInput.style.display = "table-cell"
+            videoUrlDiv.style.display = "none"
+            setTimeout(()=>{
+                videoUrlInput.focus()
+                videoUrlInput.inputElement.inputElement.select()
+            }, 100)
+        }
+
+        // set back to non edit mode.
+        videoUrlInput.onblur = () => {
+            videoUrlInput.style.display = "none"
+            videoUrlDiv.style.display = "table-cell"
+            videoUrlDiv.innerHTML = videoUrlInput.value
+        }
+
+        // The video description
+        let editVideoDescriptionBtn = this.shadowRoot.querySelector("#edit-video-description-btn")
+        let videoVideoDescriptionInput = this.shadowRoot.querySelector("#video-description-input")
+        let videoVideoDescriptionDiv = this.shadowRoot.querySelector("#video-description-div")
+
+        editVideoDescriptionBtn.onclick = () => {
+            videoVideoDescriptionInput.style.display = "table-cell"
+            videoVideoDescriptionDiv.style.display = "none"
+            setTimeout(()=>{
+                videoVideoDescriptionInput.focus()
+                videoVideoDescriptionInput.textarea.select()
+            }, 100)
+        }
+
+        // set back to non edit mode.
+        videoVideoDescriptionInput.onblur = () => {
+            videoVideoDescriptionInput.style.display = "none"
+            videoVideoDescriptionDiv.style.display = "table-cell"
+            videoVideoDescriptionDiv.innerHTML = videoVideoDescriptionInput.value
+        }
     }
 
     setVideo(video) {
