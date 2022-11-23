@@ -216,7 +216,7 @@ export function getImage(callback, images, files, index, globule) {
     if (!f) {
         callback([])
     }
-    
+
     index++
 
     // set the url for the image.
@@ -800,7 +800,7 @@ export class FilesView extends HTMLElement {
 
                 getVideoInfo(globule, this.menu.file, (videos) => {
                     if (videos.length > 0) {
-                        videos.forEach(video=>{
+                        videos.forEach(video => {
                             video.globule = globule
                         })
                         this.menu.file.videos = videos // keep in the file itself...
@@ -810,7 +810,7 @@ export class FilesView extends HTMLElement {
                         // get the title infos...
                         getTitleInfo(globule, this.menu.file, (titles) => {
                             if (titles.length > 0) {
-                                titles.forEach(title=>{
+                                titles.forEach(title => {
                                     title.globule = globule
                                 })
                                 this.menu.file.titles = titles // keep in the file itself...
@@ -822,7 +822,7 @@ export class FilesView extends HTMLElement {
             } else if (this.menu.file.mime.startsWith("audio")) {
                 getAudioInfo(globule, this.menu.file, (audios) => {
                     if (audios.length > 0) {
-                        audios.forEach(audio=>{
+                        audios.forEach(audio => {
                             audio.globule = globule
                         })
                         this.menu.file.audios = audios // keep in the file itself...
@@ -1414,7 +1414,7 @@ export class FilesView extends HTMLElement {
                 okBtn.onclick = () => {
 
                     let rqst = new UploadVideoRequest
-                    rqst.setDest(this.__dir__.path )
+                    rqst.setDest(this.__dir__.path)
 
                     if (mp3Radio.checked) {
                         rqst.setFormat("mp3")
@@ -4283,23 +4283,26 @@ export class FileExplorer extends HTMLElement {
                 (uuid) => {
                     this.listeners[`reload_dir_${this.globule.config.Domain}_event`] = uuid
                 }, (path) => {
-                    console.log("event receive for dir ", path)
-                    // remove existing...
-                    this.displayWaitMessage("load " + path)
-                    _readDir(path, (dir) => {
-                        this.fileNavigator.reload(dir, () => {
-                            // reload dir to be sure if it's public that change will be applied.
-                            _readDir(path, (dir) => {
-                                if (dir.path == this.path) {
-                                    Model.eventHub.publish("__set_dir_event__", { path: dir, file_explorer_id: this.id }, true)
+                   
+         
+                    if (this.path == path) {
+                        console.log("event receive for dir ", path)
+                        this.displayWaitMessage("load " + path)
 
-                                }
-                                this.shadowRoot.querySelector("globular-disk-space-manager").refresh()
-                                this.resume()
-                            }, err => ApplicationView.displayMessage(err, 3000), this.globule)
-                        })
-                    }, err => ApplicationView.displayMessage(err, 3000), this.globule, true)
+                        _readDir(path, (dir) => {
+                            this.fileNavigator.reload(dir, () => {
+                                // reload dir to be sure if it's public that change will be applied.
+                                _readDir(path, (dir) => {
+                                    if (dir.path == this.path) {
+                                        Model.eventHub.publish("__set_dir_event__", { path: dir, file_explorer_id: this.id }, true)
 
+                                    }
+                                    this.shadowRoot.querySelector("globular-disk-space-manager").refresh()
+                                    this.resume()
+                                }, err => ApplicationView.displayMessage(err, 3000), this.globule)
+                            })
+                        }, err => ApplicationView.displayMessage(err, 3000), this.globule, true)
+                    }
                 }, false)
         }
 

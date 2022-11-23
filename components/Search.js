@@ -488,6 +488,14 @@ export class SearchBar extends HTMLElement {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
+
+        this.titlesCheckbox = null
+        this.moviesCheckbox = null
+        this.tvSeriesCheckbox = null
+        this.tvEpisodesCheckbox = null
+        this.videosCheckbox = null
+        this.youtubeCheckbox = null
+        this.adultCheckbox = null
     }
 
     // The connection callback.
@@ -559,6 +567,17 @@ export class SearchBar extends HTMLElement {
                 margin-top: 8px;
             }
 
+            .context-filter{
+                display: flex;
+                font-size: .85rem;
+                margin: 0px 18px 5px 18px;
+                border-bottom: 1px solid  var(--palette-action-disabled);
+            }
+
+            .context-filter paper-checkbox {
+
+            }
+
         </style>
         <div id="search-bar">
             <iron-icon icon="search" style="--iron-icon-fill-color: var(--palette-text-accent);" ></iron-icon>
@@ -567,8 +586,21 @@ export class SearchBar extends HTMLElement {
             <paper-card id="context-search-selector">
                 <!--paper-checkbox checked name="webPages" id="context-search-selector-webpages">Webpages</paper-checkbox-->
                 <paper-checkbox checked name="blogPosts" id="context-search-selector-blog-posts">Blog Posts</paper-checkbox>
-                <paper-checkbox checked name="titles" id="context-search-selector-movies">Movies</paper-checkbox>
-                <paper-checkbox checked name="videos" id="context-search-selector-videos">Videos</paper-checkbox>
+                <div style="display: flex; flex-direction: column">
+                    <paper-checkbox checked name="titles" id="context-search-selector-titles">Titles</paper-checkbox>
+                    <div class="context-filter">
+                        <paper-checkbox checked name="movies" id="context-search-selector-movies">Movies</paper-checkbox>
+                        <paper-checkbox checked name="movies" id="context-search-selector-tv-series">TV-Series</paper-checkbox>
+                        <paper-checkbox checked name="movies" id="context-search-selector-tv-episodes">TV-Episodes</paper-checkbox>
+                    </div>
+                </div>
+                <div style="display: flex; flex-direction: column">
+                    <paper-checkbox checked name="videos" id="context-search-selector-videos">Videos</paper-checkbox>
+                    <div class="context-filter">
+                        <paper-checkbox checked name="youtube" id="context-search-selector-youtube">Youtube</paper-checkbox>
+                        <paper-checkbox  name="adult" id="context-search-selector-adult">Adult</paper-checkbox>
+                    </div>
+                </div>
                 <paper-checkbox checked name="audios" id="context-search-selector-audios">Audios</paper-checkbox>
             </paper-card>
         </div>
@@ -580,6 +612,37 @@ export class SearchBar extends HTMLElement {
 
         let changeSearchContextBtn = this.shadowRoot.getElementById("change-search-context")
         let contextSearchSelector = this.shadowRoot.getElementById("context-search-selector")
+
+        this.titlesCheckbox = this.shadowRoot.querySelector("#context-search-selector-titles")
+        this.moviesCheckbox = this.shadowRoot.querySelector("#context-search-selector-movies")
+        this.tvSeriesCheckbox = this.shadowRoot.querySelector("#context-search-selector-tv-series")
+        this.tvEpisodesCheckbox = this.shadowRoot.querySelector("#context-search-selector-tv-episodes")
+
+        this.titlesCheckbox.onchange = ()=>{
+            if(this.titlesCheckbox.checked){
+                this.moviesCheckbox.removeAttribute("disabled")
+                this.tvSeriesCheckbox.removeAttribute("disabled")
+                this.tvEpisodesCheckbox.removeAttribute("disabled")
+            }else{
+                this.moviesCheckbox.setAttribute("disabled", "")
+                this.tvSeriesCheckbox.setAttribute("disabled", "")
+                this.tvEpisodesCheckbox.setAttribute("disabled", "")
+            }
+        }
+
+        this.videosCheckbox = this.shadowRoot.querySelector("#context-search-selector-videos")
+        this.youtubeCheckbox = this.shadowRoot.querySelector("#context-search-selector-youtube")
+        this.adultCheckbox = this.shadowRoot.querySelector("#context-search-selector-adult")
+
+        this.videosCheckbox.onchange = ()=>{
+            if(this.videosCheckbox.checked){
+                this.youtubeCheckbox.removeAttribute("disabled")
+                this.adultCheckbox.removeAttribute("disabled")
+            }else{
+                this.youtubeCheckbox.setAttribute("disabled", "")
+                this.adultCheckbox.setAttribute("disabled", "")
+            }
+        }
 
         searchInput.onblur = () => {
             div.style.boxShadow = ""
@@ -597,9 +660,33 @@ export class SearchBar extends HTMLElement {
                 }
 
                 if (contexts.length > 0) {
-                    search(searchInput.value, contexts, 0)
+                    let query = searchInput.value
+
+                    // remove unwanted results...
+                    if(!this.adultCheckbox.checked){
+                        query += " -adult"
+                    }
+
+                    if(!this.youtubeCheckbox.checked){
+                        query += " -youtube"
+                    }
+
+                    if(!this.moviesCheckbox.checked){
+                        query += " -Movie"
+                    }
+
+                    if(!this.tvEpisodesCheckbox.checked){
+                        query += " -TVEpisode"
+                    }
+
+                    if(!this.tvSeriesCheckbox.checked){
+                        query += " -TVSerie"
+                    }
+
+                    search(query, contexts, 0)
                     searchInput.value = ""
                     Model.eventHub.publish("_display_search_results_", {}, true)
+
                 } else {
                     ApplicationView.displayMessage("You must selected a search context, Blog, Video or Title...", 3000)
                     contextSearchSelector.style.display = "flex"
@@ -741,11 +828,11 @@ export class SearchResults extends HTMLElement {
 
                 let uuid = "_" + getUuid(evt.query)
                 let tab = this.tabs.querySelector(`#${uuid}-tab`)
-
+                let query = evt.query.replaceAll(" -adult", "").replaceAll(" -youtube", "").replaceAll(" -TVEpisode", "").replaceAll(" -TVSerie", "").replaceAll(" -Movie", "")
                 if (tab == null) {
                     let html = `
                     <paper-tab id="${uuid}-tab">
-                        <span>${evt.query} (<span id="${uuid}-total-span" style="font-size: 1rem;"></span>)</span>
+                        <span>${query} (<span id="${uuid}-total-span" style="font-size: 1rem;"></span>)</span>
                         <paper-icon-button id="${uuid}-close-btn" icon="icons:close"></paper-icon-button>
                     </paper-tab>
                     `

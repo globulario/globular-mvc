@@ -224,6 +224,7 @@ export class DiskSpaceManager extends HTMLElement {
   }
 
   getAvailableSpace(id, type, callback, errorCallback) {
+    this.progressBar.setAttribute("indeterminate", "")
     let rqst = new GetSubjectAvailableSpaceRqst
     rqst.setSubject(id)
     rqst.setType(type)
@@ -240,10 +241,16 @@ export class DiskSpaceManager extends HTMLElement {
       .then((rsp) => {
         // Here I will return the value with it
         this.available_space = rsp.getAvailableSpace()
+        this.progressBar.removeAttribute("indeterminate")
         callback();
       })
       .catch((err) => {
         errorCallback(err);
+        if (err.message.indexOf("no space available for") != -1) {
+          this.available_space = 0;
+          this.progressBar.removeAttribute("indeterminate")
+          callback()
+        }
       });
   }
 
