@@ -274,6 +274,7 @@ function playTitleListener(player, title, indexPath, globule) {
 
 // Search over multiple peers...
 function search(query, contexts_, offset) {
+    console.log("search for: ... ", query)
 
     // Connections can contain many time the same address....
     let globules = Model.getGlobules()
@@ -1309,10 +1310,19 @@ export class SearchResultsPage extends HTMLElement {
             this.removeChild(this.children[0])
         }
 
+
         this.contexts.forEach(context => {
             if (this.hits_by_context[context]) {
-                for (var i = this.offset * MAX_DISPLAY_RESULTS; this.querySelectorAll("." + context).length < MAX_DISPLAY_RESULTS && i < this.hits_by_context[context].length; i++) {
+                let hits = []
+                for (var i = 0; i < this.hits_by_context[context].length; i++) {
                     let hit = this.hits_by_context[context][i]
+                    if (!hit.hidden && hit.enable) {
+                        hits.push(hit)
+                    }
+                }
+
+                for (var i = this.offset * MAX_DISPLAY_RESULTS; this.querySelectorAll("." + context).length < MAX_DISPLAY_RESULTS && i < hits.length; i++) {
+                    let hit = hits[i]
                     if (!hit.hidden && hit.enable) {
                         // append the mosaic card (blog, title, video, audio...)
                         this.appendChild(this.displayMosaicHit(hit, context)) 
