@@ -7,8 +7,28 @@ import { VideoPreview, getFileSizeString } from "./File";
 import { ApplicationView } from "../ApplicationView";
 import { randomUUID } from "./utility";
 import { playVideo } from "./Video";
-import { playAudio } from "./Audio";
+import { playAudio, secondsToTime } from "./Audio";
 import '@polymer/iron-autogrow-textarea/iron-autogrow-textarea.js';
+
+// extract the duration info from the raw data.
+function parseDuration(duration) {
+    // display the track lenght...
+    let obj = secondsToTime(duration)
+    var hours = obj.h
+    var min = obj.m
+    var sec = obj.s
+    let hours_ = (hours < 10) ? '0' + hours : hours;
+    let minutes_ = (min < 10) ? '0' + min : min;
+    let seconds_ = (sec < 10) ? '0' + sec : sec;
+
+    if (hours > 0)
+        return hours_ + ":" + minutes_ + ":" + seconds_;
+
+    if (min > 0)
+        return minutes_ + ":" + seconds_;
+
+    return seconds_ + "'s";
+}
 
 function listToString(lst) {
     let str = "["
@@ -169,7 +189,7 @@ function getVideoPreview(parent, path, name, callback, globule) {
 
     File.getFile(globule, path, w, h, file => {
         getHiddenFiles(path, previewDir => {
-            
+
             let files = []
             if (previewDir) {
                 if (previewDir._files) {
@@ -489,7 +509,7 @@ export class InformationsManager extends HTMLElement {
         closeButton.onclick = () => {
             // remove it from it parent.
             this.parentNode.removeChild(this)
-            if(this.onclose!=null){
+            if (this.onclose != null) {
                 this.onclose()
             }
 
@@ -761,6 +781,11 @@ export class VideoInfo extends HTMLElement {
 
         }
 
+        let duration = ""
+        if (video.getDuration() > 0) {
+            duration = parseDuration(video.getDuration())
+        }
+
         // Set the header section.
         this.titleDiv.innerHTML = `
         <div class="title-sub-title-div" style="display: flex; flex-direction: column;"> 
@@ -769,7 +794,7 @@ export class VideoInfo extends HTMLElement {
                 <h3 class="title-sub-title-div" style="${this.isShort ? "font-size: 1rem;" : ""}">          
                     <span id="title-type"><span>Genre: </span>${genres}</span>
                 </h3>    
-                <span id="title-duration" style="padding-left: 10px;"><span>Duration: </span> ${video.getDuration()}</span>
+                <span id="title-duration" style="padding-left: 10px;"><span>Duration: </span> ${duration}</span>
             </span>
         </div>
         `
@@ -946,7 +971,7 @@ export class VideoInfoEditor extends HTMLElement {
         editVideoIdBtn.onclick = () => {
             videoIdInput.style.display = "table-cell"
             videoIdDiv.style.display = "none"
-            setTimeout(()=>{
+            setTimeout(() => {
                 videoIdInput.focus()
                 videoIdInput.inputElement.inputElement.select()
             }, 100)
@@ -966,7 +991,7 @@ export class VideoInfoEditor extends HTMLElement {
         editVideoUrlBtn.onclick = () => {
             videoUrlInput.style.display = "table-cell"
             videoUrlDiv.style.display = "none"
-            setTimeout(()=>{
+            setTimeout(() => {
                 videoUrlInput.focus()
                 videoUrlInput.inputElement.inputElement.select()
             }, 100)
@@ -987,7 +1012,7 @@ export class VideoInfoEditor extends HTMLElement {
         editVideoDescriptionBtn.onclick = () => {
             videoVideoDescriptionInput.style.display = "table-cell"
             videoVideoDescriptionDiv.style.display = "none"
-            setTimeout(()=>{
+            setTimeout(() => {
                 videoVideoDescriptionInput.focus()
                 videoVideoDescriptionInput.textarea.select()
             }, 100)
@@ -1212,7 +1237,7 @@ export class TitleInfo extends HTMLElement {
             okBtn.onclick = () => {
                 let rqst = new DeleteTitleRequest()
                 let globule = title.globule
-                generatePeerToken(globule, token=>{
+                generatePeerToken(globule, token => {
                     rqst.setTitleid(title.getId())
                     rqst.setIndexpath(globule.config.DataPath + "/search/titles")
                     globule.titleService.deleteTitle(rqst, { application: Application.application, domain: Application.domain, token: token })
@@ -1221,7 +1246,7 @@ export class TitleInfo extends HTMLElement {
                             this.parentNode.removeChild(this)
                         })
                         .catch(err => ApplicationView.displayMessage(err, 3000))
-    
+
                 })
 
                 toast.dismiss();

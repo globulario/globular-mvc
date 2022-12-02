@@ -148,7 +148,7 @@ export class PlayList extends HTMLElement {
         this.index = 0
     }
 
-    play(item) {
+    play(item, restart, resume) {
         this.index = this.items.indexOf(item);
 
         getVideoInfo(this.globule, item.id, (video, token) => {
@@ -161,8 +161,12 @@ export class PlayList extends HTMLElement {
                 if (token) {
                     url += "&token=" + token
                 }
-                localStorage.removeItem(video.getId()) // play the video at start...
-                this.videoPlayer.play(url, this.globule, video)
+                if (restart)
+                    localStorage.removeItem(video.getId()) // play the video at start...
+
+                if (resume)
+                    this.videoPlayer.play(url, this.globule, video)
+
             } else {
 
                 getAudioInfo(this.globule, item.id, (audio, token) => {
@@ -176,7 +180,7 @@ export class PlayList extends HTMLElement {
                                 if (exists) {
                                     var parser = document.createElement('a');
                                     parser.href = url
-                                    this.audioPlayer.play( parser.pathname, this.globule, audio, true)
+                                    this.audioPlayer.play(parser.pathname, this.globule, audio, true)
                                 } else {
                                     this.audioPlayer.play(url, this.globule, audio)
                                 }
@@ -194,15 +198,22 @@ export class PlayList extends HTMLElement {
     playNext() {
         if (this.index < this.items.length - 1) {
             this.index++
-            this.setPlaying(this.items[this.index])
+            this.setPlaying(this.items[this.index], true, true)
         } else {
             this.index = 0
             this.items.forEach(item => {
                 item.stopPlaying()
                 item.classList.remove("playing")
             })
-            if (this.audioPlayer.loop) {
-                this.setPlaying(this.items[this.index])
+            let loop = false
+            if(this.audioPlayer){
+                loop = this.audioPlayer.loop
+            } else if(this.videoPlayer){
+                loop = this.videoPlayer.loop
+            }
+
+            if (loop) {
+                this.setPlaying(this.items[this.index], true, true)
             }
         }
     }
@@ -222,15 +233,20 @@ export class PlayList extends HTMLElement {
     playPrevious() {
         if (this.index > 0) {
             this.index--
-            this.setPlaying(this.items[this.index])
+            this.setPlaying(this.items[this.index], true, true)
         } else {
             console.log("no more item to play!")
         }
     }
 
-    load(txt, globule, audioPlayer) {
+    load(txt, globule, player) {
         // keep refrence to the audio player.
-        this.audioPlayer = audioPlayer;
+        if (player.constructor.name == "Audio_AudioPlayer") {
+            this.audioPlayer = player;
+        } else if (player.constructor.name == "Video_VideoPlayer") {
+            this.videoPlayer = player;
+        }
+
         this.globule = globule
         this.itmes = []
 
@@ -296,20 +312,14 @@ export class PlayList extends HTMLElement {
             let item_ = new PlayListItem(item, this, this.items.length, this.globule)
 
             item_.onmouseover = () => {
-                if (item_.isPlaying) {
-                    item_.showPauseButton()
-                    item_.hidePlayButton()
-                } else {
+                if (!item_.isPlaying) {
                     item_.hidePauseButton()
                     item_.showPlayButton()
                 }
             }
 
             item_.onmouseleave = () => {
-                if (item_.isPlaying) {
-                    item_.showPlayButton()
-                    item_.hidePauseButton()
-                } else {
+                if (!item_.isPlaying) {
                     item_.hidePlayButton()
                     item_.hidePauseButton()
                 }
@@ -323,11 +333,11 @@ export class PlayList extends HTMLElement {
 
         // play the first item...
         if (this.items.length > 0) {
-            this.setPlaying(this.items[0])
+            this.setPlaying(this.items[0], true, true)
         }
     }
 
-    setPlaying(item) {
+    setPlaying(item, restart, resume) {
         this.items.forEach(item => {
             item.stopPlaying()
             item.classList.remove("playing")
@@ -335,15 +345,15 @@ export class PlayList extends HTMLElement {
 
         this.index = this.items.indexOf(item);
         item.setPlaying()
-        this.play(item)
+        this.play(item, restart, resume)
         item.classList.add("playing")
 
-        if(this.audioPlayer!=null){
+        if (this.audioPlayer != null) {
             this.audioPlayer.setTarckInfo(this.index, this.items.length)
-        }else if(this.videoPlayer != null){
+        } else if (this.videoPlayer != null) {
             this.videoPlayer.setTarckInfo(this.index, this.items.length)
         }
-        
+
 
         // set the scoll position...
         this.shadowRoot.querySelector("#container").scrollTo({ top: item.offsetTop - 10, behavior: 'smooth' });
@@ -358,13 +368,19 @@ export class PlayList extends HTMLElement {
     resumePlaying() {
         let item = this.items[this.index]
         if (item)
-            this.setPlaying(item)
+            this.setPlaying(item, false, false)
     }
 
     orderItems() {
         // sort by items index...
         this.innerHTML = ""
-        if (this.audioPlayer.shuffle) {
+        let suffle = false;
+        if (this.audioPlayer) {
+            suffle = this.audioPlayer.shuffle
+        } else if (this.videoPlayer) {
+            suffle = this.videoPlayer.shuffle
+        }
+        if (suffle) {
             this.items = shuffleArray(this.items)
         } else {
             this.items = this.items.sort((a, b) => {
@@ -462,9 +478,15 @@ export class PlayListItem extends HTMLElement {
         this.playBtn = this.shadowRoot.querySelector("#play-arrow")
         this.pauseBtn = this.shadowRoot.querySelector("#pause")
         this.titleDuration = this.shadowRoot.querySelector("#title-duration-span")
+        this.needResume = false
 
         this.playBtn.onclick = () => {
-            this.parent.setPlaying(this)
+            if(this.needResume){
+                this.parent.setPlaying(this,  false, true)
+            }else{
+                this.parent.setPlaying(this,  true, true)
+            }
+            
             this.hidePlayButton()
             this.showPauseButton()
         }
@@ -472,7 +494,12 @@ export class PlayListItem extends HTMLElement {
         this.pauseBtn.onclick = () => {
             this.hidePauseButton()
             this.showPlayButton()
-            this.parent.audioPlayer.pause()
+            if (this.parent.audioPlayer) {
+                this.parent.audioPlayer.pause()
+            } else if (this.parent.videoPlayer) {
+                this.parent.videoPlayer.stop()
+                this.needResume = true
+            }
         }
 
         this.isPlaying = false;
@@ -486,13 +513,15 @@ export class PlayListItem extends HTMLElement {
             this.audio = audio;
             if (audio == null) {
                 getVideoInfo(globule, this.id, video => {
-                   
+
                     if (video != null) {
                         this.video = video
                         console.log("no information found for item ", item)
                         this.shadowRoot.querySelector("#title-div").innerHTML = video.getDescription()
                         this.shadowRoot.querySelector("#title-artist-span").innerHTML = video.getPublisherid().getName()
                         this.shadowRoot.querySelector("#title-image").src = video.getPoster().getContenturl()
+                        if (this.video.getDuration())
+                            this.titleDuration.innerHTML = this.parseDuration(this.video.getDuration())
                     }
                 })
             } else {
@@ -593,14 +622,18 @@ export class PlayListItem extends HTMLElement {
     }
 
     setPlaying() {
-        this.playBtn.style.visibility = "visible"
-        this.pauseBtn.style.visibility = "hidden"
+        this.playBtn.style.visibility = "hidden"
+        this.pauseBtn.style.visibility = "visible"
+        this.hidePlayButton()
+        this.showPauseButton()
         this.isPlaying = true;
     }
 
     pausePlaying() {
         this.playBtn.style.visibility = "visible"
         this.pauseBtn.style.visibility = "hidden"
+        this.hidePauseButton()
+        this.showPlayButton()
         this.isPlaying = false;
     }
 
@@ -610,6 +643,7 @@ export class PlayListItem extends HTMLElement {
         this.pauseBtn.style.display = "none"
         this.playBtn.style.display = "block"
         this.isPlaying = false;
+        this.needResume = false;
     }
 
     showPlayButton() {

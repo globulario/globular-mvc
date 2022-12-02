@@ -237,7 +237,9 @@ export class VideoPlayer extends HTMLElement {
         let controls = this.querySelector(".plyr__controls")
         controls.style.flexWrap = "wrap"
         controls.style.justifyContent = "flex-start"
-        console.log("----------------> controls: ", controls)
+
+        let plyrVideo = this.querySelector(".plyr--video")
+    
         // add additional button for the playlist...
         let html = `
             <div style="flex-basis: 100%; height: 5px;"></div>
@@ -258,6 +260,28 @@ export class VideoPlayer extends HTMLElement {
         this.loopBtn = this.querySelector("#repeat")
         this.shuffleBtn = this.querySelector("#shuffle")
         this.trackInfo = this.querySelector("#track-info")
+
+        let playPauseBtn = controls.children[0]
+        playPauseBtn.addEventListener("click", evt=>{
+           
+            let state =  evt.target.getAttribute("aria-label")
+            if(state == "Play"){
+                this.playlist.resumePlaying() 
+            }else if(state == "Pause"){
+                this.playlist.pausePlaying() 
+            }
+
+        }, true)
+
+        plyrVideo.addEventListener("click", evt=>{
+            let state =  playPauseBtn.getAttribute("aria-label")
+            if(state == "Play"){
+                this.playlist.resumePlaying() 
+            }else if(state == "Pause"){
+                this.playlist.pausePlaying() 
+            }
+
+        }, true)
 
         this.loop = false
         if (localStorage.getItem("video_loop")) {
