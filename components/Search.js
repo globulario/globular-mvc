@@ -274,7 +274,6 @@ function playTitleListener(player, title, indexPath, globule) {
 
 // Search over multiple peers...
 function search(query, contexts_, offset) {
-    console.log("search for: ... ", query)
 
     // Connections can contain many time the same address....
     let globules = Model.getGlobules()

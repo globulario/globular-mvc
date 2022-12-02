@@ -742,8 +742,6 @@ export class AudioPlayer extends HTMLElement {
                 } else {
                     this.play(this.path, this._audio_.globule, this._audio_)
                 }
-
-                this._audio_
             } else {
                 this.stop()
             }
@@ -853,7 +851,12 @@ export class AudioPlayer extends HTMLElement {
 
         xhr.onload = (evt) => {
             console.log(evt)
-            this.wavesurfer.loadBlob(evt.target.response);
+            if(evt.target.response.size < 24000000){
+                this.wavesurfer.loadBlob(evt.target.response);
+            }else{
+                ApplicationView.displayMessage("this file is to large to be play by the audio player. The maximum size is 24MB for audio file", 3000)
+            }
+            
         };
 
         xhr.send();

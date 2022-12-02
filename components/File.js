@@ -29,7 +29,7 @@ import { v4 as uuidv4 } from "uuid";
 
 // Menu to set action on files.
 import { DropdownMenu } from './dropdownMenu.js';
-import { AddPublicDirRequest, ConvertVideoToHlsRequest, ConvertVideoToMpeg4H264Request, CopyRequest, CreateDirRequest, CreateVideoPreviewRequest, CreateVideoTimeLineRequest, GeneratePlaylistRequest, GetPublicDirsRequest, MoveRequest, RemovePublicDirRequest, UploadVideoRequest } from 'globular-web-client/file/file_pb';
+import { AddPublicDirRequest, ConvertVideoToHlsRequest, ConvertVideoToMpeg4H264Request, CopyRequest, CreateDirRequest, CreateVideoPreviewRequest, CreateVideoTimeLineRequest, GeneratePlaylistRequest, GetPublicDirsRequest, MoveRequest, RemovePublicDirRequest, StartProcessVideoRequest, UploadVideoRequest } from 'globular-web-client/file/file_pb';
 import { createArchive, deleteDir, deleteFile, downloadFileHttp, renameFile, uploadFiles } from 'globular-web-client/api';
 import { ApplicationView } from '../ApplicationView';
 import { Application } from '../Application';
@@ -44,6 +44,7 @@ import { getImdbInfo } from './Search';
 import { setMoveable } from './moveable'
 import { setResizeable } from './rezieable'
 import { SplitView } from './Splitter'
+import { Account } from '../Account';
 
 
 // keep track of shared directory
@@ -387,7 +388,8 @@ export class FilesView extends HTMLElement {
         let menuItemsHTML = `
         <globular-dropdown-menu-item  id="file-infos-menu-item" icon="icons:info" text="File Infos" action=""> </globular-dropdown-menu-item>
         <globular-dropdown-menu-item  id="title-infos-menu-item" icon="icons:info" text="Title Infos" action="" style="display: none;"> </globular-dropdown-menu-item>
-        <globular-dropdown-menu-item  id="manage-acess-menu-item" icon="folder-shared" text="Manage access"action=""></globular-dropdown-menu-item>
+        <globular-dropdown-menu-item  id="manage-acess-menu-item" icon="folder-shared" text="Manage access" action=""></globular-dropdown-menu-item>
+        <globular-dropdown-menu-item  id="refresh-infos-menu-item" icon="icons:refresh" text="Refresh infos" action="" style="display: none;"></globular-dropdown-menu-item>
           <globular-dropdown-menu-item separator="true" id="video-menu-item" icon="maps:local-movies" text="Movies" action="" style="display: none;"> 
             <globular-dropdown-menu>
                 <globular-dropdown-menu-item id="generate-timeline-menu-item" icon="maps:local-movies" text="generate timeline" action=""> </globular-dropdown-menu-item>
@@ -411,6 +413,7 @@ export class FilesView extends HTMLElement {
 
         this.fileInfosMenuItem = this.menu.querySelector("#file-infos-menu-item")
         this.titleInfosMenuItem = this.menu.querySelector("#title-infos-menu-item")
+        this.refreshInfoMenuItem = this.menu.querySelector("#refresh-infos-menu-item")
         this.mananageAccessMenuItem = this.menu.querySelector("#manage-acess-menu-item")
         this.renameMenuItem = this.menu.querySelector("#rename-menu-item")
         this.deleteMenuItem = this.menu.querySelector("#delete-menu-item")
@@ -437,6 +440,7 @@ export class FilesView extends HTMLElement {
 
         // Action to do when file is set
         this.menu.setFile = (f) => {
+
             this.menu.file = f;
             if (this.menu.file.mime.startsWith("video")) {
                 this.titleInfosMenuItem.style.display = "block"
@@ -459,9 +463,34 @@ export class FilesView extends HTMLElement {
                     this.titleInfosMenuItem.style.display = "none"
                 }
 
+                if (this.menu.file.isDir) {
+                    this.refreshInfoMenuItem.style.display = "block"
+                }
+
                 this.videMenuItem.style.display = "none"
                 this.openInNewTabItem.style.display = "none"
             }
+        }
+
+        this.refreshInfoMenuItem.action = () => {
+            let rqst = new StartProcessVideoRequest
+            rqst.setPath(this.menu.file.path)
+            let globule = this._file_explorer_.globule
+
+            generatePeerToken(globule, token => {
+                globule.fileService.startProcessVideo(rqst, {
+                    token: token,
+                    application: Model.application,
+                    domain: globule.config.Domain,
+                    address: globule.config.address
+                }).then(() => {
+                    ApplicationView.displayMessage("informations are now updated", 3000)
+                })
+                    .catch(err => ApplicationView.displayMessage(err, 3000))
+            })
+
+            // Remove it from it parent...
+            this.menu.parentNode.removeChild(this.menu)
         }
 
         this.cutMenuItem.action = () => {
@@ -795,45 +824,42 @@ export class FilesView extends HTMLElement {
         this.titleInfosMenuItem.action = () => {
             // So here I will create a new permission manager object and display it for the given file.
             let globule = this._file_explorer_.globule
+            
+            let file = this.menu.file
+            if (file.mime.startsWith("video")) {
 
-            if (this.menu.file.mime.startsWith("video")) {
-
-                getVideoInfo(globule, this.menu.file, (videos) => {
+                getVideoInfo(globule, file, (videos) => {
                     if (videos.length > 0) {
                         videos.forEach(video => {
                             video.globule = globule
                         })
-                        this.menu.file.videos = videos // keep in the file itself...
-                        Model.eventHub.publish("display_media_infos_event", this.menu.file, true)
+                        file.videos = videos // keep in the file itself...
+                        Model.eventHub.publish("display_media_infos_event", file, true)
                     } else {
 
                         // get the title infos...
-                        getTitleInfo(globule, this.menu.file, (titles) => {
+                        getTitleInfo(globule, file, (titles) => {
                             if (titles.length > 0) {
                                 titles.forEach(title => {
                                     title.globule = globule
                                 })
-                                this.menu.file.titles = titles // keep in the file itself...
-                                Model.eventHub.publish("display_media_infos_event", this.menu.file, true)
+                                file.titles = titles // keep in the file itself...
+                                Model.eventHub.publish("display_media_infos_event", file, true)
                             }
                         })
                     }
                 })
-            } else if (this.menu.file.mime.startsWith("audio")) {
-                getAudioInfo(globule, this.menu.file, (audios) => {
+            } else if (file.mime.startsWith("audio")) {
+                getAudioInfo(globule, file, (audios) => {
                     if (audios.length > 0) {
                         audios.forEach(audio => {
                             audio.globule = globule
                         })
-                        this.menu.file.audios = audios // keep in the file itself...
-                        Model.eventHub.publish("display_media_infos_event", this.menu.file, true)
+                        file.audios = audios // keep in the file itself...
+                        Model.eventHub.publish("display_media_infos_event", file, true)
                     }
                 })
             }
-
-
-
-
             // hide the menu...
             this.menu.parentNode.removeChild(this.menu)
         }
@@ -878,11 +904,13 @@ export class FilesView extends HTMLElement {
             rqst.setHeight(128)
             rqst.setNb(20)
             let globule = this._file_explorer_.globule
-            let path = this.menu.file.path
+            let file = this.menu.file
+            let path = file.path
+
 
             // Set the users files/applications
-            if (this.menu.file.path.startsWith("/users") || this.menu.file.path.startsWith("/applications")) {
-                path = globule.config.DataPath + "/files" + this.menu.file.path
+            if (this.menu.file.path.startsWith("/users") || file.path.startsWith("/applications")) {
+                path = globule.config.DataPath + "/files" + file.path
             }
 
             rqst.setPath(path)
@@ -890,7 +918,7 @@ export class FilesView extends HTMLElement {
             globule.fileService.createVideoPreview(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
                 .then(rsp => {
                     ApplicationView.displayMessage("Preview are created </br>" + path, 3500)
-                    Model.publish("refresh_dir_evt", this.menu.file.path.substring(0, this.menu.file.path.lastIndexOf("/")), false);
+                    Model.publish("refresh_dir_evt", file.path.substring(0, file.path.lastIndexOf("/")), false);
                 })
                 .catch(err => {
                     ApplicationView.displayMessage(err, 3000)
@@ -901,11 +929,13 @@ export class FilesView extends HTMLElement {
 
         this.toMp4MenuItem.action = () => {
             let rqst = new ConvertVideoToMpeg4H264Request
-            let path = this.menu.file.path
+            let file = this.menu.file
+            let path = file.path
+           
             let globule = this._file_explorer_.globule
             // Set the users files/applications
-            if (this.menu.file.path.startsWith("/users") || this.menu.file.path.startsWith("/applications")) {
-                path = globule.config.DataPath + "/files" + this.menu.file.path
+            if (file.path.startsWith("/users") || file.path.startsWith("/applications")) {
+                path = globule.config.DataPath + "/files" + file.path
             }
             rqst.setPath(path)
 
@@ -913,7 +943,7 @@ export class FilesView extends HTMLElement {
             globule.fileService.convertVideoToMpeg4H264(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
                 .then(rsp => {
                     ApplicationView.displayMessage("Conversion done </br>" + path, 3500)
-                    Model.eventHub.publish("refresh_dir_evt", this.menu.file.path.substring(0, this.menu.file.path.lastIndexOf("/")), false);
+                    Model.eventHub.publish("refresh_dir_evt", file.path.substring(0, file.path.lastIndexOf("/")), false);
                 })
                 .catch(err => {
                     ApplicationView.displayMessage(err, 3000)
@@ -925,11 +955,12 @@ export class FilesView extends HTMLElement {
 
         this.toHlsMenuItem.action = () => {
             let rqst = new ConvertVideoToHlsRequest
-            let path = this.menu.file.path
+            let file = this.menu.file
+            let path = file.path
             let globule = this._file_explorer_.globule
             // Set the users files/applications
-            if (this.menu.file.path.startsWith("/users") || this.menu.file.path.startsWith("/applications")) {
-                path = globule.config.DataPath + "/files" + this.menu.file.path
+            if (file.path.startsWith("/users") || file.path.startsWith("/applications")) {
+                path = globule.config.DataPath + "/files" + file.path
             }
             rqst.setPath(path)
 
@@ -937,7 +968,7 @@ export class FilesView extends HTMLElement {
             globule.fileService.convertVideoToHls(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
                 .then(rsp => {
                     ApplicationView.displayMessage("Conversion done </br>" + path, 3500)
-                    Model.publish("refresh_dir_evt", this.menu.file.path.substring(0, this.menu.file.path.lastIndexOf("/")), false);
+                    Model.publish("refresh_dir_evt", file.path.substring(0, file.path.lastIndexOf("/")), false);
                 })
                 .catch(err => {
                     ApplicationView.displayMessage(err, 3000)
@@ -2102,12 +2133,33 @@ export class FilesIconView extends FilesView {
 
                         if (fileType == "audio" && dir.__audioPlaylist__) {
                             playlistDiv.innerHTML = `
+                                <iron-icon id="refresh-audios-btn" icon="icons:refresh" title="refresh audios infos and playlist"></iron-icon>
                                 <iron-icon id="play-audios-btn" icon="av:play-arrow" title="play audio files"></iron-icon>
                                 <iron-icon id="copy-audios-playlist-lnk" icon="icons:link" title="copy playlist url"></iron-icon>
                             `
                             // Get reference to button...
+                            let refreshAudiosBtn = playlistDiv.querySelector("#refresh-audios-btn")
                             let playAudiosBtn = playlistDiv.querySelector("#play-audios-btn")
                             let copyAudiosBtn = playlistDiv.querySelector("#copy-audios-playlist-lnk")
+
+                            refreshAudiosBtn.onclick = () => {
+                                let rqst = new StartProcessVideoRequest
+                                rqst.setPath(dir.path)
+                                let globule = this._file_explorer_.globule
+
+                                generatePeerToken(globule, token => {
+                                    globule.fileService.startProcessVideo(rqst, {
+                                        token: token,
+                                        application: Model.application,
+                                        domain: globule.config.Domain,
+                                        address: globule.config.address
+                                    }).then(() => {
+                                        ApplicationView.displayMessage("playlist and audios informations are now updated", 3000)
+                                    })
+                                        .catch(err => ApplicationView.displayMessage(err, 3000))
+                                })
+
+                            }
 
                             copyAudiosBtn.onclick = () => {
                                 copyUrl(dir.__audioPlaylist__.path)
@@ -2132,13 +2184,33 @@ export class FilesIconView extends FilesView {
 
                         } else if (fileType == "video" && dir.__videoPlaylist__) {
                             playlistDiv.innerHTML = `
+                                <iron-icon id="refresh-videos-btn" icon="icons:refresh" title="refresh video infos and playlist"></iron-icon>
                                 <iron-icon id="play-videos-btn" icon="av:play-arrow" title="play video files"></iron-icon>
                                 <iron-icon id="copy-videos-playlist-lnk" icon="icons:link" title="copy playlist url"></iron-icon>
                             `
 
                             // Get reference to button...
+                            let refreshVideosBtn = playlistDiv.querySelector("#refresh-videos-btn")
                             let playVideosBtn = playlistDiv.querySelector("#play-videos-btn")
                             let copyVideosBtn = playlistDiv.querySelector("#copy-videos-playlist-lnk")
+
+                            refreshVideosBtn.onclick = () => {
+                                let rqst = new StartProcessVideoRequest
+                                rqst.setPath(dir.path)
+                                let globule = this._file_explorer_.globule
+
+                                generatePeerToken(globule, token => {
+                                    globule.fileService.startProcessVideo(rqst, {
+                                        token: token,
+                                        application: Model.application,
+                                        domain: globule.config.Domain,
+                                        address: globule.config.address
+                                    }).then(() => {
+                                        ApplicationView.displayMessage("playlist and videos informations are now updated", 3000)
+                                    })
+                                        .catch(err => ApplicationView.displayMessage(err, 3000))
+                                })
+                            }
 
                             copyVideosBtn.onclick = () => {
                                 copyUrl(dir.__videoPlaylist__.path)
@@ -3363,75 +3435,85 @@ export class FileNavigator extends HTMLElement {
         let initShared = (share, callback) => {
 
             let userId = share.getPath().split("/")[2];
+
             if (userId == Application.account.id || userId == Application.account.id + "@" + Application.account.domain) {
                 callback()
                 return // I will not display it...
             }
 
-            if (this.shared[userId] == undefined) {
-                this.shared[userId] = new File(userId, "/shared/" + userId, true, this._file_explorer_.globule)
-                this.shared[userId].isDir = true;
-                this.shared[userId].files = [];
-                this.shared[userId].mime = "";
-                this.shared[userId].modTime = new Date()
-                this.shared_.files.push(this.shared[userId])
+            Account.getAccount(userId, user => {
 
-                Model.eventHub.subscribe(userId + "_change_permission_event", uuid => { },
-                    evt => {
-                        // refresh the shared...
-                        this.initShared()
-                    }, false, this)
-            }
+                if (this.shared[userId] == undefined) {
+                    this.shared[userId] = new File(userId, "/shared/" + userId, true, this._file_explorer_.globule)
+                    this.shared[userId].isDir = true;
+                    this.shared[userId].files = [];
+                    this.shared[userId].mime = "";
+                    this.shared[userId].modTime = new Date()
+                    this.shared_.files.push(this.shared[userId])
 
-            this._file_explorer_.displayWaitMessage("load " + share.getPath())
-            _readDir(share.getPath(), dir => {
-                this._file_explorer_.resume()
-                // used by set dir...
-                markAsShare(dir)
-
-                // From the path I will get the user id who share the file and 
-                // create a local directory if none exist...
-                if (this.shared[userId].files.find(f => f.path == dir.path) == undefined) {
-                    this.shared[userId].files.push(dir)
-                    callback()
+                    Model.eventHub.subscribe(userId + "_change_permission_event", uuid => { },
+                        evt => {
+                            // refresh the shared...
+                            this.initShared()
+                        }, false, this)
                 }
-            }, err => {
-                // The file is not a directory so the file will simply put in the share.
-                if (err.message.indexOf("is a directory") != -1) {
-                    File.getFile(this._file_explorer_.globule, share.getPath(), 128, 85,
-                        (f) => {
-                            if (f.path.indexOf(".hidden") != -1) {
-                                // In that case I need to append the file in a local dir named hidden.
-                                let hiddenDir = null;
-                                this.shared[userId].files.forEach(f => {
-                                    if (f.name == ".hidden") {
-                                        hiddenDir = f
+
+                this._file_explorer_.displayWaitMessage("load " + share.getPath())
+                _readDir(share.getPath(), dir => {
+                    this._file_explorer_.resume()
+                    // used by set dir...
+                    markAsShare(dir)
+
+                    // From the path I will get the user id who share the file and 
+                    // create a local directory if none exist...
+                    if (this.shared[userId]) {
+                        if (this.shared[userId].files.find(f => f.path == dir.path) == undefined) {
+                            this.shared[userId].files.push(dir)
+                            callback()
+                        }
+                    }
+                }, err => {
+                    // The file is not a directory so the file will simply put in the share.
+                    if (err.message.indexOf("is a directory") != -1) {
+                        File.getFile(this._file_explorer_.globule, share.getPath(), 128, 85,
+                            (f) => {
+                                if (f.path.indexOf(".hidden") != -1) {
+                                    // In that case I need to append the file in a local dir named hidden.
+                                    let hiddenDir = null;
+                                    this.shared[userId].files.forEach(f => {
+                                        if (f.name == ".hidden") {
+                                            hiddenDir = f
+                                        }
+                                    })
+                                    if (hiddenDir == null) {
+                                        hiddenDir = new File(".hidden", "/shared/" + userId + "/.hidden", true, this._file_explorer_.globule)
+                                        hiddenDir.isDir = true
+                                        hiddenDir.modTime = new Date()
+                                        hiddenDir.mime = ""
+                                        hiddenDir.files = [f]
+                                        this.shared[userId].files.push(hiddenDir)
+
+                                    } else {
+                                        // append only if it dosent exist....
+                                        if (this.shared[userId].files.find(f_ => f.path == f_.path) == undefined) {
+                                            hiddenDir.files.push(f)
+                                        }
                                     }
-                                })
-                                if (hiddenDir == null) {
-                                    hiddenDir = new File(".hidden", "/shared/" + userId + "/.hidden", true, this._file_explorer_.globule)
-                                    hiddenDir.isDir = true
-                                    hiddenDir.modTime = new Date()
-                                    hiddenDir.mime = ""
-                                    hiddenDir.files = [f]
-                                    this.shared[userId].files.push(hiddenDir)
 
                                 } else {
-                                    // append only if it dosent exist....
                                     if (this.shared[userId].files.find(f_ => f.path == f_.path) == undefined) {
-                                        hiddenDir.files.push(f)
+                                        this.shared[userId].files.push(f)
+                                        callback()
                                     }
                                 }
+                            }, e => console.log(e))
+                    }
+                }, this._file_explorer_.globule)
+            }, err=>{
+                console.log("----------> ", err)
+                callback()
+            })
 
-                            } else {
-                                if (this.shared[userId].files.find(f_ => f.path == f_.path) == undefined) {
-                                    this.shared[userId].files.push(f)
-                                    callback()
-                                }
-                            }
-                        }, e => console.log(e))
-                }
-            }, this._file_explorer_.globule)
         }
 
 
@@ -4283,9 +4365,9 @@ export class FileExplorer extends HTMLElement {
                 (uuid) => {
                     this.listeners[`reload_dir_${this.globule.config.Domain}_event`] = uuid
                 }, (path) => {
-                   
-         
-                    if (this.path == path) {
+
+
+                    if (path.endsWith(this.path)) {
                         console.log("event receive for dir ", path)
                         this.displayWaitMessage("load " + path)
 

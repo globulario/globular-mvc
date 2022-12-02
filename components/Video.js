@@ -11,6 +11,7 @@ import { setMoveable } from './moveable'
 import { setResizeable } from './rezieable'
 import { File } from "../File"
 import { randomUUID } from "./utility";
+import { PlayList } from "./Playlist"
 
 Object.defineProperty(HTMLMediaElement.prototype, 'playing', {
     get: function () {
@@ -29,11 +30,15 @@ String.prototype.endsWith = function (suffix) {
  * @param {*} onclose 
  */
 export function playVideo(path, onplay, onclose, title, globule) {
+
+
     let videoPlayer = document.getElementById("video-player-x")
 
     if (videoPlayer == null) {
         videoPlayer = new VideoPlayer()
         videoPlayer.id = "video-player-x"
+    } else {
+        videoPlayer.stop()
     }
 
     videoPlayer.style.height = "0px"
@@ -53,7 +58,20 @@ export function playVideo(path, onplay, onclose, title, globule) {
         videoPlayer.onclose = onclose
     }
 
-    videoPlayer.play(path, globule)
+
+    // clear the playlist...
+    if (videoPlayer.playlist)
+        videoPlayer.playlist.clear()
+
+    // play a given title.
+    if (path.endsWith("video.m3u") || path.startsWith("#EXTM3U")) {
+        videoPlayer.loadPlaylist(path, globule)
+        videoPlayer.showPlaylist()
+    } else {
+        videoPlayer.hidePlaylist()
+        videoPlayer.play(path, globule)
+    }
+
     return videoPlayer
 }
 
@@ -71,6 +89,16 @@ export class VideoPlayer extends HTMLElement {
         this.attachShadow({ mode: 'open' });
         let hideheader = this.getAttribute("hideheader") != undefined
         this.titleInfo = null; // movie, serie title, video
+        this.playlist = null; // The playlist...
+
+        this.skipPresiousBtn = null;
+        this.stopBtn = null;
+        this.skipNextBtn = null;
+        this.loopBtn = null;
+        this.shuffleBtn = null;
+        this.trackInfo = null;
+        this.loop = true;
+        this.shuffle = false;
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -116,8 +144,8 @@ export class VideoPlayer extends HTMLElement {
                 <span id="title-span"></span>
                 <paper-icon-button id="title-info-button" icon="icons:arrow-drop-down-circle"></paper-icon-button>
             </div>
-            <div style="display: flex; flex-direction: column;">
-                <globular-playlist></globular-playlist>
+            <div style="display: flex; background: black;">
+                <globular-playlist style="display: none; min-width: 450px;"></globular-playlist>
                 <slot></slot>
             </div>
         </paper-card>
@@ -127,13 +155,16 @@ export class VideoPlayer extends HTMLElement {
 
 
         this.shadowRoot.querySelector("#title-info-button").onclick = () => {
-            console.log(this.titleInfo.constructor.name)
-            if(this.titleInfo.clearActorsList !=undefined){
-                this.showTitleInfo(this.titleInfo)
-            }else{
-                this.showVideoInfo(this.titleInfo)
-            }   
-           
+            if (this.titleInfo) {
+                if (this.titleInfo.clearActorsList != undefined) {
+                    this.showTitleInfo(this.titleInfo)
+                } else {
+                    this.showVideoInfo(this.titleInfo)
+                }
+            } else {
+                ApplicationView.displayMessage("no title information found", 3000)
+            }
+
         }
 
         // give the focus to the input.
@@ -193,10 +224,150 @@ export class VideoPlayer extends HTMLElement {
                 }
             );
         }
+
+        this.playlist = this.shadowRoot.querySelector("globular-playlist")
+        this.playlist.videoPlayer = this
     }
 
     connectedCallback() {
+        if (this.skipPresiousBtn) {
+            return
+        }
 
+        let controls = this.querySelector(".plyr__controls")
+        controls.style.flexWrap = "wrap"
+        controls.style.justifyContent = "flex-start"
+        console.log("----------------> controls: ", controls)
+        // add additional button for the playlist...
+        let html = `
+            <div style="flex-basis: 100%; height: 5px;"></div>
+            <iron-icon style="--iron-icon-height: 32px; --iron-icon-width: 32px; fill: #424242;" class="plyr__controls__item plyr__control" title="Shuffle Playlist" id="shuffle" icon="av:shuffle"></iron-icon>
+            <iron-icon style="--iron-icon-height: 32px; --iron-icon-width: 32px;" class="plyr__controls__item plyr__control" id="skip-previous" title="Previous Track" icon="av:skip-previous"></iron-icon>
+            <iron-icon style="--iron-icon-height: 32px; --iron-icon-width: 32px;" class="plyr__controls__item plyr__control" id="skip-next" title="Next Track" icon="av:skip-next"></iron-icon>
+            <iron-icon style="--iron-icon-height: 32px; --iron-icon-width: 32px;" class="plyr__controls__item plyr__control" id="stop" title="Stop" icon="av:stop"></iron-icon>
+            <iron-icon style="--iron-icon-height: 32px; --iron-icon-width: 32px;" class="plyr__controls__item plyr__control" title="Loop Playlist" id="repeat" icon="av:repeat"></iron-icon>
+            <div id="track-info"></div>
+        `
+        let range = document.createRange()
+        controls.appendChild(range.createContextualFragment(html))
+
+        // Now the buttons actions.
+        this.skipPresiousBtn = this.querySelector("#skip-previous")
+        this.stopBtn = this.querySelector("#stop")
+        this.skipNextBtn = this.querySelector("#skip-next")
+        this.loopBtn = this.querySelector("#repeat")
+        this.shuffleBtn = this.querySelector("#shuffle")
+        this.trackInfo = this.querySelector("#track-info")
+
+        this.loop = false
+        if (localStorage.getItem("video_loop")) {
+            this.loop = localStorage.getItem("video_loop") == "true"
+        }
+
+        if (this.loop) {
+            this.loopBtn.style.fill = "white"
+        } else {
+            this.loopBtn.style.fill = "gray"
+        }
+
+        this.shuffle = false
+        if (localStorage.getItem("video_shuffle")) {
+            this.shuffle = localStorage.getItem("video_shuffle") == "true"
+        }
+
+        if (this.shuffle) {
+            this.shuffleBtn.style.fill = "white"
+        } else {
+            this.shuffleBtn.style.fill = "#424242"
+        }
+
+        // stop the audio player....
+        this.stopBtn.onclick = () => {
+            this.stop()
+            if (this.playlist) {
+                this.playlist.stop()
+            }
+            this.trackInfo.innerHTML = ""
+        }
+
+        this.skipNextBtn.onclick = () => {
+            this.stop()
+            if (this.playlist) {
+                this.playlist.playNext()
+            }
+        }
+
+        this.skipPresiousBtn.onclick = () => {
+            this.stop()
+            if (this.playlist) {
+                this.playlist.playPrevious()
+            }
+        }
+
+        // loop...
+        this.loopBtn.onclick = () => {
+
+            if (this.loop) {
+                localStorage.setItem("video_loop", "false");
+                this.loop = false;
+            } else {
+                localStorage.setItem("video_loop", "true")
+                this.loop = true;
+            }
+
+            if (this.loop) {
+                this.loopBtn.style.fill = "white"
+            } else {
+                this.loopBtn.style.fill = "#424242"
+            }
+
+        }
+
+        this.shuffleBtn.onclick = () => {
+            if (this.shuffle) {
+                localStorage.setItem("video_shuffle", "false");
+                this.shuffle = false;
+            } else {
+                localStorage.setItem("video_shuffle", "true")
+                this.shuffle = true;
+            }
+
+            if (this.shuffle) {
+                this.shuffleBtn.style.fill = "white"
+            } else {
+                this.shuffleBtn.style.fill = "#424242"
+            }
+
+            this.playlist.orderItems()
+        }
+
+    }
+
+    loadPlaylist(path, globule) {
+        this.playlist.clear()
+        this.playlist.load(path, globule, this)
+
+    }
+
+    showPlaylist() {
+        this.playlist.style.display = "block"
+        let playlistButtons = this.querySelectorAll("iron-icon")
+        for (var i = 0; i < playlistButtons.length; i++) {
+            playlistButtons[i].style.display = "block"
+        }
+    }
+
+    hidePlaylist() {
+        this.playlist.style.display = "none"
+        let playlistButtons = this.querySelectorAll("iron-icon")
+        for (var i = 0; i < playlistButtons.length; i++) {
+            playlistButtons[i].style.display = "none"
+        }
+    }
+
+    setTarckInfo(index, total) {
+        // display the position on the list...
+        console.log("set " + index + " of " + total)
     }
 
     showVideoInfo(video) {
@@ -213,12 +384,12 @@ export class VideoPlayer extends HTMLElement {
             let range = document.createRange()
             document.body.appendChild(range.createContextualFragment(html))
             videoInfoBox = document.getElementById("video-info-box")
-            let parent =   document.getElementById("video-info-box-dialog-"+uuid)
+            let parent = document.getElementById("video-info-box-dialog-" + uuid)
             parent.style.position = "fixed"
             parent.style.top = "75px"
             parent.style.left = "50%"
             parent.style.transform = "translate(-50%)"
-            videoInfoBox.onclose = ()=>{
+            videoInfoBox.onclose = () => {
                 parent.parentNode.removeChild(parent)
             }
         }
@@ -237,13 +408,13 @@ export class VideoPlayer extends HTMLElement {
             let range = document.createRange()
             document.body.appendChild(range.createContextualFragment(html))
             titleInfoBox = document.getElementById("title-info-box")
-            let parent =   document.getElementById("video-info-box-dialog-" + uuid)
+            let parent = document.getElementById("video-info-box-dialog-" + uuid)
             parent.style.position = "fixed"
             parent.style.top = "75px"
             parent.style.left = "50%"
             parent.style.transform = "translate(-50%)"
-            
-            titleInfoBox.onclose = ()=>{
+
+            titleInfoBox.onclose = () => {
                 parent.parentNode.removeChild(parent)
             }
         }
@@ -252,31 +423,39 @@ export class VideoPlayer extends HTMLElement {
 
     play(path, globule) {
 
-        let url = globule.config.Protocol + "://" + globule.config.Domain
-        if (window.location != globule.config.Domain) {
-            if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
-                url = globule.config.Protocol + "://" + window.location.host
-            }
-        }
+        let url = path;
 
-        if (globule.config.Protocol == "https") {
-            if (globule.config.PortHttps != 443)
-                url += ":" + globule.config.PortHttps
+        if (!url.startsWith("http")) {
+            url = globule.config.Protocol + "://" + globule.config.Domain
+            if (window.location != globule.config.Domain) {
+                if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
+                    url = globule.config.Protocol + "://" + window.location.host
+                }
+            }
+
+            if (globule.config.Protocol == "https") {
+                if (globule.config.PortHttps != 443)
+                    url += ":" + globule.config.PortHttps
+            } else {
+                if (globule.config.PortHttps != 80)
+                    url += ":" + globule.config.PortHttp
+            }
+
+            path.split("/").forEach(item => {
+                item = item.trim()
+                if (item.length > 0) {
+                    url += "/" + encodeURIComponent(item)
+                }
+            })
+
+            url += "?application=" + Model.application
+            if (localStorage.getItem("user_token") != undefined) {
+                url += "&token=" + localStorage.getItem("user_token")
+            }
         } else {
-            if (globule.config.PortHttps != 80)
-                url += ":" + globule.config.PortHttp
-        }
-
-        path.split("/").forEach(item => {
-            item = item.trim()
-            if (item.length > 0) {
-                url += "/" + encodeURIComponent(item)
-            }
-        })
-
-        url += "?application=" + Model.application
-        if (localStorage.getItem("user_token") != undefined) {
-            url += "&token=" + localStorage.getItem("user_token")
+            var parser = document.createElement('a');
+            parser.href = url
+            path = parser.pathname
         }
 
         // validate url access.
@@ -284,7 +463,6 @@ export class VideoPlayer extends HTMLElement {
             .then((response) => {
                 if (response.status !== 200) {
                     throw new Error(response.status)
-
                 } else {
                     if (File.hasLocal) {
                         File.hasLocal(path, exists => {
@@ -301,7 +479,7 @@ export class VideoPlayer extends HTMLElement {
                 }
             })
             .catch((error) => {
-                ApplicationView.displayMessage("You are not authorize to read that media file", 4000)
+                ApplicationView.displayMessage("fail to read url ", url, "with error ", error, 4000)
                 this.close()
                 document.exitFullscreen()
             });
@@ -329,7 +507,7 @@ export class VideoPlayer extends HTMLElement {
 
             globule.titleService.getFileTitles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
                 .then(rsp => {
-                    rsp.getTitles().getTitlesList().forEach(t=>t.globule = globule)
+                    rsp.getTitles().getTitlesList().forEach(t => t.globule = globule)
                     callback(rsp.getTitles().getTitlesList())
                 })
         }
@@ -342,7 +520,7 @@ export class VideoPlayer extends HTMLElement {
 
             globule.titleService.getFileVideos(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
                 .then(rsp => {
-                    rsp.getVideos().getVideosList().forEach(v=>v.globule = globule)
+                    rsp.getVideos().getVideosList().forEach(v => v.globule = globule)
                     callback(rsp.getVideos().getVideosList())
                 })
         }
@@ -362,6 +540,19 @@ export class VideoPlayer extends HTMLElement {
 
                     this.video.onended = () => {
                         console.log("the video is ended....")
+                        if (this.playlist.items.length > 1) {
+                            this.playlist.playNext()
+                        } else if (this.loop) {
+                            if (File.hasLocal) {
+                                File.hasLocal(this.path, exists => {
+                                    this.play(this.path, this.titleInfo.globule)
+                                })
+                            } else {
+                                this.play(this.path, this.titleInfo.globule)
+                            }
+                        } else {
+                            this.stop()
+                        }
                     }
 
                     Model.eventHub.publish("play_video_player_evt_", { _id: this.titleInfo.getId(), isVideo: this.titleInfo.isVideo, currentTime: this.video.currentTime, date: new Date() }, true)
@@ -487,9 +678,9 @@ export class VideoPlayer extends HTMLElement {
      */
     close() {
         this.stop()
-        if(this.parentNode)
+        if (this.parentNode)
             this.parentElement.removeChild(this)
-            
+
         if (this.onclose) {
             this.onclose()
         }

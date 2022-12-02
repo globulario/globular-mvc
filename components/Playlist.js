@@ -133,6 +133,7 @@ export class PlayList extends HTMLElement {
         this.style.display = "table"
         this.playlist = null;
         this.audioPlayer = null;
+        this.videoPlayer = null;
         this.globule = null;
         this.items = []
     }
@@ -160,6 +161,7 @@ export class PlayList extends HTMLElement {
                 if (token) {
                     url += "&token=" + token
                 }
+                localStorage.removeItem(video.getId()) // play the video at start...
                 this.videoPlayer.play(url, this.globule, video)
             } else {
 
@@ -170,11 +172,11 @@ export class PlayList extends HTMLElement {
                     if (audio)
                         if (File.hasLocal) {
                             // Get the file path part from the url and test if a local copy exist, if so I will use it.
-                            let url_ = url.replace("://", "")
-                            let path = url_.substring(url_.indexOf("/"), url_.indexOf("?"))
                             File.hasLocal(path, exists => {
                                 if (exists) {
-                                    this.audioPlayer.play(path, this.globule, audio, true)
+                                    var parser = document.createElement('a');
+                                    parser.href = url
+                                    this.audioPlayer.play( parser.pathname, this.globule, audio, true)
                                 } else {
                                     this.audioPlayer.play(url, this.globule, audio)
                                 }
@@ -336,7 +338,12 @@ export class PlayList extends HTMLElement {
         this.play(item)
         item.classList.add("playing")
 
-        this.audioPlayer.setTarckInfo(this.index, this.items.length)
+        if(this.audioPlayer!=null){
+            this.audioPlayer.setTarckInfo(this.index, this.items.length)
+        }else if(this.videoPlayer != null){
+            this.videoPlayer.setTarckInfo(this.index, this.items.length)
+        }
+        
 
         // set the scoll position...
         this.shadowRoot.querySelector("#container").scrollTo({ top: item.offsetTop - 10, behavior: 'smooth' });
@@ -479,9 +486,13 @@ export class PlayListItem extends HTMLElement {
             this.audio = audio;
             if (audio == null) {
                 getVideoInfo(globule, this.id, video => {
-                    this.video = video
-                    if (video == null) {
+                   
+                    if (video != null) {
+                        this.video = video
                         console.log("no information found for item ", item)
+                        this.shadowRoot.querySelector("#title-div").innerHTML = video.getDescription()
+                        this.shadowRoot.querySelector("#title-artist-span").innerHTML = video.getPublisherid().getName()
+                        this.shadowRoot.querySelector("#title-image").src = video.getPoster().getContenturl()
                     }
                 })
             } else {

@@ -1464,6 +1464,10 @@ export class FileInfo extends HTMLElement {
                     <div style="display: table-cell; font-weight: 450;">Size:</div>
                     <div style="display: table-cell;">${getFileSizeString(file.size)}</div>
                 </div>
+                <div style="display: table-row;">
+                    <div style="display: table-cell; font-weight: 450;">Checksum:</div>
+                    <div style="display: table-cell;">${file.checksum}</div>
+                </div>
             </div>
         </div>
         `

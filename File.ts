@@ -97,6 +97,15 @@ export class File extends Model {
         this._mime = value;
     }
 
+    /** The file checksum */
+    private _checksum: string;
+    public get checksum(): string {
+        return this._checksum;
+    }
+    public set checksum(value: string) {
+        this._checksum = value;
+    }
+
     /** is dir */
     private _isDir: boolean;
     public get isDir(): boolean {
@@ -148,6 +157,7 @@ export class File extends Model {
         file.size = obj.Size
         file.thumbnail = obj.Thumbnail
         file.metadata = obj.Metadata
+        file.checksum = obj.Checksum
 
         if (obj.Metadata) {
             if (obj.Metadata.Picture) {
