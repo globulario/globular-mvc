@@ -196,6 +196,17 @@ export class VideoPlayer extends HTMLElement {
         container.resizeHeightDiv.style.display = "none"
         container.style.height = "auto"
 
+        // set the initial size of the video player to fit the played video...
+        this.video.onplay = (evt)=>{
+            this.playlist.style.height = this.video.videoHeight + "px"
+            if(this.playlist.style.display == "none"){
+                container.style.width = this.video.videoWidth + "px"
+            }else{
+                container.style.width = this.video.videoWidth + this.playlist.offsetWidth + "px"
+            }
+            localStorage.setItem("__video_player_dimension__", JSON.stringify({ width: this.video.videoWidth, height: this.video.videoHeight }))
+        }
+
         // toggle full screen when the user double click on the header.
         this.shadowRoot.querySelector(".header").ondblclick = () => {
             var type = this.player.media.tagName.toLowerCase(),
