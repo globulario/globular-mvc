@@ -109,6 +109,12 @@ export class VideoPlayer extends HTMLElement {
                 position: fixed;
             }
 
+            #content{
+                display: flex;
+                background: #000000;
+                justify-items: center;
+            }
+
             .header{
                 display: flex;
                 align-items: center;
@@ -144,14 +150,15 @@ export class VideoPlayer extends HTMLElement {
                 <span id="title-span"></span>
                 <paper-icon-button id="title-info-button" icon="icons:arrow-drop-down-circle"></paper-icon-button>
             </div>
-            <div style="display: flex; background: black;">
-                <globular-playlist style="display: none; min-width: 450px;"></globular-playlist>
+            <div id="content" style="display: flex; background: black;">
+                <globular-playlist style="display: none; min-width: 450px; overflow:hidden; height: 600px;"></globular-playlist>
                 <slot></slot>
             </div>
         </paper-card>
         `
 
         let container = this.shadowRoot.querySelector("#container")
+        let content = this.shadowRoot.querySelector("#content")
 
 
         this.shadowRoot.querySelector("#title-info-button").onclick = () => {
