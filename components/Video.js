@@ -41,6 +41,8 @@ export function playVideo(path, onplay, onclose, title, globule) {
         videoPlayer.stop()
     }
 
+    videoPlayer.resume = false;
+
     videoPlayer.style.height = "0px"
     videoPlayer.style.width = "0px"
     videoPlayer.style.zIndex = 100
@@ -99,6 +101,7 @@ export class VideoPlayer extends HTMLElement {
         this.trackInfo = null;
         this.loop = true;
         this.shuffle = false;
+        this.resume = false;
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -185,6 +188,7 @@ export class VideoPlayer extends HTMLElement {
         if (offsetTop == 0) {
             offsetTop = 60
         }
+        this.path = ""
         this.appendChild(this.video)
 
         container.name = "video_player"
@@ -198,6 +202,13 @@ export class VideoPlayer extends HTMLElement {
 
         // set the initial size of the video player to fit the played video...
         this.video.onplay = (evt)=>{
+            if(this.resume){
+                return
+            }
+
+            this.resume = true
+
+            // event resize the video only if the video is new...
             this.playlist.style.height = this.video.videoHeight + "px"
             if(this.playlist.style.display == "none"){
                 container.style.width = this.video.videoWidth + "px"
@@ -464,7 +475,7 @@ export class VideoPlayer extends HTMLElement {
     }
 
     play(path, globule) {
-
+   
         let url = path;
 
         if (!url.startsWith("http")) {
@@ -499,6 +510,18 @@ export class VideoPlayer extends HTMLElement {
             parser.href = url
             path = parser.pathname
         }
+
+        if(this.path == path){
+            this.resume = true;
+            this.video.play()
+            return
+        }else{
+            // keep track of the current path
+            this.path = path
+            this.resume = false;
+        }
+
+       
 
         // validate url access.
         fetch(url, { method: "HEAD" })
@@ -582,6 +605,7 @@ export class VideoPlayer extends HTMLElement {
 
                     this.video.onended = () => {
                         console.log("the video is ended....")
+                        this.resume = false;
                         if (this.playlist.items.length > 1) {
                             this.playlist.playNext()
                         } else if (this.loop) {
