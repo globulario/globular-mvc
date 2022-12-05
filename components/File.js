@@ -29,7 +29,7 @@ import { v4 as uuidv4 } from "uuid";
 
 // Menu to set action on files.
 import { DropdownMenu } from './dropdownMenu.js';
-import { AddPublicDirRequest, ConvertVideoToHlsRequest, ConvertVideoToMpeg4H264Request, CopyRequest, CreateDirRequest, CreateVideoPreviewRequest, CreateVideoTimeLineRequest, GeneratePlaylistRequest, GetPublicDirsRequest, MoveRequest, RemovePublicDirRequest, StartProcessVideoRequest, UploadVideoRequest } from 'globular-web-client/file/file_pb';
+import { AddPublicDirRequest, ConvertVideoToHlsRequest, ConvertVideoToMpeg4H264Request, CopyRequest, CreateDirRequest, CreateVideoPreviewRequest, CreateVideoTimeLineRequest, GeneratePlaylistRequest, GetPublicDirsRequest, MoveRequest, ReadFileRequest, RemovePublicDirRequest, StartProcessVideoRequest, UploadVideoRequest } from 'globular-web-client/file/file_pb';
 import { createArchive, deleteDir, deleteFile, downloadFileHttp, renameFile, uploadFiles } from 'globular-web-client/api';
 import { ApplicationView } from '../ApplicationView';
 import { Application } from '../Application';
@@ -45,6 +45,7 @@ import { setMoveable } from './moveable'
 import { setResizeable } from './rezieable'
 import { SplitView } from './Splitter'
 import { Account } from '../Account';
+import { mergeTypedArrays, uint8arrayToStringMethod } from "../Utility";
 
 
 // keep track of shared directory
@@ -824,7 +825,7 @@ export class FilesView extends HTMLElement {
         this.titleInfosMenuItem.action = () => {
             // So here I will create a new permission manager object and display it for the given file.
             let globule = this._file_explorer_.globule
-            
+
             let file = this.menu.file
             if (file.mime.startsWith("video")) {
 
@@ -931,7 +932,7 @@ export class FilesView extends HTMLElement {
             let rqst = new ConvertVideoToMpeg4H264Request
             let file = this.menu.file
             let path = file.path
-           
+
             let globule = this._file_explorer_.globule
             // Set the users files/applications
             if (file.path.startsWith("/users") || file.path.startsWith("/applications")) {
@@ -2206,10 +2207,63 @@ export class FilesIconView extends FilesView {
                                         domain: globule.config.Domain,
                                         address: globule.config.address
                                     }).then(() => {
-                                        ApplicationView.displayMessage("playlist and videos informations are now updated", 3000)
+                                        ApplicationView.displayMessage("Playlist is updated. Informations will be update...", 3000)
+                                        let rqst = new ReadFileRequest
+                                        rqst.setPath(dir.path + "/.hidden/playlist.json")
+                                        let stream = globule.fileService.readFile(rqst, {
+                                            token: token,
+                                            application: Model.application,
+                                            domain: globule.config.Domain,
+                                            address: globule.config.address
+                                        })
+
+                                        let data = [];
+                                        stream.on("data", (rsp) => {
+                                            data = mergeTypedArrays(data, rsp.getData());
+                                        });
+                                
+                                        stream.on("status", (status) => {
+                                            if (status.code == 0) {
+                                                uint8arrayToStringMethod(data, (str) => {
+                                                    let playlist = JSON.parse(str)
+                                                    let rqst = new UploadVideoRequest
+                                                    rqst.setDest(playlist.path)
+                                                    rqst.setFormat(playlist.format)
+                                                    rqst.setUrl(playlist.url)
+                                
+                                                    generatePeerToken(this._file_explorer_.globule, token => {
+                                
+                                                        let stream = this._file_explorer_.globule.fileService.uploadVideo(rqst, { application: Application.application, domain: this._file_explorer_.globule.config.Domain, token: token })
+                                                        let pid = -1;
+                                
+                                                        // Here I will create a local event to be catch by the file uploader...
+                                                        stream.on("data", (rsp) => {
+                                                            if (rsp.getPid() != null) {
+                                                                pid = rsp.getPid()
+                                                            }
+                                
+                                                            // Publish local event.
+                                                            Model.eventHub.publish("__upload_link_event__", { pid: pid, path: playlist.path, infos: rsp.getResult(), done: false, lnk: playlist.url }, true);
+                                                        })
+                                
+                                                        stream.on("status", (status) => {
+                                                            if (status.code === 0) {
+                                                                Model.eventHub.publish("__upload_link_event__", { pid: pid, path: playlist.path, infos: "", done: true, lnk: playlist.url }, true);
+                                                            }
+                                                        });
+                                                    }, err => ApplicationView.displayMessage(err, 3000))
+                                                });
+                                            } else {
+                                                // In case of error I will return an empty array
+                                                errorCallback(status.details)
+                                            }
+                                        });
+
                                     })
                                         .catch(err => ApplicationView.displayMessage(err, 3000))
                                 })
+
+
                             }
 
                             copyVideosBtn.onclick = () => {
@@ -3509,7 +3563,7 @@ export class FileNavigator extends HTMLElement {
                             }, e => console.log(e))
                     }
                 }, this._file_explorer_.globule)
-            }, err=>{
+            }, err => {
                 console.log("----------> ", err)
                 callback()
             })
@@ -5389,7 +5443,7 @@ export class FilesUploader extends HTMLElement {
         let id = "link-download-row-" + pid
         let row = this.shadowRoot.querySelector("#" + id)
 
-        if (done) {
+        if (done || infos == "done") {
             let span_title = this.links_download_table.querySelector("#" + id + "_title")
             if (span_title) {
                 ApplicationView.displayMessage("File " + span_title.innerHTML + " was now uploaded!", 3000)
@@ -5607,7 +5661,7 @@ export class FilesUploader extends HTMLElement {
             cellSource.style.textAlign = "left"
             cellSource.style.paddingLeft = "5px"
             cellSource.innerHTML = `
-                <div style="display: flex; flex-direction: column;">
+                <div style="display: flex; flex-direction: column;width: 400px;">
                     <span style="background-color:var(--palette-background-default);">${f.name}</span>
                     <paper-progress value=0 style="width: 100%;"></paper-progress>
                 </div>`;

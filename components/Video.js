@@ -42,9 +42,6 @@ export function playVideo(path, onplay, onclose, title, globule) {
     }
 
     videoPlayer.resume = false;
-
-    videoPlayer.style.height = "0px"
-    videoPlayer.style.width = "0px"
     videoPlayer.style.zIndex = 100
 
     ApplicationView.layout.workspace().appendChild(videoPlayer)
@@ -201,21 +198,24 @@ export class VideoPlayer extends HTMLElement {
         container.style.height = "auto"
 
         // set the initial size of the video player to fit the played video...
-        this.video.onplay = (evt)=>{
-            if(this.resume){
+        this.video.onplaying = (evt) => {
+            if (this.resume) {
                 return
             }
 
             this.resume = true
 
-            // event resize the video only if the video is new...
-            this.playlist.style.height = this.video.videoHeight + "px"
-            if(this.playlist.style.display == "none"){
-                container.style.width = this.video.videoWidth + "px"
-            }else{
-                container.style.width = this.video.videoWidth + this.playlist.offsetWidth + "px"
+            if (this.video.videoHeight > 0 && this.video.videoWidth) {
+
+                // event resize the video only if the video is new...
+                this.playlist.style.height = this.video.videoHeight + "px"
+                if (this.playlist.style.display == "none") {
+                    container.style.width = this.video.videoWidth + "px"
+                } else {
+                    container.style.width = this.video.videoWidth + this.playlist.offsetWidth + "px"
+                }
+                localStorage.setItem("__video_player_dimension__", JSON.stringify({ width: this.video.videoWidth, height: this.video.videoHeight }))
             }
-            localStorage.setItem("__video_player_dimension__", JSON.stringify({ width: this.video.videoWidth, height: this.video.videoHeight }))
         }
 
         // toggle full screen when the user double click on the header.
@@ -268,7 +268,7 @@ export class VideoPlayer extends HTMLElement {
         controls.style.justifyContent = "flex-start"
 
         let plyrVideo = this.querySelector(".plyr--video")
-    
+
         // add additional button for the playlist...
         let html = `
             <div style="flex-basis: 100%; height: 5px;"></div>
@@ -291,23 +291,23 @@ export class VideoPlayer extends HTMLElement {
         this.trackInfo = this.querySelector("#track-info")
 
         let playPauseBtn = controls.children[0]
-        playPauseBtn.addEventListener("click", evt=>{
-           
-            let state =  evt.target.getAttribute("aria-label")
-            if(state == "Play"){
-                this.playlist.resumePlaying() 
-            }else if(state == "Pause"){
-                this.playlist.pausePlaying() 
+        playPauseBtn.addEventListener("click", evt => {
+
+            let state = evt.target.getAttribute("aria-label")
+            if (state == "Play") {
+                this.playlist.resumePlaying()
+            } else if (state == "Pause") {
+                this.playlist.pausePlaying()
             }
 
         }, true)
 
-        plyrVideo.addEventListener("click", evt=>{
-            let state =  playPauseBtn.getAttribute("aria-label")
-            if(state == "Play"){
-                this.playlist.resumePlaying() 
-            }else if(state == "Pause"){
-                this.playlist.pausePlaying() 
+        plyrVideo.addEventListener("click", evt => {
+            let state = playPauseBtn.getAttribute("aria-label")
+            if (state == "Play") {
+                this.playlist.resumePlaying()
+            } else if (state == "Pause") {
+                this.playlist.pausePlaying()
             }
 
         }, true)
@@ -475,7 +475,7 @@ export class VideoPlayer extends HTMLElement {
     }
 
     play(path, globule) {
-   
+
         let url = path;
 
         if (!url.startsWith("http")) {
@@ -508,20 +508,20 @@ export class VideoPlayer extends HTMLElement {
         } else {
             var parser = document.createElement('a');
             parser.href = url
-            path = parser.pathname
+            path = decodeURIComponent(parser.pathname)
         }
 
-        if(this.path == path){
+        if (this.path == path) {
             this.resume = true;
             this.video.play()
             return
-        }else{
+        } else {
             // keep track of the current path
             this.path = path
             this.resume = false;
         }
 
-       
+
 
         // validate url access.
         fetch(url, { method: "HEAD" })

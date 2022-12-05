@@ -180,7 +180,7 @@ export class PlayList extends HTMLElement {
                                 if (exists) {
                                     var parser = document.createElement('a');
                                     parser.href = url
-                                    this.audioPlayer.play(parser.pathname, this.globule, audio, true)
+                                    this.audioPlayer.play(decodeURIComponent(parser.pathname), this.globule, audio, true)
                                 } else {
                                     this.audioPlayer.play(url, this.globule, audio)
                                 }
