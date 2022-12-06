@@ -44,7 +44,7 @@ function getAllAccountsInfo_(globule, callback, errorCallback) {
       // the data will be keep in the local storage if the user was once log on that computer.
       if (localStorage.getItem(a.getId()) != undefined) {
         let data = JSON.parse(localStorage.getItem(a.getId()))
-        a.profilPicture_ = data.profilPicture_
+        a.profilePicture_ = data.profilePicture_
         a.firstName_ = data.firstName_
         a.lastName_ = data.lastName_
         a.globule = globule // keep reference to the parent globule.
@@ -146,7 +146,7 @@ export class AccountMenu extends Menu {
         this.accountUpdateListener = uuid;
       },
       (data) => {
-        this.setProfilePicture(data.profilPicture_)
+        this.setProfilePicture(data.profilePicture_)
       },
       true, this)
 
@@ -255,8 +255,8 @@ export class AccountMenu extends Menu {
     this.img = this.shadowRoot.getElementById("profile-picture");
     this.ico = this.shadowRoot.getElementById("profile-icon");
 
-    if (account.profilPicture_ != undefined) {
-      this.setProfilePicture(account.profilPicture_);
+    if (account.profilePicture_ != undefined) {
+      this.setProfilePicture(account.profilePicture_);
     }
 
     this.shadowRoot.removeChild(this.getMenuDiv());
@@ -589,8 +589,8 @@ export class AccountPanel extends HTMLElement {
         </style>
         <div id="container">
             <div class="header">
-            <img style="width: 32px; height: 32px; display: ${this.account.profilPicture_ == undefined ? "none" : "block"};" src="${this.account.profilPicture_}"></img>
-            <iron-icon icon="account-circle" style="width: 32px; height: 32px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${this.account.profilPicture_ != undefined ? "none" : "block"};"></iron-icon>
+            <img style="width: 32px; height: 32px; display: ${this.account.profilePicture_ == undefined ? "none" : "block"};" src="${this.account.profilePicture_}"></img>
+            <iron-icon icon="account-circle" style="width: 32px; height: 32px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${this.account.profilePicture_ != undefined ? "none" : "block"};"></iron-icon>
                 <span class="title">${this.account.getName() + "@" + this.account.getDomain()}</span>
                 <globular-disk-space-manager editable="true" account="${this.account.getId() + "@" + this.account.getDomain()}"></globular-disk-space-manager>
                 <paper-button id="delete-account-btn">Delete</paper-button>

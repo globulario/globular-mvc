@@ -125,26 +125,25 @@ export class Ringtones extends HTMLElement {
             this.account = contact;
 
             Account.getContacts(Application.account, `{"_id":"${contact.id + "@" + contact.domain}"}`, contacts => {
-                if (contacts[0].ringtone) {
-                    this.account.ringtone = contacts[0].ringtone
+                if (contacts.length > 0) {
+                    if (contacts[0].ringtone) {
+                        this.account.ringtone = contacts[0].ringtone
+                    }
+
+
+                    // Now I will set the file...
+                    this.loadRingTone(Model.globular.config.WebRoot + "/webroot/" + Model.application + "/" + this.getAttribute("dir"), () => {
+
+                        // The dir where additional ringtone will be place.
+                        createDir(Model.globular, Model.globular.config.DataPath + "/files/applications/" + Model.application, "ringtones",
+                            () => {
+                                this.loadRingTone("/applications/" + Model.application + "/ringtones", () => this.setCurrentRingtone())
+                            },
+                            () => {
+                                this.loadRingTone("/applications/" + Model.application + "/ringtones", () => this.setCurrentRingtone())
+                            })
+                    }, false)
                 }
-
-
-                // Now I will set the file...
-                this.loadRingTone(Model.globular.config.WebRoot + "/webroot/" + Model.application + "/" + this.getAttribute("dir"), () => {
-
-                    // The dir where additional ringtone will be place.
-                    createDir(Model.globular, Model.globular.config.DataPath + "/files/applications/" + Model.application, "ringtones",
-                        () => {
-                            this.loadRingTone("/applications/" + Model.application + "/ringtones", () => this.setCurrentRingtone())
-                        },
-                        () => {
-                            this.loadRingTone("/applications/" + Model.application + "/ringtones", () => this.setCurrentRingtone())
-                        })
-                }, false)
-
-
-
 
 
             }, err => ApplicationView.displayMessage(err, 3000))
@@ -281,8 +280,8 @@ export class Ringtones extends HTMLElement {
         contact.setId(this.account.id + "@" + this.account.domain)
         contact.setStatus("accepted")
         contact.setRingtone(this.account.ringtone)
-        if (this.account.profilPicture)
-            contact.setProfilepicture(this.account.profilPicture)
+        if (this.account.profilePicture)
+            contact.setProfilepicture(this.account.profilePicture)
 
         contact.setInvitationtime(Math.round(Date.now() / 1000))
         rqst.setContact(contact)
@@ -302,12 +301,12 @@ export class Ringtones extends HTMLElement {
             .catch(err => ApplicationView(err, 3000));
     }
 
-    play(loop){
+    play(loop) {
         this.shadowRoot.querySelector("#ringtone").children[0].play(loop)
     }
 
 
-    stop(){
+    stop() {
         this.shadowRoot.querySelector("#ringtone").children[0].stop()
     }
 }
@@ -457,13 +456,13 @@ export class Ringtone extends HTMLElement {
             this.audio = new Audio(this.url)
         }
 
-        if(loop){
+        if (loop) {
             this.audio.setAttribute("loop", "true")
         }
 
         this.audio.play()
 
-        this.audio.onended = ()=>{
+        this.audio.onended = () => {
             this.stop()
         }
     }

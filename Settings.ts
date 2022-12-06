@@ -69,7 +69,7 @@ export class UserSettings extends Settings {
 
         // Here I will append the image cropper in order for the user to change it profile
         // picture.
-        let imageCropperSettings = new ImageCropperSetting("Picture", "Change the user picture", account.id, account.profilPicture)
+        let imageCropperSettings = new ImageCropperSetting("Picture", "Change the user picture", account.id, account.profilePicture)
         userPictureSetting.addSetting(imageCropperSettings)
 
         // The user name.
@@ -143,11 +143,11 @@ export class UserSettings extends Settings {
                     account.firstName = firstNameSetting.getValue();
                     account.lastName = lastNameSetting.getValue();
                     account.middleName = middleNameSetting.getValue();
-                    account.profilPicture = imageCropperSettings.getValue();
+                    account.profilePicture = imageCropperSettings.getValue();
 
                     account.save(
                         () => {
-                            imageCropperSettings.setValue(account.profilPicture)
+                            imageCropperSettings.setValue(account.profilePicture)
                         },
                         (err: any) => {
                             console.log(err)
@@ -157,7 +157,7 @@ export class UserSettings extends Settings {
                     firstNameSetting.setValue(account.firstName)
                     lastNameSetting.setValue(account.lastName)
                     middleNameSetting.setValue(account.middleName)
-                    imageCropperSettings.setValue(account.profilPicture)
+                    imageCropperSettings.setValue(account.profilePicture)
                 }
             }, true)
     }

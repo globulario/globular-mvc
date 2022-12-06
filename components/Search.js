@@ -224,7 +224,7 @@ function playTitleListener(player, title, indexPath, globule) {
                     <div>Play the next episode?</div>
                     <h3 style="font-size: 1.17em; font-weight: bold;">${nextEpisode.getName()}</h3>
                     <div>Season ${nextEpisode.getSeason()} Episode ${nextEpisode.getEpisode()}</div>
-                    <img style="width: 400px;" src="${nextEpisode.getPoster().getContenturl()}"></img>
+                    <img style="max-width: 250px; align-self: center;" src="${nextEpisode.getPoster().getContenturl()}"></img>
                     <p style="max-width: 400px;">${nextEpisode.getDescription()}</p>
                     <div style="display: flex; justify-content: flex-end;">
                         <paper-button id="imdb-lnk-ok-button">Yes</paper-button>

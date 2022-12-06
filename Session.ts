@@ -3,6 +3,7 @@ import { ApplicationView } from "./ApplicationView";
 import { Account } from "./Account"
 import * as resource from "globular-web-client/resource/resource_pb";
 import { Globular } from "globular-web-client";
+import { GetSubjectAvailableSpaceRqst, SubjectType } from "globular-web-client/rbac/rbac_pb";
 
 /**
  * The session object will keep information about the
@@ -180,6 +181,26 @@ export class Session extends Model {
                 initCallback()
             }, errorCallback)
         })
+
+        let rqst = new GetSubjectAvailableSpaceRqst
+        rqst.setSubject(accountId)
+        rqst.setType(SubjectType.ACCOUNT)
+
+        let token = localStorage.getItem("user_token")
+
+        // load available space for the account on the globule...
+        Model.globular.rbacService
+            .getSubjectAvailableSpace(rqst, {
+                token: token,
+                application: Model.application,
+                domain: Model.domain
+            })
+            .then((rsp) => {
+                console.log(rsp)
+            })
+            .catch((err) => {
+                console.log(err)
+            });
     }
 
     toString(): string {

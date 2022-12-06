@@ -493,8 +493,8 @@ export class BlogPostElement extends HTMLElement {
         Account.getAccount(blog.getAuthor(), a => {
             let img = this.shadowRoot.querySelector("#blog-reader-author-picture")
             let ico = this.shadowRoot.querySelector("#blog-reader-author-icon")
-            if (a.profilPicture_ != undefined) {
-                img.src = a.profilPicture_
+            if (a.profilePicture_ != undefined) {
+                img.src = a.profilePicture_
                 img.style.display = "block"
                 ico.style.display = "none"
             }
@@ -1254,8 +1254,8 @@ export class BlogComment extends HTMLElement {
         Account.getAccount(comment.getAccountId(), a => {
             let img = this.shadowRoot.querySelector("#blog-comment-author-picture")
             let ico = this.shadowRoot.querySelector("#blog-comment-author-icon")
-            if (a.profilPicture_ != undefined) {
-                img.src = a.profilPicture_
+            if (a.profilePicture_ != undefined) {
+                img.src = a.profilePicture_
                 img.style.display = "block"
                 ico.style.display = "none"
             }

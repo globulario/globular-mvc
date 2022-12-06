@@ -182,7 +182,9 @@ export class SessionState extends HTMLElement {
 
         // unsubscribe first.
         let globule = Model.getGlobule(this.account.session.domain)
-
+        if(!globule){
+            globule = Model.getGlobule(this.account.domain)
+        }
 
         if (this.hasAttribute("editable")) {
             sessionTime = this.account.session.lastStateTime;

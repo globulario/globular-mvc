@@ -456,7 +456,7 @@ export class Application extends Model {
             userFirstName = userInfo_["firstName_"]
             userLastName = userInfo_["lastName_"]
             userMiddleName = userInfo_["middleName_"]
-            userProfilePicture = userInfo_["profilPicture_"]
+            userProfilePicture = userInfo_["profilePicture_"]
         }
 
         ApplicationView.wait(
@@ -977,7 +977,7 @@ export class Application extends Model {
               userFirstName = userInfo_["firstName_"]
               userLastName = userInfo_["lastName_"]
               userMiddleName = userInfo_["middleName_"]
-              userProfilePicture = userInfo_["profilPicture_"]
+              userProfilePicture = userInfo_["profilePicture_"]
           }
 
           Application.account = new Account(id, email, userName, userDomain, userFirstName, userLastName, userMiddleName, userProfilePicture);

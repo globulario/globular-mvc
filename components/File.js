@@ -145,7 +145,6 @@ function getTitleInfo(globule, file, callback) {
 function getVideoInfo(globule, file, callback) {
 
     let rqst = new GetFileVideosRequest
-    console.log("read videos for file ", file.path)
     rqst.setIndexpath(globule.config.DataPath + "/search/videos")
     rqst.setFilepath(file.path)
 
@@ -162,14 +161,12 @@ function getVideoInfo(globule, file, callback) {
 function getAudioInfo(globule, file, callback) {
 
     let rqst = new GetFileAudiosRequest
-    console.log("read title for file ", file.path)
     rqst.setIndexpath(globule.config.DataPath + "/search/audios")
     rqst.setFilepath(file.path)
 
     globule.titleService.getFileAudios(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
         .then(rsp => {
             let audios = rsp.getAudios().getAudiosList()
-            console.log(audios)
             callback(audios)
         })
         .catch(err => {
@@ -321,7 +318,6 @@ function _readDir(path, callback, errorCallback, globule, force = false) {
 
         let parent = dir.path.substring(0, dir.path.lastIndexOf("/"))
         if (public_[parent]) {
-            console.log("---------> is public: ", path)
             markAsPublic(dir, parent)
         }
 
@@ -1881,14 +1877,20 @@ export class FilesIconView extends FilesView {
                 font-size: 1rem;
             }
 
+            #audio_playlist_div, #video_playlist_div {
+                display: flex;
+            }
+
             #video_playlist_div iron-icon {
                 height: 24px;
                 width: 24px;
+                margin-left: 16px;
             }
 
             #audio_playlist_div iron-icon {
                 height: 24px;
                 width: 24px;
+                margin-left: 16px;
             }
 
 
@@ -2135,13 +2137,78 @@ export class FilesIconView extends FilesView {
                         if (fileType == "audio" && dir.__audioPlaylist__) {
                             playlistDiv.innerHTML = `
                                 <iron-icon id="refresh-audios-btn" icon="icons:refresh" title="refresh audios infos and playlist"></iron-icon>
-                                <iron-icon id="play-audios-btn" icon="av:play-arrow" title="play audio files"></iron-icon>
+                                <iron-icon id="download-audios-btn" icon="av:playlist-add-check" title="download new audio from the channel" style="display:none;"></iron-icon>
+                                <iron-icon id="play-audios-btn" icon="av:queue-music" title="play audio files"></iron-icon>
                                 <iron-icon id="copy-audios-playlist-lnk" icon="icons:link" title="copy playlist url"></iron-icon>
                             `
                             // Get reference to button...
                             let refreshAudiosBtn = playlistDiv.querySelector("#refresh-audios-btn")
                             let playAudiosBtn = playlistDiv.querySelector("#play-audios-btn")
                             let copyAudiosBtn = playlistDiv.querySelector("#copy-audios-playlist-lnk")
+                            let downloadAudiosBtn = playlistDiv.querySelector("#download-audios-btn")
+                            let globule = this._file_explorer_.globule
+                            let playlist = null
+
+                            generatePeerToken(globule, token => {
+                                let rqst = new ReadFileRequest
+                                rqst.setPath(dir.path + "/.hidden/playlist.json")
+                                let stream = globule.fileService.readFile(rqst, {
+                                    token: token,
+                                    application: Model.application,
+                                    domain: globule.config.Domain,
+                                    address: globule.config.address
+                                })
+
+                                let data = [];
+                                stream.on("data", (rsp) => {
+                                    data = mergeTypedArrays(data, rsp.getData());
+                                });
+
+                                stream.on("status", (status) => {
+                                    if (status.code == 0) {
+                                        uint8arrayToStringMethod(data, (str) => {
+                                            playlist = JSON.parse(str)
+                                            downloadVideosBtn.style.display = "block"
+                                        });
+                                    }
+                                });
+                            })
+
+                            // Update videos from a channel.
+                            downloadAudiosBtn.onclick = () => {
+
+                                if (!playlist) {
+                                    downloadAudiosBtn.style.display = "none"
+                                    return
+                                }
+
+                                generatePeerToken(globule, token => {
+                                    let rqst = new UploadVideoRequest
+                                    rqst.setDest(playlist.path)
+                                    rqst.setFormat(playlist.format)
+                                    rqst.setUrl(playlist.url)
+
+                                    let stream = this._file_explorer_.globule.fileService.uploadVideo(rqst, { application: Application.application, domain: this._file_explorer_.globule.config.Domain, token: token })
+                                    let pid = -1;
+
+                                    // Here I will create a local event to be catch by the file uploader...
+                                    stream.on("data", (rsp) => {
+                                        if (rsp.getPid() != null) {
+                                            pid = rsp.getPid()
+                                        }
+
+                                        // Publish local event.
+                                        Model.eventHub.publish("__upload_link_event__", { pid: pid, path: playlist.path, infos: rsp.getResult(), done: false, lnk: playlist.url }, true);
+                                    })
+
+                                    stream.on("status", (status) => {
+                                        if (status.code === 0) {
+                                            Model.eventHub.publish("__upload_link_event__", { pid: pid, path: playlist.path, infos: "", done: true, lnk: playlist.url }, true);
+                                        }
+                                    });
+                                })
+                            }
+
 
                             refreshAudiosBtn.onclick = () => {
                                 let rqst = new StartProcessVideoRequest
@@ -2186,14 +2253,77 @@ export class FilesIconView extends FilesView {
                         } else if (fileType == "video" && dir.__videoPlaylist__) {
                             playlistDiv.innerHTML = `
                                 <iron-icon id="refresh-videos-btn" icon="icons:refresh" title="refresh video infos and playlist"></iron-icon>
-                                <iron-icon id="play-videos-btn" icon="av:play-arrow" title="play video files"></iron-icon>
+                                <iron-icon id="download-videos-btn" icon="av:playlist-add-check" title="download new video from the channel" style="display:none;"></iron-icon>
+                                <iron-icon id="play-videos-btn" icon="av:playlist-play" title="play video files"></iron-icon>
                                 <iron-icon id="copy-videos-playlist-lnk" icon="icons:link" title="copy playlist url"></iron-icon>
                             `
 
                             // Get reference to button...
+                            let downloadVideosBtn = playlistDiv.querySelector("#download-videos-btn")
                             let refreshVideosBtn = playlistDiv.querySelector("#refresh-videos-btn")
                             let playVideosBtn = playlistDiv.querySelector("#play-videos-btn")
                             let copyVideosBtn = playlistDiv.querySelector("#copy-videos-playlist-lnk")
+                            let globule = this._file_explorer_.globule
+                            let playlist = null
+
+                            generatePeerToken(globule, token => {
+                                let rqst = new ReadFileRequest
+                                rqst.setPath(dir.path + "/.hidden/playlist.json")
+                                let stream = globule.fileService.readFile(rqst, {
+                                    token: token,
+                                    application: Model.application,
+                                    domain: globule.config.Domain,
+                                    address: globule.config.address
+                                })
+
+                                let data = [];
+                                stream.on("data", (rsp) => {
+                                    data = mergeTypedArrays(data, rsp.getData());
+                                });
+
+                                stream.on("status", (status) => {
+                                    if (status.code == 0) {
+                                        uint8arrayToStringMethod(data, (str) => {
+                                            playlist = JSON.parse(str)
+                                            downloadVideosBtn.style.display = "block"
+                                        });
+                                    }
+                                });
+                            })
+
+                            // Update videos from a channel.
+                            downloadVideosBtn.onclick = () => {
+
+                                if (!playlist) {
+                                    downloadVideosBtn.style.display = "none"
+                                    return
+                                }
+                                generatePeerToken(globule, token => {
+                                    let rqst = new UploadVideoRequest
+                                    rqst.setDest(playlist.path)
+                                    rqst.setFormat(playlist.format)
+                                    rqst.setUrl(playlist.url)
+
+                                    let stream = this._file_explorer_.globule.fileService.uploadVideo(rqst, { application: Application.application, domain: this._file_explorer_.globule.config.Domain, token: token })
+                                    let pid = -1;
+
+                                    // Here I will create a local event to be catch by the file uploader...
+                                    stream.on("data", (rsp) => {
+                                        if (rsp.getPid() != null) {
+                                            pid = rsp.getPid()
+                                        }
+
+                                        // Publish local event.
+                                        Model.eventHub.publish("__upload_link_event__", { pid: pid, path: playlist.path, infos: rsp.getResult(), done: false, lnk: playlist.url }, true);
+                                    })
+
+                                    stream.on("status", (status) => {
+                                        if (status.code === 0) {
+                                            Model.eventHub.publish("__upload_link_event__", { pid: pid, path: playlist.path, infos: "", done: true, lnk: playlist.url }, true);
+                                        }
+                                    });
+                                })
+                            }
 
                             refreshVideosBtn.onclick = () => {
                                 let rqst = new StartProcessVideoRequest
@@ -2208,56 +2338,7 @@ export class FilesIconView extends FilesView {
                                         address: globule.config.address
                                     }).then(() => {
                                         ApplicationView.displayMessage("Playlist is updated. Informations will be update...", 3000)
-                                        let rqst = new ReadFileRequest
-                                        rqst.setPath(dir.path + "/.hidden/playlist.json")
-                                        let stream = globule.fileService.readFile(rqst, {
-                                            token: token,
-                                            application: Model.application,
-                                            domain: globule.config.Domain,
-                                            address: globule.config.address
-                                        })
 
-                                        let data = [];
-                                        stream.on("data", (rsp) => {
-                                            data = mergeTypedArrays(data, rsp.getData());
-                                        });
-                                
-                                        stream.on("status", (status) => {
-                                            if (status.code == 0) {
-                                                uint8arrayToStringMethod(data, (str) => {
-                                                    let playlist = JSON.parse(str)
-                                                    let rqst = new UploadVideoRequest
-                                                    rqst.setDest(playlist.path)
-                                                    rqst.setFormat(playlist.format)
-                                                    rqst.setUrl(playlist.url)
-                                
-                                                    generatePeerToken(this._file_explorer_.globule, token => {
-                                
-                                                        let stream = this._file_explorer_.globule.fileService.uploadVideo(rqst, { application: Application.application, domain: this._file_explorer_.globule.config.Domain, token: token })
-                                                        let pid = -1;
-                                
-                                                        // Here I will create a local event to be catch by the file uploader...
-                                                        stream.on("data", (rsp) => {
-                                                            if (rsp.getPid() != null) {
-                                                                pid = rsp.getPid()
-                                                            }
-                                
-                                                            // Publish local event.
-                                                            Model.eventHub.publish("__upload_link_event__", { pid: pid, path: playlist.path, infos: rsp.getResult(), done: false, lnk: playlist.url }, true);
-                                                        })
-                                
-                                                        stream.on("status", (status) => {
-                                                            if (status.code === 0) {
-                                                                Model.eventHub.publish("__upload_link_event__", { pid: pid, path: playlist.path, infos: "", done: true, lnk: playlist.url }, true);
-                                                            }
-                                                        });
-                                                    }, err => ApplicationView.displayMessage(err, 3000))
-                                                });
-                                            } else {
-                                                // In case of error I will return an empty array
-                                                errorCallback(status.details)
-                                            }
-                                        });
 
                                     })
                                         .catch(err => ApplicationView.displayMessage(err, 3000))
@@ -3488,85 +3569,86 @@ export class FileNavigator extends HTMLElement {
         // Init the share info
         let initShared = (share, callback) => {
 
+            // Try to get the user id...
             let userId = share.getPath().split("/")[2];
 
             if (userId == Application.account.id || userId == Application.account.id + "@" + Application.account.domain) {
                 callback()
                 return // I will not display it...
-            }
+            } else if (userId.indexOf("@") != -1) {
+                Account.getAccount(userId, user => {
+                    if (this.shared[userId] == undefined) {
+                        this.shared[userId] = new File(userId, "/shared/" + userId, true, this._file_explorer_.globule)
+                        this.shared[userId].isDir = true;
+                        this.shared[userId].files = [];
+                        this.shared[userId].mime = "";
+                        this.shared[userId].modTime = new Date()
+                        this.shared_.files.push(this.shared[userId])
 
-            Account.getAccount(userId, user => {
-
-                if (this.shared[userId] == undefined) {
-                    this.shared[userId] = new File(userId, "/shared/" + userId, true, this._file_explorer_.globule)
-                    this.shared[userId].isDir = true;
-                    this.shared[userId].files = [];
-                    this.shared[userId].mime = "";
-                    this.shared[userId].modTime = new Date()
-                    this.shared_.files.push(this.shared[userId])
-
-                    Model.eventHub.subscribe(userId + "_change_permission_event", uuid => { },
-                        evt => {
-                            // refresh the shared...
-                            this.initShared()
-                        }, false, this)
-                }
-
-                this._file_explorer_.displayWaitMessage("load " + share.getPath())
-                _readDir(share.getPath(), dir => {
-                    this._file_explorer_.resume()
-                    // used by set dir...
-                    markAsShare(dir)
-
-                    // From the path I will get the user id who share the file and 
-                    // create a local directory if none exist...
-                    if (this.shared[userId]) {
-                        if (this.shared[userId].files.find(f => f.path == dir.path) == undefined) {
-                            this.shared[userId].files.push(dir)
-                            callback()
-                        }
+                        Model.eventHub.subscribe(userId + "_change_permission_event", uuid => { },
+                            evt => {
+                                // refresh the shared...
+                                this.initShared()
+                            }, false, this)
                     }
-                }, err => {
-                    // The file is not a directory so the file will simply put in the share.
-                    if (err.message.indexOf("is a directory") != -1) {
-                        File.getFile(this._file_explorer_.globule, share.getPath(), 128, 85,
-                            (f) => {
-                                if (f.path.indexOf(".hidden") != -1) {
-                                    // In that case I need to append the file in a local dir named hidden.
-                                    let hiddenDir = null;
-                                    this.shared[userId].files.forEach(f => {
-                                        if (f.name == ".hidden") {
-                                            hiddenDir = f
+
+                    this._file_explorer_.displayWaitMessage("load " + share.getPath())
+                    _readDir(share.getPath(), dir => {
+                        this._file_explorer_.resume()
+                        // used by set dir...
+                        markAsShare(dir)
+
+                        // From the path I will get the user id who share the file and 
+                        // create a local directory if none exist...
+                        if (this.shared[userId]) {
+                            if (this.shared[userId].files.find(f => f.path == dir.path) == undefined) {
+                                this.shared[userId].files.push(dir)
+                                callback()
+                            }
+                        }
+                    }, err => {
+                        // The file is not a directory so the file will simply put in the share.
+                        if (err.message.indexOf("is a directory") != -1) {
+                            File.getFile(this._file_explorer_.globule, share.getPath(), 128, 85,
+                                (f) => {
+                                    if (f.path.indexOf(".hidden") != -1) {
+                                        // In that case I need to append the file in a local dir named hidden.
+                                        let hiddenDir = null;
+                                        this.shared[userId].files.forEach(f => {
+                                            if (f.name == ".hidden") {
+                                                hiddenDir = f
+                                            }
+                                        })
+                                        if (hiddenDir == null) {
+                                            hiddenDir = new File(".hidden", "/shared/" + userId + "/.hidden", true, this._file_explorer_.globule)
+                                            hiddenDir.isDir = true
+                                            hiddenDir.modTime = new Date()
+                                            hiddenDir.mime = ""
+                                            hiddenDir.files = [f]
+                                            this.shared[userId].files.push(hiddenDir)
+
+                                        } else {
+                                            // append only if it dosent exist....
+                                            if (this.shared[userId].files.find(f_ => f.path == f_.path) == undefined) {
+                                                hiddenDir.files.push(f)
+                                            }
                                         }
-                                    })
-                                    if (hiddenDir == null) {
-                                        hiddenDir = new File(".hidden", "/shared/" + userId + "/.hidden", true, this._file_explorer_.globule)
-                                        hiddenDir.isDir = true
-                                        hiddenDir.modTime = new Date()
-                                        hiddenDir.mime = ""
-                                        hiddenDir.files = [f]
-                                        this.shared[userId].files.push(hiddenDir)
 
                                     } else {
-                                        // append only if it dosent exist....
                                         if (this.shared[userId].files.find(f_ => f.path == f_.path) == undefined) {
-                                            hiddenDir.files.push(f)
+                                            this.shared[userId].files.push(f)
+                                            callback()
                                         }
                                     }
-
-                                } else {
-                                    if (this.shared[userId].files.find(f_ => f.path == f_.path) == undefined) {
-                                        this.shared[userId].files.push(f)
-                                        callback()
-                                    }
-                                }
-                            }, e => console.log(e))
-                    }
-                }, this._file_explorer_.globule)
-            }, err => {
-                console.log("----------> ", err)
+                                }, e => console.log(e))
+                        }
+                    }, this._file_explorer_.globule)
+                }, err => {
+                    callback()
+                })
+            }else{
                 callback()
-            })
+            }
 
         }
 
@@ -4422,7 +4504,6 @@ export class FileExplorer extends HTMLElement {
 
 
                     if (path.endsWith(this.path)) {
-                        console.log("event receive for dir ", path)
                         this.displayWaitMessage("load " + path)
 
                         _readDir(path, (dir) => {

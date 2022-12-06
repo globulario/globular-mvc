@@ -1536,8 +1536,8 @@ export class ParticipantsList extends HTMLElement {
         let html = `
                 <div  id="paticipant-${p._id}-row" class="participant-table-row">
                     <div>
-                        <img style="width: 48px; height: 48px; display: ${p.profilPicture_ == undefined ? "none" : "block"};" src="${p.profilPicture_}"></img>
-                        <iron-icon icon="account-circle" style="width: 48px; height: 48px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${p.profilPicture_ != undefined ? "none" : "block"};"></iron-icon>
+                        <img style="width: 48px; height: 48px; display: ${p.profilePicture_ == undefined ? "none" : "block"};" src="${p.profilePicture_}"></img>
+                        <iron-icon icon="account-circle" style="width: 48px; height: 48px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${p.profilePicture_ != undefined ? "none" : "block"};"></iron-icon>
                     </div>
                     <div style="flex-grow: 1;">
                         <span><span style="font-style: italic;">${p.name_}</span> ${p.firstName_} ${p.lastName_}</span>
@@ -1576,8 +1576,8 @@ export class ParticipantsList extends HTMLElement {
         let html = `
             <div id="paticipant-${p._id}-row" class="participant-table-row">
                 <div>
-                    <img style="width: 48px; height: 48px; display: ${p.profilPicture_ == undefined ? "none" : "block"};" src="${p.profilPicture_}"></img>
-                    <iron-icon icon="account-circle" style="width: 48px; height: 48px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${p.profilPicture_ != undefined ? "none" : "block"};"></iron-icon>
+                    <img style="width: 48px; height: 48px; display: ${p.profilePicture_ == undefined ? "none" : "block"};" src="${p.profilePicture_}"></img>
+                    <iron-icon icon="account-circle" style="width: 48px; height: 48px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${p.profilePicture_ != undefined ? "none" : "block"};"></iron-icon>
                 </div>
                 <div style="flex-grow: 1;">
                     <span><span style="font-style: italic;">${p.name_}</span> ${p.firstName_} ${p.lastName_}</span>
@@ -1609,7 +1609,7 @@ export class ParticipantsList extends HTMLElement {
                     () => {
                         ApplicationView.displayMessage(`
                         <div style="display: flex; flex-direction: column;">
-                            <img style="height: 48px; width: 48px;" src="${user.profilPicture_}"></img>
+                            <img style="height: 48px; width: 48px;" src="${user.profilePicture_}"></img>
                             <span>User <span style="font-style: italic;">${user.name_}</span> was kicked out of the conversation <span style="font-style:italic;">${conversation.getName()}</span>.</span>
                             <span> <span style="font-style: italic;">${user.name_}</span> will not be able to join the conversation without a new invitation.</span>
                         </div>
@@ -2520,10 +2520,10 @@ export class GlobularMessagePanel extends HTMLElement {
                     participantInfos.style.left = "-38px"
 
                     // Set the ico.
-                    if (author.profilPicture != undefined) {
+                    if (author.profilePicture != undefined) {
                         ico.style.display = "none"
                         img.style.display = "block"
-                        img.src = author.profilPicture
+                        img.src = author.profilePicture
                         this.classList.add("others-message")
                     } else {
                         ico.style.display = "block"

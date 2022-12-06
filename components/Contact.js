@@ -28,6 +28,7 @@ import { randomUUID } from './utility';
 import { Application } from '../Application';
 import { LogRqst } from 'globular-web-client/log/log_pb';
 import { VideoConversation } from './WebRTC';
+import * as getUuidByString from 'uuid-by-string';
 
 /**
  * Login/Register functionality.
@@ -295,7 +296,6 @@ export class SentContactInvitations extends HTMLElement {
                     },
                     err => {
                         ApplicationView.displayMessage(err, 3000)
-                        console.log(err)
                     })
             },
             false, this)
@@ -315,9 +315,14 @@ export class SentContactInvitations extends HTMLElement {
 
         </style>
 
-        <div class="contact-invitations-list"></div>
+        <div class="contact-invitations-list">
+            <slot></slot>
+        </div>
 
         `
+
+        let globule = Model.getGlobule(account.domain)
+        
         // So here I will get the list of sent invitation for the account.
         Account.getContacts(this.account, `{"status":"sent"}`, (invitations) => {
 
@@ -335,12 +340,6 @@ export class SentContactInvitations extends HTMLElement {
             ApplicationView.displayMessage(err, 3000)
         })
 
-        let domain = Application.domain
-        if (account.session) {
-            domain = account.session.domain
-        }
-
-        let globule = Model.getGlobule(domain)
 
         globule.eventHub.subscribe("revoked_" + account.id + "@" + account.domain + "_evt",
             (uuid) => { },
@@ -395,9 +394,9 @@ export class SentContactInvitations extends HTMLElement {
     }
 
     appendContact(contact) {
-        let contactLst = this.shadowRoot.querySelector(".contact-invitations-list")
-        let id = "_" + contact.id.split("-").join("_") + "@" + contact.domain + "_pending_invitation"
-        if (contactLst.querySelector("#" + id) != undefined) {
+
+        let id = "_" + getUuidByString(contact.id + "@" + contact.domain + "_pending_invitation")
+        if (this.querySelector("#" + id) != undefined) {
             return;
         }
 
@@ -405,21 +404,20 @@ export class SentContactInvitations extends HTMLElement {
 
         card.id = id
         card.setRevokeButton(this.onRevokeContact)
-        contactLst.appendChild(card)
-        this.badge.label = contactLst.children.length
+        this.appendChild(card)
+        this.badge.label = this.children.length
         this.badge.style.display = "block"
         window.dispatchEvent(new Event('resize'));
     }
 
     removeContact(contact) {
         // simply remove it.
-        let contactLst = this.shadowRoot.querySelector(".contact-invitations-list")
-        let id = "_" + contact.id.split("-").join("_") + "_" + contact.domain + "_pending_invitation"
-        let card = contactLst.querySelector("#" + id)
+        let id = "_" + getUuidByString(contact.id + "@" + contact.domain + "_pending_invitation")
+        let card = this.querySelector("#" + id)
         if (card != undefined) {
-            contactLst.removeChild(card)
-            this.badge.label = contactLst.children.length
-            if (contactLst.children.length == 0) {
+            this.removeChild(card)
+            this.badge.label = this.children.length
+            if (this.children.length == 0) {
                 this.badge.style.display = "none"
             }
         }
@@ -525,7 +523,9 @@ export class ReceivedContactInvitations extends HTMLElement {
             }
 
         </style>
-        <div class="contact-invitations-list"></div>
+        <div class="contact-invitations-list">
+            <slot></slot>
+        </div>
         `
         // So here I will get the list of sent invitation for the account.
         Account.getContacts(this.account, `{"status":"received"}`, (invitations) => {
@@ -551,29 +551,28 @@ export class ReceivedContactInvitations extends HTMLElement {
     }
 
     appendContact(contact) {
-        let contactLst = this.shadowRoot.querySelector(".contact-invitations-list")
-        let id = "_" + contact.id.split("-").join("_") + "_" + contact.domain + "_pending_invitation"
-        if (contactLst.querySelector("#" + id) != undefined) {
+
+        let id = "_" + getUuidByString(contact.id + "@" + contact.domain + "_pending_invitation")
+        if (this.querySelector("#" + id) != undefined) {
             return;
         }
         let card = new ContactCard(this.account, contact)
 
         card.id = id
         card.setAcceptDeclineButton(this.onAcceptContact, this.onDeclineContact)
-        contactLst.appendChild(card)
-        this.badge.label = contactLst.children.length
+        this.appendChild(card)
+        this.badge.label = this.children.length
         this.badge.style.display = "block"
     }
 
     removeContact(contact) {
         // simply remove it.
-        let contactLst = this.shadowRoot.querySelector(".contact-invitations-list")
-        let card = contactLst.querySelector("#" + "_" + contact.id.split("-").join("_") + "_" + contact.domain + "_pending_invitation")
-
+        let id = "_" + getUuidByString(contact.id + "@" + contact.domain + "_pending_invitation")
+        let card = this.querySelector("#" + id)
         if (card != undefined) {
-            contactLst.removeChild(card)
-            this.badge.label = contactLst.children.length
-            if (contactLst.children.length == 0) {
+            this.removeChild(card)
+            this.badge.label = this.children.length
+            if (this.children.length == 0) {
                 this.badge.style.display = "none"
             }
         }
@@ -615,7 +614,7 @@ export class ContactList extends HTMLElement {
                 Account.getAccount(invitation._id,
                     (contact) => {
                         if (invitation.profilePicture)
-                            contact.profilPicture = invitation.profilePicture
+                            contact.profilePicture = invitation.profilePicture
                         contact.ringtone = invitation.ringtone
                         this.appendContact(contact);
                     },
@@ -700,7 +699,7 @@ export class ContactList extends HTMLElement {
                     <div id="select-media-dialog">
                         <div>Incomming Call from</div>
                         <div style="display: flex; flex-direction: column; justify-content: center;">
-                            <img style="width: 185.31px; align-self: center; padding-top: 10px; padding-bottom: 15px;" src="${caller.profilPicture}"> </img>
+                            <img style="width: 185.31px; align-self: center; padding-top: 10px; padding-bottom: 15px;" src="${caller.profilePicture}"> </img>
                         </div>
                         <span style="max-width: 300px; font-size: 1.5rem;">${caller.name}</span>
                         <div style="display: flex; justify-content: flex-end;">
@@ -781,7 +780,9 @@ export class ContactList extends HTMLElement {
                 border-bottom: 1px solid var(--palette-divider);
             }
         </style>
-        <div class="contact-invitations-list"></div>
+        <div class="contact-invitations-list">
+            <slot></slot>
+        </div>
         `
         // The connection callback.
 
@@ -793,7 +794,7 @@ export class ContactList extends HTMLElement {
                 Account.getAccount(invitation._id,
                     (contact) => {
                         if (invitation.profilePicture)
-                            contact.profilPicture = invitation.profilePicture
+                            contact.profilePicture = invitation.profilePicture
                         contact.ringtone = invitation.ringtone
                         this.appendContact(contact);
                     },
@@ -809,14 +810,14 @@ export class ContactList extends HTMLElement {
     }
 
     getContactCard(contact) {
-        let card = this.querySelector("#" + "_" + contact.id.split("-").join("_") + "_" + contact.domain + "_accepted_invitation")
+        let id = "_" + getUuidByString(contact.id + "@" + contact.domain + "_accepted_invitation")
+        let card = this.querySelector("#" + id)
         return card;
     }
 
     appendContact(contact) {
-        let contactLst = this.shadowRoot.querySelector(".contact-invitations-list")
-        let id = "_" + contact.id.split("-").join("_") + "_" + contact.domain + "_accepted_invitation"
-        if (contactLst.querySelector("#" + id) != undefined) {
+        let id = "_" + getUuidByString(contact.id + "@" + contact.domain + "_accepted_invitation")
+        if (this.querySelector("#" + id) != undefined) {
             return
         }
 
@@ -829,21 +830,22 @@ export class ContactList extends HTMLElement {
 
         card.setDeleteButton(this.onDeleteContact)
         card.showRingtone()
-        contactLst.appendChild(card)
+        this.appendChild(card)
 
 
-        this.badge.label = contactLst.children.length
+        this.badge.label = this.children.length
         this.badge.style.display = "block"
     }
 
     removeContact(contact) {
         // simply remove it.
-        let contactLst = this.shadowRoot.querySelector(".contact-invitations-list")
-        let card = contactLst.querySelector("#" + "_" + contact.id.split("-").join("_") + "_" + contact.domain + "_accepted_invitation")
+        let id = "_" + getUuidByString(contact.id + "@" + contact.domain + "_accepted_invitation")
+
+        let card = this.querySelector("#" + id)
         if (card != undefined) {
-            contactLst.removeChild(card)
-            this.badge.label = contactLst.children.length
-            if (contactLst.children.length == 0) {
+            this.removeChild(card)
+            this.badge.label = this.children.length
+            if (this.children.length == 0) {
                 this.badge.style.display = "none"
             }
         }
@@ -921,7 +923,7 @@ export class ContactList extends HTMLElement {
                         <div id="select-media-dialog">
                             <div>Outgoing Call to </div>
                             <div style="display: flex; flex-direction: column; justify-content: center;">
-                                <img style="width: 185.31px; align-self: center; padding-top: 10px; padding-bottom: 15px;" src="${callee.profilPicture}"> </img>
+                                <img style="width: 185.31px; align-self: center; padding-top: 10px; padding-bottom: 15px;" src="${callee.profilePicture}"> </img>
                             </div>
                             <span style="max-width: 300px; font-size: 1.5rem;">${callee.name}</span>
                             <div style="display: flex; justify-content: flex-end;">
@@ -1179,8 +1181,8 @@ export class ContactCard extends HTMLElement {
         </style>
         <div class="contact-invitation-div" style="display: flex; flex-direction: column;">
             <div style="display: flex; align-items: center; padding: 5px;"> 
-                <img style="width: 40px; height: 40px; display: ${this.contact.profilPicture_ == undefined ? "none" : "block"};" src="${this.contact.profilPicture_}"></img>
-                <iron-icon icon="account-circle" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${this.contact.profilPicture_ != undefined ? "none" : "block"};"></iron-icon>
+                <img style="width: 40px; height: 40px; display: ${this.contact.profilePicture_ == undefined ? "none" : "block"};" src="${this.contact.profilePicture_}"></img>
+                <iron-icon icon="account-circle" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${this.contact.profilePicture_ != undefined ? "none" : "block"};"></iron-icon>
                 <div style="display: flex; flex-direction: column; width:300px; font-size: .85em; padding-left: 8px;">
                     <span>${this.contact.name}</span>
                     <span>${this.contact.email_}</span>

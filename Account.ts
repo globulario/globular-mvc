@@ -67,13 +67,13 @@ export class Account extends Model {
     private hasData: boolean;
 
     // The user profile picture.
-    private profilPicture_: string;
-    public get profilPicture(): string {
-        return this.profilPicture_;
+    private profilePicture_: string;
+    public get profilePicture(): string {
+        return this.profilePicture_;
     }
 
-    public set profilPicture(value: string) {
-        this.profilPicture_ = value;
+    public set profilePicture(value: string) {
+        this.profilePicture_ = value;
     }
 
     // The ringtone for that user...
@@ -133,7 +133,7 @@ export class Account extends Model {
         this.firstName_ = firstName;
         this.lastName_ = lastName;
         this.middleName_ = middleName;
-        this.profilPicture_ = profilePicture
+        this.profilePicture_ = profilePicture
     }
 
     /**
@@ -162,6 +162,8 @@ export class Account extends Model {
             domain = accountId.split("@")[1]
             id = accountId.split("@")[0]
         }
+
+        
 
         if (Account.accounts[accountId] != null) {
             if (Account.accounts[accountId].session != null) {
@@ -415,8 +417,8 @@ export class Account extends Model {
         if (this.middleName == undefined) {
             this.middleName = "";
         }
-        if (data["profilPicture_"] != undefined) {
-            this.profilPicture = data["profilPicture_"];
+        if (data["profilePicture_"] != undefined) {
+            this.profilePicture = data["profilePicture_"];
 
             // keep the user data into the localstore.
             localStorage.setItem(this.id, JSON.stringify(data))
@@ -506,7 +508,7 @@ export class Account extends Model {
     changeProfilImage(
         dataUrl: string
     ) {
-        this.profilPicture_ = dataUrl;
+        this.profilePicture_ = dataUrl;
     }
 
     /**
@@ -558,7 +560,7 @@ export class Account extends Model {
     }
 
     toString(): string {
-        return JSON.stringify({ _id: this.id, firstName_: this.firstName, lastName_: this.lastName, middleName_: this.middleName, profilPicture_: this.profilPicture });
+        return JSON.stringify({ _id: this.id, firstName_: this.firstName, lastName_: this.lastName, middleName_: this.middleName, profilePicture_: this.profilePicture });
     }
 
     getId(): string {
@@ -630,8 +632,8 @@ export class Account extends Model {
         if (to.ringtone)
             contact.setRingtone(to.ringtone)
 
-        if (to.profilPicture)
-            contact.setProfilepicture(to.profilPicture)
+        if (to.profilePicture)
+            contact.setProfilepicture(to.profilePicture)
 
         rqst.setContact(contact)
         let token = localStorage.getItem("user_token")
@@ -644,7 +646,11 @@ export class Account extends Model {
         })
             .then((rsp: ResourceService.SetAccountContactRsp) => {
                 let sentInvitation = `{"_id":"${to.id + "@" + to.domain}", "invitationTime":${Math.floor(Date.now() / 1000)}, "status":"${status_from}"}`
-                Model.publish(status_from + "_" + from.id + "@" + from.domain + "_evt", sentInvitation, false)
+
+                Model.getGlobule(from.domain).eventHub.publish(status_from + "_" + from.id + "@" + from.domain + "_evt", sentInvitation, false)
+                if(from.domain!= to.domain){
+                    Model.getGlobule(to.domain).eventHub.publish(status_from + "_" + from.id + "@" + from.domain + "_evt", sentInvitation, false)
+                }
 
                 // Here I will return the value with it
                 let rqst = new ResourceService.SetAccountContactRqst
@@ -667,7 +673,11 @@ export class Account extends Model {
                     .then((rsp: ReplaceOneRsp) => {
                         // Here I will return the value with it
                         let receivedInvitation = `{"_id":"${from.id + "@" + from.domain}", "invitationTime":${Math.floor(Date.now() / 1000)}, "status":"${status_to}"}`
-                        Model.publish(status_to + "_" + to.id + "@" + to.domain + "_evt", receivedInvitation, false)
+                        Model.getGlobule(from.domain).eventHub.publish(status_to + "_" + to.id + "@" + to.domain + "_evt", receivedInvitation, false)
+                        if(from.domain!= to.domain){
+                            Model.getGlobule(to.domain).eventHub.publish(status_to + "_" + to.id + "@" + to.domain + "_evt", receivedInvitation, false)
+                        }
+
                         successCallback();
                     })
                     .catch(errorCallback);
@@ -736,7 +746,8 @@ export class Account extends Model {
                         if (Account.accounts[a_.getId() + "@" + a_.getDomain()] != undefined) {
                             accounts.push(Account.accounts[a_.getId() + "@" + a_.getDomain()])
                         } else {
-                            accounts.push(new Account(a_.getId(), a_.getEmail(), a_.getName(), a_.getDomain(), a_.getFirstname(), a_.getLastname(), a_.getMiddle(), a_.getProfilepicture()))
+                            let account = new Account(a_.getId(), a_.getEmail(), a_.getName(), a_.getDomain(), a_.getFirstname(), a_.getLastname(), a_.getMiddle(), a_.getProfilepicture())
+                            accounts.push(account)
                         }
                     })
                     callback(accounts)
