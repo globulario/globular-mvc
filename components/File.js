@@ -3571,7 +3571,7 @@ export class FileNavigator extends HTMLElement {
 
             // Try to get the user id...
             let userId = share.getPath().split("/")[2];
-
+            console.log("--------------> userID ", userId)
             if (userId == Application.account.id || userId == Application.account.id + "@" + Application.account.domain) {
                 callback()
                 return // I will not display it...
@@ -3608,7 +3608,7 @@ export class FileNavigator extends HTMLElement {
                         }
                     }, err => {
                         // The file is not a directory so the file will simply put in the share.
-                        if (err.message.indexOf("is a directory") != -1) {
+                        if (err.message.indexOf("is not a directory") != -1) {
                             File.getFile(this._file_explorer_.globule, share.getPath(), 128, 85,
                                 (f) => {
                                     if (f.path.indexOf(".hidden") != -1) {

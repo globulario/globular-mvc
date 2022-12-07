@@ -348,7 +348,7 @@ export class PermissionsManager extends HTMLElement {
         this.innerHTML = ""
 
         // set the permssion viewer
-        this.permissionsViewer = new PermissionsViewer([...this.permissionsNames, "owner"])
+        this.permissionsViewer = new PermissionsViewer(["read", "write", "delete", "owner"])
         this.permissionsViewer.slot = "permission-viewer"
         this.permissionsViewer.setPermissions(this.permissions)
         this.appendChild(this.permissionsViewer)
