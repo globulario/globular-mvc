@@ -1,6 +1,6 @@
 
 import { getTheme } from "./Theme";
-import { Model } from '../Model';
+import { generatePeerToken, Model } from '../Model';
 import { Application } from "../Application";
 import Plyr from 'plyr';
 import "./plyr.css"
@@ -476,82 +476,86 @@ export class VideoPlayer extends HTMLElement {
 
     play(path, globule) {
 
-        let url = path;
-
-        if (!url.startsWith("http")) {
-            url = globule.config.Protocol + "://" + globule.config.Domain
-            if (window.location != globule.config.Domain) {
-                if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
-                    url = globule.config.Protocol + "://" + window.location.host
-                }
-            }
-
-            if (globule.config.Protocol == "https") {
-                if (globule.config.PortHttps != 443)
-                    url += ":" + globule.config.PortHttps
-            } else {
-                if (globule.config.PortHttps != 80)
-                    url += ":" + globule.config.PortHttp
-            }
-
-            path.split("/").forEach(item => {
-                item = item.trim()
-                if (item.length > 0) {
-                    url += "/" + encodeURIComponent(item)
-                }
-            })
-
-            url += "?application=" + Model.application
-            if (localStorage.getItem("user_token") != undefined) {
-                url += "&token=" + localStorage.getItem("user_token")
-            }
-        } else {
-            var parser = document.createElement('a');
-            parser.href = url
-            path = decodeURIComponent(parser.pathname)
-        }
-
-        if (this.path == path) {
-            this.resume = true;
-            this.video.play()
-            return
-        } else {
-            // keep track of the current path
-            this.path = path
-            this.resume = false;
-        }
-
-
-
-        // validate url access.
-        fetch(url, { method: "HEAD" })
-            .then((response) => {
-                if (response.status !== 200) {
-                    throw new Error(response.status)
-                } else {
-                    if (File.hasLocal) {
-                        File.hasLocal(path, exists => {
-                            if (exists) {
-                                // local-media
-                                this.play_(path, globule, true)
-                            } else {
-                                this.play_(path, globule, false)
-                            }
-                        })
-                    } else {
-                        this.play_(path, globule, false)
+        generatePeerToken(globule, token=>{
+            let url = path;
+            if (!url.startsWith("http")) {
+                url = globule.config.Protocol + "://" + globule.config.Domain
+                if (window.location != globule.config.Domain) {
+                    if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
+                        url = globule.config.Protocol + "://" + window.location.host
                     }
                 }
-            })
-            .catch((error) => {
-                ApplicationView.displayMessage("fail to read url ", url, "with error ", error, 4000)
-                this.close()
-                document.exitFullscreen()
-            });
+    
+                if (globule.config.Protocol == "https") {
+                    if (globule.config.PortHttps != 443)
+                        url += ":" + globule.config.PortHttps
+                } else {
+                    if (globule.config.PortHttps != 80)
+                        url += ":" + globule.config.PortHttp
+                }
+    
+                path.split("/").forEach(item => {
+                    item = item.trim()
+                    if (item.length > 0) {
+                        url += "/" + encodeURIComponent(item)
+                    }
+                })
+    
+                url += "?application=" + Model.application
+                if (localStorage.getItem("user_token") != undefined) {
+                    url += "&token=" + token
+                }
+            } else {
+                var parser = document.createElement('a');
+                parser.href = url
+                path = decodeURIComponent(parser.pathname)
+            }
+    
+            if (this.path == path) {
+                this.resume = true;
+                this.video.play()
+                return
+            } else {
+                // keep track of the current path
+                this.path = path
+                this.resume = false;
+            }
+    
+    
+    
+            // validate url access.
+            fetch(url, { method: "HEAD" })
+                .then((response) => {
+                    if (response.status !== 200) {
+                        throw new Error(response.status)
+                    } else {
+                        if (File.hasLocal) {
+                            File.hasLocal(path, exists => {
+                                if (exists) {
+                                    // local-media
+                                    this.play_(path, globule, true, token)
+                                } else {
+                                    this.play_(path, globule, false, token)
+                                }
+                            })
+                        } else {
+                            this.play_(path, globule, false, token)
+                        }
+                    }
+                })
+                .catch((error) => {
+                    ApplicationView.displayMessage("fail to read url " + url + "with error " + error, 4000)
+                    if(this.parentNode){
+                        this.parentNode.removeChild(this)
+                    }
+                });
+    
+        }, err=>ApplicationView.displayMessage(err, 4000))
 
+     
     }
 
-    play_(path, globule, local = false) {
+    play_(path, globule, local = false, token) {
 
         this.style.zIndex = 100
         // Set the title...
@@ -570,7 +574,7 @@ export class VideoPlayer extends HTMLElement {
             rqst.setIndexpath(globule.config.DataPath + "/search/titles")
             rqst.setFilepath(path)
 
-            globule.titleService.getFileTitles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+            globule.titleService.getFileTitles(rqst, { application: Application.application, domain: Application.domain, token: token })
                 .then(rsp => {
                     rsp.getTitles().getTitlesList().forEach(t => t.globule = globule)
                     callback(rsp.getTitles().getTitlesList())
@@ -583,7 +587,7 @@ export class VideoPlayer extends HTMLElement {
             rqst.setIndexpath(globule.config.DataPath + "/search/videos")
             rqst.setFilepath(path)
 
-            globule.titleService.getFileVideos(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+            globule.titleService.getFileVideos(rqst, { application: Application.application, domain: Application.domain, token: token })
                 .then(rsp => {
                     rsp.getVideos().getVideosList().forEach(v => v.globule = globule)
                     callback(rsp.getVideos().getVideosList())
@@ -712,7 +716,7 @@ export class VideoPlayer extends HTMLElement {
 
         url += "?application=" + Model.application
         if (localStorage.getItem("user_token") != undefined) {
-            url += "&token=" + localStorage.getItem("user_token")
+            url += "&token=" + token
         }
 
         if (local) {

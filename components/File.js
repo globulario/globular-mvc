@@ -3571,7 +3571,6 @@ export class FileNavigator extends HTMLElement {
 
             // Try to get the user id...
             let userId = share.getPath().split("/")[2];
-            console.log("--------------> userID ", userId)
             if (userId == Application.account.id || userId == Application.account.id + "@" + Application.account.domain) {
                 callback()
                 return // I will not display it...

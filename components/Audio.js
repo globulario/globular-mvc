@@ -851,7 +851,7 @@ export class AudioPlayer extends HTMLElement {
 
         xhr.onload = (evt) => {
             console.log(evt)
-            if(evt.target.response.size < 24000000){
+            if(evt.target.response.size < 48000000){
                 this.wavesurfer.loadBlob(evt.target.response);
             }else{
                 ApplicationView.displayMessage("this file is to large to be play by the audio player. The maximum size is 24MB for audio file", 3000)

@@ -649,117 +649,120 @@ export class ContactList extends HTMLElement {
                 Account.getAccount(call.getCallee(), callee => {
 
                     let globule = Application.getGlobule(callee.domain)
-
-                    let url = globule.config.Protocol + "://" + globule.config.Domain
-                    if (window.location != globule.config.Domain) {
-                        if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
-                            url = globule.config.Protocol + "://" + window.location.host
+                    generatePeerToken(globule, token=>{
+                        let url = globule.config.Protocol + "://" + globule.config.Domain
+                        if (window.location != globule.config.Domain) {
+                            if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
+                                url = globule.config.Protocol + "://" + window.location.host
+                            }
                         }
-                    }
-
-                    if (globule.config.Protocol == "https") {
-                        if (globule.config.PortHttps != 443)
-                            url += ":" + globule.config.PortHttps
-                    } else {
-                        if (globule.config.PortHttps != 80)
-                            url += ":" + globule.config.PortHttp
-                    }
-
-                    // so here I will found the caller ringtone...
-                    let path = caller.ringtone
-                    path = path.replace(globule.config.WebRoot, "")
-
-                    path.split("/").forEach(item => {
-                        item = item.trim()
-                        if (item.length > 0) {
-                            url += "/" + encodeURIComponent(item)
+    
+                        if (globule.config.Protocol == "https") {
+                            if (globule.config.PortHttps != 443)
+                                url += ":" + globule.config.PortHttps
+                        } else {
+                            if (globule.config.PortHttps != 80)
+                                url += ":" + globule.config.PortHttp
                         }
-                    })
-
-                    url += "?application=" + Model.application
-                    if (localStorage.getItem("user_token") != undefined) {
-                        url += "&token=" + localStorage.getItem("user_token")
-                    }
-
-                    let audio = new Audio(url)
-                    audio.setAttribute("loop", "true")
-                    audio.setAttribute("autoplay", "true")
-
-                    // So now I will display the interface the user to ask...
-                    // So here I will get the information from imdb and propose to assciate it with the file.
-                    let toast = ApplicationView.displayMessage(`
-                    <style>
-                        ${getTheme()}
-                        paper-icon-button {
-                            width: 40px;
-                            height: 40px;
-                            border-radius: 50%;
-                          }
-                    </style>
-                    <div id="select-media-dialog">
-                        <div>Incomming Call from</div>
-                        <div style="display: flex; flex-direction: column; justify-content: center;">
-                            <img style="width: 185.31px; align-self: center; padding-top: 10px; padding-bottom: 15px;" src="${caller.profilePicture}"> </img>
+    
+                        // so here I will found the caller ringtone...
+                        let path = caller.ringtone
+                        path = path.replace(globule.config.WebRoot, "")
+    
+                        path.split("/").forEach(item => {
+                            item = item.trim()
+                            if (item.length > 0) {
+                                url += "/" + encodeURIComponent(item)
+                            }
+                        })
+    
+                        url += "?application=" + Model.application
+                        if (localStorage.getItem("user_token") != undefined) {
+                            url += "&token=" + token
+                        }
+    
+                        let audio = new Audio(url)
+                        audio.setAttribute("loop", "true")
+                        audio.setAttribute("autoplay", "true")
+    
+                        // So now I will display the interface the user to ask...
+                        // So here I will get the information from imdb and propose to assciate it with the file.
+                        let toast = ApplicationView.displayMessage(`
+                        <style>
+                            ${getTheme()}
+                            paper-icon-button {
+                                width: 40px;
+                                height: 40px;
+                                border-radius: 50%;
+                              }
+                        </style>
+                        <div id="select-media-dialog">
+                            <div>Incomming Call from</div>
+                            <div style="display: flex; flex-direction: column; justify-content: center;">
+                                <img style="width: 185.31px; align-self: center; padding-top: 10px; padding-bottom: 15px;" src="${caller.profilePicture}"> </img>
+                            </div>
+                            <span style="max-width: 300px; font-size: 1.5rem;">${caller.name}</span>
+                            <div style="display: flex; justify-content: flex-end;">
+                                <paper-icon-button id="ok-button" style="background-color: green; margin-right: 16px;" icon="communication:call"></paper-icon-button>
+                                <paper-icon-button id="cancel-button"  style="background-color: red;" icon="communication:call-end">Dismiss</paper-button>
+                            </div>
                         </div>
-                        <span style="max-width: 300px; font-size: 1.5rem;">${caller.name}</span>
-                        <div style="display: flex; justify-content: flex-end;">
-                            <paper-icon-button id="ok-button" style="background-color: green; margin-right: 16px;" icon="communication:call"></paper-icon-button>
-                            <paper-icon-button id="cancel-button"  style="background-color: red;" icon="communication:call-end">Dismiss</paper-button>
-                        </div>
-                    </div>
-                    `)
-
-
-                    let timeout = setTimeout(() => {
-                        audio.pause()
-                        toast.dismiss();
-                        Model.getGlobule(caller.domain).eventHub.publish(call.getUuid() + "_miss_call_evt", call.serializeBinary(), false)
-                        Model.getGlobule(callee.domain).eventHub.publish(call.getUuid() + "_miss_call_evt", call.serializeBinary(), false)
-
-                    }, 30 * 1000)
-
-                    let cancelBtn = toast.el.querySelector("#cancel-button")
-                    cancelBtn.onclick = () => {
-                        toast.dismiss();
-                        audio.pause()
-                        clearTimeout(timeout)
-
-                        // Here I will send miss call event...
-                        Model.getGlobule(caller.domain).eventHub.publish(call.getUuid() + "_miss_call_evt", call.serializeBinary(), false)
-                        Model.getGlobule(callee.domain).eventHub.publish(call.getUuid() + "_miss_call_evt", call.serializeBinary(), false)
-
-                    }
-
-                    let okBtn = toast.el.querySelector("#ok-button")
-                    okBtn.onclick = () => {
-
-                        toast.dismiss();
-                        audio.pause()
-                        clearTimeout(timeout)
-
-                        // The contact has answer the call!
-                        let videoConversation = new VideoConversation(call.getUuid(), caller.domain)
-                        videoConversation.style.position = "fixed"
-                        videoConversation.style.left = "0px"
-                        videoConversation.style.top = "0px"
-
-
-                        // append it to the workspace.
-                        ApplicationView.layout.workspace().appendChild(videoConversation)
-
-                        Model.getGlobule(caller.domain).eventHub.publish(call.getUuid() + "_answering_call_evt", call.serializeBinary(), false)
-                        Model.getGlobule(callee.domain).eventHub.publish(call.getUuid() + "_answering_call_evt", call.serializeBinary(), false)
-                    }
-
-                    // Here the call was miss...
-                    Model.getGlobule(caller.domain).eventHub.subscribe(call.getUuid() + "_miss_call_evt", uuid => { }, evt => {
-
-                        clearTimeout(timeout)
-
-                        // The contact has answer the call!
-                        audio.pause()
-                        toast.dismiss();
-                    }, false)
+                        `)
+    
+    
+                        let timeout = setTimeout(() => {
+                            audio.pause()
+                            toast.dismiss();
+                            Model.getGlobule(caller.domain).eventHub.publish(call.getUuid() + "_miss_call_evt", call.serializeBinary(), false)
+                            Model.getGlobule(callee.domain).eventHub.publish(call.getUuid() + "_miss_call_evt", call.serializeBinary(), false)
+    
+                        }, 30 * 1000)
+    
+                        let cancelBtn = toast.el.querySelector("#cancel-button")
+                        cancelBtn.onclick = () => {
+                            toast.dismiss();
+                            audio.pause()
+                            clearTimeout(timeout)
+    
+                            // Here I will send miss call event...
+                            Model.getGlobule(caller.domain).eventHub.publish(call.getUuid() + "_miss_call_evt", call.serializeBinary(), false)
+                            Model.getGlobule(callee.domain).eventHub.publish(call.getUuid() + "_miss_call_evt", call.serializeBinary(), false)
+    
+                        }
+    
+                        let okBtn = toast.el.querySelector("#ok-button")
+                        okBtn.onclick = () => {
+    
+                            toast.dismiss();
+                            audio.pause()
+                            clearTimeout(timeout)
+    
+                            // The contact has answer the call!
+                            let videoConversation = new VideoConversation(call.getUuid(), caller.domain)
+                            videoConversation.style.position = "fixed"
+                            videoConversation.style.left = "0px"
+                            videoConversation.style.top = "0px"
+    
+    
+                            // append it to the workspace.
+                            ApplicationView.layout.workspace().appendChild(videoConversation)
+    
+                            Model.getGlobule(caller.domain).eventHub.publish(call.getUuid() + "_answering_call_evt", call.serializeBinary(), false)
+                            Model.getGlobule(callee.domain).eventHub.publish(call.getUuid() + "_answering_call_evt", call.serializeBinary(), false)
+                        }
+    
+                        // Here the call was miss...
+                        Model.getGlobule(caller.domain).eventHub.subscribe(call.getUuid() + "_miss_call_evt", uuid => { }, evt => {
+    
+                            clearTimeout(timeout)
+    
+                            // The contact has answer the call!
+                            audio.pause()
+                            toast.dismiss();
+                        }, false)
+                    }, err=>ApplicationView.displayMessage(err, 3000))
+                    
+                   
 
                 })
 

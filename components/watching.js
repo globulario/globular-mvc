@@ -445,7 +445,7 @@ export class WatchingMenu extends Menu {
 
             Model.eventHub.subscribe("stop_video_player_evt_", uuid => { }, evt => {
                 this.saveWatchingTitle(evt, () => { })
-                this.mediaWatching.appendTitle(evt, null, null)
+                this.mediaWatching.appendTitle(evt, ()=>{console.log("title ", evt._id, " was add to watching...")}, err=>{console.log("fail to add title with error: ", err)})
             }, true)
 
             Model.eventHub.subscribe("remove_video_player_evt_", uuid => { }, evt => {

@@ -142,9 +142,6 @@ export class VideoConversation extends HTMLElement {
         container.style.top = offsetTop + "px"
         this.peersVideo = this.shadowRoot.querySelector(".peers-video")
         this.startShareScreenBtn = this.shadowRoot.querySelector("#start-share-screen")
-
-        container.resizeHeightDiv.style.display = "none"
-
         container.name = "webrtc_window"
 
         setResizeable(container, (width, height) => {
