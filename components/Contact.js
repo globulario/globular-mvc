@@ -111,7 +111,7 @@ export class ContactsMenu extends Menu {
             <div id="Contacts-div">
                 <div id="header" style="width: 100%;">
                     <globular-autocomplete type="email" label="Search Contact" id="invite_contact_input" width="${this.width - 10}" style="flex-grow: 1;"></globular-autocomplete>
-                    <paper-tabs selected="0">
+                    <paper-tabs selected="0" style="min-width: 450px;">
                         <paper-tab id="contacts-tab">
                             <span id="contacts-label">Contacts</span>
                             <paper-badge style="display: none;" for="contacts-label"></paper-badge>
@@ -864,11 +864,11 @@ export class ContactList extends HTMLElement {
         call.setStarttime(Math.floor(Date.now() / 1000)) // set unix timestamp...
         let rqst = new SetCallRqst
         rqst.setCall(call)
-        let token = localStorage.getItem("user_token")
 
         // Set value on the callee...
         let globule = Model.getGlobule(Application.account.domain)
-        globule.resourceService.setCall(rqst, { application: Application.application, domain: globule.config.Domain, token: token })
+        generatePeerToken(globule, token=>{
+            globule.resourceService.setCall(rqst, { application: Application.application, domain: globule.config.Domain, token: token })
             .then(rsp => {
 
                 Account.getAccount(call.getCaller(), caller => {
@@ -904,7 +904,7 @@ export class ContactList extends HTMLElement {
 
                         url += "?application=" + Model.application
                         if (localStorage.getItem("user_token") != undefined) {
-                            url += "&token=" + localStorage.getItem("user_token")
+                            url += "&token=" + token
                         }
 
                         let audio = new Audio(url)
@@ -1037,6 +1037,7 @@ export class ContactList extends HTMLElement {
 
                                 // Send notification...
                                 Model.getGlobule(contact.domain).eventHub.publish(contact.id + "@" + contact.domain + "_notification_event", notification_.toString(), false)
+                                Model.getGlobule(Application.domain).eventHub.publish("calling_" + contact.id + "@" + contact.domain + "_evt", call, true)
                             })
 
                         }, false)
@@ -1058,6 +1059,8 @@ export class ContactList extends HTMLElement {
                 globule.resourceService.setCall(rqst, { application: Application.application, domain: globule.config.Domain, token: token })
             }, err => ApplicationView.displayMessage(err, 3000))
         }
+        })
+
     }
 
 }

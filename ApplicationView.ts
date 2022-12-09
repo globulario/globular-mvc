@@ -18,6 +18,7 @@ import { FilesMenu } from "./components/File";
 import { SearchBar, SearchResults } from "./components/Search";
 import { ContactCard, ContactsMenu } from "./components/Contact";
 import { MessengerMenu, Messenger } from "./components/Messenger";
+import { CallsHistoryMenu } from "./components/Calls"
 import { SettingsMenu, SettingsPanel, StringListSetting } from "./components/Settings";
 import { Application } from "./Application";
 // Not directly use here but must be include anyways
@@ -89,6 +90,9 @@ export class ApplicationView extends View {
 
   /** The account panel */
   private accountMenu: AccountMenu;
+
+  /** The call history menu */
+  private callsHistoryMenu: CallsHistoryMenu;
 
   /** The  overflow menu*/
   private overFlowMenu: OverflowMenu;
@@ -206,6 +210,9 @@ export class ApplicationView extends View {
 
     // The messenger menu
     this.messengerMenu = new MessengerMenu();
+
+    // the call history menu
+    this.callsHistoryMenu = new CallsHistoryMenu();
 
     // The camera can be use to take picture.
     this._camera = new Camera();
@@ -502,9 +509,11 @@ export class ApplicationView extends View {
         // The contacts will be initialyse at login time only.
         this.contactsMenu.init(account);
 
-
         // Also the messenger menu
         this.messengerMenu.init(account);
+
+        // Init the call history.
+        this.callsHistoryMenu.init(account);
 
         // Set the messenger.
         this.messenger = new Messenger(account);
@@ -754,6 +763,10 @@ export class ApplicationView extends View {
           this.contactsMenu.getMenuDiv().classList.remove("bottom");
           this.contactsMenu.getMenuDiv().classList.add("left");
 
+          this.overFlowMenu.getMenuDiv().appendChild(this.callsHistoryMenu);
+          this.callsHistoryMenu.getMenuDiv().classList.remove("bottom");
+          this.callsHistoryMenu.getMenuDiv().classList.add("left");
+
           this.overFlowMenu.getMenuDiv().appendChild(this.messengerMenu);
           this.messengerMenu.getMenuDiv().classList.remove("bottom");
           this.messengerMenu.getMenuDiv().classList.add("left");
@@ -796,6 +809,10 @@ export class ApplicationView extends View {
           ApplicationView.layout.toolbar().appendChild(this.contactsMenu);
           this.contactsMenu.getMenuDiv().classList.remove("left");
           this.contactsMenu.getMenuDiv().classList.add("bottom");
+
+          ApplicationView.layout.toolbar().appendChild(this.callsHistoryMenu);
+          this.callsHistoryMenu.getMenuDiv().classList.remove("left");
+          this.callsHistoryMenu.getMenuDiv().classList.add("bottom");
 
           ApplicationView.layout.toolbar().appendChild(this.messengerMenu);
           this.messengerMenu.getMenuDiv().classList.remove("left");

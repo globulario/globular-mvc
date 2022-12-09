@@ -337,13 +337,19 @@ export class Ringtone extends HTMLElement {
             #container{
                 display: flex;
                 align-items: center;
+                font-size: 1rem;
 
+            }
+
+            .small {
+                height: 32px;
+                width: 32px;
             }
         </style>
         <div id="container">
 
-            <paper-icon-button id="play-button" icon="av:play-arrow"></paper-icon-button>
-            <paper-icon-button id="stop-button" icon="av:stop" style="display: none;"></paper-icon-button>
+            <paper-icon-button class="small" id="play-button" icon="av:play-arrow"></paper-icon-button>
+            <paper-icon-button class="small" id="stop-button" icon="av:stop" style="display: none;"></paper-icon-button>
 
             <span style="flex-grow: 1;">${file.name}</span>
 

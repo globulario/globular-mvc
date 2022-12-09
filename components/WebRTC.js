@@ -290,7 +290,7 @@ export class VideoConversation extends HTMLElement {
     }
 
     closeConnection(connectionId) {
-
+        console.log("-----------------> call close...", connectionId)
         let peerVideo = this.peersVideo.querySelector("#_" + connectionId + "_video")
         if (peerVideo == undefined) {
             return
@@ -327,7 +327,7 @@ export class VideoConversation extends HTMLElement {
         }
 
         this.eventHub.publish(`video_conversation_close_${connectionId}_evt`, {}, false);
-        this.eventHub.publish(`video_conversation_close_${this.conversationUuid + "_" + Application.account._id}_evt`, {}, false);
+        this.eventHub.publish(`video_conversation_close_${this.conversationUuid}_evt`, {}, false);
     }
 
     // init a new peer connections.
@@ -381,6 +381,7 @@ export class VideoConversation extends HTMLElement {
                     case "disconnected":
                     case "failed":
                     case "closed":
+                        
                         // The connection has been closed
                         this.closeConnection(connectionId)
 

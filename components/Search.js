@@ -23,10 +23,10 @@ var MAX_DISPLAY_RESULTS = 20; // the maximum results display per page per globul
 var MAX_RESULTS = 5000; // The total number of result search...
 
 window.onerror = function (msg, url, line) {
-    alert("Message : " + msg );
-    alert("url : " + url );
-    alert("Line number : " + line );
- }
+    alert("Message : " + msg);
+    alert("url : " + url);
+    alert("Line number : " + line);
+}
 
 // keep values in memorie to speedup...
 var titles = {}
@@ -118,7 +118,7 @@ export function getCoverDataUrl(callback, videoId, videoUrl, videoPath, globule)
 
 // That function will be use to asscociate file with imdb information.
 export function getImdbInfo(id, callback, errorcallback, globule) {
-   
+
     if (titles[id]) {
         if (titles[id].ID) {
             callback(titles[id])
@@ -376,7 +376,7 @@ function searchTitles(globule, query, contexts, indexPath, offset, max, callback
                     let uuid = "_" + getUuid(query)
                     Model.eventHub.publish(`${uuid}_search_hit_event__`, { hit: hit, context: indexPath.substring(indexPath.lastIndexOf("/") + 1) }, true)
                 })
-            }else{
+            } else {
                 // keep it
                 hits.push(hit)
             }
@@ -618,12 +618,12 @@ export class SearchBar extends HTMLElement {
         this.tvSeriesCheckbox = this.shadowRoot.querySelector("#context-search-selector-tv-series")
         this.tvEpisodesCheckbox = this.shadowRoot.querySelector("#context-search-selector-tv-episodes")
 
-        this.titlesCheckbox.onchange = ()=>{
-            if(this.titlesCheckbox.checked){
+        this.titlesCheckbox.onchange = () => {
+            if (this.titlesCheckbox.checked) {
                 this.moviesCheckbox.removeAttribute("disabled")
                 this.tvSeriesCheckbox.removeAttribute("disabled")
                 this.tvEpisodesCheckbox.removeAttribute("disabled")
-            }else{
+            } else {
                 this.moviesCheckbox.setAttribute("disabled", "")
                 this.tvSeriesCheckbox.setAttribute("disabled", "")
                 this.tvEpisodesCheckbox.setAttribute("disabled", "")
@@ -634,11 +634,11 @@ export class SearchBar extends HTMLElement {
         this.youtubeCheckbox = this.shadowRoot.querySelector("#context-search-selector-youtube")
         this.adultCheckbox = this.shadowRoot.querySelector("#context-search-selector-adult")
 
-        this.videosCheckbox.onchange = ()=>{
-            if(this.videosCheckbox.checked){
+        this.videosCheckbox.onchange = () => {
+            if (this.videosCheckbox.checked) {
                 this.youtubeCheckbox.removeAttribute("disabled")
                 this.adultCheckbox.removeAttribute("disabled")
-            }else{
+            } else {
                 this.youtubeCheckbox.setAttribute("disabled", "")
                 this.adultCheckbox.setAttribute("disabled", "")
             }
@@ -663,23 +663,23 @@ export class SearchBar extends HTMLElement {
                     let query = searchInput.value
 
                     // remove unwanted results...
-                    if(!this.adultCheckbox.checked){
+                    if (!this.adultCheckbox.checked) {
                         query += " -adult"
                     }
 
-                    if(!this.youtubeCheckbox.checked){
+                    if (!this.youtubeCheckbox.checked) {
                         query += " -youtube"
                     }
 
-                    if(!this.moviesCheckbox.checked){
+                    if (!this.moviesCheckbox.checked) {
                         query += " -Movie"
                     }
 
-                    if(!this.tvEpisodesCheckbox.checked){
+                    if (!this.tvEpisodesCheckbox.checked) {
                         query += " -TVEpisode"
                     }
 
-                    if(!this.tvSeriesCheckbox.checked){
+                    if (!this.tvSeriesCheckbox.checked) {
                         query += " -TVSerie"
                     }
 
@@ -1108,76 +1108,37 @@ export class SearchResultsPage extends HTMLElement {
 
                     hit.hidden = false;
                     hit.enable = true;
+                    if (hit.hasTitle || hit.hasVideo || hit.hasAudio) {
+                        // here I will keep track of hit classes...
+                        if (hit.hasTitle()) {
+                            hit.getTitle().getGenresList().forEach(g => {
+                                let className = getUuidByString(g.toLowerCase())
+                                if (this.hits_by_className[className] == undefined) {
+                                    this.hits_by_className[className] = []
+                                }
+                                if (this.hits_by_className[className].indexOf(uuid) == -1) {
+                                    this.hits_by_className[className].push(uuid)
+                                }
+                            })
+                            // now the term..
+                            let className = getUuidByString("high")
+                            if (hit.getTitle().getRating() < 3.5) {
+                                className = getUuidByString("low")
+                            } else if (hit.getTitle().getRating() < 7.0) {
+                                className = getUuidByString("medium")
+                            }
 
-                    // here I will keep track of hit classes...
-                    if (hit.hasTitle()) {
-                        hit.getTitle().getGenresList().forEach(g => {
-                            let className = getUuidByString(g.toLowerCase())
                             if (this.hits_by_className[className] == undefined) {
                                 this.hits_by_className[className] = []
                             }
+
                             if (this.hits_by_className[className].indexOf(uuid) == -1) {
                                 this.hits_by_className[className].push(uuid)
                             }
-                        })
-                        // now the term..
-                        let className = getUuidByString("high")
-                        if (hit.getTitle().getRating() < 3.5) {
-                            className = getUuidByString("low")
-                        } else if (hit.getTitle().getRating() < 7.0) {
-                            className = getUuidByString("medium")
-                        }
 
-                        if (this.hits_by_className[className] == undefined) {
-                            this.hits_by_className[className] = []
-                        }
-
-                        if (this.hits_by_className[className].indexOf(uuid) == -1) {
-                            this.hits_by_className[className].push(uuid)
-                        }
-
-                    } else if (hit.hasVideo()) {
-                        hit.getVideo().getGenresList().forEach(g => {
-                            let className = getUuidByString(g.toLowerCase())
-                            if (this.hits_by_className[className] == undefined) {
-                                this.hits_by_className[className] = []
-                            }
-                            if (this.hits_by_className[className].indexOf(uuid) == -1) {
-                                this.hits_by_className[className].push(uuid)
-                            }
-                        })
-
-                        hit.getVideo().getTagsList().forEach(g => {
-                            let className = getUuidByString(g.toLowerCase())
-                            if (this.hits_by_className[className] == undefined) {
-                                this.hits_by_className[className] = []
-                            }
-                            if (this.hits_by_className[className].indexOf(uuid) == -1) {
-                                this.hits_by_className[className].push(uuid)
-                            }
-                        })
-
-                        // now the term..
-                        let className = getUuidByString("high")
-                        if (hit.getVideo().getRating() < 3.5) {
-                            className = getUuidByString("low")
-                        } else if (hit.getVideo().getRating() < 7.0) {
-                            className = getUuidByString("medium")
-                        }
-
-                        if (this.hits_by_className[className] == undefined) {
-                            this.hits_by_className[className] = []
-                        }
-
-                        if (this.hits_by_className[className].indexOf(uuid) == -1) {
-                            this.hits_by_className[className].push(uuid)
-                        }
-                    } else if (hit.hasAudio()) {
-
-                        hit.getAudio().getGenresList().forEach(g => {
-                            g.split(" ").forEach(g_ => {
-                                let className = getUuidByString(g_.toLowerCase())
-
+                        } else if (hit.hasVideo()) {
+                            hit.getVideo().getGenresList().forEach(g => {
+                                let className = getUuidByString(g.toLowerCase())
                                 if (this.hits_by_className[className] == undefined) {
                                     this.hits_by_className[className] = []
                                 }
@@ -1186,7 +1147,50 @@ export class SearchResultsPage extends HTMLElement {
                                 }
                             })
 
-                        })
+                            hit.getVideo().getTagsList().forEach(g => {
+                                let className = getUuidByString(g.toLowerCase())
+                                if (this.hits_by_className[className] == undefined) {
+                                    this.hits_by_className[className] = []
+                                }
+                                if (this.hits_by_className[className].indexOf(uuid) == -1) {
+                                    this.hits_by_className[className].push(uuid)
+                                }
+                            })
+
+                            // now the term..
+                            let className = getUuidByString("high")
+                            if (hit.getVideo().getRating() < 3.5) {
+                                className = getUuidByString("low")
+                            } else if (hit.getVideo().getRating() < 7.0) {
+                                className = getUuidByString("medium")
+                            }
+
+                            if (this.hits_by_className[className] == undefined) {
+                                this.hits_by_className[className] = []
+                            }
+
+                            if (this.hits_by_className[className].indexOf(uuid) == -1) {
+                                this.hits_by_className[className].push(uuid)
+                            }
+                        } else if (hit.hasAudio()) {
+
+                            hit.getAudio().getGenresList().forEach(g => {
+                                g.split(" ").forEach(g_ => {
+                                    let className = getUuidByString(g_.toLowerCase())
+
+                                    if (this.hits_by_className[className] == undefined) {
+                                        this.hits_by_className[className] = []
+                                    }
+                                    if (this.hits_by_className[className].indexOf(uuid) == -1) {
+                                        this.hits_by_className[className].push(uuid)
+                                    }
+                                })
+
+                            })
+                        }
+                    }else{
+                        // console.log(hit)
+                        // There is facet for blogpost..? categorie, keywords etc...
                     }
 
                     // Display first results...
@@ -1203,6 +1207,8 @@ export class SearchResultsPage extends HTMLElement {
                             this.tab.totalSpan.innerHTML = this.getTotal() + ""
                         }
                     }
+
+
                 }
 
             }, true)
@@ -1305,7 +1311,7 @@ export class SearchResultsPage extends HTMLElement {
     refresh() {
         console.log("page refresh call...")
         // this.innerHTML = ""
-        while(this.children.length > 0){
+        while (this.children.length > 0) {
             this.removeChild(this.children[0])
         }
 
@@ -1324,8 +1330,8 @@ export class SearchResultsPage extends HTMLElement {
                     let hit = hits[i]
                     if (!hit.hidden && hit.enable) {
                         // append the mosaic card (blog, title, video, audio...)
-                        this.appendChild(this.displayMosaicHit(hit, context)) 
-                        this.appendChild( this.displayListHit(hit, context) )
+                        this.appendChild(this.displayMosaicHit(hit, context))
+                        this.appendChild(this.displayListHit(hit, context))
                     }
                 }
             }
@@ -1591,7 +1597,7 @@ export class SearchResultsPage extends HTMLElement {
         //this.appendChild()
         let hitDiv = range.createContextualFragment(html)
 
-        let snippetDiv =  hitDiv.querySelector(`.snippets-div`)
+        let snippetDiv = hitDiv.querySelector(`.snippets-div`)
 
         let titleInfoDiv = hitDiv.querySelector(`.title-info-div`)
 
@@ -2332,18 +2338,18 @@ export class SearchFlipCard extends HTMLElement {
                         let serie = rsp.getTitle()
                         let url = serie.getPoster().getContenturl()
                         /*toDataURL(url, (dataUrl) => {*/
-                            this.shadowRoot.querySelector(`#hit-div-mosaic-front`).style.backgroundImage = `url(${url})`
-                            serieName.innerHTML = serie.getName()
+                        this.shadowRoot.querySelector(`#hit-div-mosaic-front`).style.backgroundImage = `url(${url})`
+                        serieName.innerHTML = serie.getName()
                         /*})*/
                     })
                     .catch(err => {
                         // in that case I will try with imdb...
-                        
+
                         getImdbInfo(title.getSerie(), serie => {
                             let url = serie.Poster.ContentURL
                             /*toDataURL(url, (dataUrl) => {*/
-                                this.shadowRoot.querySelector(`#hit-div-mosaic-front`).style.backgroundImage = `url(${url})`
-                                serieName.innerHTML = serie.Name
+                            this.shadowRoot.querySelector(`#hit-div-mosaic-front`).style.backgroundImage = `url(${url})`
+                            serieName.innerHTML = serie.Name
                             /*})*/
                         }, err => ApplicationView.displayMessage(err, 3000), globule)
                     })
@@ -2352,7 +2358,7 @@ export class SearchFlipCard extends HTMLElement {
         } else {
             let url = title.getPoster().getContenturl()
             /*toDataURL(url, (dataUrl) => {*/
-                this.shadowRoot.querySelector(`#hit-div-mosaic-front`).style.backgroundImage = `url(${url})`
+            this.shadowRoot.querySelector(`#hit-div-mosaic-front`).style.backgroundImage = `url(${url})`
             /*})*/
         }
 

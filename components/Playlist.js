@@ -309,7 +309,8 @@ export class PlayList extends HTMLElement {
         // clear the content...
         this.innerHTML = ""
         this.playlist.items.forEach(item => {
-            let item_ = new PlayListItem(item, this, this.items.length, this.globule)
+            let index = this.items.length
+            let item_ = new PlayListItem(item, this, index , this.globule)
 
             item_.onmouseover = () => {
                 if (!item_.isPlaying) {
