@@ -23,7 +23,7 @@ import { ApplicationView } from '../ApplicationView';
 import { Application } from '../Application';
 import { ContactCard } from './Contact';
 import { Notification as Notification_ } from '../Notification';
-import { Call, CreateNotificationRqst, GetCallHistoryRqst, Notification, NotificationType, SetCallRqst } from 'globular-web-client/resource/resource_pb';
+import { Call, ClearCallsRqst, CreateNotificationRqst, DeleteCallRqst, GetCallHistoryRqst, Notification, NotificationType, SetCallRqst } from 'globular-web-client/resource/resource_pb';
 import { randomUUID } from './utility';
 import { VideoConversation } from './WebRTC';
 import { secondsToTime } from './Audio';
@@ -101,12 +101,14 @@ export class CallsHistoryMenu extends Menu {
                 <globular-autocomplete type="email" label="Search Contact" id="call_contact_input" width="${this.width - 10}" style="flex-grow: 1;"></globular-autocomplete>
                 <paper-tabs selected="0">
                     <paper-tab id="incomming-calls-tab">
-                        <span id="incomming-calls-label">Incomming Call's</span>
+                        <span id="incomming-calls-label" style="flex-grow: 1;">Incomming Call's</span>
                         <paper-badge style="display: none;" for="incomming-calls-label"></paper-badge>
+                        <paper-icon-button id="clear-incomming-calls-btn" title="clear all incomming call's" icon="icons:delete-sweep"></paper-icon-button>
                     </paper-tab>
                     <paper-tab id="outgoing-calls-tab">
-                        <span id="outgoing-calls-label">Outgoing Call's</span>
+                        <span id="outgoing-calls-label" style="flex-grow: 1;">Outgoing Call's</span>
                         <paper-badge style="display: none;" for="outgoing-calls-label"></paper-badge>
+                        <paper-icon-button id="clear-outgoing-calls-btn" title="clear all outgoing call's" icon="icons:delete-sweep"></paper-icon-button>
                     </paper-tab>
                 </paper-tabs>
             </div>
@@ -133,6 +135,134 @@ export class CallsHistoryMenu extends Menu {
 
         let incommingCallsTab = this.getMenuDiv().querySelector("#incomming-calls-tab")
         let incommingCallsDiv = this.getMenuDiv().querySelector("#incomming-calls-div")
+
+        let clearIncommingCallsBtn = this.getMenuDiv().querySelector("#clear-incomming-calls-btn")
+        clearIncommingCallsBtn.onclick = () => {
+            // Here I will ask the user for confirmation before actually delete the contact informations.
+            let toast = ApplicationView.displayMessage(
+                `
+            <style>
+              ${getTheme()}
+              #yes-no-calls-clear-box{
+                display: flex;
+                flex-direction: column;
+              }
+
+              #yes-no-calls-clear-box globular-contact-card{
+                padding-bottom: 10px;
+              }
+
+              #yes-no-calls-clear-box div{
+                display: flex;
+                padding-bottom: 10px;
+              }
+
+            </style>
+            <div id="yes-no-calls-clear-box">
+              <div>Your about to clear incomming call's history</div>
+              <div>Is it what you want to do? </div>
+              <div style="justify-content: flex-end;">
+                <paper-button raised id="yes-calls-clear">Yes</paper-button>
+                <paper-button raised id="no-calls-clear">No</paper-button>
+              </div>
+            </div>
+            `,
+                15000 // 15 sec...
+            );
+
+            let yesBtn = document.querySelector("#yes-calls-clear")
+            let noBtn = document.querySelector("#no-calls-clear")
+
+            // On yes
+            yesBtn.onclick = () => {
+                toast.dismiss();
+                let rqst = new ClearCallsRqst
+                rqst.setAccountId(this.account.id + "@" + this.account.domain)
+                rqst.setFilter(`{"callee":"${this.account.id + "@" + this.account.domain}"}`)
+                let globule = Model.getGlobule(this.account.domain)
+
+                generatePeerToken(globule, token => {
+                    globule.resourceService.clearCalls(rqst, { application: Application.application, domain: globule.config.Domain, token: token })
+                        .then(rsp => {
+
+                            ApplicationView.displayMessage(
+                                "Incomming call's history was clear",
+                                3000
+                            );
+                            this.refreshCalls()
+                        })
+                })
+            }
+
+            noBtn.onclick = () => {
+                toast.dismiss();
+            }
+        }
+
+        let clearOutgoingCallsBtn = this.getMenuDiv().querySelector("#clear-outgoing-calls-btn")
+        clearOutgoingCallsBtn.onclick = () => {
+            // Here I will ask the user for confirmation before actually delete the contact informations.
+            let toast = ApplicationView.displayMessage(
+                `
+            <style>
+              ${getTheme()}
+              #yes-no-calls-clear-box{
+                display: flex;
+                flex-direction: column;
+              }
+
+              #yes-no-calls-clear-box globular-contact-card{
+                padding-bottom: 10px;
+              }
+
+              #yes-no-calls-clear-box div{
+                display: flex;
+                padding-bottom: 10px;
+              }
+
+            </style>
+            <div id="yes-no-calls-clear-box">
+              <div>Your about to clear outgoing call's history</div>
+              <div>Is it what you want to do? </div>
+              <div style="justify-content: flex-end;">
+                <paper-button raised id="yes-calls-clear">Yes</paper-button>
+                <paper-button raised id="no-calls-clear">No</paper-button>
+              </div>
+            </div>
+            `,
+                15000 // 15 sec...
+            );
+
+            let yesBtn = document.querySelector("#yes-calls-clear")
+            let noBtn = document.querySelector("#no-calls-clear")
+
+            // On yes
+            yesBtn.onclick = () => {
+                toast.dismiss();
+
+
+                let rqst = new ClearCallsRqst
+                rqst.setAccountId(this.account.id + "@" + this.account.domain)
+                rqst.setFilter(`{"caller":"${this.account.id + "@" + this.account.domain}"}`)
+                let globule = Model.getGlobule(this.account.domain)
+
+                generatePeerToken(globule, token => {
+                    globule.resourceService.clearCalls(rqst, { application: Application.application, domain: globule.config.Domain, token: token })
+                        .then(rsp => {
+
+                            ApplicationView.displayMessage(
+                                "Outgoing call's history was clear",
+                                3000
+                            );
+                            this.refreshCalls()
+                        })
+                })
+            }
+
+            noBtn.onclick = () => {
+                toast.dismiss();
+            }
+        }
 
         incommingCallsTab.onclick = () => {
             outgoingCallsDiv.style.display = "none"
@@ -249,7 +379,12 @@ export class CallsHistoryMenu extends Menu {
 
     }
 
+    onshow() {
 
+        if (this.account)
+            this.refreshCalls()
+
+    }
 
     // save the call in the backend.
     setCall(call) {
@@ -327,7 +462,8 @@ export class CallsHistoryMenu extends Menu {
                             <div style="display: flex; align-items: center;">
                                 <img></img>
                                 <span style="flex-grow: 1;"></span>
-                                <paper-icon-button icon="communication:call"></paper-icon-button>
+                                <paper-icon-button id="delete-btn" icon="icons:delete"></paper-icon-button>
+                                <paper-icon-button id="call-btn" icon="communication:call"></paper-icon-button>
                             </div>
                         </div>
                         `
@@ -335,7 +471,8 @@ export class CallsHistoryMenu extends Menu {
                         let div = fragment.querySelector(`#_${call.getUuid()}`)
                         let img = fragment.querySelector("img")
                         let span = fragment.querySelector("span")
-                        let btn = fragment.querySelector("paper-icon-button")
+                        let call_btn = fragment.querySelector("#call-btn")
+                        let delete_btn = fragment.querySelector("#delete-btn")
                         let date_div = fragment.querySelector("#call_date")
                         let duration_div = fragment.querySelector("#call_duration")
                         div.style.order = ++index
@@ -373,9 +510,28 @@ export class CallsHistoryMenu extends Menu {
                                         duration_div.innerHTML = hours_ + ":" + minutes_ + ":" + seconds_;
                                     }
 
-                                    btn.onclick = () => {
+                                    call_btn.onclick = () => {
                                         this.onCallContact(contact)
                                     }
+
+                                    delete_btn.onclick = () => {
+                                        let rqst = new DeleteCallRqst
+                                        rqst.setAccountId(this.account.id + "@" + this.account.domain)
+                                        rqst.setUuid(call.getUuid())
+                                        // Set value on the callee...
+                                        let globule = Model.getGlobule(this.account.domain)
+                                        generatePeerToken(globule, token => {
+                                            globule.resourceService.deleteCall(rqst, { application: Application.application, domain: globule.config.Domain, token: token })
+                                                .then(rsp => {
+                                                    // this.refreshCalls()
+                                                    let div = this.getMenuDiv().querySelector(`#_${call.getUuid()}`)
+                                                    if (div) {
+                                                        div.parentNode.removeChild(div)
+                                                    }
+                                                })
+                                        })
+                                    }
+
                                 }
 
                             }, err => ApplicationView.displayMessage(err, 3000))

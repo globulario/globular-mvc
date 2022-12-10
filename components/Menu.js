@@ -184,6 +184,9 @@ export class Menu extends HTMLElement {
 
             let menuDiv = this.shadowRoot.getElementById(this.id + "_div")
             menuDiv.appendChild(this.menu)
+            if(this.onshow){
+                this.onshow()
+            }
 
             // set the handler.
             document.addEventListener("click", handler);

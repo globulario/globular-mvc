@@ -33,6 +33,7 @@ import { Terminal } from "./components/Terminal"
 import { Workspace } from './components/Workspace'
 import { WatchingMenu } from './components/watching'
 import { ContentManager } from './components/Content'
+import { ShareMenu } from './components/Share'
 
 
 // This variable is there to give acces to wait and resume...
@@ -109,6 +110,9 @@ export class ApplicationView extends View {
 
   /** The file menu */
   private filesMenu: FilesMenu;
+
+  /** The share menu */
+  private shareMenu: ShareMenu;
 
   /** The watching content */
   private watchingMenu: WatchingMenu;
@@ -252,6 +256,8 @@ export class ApplicationView extends View {
     // The file menu
     this.filesMenu = new FilesMenu();
 
+    // The share menu.
+    this.shareMenu = new ShareMenu();
 
     this._sidemenu_childnodes = new Array<any>();
     this._workspace_childnodes = new Array<any>();
@@ -645,6 +651,17 @@ export class ApplicationView extends View {
 
       }, true)
 
+      Model.eventHub.subscribe("_display_share_panel_event_",
+      uuid => { },
+      evt => {
+
+        // remove actual nodes
+        this.hideContent()
+
+        // Append the watching component...
+        this.getWorkspace().appendChild(evt);
+
+      }, true)
 
     Model.eventHub.subscribe("_open_file_explorer_event_",
       uuid => { },
@@ -755,6 +772,11 @@ export class ApplicationView extends View {
           this.watchingMenu.getMenuDiv().classList.remove("bottom");
           this.watchingMenu.getMenuDiv().classList.add("left");
 
+          
+          this.overFlowMenu.getMenuDiv().appendChild(this.shareMenu);
+          this.shareMenu.getMenuDiv().classList.remove("bottom");
+          this.shareMenu.getMenuDiv().classList.add("left");
+
           this.overFlowMenu.getMenuDiv().appendChild(this.filesMenu);
           this.filesMenu.getMenuDiv().classList.remove("bottom");
           this.filesMenu.getMenuDiv().classList.add("left");
@@ -801,6 +823,10 @@ export class ApplicationView extends View {
           ApplicationView.layout.toolbar().appendChild(this.watchingMenu);
           this.watchingMenu.getMenuDiv().classList.remove("left");
           this.watchingMenu.getMenuDiv().classList.add("bottom");
+
+          ApplicationView.layout.toolbar().appendChild(this.shareMenu);
+          this.shareMenu.getMenuDiv().classList.remove("left");
+          this.shareMenu.getMenuDiv().classList.add("bottom");
 
           ApplicationView.layout.toolbar().appendChild(this.filesMenu);
           this.filesMenu.getMenuDiv().classList.remove("left");
@@ -1034,6 +1060,7 @@ export class ApplicationView extends View {
     // set menu...
     this.notificationMenu.init();
     this.filesMenu.init();
+    this.shareMenu.init();
     this.watchingMenu.init();
     this.blogEditingMenu.init();
 

@@ -862,6 +862,7 @@ export class ContactList extends HTMLElement {
         call.setCallee(contact.id + "@" + contact.domain)
         call.setCaller(Application.account.id + "@" + Application.account.domain)
         call.setStarttime(Math.floor(Date.now() / 1000)) // set unix timestamp...
+        call.setEndtime(-1)
         let rqst = new SetCallRqst
         rqst.setCall(call)
 
