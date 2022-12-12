@@ -1425,7 +1425,7 @@ export class FileInfo extends HTMLElement {
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
         let mime = file.mime
-
+ 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>

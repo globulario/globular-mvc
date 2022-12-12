@@ -152,7 +152,7 @@ export class File extends Model {
         const file = new File(obj.name, obj.path)
         file.isDir = obj.isDir
         file.mime = obj.mime
-        file.modeTime = new Date(obj.modeTime / 1000)
+        file.modeTime = new Date(obj.modeTime*1000)
         file.mode = obj.mode
         file.size = obj.size
         file.thumbnail = obj.thumbnail
