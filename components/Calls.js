@@ -94,6 +94,9 @@ export class CallsHistoryMenu extends Menu {
                 min-width: 450px;
             }
 
+            #clear-outgoing-calls-btn, #clear-incomming-calls-btn{
+                padding: 10px;
+            }
 
         </style>
         <div id="Contacts-div">

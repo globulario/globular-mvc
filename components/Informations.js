@@ -161,45 +161,18 @@ const __style__ = `
 }
 `
 
-// Read dir content.
-function _readDir(path, callback, errorCallback, globule) {
-    // Here I will keep the dir info in the cache...
-    File.readDir(path, false, (dir) => {
-        callback(dir)
-    }, errorCallback, globule)
-}
-
-// Return the content of video preview div.
-function getHiddenFiles(path, callback, globule) {
-    // Set the title...
-    let thumbnailPath = path.replace("/playlist.m3u8", "")
-    if (thumbnailPath.lastIndexOf(".mp4") != -1 || thumbnailPath.lastIndexOf(".MP4") != -1) {
-        thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("."))
-    }
-
-    thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/__preview__"
-
-    _readDir(thumbnailPath, callback, err => { callback(null); console.log(err) }, globule)
-}
-
 // Create the video preview...
 function getVideoPreview(parent, path, name, callback, globule) {
     let h = 85;
     let w = 128;
 
     File.getFile(globule, path, w, h, file => {
-        getHiddenFiles(path, previewDir => {
+       
 
-            let files = []
-            if (previewDir) {
-                if (previewDir._files) {
-                    files = previewDir._files
-                }
-            }
-
+    
             let fileNameSpan = document.createElement("span")
 
-            let preview = new VideoPreview(file, files, 85, () => {
+            let preview = new VideoPreview(file, 85, () => {
                 if (preview.width > 0 && preview.height > 0) {
                     w = (preview.width / preview.height) * h
                 }
@@ -307,7 +280,6 @@ function getVideoPreview(parent, path, name, callback, globule) {
             previewDiv.appendChild(fileNameSpan)
             callback(previewDiv)
 
-        }, globule)
     }, err => ApplicationView.displayMessage(err, 3000))
 
 }
@@ -1483,7 +1455,7 @@ export class FileInfo extends HTMLElement {
                 </div>
                 <div style="display: table-row;">
                     <div style="display: table-cell; font-weight: 450;">Modified:</div>
-                    <div style="display: table-cell;">${file.modTime}</div>
+                    <div style="display: table-cell;">${file.modeTime}</div>
                 </div>
                 <div style="display: table-row;">
                     <div style="display: table-cell; font-weight: 450;">Size:</div>

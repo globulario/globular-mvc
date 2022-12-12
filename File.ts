@@ -4,7 +4,7 @@ import * as jwt from "jwt-decode";
 import { Globular } from 'globular-web-client';
 import { ApplicationView } from './ApplicationView';
 import { getTheme } from './components/Theme';
-import { GetFileInfoRequest } from 'globular-web-client/file/file_pb';
+import { FileInfo, GetFileInfoRequest } from 'globular-web-client/file/file_pb';
 import { Application } from './Application';
 
 /**
@@ -80,12 +80,12 @@ export class File extends Model {
     }
 
     /** The mode time */
-    private _modTime: Date;
-    public get modTime(): Date {
-        return this._modTime;
+    private _modeTime: Date;
+    public get modeTime(): Date {
+        return this._modeTime;
     }
-    public set modTime(value: Date) {
-        this._modTime = value;
+    public set modeTime(value: Date) {
+        this._modeTime = value;
     }
 
     /** The Mime type */
@@ -149,25 +149,18 @@ export class File extends Model {
      * @param obj The JSON object.
      */
     static fromObject(obj: any): any {
-        const file = new File(obj.Name, obj.Path)
-        file.isDir = obj.IsDir
-        file.mime = obj.Mime
-        file.modTime = new Date(obj.ModTime)
-        file.mode = obj.Mode
-        file.size = obj.Size
-        file.thumbnail = obj.Thumbnail
-        file.metadata = obj.Metadata
-        file.checksum = obj.Checksum
-
-        if (obj.Metadata) {
-            if (obj.Metadata.Picture) {
-                file.thumbnail = obj.Metadata.ImageUrl
-            }
-        }
+        const file = new File(obj.name, obj.path)
+        file.isDir = obj.isDir
+        file.mime = obj.mime
+        file.modeTime = new Date(obj.modeTime / 1000)
+        file.mode = obj.mode
+        file.size = obj.size
+        file.thumbnail = obj.thumbnail
+        file.checksum = obj.checksum
 
         // Now the sub-file.
-        if (file.isDir && obj.Files != null) {
-            for (let o of obj.Files) {
+        if (file.isDir && obj.filesList != null) {
+            for (let o of obj.filesList) {
                 let f = <File>File.fromObject(o)
                 file.files.push(f)
             }
@@ -192,7 +185,7 @@ export class File extends Model {
         let obj = {
             IsDir: this.isDir,
             Mime: this.mime,
-            ModTime: this.modTime.toISOString(),
+            modeTime: this.modeTime.toISOString(),
             Mode: this.mode,
             Name: this.name,
             Path: this.path,
@@ -241,7 +234,7 @@ export class File extends Model {
             rqst.setThumnailwidth(thumbnailWith)
             globule.fileService.getFileInfo(rqst, { application: Application.application, domain: globule.config.Domain, token: token })
                 .then(rsp => {
-                    let f = File.fromString(rsp.getData())
+                    let f = File.fromObject(rsp.getInfo().toObject())
                     callback(f);
 
                 })
@@ -271,8 +264,8 @@ export class File extends Model {
                 return
             }
 
-            readDir(globule, path, recursive, (data: any) => {
-                callback(File.fromObject(data))
+            readDir(globule, path, recursive, (dir: FileInfo) => {
+                callback(File.fromObject(dir.toObject()))
             }, errorCallback, 80, 80, token)
         }, errorCallback)
     }

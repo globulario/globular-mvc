@@ -1060,7 +1060,7 @@ export class ApplicationView extends View {
     // set menu...
     this.notificationMenu.init();
     this.filesMenu.init();
-    this.shareMenu.init();
+    this.shareMenu.init(account);
     this.watchingMenu.init();
     this.blogEditingMenu.init();
 

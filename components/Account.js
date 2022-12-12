@@ -15,7 +15,7 @@ import "./DiskSpace.js"
 import { Menu } from "./Menu";
 import { Model } from "../Model";
 import { getTheme } from "./Theme";
-import { AddAccountRoleRqst, AddGroupMemberAccountRqst, AddOrganizationAccountRqst, DeleteAccountRqst, GetAccountsRqst, RegisterAccountRqst, RemoveAccountRoleRqst, RemoveGroupMemberAccountRqst, RemoveOrganizationAccountRqst } from "globular-web-client/resource/resource_pb";
+import { Account, AddAccountRoleRqst, AddGroupMemberAccountRqst, AddOrganizationAccountRqst, DeleteAccountRqst, GetAccountsRqst, RegisterAccountRqst, RemoveAccountRoleRqst, RemoveGroupMemberAccountRqst, RemoveOrganizationAccountRqst } from "globular-web-client/resource/resource_pb";
 import { getAllGroups, getAllRoles } from 'globular-web-client/api';
 import { getAllOrganizations } from "./Organization";
 import { SearchableGroupList, SearchableOrganizationList, SearchableRoleList } from "./List";
@@ -476,7 +476,7 @@ export class AccountManager extends HTMLElement {
 
           let rqst = new RegisterAccountRqst()
 
-          let account = new account()
+          let account = new Account()
           account.setId(accountId)
           account.setName(accountId)
           account.setPassword("1234")

@@ -166,11 +166,11 @@ export class Ringtones extends HTMLElement {
 
     loadRingTone(path, callback, deletable) {
 
-        readDir(Model.globular, path, false, (data) => {
-            let dir = File.fromObject(data)
-            dir.files.forEach(f => {
-                if (f.name.indexOf(".mp3") != -1) {
-                    let ringtone = new Ringtone(f, this)
+        readDir(Model.globular, path, false, dir => {
+            
+            dir.getFilesList().forEach(f => {
+                if (f.getName().indexOf(".mp3") != -1) {
+                    let ringtone = new Ringtone(File.fromObject(f.toObject()), this)
                     this.appendChild(ringtone)
                     if (deletable != undefined) {
                         if (deletable == false) {

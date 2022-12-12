@@ -33,8 +33,7 @@ import { AddPublicDirRequest, ConvertVideoToHlsRequest, ConvertVideoToMpeg4H264R
 import { createArchive, deleteDir, deleteFile, downloadFileHttp, renameFile, uploadFiles } from 'globular-web-client/api';
 import { ApplicationView } from '../ApplicationView';
 import { Application } from '../Application';
-import { RunCmdRequest } from 'globular-web-client/admin/admin_pb';
-import { AddResourceOwnerRqst, GetSharedResourceRqst, SubjectType } from 'globular-web-client/rbac/rbac_pb';
+import { GetSharedResourceRqst, SubjectType } from 'globular-web-client/rbac/rbac_pb';
 import { randomUUID } from './utility';
 import * as getUuidByString from 'uuid-by-string';
 import { ImageViewer } from './Image';
@@ -339,7 +338,22 @@ function getHiddenFiles(path, callback, globule) {
 }
 
 function _publishSetDirEvent(path, file_explorer_) {
-    file_explorer_.displayWaitMessage("load " + path)
+    file_explorer_.displayWaitMessage("retreive " + path + " information")
+
+    let dir = null;
+
+    // subscribe once...
+    let listener = getUuidByString(path)
+    if (!file_explorer_[listener]) {
+        file_explorer_.globule.eventHub.subscribe("_read_dir_" + path, uuid => file_explorer_[listener] =  uuid, f => {
+            if(f.getPath() == path){
+                file_explorer_.displayWaitMessage("load  " + path + " interface")
+                dir = File.fromObject(f.toObject())
+                Model.eventHub.publish("__set_dir_event__", { path: dir, file_explorer_id: file_explorer_.id }, true)
+            }
+        }, true)
+    }
+
     _readDir(path, (dir) => {
         Model.eventHub.publish("__set_dir_event__", { path: dir, file_explorer_id: file_explorer_.id }, true)
         file_explorer_.resume()
@@ -1660,7 +1674,7 @@ export class FilesListView extends FilesView {
                     <iron-icon id="${id}_icon" class="file-lnk-ico" style="height: 18px;" icon="${icon}"></iron-icon> 
                     <span> ${f.name} </span>
                 </td>
-                <td>${f.modTime.toLocaleString()}</td>
+                <td>${f.modeTime.toLocaleString()}</td>
                 <td>${mime}</td>
                 <td>${size}</td>
             `
@@ -2484,60 +2498,58 @@ export class FilesIconView extends FilesView {
                         if (fileType == "video") {
 
                             /** In that case I will display the vieo preview. */
-                            getHiddenFiles(file.path, previewDir => {
-                                let h = 72;
-                                if (previewDir) {
 
-                                    let preview = new VideoPreview(file, previewDir._files, h, () => {
-                                        fileNameSpan.style.wordBreak = "break-all"
-                                        fileNameSpan.style.fontSize = ".85rem"
-                                        fileNameSpan.style.maxWidth = preview.width + "px"
-                                        if (file.videos) {
-                                            if (file.videos.length > 0)
-                                                fileNameSpan.innerHTML = file.videos[0].getDescription()
-                                        }
+                            let h = 72;
 
-                                    }, this._file_explorer_.globule)
-
-                                    // keep the explorer link...
-                                    preview._file_explorer_ = this._file_explorer_
-                                    preview.name = file.name;
-                                    preview.onpreview = () => {
-                                        let previews = this.div.querySelectorAll("globular-video-preview")
-                                        previews.forEach(p => {
-                                            // stop all other preview...
-                                            if (preview.name != p.name) {
-                                                p.stopPreview()
-                                            }
-                                        })
-                                    }
-
-                                    fileIconDiv.insertBefore(preview, fileIconDiv.firstChild)
-
-                                    preview.draggable = false
-
-                                    fileIconDiv.ondrop = (evt) => {
-                                        evt.stopPropagation();
-                                        evt.preventDefault()
-                                        let url = evt.dataTransfer.getData("Url");
-                                        if (url.startsWith("https://www.imdb.com/title")) {
-                                            this.setImdbTitleInfo(url, file)
-                                        }
-                                    }
+                            let preview = new VideoPreview(file, h, () => {
+                                fileNameSpan.style.wordBreak = "break-all"
+                                fileNameSpan.style.fontSize = ".85rem"
+                                fileNameSpan.style.maxWidth = preview.width + "px"
+                                if (file.videos) {
+                                    if (file.videos.length > 0)
+                                        fileNameSpan.innerHTML = file.videos[0].getDescription()
                                 }
 
-                                // Retreive the video title to display more readable file name...
-                                if (file.video) {
-                                    fileNameSpan.innerHTML = file.video[0].getDescription()
-                                } else {
-                                    getVideoInfo(this._file_explorer_.globule, file, videos => {
-                                        if (videos.length > 0) {
-                                            file.videos = videos // keep in the file itself...
-                                            fileNameSpan.innerHTML = file.videos[0].getDescription()
-                                        }
-                                    })
-                                }
                             }, this._file_explorer_.globule)
+
+                            // keep the explorer link...
+                            preview._file_explorer_ = this._file_explorer_
+                            preview.name = file.name;
+                            preview.onpreview = () => {
+                                let previews = this.div.querySelectorAll("globular-video-preview")
+                                previews.forEach(p => {
+                                    // stop all other preview...
+                                    if (preview.name != p.name) {
+                                        p.stopPreview()
+                                    }
+                                })
+                            }
+
+                            fileIconDiv.insertBefore(preview, fileIconDiv.firstChild)
+
+                            preview.draggable = false
+
+                            fileIconDiv.ondrop = (evt) => {
+                                evt.stopPropagation();
+                                evt.preventDefault()
+                                let url = evt.dataTransfer.getData("Url");
+                                if (url.startsWith("https://www.imdb.com/title")) {
+                                    this.setImdbTitleInfo(url, file)
+                                }
+                            }
+
+
+                            // Retreive the video title to display more readable file name...
+                            if (file.video) {
+                                fileNameSpan.innerHTML = file.video[0].getDescription()
+                            } else {
+                                getVideoInfo(this._file_explorer_.globule, file, videos => {
+                                    if (videos.length > 0) {
+                                        file.videos = videos // keep in the file itself...
+                                        fileNameSpan.innerHTML = file.videos[0].getDescription()
+                                    }
+                                })
+                            }
 
 
                         } else if (file.isDir) {
@@ -3499,7 +3511,7 @@ export class FileNavigator extends HTMLElement {
         this.public_.isDir = true;
         this.public_.files = [];
         this.public_.mime = "";
-        this.public_.modTime = new Date()
+        this.public_.modeTime = new Date()
 
         Model.eventHub.subscribe("public_change_permission_event", uuid => { },
             evt => {
@@ -3564,7 +3576,7 @@ export class FileNavigator extends HTMLElement {
         this.shared_.isDir = true;
         this.shared_.files = [];
         this.shared_.mime = "";
-        this.shared_.modTime = new Date()
+        this.shared_.modeTime = new Date()
 
         // Init the share info
         let initShared = (share, callback) => {
@@ -3581,7 +3593,7 @@ export class FileNavigator extends HTMLElement {
                         this.shared[userId].isDir = true;
                         this.shared[userId].files = [];
                         this.shared[userId].mime = "";
-                        this.shared[userId].modTime = new Date()
+                        this.shared[userId].modeTime = new Date()
                         this.shared_.files.push(this.shared[userId])
 
                         Model.eventHub.subscribe(userId + "_change_permission_event", uuid => { },
@@ -3621,7 +3633,7 @@ export class FileNavigator extends HTMLElement {
                                         if (hiddenDir == null) {
                                             hiddenDir = new File(".hidden", "/shared/" + userId + "/.hidden", true, this._file_explorer_.globule)
                                             hiddenDir.isDir = true
-                                            hiddenDir.modTime = new Date()
+                                            hiddenDir.modeTime = new Date()
                                             hiddenDir.mime = ""
                                             hiddenDir.files = [f]
                                             this.shared[userId].files.push(hiddenDir)
@@ -3645,7 +3657,7 @@ export class FileNavigator extends HTMLElement {
                 }, err => {
                     callback()
                 })
-            }else{
+            } else {
                 callback()
             }
 
@@ -4620,7 +4632,7 @@ export class FileExplorer extends HTMLElement {
 
         // Load the application dir.
         this.displayWaitMessage("load " + Model.application + "dir")
-        _readDir(this.globule.config.DataPath + "/files/applications/" + Model.application, (dir) => {
+        _readDir("/applications/" + Model.application, (dir) => {
             // set interface with the given directory.
             this.resume()
 
@@ -5021,14 +5033,13 @@ export class VideoPreview extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor(file, previews, height, onresize, globule) {
+    constructor(file, height, onresize, globule) {
         super()
 
         this.file = file
         this.path = file.path;
         this.height = height;
         this.onresize = onresize;
-        this.previews = previews;
         this.onpreview = null;
         this.onplay = null;
         this.__show_play_btn__ = false;
@@ -5104,6 +5115,8 @@ export class VideoPreview extends HTMLElement {
                 this.container.appendChild(this.firstImage)
                 this.images.push(this.firstImage)
             }
+        } else {
+            console.log("no thumbnail image was found for ", this.file)
         }
 
         // Play the video
@@ -5130,31 +5143,39 @@ export class VideoPreview extends HTMLElement {
         // Connect events
         this.container.onmouseenter = (evt) => {
             evt.stopPropagation();
+
             if (this.images.length == 1) {
-
-                getImage((images) => {
-                    this.images = images
-                    if (this.images.length > 0) {
-                        this.container.appendChild(this.images[0])
-
-                        this.playBtn.style.display = "block";
-                        if (this.interval == null && !is_over_play_btn) {
-                            this.startPreview();
+                getHiddenFiles(file.path, previewDir => {
+                    let previews = []
+                    if (previewDir) {
+                        if (previewDir._files) {
+                            previews = previewDir._files
                         }
-
-                        if (this.onresize != undefined) {
-                            this.onresize()
-                        }
-
                     }
-                }, this.images, previews, index, globule) // Download the first image only...
+
+                    getImage((images) => {
+                        this.images = images
+                        if (this.images.length > 0) {
+                            this.container.appendChild(this.images[0])
+
+                            this.playBtn.style.display = "block";
+                            if (this.interval == null && !is_over_play_btn) {
+                                this.startPreview();
+                            }
+
+                            if (this.onresize != undefined) {
+                                this.onresize()
+                            }
+                        }
+                    }, this.images, previews, index, globule) // Download the first image only...
+
+                }, globule)
             } else if (this.images.length > 1) {
                 this.playBtn.style.display = "block";
                 if (this.interval == null && !is_over_play_btn) {
                     this.startPreview();
                 }
             }
-
 
         }
 
