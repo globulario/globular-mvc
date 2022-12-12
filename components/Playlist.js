@@ -514,15 +514,15 @@ export class PlayListItem extends HTMLElement {
             this.audio = audio;
             if (audio == null) {
                 getVideoInfo(globule, this.id, video => {
-
                     if (video != null) {
                         this.video = video
-                        console.log("no information found for item ", item)
                         this.shadowRoot.querySelector("#title-div").innerHTML = video.getDescription()
                         this.shadowRoot.querySelector("#title-artist-span").innerHTML = video.getPublisherid().getName()
                         this.shadowRoot.querySelector("#title-image").src = video.getPoster().getContenturl()
                         if (this.video.getDuration())
                             this.titleDuration.innerHTML = this.parseDuration(this.video.getDuration())
+                    }else{
+                        console.log("no information found for item ", item)
                     }
                 })
             } else {

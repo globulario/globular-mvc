@@ -338,23 +338,9 @@ function getHiddenFiles(path, callback, globule) {
 }
 
 function _publishSetDirEvent(path, file_explorer_) {
-    file_explorer_.displayWaitMessage("retreive " + path + " information")
-
-    let dir = null;
-
-    // subscribe once...
-    let listener = getUuidByString(path)
-    if (!file_explorer_[listener]) {
-        file_explorer_.globule.eventHub.subscribe("_read_dir_" + path, uuid => file_explorer_[listener] =  uuid, f => {
-            if(f.getPath() == path){
-                file_explorer_.displayWaitMessage("load  " + path + " interface")
-                dir = File.fromObject(f.toObject())
-                Model.eventHub.publish("__set_dir_event__", { path: dir, file_explorer_id: file_explorer_.id }, true)
-            }
-        }, true)
-    }
-
+    file_explorer_.displayWaitMessage("load " + path)
     _readDir(path, (dir) => {
+        
         Model.eventHub.publish("__set_dir_event__", { path: dir, file_explorer_id: file_explorer_.id }, true)
         file_explorer_.resume()
     }, err => { console.log(err) }, file_explorer_.globule)
@@ -2104,7 +2090,7 @@ export class FilesIconView extends FilesView {
                 if (section == undefined && filesByType[fileType].length > 0) {
                     let html = `
                     <div class="file-type-section">
-                        <div class="title">${fileType} <span style="flex-grow: 1;">(${filesByType[fileType].length})</span> <div id="${fileType}_playlist_div"></div></div>
+                        <div class="title">${fileType} <span id="${fileType}_section_count" style="flex-grow: 1; padding-left: 5px;"> (${filesByType[fileType].length})</span> <div id="${fileType}_playlist_div"></div></div>
                         <div class="content" id="${fileType}_section"></div>
                     </div>
                     `
@@ -2372,6 +2358,8 @@ export class FilesIconView extends FilesView {
 
                         }
                     }
+                }else {
+                    this.div.querySelector(`#container`).querySelector(`#${fileType}_section_count`).innerHTML = ` (${section.children.length})`
                 }
 
                 // Now I will create the icon file view.
@@ -4787,8 +4775,8 @@ export class FileExplorer extends HTMLElement {
                     img.slot = "images"
                     img.draggable = false;
                     let exist = false;
-                    for (var i = 0; i < this.imageViewer.children.length; i++) {
-                        if (this.imageViewer.children[i].name == img.name) {
+                    for (var j= 0; j < this.imageViewer.children.length; j++) {
+                        if (this.imageViewer.children[j].name == img.name) {
                             exist = true;
                             break
                         }
