@@ -1971,6 +1971,10 @@ export class SearchVideoCard extends HTMLElement {
                 cursor: pointer;
             }
 
+            .video-card img{
+                max-height: 200px;
+            }
+
             .video-card p{
                 font-size: 1.1rem;
                 margin: 5px;
