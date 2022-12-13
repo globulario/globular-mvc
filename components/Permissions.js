@@ -1883,6 +1883,13 @@ export class ResourcePermissions extends HTMLElement {
                 cursor: pointer;
             }
 
+            .resource-text {
+                text-overflow: ellipsis;
+                overflow: hidden; 
+                max-width: 584px;
+                white-space: nowrap;
+            }
+
         </style>
         <div id="container">
             <div class="header">
@@ -1891,7 +1898,7 @@ export class ResourcePermissions extends HTMLElement {
                     <paper-ripple class="circle" recenters=""></paper-ripple>
                 </div>
 
-                <span style="flex-grow: 1; padding: 5px;">
+                <span class="resource-text" style="flex-grow: 1; padding: 5px;">
                     ${resource.getHeaderText()}
                 </span>
 

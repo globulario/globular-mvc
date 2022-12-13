@@ -6,6 +6,7 @@ import { ApplicationView } from './ApplicationView';
 import { getTheme } from './components/Theme';
 import { FileInfo, GetFileInfoRequest } from 'globular-web-client/file/file_pb';
 import { Application } from './Application';
+import { formatReal } from './components/utility';
 
 /**
  * Server side file accessor. That 
@@ -258,12 +259,15 @@ export class File extends Model {
                 globule = Model.getGlobule(address)
             }
 
+            path = path.replace(globule.config.DataPath + "/files/", "/")
+
             let id = globule.config.Domain + "@" + path
             if (File._local_files[id] != undefined) {
                 callback(File._local_files[id])
                 return
             }
 
+            console.log("read dir ", path)
             readDir(globule, path, recursive, (dir: FileInfo) => {
                 callback(File.fromObject(dir.toObject()))
             }, errorCallback, 80, 80, token)

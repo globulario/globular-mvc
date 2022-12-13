@@ -27,6 +27,12 @@ export function secondsToTime(secs) {
 }
 
 export function playAudio(path, onplay, onclose, title, globule) {
+    
+    let menus = document.body.querySelectorAll("globular-dropdown-menu")
+    for(var i=0; i < menus.length; i++ ){
+        menus[i].close()
+        menus[i].parentNode.removeChild(menus[i])
+    }
 
     let audioPlayer = document.getElementById("audio-player-x")
 

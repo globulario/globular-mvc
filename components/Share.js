@@ -1,4 +1,5 @@
 import "@polymer/iron-icons/social-icons";
+import * as getUuidByString from "uuid-by-string";
 import { Account } from "../Account";
 import { ApplicationView } from "../ApplicationView";
 import { Model } from "../Model";
@@ -50,6 +51,10 @@ export class SharePanel extends HTMLElement {
     // Create the applicaiton view.
     constructor(account) {
         super()
+
+        // keep local account in memory...
+        this.account = account;
+
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
 
@@ -148,6 +153,19 @@ export class SharePanel extends HTMLElement {
                 cursor: pointer;
             }
 
+            .selector:hover {
+                cursor: pointer;
+            }
+
+            .selector {
+                text-decoration: underline;
+                padding: 2px;
+            } 
+
+            .counter{
+                font-size: 1rem;
+            }
+
         </style>
         <paper-card id="container">
             <div style="display: flex; justify-content: center;">
@@ -158,8 +176,8 @@ export class SharePanel extends HTMLElement {
                 <div id="subjects-div">
                     <div class="vertical-tabs">
                         <div class="vertical-tab" id="accounts-tab">
-                            <span id="accounts-selector">
-                                Account's <span id="accounts-counter"></span>
+                            <span class="selector" id="accounts-selector">
+                                Account's <span class="counter" id="accounts-counter"></span>
                                 <paper-ripple recenters=""></paper-ripple>
                             </span>
                            
@@ -169,7 +187,7 @@ export class SharePanel extends HTMLElement {
                             </iron-collapse>
                         </div>
                         <div class="vertical-tab" id="groups-tab">
-                            <span>
+                            <span class="selector" id="groups-selector">
                                 Group's
                                 <paper-ripple recenters=""></paper-ripple>
                             </span>
@@ -180,7 +198,7 @@ export class SharePanel extends HTMLElement {
                             </iron-collapse>
                         </div>
                         <div class="vertical-tab" id="organizations-tab">
-                            <span>
+                            <span class="selector" id="organizations-selector">
                                 Organization's
                                 <paper-ripple  recenters=""></paper-ripple>
                             </span>
@@ -191,7 +209,7 @@ export class SharePanel extends HTMLElement {
                             </iron-collapse>
                         </div>
                         <div class="vertical-tab" id="applications-tab">
-                            <span>
+                            <span class="selector" id="appliacations-selector">
                                 Application's
                                 <paper-ripple  recenters=""></paper-ripple>
                             </span>
@@ -292,11 +310,13 @@ export class SharePanel extends HTMLElement {
         Account.getAccounts("{}", accounts => {
             let range = document.createRange()
             let count = 0
+            
             accounts.forEach(a => {
                 console.log(a)
-                if (a.id != "sa") {
+                if (a.id != "sa" && a.id != this.account.id) {
+                    let uuid = "_" + getUuidByString(a.id + "@" + a.domain)
                     let html = `
-                    <div class="infos">
+                    <div id="${ uuid }" class="infos">
                         <img src="${a.profilePicture}">
                         
                         </img>
@@ -305,6 +325,12 @@ export class SharePanel extends HTMLElement {
                     `
                     let fragment = range.createContextualFragment(html)
                     accountsDiv.appendChild(fragment)
+
+                    let accountDiv = accountsDiv.querySelector(`#${uuid}`)
+                    accountDiv.onclick = ()=>{
+                        console.log("-----------> you click ", a.id + "@" + a.domain)
+                    }
+
                     count++
                 }
             })

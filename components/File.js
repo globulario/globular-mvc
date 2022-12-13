@@ -34,7 +34,7 @@ import { createArchive, deleteDir, deleteFile, downloadFileHttp, renameFile, upl
 import { ApplicationView } from '../ApplicationView';
 import { Application } from '../Application';
 import { GetSharedResourceRqst, SubjectType } from 'globular-web-client/rbac/rbac_pb';
-import { randomUUID } from './utility';
+import { getCoords, randomUUID } from './utility';
 import * as getUuidByString from 'uuid-by-string';
 import { ImageViewer } from './Image';
 import { AssociateFileWithTitleRequest, CreateTitleRequest, GetFileAudiosRequest, GetFileTitlesRequest, GetFileVideosRequest, Person, Poster, Title } from 'globular-web-client/title/title_pb';
@@ -340,7 +340,7 @@ function getHiddenFiles(path, callback, globule) {
 function _publishSetDirEvent(path, file_explorer_) {
     file_explorer_.displayWaitMessage("load " + path)
     _readDir(path, (dir) => {
-        
+
         Model.eventHub.publish("__set_dir_event__", { path: dir, file_explorer_id: file_explorer_.id }, true)
         file_explorer_.resume()
     }, err => { console.log(err) }, file_explorer_.globule)
@@ -486,8 +486,10 @@ export class FilesView extends HTMLElement {
                     .catch(err => ApplicationView.displayMessage(err, 3000))
             })
 
-            // Remove it from it parent...
+            // Remove it from it parent... 
+            this.menu.close()
             this.menu.parentNode.removeChild(this.menu)
+
         }
 
         this.cutMenuItem.action = () => {
@@ -505,7 +507,8 @@ export class FilesView extends HTMLElement {
             // empty the selection.
             this.selected = {}
 
-            // Remove it from it parent...
+            // Remove it from it parent... 
+            this.menu.close()
             this.menu.parentNode.removeChild(this.menu)
         }
 
@@ -525,7 +528,8 @@ export class FilesView extends HTMLElement {
             // empty the selection.
             this.selected = {}
 
-            // Remove it from it parent...
+            // Remove it from it parent... 
+            this.menu.close()
             this.menu.parentNode.removeChild(this.menu)
         }
 
@@ -539,8 +543,8 @@ export class FilesView extends HTMLElement {
                 // Here I will call copy
                 this.move(this.menu.file.path)
             }
-
-            // Remove it from it parent...
+            // Remove it from it parent... 
+            this.menu.close()
             this.menu.parentNode.removeChild(this.menu)
         }
 
@@ -572,6 +576,11 @@ export class FilesView extends HTMLElement {
                 url += "&token=" + localStorage.getItem("user_token");
             }
             window.open(url, '_blank', "fullscreen=yes");
+
+            // Remove it from it parent... 
+            this.menu.close()
+            this.menu.parentNode.removeChild(this.menu)
+
         }
 
         this.copyUrlItem.action = () => {
@@ -605,6 +614,10 @@ export class FilesView extends HTMLElement {
             copyToClipboard(url)
 
             ApplicationView.displayMessage("url was copy to clipboard...", 3000)
+
+            // Remove it from it parent... 
+            this.menu.close()
+            this.menu.parentNode.removeChild(this.menu)
         }
 
         this.downloadMenuItem.action = () => {
@@ -668,7 +681,8 @@ export class FilesView extends HTMLElement {
 
             }
 
-            // Remove it from it parent...
+            // Remove it from it parent... 
+            this.menu.close()
             this.menu.parentNode.removeChild(this.menu)
         }
 
@@ -801,7 +815,8 @@ export class FilesView extends HTMLElement {
             noBtn.onclick = () => {
                 toast.dismiss();
             }
-
+            // Remove it from it parent... 
+            this.menu.close()
             this.menu.parentNode.removeChild(this.menu)
 
         }
@@ -809,12 +824,15 @@ export class FilesView extends HTMLElement {
         this.renameMenuItem.action = () => {
             // Display the rename input...
             this.menu.rename()
+            // Remove it from it parent... 
+            this.menu.close()
             this.menu.parentNode.removeChild(this.menu)
         }
 
         this.fileInfosMenuItem.action = () => {
             Model.eventHub.publish("display_file_infos_event", this.menu.file, true)
-            // hide the menu...
+            // Remove it from it parent... 
+            this.menu.close()
             this.menu.parentNode.removeChild(this.menu)
         }
 
@@ -832,6 +850,9 @@ export class FilesView extends HTMLElement {
                         })
                         file.videos = videos // keep in the file itself...
                         Model.eventHub.publish("display_media_infos_event", file, true)
+                        // Remove it from it parent... 
+                        this.menu.close()
+                        this.menu.parentNode.removeChild(this.menu)
                     } else {
 
                         // get the title infos...
@@ -842,6 +863,9 @@ export class FilesView extends HTMLElement {
                                 })
                                 file.titles = titles // keep in the file itself...
                                 Model.eventHub.publish("display_media_infos_event", file, true)
+                                // Remove it from it parent... 
+                                this.menu.close()
+                                this.menu.parentNode.removeChild(this.menu)
                             }
                         })
                     }
@@ -854,17 +878,19 @@ export class FilesView extends HTMLElement {
                         })
                         file.audios = audios // keep in the file itself...
                         Model.eventHub.publish("display_media_infos_event", file, true)
+                        // Remove it from it parent... 
+                        this.menu.close()
+                        this.menu.parentNode.removeChild(this.menu)
                     }
                 })
             }
-            // hide the menu...
-            this.menu.parentNode.removeChild(this.menu)
         }
 
         this.mananageAccessMenuItem.action = () => {
             // So here I will create a new permission manager object and display it for the given file.
             Model.eventHub.publish("display_permission_manager_event", this.menu.file.path, true)
-
+            // Remove it from it parent... 
+            this.menu.close()
             this.menu.parentNode.removeChild(this.menu)
         }
 
@@ -891,7 +917,9 @@ export class FilesView extends HTMLElement {
                     ApplicationView.displayMessage(err, 3000)
                 })
 
+            // Remove it from it parent... 
             this.menu.close()
+            this.menu.parentNode.removeChild(this.menu)
 
         }
 
@@ -921,7 +949,9 @@ export class FilesView extends HTMLElement {
                     ApplicationView.displayMessage(err, 3000)
                 })
 
+            // Remove it from it parent... 
             this.menu.close()
+            this.menu.parentNode.removeChild(this.menu)
         }
 
         this.toMp4MenuItem.action = () => {
@@ -946,7 +976,9 @@ export class FilesView extends HTMLElement {
                     ApplicationView.displayMessage(err, 3000)
                 })
 
+            // Remove it from it parent... 
             this.menu.close()
+            this.menu.parentNode.removeChild(this.menu)
 
         }
 
@@ -971,7 +1003,9 @@ export class FilesView extends HTMLElement {
                     ApplicationView.displayMessage(err, 3000)
                 })
 
+            // Remove it from it parent... 
             this.menu.close()
+            this.menu.parentNode.removeChild(this.menu)
         }
 
         this.shadowRoot.innerHTML = `
@@ -1103,6 +1137,13 @@ export class FilesView extends HTMLElement {
             }
         }
 
+    }
+
+    disconnectedCallback() {
+        this.menu.close()
+        if (this.menu.parentNode) {
+            this.menu.parentNode.removeChild(this.menu)
+        }
     }
 
     setFileExplorer(fileExplorer) {
@@ -1717,9 +1758,13 @@ export class FilesListView extends FilesView {
                     if (!this.menu.isOpen()) {
 
                         this.menu.showBtn()
-                        this.div.querySelector(`tbody`).appendChild(this.menu)
-                        this.menu.style.top = row.offsetTop + "px";
-                        this.menu.style.left = row.children[0].offsetWidth - this.menu.offsetWidth + "px";
+                        document.body.appendChild(this.menu)
+
+
+                        let coords = getCoords(span)
+                        this.menu.style.position = "absolute"
+                        this.menu.style.top = coords.top + 2 + "px"
+                        this.menu.style.left = coords.left + span.offsetWidth - 20 + "px"
 
                         this.menu.setFile(f)
 
@@ -1985,11 +2030,6 @@ export class FilesIconView extends FilesView {
                 top: -1.5px;
                 right: 0px;
                 z-index: 100;
-            }
-
-            globular-dropdown-menu globular-dropdown-menu {
-                top: -5px;
-                right: 0px;
             }
 
             iron-icon {
@@ -2358,7 +2398,7 @@ export class FilesIconView extends FilesView {
 
                         }
                     }
-                }else {
+                } else {
                     this.div.querySelector(`#container`).querySelector(`#${fileType}_section_count`).innerHTML = ` (${section.children.length})`
                 }
 
@@ -2721,9 +2761,14 @@ export class FilesIconView extends FilesView {
 
                             if (!this.menu.isOpen()) {
                                 this.menu.showBtn()
-                                fileIconDiv.parentNode.appendChild(this.menu)
-                                this.menu.style.top = "0px"
-                                this.menu.style.right = "-5px"
+                                //fileIconDiv.parentNode.appendChild(this.menu)
+
+                                document.body.appendChild(this.menu)
+
+                                let coords = getCoords(fileIconDiv.parentNode)
+                                this.menu.style.position = "absolute"
+                                this.menu.style.top = coords.top + 8 + "px"
+                                this.menu.style.left = coords.left + fileIconDiv.offsetWidth - 20 + "px"
 
                                 this.menu.onmouseover = (evt) => {
                                     evt.stopPropagation();
@@ -3876,6 +3921,7 @@ export class FileExplorer extends HTMLElement {
                 right: 0px;
                 bottom: 0px;
                 overflow: auto;
+                z-index: 100;
             }
 
             #enter-full-screen-btn:hover{
@@ -3972,10 +4018,18 @@ export class FileExplorer extends HTMLElement {
         this.name = "file_explorer"
 
         setMoveable(this.shadowRoot.querySelector(".card-header"), this, (left, top) => {
-            /** */
+            if (this.filesListView.menu.parentNode) {
+                this.filesListView.menu.parentNode.removeChild(this.filesListView.menu)
+                this.filesListView.menu.close()
+            }
+            if (this.filesIconView.menu.parentNode) {
+                this.filesIconView.menu.parentNode.removeChild(this.filesIconView.menu)
+                this.filesIconView.menu.close()
+            }
         }, this, offsetTop)
 
         if (localStorage.getItem("__file_explorer_dimension__")) {
+
             let dimension = JSON.parse(localStorage.getItem("__file_explorer_dimension__"))
             if (!dimension) {
                 dimension = { with: 600, height: 400 }
@@ -3986,6 +4040,14 @@ export class FileExplorer extends HTMLElement {
 
         this.shadowRoot.querySelector("#file-explorer-box").name = "file_explorer"
         setResizeable(this.shadowRoot.querySelector("#file-explorer-box"), (width, height) => {
+            if (this.filesListView.menu.parentNode) {
+                this.filesListView.menu.parentNode.removeChild(this.filesListView.menu)
+                this.filesListView.menu.close()
+            }
+            if (this.filesIconView.menu.parentNode) {
+                this.filesIconView.menu.parentNode.removeChild(this.filesIconView.menu)
+                this.filesIconView.menu.close()
+            }
             localStorage.setItem("__file_explorer_dimension__", JSON.stringify({ width: width, height: height }))
         })
 
@@ -4406,6 +4468,7 @@ export class FileExplorer extends HTMLElement {
                     // keep the active path.
                     if (this.id == evt.file_explorer_id) {
                         this.setDir(evt.path)
+
                     }
                 }, true
             )
@@ -4677,6 +4740,7 @@ export class FileExplorer extends HTMLElement {
     }
 
     playVideo(file) {
+
         this.style.zIndex = 1;
         let video = null
         if (file.videos) {
@@ -4775,7 +4839,7 @@ export class FileExplorer extends HTMLElement {
                     img.slot = "images"
                     img.draggable = false;
                     let exist = false;
-                    for (var j= 0; j < this.imageViewer.children.length; j++) {
+                    for (var j = 0; j < this.imageViewer.children.length; j++) {
                         if (this.imageViewer.children[j].name == img.name) {
                             exist = true;
                             break
@@ -4806,6 +4870,15 @@ export class FileExplorer extends HTMLElement {
 
         this.imageViewer.style.display = "none";
         this.imageViewer.innerHTML = "";
+
+        if (this.filesListView.menu.parentNode) {
+            this.filesListView.menu.parentNode.removeChild(this.filesListView.menu)
+            this.filesListView.menu.close()
+        }
+        if (this.filesIconView.menu.parentNode) {
+            this.filesIconView.menu.parentNode.removeChild(this.filesIconView.menu)
+            this.filesIconView.menu.close()
+        }
 
         // Set back the view when the image viewer is close.
         this.imageViewer.onclose = () => {

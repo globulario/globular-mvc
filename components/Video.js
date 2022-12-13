@@ -31,6 +31,12 @@ String.prototype.endsWith = function (suffix) {
  */
 export function playVideo(path, onplay, onclose, title, globule) {
 
+    let menus = document.body.querySelectorAll("globular-dropdown-menu")
+    for(var i=0; i < menus.length; i++ ){
+        menus[i].close()
+        menus[i].parentNode.removeChild(menus[i])
+    }
+
 
     let videoPlayer = document.getElementById("video-player-x")
 
@@ -161,7 +167,8 @@ export class VideoPlayer extends HTMLElement {
         let content = this.shadowRoot.querySelector("#content")
 
 
-        this.shadowRoot.querySelector("#title-info-button").onclick = () => {
+        this.shadowRoot.querySelector("#title-info-button").onclick = (evt) => {
+            evt.stopPropagation()
             if (this.titleInfo) {
                 if (this.titleInfo.clearActorsList != undefined) {
                     this.showTitleInfo(this.titleInfo)

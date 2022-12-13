@@ -36,8 +36,6 @@ export class DropdownMenuItem extends HTMLElement {
           #container div{
             display: flex;
             min-width: 150px;
-            justify-content: flex-start;
-            align-items: flex-end;
             padding: 3px;
             transition: background 0.2s ease,padding 0.8s linear;
             background-color: var(--palette-background-paper);
@@ -64,6 +62,7 @@ export class DropdownMenuItem extends HTMLElement {
 
           span {
             flex-grow: 1;
+            font-size: 1rem;
           }
 
           .separator{
@@ -76,7 +75,7 @@ export class DropdownMenuItem extends HTMLElement {
       
       <div id="container">
         <span class="separator"></span>
-        <div>
+        <div style="display: flex; justify-content: center;">
           <paper-ripple recenters></paper-ripple>
           <iron-icon id="icon" icon="${this.icon}"> </iron-icon>
           <span>${this.text}</span>
@@ -165,12 +164,19 @@ export class DropdownMenu extends HTMLElement {
 
             .menu-items{
               position: absolute;
-              top: 41px;
+              top: 30px;
+              left: 10px;
+
             }
+
+            iron-icon:hover{
+              cursor: pointer;
+            }
+
 
         </style>
         <div id="container">
-          <paper-icon-button icon="${this.icon}"> </paper-icon-button>
+          <iron-icon icon="${this.icon}"> </iron-icon>
           <paper-card class="menu-items" style="display: none;">
               <div class="card-content">
                 <slot></slot>
@@ -180,7 +186,7 @@ export class DropdownMenu extends HTMLElement {
         `
 
     // give the focus to the input.
-    this.menuBtn = this.shadowRoot.querySelector("paper-icon-button")
+    this.menuBtn = this.shadowRoot.querySelector("iron-icon")
     let menuItems = this.shadowRoot.querySelector("paper-card")
     this.menuBtn.onclick = (evt) => {
       evt.stopPropagation()
@@ -196,6 +202,13 @@ export class DropdownMenu extends HTMLElement {
   connectedCallback() {
     if (this.hasAttribute("icon")) {
       this.shadowRoot.querySelector("iron-icon").icon = this.getAttribute("icon")
+     
+    }
+
+    if(this.parentNode.tagName == "GLOBULAR-DROPDOWN-MENU-ITEM"){
+      let menuItems = this.shadowRoot.querySelector("paper-card")
+      menuItems.style.top = "0px"
+      menuItems.style.left = "25px"
     }
   }
 

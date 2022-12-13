@@ -202,6 +202,7 @@ dropdown-menu-element {
 globular-dropdown-menu globular-dropdown-menu {
    top: -5px;
    right: 0px;
+   z-index: 1;
 }
 
 /** The process manager */
