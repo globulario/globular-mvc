@@ -206,9 +206,9 @@ export class PlayList extends HTMLElement {
                 item.classList.remove("playing")
             })
             let loop = false
-            if(this.audioPlayer){
+            if (this.audioPlayer) {
                 loop = this.audioPlayer.loop
-            } else if(this.videoPlayer){
+            } else if (this.videoPlayer) {
                 loop = this.videoPlayer.loop
             }
 
@@ -302,40 +302,52 @@ export class PlayList extends HTMLElement {
             }
         })
 
-
     }
 
     refresh() {
         // clear the content...
         this.innerHTML = ""
-        this.playlist.items.forEach(item => {
-            let index = this.items.length
-            let item_ = new PlayListItem(item, this, index , this.globule)
+   
+        let newPlayListItem = (index) => {
+            let item = this.playlist.items[index]
 
-            item_.onmouseover = () => {
-                if (!item_.isPlaying) {
-                    item_.hidePauseButton()
-                    item_.showPlayButton()
+            new PlayListItem(item, this, index, (item_) => {
+
+                item_.onmouseover = () => {
+                    if (!item_.isPlaying) {
+                        item_.hidePauseButton()
+                        item_.showPlayButton()
+                    }
                 }
-            }
 
-            item_.onmouseleave = () => {
-                if (!item_.isPlaying) {
-                    item_.hidePlayButton()
-                    item_.hidePauseButton()
+                item_.onmouseleave = () => {
+                    if (!item_.isPlaying) {
+                        item_.hidePlayButton()
+                        item_.hidePauseButton()
+                    }
                 }
-            }
 
-            this.items.push(item_)
-            this.appendChild(item_)
-        })
+                this.items.push(item_)
+                this.appendChild(item_)
 
-        this.orderItems()
+                if (this.playlist.items.length == this.items.length) {
+                    this.orderItems()
 
-        // play the first item...
-        if (this.items.length > 0) {
-            this.setPlaying(this.items[0], true, true)
+                    // play the first item...
+                    if (this.items.length > 0) {
+                        this.setPlaying(this.items[0], true, true)
+                    }
+                } else {
+                    newPlayListItem(this.items.length)
+                }
+
+            }, this.globule)
         }
+
+        // start recursion
+        newPlayListItem(this.items.length)
+
+
     }
 
     setPlaying(item, restart, resume) {
@@ -402,7 +414,7 @@ export class PlayListItem extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor(item, parent, index, globule) {
+    constructor(item, parent, index, callback, globule) {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
@@ -482,12 +494,12 @@ export class PlayListItem extends HTMLElement {
         this.needResume = false
 
         this.playBtn.onclick = () => {
-            if(this.needResume){
-                this.parent.setPlaying(this,  false, true)
-            }else{
-                this.parent.setPlaying(this,  true, true)
+            if (this.needResume) {
+                this.parent.setPlaying(this, false, true)
+            } else {
+                this.parent.setPlaying(this, true, true)
             }
-            
+
             this.hidePlayButton()
             this.showPauseButton()
         }
@@ -515,13 +527,16 @@ export class PlayListItem extends HTMLElement {
             if (audio == null) {
                 getVideoInfo(globule, this.id, video => {
                     if (video != null) {
+                        console.log(video)
                         this.video = video
                         this.shadowRoot.querySelector("#title-div").innerHTML = video.getDescription()
                         this.shadowRoot.querySelector("#title-artist-span").innerHTML = video.getPublisherid().getName()
                         this.shadowRoot.querySelector("#title-image").src = video.getPoster().getContenturl()
                         if (this.video.getDuration())
                             this.titleDuration.innerHTML = this.parseDuration(this.video.getDuration())
-                    }else{
+
+                        callback(this)
+                    } else {
                         console.log("no information found for item ", item)
                     }
                 })
@@ -531,6 +546,7 @@ export class PlayListItem extends HTMLElement {
                 this.shadowRoot.querySelector("#title-image").src = audio.getPoster().getContenturl()
                 if (this.audio.getDuration())
                     this.titleDuration.innerHTML = this.parseDuration(this.audio.getDuration())
+                callback(this)
             }
         })
     }
