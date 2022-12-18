@@ -2,6 +2,7 @@ import { FindOneRqst, ReplaceOneRqst, ReplaceOneRsp } from "globular-web-client/
 import { Model } from "./Model";
 import { Account } from "./Account"
 import * as resource from "globular-web-client/resource/resource_pb";
+import { getAllGroups } from "globular-web-client/api";
 
 /**
  * Group are use to aggregate accounts.
@@ -23,6 +24,14 @@ export class Group extends Model {
     }
     public set name(value: string) {
         this._name = value;
+    }
+
+    private _domain: string;
+    public get domain(): string {
+        return this._domain;
+    }
+    public set domain(value: string) {
+        this._domain = value;
     }
 
     // keep the list members references.
@@ -66,6 +75,20 @@ export class Group extends Model {
                 errorCallback(status.details)
             }
         })
+    }
+
+    // Return the list of all groups.
+    static getGroups(callback: (callback: Group[]) => void, errorCallback: (err: any) => void){
+        let groups = new Array<Group>();
+        getAllGroups(Model.globular, groups_ =>{
+            groups_.forEach(g=>{
+                let g_ = new Group(g.getId())
+                g_.fromObject(g)
+                groups.push(g_)
+                callback(groups)
+            })
+
+        }, errorCallback);
     }
 
     // Retreive a given group.
@@ -129,7 +152,7 @@ export class Group extends Model {
         // Initi the group.
         let setAccount_ = (index: number) => {
             if (index < this.members.length) {
-                let memberId = this.members[index]["$id"]
+                let memberId = this.members[index]
                 Account.getAccount(memberId, (a: Account) => {
                     members.push(a)
                     index++
@@ -148,7 +171,7 @@ export class Group extends Model {
     // Return true if an account if member of a given group.
     hasMember(account: Account): boolean {
         this.members.forEach((m: any) => {
-            if (m["$id"] == account.id) {
+            if (m == account.id + "@" + account.domain) {
                 return true;
             }
         })
@@ -166,6 +189,7 @@ export class Group extends Model {
         if (obj != undefined) {
             this._id = obj.getId();
             this.name = obj.getName();
+            this.domain = obj.getDomain();
             this.members = obj.getMembersList();
         }
     }

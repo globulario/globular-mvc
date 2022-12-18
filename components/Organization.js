@@ -285,6 +285,7 @@ export class OrganizationPanel extends HTMLElement {
             .title{
                 flex-grow: 1;
                 margin: 8px;
+                font-size: 1.1rem;
             }
             
                         

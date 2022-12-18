@@ -214,6 +214,20 @@ globular-processes-manager .table-item {
 
 globular-processes-manager .table-item-value {}
 
+
+.globular-wizard-page{
+   background-color: var(--palette-background-paper);
+   color: var(--palette-text-primary);
+}
+
+globular-share-resource-wizard{
+   position: fixed;
+   top: 50%;
+   left: 50%;
+   /* bring your own prefixes */
+   transform: translate(-50%, -50%);
+}
+
 /** The cell value div **/
 .table-item-value {
    height: 100%;

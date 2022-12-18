@@ -862,8 +862,7 @@ export class Application extends Model {
 
               // Here I will ask the user for confirmation before actually delete the contact informations.
               let toast = <any>ApplicationView.displayMessage(
-                `
-                <style>
+                ` <style>
                   #contact-session-info-box{
                     display: flex;
                     flex-direction: column;
@@ -882,8 +881,8 @@ export class Application extends Model {
                 <div id="contact-session-info-box">
                   <div>Session state change... </div>
                   <globular-contact-card contact="${account.id + "@" + account.domain}"></globular-contact-card>
-                </div>
-          `,
+                </div>`,
+
                 5000 // 15 sec...
               )
             }

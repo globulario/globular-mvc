@@ -14,6 +14,8 @@ import '@polymer/paper-dropdown-menu/paper-dropdown-menu.js'
 import '@polymer/paper-listbox/paper-listbox.js'
 import '@polymer/paper-item/paper-item.js'
 import "./DiskSpace.js"
+import "./Share.js"
+
 import * as getUuid from 'uuid-by-string'
 
 import { generatePeerToken, Model } from '../Model';
@@ -45,6 +47,7 @@ import { setResizeable } from './rezieable'
 import { SplitView } from './Splitter'
 import { Account } from '../Account';
 import { mergeTypedArrays, uint8arrayToStringMethod } from "../Utility";
+import { ShareResourceMenu } from './Share.js';
 
 
 // keep track of shared directory
@@ -382,6 +385,9 @@ export class FilesView extends HTMLElement {
         // Innitialisation of the layout.
         let id = "_" + uuidv4().split("-").join("_").split("@").join("_");
 
+        // Create the share resource menu.
+        this.shareResource = new ShareResourceMenu
+
         let menuItemsHTML = `
         <globular-dropdown-menu-item  id="file-infos-menu-item" icon="icons:info" text="File Infos" action=""> </globular-dropdown-menu-item>
         <globular-dropdown-menu-item  id="title-infos-menu-item" icon="icons:info" text="Title Infos" action="" style="display: none;"> </globular-dropdown-menu-item>
@@ -631,19 +637,22 @@ export class FilesView extends HTMLElement {
                 generatePeerToken(globule, token => {
                     // Create a tempory name...
                     let uuid = "_" + uuidv4().split("-").join("_").split("@").join("_");
+                    this._file_explorer_.displayWaitMessage("create archive before for selected files...")
                     createArchive(globule, files, uuid,
                         path => {
                             // Download the file...
-                            downloadFileHttp(path, uuid + ".tgz",
+                            this._file_explorer_.displayWaitMessage("start download archive " + path)
+                            downloadFileHttp(path, uuid + ".tar.gz",
                                 () => {
                                     // Now I will remove the file from the server....
+                                    this._file_explorer_.displayWaitMessage("remove archive " + path)
                                     deleteFile(globule, path,
                                         () => {
-                                            console.log("file removed")
+                                            this._file_explorer_.resume()
                                         },
-                                        err => { ApplicationView.displayMessage(err, 3000) }, token)
+                                        err => { ApplicationView.displayMessage(err, 3000); this._file_explorer_.resume() }, token)
                                 }, token)
-                        }, err => { ApplicationView.displayMessage(err, 3000) }, token)
+                        }, err => { ApplicationView.displayMessage(err, 3000); this._file_explorer_.resume() }, token)
                 })
 
             } else {
@@ -654,19 +663,21 @@ export class FilesView extends HTMLElement {
                 // if the file is a directory I will create archive and download it.
                 if (this.menu.file.isDir) {
                     generatePeerToken(globule, token => {
+                        this._file_explorer_.displayWaitMessage("create archive before for " + this.menu.file.path)
                         createArchive(globule, [path], name,
                             path_ => {
                                 // Download the file...
-                                downloadFileHttp(path_, name + ".tgz",
+                                this._file_explorer_.displayWaitMessage("start download " + name + ".tar.gz")
+                                downloadFileHttp(path_, name + ".tar.gz",
                                     () => {
                                         // Now I will remove the file from the server....
                                         deleteFile(globule, path_,
                                             () => {
-                                                console.log("file removed")
+                                                this._file_explorer_.resume()
                                             },
-                                            err => { ApplicationView.displayMessage(err, 3000) }, token)
+                                            err => { ApplicationView.displayMessage(err, 3000); this._file_explorer_.resume() }, token)
                                     }, token)
-                            }, err => { ApplicationView.displayMessage(err, 3000) }, token)
+                            }, err => { ApplicationView.displayMessage(err, 3000); this._file_explorer_.resume() }, token)
                     })
                 } else {
                     // simply download the file.
@@ -1587,6 +1598,7 @@ export class FilesListView extends FilesView {
             }
 
             .first-cell span{
+                display: flex;
                 flex-grow: 1;
                 padding-top: 4px;
                 padding-left: 4px;
@@ -1757,13 +1769,29 @@ export class FilesListView extends FilesView {
                     evt.stopPropagation();
                     if (!this.menu.isOpen()) {
 
+                        // Set the share menu
+                        span.appendChild(this.shareResource)
+                        this.shareResource.style.position = "absolute"
+                        this.shareResource.style.top = "7px";
+                        this.shareResource.style.right = "25px";
+
+                        let files = [];
+                        for (var key in this.selected) {
+                            files.push(this.selected[key])
+                        }
+
+                        if (files.filter(f_ => f_.path === f.path).length == 0) {
+                            files.push(f)
+                        }
+                        
+                        this.shareResource.setFiles(files)
+
                         this.menu.showBtn()
                         document.body.appendChild(this.menu)
 
-
                         let coords = getCoords(span)
                         this.menu.style.position = "absolute"
-                        this.menu.style.top = coords.top + 2 + "px"
+                        this.menu.style.top = coords.top + 5 + "px"
                         this.menu.style.left = coords.left + span.offsetWidth - 20 + "px"
 
                         this.menu.setFile(f)
@@ -1781,15 +1809,6 @@ export class FilesListView extends FilesView {
                         // set the rename function.
                         this.menu.rename = () => {
                             this.rename(this.menu.parentNode, f, row.offsetTop + row.offsetHeight + 6)
-                        }
-                    }
-                }
-
-                row.onmouseout = (evt) => {
-                    evt.stopPropagation();
-                    if (!this.menu.isOpen()) {
-                        if (this.menu.parentNode != undefined) {
-
                         }
                     }
                 }
@@ -1812,6 +1831,11 @@ export class FilesListView extends FilesView {
                         checkbox.style.visibility = "hidden"
                     }
                     row.classList.remove("active")
+
+                    if (this.shareResource.parentNode) {
+                        this.shareResource.parentNode.removeChild(this.shareResource)
+                    }
+
                 }
 
                 if (!f.name.startsWith(".")) {
@@ -2398,7 +2422,7 @@ export class FilesIconView extends FilesView {
 
                         }
                     }
-                } else {
+                } else if (section) {
                     this.div.querySelector(`#container`).querySelector(`#${fileType}_section_count`).innerHTML = ` (${section.children.length})`
                 }
 
@@ -2481,13 +2505,33 @@ export class FilesIconView extends FilesView {
                                     }
                                 })
                             fileIconDiv.classList.add("active")
+
+                            fileIconDiv.appendChild(this.shareResource)
+
+                            let files = [];
+                            for (var key in this.selected) {
+                                files.push(this.selected[key])
+                            }
+                            if (files.filter(f => f.path === file.path).length == 0) {
+                                files.push(file)
+                            }
+
+                            this.shareResource.setFiles(files)
+
+                            this.shareResource.style.position = "absolute"
+                            this.shareResource.style.top = "0px";
+                            this.shareResource.style.right = "20px";
                         }
 
-                        fileIconDiv.onmouseout = (evt) => {
+                        fileIconDiv.onmouseleave = (evt) => {
                             evt.stopPropagation();
                             let checkbox = fileIconDiv.querySelector("paper-checkbox")
                             if (!checkbox.checked) {
                                 checkbox.style.display = "none"
+                            }
+
+                            if (this.shareResource.parentNode) {
+                                this.shareResource.parentNode.removeChild(this.shareResource)
                             }
 
                             let fileIconDivs = this.div.querySelectorAll(".file-icon-div")
@@ -2568,13 +2612,47 @@ export class FilesIconView extends FilesView {
 
 
                             // Retreive the video title to display more readable file name...
-                            if (file.video) {
-                                fileNameSpan.innerHTML = file.video[0].getDescription()
+                            if (file.videos) {
+                                fileNameSpan.innerHTML = file.videos[0].getDescription()
                             } else {
                                 getVideoInfo(this._file_explorer_.globule, file, videos => {
                                     if (videos.length > 0) {
                                         file.videos = videos // keep in the file itself...
+                                        videos.forEach(video => {
+                                            video.globule = this._file_explorer_.globule
+                                        })
+
                                         fileNameSpan.innerHTML = file.videos[0].getDescription()
+                                    } else {
+
+                                        if (file.titles) {
+                                            let title = file.titles[0]
+                                            let name = title.getName()
+
+                                            if (title.getEpisode() > 0) {
+                                                name += " S" + title.getSeason() + "-E" + title.getEpisode()
+                                            }
+
+                                            fileNameSpan.innerHTML = name
+                                            fileNameSpan.title = file.path
+                                        } else {
+                                            // get the title infos...
+                                            getTitleInfo(this._file_explorer_.globule, file, (titles) => {
+                                                if (titles.length > 0) {
+                                                    titles.forEach(title => {
+                                                        title.globule = this._file_explorer_.globule
+                                                    })
+                                                    file.titles = titles // keep in the file itself...
+                                                    let title = file.titles[0]
+                                                    let name = title.getName()
+                                                    if (title.getEpisode() > 0) {
+                                                        name += " S" + title.getSeason() + "-E" + title.getEpisode()
+                                                    }
+                                                    fileNameSpan.innerHTML = name
+                                                    fileNameSpan.title = file.path
+                                                }
+                                            })
+                                        }
                                     }
                                 })
                             }
@@ -2759,11 +2837,30 @@ export class FilesIconView extends FilesView {
                             // display the actual checkbox...
                             checkbox.style.display = "block"
 
+
+                            fileIconDiv.appendChild(this.shareResource)
+
+                            let files = [];
+                            for (var key in this.selected) {
+                                files.push(this.selected[key])
+                            }
+
+                            if (files.filter(f => f.path === file.path).length == 0) {
+                                files.push(file)
+                            }
+
+                            this.shareResource.setFiles(files)
+
+                            this.shareResource.style.position = "absolute"
+                            this.shareResource.style.top = "0px";
+                            this.shareResource.style.right = "20px";
+
+                            document.body.appendChild(this.menu)
+
+
                             if (!this.menu.isOpen()) {
                                 this.menu.showBtn()
                                 //fileIconDiv.parentNode.appendChild(this.menu)
-
-                                document.body.appendChild(this.menu)
 
                                 let coords = getCoords(fileIconDiv.parentNode)
                                 this.menu.style.position = "absolute"
@@ -4048,6 +4145,7 @@ export class FileExplorer extends HTMLElement {
                 this.filesIconView.menu.parentNode.removeChild(this.filesIconView.menu)
                 this.filesIconView.menu.close()
             }
+
             localStorage.setItem("__file_explorer_dimension__", JSON.stringify({ width: width, height: height }))
         })
 
@@ -4228,6 +4326,17 @@ export class FileExplorer extends HTMLElement {
             this.fileIconBtn.classList.remove("active")
             this.filesListBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-active)")
             this.fileIconBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
+
+            if (this.filesListView.menu.parentNode) {
+                this.filesListView.menu.parentNode.removeChild(this.filesListView.menu)
+                this.filesListView.menu.close()
+            }
+
+            if (this.filesIconView.menu.parentNode) {
+                this.filesIconView.menu.parentNode.removeChild(this.filesIconView.menu)
+                this.filesIconView.menu.close()
+            }
+
         }
 
         this.fileIconBtn.onclick = (evt) => {
@@ -4242,6 +4351,16 @@ export class FileExplorer extends HTMLElement {
             this.fileReader.style.display = "none"
             this.filesListBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
             this.fileIconBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-active)")
+
+            if (this.filesListView.menu.parentNode) {
+                this.filesListView.menu.parentNode.removeChild(this.filesListView.menu)
+                this.filesListView.menu.close()
+            }
+
+            if (this.filesIconView.menu.parentNode) {
+                this.filesIconView.menu.parentNode.removeChild(this.filesIconView.menu)
+                this.filesIconView.menu.close()
+            }
         }
 
         this.fileExplererCloseBtn.onclick = (evt) => {
@@ -4526,7 +4645,6 @@ export class FileExplorer extends HTMLElement {
                 }, (file) => {
 
                     if (file.titles != undefined) {
-
                         this.informationManager.setTitlesInformation(file.titles)
                     } else if (file.videos != undefined) {
                         this.informationManager.setVideosInformation(file.videos)

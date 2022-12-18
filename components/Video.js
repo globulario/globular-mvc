@@ -617,6 +617,7 @@ export class VideoPlayer extends HTMLElement {
                     this.video.onended = () => {
                         console.log("the video is ended....")
                         this.resume = false;
+                        localStorage.removeItem(this.titleInfo.getId())
                         if (this.playlist.items.length > 1) {
                             this.playlist.playNext()
                         } else if (this.loop) {
@@ -632,7 +633,7 @@ export class VideoPlayer extends HTMLElement {
                         }
                     }
 
-                    Model.eventHub.publish("play_video_player_evt_", { _id: this.titleInfo.getId(), isVideo: this.titleInfo.isVideo, currentTime: this.video.currentTime, date: new Date() }, true)
+                    //Model.eventHub.publish("play_video_player_evt_", { _id: this.titleInfo.getId(), isVideo: this.titleInfo.isVideo, currentTime: this.video.currentTime, date: new Date() }, true)
                 }
 
             }
