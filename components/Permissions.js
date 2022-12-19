@@ -317,10 +317,17 @@ export class PermissionsManager extends HTMLElement {
     }
 
     // Save permissions
-    savePermissions() {
+    savePermissions(callback) {
         let rqst = new SetResourcePermissionsRqst
+
+
         rqst.setPermissions(this.permissions)
         rqst.setPath(this.path)
+
+        if(!this.permissions.getResourceType()){
+            this.permissions.setResourceType("file")
+        }
+        
         rqst.setResourcetype(this.permissions.getResourceType())
 
         this.globule.rbacService.setResourcePermissions(rqst, {
@@ -331,8 +338,16 @@ export class PermissionsManager extends HTMLElement {
         }).then(rsp => {
             // reload the interface.
             this.setPath(this.path)
+
             Model.publish(Application.account.id + "_change_permission_event", {}, false)
-        }).catch(err => ApplicationView.displayMessage(err, 3000))
+            if (callback) {
+                callback()
+            }
+        }).catch(err => {
+            ApplicationView.displayMessage(err, 3000);
+            this.setPath(this.path)
+            // force reload the interfce...
+        })
     }
 
     setPermissions(permissions) {
@@ -351,6 +366,7 @@ export class PermissionsManager extends HTMLElement {
         this.permissionsViewer = new PermissionsViewer(["read", "write", "delete", "owner"])
         this.permissionsViewer.slot = "permission-viewer"
         this.permissionsViewer.setPermissions(this.permissions)
+        this.permissionsViewer.permissionManager = this;
         this.appendChild(this.permissionsViewer)
 
         // Here I will display the owner's
@@ -831,6 +847,7 @@ export class PermissionsViewer extends HTMLElement {
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
         this.permissionsNames = permissionsNames;
+        this.permissionsViewer = null
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -1084,7 +1101,8 @@ export class PermissionsViewer extends HTMLElement {
         return div
     }
 
-    setPermissionCell(row, value) {
+    setPermissionCell(row, value, permissions, name, subject) {
+
         // The delete permission
         let cell = document.createElement("div")
         cell.style.display = "table-cell"
@@ -1109,6 +1127,310 @@ export class PermissionsViewer extends HTMLElement {
             }
         } else {
             cell.appendChild(none)
+        }
+
+
+        check.onmouseover = none.onmouseover = denied.onmouseover = function (evt) {
+            this.style.cursor = "pointer"
+        }
+
+        check.onmouseleave = none.onmouseleave = denied.onmouseleave = function (evt) {
+            this.style.cursor = "default"
+        }
+
+        // Here I will append user interaction...
+        check.onclick = () => {
+
+            if (name == "owner") {
+                // remove the owner from the column...
+                let owner_permission = permissions.getOwners()
+                if (!owner_permission) {
+                    owner_permission = new Permission
+                    owner_permission.setName(name)
+                    owner_permission.setAccountsList([])
+                    owner_permission.setApplicationsList([])
+                    owner_permission.setOrganizationsList([])
+                    owner_permission.setGroupsList([])
+                    permissions.setOwners(owner_permission)
+                }
+
+                if (subject.type == "group") {
+                    let lst = owner_permission.getGroupsList()
+                    lst = lst.filter(g => g != subject.id)
+                    owner_permission.setGroupsList(lst)
+                } else if (subject.type == "account") {
+                    let lst = owner_permission.getAccountsList()
+                    lst = lst.filter(a => a != subject.id)
+                    owner_permission.setAccountsList(lst)
+                } else if (subject.type == "application") {
+                    let lst = owner_permission.getApplicationsList()
+                    lst = lst.filter(a => a != subject.id)
+                    owner_permission.setApplicationsList(lst)
+                } else if (subject.type == "organization") {
+                    let lst = owner_permission.getOrganizationsList()
+                    lst = lst.filter(o => o != subject.id)
+                    owner_permission.setOrganizationsList(lst)
+                }
+
+                // set the icon...
+                cell.appendChild(none)
+                if (check.parentNode)
+                    check.parentNode.removeChild(check)
+            } else {
+                // Remove previous allowed permission
+                let allowed_permission = permissions.getAllowedList().filter(p_ => p_.getName() == name)[0]
+                if (allowed_permission) {
+                    // First I will remove the allowed permission.
+                    if (subject.type == "group") {
+                        let lst = allowed_permission.getGroupsList()
+                        lst = lst.filter(g => g != subject.id)
+                        allowed_permission.setGroupsList(lst)
+                    } else if (subject.type == "account") {
+                        let lst = allowed_permission.getAccountsList()
+                        lst = lst.filter(a => a != subject.id)
+                        allowed_permission.setAccountsList(lst)
+                    } else if (subject.type == "application") {
+                        let lst = allowed_permission.getApplicationsList()
+                        lst = lst.filter(a => a != subject.id)
+                        allowed_permission.setApplicationsList(lst)
+                    } else if (subject.type == "organization") {
+                        let lst = allowed_permission.getOrganizationsList()
+                        lst = lst.filter(o => o != subject.id)
+                        allowed_permission.setOrganizationsList(lst)
+                    }
+
+                }
+
+                // Append in denied...
+                let denied_permission = permissions.getDeniedList().filter(p_ => p_.getName() == name)[0]
+                if (!denied_permission) {
+                    denied_permission = new Permission
+                    denied_permission.setName(name)
+                    denied_permission.setAccountsList([])
+                    denied_permission.setApplicationsList([])
+                    denied_permission.setOrganizationsList([])
+                    denied_permission.setGroupsList([])
+                    let lst = permissions.getDeniedList()
+                    lst.push(denied_permission)
+                    permissions.getDeniedList(lst)
+                }
+
+                if (subject.type == "group") {
+                    let lst = denied_permission.getGroupsList()
+                    if (lst.filter(s => s == subject.id).length == 0) {
+                        lst.push(subject.id)
+                    }
+                    denied_permission.setGroupsList(lst)
+                } else if (subject.type == "account") {
+                    let lst = denied_permission.getAccountsList()
+                    if (lst.filter(s => s == subject.id).length == 0) {
+                        lst.push(subject.id)
+                    }
+                    denied_permission.setAccountsList(lst)
+                } else if (subject.type == "application") {
+                    let lst = denied_permission.getApplicationsList()
+                    if (lst.filter(s => s == subject.id).length == 0) {
+                        lst.push(subject.id)
+                    }
+                    denied_permission.setApplicationsList(lst)
+                } else if (subject.type == "organization") {
+                    let lst = denied_permission.getOrganizationsList()
+                    if (lst.filter(s => s == subject.id).length == 0) {
+                        lst.push(subject.id)
+                    }
+                    denied_permission.setOrgnanizationsPermissions(lst)
+                }
+
+                // set the icon...
+                cell.appendChild(denied)
+                if (check.parentNode)
+                    check.parentNode.removeChild(check)
+                if (none.parentNode)
+                    none.parentNode.removeChild(none)
+            }
+
+
+            this.permissionManager.savePermissions(() => {
+                console.log("permission was save!")
+            })
+        }
+
+        none.onclick = () => {
+
+            if (name == "owner") {
+                let owner_permission = permissions.getOwners()
+                if (!owner_permission) {
+                    owner_permission = new Permission
+                    owner_permission.setName(name)
+                    owner_permission.setAccountsList([])
+                    owner_permission.setApplicationsList([])
+                    owner_permission.setOrganizationsList([])
+                    owner_permission.setGroupsList([])
+                    permissions.setOwners(owner_permission)
+                }
+                if (subject.type == "group") {
+                    let lst = owner_permission.getGroupsList()
+                    if (lst.filter(s => s == subject.id).length == 0) {
+                        lst.push(subject.id)
+                    }
+                    owner_permission.setGroupsList(lst)
+                } else if (subject.type == "account") {
+                    let lst = owner_permission.getAccountsList()
+                    if (lst.filter(s => s == subject.id).length == 0) {
+                        lst.push(subject.id)
+                    }
+                    owner_permission.setAccountsList(lst)
+                } else if (subject.type == "application") {
+                    let lst = owner_permission.getApplicationsList()
+                    if (lst.filter(s => s == subject.id).length == 0) {
+                        lst.push(subject.id)
+                    }
+                    owner_permission.setApplicationsList(lst)
+                } else if (subject.type == "organization") {
+                    let lst = owner_permission.getOrganizationsList()
+                    if (lst.filter(s => s == subject.id).length == 0) {
+                        lst.push(subject.id)
+                    }
+                    owner_permission.setOrgnanizationsPermissions(lst)
+                }
+
+                cell.appendChild(check)
+                if (none.parentNode)
+                    none.parentNode.removeChild(none)
+            } else {
+
+                // if the permission exist in denied...
+                let denied_permission = permissions.getDeniedList().filter(p_ => p_.getName() == name)[0]
+                if (denied_permission) {
+                    if (subject.type == "group") {
+                        let lst = denied_permission.getGroupsList()
+                        lst = lst.filter(g => g != subject.id)
+                        denied_permission.setGroupsList(lst)
+                    } else if (subject.type == "account") {
+                        let lst = denied_permission.getAccountsList()
+                        lst = lst.filter(a => a != subject.id)
+                        denied_permission.setAccountsList(lst)
+                    } else if (subject.type == "application") {
+                        let lst = denied_permission.getApplicationsList()
+                        lst = lst.filter(a => a != subject.id)
+                        denied_permission.setApplicationsList(lst)
+                    } else if (subject.type == "organization") {
+                        let lst = denied_permission.getOrganizationsList()
+                        lst = lst.filter(o => o != subject.id)
+                        denied_permission.setOrganizationsList(lst)
+                    }
+                }
+
+                let allowed_permission = permissions.getAllowedList().filter(p_ => p_.getName() == name)[0]
+                if (!allowed_permission) {
+                    if (!allowed_permission) {
+                        allowed_permission = new Permission
+                        allowed_permission.setName(name)
+                        allowed_permission.setAccountsList([])
+                        allowed_permission.setApplicationsList([])
+                        allowed_permission.setOrganizationsList([])
+                        allowed_permission.setGroupsList([])
+                        let lst = permissions.getAllowedList()
+                        lst.push(allowed_permission)
+                        permissions.setAllowedList(lst)
+                    }
+                }
+
+                if (subject.type == "group") {
+                    let lst = allowed_permission.getGroupsList()
+                    if (lst.filter(s => s == subject.id).length == 0) {
+                        lst.push(subject.id)
+                    }
+                    allowed_permission.setGroupsList(lst)
+                } else if (subject.type == "account") {
+                    let lst = allowed_permission.getAccountsList()
+                    if (lst.filter(s => s == subject.id).length == 0) {
+                        lst.push(subject.id)
+                    }
+                    allowed_permission.setAccountsList(lst)
+                } else if (subject.type == "application") {
+                    let lst = allowed_permission.getApplicationsList()
+                    if (lst.filter(s => s == subject.id).length == 0) {
+                        lst.push(subject.id)
+                    }
+                    allowed_permission.setApplicationsList(lst)
+                } else if (subject.type == "organization") {
+                    let lst = allowed_permission.getOrganizationsList()
+                    if (lst.filter(s => s == subject.id).length == 0) {
+                        lst.push(subject.id)
+                    }
+                    allowed_permission.setOrgnanizationsPermissions(lst)
+                }
+
+                cell.appendChild(check)
+                if (none.parentNode)
+                    none.parentNode.removeChild(none)
+                if (denied.parentNode)
+                    denied.parentNode.removeChild(denied)
+
+            }
+
+
+            this.permissionManager.savePermissions(() => {
+                console.log("permission was save!")
+            })
+        }
+
+        denied.onclick = () => {
+
+            cell.appendChild(none)
+            if (check.parentNode)
+                check.parentNode.removeChild(check)
+            if (denied.parentNode)
+                denied.parentNode.removeChild(denied)
+
+            let denied_permission = permissions.getDeniedList().filter(p_ => p_.getName() == name)[0]
+            if (denied_permission) {
+                if (subject.type == "group") {
+                    let lst = denied_permission.getGroupsList()
+                    lst = lst.filter(g => g != subject.id)
+                    denied_permission.setGroupsList(lst)
+                } else if (subject.type == "account") {
+                    let lst = denied_permission.getAccountsList()
+                    lst = lst.filter(a => a != subject.id)
+                    denied_permission.setAccountsList(lst)
+                } else if (subject.type == "application") {
+                    let lst = denied_permission.getApplicationsList()
+                    lst = lst.filter(a => a != subject.id)
+                    denied_permission.setApplicationsList(lst)
+                } else if (subject.type == "organization") {
+                    let lst = denied_permission.getOrganizationsList()
+                    lst = lst.filter(o => o != subject.id)
+                    denied_permission.setOrganizationsList(lst)
+                }
+            }
+
+            let allowed_permission = permissions.getAllowedList().filter(p_ => p_.getName() == name)[0]
+            if (allowed_permission) {
+                // First I will remove the allowed permission.
+                if (subject.type == "group") {
+                    let lst = allowed_permission.getGroupsList()
+                    lst = lst.filter(g => g != subject.id)
+                    allowed_permission.setGroupsList(lst)
+                } else if (subject.type == "account") {
+                    let lst = allowed_permission.getAccountsList()
+                    lst = lst.filter(a => a != subject.id)
+                    allowed_permission.setAccountsList(lst)
+                } else if (subject.type == "application") {
+                    let lst = allowed_permission.getApplicationsList()
+                    lst = lst.filter(a => a != subject.id)
+                    allowed_permission.setApplicationsList(lst)
+                } else if (subject.type == "organization") {
+                    let lst = allowed_permission.getOrganizationsList()
+                    lst = lst.filter(o => o != subject.id)
+                    allowed_permission.setOrganizationsList(lst)
+                }
+
+            }
+
+            this.permissionManager.savePermissions(() => {
+                console.log("permission was save!")
+            })
         }
 
         row.appendChild(cell)
@@ -1186,7 +1508,7 @@ export class PermissionsViewer extends HTMLElement {
 
             // Now I will set the value for other cells..
             this.permissionsNames.forEach(id => {
-                this.setPermissionCell(row, subject.permissions[id])
+                this.setPermissionCell(row, subject.permissions[id], permissions, id, subject)
             })
 
             this.permissionsDiv.appendChild(row)
@@ -1418,9 +1740,9 @@ function getConversation(id, callback, errorCallback) {
  * Return file info.
  */
 function getFile(path, callback, errorCallback) {
-    
 
-    File.getFile(Model.globular, path, 128, 85, f=>{
+
+    File.getFile(Model.globular, path, 128, 85, f => {
 
         // the path that point to the resource
         f.getPath = () => {
@@ -1626,7 +1948,7 @@ export class ResourcesPermissionsManager extends HTMLElement {
         this.appendResourcePermissions("blog", getBlog)
         this.appendResourcePermissions("conversation", getConversation)
         this.appendResourcePermissions("domain", getDomain)
-        this.appendResourcePermissions("file", getFile)
+        //this.appendResourcePermissions("file", getFile) // to slow when the number of file is high...
         this.appendResourcePermissions("group", getGroup)
         this.appendResourcePermissions("organization", getOrganization)
         this.appendResourcePermissions("package", getPackage)
@@ -1768,7 +2090,7 @@ export class ResourcesPermissionsType extends HTMLElement {
                     }, err => {
                         console.log(err)
                         // delete the permissions if the resource dosent exist.
-                        PermissionManager.deleteResourcePermissions(p.getPath(), err=>ApplicationView.displayMessage(err, 3000))
+                        PermissionManager.deleteResourcePermissions(p.getPath(), err => ApplicationView.displayMessage(err, 3000))
                     })
                 }
             })

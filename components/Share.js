@@ -1,6 +1,6 @@
 import "@polymer/iron-icons/social-icons";
 import { GeneratePeerTokenRequest } from "globular-web-client/authentication/authentication_pb";
-import { GetResourcePermissionRqst, GetResourcePermissionsRqst, Permission, Permissions } from "globular-web-client/rbac/rbac_pb";
+import { GetResourcePermissionRqst, GetResourcePermissionsRqst, Permission, Permissions, SetResourcePermissionsRqst } from "globular-web-client/rbac/rbac_pb";
 import * as getUuidByString from "uuid-by-string";
 import { Account } from "../Account";
 import { Application } from "../Application";
@@ -366,14 +366,14 @@ export class ShareResourceWizard extends HTMLElement {
             // Here I will get read element from the interface to get permissions infos...
             let permissions = sharedSubjectsPermission.getPermissions()
 
-            this.setFilesPermissions(permissions, files, results => {
+            this.setFilesPermissions(permissions, files, errors => {
                 let participants = selectedSubjects.getAccounts()
                 let groups = selectedSubjects.getGroups()
 
                 // display the list of resource...
                 let getMembers = (index) => {
                     let group = groups[index]
-                   
+
                     group.getMembers(members => {
                         // append members...
                         members.forEach(member => {
@@ -383,7 +383,7 @@ export class ShareResourceWizard extends HTMLElement {
                         })
                         index++
                         if (index < groups.length) {
-                            
+
                             getMembers(index)
                         } else {
                             displayParticipants()
@@ -428,6 +428,14 @@ export class ShareResourceWizard extends HTMLElement {
                         </div>
                         `
                         resourcesDiv.appendChild(range.createContextualFragment(fileDiv))
+
+                        // Here I will display error in the interface if ther some...
+                        if (errors[file.path]) {
+                            resourcesDiv.querySelector(`#${uuid + "_success"}`).style.display = "none"
+                            resourcesDiv.querySelector(`#${uuid + "_error"}`).title = errors[file.path].message
+                        } else {
+                            resourcesDiv.querySelector(`#${uuid + "_error"}`).style.display = "none"
+                        }
                     })
                 }
 
@@ -559,16 +567,30 @@ export class ShareResourceWizard extends HTMLElement {
     // for a given file.
     setFilesPermissions(permissions_, files, callback) {
 
+        let errors = {}
+
         // save permissions.
-        let savePermissions = (permissions, callback, errorCallback) => {
+        let saveFilePermissions = (f, permissions, callback, errorCallback) => {
             /** todo write the code to save the permission. */
             console.log("save permissions: ", permissions)
-            callback()
+            let rqst = new SetResourcePermissionsRqst
+            let globule = f.globule
+            rqst.setPath(f.path)
+            rqst.setResourcetype("file")
+            rqst.setPermissions(permissions)
+            generatePeerToken(globule, token => {
+                globule.rbacService.setResourcePermissions(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: token })
+                    .then(() => { console.log("save permission successfully!"); callback(); })
+                    .catch(err => {
+                        console.log("-----------> ", err)
+                        errorCallback(err)
+                    })
+            })
         }
 
         let setPermissions = (index) => {
-            if(index == files.length){
-                callback()
+            if (index == files.length) {
+                callback(errors)
                 return
             }
 
@@ -585,27 +607,86 @@ export class ShareResourceWizard extends HTMLElement {
                     rsp => {
                         permissions = rsp.getPermissions()
                         console.log("permission find for file ", f.path, permissions)
-                        if (index < files.length) {
-                            index++
-                            // next file...
-                            savePermissions(permissions, () => {
-                                setPermissions(index)
-                            })
-                        }
+                        // so here I will merge the value for permission_ (taken from the interface)
+                        // and the existing permissions from the backend.
+                        permissions_.allowed.forEach(p => {
+
+                            // Get existing allowed permission accounts list.
+                            let allowed = permissions.getAllowedList()
+
+                            // The existing permission with the same name
+                            let p_ = allowed.filter(p__ => p__.getName() == p.getName())[0]
+                            if (p_) {
+                                let accounts_lst = p.getAccountsList()
+                                accounts_lst.forEach(a => {
+                                    let accounts_lst_ = p_.getAccountsList()
+                                    if (accounts_lst_.filter(a_ => a_ == a).length == 0) {
+                                        accounts_lst_.push(a)
+                                    }
+                                    p_.setAccountsList(accounts_lst_)
+                                })
+
+                                let groups_lst = p.getGroupsList()
+                                groups_lst.forEach(g => {
+                                    let groups_lst_ = p_.getGroupsList()
+                                    if (groups_lst_.filter(g_ => g_ == g).length == 0) {
+                                        groups_lst_.push(g)
+                                    }
+                                    p_.setGroupsList(groups_lst_)
+                                })
+                            } else {
+                                // no permission with that name exist so I will simply append the new one...
+                                permissions.addAllowed(p)
+                            }
+                        })
+
+                        // Now the denied permissions.
+                        permissions_.denied.forEach(p => {
+
+                            // Get existing allowed permission accounts list.
+                            let denied = permissions.getDeniedList()
+
+                            // The existing permission with the same name
+                            let p_ = denied.filter(p__ => p__.getName() == p.getName())[0]
+                            if (p_) {
+                                let accounts_lst = p.getAccountsList()
+                                accounts_lst.forEach(a => {
+                                    let accounts_lst_ = p_.getAccountsList()
+                                    if (accounts_lst_.filter(a_ => a_ == a).length == 0) {
+                                        accounts_lst_.push(a)
+                                    }
+                                    p_.setAccountsList(accounts_lst_)
+                                })
+
+                                let groups_lst = p.getGroupsList()
+                                groups_lst.forEach(g => {
+                                    let groups_lst_ = p_.getGroupsList()
+                                    if (groups_lst_.filter(g_ => g_ == g).length == 0) {
+                                        groups_lst_.push(g)
+                                    }
+                                    p_.setGroupsList(groups_lst_)
+                                })
+                            } else {
+                                // no permission with that name exist so I will simply append the new one...
+                                permissions.addDenied(p)
+                            }
+                        })
+
+                        // next file...
+                        saveFilePermissions(f, permissions, () => {
+                            setPermissions(++index)
+                        }, err => { console.log("---------->", err); errors[f.path] = err; setPermissions(++index) })
+
                     }).catch(err => {
-                       
+
                         let msg = JSON.parse(err.message);
-                        console.log(msg.ErrorMsg)
                         if (msg.ErrorMsg.startsWith("item not found")) {
                             permissions.setAllowedList(permissions_.allowed)
                             permissions.setDeniedList(permissions_.denied)
-                            if (index < files.length) {
-                                index++
-                                // setPermissions(index)
-                                savePermissions(permissions, () => {
-                                    setPermissions(index)
-                                })
-                            }
+                            saveFilePermissions(f, permissions, () => {
+                                setPermissions(++index)
+                            }, err => { console.log("---------------> ", err); errors[f.path] = err; setPermissions(++index) })
+
                         }
                     })
             })
@@ -1490,7 +1571,7 @@ export class SharedSubjectsPermissions extends HTMLElement {
             }
 
             /** The delete permission */
-              if (icons[2].icon == "icons:check") {
+            if (icons[2].icon == "icons:check") {
                 if (row.subject instanceof Account) {
                     let accountId = row.subject.id + "@" + row.subject.domain
                     let lst = allowed_delete_permission.getAccountsList()
