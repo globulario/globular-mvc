@@ -22,6 +22,11 @@ import { LogInfo, LogLevel, LogRqst, LogRsp, Occurence } from "globular-web-clie
 import { Session, SessionState } from "./Session";
 import { formatBoolean } from "./components/utility";
 import { DomPlatform } from "chart.js";
+import { File } from "./File";
+import { playVideo } from "./components/Video";
+import { playAudio } from "./components/Audio";
+import { getAudioInfo, getTitleInfo, getVideoInfo } from "./components/File";
+import { Audio, Title, Video } from "globular-web-client/title/title_pb";
 
 // Get the configuration from url
 function getFileConfig(url: string, callback: (obj: any) => void, errorcallback: (err: any) => void) {
@@ -410,6 +415,39 @@ export class Application extends Model {
         },
         true, this
       );
+
+      Model.eventHub.subscribe(
+        "follow_link_event_",
+        (uuid: string) => {
+        },
+        (lnk: any) => {
+         
+          let globule = Model.getGlobule(lnk.domain)
+          File.getFile(globule, lnk.path, -1, -1, (file:any) =>{
+            if(file.mime.startsWith("video")){
+              getTitleInfo(globule, file, (titles:Title[])=>{
+                if(titles){
+                  playVideo(file.path, ()=>{}, ()=>{}, titles[0], globule )
+                }else{
+                  getVideoInfo(globule, file, (videos:Video[])=>{
+                    playVideo(file.path, ()=>{}, ()=>{}, videos[0], globule )
+                  })
+                }
+              })
+             
+            }else if(file.mime.startsWith("audio")){
+              getAudioInfo(globule, file, (audios:Audio[])=>{
+                playAudio(file.path, ()=>{}, ()=>{}, audios[0], globule )
+              })
+              
+            }else {
+              console.log(file.mime, " what to do...")
+            }
+          }, err => ApplicationView.displayMessage(err, 3000))
+        },
+        true, this
+      );
+      
 
 
       // Get backend application infos.

@@ -126,7 +126,7 @@ function copyToClipboard(text) {
 }
 
 // Now I will test if imdb info are allready asscociated.
-function getTitleInfo(globule, file, callback) {
+export function getTitleInfo(globule, file, callback) {
     let rqst = new GetFileTitlesRequest
     rqst.setIndexpath(globule.config.DataPath + "/search/titles")
 
@@ -144,7 +144,7 @@ function getTitleInfo(globule, file, callback) {
 }
 
 
-function getVideoInfo(globule, file, callback) {
+export function getVideoInfo(globule, file, callback) {
 
     let rqst = new GetFileVideosRequest
     rqst.setIndexpath(globule.config.DataPath + "/search/videos")
@@ -160,7 +160,7 @@ function getVideoInfo(globule, file, callback) {
         })
 }
 
-function getAudioInfo(globule, file, callback) {
+export function getAudioInfo(globule, file, callback) {
 
     let rqst = new GetFileAudiosRequest
     rqst.setIndexpath(globule.config.DataPath + "/search/audios")
@@ -346,7 +346,7 @@ function _publishSetDirEvent(path, file_explorer_) {
 
         Model.eventHub.publish("__set_dir_event__", { path: dir, file_explorer_id: file_explorer_.id }, true)
         file_explorer_.resume()
-    }, err => { console.log(err) }, file_explorer_.globule)
+    }, err => {ApplicationView.displayMessage(err, 3000);  file_explorer_.resume();}, file_explorer_.globule)
 }
 
 /**

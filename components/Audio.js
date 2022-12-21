@@ -1,8 +1,6 @@
 import { getTheme } from "./Theme";
 import { Model } from '../Model';
-import { Application } from "../Application";
 import { ApplicationView } from "../ApplicationView";
-import { GetFileVideosRequest } from "globular-web-client/title/title_pb";
 import { setMoveable } from './moveable'
 import WaveSurfer from "wavesurfer.js";
 import { PlayList } from "./Playlist"
@@ -785,8 +783,11 @@ export class AudioPlayer extends HTMLElement {
 
 
         if (audio) {
+            if(audio.getArtist()){
+                this.shadowRoot.querySelector("#title-span").innerHTML = audio.getArtist() + " : "
+            }
             // TODO see how to get the featuring info...
-            this.shadowRoot.querySelector("#title-span").innerHTML = audio.getArtist() + " : " + audio.getTitle()
+            this.shadowRoot.querySelector("#title-span").innerHTML +=  audio.getTitle()
 
             this.albumName.innerHTML = audio.getAlbum()
             this.albumYear.innerHTML = ""

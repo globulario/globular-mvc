@@ -27,6 +27,11 @@ export class File extends Model {
 
     private globule: Globular;
 
+    // return the file domain.
+    public get domain(): string {
+        return this.globule.config.Domain;
+    }
+
     private _metadata: any = {};
     public get metadata(): any {
         return this._metadata;
@@ -268,6 +273,7 @@ export class File extends Model {
             }
 
             console.log("read dir ", path)
+            // 
             readDir(globule, path, recursive, (dir: FileInfo) => {
                 callback(File.fromObject(dir.toObject()))
             }, errorCallback, 80, 80, token)

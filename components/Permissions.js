@@ -324,10 +324,10 @@ export class PermissionsManager extends HTMLElement {
         rqst.setPermissions(this.permissions)
         rqst.setPath(this.path)
 
-        if(!this.permissions.getResourceType()){
+        if (!this.permissions.getResourceType()) {
             this.permissions.setResourceType("file")
         }
-        
+
         rqst.setResourcetype(this.permissions.getResourceType())
 
         this.globule.rbacService.setResourcePermissions(rqst, {
@@ -372,6 +372,7 @@ export class PermissionsManager extends HTMLElement {
         // Here I will display the owner's
         let ownersPermissionPanel = new PermissionPanel(this)
         ownersPermissionPanel.id = "permission_owners_panel"
+
 
         ownersPermissionPanel.setPermission(this.permissions.getOwners(), true)
         ownersPermissionPanel.slot = "owner"
@@ -911,6 +912,15 @@ export class PermissionsViewer extends HTMLElement {
 
     // Set the permission
     setPermission(subjects, name, permission) {
+
+        if (!permission) {
+            permission = new Permission
+            permission.setName(name)
+            permission.setAccountsList([])
+            permission.setGroupsList([])
+            permission.setApplicationsList([])
+            permission.setOrganizationsList([])
+        }
 
         // Accounts
         permission.getAccountsList().forEach(a => {
@@ -1453,6 +1463,18 @@ export class PermissionsViewer extends HTMLElement {
 
         // So here I will transform the values to be display in a table like view.
         let subjects = {}
+
+        // be sure owner permission are set...
+        let owner_permission = permissions.getOwners()
+        if (!owner_permission) {
+            owner_permission = new Permission
+            owner_permission.setName("owner")
+            owner_permission.setAccountsList([])
+            owner_permission.setApplicationsList([])
+            owner_permission.setOrganizationsList([])
+            owner_permission.setGroupsList([])
+            permissions.setOwners(owner_permission)
+        }
 
         // Set the owner permissions.
         this.setPermission(subjects, "owner", permissions.getOwners())

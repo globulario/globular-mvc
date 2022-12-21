@@ -1,6 +1,7 @@
 import "@polymer/iron-icons/social-icons";
 import { GeneratePeerTokenRequest } from "globular-web-client/authentication/authentication_pb";
 import { GetResourcePermissionRqst, GetResourcePermissionsRqst, Permission, Permissions, SetResourcePermissionsRqst } from "globular-web-client/rbac/rbac_pb";
+import { CreateNotificationRqst, Notification, NotificationType } from "globular-web-client/resource/resource_pb";
 import * as getUuidByString from "uuid-by-string";
 import { Account } from "../Account";
 import { Application } from "../Application";
@@ -11,6 +12,8 @@ import { Menu } from './Menu';
 import { getTheme } from "./Theme";
 import { randomUUID } from "./utility";
 import { Wizard } from "./Wizard";
+import {Link} from "./Link"
+import { Notification as Notification_ } from '../Notification';
 
 /**
  * Login/Register functionality.
@@ -383,7 +386,6 @@ export class ShareResourceWizard extends HTMLElement {
                         })
                         index++
                         if (index < groups.length) {
-
                             getMembers(index)
                         } else {
                             displayParticipants()
@@ -433,15 +435,77 @@ export class ShareResourceWizard extends HTMLElement {
                         if (errors[file.path]) {
                             resourcesDiv.querySelector(`#${uuid + "_success"}`).style.display = "none"
                             resourcesDiv.querySelector(`#${uuid + "_error"}`).title = errors[file.path].message
+
                         } else {
                             resourcesDiv.querySelector(`#${uuid + "_error"}`).style.display = "none"
+                            
+                            participants.forEach(contact => {
+                                // So here I will send a notification to the participant with the share information...
+                                let rqst = new CreateNotificationRqst
+                                let notification = new Notification
+
+                                notification.setDate(parseInt(Date.now() / 1000)) // Set the unix time stamp...
+                                notification.setId(randomUUID())
+                                notification.setRecipient(contact.id + "@" + contact.domain)
+                                notification.setSender(Application.account.id + "@" + Application.account.domain)
+                                notification.setNotificationType(NotificationType.USER_NOTIFICATION)
+
+                                let date = new Date()
+                                let msg = `
+                                <div style="display: flex; flex-direction: column; padding: 16px;">
+                                    <div>
+                                    ${date.toLocaleString()}
+                                    </div>
+                                    <div>
+                                        <div style="display: flex; flex-direction: column;">
+                                                <p>
+                                                    ${Application.account.name} has share file with you,
+                                                </p>
+
+                                                <globular-link path="${file.path}" thumbnail="${file.thumbnail}" domain="${file.domain}"></globular-link>
+      
+                                            </div>
+                                   
+                                    </div>
+                                </div>
+                                `
+
+                                notification.setMessage(msg)
+                                rqst.setNotification(notification)
+
+                                // Create the notification...
+                                let globule = Model.getGlobule(contact.domain)
+                                generatePeerToken(globule, token=>{
+                                    globule.resourceService.createNotification(rqst, {
+                                        token: token,
+                                        application: Model.application,
+                                        domain: contact.domain,
+                                        address: Model.address
+                                    }).then((rsp) => {
+                                        /** nothing here... */
+                                        let notification_ = new Notification_
+                                        notification_.id = notification.getId()
+                                        notification_.date = date
+                                        notification_.sender = notification.getSender()
+                                        notification_.recipient = notification.getRecipient()
+                                        notification_.text = notification.getMessage()
+                                        notification_.type = 0
+        
+                                        // Send notification...
+                                        Model.getGlobule(contact.domain).eventHub.publish(contact.id + "@" + contact.domain + "_notification_event", notification_.toString(), false)
+                                    }).catch(err => {
+                                        ApplicationView.displayMessage(err, 3000);
+                                        console.log(err)
+                                    })
+                                })
+           
+                            })
                         }
                     })
                 }
 
                 let displayParticipants = () => {
                     let participantsDiv = summary_page.querySelector("#paticipants")
-
                     let range = document.createRange()
 
                     // set style...
@@ -582,7 +646,6 @@ export class ShareResourceWizard extends HTMLElement {
                 globule.rbacService.setResourcePermissions(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: token })
                     .then(() => { console.log("save permission successfully!"); callback(); })
                     .catch(err => {
-                        console.log("-----------> ", err)
                         errorCallback(err)
                     })
             })
