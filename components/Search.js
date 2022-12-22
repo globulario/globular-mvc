@@ -2471,6 +2471,21 @@ export class SearchTitleDetail extends HTMLElement {
         // test create offer...
         this.titlePreview = this.shadowRoot.querySelector("#title-preview")
         this.episodePreview = this.shadowRoot.querySelector("#epsiode-preview")
+        this.shadowRoot.querySelector("#epsiode-preview").onmouseover = function(evt) {
+            this.play()
+        }
+
+        this.shadowRoot.querySelector("#epsiode-preview").onmouseleave = function(evt) {
+            this.pause()
+        }
+
+        this.shadowRoot.querySelector("#title-preview").onmouseover = function(evt) {
+            this.play()
+        }
+
+        this.shadowRoot.querySelector("#title-preview").onmouseleave = function(evt) {
+            this.pause()
+        }
     }
 
     connectedCallback() {
