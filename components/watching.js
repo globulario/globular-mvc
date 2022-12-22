@@ -55,6 +55,11 @@ export class MediaWatching extends HTMLElement {
                 width: 80%;
             }
 
+            #movie-title, #video-title {
+                font-size: 1.4rem;
+            }
+
+            
         </style>
         <paper-card id="container">
         
@@ -296,6 +301,10 @@ export class MediaWatchingCard extends HTMLElement {
             #container span {
                 flex-grow: 1;
                 text-align: right;
+            }
+
+            #title-date {
+                font-size: 1rem;
             }
         </style>
 

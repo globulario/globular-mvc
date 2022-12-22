@@ -533,9 +533,11 @@ export class VideoPlayer extends HTMLElement {
             // validate url access.
             fetch(url, { method: "HEAD" })
                 .then((response) => {
-                    if (response.status !== 200) {
-                        throw new Error(response.status)
-                    } else {
+                    if (response.status == 401) {
+                        ApplicationView.displayMessage(`unable to read the file ${path} Check your access privilege`, 3500)
+                        this.close()
+                        return
+                    } else if (response.status == 200) {
                         if (File.hasLocal) {
                             File.hasLocal(path, exists => {
                                 if (exists) {
@@ -548,6 +550,8 @@ export class VideoPlayer extends HTMLElement {
                         } else {
                             this.play_(path, globule, false, token)
                         }
+                    }else{
+                        throw new Error(response.status)
                     }
                 })
                 .catch((error) => {

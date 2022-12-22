@@ -991,24 +991,23 @@ export class ContactList extends HTMLElement {
                                 generatePeerToken(Model.getGlobule(contact.domain), token => {
                                     let rqst = new CreateNotificationRqst
                                     let notification = new Notification
-
                                     notification.setDate(parseInt(Date.now() / 1000)) // Set the unix time stamp...
-                                    notification.setId(randomUUID())
+                                    notification.setId(call.getUuid())
                                     notification.setRecipient(contact.id + "@" + contact.domain)
                                     notification.setSender(Application.account.id + "@" + Application.account.domain)
                                     notification.setNotificationType(NotificationType.USER_NOTIFICATION)
 
                                     let date = new Date()
                                     let msg = `
-                                <div style="display: flex; flex-direction: column; padding: 16px;">
-                                    <div>
-                                        ${date.toLocaleString()}
+                                    <div style="display: flex; flex-direction: column; padding: 16px;">
+                                        <div>
+                                            ${date.toLocaleString()}
+                                        </div>
+                                        <div>
+                                            Missed call from ${Application.account.name}
+                                        </div>
                                     </div>
-                                    <div>
-                                        Missed call from ${Application.account.name}
-                                    </div>
-                                </div>
-                                `
+                                    `
 
                                     notification.setMessage(msg)
                                     rqst.setNotification(notification)

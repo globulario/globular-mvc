@@ -27,6 +27,7 @@ import { Call, ClearCallsRqst, CreateNotificationRqst, DeleteCallRqst, GetCallHi
 import { randomUUID } from './utility';
 import { VideoConversation } from './WebRTC';
 import { secondsToTime } from './Audio';
+import * as getUuidByString from 'uuid-by-string';
 
 /**
  * Display information about calls, missed calls etc...
@@ -679,7 +680,8 @@ export class CallsHistoryMenu extends Menu {
                                     audio.pause()
                                     toast.dismiss();
                                     Model.getGlobule(caller.domain).eventHub.publish(call.getUuid() + "_miss_call_evt", call.serializeBinary(), false)
-                                    Model.getGlobule(callee.domain).eventHub.publish(call.getUuid() + "_miss_call_evt", call.serializeBinary(), false)
+                                    if (caller.domain != callee.domain)
+                                        Model.getGlobule(callee.domain).eventHub.publish(call.getUuid() + "_miss_call_evt", call.serializeBinary(), false)
 
                                 }, 30 * 1000)
 
@@ -691,7 +693,8 @@ export class CallsHistoryMenu extends Menu {
 
                                     // Here I will send miss call event...
                                     Model.getGlobule(caller.domain).eventHub.publish(call.getUuid() + "_miss_call_evt", call.serializeBinary(), false)
-                                    Model.getGlobule(callee.domain).eventHub.publish(call.getUuid() + "_miss_call_evt", call.serializeBinary(), false)
+                                    if (caller.domain != callee.domain)
+                                        Model.getGlobule(callee.domain).eventHub.publish(call.getUuid() + "_miss_call_evt", call.serializeBinary(), false)
                                 }
 
                                 // Here the call succeed...
@@ -728,9 +731,8 @@ export class CallsHistoryMenu extends Menu {
                                     generatePeerToken(Model.getGlobule(contact.domain), token => {
                                         let rqst = new CreateNotificationRqst
                                         let notification = new Notification
-
                                         notification.setDate(parseInt(Date.now() / 1000)) // Set the unix time stamp...
-                                        notification.setId(randomUUID())
+                                        notification.setId(call.getUuid())
                                         notification.setRecipient(contact.id + "@" + contact.domain)
                                         notification.setSender(Application.account.id + "@" + Application.account.domain)
                                         notification.setNotificationType(NotificationType.USER_NOTIFICATION)
@@ -781,7 +783,9 @@ export class CallsHistoryMenu extends Menu {
 
                                 // so here I will play the audio of the contact util it respond or the delay was done...
                                 Model.getGlobule(contact.domain).eventHub.publish("calling_" + contact.id + "@" + contact.domain + "_evt", call.serializeBinary(), false)
+                                
                                 Model.getGlobule(this.account.domain).eventHub.publish("calling_" + contact.id + "@" + contact.domain + "_evt", call, true)
+
                             })
 
                         })

@@ -294,6 +294,17 @@ export function getImage(callback, images, files, index, globule) {
 // Keep dir info in map to save time...
 let dirs = {}
 
+// Usefull to get dir like /shared or /public that dosent exist on the server.
+export function getLocalDir(globule, path) {
+    let key = getUuidByString(globule.config.Domain + "@" + path)
+    let dir = dirs[key]
+
+    if (dir != null) {
+        return dir
+    }
+    return null
+}
+
 /**
  * Read dir from local map if available. Read from the server
  * if not in the map of force (in case of refresh)
@@ -346,7 +357,7 @@ function _publishSetDirEvent(path, file_explorer_) {
 
         Model.eventHub.publish("__set_dir_event__", { path: dir, file_explorer_id: file_explorer_.id }, true)
         file_explorer_.resume()
-    }, err => {ApplicationView.displayMessage(err, 3000);  file_explorer_.resume();}, file_explorer_.globule)
+    }, err => { ApplicationView.displayMessage(err, 3000); file_explorer_.resume(); }, file_explorer_.globule)
 }
 
 /**
@@ -1783,7 +1794,7 @@ export class FilesListView extends FilesView {
                         if (files.filter(f_ => f_.path === f.path).length == 0) {
                             files.push(f)
                         }
-                        
+
                         this.shareResource.setFiles(files)
 
                         this.menu.showBtn()
@@ -3234,7 +3245,7 @@ export class PathNavigator extends HTMLElement {
                                 btn.icon = "icons:chevron-right"
                             }
                         }
-                    }, err => { console.log(err); }, this._file_explorer_.globule)
+                    }, err => { console.log(err); file_explorer_.resume(); }, this._file_explorer_.globule)
                 }
 
                 btn.onmouseover = () => {
@@ -3614,7 +3625,7 @@ export class FileNavigator extends HTMLElement {
     }
 
     // Set the directory.
-    setDir(dir) {
+    setDir(dir, callback) {
         if (this.dir == dir || !(dir.path.startsWith("/public") || public_[dir.path] != undefined || dir.path.startsWith("/shared") || shared[dir.path] != undefined || shared[dir.path] != undefined || dir.path.startsWith("/applications/" + Application.application) || dir.path.startsWith("/users/" + Application.account.id))) {
             return;
         }
@@ -3622,11 +3633,13 @@ export class FileNavigator extends HTMLElement {
         this.dir = dir;
         this.initTreeView(dir, this.userDiv, 0)
 
-        // Init shared...
-        this.initShared()
-
         // Init public list of directories
-        this.initPublic()
+        this._file_explorer_.displayWaitMessage("load public content")
+        this.initPublic(() => {
+            this._file_explorer_.displayWaitMessage("load shared content")
+            // Init shared...
+            this.initShared((shared_, public_) => { if (callback) callback(shared_, public_); this._file_explorer_.resume()})
+        })
     }
 
     // Init the public folder...
@@ -3663,7 +3676,6 @@ export class FileNavigator extends HTMLElement {
                                 this._file_explorer_.resume()
                                 // used by set dir...
                                 markAsPublic(dir, path)
-
                                 this.public_.files.push(dir)
                                 index++
                                 initPublicDir(callback, err => ApplicationView.displayMessage(err, 3000))
@@ -3692,7 +3704,7 @@ export class FileNavigator extends HTMLElement {
 
 
     // Init shared folders
-    initShared() {
+    initShared(initCallback) {
         this.sharedDiv.innerHTML = ""
         this.shared = {}
 
@@ -3708,12 +3720,14 @@ export class FileNavigator extends HTMLElement {
         this.shared_.mime = "";
         this.shared_.modeTime = new Date()
 
+        console.log("--------> init shared called...")
+
         // Init the share info
         let initShared = (share, callback) => {
-
             // Try to get the user id...
             let userId = share.getPath().split("/")[2];
             if (userId == Application.account.id || userId == Application.account.id + "@" + Application.account.domain) {
+                console.log(userId, 3729)
                 callback()
                 return // I will not display it...
             } else if (userId.indexOf("@") != -1) {
@@ -3744,11 +3758,14 @@ export class FileNavigator extends HTMLElement {
                         if (this.shared[userId]) {
                             if (this.shared[userId].files.find(f => f.path == dir.path) == undefined) {
                                 this.shared[userId].files.push(dir)
-                                callback()
+                                console.log(userId, 3761)
+                               
                             }
                         }
+                        callback()
                     }, err => {
                         // The file is not a directory so the file will simply put in the share.
+                        this._file_explorer_.resume();
                         if (err.message.indexOf("is not a directory") != -1) {
                             File.getFile(this._file_explorer_.globule, share.getPath(), 128, 85,
                                 (f) => {
@@ -3778,19 +3795,20 @@ export class FileNavigator extends HTMLElement {
                                     } else {
                                         if (this.shared[userId].files.find(f_ => f.path == f_.path) == undefined) {
                                             this.shared[userId].files.push(f)
-                                            callback()
                                         }
                                     }
-                                }, e => console.log(e))
+                                    callback()
+                                }, e =>{console.log(e);  console.log(userId, 3801, e)})
                         }
                     }, this._file_explorer_.globule)
                 }, err => {
+                    console.log(userId, 3805)
                     callback()
                 })
             } else {
+                console.log(userId, 3805)
                 callback()
             }
-
         }
 
 
@@ -3806,19 +3824,25 @@ export class FileNavigator extends HTMLElement {
         let globule = this._file_explorer_.globule
         globule.rbacService.getSharedResource(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
             .then(rsp => {
+
                 // Here I need to sync the funtion and init the tree view once all is done...
                 let callback = () => {
                     let s = rsp.getSharedresourceList().pop()
                     if (s != undefined) {
                         initShared(s, callback)
                     } else {
+            
                         for (const id in this.shared) {
                             let shared = this.shared[id]
                             // this.initTreeView(shared, this.sharedDiv, 0)
                             this.initTreeView(this.shared_, this.sharedDiv, 0)
                             delete dirs[getUuidByString(this._file_explorer_.globule.config.Domain + "@" + shared.path)]
-                            Model.eventHub.publish("reload_dir_event", shared.path, false);
+                            //Model.eventHub.publish("reload_dir_event", shared.path, false);
                         }
+
+                        if (initCallback)
+                        initCallback(this.shared, this.public_)
+
                     }
                 }
 
@@ -4562,7 +4586,7 @@ export class FileExplorer extends HTMLElement {
     }
 
     // Set the file explorer directory.
-    init() {
+    init(callback) {
 
         // Init the path navigator
         this.pathNavigator.init();
@@ -4696,7 +4720,7 @@ export class FileExplorer extends HTMLElement {
                                     }
                                     this.shadowRoot.querySelector("globular-disk-space-manager").refresh()
                                     this.resume()
-                                }, err => ApplicationView.displayMessage(err, 3000), this.globule)
+                                }, err => { ApplicationView.displayMessage(err, 3000); this.resume() }, this.globule)
                             })
                         }, err => ApplicationView.displayMessage(err, 3000), this.globule, true)
                     }
@@ -4771,7 +4795,7 @@ export class FileExplorer extends HTMLElement {
             this.resume()
 
             if (this.fileNavigator != null) {
-                this.fileNavigator.setDir(dir)
+                this.fileNavigator.setDir(dir, (shared_, public_) => { if (callback) callback(shared_, public_) })
             } else {
                 console.log("no file navigator!")
             }
@@ -4797,7 +4821,7 @@ export class FileExplorer extends HTMLElement {
             this.setDir(dir)
 
 
-        }, this.onerror, this.globule)
+        }, () => { this.onerror; this.resume() }, this.globule)
 
         // Load the application dir.
         this.displayWaitMessage("load " + Model.application + "dir")
@@ -4832,7 +4856,7 @@ export class FileExplorer extends HTMLElement {
             this.setDir(dir)
 
 
-        }, this.onerror, this.globule)
+        }, () => { this.onerror; this.resume() }, this.globule)
     }
 
     // The connection callback.

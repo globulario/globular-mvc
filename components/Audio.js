@@ -857,7 +857,11 @@ export class AudioPlayer extends HTMLElement {
         xhr.responseType = 'blob';
 
         xhr.onload = (evt) => {
-            console.log(evt)
+            if(evt.target.status == 401){
+                ApplicationView.displayMessage(`unable to read the file ${path} Check your access privilege`, 3500)
+                this.close()
+                return
+            }
             if(evt.target.response.size < 48000000){
                 this.wavesurfer.loadBlob(evt.target.response);
             }else{

@@ -25,8 +25,9 @@ import { DomPlatform } from "chart.js";
 import { File } from "./File";
 import { playVideo } from "./components/Video";
 import { playAudio } from "./components/Audio";
-import { getAudioInfo, getTitleInfo, getVideoInfo } from "./components/File";
+import { FileExplorer, getAudioInfo, getLocalDir, getTitleInfo, getVideoInfo } from "./components/File";
 import { Audio, Title, Video } from "globular-web-client/title/title_pb";
+import { Globular } from "globular-web-client";
 
 // Get the configuration from url
 function getFileConfig(url: string, callback: (obj: any) => void, errorcallback: (err: any) => void) {
@@ -218,7 +219,7 @@ export class Application extends Model {
           domain: Model.domain,
           address: Model.address
         }).then((rsp: LogRsp) => {
-          
+
         })
           .catch((err: any) => {
             ApplicationView.displayMessage(err, 3000)
@@ -285,7 +286,7 @@ export class Application extends Model {
             evt.repwd,
             evt.domain,
             (data: any) => {
-        
+
             },
             (err: any) => {
               ApplicationView.displayMessage(err, 4000);
@@ -421,34 +422,119 @@ export class Application extends Model {
         (uuid: string) => {
         },
         (lnk: any) => {
-         
+
+
+          let openFileExplorer = (globule: Globular, file: File, callback: (dir: File, explorer: FileExplorer) => void) => {
+            // So the file is not a stream I will open the file explorer...
+            // The file explorer object.
+            let fileExplorer = new FileExplorer();
+
+            let userId = localStorage.getItem("user_id")
+            let userDomain = localStorage.getItem("user_domain")
+
+            // Set the file explorer...
+            fileExplorer.setRoot("/users/" + userId + "@" + userDomain)
+
+            // Set the file explorer...
+            fileExplorer.init((shared: any, public_: any) => {
+              let dir = shared[file.path.split("/")[2]]
+              console.log("----------------> init callback call! ", shared)
+              if (dir) {
+                Model.eventHub.publish("__set_dir_event__", { path: dir, file_explorer_id: fileExplorer.id }, true)
+                callback(dir, fileExplorer)
+              } else {
+                File.readDir(file.path, false, (dir: File) => {
+                  Model.eventHub.publish("__set_dir_event__", { path: dir, file_explorer_id: fileExplorer.id }, true)
+                  callback(dir, fileExplorer)
+                }, err => { }, globule)
+              }
+
+            });
+
+            // Set the onerror callback for the component.
+            fileExplorer.onerror = (err: any) => {
+              return ApplicationView.displayMessage(err, 4000)
+            };
+
+            fileExplorer.onclose = () => {
+              // Remove the file explorer.
+              fileExplorer.parentNode.removeChild(fileExplorer)
+              fileExplorer.delete() // remove all listeners.
+              fileExplorer = null;
+            }
+
+            Model.eventHub.publish("_open_file_explorer_event_", fileExplorer, true)
+            fileExplorer.open()
+          }
+
           let globule = Model.getGlobule(lnk.domain)
-          File.getFile(globule, lnk.path, -1, -1, (file:any) =>{
-            if(file.mime.startsWith("video")){
-              getTitleInfo(globule, file, (titles:Title[])=>{
-                if(titles){
-                  playVideo(file.path, ()=>{}, ()=>{}, titles[0], globule )
-                }else{
-                  getVideoInfo(globule, file, (videos:Video[])=>{
-                    playVideo(file.path, ()=>{}, ()=>{}, videos[0], globule )
+          File.getFile(globule, lnk.path, -1, -1, (file: any) => {
+            if (file.mime.startsWith("video")) {
+              getTitleInfo(globule, file, (titles: Title[]) => {
+                if (titles) {
+                  playVideo(file.path, () => { }, () => { }, titles[0], globule)
+                } else {
+                  getVideoInfo(globule, file, (videos: Video[]) => {
+                    playVideo(file.path, () => { }, () => { }, videos[0], globule)
                   })
                 }
               })
-             
-            }else if(file.mime.startsWith("audio")){
-              getAudioInfo(globule, file, (audios:Audio[])=>{
-                playAudio(file.path, ()=>{}, ()=>{}, audios[0], globule )
+
+            } else if (file.mime.startsWith("audio")) {
+              getAudioInfo(globule, file, (audios: Audio[]) => {
+                playAudio(file.path, () => { }, () => { }, audios[0], globule)
               })
-              
-            }else {
-              console.log(file.mime, " what to do...")
+
+            } else if (file.mime == "inode/directory") {
+              File.getFile(file.globule, file.path + "/playlist.m3u8", -1, -1, f => {
+                getVideoInfo(globule, file, (videos: Video[]) => {
+                  playVideo(file.path, () => { }, () => { }, videos[0], globule)
+                })
+              }, err => {
+
+                openFileExplorer(globule, file, (dir: File, explorer: FileExplorer) => { })
+              })
+            } else if (file.mime.startsWith("text/") || file.mime == "application/pdf" || file.mime == "application/json") {
+
+              let path = file.path.substring(0, file.path.lastIndexOf("/"));
+              File.getFile(file.globule, path, -1, -1, f => {
+                openFileExplorer(file.globule, f,
+                  (dir: File, explorer: FileExplorer) => {
+                    /** nothing */
+                    setTimeout(() => {
+                      explorer.readFile(file)
+                    }, 1000)
+                  })
+              }, err => ApplicationView.displayMessage(err, 3000))
+            } else if (file.mime.startsWith("image/")) {
+
+              let path = file.path.substring(0, file.path.lastIndexOf("/"));
+              File.getFile(file.globule, path, -1, -1, f => {
+                openFileExplorer(file.globule, f,
+                  (dir: File, explorer: FileExplorer) => {
+                    /** nothing */
+                    setTimeout(() => {
+                      explorer.showImage(file)
+                    }, 1000)
+                  })
+              }, err => ApplicationView.displayMessage(err, 3000))
+            } else {
+              // Open the file location if no reader's are available...
+              let path = file.path.substring(0, file.path.lastIndexOf("/"));
+              File.getFile(file.globule, path, -1, -1, f => {
+                openFileExplorer(file.globule, f,
+                  (dir: File, explorer: FileExplorer) => {
+                    /** nothing */
+                    setTimeout(() => {
+
+                    }, 1000)
+                  })
+              }, err => ApplicationView.displayMessage(err, 3000))
             }
           }, err => ApplicationView.displayMessage(err, 3000))
         },
         true, this
       );
-      
-
 
       // Get backend application infos.
       Application.getAllApplicationInfo(
@@ -484,17 +570,17 @@ export class Application extends Model {
         let userName = localStorage.getItem("user_name");
         let userDomain = localStorage.getItem("user_domain");
 
-        let userInfo =  localStorage.getItem(userId);
+        let userInfo = localStorage.getItem(userId);
         let userFirstName = ""
         let userLastName = ""
         let userMiddleName = ""
         let userProfilePicture = ""
-        if(userInfo){
-            let userInfo_ = JSON.parse(userInfo)
-            userFirstName = userInfo_["firstName_"]
-            userLastName = userInfo_["lastName_"]
-            userMiddleName = userInfo_["middleName_"]
-            userProfilePicture = userInfo_["profilePicture_"]
+        if (userInfo) {
+          let userInfo_ = JSON.parse(userInfo)
+          userFirstName = userInfo_["firstName_"]
+          userLastName = userInfo_["lastName_"]
+          userMiddleName = userInfo_["middleName_"]
+          userProfilePicture = userInfo_["profilePicture_"]
         }
 
         ApplicationView.wait(
@@ -783,7 +869,7 @@ export class Application extends Model {
     email: string,
     password: string,
     confirmPassord: string,
-    domain:string,
+    domain: string,
     onRegister: (account: Account) => void,
     onError: (err: any) => void
   ): Account {
@@ -817,7 +903,7 @@ export class Application extends Model {
         localStorage.setItem("token_expired", (<any>decoded).exp);
         localStorage.setItem("user_email", (<any>decoded).email);
         localStorage.setItem("user_domain", (<any>decoded).user_domain);
-        
+
 
         let rqst = new CreateConnectionRqst
         let connectionId = name.split("@").join("_").split(".").join("_");
@@ -1004,17 +1090,17 @@ export class Application extends Model {
           domain: Model.domain,
           address: address
         }).then(() => {
-          let userInfo =  localStorage.getItem(id);
+          let userInfo = localStorage.getItem(id);
           let userFirstName = ""
           let userLastName = ""
           let userMiddleName = ""
           let userProfilePicture = ""
-          if(userInfo){
-              let userInfo_ = JSON.parse(userInfo)
-              userFirstName = userInfo_["firstName_"]
-              userLastName = userInfo_["lastName_"]
-              userMiddleName = userInfo_["middleName_"]
-              userProfilePicture = userInfo_["profilePicture_"]
+          if (userInfo) {
+            let userInfo_ = JSON.parse(userInfo)
+            userFirstName = userInfo_["firstName_"]
+            userLastName = userInfo_["lastName_"]
+            userMiddleName = userInfo_["middleName_"]
+            userProfilePicture = userInfo_["profilePicture_"]
           }
 
           Application.account = new Account(id, email, userName, userDomain, userFirstName, userLastName, userMiddleName, userProfilePicture);
