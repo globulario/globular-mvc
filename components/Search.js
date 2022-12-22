@@ -2020,8 +2020,8 @@ export class SearchVideoCard extends HTMLElement {
             </div>
         </div>
         `
-
-        // test create offer...
+        
+        this.videoPreview = this.shadowRoot.querySelector("#preview-image")
     }
 
 
@@ -2175,11 +2175,13 @@ export class SearchVideoCard extends HTMLElement {
         card.onmouseover = () => {
             preview.style.display = "block"
             thumbnail.style.display = "none"
+            this.videoPreview.play()
         }
 
         card.onmouseleave = () => {
             preview.style.display = "none"
             thumbnail.style.display = "block"
+            this.videoPreview.pause()
         }
 
         // Here I will get the file asscociated with the video...
@@ -2469,22 +2471,26 @@ export class SearchTitleDetail extends HTMLElement {
         `
 
         // test create offer...
+        this.titleCard = this.shadowRoot.querySelector(".search-title-detail")
         this.titlePreview = this.shadowRoot.querySelector("#title-preview")
+
+        this.titleCard.onmouseover = (evt) =>{
+            this.titlePreview.play()
+        }
+
+        this.titleCard.onmouseleave = (evt)=> {
+            this.titlePreview.pause()
+        }
+
         this.episodePreview = this.shadowRoot.querySelector("#epsiode-preview")
-        this.shadowRoot.querySelector("#epsiode-preview").onmouseover = function(evt) {
-            this.play()
+        let episodesLst = this.shadowRoot.querySelector(".season-episodes-lst") 
+
+        episodesLst.onmouseover = (evt) => {
+            this.episodePreview.play()
         }
 
-        this.shadowRoot.querySelector("#epsiode-preview").onmouseleave = function(evt) {
-            this.pause()
-        }
-
-        this.shadowRoot.querySelector("#title-preview").onmouseover = function(evt) {
-            this.play()
-        }
-
-        this.shadowRoot.querySelector("#title-preview").onmouseleave = function(evt) {
-            this.pause()
+        episodesLst.onmouseleave = (evt) =>{
+            this.episodePreview.pause()
         }
     }
 
