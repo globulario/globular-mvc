@@ -5503,7 +5503,6 @@ export class FilesUploader extends HTMLElement {
                 flex-direction: column;
                 width: 100%;
                 max-height: 200px;
-                max-width: 600px;
                 overflow: auto;
             }
 

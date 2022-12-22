@@ -32,7 +32,7 @@ String.prototype.endsWith = function (suffix) {
 export function playVideo(path, onplay, onclose, title, globule) {
 
     let menus = document.body.querySelectorAll("globular-dropdown-menu")
-    for(var i=0; i < menus.length; i++ ){
+    for (var i = 0; i < menus.length; i++) {
         menus[i].close()
         menus[i].parentNode.removeChild(menus[i])
     }
@@ -483,7 +483,7 @@ export class VideoPlayer extends HTMLElement {
 
     play(path, globule) {
 
-        generatePeerToken(globule, token=>{
+        generatePeerToken(globule, token => {
             let url = path;
             if (!url.startsWith("http")) {
                 url = globule.config.Protocol + "://" + globule.config.Domain
@@ -492,7 +492,7 @@ export class VideoPlayer extends HTMLElement {
                         url = globule.config.Protocol + "://" + window.location.host
                     }
                 }
-    
+
                 if (globule.config.Protocol == "https") {
                     if (globule.config.PortHttps != 443)
                         url += ":" + globule.config.PortHttps
@@ -500,14 +500,14 @@ export class VideoPlayer extends HTMLElement {
                     if (globule.config.PortHttps != 80)
                         url += ":" + globule.config.PortHttp
                 }
-    
+
                 path.split("/").forEach(item => {
                     item = item.trim()
                     if (item.length > 0) {
                         url += "/" + encodeURIComponent(item)
                     }
                 })
-    
+
                 url += "?application=" + Model.application
                 if (localStorage.getItem("user_token") != undefined) {
                     url += "&token=" + token
@@ -517,7 +517,7 @@ export class VideoPlayer extends HTMLElement {
                 parser.href = url
                 path = decodeURIComponent(parser.pathname)
             }
-    
+
             if (this.path == path) {
                 this.resume = true;
                 this.video.play()
@@ -527,9 +527,9 @@ export class VideoPlayer extends HTMLElement {
                 this.path = path
                 this.resume = false;
             }
-    
-    
-    
+
+
+
             // validate url access.
             fetch(url, { method: "HEAD" })
                 .then((response) => {
@@ -550,20 +550,20 @@ export class VideoPlayer extends HTMLElement {
                         } else {
                             this.play_(path, globule, false, token)
                         }
-                    }else{
+                    } else {
                         throw new Error(response.status)
                     }
                 })
                 .catch((error) => {
                     ApplicationView.displayMessage("fail to read url " + url + "with error " + error, 4000)
-                    if(this.parentNode){
+                    if (this.parentNode) {
                         this.parentNode.removeChild(this)
                     }
                 });
-    
-        }, err=>ApplicationView.displayMessage(err, 4000))
 
-     
+        }, err => ApplicationView.displayMessage(err, 4000))
+
+
     }
 
     play_(path, globule, local = false, token) {
@@ -677,8 +677,11 @@ export class VideoPlayer extends HTMLElement {
         } else if (!path.endsWith("/playlist.m3u8")) {
             path += "/playlist.m3u8"
         } else {
-            ApplicationView.displayMessage("the file cannot be play by the video player", 3000)
-            return
+            
+            if (!(path.endsWith("/playlist.m3u8") || path.endsWith(".mp4") || path.endsWith(".webm"))){
+                ApplicationView.displayMessage("the file cannot be play by the video player", 3000)
+                return
+            }
         }
 
         thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/__timeline__/thumbnails.vtt"
