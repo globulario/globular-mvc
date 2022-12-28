@@ -4973,7 +4973,7 @@ export class FileExplorer extends HTMLElement {
         }
     }
 
-    loadImages(dir) {
+    loadImages(dir, callback) {
         // get all images in the directory
         let images_ = []
         for (var i = 0; i < dir.files.length; i++) {
@@ -5009,11 +5009,15 @@ export class FileExplorer extends HTMLElement {
                 }
                 // Init the images...
                 this.imageViewer.populateChildren();
+
+                // call when finish...
+                if(callback)
+                    callback()
             }, images, images_, index, this.globule)
         }
     }
 
-    setDir(dir) {
+    setDir(dir, callback) {
 
 
         if (!(dir.path.startsWith("/public") || public_[dir.path] != undefined || dir.path.startsWith("/shared") || shared[dir.path] != undefined || dir.path.startsWith("/applications/" + Application.application) || dir.path.startsWith("/users/" + Application.account.id))) {
@@ -5042,7 +5046,7 @@ export class FileExplorer extends HTMLElement {
             this.displayView()
         }
 
-        this.loadImages(dir)
+        this.loadImages(dir, callback)
 
         if (this.backNavigationBtn != null) {
             this.backNavigationBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")

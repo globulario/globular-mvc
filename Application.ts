@@ -500,9 +500,7 @@ export class Application extends Model {
                 openFileExplorer(file.globule, f,
                   (dir: File, explorer: FileExplorer) => {
                     /** nothing */
-                    setTimeout(() => {
-                      explorer.readFile(file)
-                    }, 1000)
+                      explorer.readFile(file);
                   })
               }, err => ApplicationView.displayMessage(err, 3000))
             } else if (file.mime.startsWith("image/")) {
@@ -513,7 +511,10 @@ export class Application extends Model {
                   (dir: File, explorer: FileExplorer) => {
                     /** nothing */
                     setTimeout(() => {
-                      explorer.showImage(file)
+                      explorer.setDir(dir, ()=>{
+                        explorer.showImage(file)
+                      })
+                     
                     }, 1000)
                   })
               }, err => ApplicationView.displayMessage(err, 3000))
@@ -524,9 +525,7 @@ export class Application extends Model {
                 openFileExplorer(file.globule, f,
                   (dir: File, explorer: FileExplorer) => {
                     /** nothing */
-                    setTimeout(() => {
-
-                    }, 1000)
+                    explorer.setDir(dir, null)
                   })
               }, err => ApplicationView.displayMessage(err, 3000))
             }

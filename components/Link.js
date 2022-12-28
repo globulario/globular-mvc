@@ -29,16 +29,36 @@ export class Link extends HTMLElement {
 
             }
 
+            .shortcut-icon {
+                position: absolute;
+                bottom: -5px;
+                left: 0px;
+            }
+
+
+            .shortcut-icon iron-icon{
+                background: white;
+                fill: black;
+                height: 20px;
+                width: 20px;
+            }
+
         </style>
 
-        <div id="link-div" style="display: flex; flex-direction: column; align-items: center; width: fit-content; margin: 5px; height: fit-content; ">
+        <div id="link-div" style="display: flex; flex-direction: column; align-items: center; width: fit-content; margin: 5px; height: fit-content;">
             <div style="display: flex; flex-direction: column; border: 1px solid var(--palette-divider); padding: 5px; border-radius: 2.5px;">
             <div style="display: flex; align-items: center; width: 100%;">
                 <span class="title" style="flex-grow: 1;"></span>
             </div>
-            <img style="height: 72px; width: fit-content; max-width: 172px;" src="${thumbnail}">
+            <div style="position: relative;">
+                <img style="height: 72px; width: fit-content; max-width: 172px;" src="${thumbnail}">
+                <div class="shortcut-icon">
+                    <iron-icon icon="icons:reply"></iron-icon>
+                </div> 
+            </div>
             </div>
             <span style="font-size: .85rem; padding: 2px; display: block; max-width: 128px; word-break: break-all;">${name}</span>
+            
         </div>
         `
 
