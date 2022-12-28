@@ -250,16 +250,6 @@ export class VideoPlayer extends HTMLElement {
 
         // HLS for streamming...
         this.hls = null;
-        if (Hls.isSupported()) {
-            this.hls = new Hls(
-                {
-                    xhrSetup: xhr => {
-                        xhr.setRequestHeader('application', Model.application)
-                        xhr.setRequestHeader('token', localStorage.getItem("user_token"))
-                    }
-                }
-            );
-        }
 
         this.playlist = this.shadowRoot.querySelector("globular-playlist")
         this.playlist.videoPlayer = this
@@ -509,9 +499,8 @@ export class VideoPlayer extends HTMLElement {
                 })
 
                 url += "?application=" + Model.application
-                if (localStorage.getItem("user_token") != undefined) {
-                    url += "&token=" + token
-                }
+                url += "&token=" + token
+
             } else {
                 var parser = document.createElement('a');
                 parser.href = url
@@ -677,8 +666,8 @@ export class VideoPlayer extends HTMLElement {
         } else if (!path.endsWith("/playlist.m3u8")) {
             path += "/playlist.m3u8"
         } else {
-            
-            if (!(path.endsWith("/playlist.m3u8") || path.endsWith(".mp4") || path.endsWith(".webm"))){
+
+            if (!(path.endsWith("/playlist.m3u8") || path.endsWith(".mp4") || path.endsWith(".webm"))) {
                 ApplicationView.displayMessage("the file cannot be play by the video player", 3000)
                 return
             }
@@ -730,9 +719,8 @@ export class VideoPlayer extends HTMLElement {
         })
 
         url += "?application=" + Model.application
-        if (localStorage.getItem("user_token") != undefined) {
-            url += "&token=" + token
-        }
+        url += "&token=" + token
+        
 
         if (local) {
             url = "local-media://" + path
@@ -742,13 +730,25 @@ export class VideoPlayer extends HTMLElement {
         this.video.src = url
 
         if (path.endsWith(".m3u8")) {
-            this.hls.attachMedia(this.video);
-            this.hls.on(Hls.Events.MEDIA_ATTACHED, () => {
-                this.hls.loadSource(url);
-                this.hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
-                    this.video.play();
+            if (Hls.isSupported()) {
+                this.hls = new Hls(
+                    {
+                        xhrSetup: xhr => {
+                            xhr.setRequestHeader('application', Model.application)
+                            xhr.setRequestHeader('token', token)
+                        }
+                    }
+                );
+
+                this.hls.attachMedia(this.video);
+
+                this.hls.on(Hls.Events.MEDIA_ATTACHED, () => {
+                    this.hls.loadSource(url);
+                    this.hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
+                        this.video.play();
+                    });
                 });
-            });
+            }
         }
 
         if (this.parentNode.offsetWidth > 0) {

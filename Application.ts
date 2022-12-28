@@ -427,7 +427,7 @@ export class Application extends Model {
           let openFileExplorer = (globule: Globular, file: File, callback: (dir: File, explorer: FileExplorer) => void) => {
             // So the file is not a stream I will open the file explorer...
             // The file explorer object.
-            let fileExplorer = new FileExplorer();
+            let fileExplorer = new FileExplorer(globule);
 
             let userId = localStorage.getItem("user_id")
             let userDomain = localStorage.getItem("user_domain")
@@ -438,7 +438,6 @@ export class Application extends Model {
             // Set the file explorer...
             fileExplorer.init((shared: any, public_: any) => {
               let dir = shared[file.path.split("/")[2]]
-              console.log("----------------> init callback call! ", shared)
               if (dir) {
                 Model.eventHub.publish("__set_dir_event__", { path: dir, file_explorer_id: fileExplorer.id }, true)
                 callback(dir, fileExplorer)

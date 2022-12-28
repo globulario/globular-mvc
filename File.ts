@@ -232,6 +232,7 @@ export class File extends Model {
      */
     static getFile(globule: Globular, path: string, thumbnailWith: number, thumbnailHeight: number, callback: (f: File) => void, errorCallback: (err: string) => void) {
 
+        console.log("----------> generate token for: ", globule.config.Domain)
         generatePeerToken(globule, token => {
 
             let rqst = new GetFileInfoRequest()
@@ -241,6 +242,7 @@ export class File extends Model {
             globule.fileService.getFileInfo(rqst, { application: Application.application, domain: globule.config.Domain, token: token })
                 .then(rsp => {
                     let f = File.fromObject(rsp.getInfo().toObject())
+                    f.globule = globule;
                     callback(f);
 
                 })
@@ -340,7 +342,7 @@ export class File extends Model {
 
                 url += "?application=" + Model.application
                 if (localStorage.getItem("user_token") != undefined) {
-                    url += "&token=" + localStorage.getItem("user_token")
+                    url += "&token=" + token
                 }
 
 
@@ -350,7 +352,7 @@ export class File extends Model {
                 url += "?domain=" + globule.config.Domain
                 url += "&application=" + Model.application
                 if (localStorage.getItem("user_token") != undefined) {
-                    url += "&token=" + localStorage.getItem("user_token")
+                    url += "&token=" + token
                 }
 
                 req.open("GET", url, true);

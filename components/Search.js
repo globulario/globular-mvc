@@ -4,7 +4,7 @@ import '@polymer/paper-icon-button/paper-icon-button.js';
 
 import { Application } from '../Application';
 import { CreateVideoRequest, DeleteVideoRequest, GetFileAudiosRequest, GetFileTitlesRequest, GetTitleByIdRequest, GetTitleFilesRequest, SearchTitlesRequest } from 'globular-web-client/title/title_pb';
-import { Model } from '../Model';
+import { generatePeerToken, Model } from '../Model';
 import { getTheme } from "./Theme";
 import * as getUuid from 'uuid-by-string'
 import { BlogPostInfo, InformationsManager, searchEpisodes } from './Informations';
@@ -60,7 +60,8 @@ export function getCoverDataUrl(callback, videoId, videoUrl, videoPath, globule)
         globule = Application.globular
     }
 
-    // set the url for the image.
+    generatePeerToken(globule, token=>{
+            // set the url for the image.
     let url = globule.config.Protocol + "://" + globule.config.Domain
     if (window.location != globule.config.Domain) {
         if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
@@ -98,7 +99,7 @@ export function getCoverDataUrl(callback, videoId, videoUrl, videoPath, globule)
     var xhr = new XMLHttpRequest();
     xhr.timeout = 1500
     xhr.open('GET', url, true);
-    xhr.setRequestHeader("token", localStorage.getItem("user_token"));
+    xhr.setRequestHeader("token", token);
     xhr.setRequestHeader("application", Model.application);
     xhr.setRequestHeader("domain", Model.domain);
 
@@ -114,11 +115,13 @@ export function getCoverDataUrl(callback, videoId, videoUrl, videoPath, globule)
     };
 
     xhr.send();
+    })
 }
 
 // That function will be use to asscociate file with imdb information.
 export function getImdbInfo(id, callback, errorcallback, globule) {
 
+  generatePeerToken(globule, token=>{
     if (titles[id]) {
         if (titles[id].ID) {
             callback(titles[id])
@@ -173,6 +176,7 @@ export function getImdbInfo(id, callback, errorcallback, globule) {
     xmlhttp.setRequestHeader("domain", globule.config.Domain);
 
     xmlhttp.send();
+  })
 }
 
 function playTitleListener(player, title, indexPath, globule) {

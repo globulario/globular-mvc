@@ -254,40 +254,42 @@ export function getImage(callback, images, files, index, globule) {
             url += "/" + encodeURIComponent(item)
     })
 
-    // Set url query parameter.
-    url += "?domain=" + Model.domain
-    url += "&application=" + Model.application
-    if (localStorage.getItem("user_token") != undefined) {
-        url += "&token=" + localStorage.getItem("user_token")
-    }
-
-    var xhr = new XMLHttpRequest();
-    xhr.timeout = 1500
-    xhr.open('GET', url, true);
-    xhr.setRequestHeader("token", localStorage.getItem("user_token"));
-    xhr.setRequestHeader("application", Model.application);
-    xhr.setRequestHeader("domain", Model.domain);
-
-    // Set responseType to 'arraybuffer', we want raw binary data buffer
-    xhr.responseType = 'blob';
-    xhr.onload = (rsp) => {
-        if (rsp.currentTarget.status == 200) {
-            var reader = new FileReader();
-            reader.readAsDataURL(rsp.currentTarget.response);
-            reader.onload = function (e) {
-                let img = document.createElement("img")
-                img.src = e.target.result
-                images.push(img)
-                if (index < files.length) {
-                    getImage(callback, images, files, index, globule)
-                } else if (callback != undefined) {
-                    callback(images)
-                }
-            };
+    generatePeerToken(globule, token => {
+        // Set url query parameter.
+        url += "?domain=" + globule.config.Domain
+        url += "&application=" + Model.application
+        if (localStorage.getItem("user_token") != undefined) {
+            url += "&token=" + token
         }
-    };
 
-    xhr.send();
+        var xhr = new XMLHttpRequest();
+        xhr.timeout = 1500
+        xhr.open('GET', url, true);
+        xhr.setRequestHeader("token", token);
+        xhr.setRequestHeader("application", Model.application);
+        xhr.setRequestHeader("domain", globule.config.Domain);
+
+        // Set responseType to 'arraybuffer', we want raw binary data buffer
+        xhr.responseType = 'blob';
+        xhr.onload = (rsp) => {
+            if (rsp.currentTarget.status == 200) {
+                var reader = new FileReader();
+                reader.readAsDataURL(rsp.currentTarget.response);
+                reader.onload = function (e) {
+                    let img = document.createElement("img")
+                    img.src = e.target.result
+                    images.push(img)
+                    if (index < files.length) {
+                        getImage(callback, images, files, index, globule)
+                    } else if (callback != undefined) {
+                        callback(images)
+                    }
+                };
+            }
+        };
+
+        xhr.send();
+    })
 }
 
 
@@ -1433,17 +1435,19 @@ export class FilesView extends HTMLElement {
             } else if (url.endsWith(".jpeg") || url.endsWith(".jpg") || url.startsWith(".bpm") || url.startsWith(".gif") || url.startsWith(".png")) {
                 // I will get the file from the url and save it on the server in the current directory.
                 var getFileBlob = (url, cb) => {
-                    var xhr = new XMLHttpRequest();
-                    xhr.timeout = 1500
-                    xhr.open("GET", url);
-                    xhr.responseType = "blob";
-                    xhr.setRequestHeader("token", localStorage.getItem("user_token"));
-                    xhr.setRequestHeader("application", Model.application);
-                    xhr.setRequestHeader("domain", Model.domain);
-                    xhr.addEventListener('load', () => {
-                        cb(xhr.response);
-                    });
-                    xhr.send();
+                    generatePeerToken( this._file_explorer_.globule, token=>{
+                        var xhr = new XMLHttpRequest();
+                        xhr.timeout = 1500
+                        xhr.open("GET", url);
+                        xhr.responseType = "blob";
+                        xhr.setRequestHeader("token", token);
+                        xhr.setRequestHeader("application", Model.application);
+                        xhr.setRequestHeader("domain", Model.domain);
+                        xhr.addEventListener('load', () => {
+                            cb(xhr.response);
+                        });
+                        xhr.send();
+                    })
                 };
 
                 var blobToFile = (blob, name) => {
@@ -3379,6 +3383,7 @@ export class FileNavigator extends HTMLElement {
 
         })
 
+
         // Select the peer.
         this.shadowRoot.querySelector("select").onchange = () => {
             let index = this.shadowRoot.querySelector("select").value
@@ -3390,7 +3395,15 @@ export class FileNavigator extends HTMLElement {
 
     // The connection callback.
     connectedCallback() {
-
+        let index = 0
+        let peers = Model.getGlobules()
+        peers.forEach(p=>{
+            if(p.config.Domain == this._file_explorer_.globule.config.Domain){
+                this.shadowRoot.querySelector("select").value = index;
+            }
+            index++
+        })
+       
     }
 
     setFileExplorer(fileExplorer) {
@@ -3638,7 +3651,7 @@ export class FileNavigator extends HTMLElement {
         this.initPublic(() => {
             this._file_explorer_.displayWaitMessage("load shared content")
             // Init shared...
-            this.initShared((shared_, public_) => { if (callback) callback(shared_, public_); this._file_explorer_.resume()})
+            this.initShared((shared_, public_) => { if (callback) callback(shared_, public_); this._file_explorer_.resume() })
         })
     }
 
@@ -3759,7 +3772,7 @@ export class FileNavigator extends HTMLElement {
                             if (this.shared[userId].files.find(f => f.path == dir.path) == undefined) {
                                 this.shared[userId].files.push(dir)
                                 console.log(userId, 3761)
-                               
+
                             }
                         }
                         callback()
@@ -3798,7 +3811,7 @@ export class FileNavigator extends HTMLElement {
                                         }
                                     }
                                     callback()
-                                }, e =>{console.log(e);  console.log(userId, 3801, e)})
+                                }, e => { console.log(e); console.log(userId, 3801, e) })
                         }
                     }, this._file_explorer_.globule)
                 }, err => {
@@ -3831,7 +3844,7 @@ export class FileNavigator extends HTMLElement {
                     if (s != undefined) {
                         initShared(s, callback)
                     } else {
-            
+
                         for (const id in this.shared) {
                             let shared = this.shared[id]
                             // this.initTreeView(shared, this.sharedDiv, 0)
@@ -3841,7 +3854,7 @@ export class FileNavigator extends HTMLElement {
                         }
 
                         if (initCallback)
-                        initCallback(this.shared, this.public_)
+                            initCallback(this.shared, this.public_)
 
                     }
                 }
@@ -3868,11 +3881,14 @@ export class FileExplorer extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor() {
+    constructor(globule) {
         super()
 
         // the default globule
         this.globule = Model.globular
+        if (globule) {
+            this.globule = globule;
+        }
 
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
@@ -4120,9 +4136,8 @@ export class FileExplorer extends HTMLElement {
         // Give information about loading data...
         this.progressDiv = this.shadowRoot.querySelector("#progress-div")
         this.shadowRoot.querySelector("globular-disk-space-manager").account = Application.account;
-        this.shadowRoot.querySelector("globular-disk-space-manager").globule = Model.globular
-
-
+        this.shadowRoot.querySelector("globular-disk-space-manager").globule = this.globule
+ 
         // enter full screen and exit full screen btn
         this.enterFullScreenBtn = this.shadowRoot.querySelector("#enter-full-screen-btn")
         this.exitFullScreenBtn = this.shadowRoot.querySelector("#exit-full-screen-btn")

@@ -1,5 +1,5 @@
 import { getTheme } from "./Theme";
-import { Model } from '../Model';
+import { generatePeerToken, Model } from '../Model';
 import { ApplicationView } from "../ApplicationView";
 import { setMoveable } from './moveable'
 import WaveSurfer from "wavesurfer.js";
@@ -25,9 +25,9 @@ export function secondsToTime(secs) {
 }
 
 export function playAudio(path, onplay, onclose, title, globule) {
-    
+
     let menus = document.body.querySelectorAll("globular-dropdown-menu")
-    for(var i=0; i < menus.length; i++ ){
+    for (var i = 0; i < menus.length; i++) {
         menus[i].close()
         menus[i].parentNode.removeChild(menus[i])
     }
@@ -783,11 +783,11 @@ export class AudioPlayer extends HTMLElement {
 
 
         if (audio) {
-            if(audio.getArtist()){
+            if (audio.getArtist()) {
                 this.shadowRoot.querySelector("#title-span").innerHTML = audio.getArtist() + " : "
             }
             // TODO see how to get the featuring info...
-            this.shadowRoot.querySelector("#title-span").innerHTML +=  audio.getTitle()
+            this.shadowRoot.querySelector("#title-span").innerHTML += audio.getTitle()
 
             this.albumName.innerHTML = audio.getAlbum()
             this.albumYear.innerHTML = ""
@@ -804,73 +804,79 @@ export class AudioPlayer extends HTMLElement {
             }
         }
 
-        let url = ""
+        generatePeerToken(globule, token => {
+            let url = ""
 
 
-        if (path.startsWith("http")) {
-            url = path;
-        } else {
-            url = globule.config.Protocol + "://" + globule.config.Domain
-            if (window.location != globule.config.Domain) {
-                if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
-                    url = globule.config.Protocol + "://" + window.location.host
-                }
-            }
-
-            if (globule.config.Protocol == "https") {
-                if (globule.config.PortHttps != 443)
-                    url += ":" + globule.config.PortHttps
+            if (path.startsWith("http")) {
+                url = path;
             } else {
-                if (globule.config.PortHttps != 80)
-                    url += ":" + globule.config.PortHttp
-            }
 
-            //url += path
-            path.split("/").forEach(item => {
-                item = item.trim()
-                if (item.length > 0) {
-                    url += "/" + encodeURIComponent(item)
+                url = globule.config.Protocol + "://" + globule.config.Domain
+                if (window.location != globule.config.Domain) {
+                    if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
+                        url = globule.config.Protocol + "://" + window.location.host
+                    }
                 }
-            })
 
-            url += "?application=" + Model.application
-            if (localStorage.getItem("user_token") != undefined) {
-                url += "&token=" + localStorage.getItem("user_token")
+                if (globule.config.Protocol == "https") {
+                    if (globule.config.PortHttps != 443)
+                        url += ":" + globule.config.PortHttps
+                } else {
+                    if (globule.config.PortHttps != 80)
+                        url += ":" + globule.config.PortHttp
+                }
+
+                //url += path
+                path.split("/").forEach(item => {
+                    item = item.trim()
+                    if (item.length > 0) {
+                        url += "/" + encodeURIComponent(item)
+                    }
+                })
+
+                url += "?application=" + Model.application
+
+                url += "&token=" + token
+
             }
-        }
 
-        if (local) {
-            url = "local-media://" + path
-        }
-
-        this.path = path;
-        if (audio) {
-            this._audio_ = audio
-            this._audio_.globule = globule
-            this.audio.src = url
-        }
-
-        var xhr = new XMLHttpRequest();
-        xhr.open('get', url, true);
-
-        // Load the data directly as a Blob.
-        xhr.responseType = 'blob';
-
-        xhr.onload = (evt) => {
-            if(evt.target.status == 401){
-                ApplicationView.displayMessage(`unable to read the file ${path} Check your access privilege`, 3500)
-                this.close()
-                return
+            if (local) {
+                url = "local-media://" + path
             }
-            if(evt.target.response.size < 48000000){
-                this.wavesurfer.loadBlob(evt.target.response);
-            }else{
-                ApplicationView.displayMessage("this file is to large to be play by the audio player. The maximum size is 24MB for audio file", 3000)
-            }
-            
-        };
 
-        xhr.send();
+            this.path = path;
+            if (audio) {
+                this._audio_ = audio
+                this._audio_.globule = globule
+                this.audio.src = url
+            }
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('get', url, true);
+
+            // Load the data directly as a Blob.
+            xhr.responseType = 'blob';
+
+            xhr.onload = (evt) => {
+                if (evt.target.status == 401) {
+                    ApplicationView.displayMessage(`unable to read the file ${path} Check your access privilege`, 3500)
+                    this.close()
+                    return
+                }
+                if (evt.target.response.size < 48000000) {
+                    this.wavesurfer.loadBlob(evt.target.response);
+                } else {
+                    ApplicationView.displayMessage("this file is to large to be play by the audio player. The maximum size is 24MB for audio file", 3000)
+                }
+
+            };
+
+            xhr.send();
+        })
+
+
+
     }
 
     // load the playlist...

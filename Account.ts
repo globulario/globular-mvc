@@ -1,4 +1,4 @@
-import { Model } from "./Model";
+import { Model, generatePeerToken } from "./Model";
 import { FindOneRqst, FindResp, FindRqst, ReplaceOneRqst, ReplaceOneRsp } from "globular-web-client/persistence/persistence_pb";
 import * as ResourceService from "globular-web-client/resource/resource_pb";
 import { mergeTypedArrays, uint8arrayToStringMethod } from "./Utility";
@@ -163,8 +163,6 @@ export class Account extends Model {
             id = accountId.split("@")[0]
         }
 
-        
-
         if (Account.accounts[accountId] != null) {
             if (Account.accounts[accountId].session != null) {
                 successCallback(Account.accounts[accountId]);
@@ -172,65 +170,69 @@ export class Account extends Model {
             }
         }
 
-        let token = localStorage.getItem("user_token")
-        let rqst = new ResourceService.GetAccountsRqst
-        rqst.setQuery(`{"$or":[{"_id":"${id}"},{"name":"${id}"} ]}`); // search by name and not id... the id will be retreived.
-        rqst.setOptions(`[{"Projection":{"_id":1, "email":1, "name":1, "groups":1, "organizations":1, "roles":1, "domain":1}}]`);
-
         let globule = Model.getGlobule(domain)
-        if (globule) {
+        generatePeerToken(globule, token => {
 
 
-            let stream = globule.resourceService.getAccounts(rqst, { domain: domain, application: Model.application, token: token })
-            let data: ResourceService.Account;
+            let rqst = new ResourceService.GetAccountsRqst
+            rqst.setQuery(`{"$or":[{"_id":"${id}"},{"name":"${id}"} ]}`); // search by name and not id... the id will be retreived.
+            rqst.setOptions(`[{"Projection":{"_id":1, "email":1, "name":1, "groups":1, "organizations":1, "roles":1, "domain":1}}]`);
 
-            stream.on("data", (rsp) => {
-                if (!data) {
-                    data = rsp.getAccountsList().pop()
-                }
-            });
+            let globule = Model.getGlobule(domain)
+            if (globule) {
 
-            stream.on("status", (status) => {
-                if (status.code == 0) {
 
-                    // so here I will get the session for the account...
-                    if (Account.accounts[accountId] != null) {
-                        if (Account.accounts[accountId].session != null) {
-                            successCallback(Account.accounts[accountId]);
+                let stream = globule.resourceService.getAccounts(rqst, { domain: domain, application: Model.application, token: token })
+                let data: ResourceService.Account;
+
+                stream.on("data", (rsp) => {
+                    if (!data) {
+                        data = rsp.getAccountsList().pop()
+                    }
+                });
+
+                stream.on("status", (status) => {
+                    if (status.code == 0) {
+
+                        // so here I will get the session for the account...
+                        if (Account.accounts[accountId] != null) {
+                            if (Account.accounts[accountId].session != null) {
+                                successCallback(Account.accounts[accountId]);
+                                return
+                            }
+
+                        }
+
+                        // Initialyse the data...
+                        if (!data) {
+                            errorCallback("no account found with id " + accountId)
                             return
                         }
 
-                    }
+                        let account = new Account(data.getId(), data.getEmail(), data.getName(), data.getDomain(), data.getFirstname(), data.getLastname(), data.getMiddle(), data.getProfilepicture())
+                        account.session = new Session(account)
+                        Account.accounts[accountId] = account;
 
-                    // Initialyse the data...
-                    if (!data) {
-                        errorCallback("no account found with id " + accountId)
-                        return
-                    }
+                        account.session.initData(() => {
+                            // here I will initialyse groups...
+                            account.groups_ = data.getGroupsList();
 
-                    let account = new Account(data.getId(), data.getEmail(), data.getName(), data.getDomain(), data.getFirstname(), data.getLastname(), data.getMiddle(), data.getProfilepicture())
-                    account.session = new Session(account)
-                    Account.accounts[accountId] = account;
-
-                    account.session.initData(() => {
-                        // here I will initialyse groups...
-                        account.groups_ = data.getGroupsList();
-
-                        if (account.id == Application.account.id) {
-                            account.initData(() => {
+                            if (account.id == Application.account.id) {
+                                account.initData(() => {
+                                    successCallback(account)
+                                }, errorCallback)
+                            } else {
                                 successCallback(account)
-                            }, errorCallback)
-                        } else {
-                            successCallback(account)
-                        }
+                            }
 
-                    }, errorCallback)
+                        }, errorCallback)
 
-                } else {
-                    errorCallback(status.details);
-                }
-            })
-        }
+                    } else {
+                        errorCallback(status.details);
+                    }
+                })
+            }
+        }, err => ApplicationView.displayMessage(err, 3000))
     }
 
     /**
@@ -345,42 +347,23 @@ export class Account extends Model {
         rqst.setQuery(query);
         rqst.setOptions("");
 
-        // So here I will set the address from the address found in the token and not 
-        // the address of the client itself.
-        let token = localStorage.getItem("user_token")
+        let globule = Model.getGlobule(userDomain)
+        generatePeerToken(globule, token => {
+            // call persist data
+            Model.getGlobule(userDomain).persistenceService
+                .findOne(rqst, {
+                    token: token,
+                    application: Model.application,
+                    domain: Model.domain // the domain at the origin of the request.
+                })
+                .then((rsp: any) => {
+                    let data = rsp.getResult().toJavaScript();
+                    successCallback(data);
+                })
+                .catch((err: any) => {
+                    if (err.code == 13) {
 
-        // call persist data
-        Model.getGlobule(userDomain).persistenceService
-            .findOne(rqst, {
-                token: token,
-                application: Model.application,
-                domain: Model.domain // the domain at the origin of the request.
-            })
-            .then((rsp: any) => {
-                let data = rsp.getResult().toJavaScript();
-                successCallback(data);
-            })
-            .catch((err: any) => {
-                if (err.code == 13) {
-
-                    if (Application.account == null) {
-                        ApplicationView.displayMessage("no connection found on the server you need to login", 3000)
-                        setTimeout(() => {
-                            localStorage.removeItem("remember_me");
-                            localStorage.removeItem("user_token");
-                            localStorage.removeItem("user_id");
-                            localStorage.removeItem("user_name");
-                            localStorage.removeItem("user_email");
-                            localStorage.removeItem("token_expired");
-                            location.reload();
-                            return;
-                        }, 3000)
-                    }
-
-                    if (Application.account.id == id) {
-                        if (err.message.indexOf("no documents in result") != -1) {
-                            successCallback({});
-                        } else {
+                        if (Application.account == null) {
                             ApplicationView.displayMessage("no connection found on the server you need to login", 3000)
                             setTimeout(() => {
                                 localStorage.removeItem("remember_me");
@@ -393,13 +376,33 @@ export class Account extends Model {
                                 return;
                             }, 3000)
                         }
+
+                        if (Application.account.id == id) {
+                            if (err.message.indexOf("no documents in result") != -1) {
+                                successCallback({});
+                            } else {
+                                ApplicationView.displayMessage("no connection found on the server you need to login", 3000)
+                                setTimeout(() => {
+                                    localStorage.removeItem("remember_me");
+                                    localStorage.removeItem("user_token");
+                                    localStorage.removeItem("user_id");
+                                    localStorage.removeItem("user_name");
+                                    localStorage.removeItem("user_email");
+                                    localStorage.removeItem("token_expired");
+                                    location.reload();
+                                    return;
+                                }, 3000)
+                            }
+                        } else {
+                            successCallback({});
+                        }
                     } else {
-                        successCallback({});
+                        errorCallback(err);
                     }
-                } else {
-                    errorCallback(err);
-                }
-            });
+                });
+        }, err => ApplicationView.displayMessage(err, 3000))
+
+
     }
 
     private setData(data: any) {
@@ -648,7 +651,7 @@ export class Account extends Model {
                 let sentInvitation = `{"_id":"${to.id + "@" + to.domain}", "invitationTime":${Math.floor(Date.now() / 1000)}, "status":"${status_from}"}`
 
                 Model.getGlobule(from.domain).eventHub.publish(status_from + "_" + from.id + "@" + from.domain + "_evt", sentInvitation, false)
-                if(from.domain!= to.domain){
+                if (from.domain != to.domain) {
                     Model.getGlobule(to.domain).eventHub.publish(status_from + "_" + from.id + "@" + from.domain + "_evt", sentInvitation, false)
                 }
 
@@ -674,7 +677,7 @@ export class Account extends Model {
                         // Here I will return the value with it
                         let receivedInvitation = `{"_id":"${from.id + "@" + from.domain}", "invitationTime":${Math.floor(Date.now() / 1000)}, "status":"${status_to}"}`
                         Model.getGlobule(from.domain).eventHub.publish(status_to + "_" + to.id + "@" + to.domain + "_evt", receivedInvitation, false)
-                        if(from.domain!= to.domain){
+                        if (from.domain != to.domain) {
                             Model.getGlobule(to.domain).eventHub.publish(status_to + "_" + to.id + "@" + to.domain + "_evt", receivedInvitation, false)
                         }
 
