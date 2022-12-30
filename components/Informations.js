@@ -1434,7 +1434,7 @@ export class TitleInfo extends HTMLElement {
                                     if (parentNode != null) {
                                         parentNode.appendChild(titleInfoBox)
                                     }
-                                }, null, globule)
+                                }, e, globule)
 
                         }).catch(err => ApplicationView.displayMessage(err, 3000))
                 }

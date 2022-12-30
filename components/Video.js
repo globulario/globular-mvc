@@ -31,8 +31,10 @@ String.prototype.endsWith = function (suffix) {
  */
 export function playVideo(path, onplay, onclose, title, globule) {
 
-    if(title.globule){
-        globule = title.globule
+    if (title) {
+        if (title.globule) {
+            globule = title.globule
+        }
     }
 
     let menus = document.body.querySelectorAll("globular-dropdown-menu")
@@ -574,9 +576,16 @@ export class VideoPlayer extends HTMLElement {
         // Now I will test if imdb info are allready asscociated.
         let getTitleInfo = (path, callback) => {
             // The title info is already set...
-            if(this.titleInfo!=undefined){
-                callback([this.titleInfo])
-                return 
+            if (this.titleInfo) {
+                if (this.titleInfo.getName != undefined) {
+                    this.titleInfo.isVideo = false;
+                    callback([this.titleInfo])
+                    return
+                } else {
+                    this.titleInfo.isVideo = true;
+                    callback([])
+                    return
+                }
             }
 
             let rqst = new GetFileTitlesRequest
@@ -592,6 +601,18 @@ export class VideoPlayer extends HTMLElement {
 
 
         let getVideoInfo = (path, callback) => {
+            if (this.titleInfo) {
+                if (this.titleInfo.getDescription != undefined) {
+                    this.titleInfo.isVideo = true;
+                    callback([this.titleInfo])
+                    return
+                } else {
+                    this.titleInfo.isVideo = false;
+                    callback([])
+                    return
+                }
+            }
+
             let rqst = new GetFileVideosRequest
             rqst.setIndexpath(globule.config.DataPath + "/search/videos")
             rqst.setFilepath(path)
@@ -729,7 +750,7 @@ export class VideoPlayer extends HTMLElement {
 
         url += "?application=" + Model.application
         url += "&token=" + token
-        
+
 
         if (local) {
             url = "local-media://" + path
