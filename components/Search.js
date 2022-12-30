@@ -2531,7 +2531,6 @@ export class SearchTitleDetail extends HTMLElement {
 
 
             let setEpisodeOption = (episode) => {
-                console.log("globule: ", globule.config.Domain)
                 let rqst = new GetTitleFilesRequest
                 rqst.setTitleid(episode.getId())
                 let indexPath = globule.config.DataPath + "/search/titles"
@@ -2686,7 +2685,7 @@ export class SearchTitleDetail extends HTMLElement {
                     this.shadowRoot.querySelector("#title-preview").onclick = this.shadowRoot.querySelector("#play-video-button").onclick = () => {
                         playVideo(path, (player, title) => {
                             playTitleListener(player, title, indexPath, globule)
-                        }, null, null, globule)
+                        }, null, title, globule)
                     }
                 }
             }).catch(err => {

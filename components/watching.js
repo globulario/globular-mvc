@@ -176,6 +176,7 @@ function getVideos(id, callback) {
 
             // append the video
             if (video != null) {
+                video.globule = g;  // keep reference to the globule.
                 videos.push(video)
             }
 
@@ -239,6 +240,7 @@ function getTitles(id, callback) {
         _getTitle(g, id, (title) => {
             // append the video
             if (title != null) {
+                title.globule = g // keep reference to globule.
                 titles.push(title)
             }
 

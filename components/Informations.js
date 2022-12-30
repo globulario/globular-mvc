@@ -1083,6 +1083,31 @@ export class TitleInfo extends HTMLElement {
 
     }
 
+    showTitleInfo(title) {
+        let uuid = randomUUID()
+        let html = `
+        <paper-card id="video-info-box-dialog-${uuid}" style="padding: 15px; background: var(--palette-background-default); border-top: 1px solid var(--palette-background-paper); border-left: 1px solid var(--palette-background-paper);">
+            <globular-informations-manager id="title-info-box"></globular-informations-manager>
+        </paper-card>
+        `
+        let titleInfoBox = document.getElementById("title-info-box")
+        if (titleInfoBox == undefined) {
+            let range = document.createRange()
+            document.body.appendChild(range.createContextualFragment(html))
+            titleInfoBox = document.getElementById("title-info-box")
+            let parent = document.getElementById("video-info-box-dialog-" + uuid)
+            parent.style.position = "fixed"
+            parent.style.top = "75px"
+            parent.style.left = "50%"
+            parent.style.transform = "translate(-50%)"
+
+            titleInfoBox.onclose = () => {
+                parent.parentNode.removeChild(parent)
+            }
+        }
+        titleInfoBox.setTitlesInformation([title])
+    }
+
     setTitle(title) {
 
         let posterUrl = ""
@@ -1232,6 +1257,7 @@ export class TitleInfo extends HTMLElement {
         let seasons = {}
 
         episodes.forEach(e => {
+            e.globule = globule
             if (e.getType() == "TVEpisode") {
                 if (e.getSeason() > 0) {
                     if (seasons[e.getSeason()] == null) {
@@ -1352,6 +1378,7 @@ export class TitleInfo extends HTMLElement {
             }
 
             episodes.forEach(e => {
+                e.globule = globule;
                 let posterUrl = ""
                 if (e.getPoster() != undefined) {
                     posterUrl = e.getPoster().getContenturl()
@@ -1366,12 +1393,19 @@ export class TitleInfo extends HTMLElement {
                             <div class="slide-on-panel-title-name">
                                 ${e.getName()}
                             </div>
-                            <paper-icon-button icon="icons:info-outline"></paper-icon-button>
+                            <paper-icon-button id="infos-btn-${uuid}" icon="icons:info-outline"></paper-icon-button>
                         </div>
                     </div>
                 `
 
                 page.appendChild(range.createContextualFragment(html))
+
+                let infosBtn = page.querySelector(`#infos-btn-${uuid}`)
+                infosBtn.onclick= (evt)=>{
+                    evt.stopPropagation()
+                    this.showTitleInfo(e)
+                }
+
                 let playBtn = page.querySelector(`#_${uuid}`)
                 playBtn.onclick = () => {
                     let indexPath = globule.config.DataPath + "/search/titles"

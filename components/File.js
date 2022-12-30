@@ -93,7 +93,7 @@ function getFileSize(url_, callback, errorcallback) {
     let url = window.location.protocol + "//" + window.location.host + "/file_size"
 
     var xmlhttp = new XMLHttpRequest();
-    xmlhttp.timeout = 1500
+    xmlhttp.timeout = 10*1000
 
     xmlhttp.onreadystatechange = function () {
         if (this.readyState == 4 && (this.status == 201 || this.status == 200)) {
@@ -263,7 +263,7 @@ export function getImage(callback, images, files, index, globule) {
         }
 
         var xhr = new XMLHttpRequest();
-        xhr.timeout = 1500
+        xhr.timeout = 10 * 1000
         xhr.open('GET', url, true);
         xhr.setRequestHeader("token", token);
         xhr.setRequestHeader("application", Model.application);
@@ -757,7 +757,7 @@ export class FilesView extends HTMLElement {
               </div>
             </div>
             `,
-                15000 // 15 sec...
+                15 * 1000 // 15 sec...
             );
 
             let yesBtn = document.querySelector("#yes-delete-files")
@@ -1435,7 +1435,7 @@ export class FilesView extends HTMLElement {
             } else if (url.endsWith(".jpeg") || url.endsWith(".jpg") || url.startsWith(".bpm") || url.startsWith(".gif") || url.startsWith(".png")) {
                 // I will get the file from the url and save it on the server in the current directory.
                 var getFileBlob = (url, cb) => {
-                    generatePeerToken( this._file_explorer_.globule, token=>{
+                    generatePeerToken(this._file_explorer_.globule, token => {
                         var xhr = new XMLHttpRequest();
                         xhr.timeout = 1500
                         xhr.open("GET", url);
@@ -3397,13 +3397,13 @@ export class FileNavigator extends HTMLElement {
     connectedCallback() {
         let index = 0
         let peers = Model.getGlobules()
-        peers.forEach(p=>{
-            if(p.config.Domain == this._file_explorer_.globule.config.Domain){
+        peers.forEach(p => {
+            if (p.config.Domain == this._file_explorer_.globule.config.Domain) {
                 this.shadowRoot.querySelector("select").value = index;
             }
             index++
         })
-       
+
     }
 
     setFileExplorer(fileExplorer) {
@@ -3733,8 +3733,6 @@ export class FileNavigator extends HTMLElement {
         this.shared_.mime = "";
         this.shared_.modeTime = new Date()
 
-        console.log("--------> init shared called...")
-
         // Init the share info
         let initShared = (share, callback) => {
             // Try to get the user id...
@@ -3828,6 +3826,7 @@ export class FileNavigator extends HTMLElement {
         if (Application.account == undefined) {
             return // nothing to do here...
         }
+        
         // The account...
         let rqst = new GetSharedResourceRqst
         rqst.setSubject(Application.account.id + "@" + Application.account.domain)
@@ -4137,7 +4136,7 @@ export class FileExplorer extends HTMLElement {
         this.progressDiv = this.shadowRoot.querySelector("#progress-div")
         this.shadowRoot.querySelector("globular-disk-space-manager").account = Application.account;
         this.shadowRoot.querySelector("globular-disk-space-manager").globule = this.globule
- 
+
         // enter full screen and exit full screen btn
         this.enterFullScreenBtn = this.shadowRoot.querySelector("#enter-full-screen-btn")
         this.exitFullScreenBtn = this.shadowRoot.querySelector("#exit-full-screen-btn")
@@ -4215,20 +4214,6 @@ export class FileExplorer extends HTMLElement {
         this.filesUploader = this.shadowRoot.querySelector("globular-files-uploader")
         this.filesUploader._file_explorer_ = this
 
-
-        // The file reader
-        // this.fileReader = this.shadowRoot.querySelector("#globular-file-reader")
-        this.fileReader = new GlobularFileReader()
-        this.fileReader.id = "#globular-file-reader"
-        this.fileReader.style.display = "none"
-        this.appendChild(this.fileReader)
-
-        // The image viewer
-        // this.imageViewer = this.shadowRoot.querySelector("#globular-image-viewer")
-        this.imageViewer = new ImageViewer()
-        this.imageViewer.id = "#globular-image-viewer"
-        this.imageViewer.style.display = "none"
-        this.appendChild(this.imageViewer)
 
         // The path navigator
         this.pathNavigator = this.shadowRoot.querySelector("#globular-path-navigator")
@@ -4597,11 +4582,31 @@ export class FileExplorer extends HTMLElement {
         this.globule = globule
         this.shadowRoot.querySelector("globular-disk-space-manager").globule = globule
         this.permissionManager.globule = globule // set the globule for get permissions...
+
         this.init()
     }
 
     // Set the file explorer directory.
     init(callback) {
+        // The file reader
+        if (this.fileReader) {
+            this.fileReader.parentNode.removeChild(this.fileReader)
+        }
+
+        this.fileReader = new GlobularFileReader()
+        this.fileReader.id = "#globular-file-reader"
+        this.fileReader.style.display = "none"
+        this.appendChild(this.fileReader)
+
+        // The image viewer
+        if (this.imageViewer) {
+            this.imageViewer.parentNode.removeChild(this.imageViewer)
+        }
+
+        this.imageViewer = new ImageViewer()
+        this.imageViewer.id = "#globular-image-viewer"
+        this.imageViewer.style.display = "none"
+        this.appendChild(this.imageViewer)
 
         // Init the path navigator
         this.pathNavigator.init();
@@ -4803,41 +4808,6 @@ export class FileExplorer extends HTMLElement {
             }, true)
         }
 
-        // Load the root dir...
-        this.displayWaitMessage("load " + this.root)
-        _readDir(this.root, (dir) => {
-            // set interface with the given directory.
-            this.resume()
-
-            if (this.fileNavigator != null) {
-                this.fileNavigator.setDir(dir, (shared_, public_) => { if (callback) callback(shared_, public_) })
-            } else {
-                console.log("no file navigator!")
-            }
-
-            if (this.pathNavigator != null) {
-                this.pathNavigator.setDir(dir)
-            } else {
-                console.log("no path navigator!")
-            }
-
-            if (this.filesListView != null) {
-                this.filesListView.setDir(dir)
-            } else {
-                console.log("no file list view!")
-            }
-
-            if (this.filesIconView) {
-                this.filesIconView.setDir(dir)
-            } else {
-                console.log("no file icon view!")
-            }
-
-            this.setDir(dir)
-
-
-        }, () => { this.onerror; this.resume() }, this.globule)
-
         // Load the application dir.
         this.displayWaitMessage("load " + Model.application + "dir")
         _readDir("/applications/" + Model.application, (dir) => {
@@ -4868,7 +4838,42 @@ export class FileExplorer extends HTMLElement {
                 console.log("no file icon view!")
             }
 
-            this.setDir(dir)
+            //this.setDir(dir)
+
+            // Load the root dir...
+            this.displayWaitMessage("load " + this.root)
+            _readDir(this.root, (dir) => {
+                // set interface with the given directory.
+                this.resume()
+
+                if (this.fileNavigator != null) {
+                    this.fileNavigator.setDir(dir, (shared_, public_) => { if (callback) callback(shared_, public_) })
+                } else {
+                    console.log("no file navigator!")
+                }
+
+                if (this.pathNavigator != null) {
+                    this.pathNavigator.setDir(dir)
+                } else {
+                    console.log("no path navigator!")
+                }
+
+                if (this.filesListView != null) {
+                    this.filesListView.setDir(dir)
+                } else {
+                    console.log("no file list view!")
+                }
+
+                if (this.filesIconView) {
+                    this.filesIconView.setDir(dir)
+                } else {
+                    console.log("no file icon view!")
+                }
+
+                this.setDir(dir)
+
+
+            }, () => { this.onerror; this.resume() }, this.globule)
 
 
         }, () => { this.onerror; this.resume() }, this.globule)
@@ -5011,7 +5016,7 @@ export class FileExplorer extends HTMLElement {
                 this.imageViewer.populateChildren();
 
                 // call when finish...
-                if(callback)
+                if (callback)
                     callback()
             }, images, images_, index, this.globule)
         }
@@ -5747,7 +5752,7 @@ export class FilesUploader extends HTMLElement {
 
         // Start display torrent infos...
         this.getTorrentLnks(this._file_explorer_.globule, lnks => {
-            console.log("------------------> ", lnks)
+            
         })
         this.getTorrentsInfo(this._file_explorer_.globule)
     }

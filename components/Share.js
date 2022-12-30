@@ -1,6 +1,5 @@
 import "@polymer/iron-icons/social-icons";
-import { GeneratePeerTokenRequest } from "globular-web-client/authentication/authentication_pb";
-import { GetResourcePermissionRqst, GetResourcePermissionsRqst, Permission, Permissions, SetResourcePermissionsRqst } from "globular-web-client/rbac/rbac_pb";
+import { GetResourcePermissionsRqst, GetSharedResourceRqst, Permission, Permissions, SetResourcePermissionsRqst, SubjectType } from "globular-web-client/rbac/rbac_pb";
 import { CreateNotificationRqst, Notification, NotificationType } from "globular-web-client/resource/resource_pb";
 import * as getUuidByString from "uuid-by-string";
 import { Account } from "../Account";
@@ -10,9 +9,10 @@ import { Group } from "../Group";
 import { generatePeerToken, Model } from "../Model";
 import { Menu } from './Menu';
 import { getTheme } from "./Theme";
-import { randomUUID } from "./utility";
+import { formatBoolean, randomUUID } from "./utility";
 import { Wizard } from "./Wizard";
-import {Link} from "./Link"
+import { Link } from "./Link"
+import { File } from "../File"
 import { Notification as Notification_ } from '../Notification';
 
 /**
@@ -82,7 +82,7 @@ export class SharePanel extends HTMLElement {
 
             #share_div{
                 display: flex;
-                flex-wrap: wrap;
+                /*flex-wrap: wrap;*/
             }
 
             #title_div{
@@ -103,6 +103,9 @@ export class SharePanel extends HTMLElement {
                 width: 80%;
             }
 
+            ::slotted(globular-shared-resources){
+                flex-grow: 1;
+            }
 
         </style>
         <paper-card id="container">
@@ -112,6 +115,7 @@ export class SharePanel extends HTMLElement {
             </div>
             <div id="share_div">
                 <globular-subjects-view></globular-subjects-view>
+                <slot></slot>
             </div>
         </paper-card>
         `
@@ -126,13 +130,174 @@ export class SharePanel extends HTMLElement {
             }
         }
 
+        let subjectsView = this.shadowRoot.querySelector("globular-subjects-view")
 
+        // Append account 
+        subjectsView.on_account_click = (accountDiv, account) => {
+            accountDiv.account = account;
+
+            this.displaySharedResources(account)
+        }
+
+        // Append group
+        subjectsView.on_group_click = (groupDiv, group) => {
+            groupDiv.group = group;
+            this.displaySharedResources(group)
+        }
+
+    }
+
+    // Display resource shared with a given subject.
+    displaySharedResources(subject) {
+        console.log("you click ", subject)
+        this.innerHTML = "" // clear the slot...
+        this.appendChild(new SharedResources(subject))
     }
 
 }
 
 customElements.define('globular-share-panel', SharePanel)
 
+
+/**
+ * That panel display resource share with a given subject (account, group, organization etc.)
+ */
+export class SharedResources extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor(subject) {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+            ${getTheme()}
+            #container{
+                display: flex;
+                width: 100%;
+                height: 95%;
+            }
+
+            .resource-share-div{
+                width: 50%;
+                height: 100%;
+                padding-left: 16px;
+                border-left: 1px solid var(--palette-divider);
+                display: flex;
+                flex-direction: column;
+            }
+
+            #you-share-you-div{
+                display: flex;
+                flex-wrap: wrap;
+            }
+
+            #share-with-you-div{
+                display: flex;
+                flex-wrap: wrap;
+            }
+
+        </style>
+        <div id="container">
+            <div class="resource-share-div" id="share-with-you">
+                <h4>Resources ${subject.name} share with you</h4>
+                <div id="share-with-you-div"></div>
+            </div>
+
+            <div class="resource-share-div" id="you-share-you">
+                <h4>Resources You share with ${subject.name}</h4>
+                <div id="you-share-you-div"></div>
+            </div>
+        </div>
+        `
+        // give the focus to the input.
+        let container = this.shadowRoot.querySelector("#container")
+
+        // get resources share with a given account...
+
+        // The logged user... ( 'you' in the context of a session)
+        this.getSharedResources(Application.account, subject, resources => {
+            this.displaySharedResources(this.shadowRoot.querySelector("#you-share-you-div"), resources)
+            console.log("resource you share ", resources)
+            this.getSharedResources(subject, Application.account, resources => {
+                this.displaySharedResources(this.shadowRoot.querySelector("#share-with-you-div"), resources)
+                console.log("resource share whit you ", resources)
+            })
+        })
+    }
+
+    displaySharedResources(div, resources) {
+
+        let range = document.createRange()
+        let displayLink = () => {
+            let r = resources.pop()
+            let globule = Model.getGlobule(r.getDomain())
+            File.getFile(globule, r.getPath(), 128, 85, file => {
+                let html = `<globular-link path="${file.path}" thumbnail="${file.thumbnail}" domain="${file.domain}"></globular-link>`
+                div.appendChild(range.createContextualFragment(html))
+                if (resources.length > 0) {
+                    displayLink();
+                }
+            }, err => {
+                console.log(err);
+                if (resources.length > 0) {
+                    displayLink()
+                }
+            })
+        }
+
+        if (resources.length > 0) {
+            displayLink()
+        }
+    }
+
+    // Return the list of resource for a given subject.
+    getSharedResources(share_by, share_with, callback) {
+
+        let globules = Model.getGlobules()
+        let resources = [];
+
+        let getSharedResource_ = () => {
+            let globule = globules.pop()
+            let rqst = new GetSharedResourceRqst
+            if (share_with.constructor.name == "Account_Account") {
+                rqst.setType(SubjectType.ACCOUNT)
+                rqst.setSubject(share_with.id + "@" + share_with.domain)
+                rqst.setOwner(share_by.id + "@" + share_by.domain)
+            } else if (share_with.constructor.name == "Group_Group") {
+                rqst.setType(SubjectType.GROUP)
+                rqst.setSubject(share_with.id + "@" + share_with.domain)
+                rqst.setOwner(share_by.id + "@" + share_by.domain)
+            }
+
+            // Get file shared by account.
+            globule.rbacService.getSharedResource(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
+                .then(rsp => {
+                    resources = resources.concat(rsp.getSharedresourceList())
+                    if (globules.length == 0) {
+                        callback(resources)
+                    } else {
+                        getSharedResource_()
+                    }
+                }).catch(err => {
+                    if (globules.length == 0) {
+                        callback(resources)
+                    } else {
+                        getSharedResource_()
+                    }
+                })
+
+        }
+
+        if (globules.length > 0)
+            getSharedResource_()
+    }
+}
+
+customElements.define('globular-shared-resources', SharedResources)
 
 /**
  * create a new permission for a given resource.
@@ -438,7 +603,7 @@ export class ShareResourceWizard extends HTMLElement {
 
                         } else {
                             resourcesDiv.querySelector(`#${uuid + "_error"}`).style.display = "none"
-                            
+
                             participants.forEach(contact => {
                                 // So here I will send a notification to the participant with the share information...
                                 let rqst = new CreateNotificationRqst
@@ -475,7 +640,7 @@ export class ShareResourceWizard extends HTMLElement {
 
                                 // Create the notification...
                                 let globule = Model.getGlobule(contact.domain)
-                                generatePeerToken(globule, token=>{
+                                generatePeerToken(globule, token => {
                                     globule.resourceService.createNotification(rqst, {
                                         token: token,
                                         application: Model.application,
@@ -490,7 +655,7 @@ export class ShareResourceWizard extends HTMLElement {
                                         notification_.recipient = notification.getRecipient()
                                         notification_.text = notification.getMessage()
                                         notification_.type = 0
-        
+
                                         // Send notification...
                                         Model.getGlobule(contact.domain).eventHub.publish(contact.id + "@" + contact.domain + "_notification_event", notification_.toString(), false)
                                     }).catch(err => {
@@ -498,7 +663,7 @@ export class ShareResourceWizard extends HTMLElement {
                                         console.log(err)
                                     })
                                 })
-           
+
                             })
                         }
                     })

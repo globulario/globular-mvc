@@ -31,12 +31,15 @@ String.prototype.endsWith = function (suffix) {
  */
 export function playVideo(path, onplay, onclose, title, globule) {
 
+    if(title.globule){
+        globule = title.globule
+    }
+
     let menus = document.body.querySelectorAll("globular-dropdown-menu")
     for (var i = 0; i < menus.length; i++) {
         menus[i].close()
         menus[i].parentNode.removeChild(menus[i])
     }
-
 
     let videoPlayer = document.getElementById("video-player-x")
 
@@ -570,6 +573,12 @@ export class VideoPlayer extends HTMLElement {
 
         // Now I will test if imdb info are allready asscociated.
         let getTitleInfo = (path, callback) => {
+            // The title info is already set...
+            if(this.titleInfo!=undefined){
+                callback([this.titleInfo])
+                return 
+            }
+
             let rqst = new GetFileTitlesRequest
             rqst.setIndexpath(globule.config.DataPath + "/search/titles")
             rqst.setFilepath(path)
