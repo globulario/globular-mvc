@@ -476,7 +476,11 @@ export class VideoPlayer extends HTMLElement {
         titleInfoBox.setTitlesInformation([title])
     }
 
-    play(path, globule) {
+    play(path, globule, titleInfo) {
+        if(titleInfo){
+            this.titleInfo = titleInfo
+            this.titleInfo.globule = globule
+        }
 
         generatePeerToken(globule, token => {
             let url = path;
@@ -493,6 +497,7 @@ export class VideoPlayer extends HTMLElement {
                         url += ":" + globule.config.PortHttps
                 } else {
                     if (globule.config.PortHttps != 80)
+                    
                         url += ":" + globule.config.PortHttp
                 }
 
@@ -521,8 +526,6 @@ export class VideoPlayer extends HTMLElement {
                 this.path = path
                 this.resume = false;
             }
-
-
 
             // validate url access.
             fetch(url, { method: "HEAD" })
