@@ -544,10 +544,11 @@ globular-blog-posts globular-blog-post {
    }
 
    globular-system-monitor {
-      grid-row-start: 5;
+      grid-row-start: 1;
       grid-row-end: 7;
       grid-column-start: 1;
       grid-column-end: 17;
+      margin-bottom: 20px;
    }
 
    globular-console {
@@ -613,10 +614,11 @@ globular-blog-posts globular-blog-post {
    }
 
    globular-system-monitor {
-      grid-row-start: 5;
+      grid-row-start: 1;
       grid-row-end: 7;
       grid-column-start: 3;
       grid-column-end: 15;
+      margin-bottom: 20px;
    }
 
    globular-console {
@@ -676,10 +678,11 @@ globular-blog-posts globular-blog-post {
    }
 
    globular-system-monitor {
-      grid-row-start: 5;
+      grid-row-start: 1;
       grid-row-end: 7;
       grid-column-start: 5;
       grid-column-end: 13;
+      margin-bottom: 20px;
    }
 
    globular-settings-panel,
@@ -739,10 +742,11 @@ globular-blog-posts globular-blog-post {
    }
 
    globular-system-monitor {
-      grid-row-start: 5;
+      grid-row-start: 2;
       grid-row-end: 7;
       grid-column-start: 4;
       grid-column-end: 14;
+      margin-bottom: 20px;
    }
 
 

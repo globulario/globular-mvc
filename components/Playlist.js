@@ -33,7 +33,7 @@ function getVideoInfo(globule, id, callback) {
         rqst.setIndexpath(globule.config.DataPath + "/search/videos")
         rqst.setVidoeid(id)
 
-        globule.titleService.getVideoById(rqst, { application: Application.application, domain: globule.config.Domain, token: token })
+        globule.titleService.getVideoById(rqst, { application: Application.application, domain: globule.domain, token: token })
             .then(rsp => {
                 callback(rsp.getVideo(), token)
             })
@@ -54,7 +54,7 @@ function getAudioInfo(globule, id, callback) {
         rqst.setIndexpath(globule.config.DataPath + "/search/audios")
         rqst.setAudioid(id)
 
-        globule.titleService.getAudioById(rqst, { application: Application.application, domain: globule.config.Domain, token: token })
+        globule.titleService.getAudioById(rqst, { application: Application.application, domain: globule.domain, token: token })
             .then(rsp => {
                 callback(rsp.getAudio(), token)
             })
@@ -258,8 +258,8 @@ export class PlayList extends HTMLElement {
                 this.refresh()
                 fireResize()
             } else {
-                let url = globule.config.Protocol + "://" + globule.config.Domain
-                if (window.location != globule.config.Domain) {
+                let url = globule.config.Protocol + "://" + globule.domain
+                if (window.location != globule.domain) {
                     if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
                         url = globule.config.Protocol + "://" + window.location.host
                     }

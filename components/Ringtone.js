@@ -368,8 +368,8 @@ export class Ringtone extends HTMLElement {
         this.deleteButton = this.shadowRoot.querySelector("#delete-button")
 
         let globule = Application.getGlobule(Application.account.session.domain)
-        let url = globule.config.Protocol + "://" + globule.config.Domain
-        if (window.location != globule.config.Domain) {
+        let url = globule.config.Protocol + "://" + globule.domain
+        if (window.location != globule.domain) {
             if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
                 url = globule.config.Protocol + "://" + window.location.host
             }

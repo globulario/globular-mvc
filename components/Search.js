@@ -62,8 +62,8 @@ export function getCoverDataUrl(callback, videoId, videoUrl, videoPath, globule)
 
     generatePeerToken(globule, token=>{
             // set the url for the image.
-    let url = globule.config.Protocol + "://" + globule.config.Domain
-    if (window.location != globule.config.Domain) {
+    let url = globule.config.Protocol + "://" + globule.domain
+    if (window.location != globule.domain) {
         if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
             url = globule.config.Protocol + "://" + window.location.host
         }
@@ -135,8 +135,8 @@ export function getImdbInfo(id, callback, errorcallback, globule) {
     titles[id].callbacks = []
     titles[id].callbacks.push(callback)
 
-    let url = globule.config.Protocol + "://" + globule.config.Domain
-    if (window.location != globule.config.Domain) {
+    let url = globule.config.Protocol + "://" + globule.domain
+    if (window.location != globule.domain) {
         if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
             url = globule.config.Protocol + "://" + window.location.host
         }
@@ -173,7 +173,7 @@ export function getImdbInfo(id, callback, errorcallback, globule) {
     };
 
     xmlhttp.open("GET", url, true);
-    xmlhttp.setRequestHeader("domain", globule.config.Domain);
+    xmlhttp.setRequestHeader("domain", globule.domain);
 
     xmlhttp.send();
   })
@@ -1813,8 +1813,8 @@ export class SearchAudioCard extends HTMLElement {
                 if (files.length > 0) {
                     audio_playList += `#EXTINF:${audio.getDuration()}, ${audio.getTitle()}, tvg-id="${audio.getId()}"\n`
 
-                    let url = globule.config.Protocol + "://" + globule.config.Domain
-                    if (window.location != globule.config.Domain) {
+                    let url = globule.config.Protocol + "://" + globule.domain
+                    if (window.location != globule.domain) {
                         if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
                             url = globule.config.Protocol + "://" + window.location.host
                         }
@@ -2082,8 +2082,8 @@ export class SearchVideoCard extends HTMLElement {
                         }
                         thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/preview.mp4"
 
-                        let url = globule.config.Protocol + "://" + globule.config.Domain
-                        if (window.location != globule.config.Domain) {
+                        let url = globule.config.Protocol + "://" + globule.domain
+                        if (window.location != globule.domain) {
                             if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
                                 url = globule.config.Protocol + "://" + window.location.host
                             }
@@ -2540,8 +2540,8 @@ export class SearchTitleDetail extends HTMLElement {
                     .then(rsp => {
                         if (rsp.getFilepathsList().length > 0) {
                             let path = rsp.getFilepathsList().pop()
-                            let url = globule.config.Protocol + "://" + globule.config.Domain
-                            if (window.location != globule.config.Domain != -1) {
+                            let url = globule.config.Protocol + "://" + globule.domain
+                            if (window.location != globule.domain != -1) {
                                 if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
                                     url = globule.config.Protocol + "://" + window.location.host
                                 }
@@ -2642,8 +2642,8 @@ export class SearchTitleDetail extends HTMLElement {
             this.showTitleInfo(title)
         }
 
-        let url = globule.config.Protocol + "://" + globule.config.Domain
-        if (window.location != globule.config.Domain) {
+        let url = globule.config.Protocol + "://" + globule.domain
+        if (window.location != globule.domain) {
             if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
                 url = globule.config.Protocol + "://" + window.location.host
             }
@@ -3039,8 +3039,8 @@ export class SearchFacetPanel extends HTMLElement {
                 if (files.length > 0) {
                     audio_playList += `#EXTINF:${audio.getDuration()}, ${audio.getTitle()}, tvg-id="${audio.getId()}"\n`
 
-                    let url = globule.config.Protocol + "://" + globule.config.Domain
-                    if (window.location != globule.config.Domain) {
+                    let url = globule.config.Protocol + "://" + globule.domain
+                    if (window.location != globule.domain) {
                         if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
                             url = globule.config.Protocol + "://" + window.location.host
                         }

@@ -28,7 +28,7 @@ export class GlobularFileReader extends HTMLElement {
 
     read(file) {
         // Read the file...
-        let url = file.globule.config.Protocol + "://" + file.globule.config.Domain + ":"
+        let url = file.globule.config.Protocol + "://" + file.globule.domain + ":"
         if (file.globule.config.Protocol == "https") {
             url += file.globule.config.PortHttps
         } else {

@@ -650,8 +650,8 @@ export class ContactList extends HTMLElement {
 
                     let globule = Application.getGlobule(callee.domain)
                     generatePeerToken(globule, token => {
-                        let url = globule.config.Protocol + "://" + globule.config.Domain
-                        if (window.location != globule.config.Domain) {
+                        let url = globule.config.Protocol + "://" + globule.domain
+                        if (window.location != globule.domain) {
                             if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
                                 url = globule.config.Protocol + "://" + window.location.host
                             }
@@ -869,7 +869,7 @@ export class ContactList extends HTMLElement {
         // Set value on the callee...
         let globule = Model.getGlobule(Application.account.domain)
         generatePeerToken(globule, token => {
-            globule.resourceService.setCall(rqst, { application: Application.application, domain: globule.config.Domain, token: token })
+            globule.resourceService.setCall(rqst, { application: Application.application, domain: globule.domain, token: token })
                 .then(rsp => {
 
                     Account.getAccount(call.getCaller(), caller => {
@@ -877,8 +877,8 @@ export class ContactList extends HTMLElement {
 
                             let globule = Application.getGlobule(caller.domain)
 
-                            let url = globule.config.Protocol + "://" + globule.config.Domain
-                            if (window.location != globule.config.Domain) {
+                            let url = globule.config.Protocol + "://" + globule.domain
+                            if (window.location != globule.domain) {
                                 if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
                                     url = globule.config.Protocol + "://" + window.location.host
                                 }
@@ -1056,7 +1056,7 @@ export class ContactList extends HTMLElement {
             if (contact.domain != Application.account.domain) {
                 let globule = Model.getGlobule(contact.domain)
                 generatePeerToken(globule, token => {
-                    globule.resourceService.setCall(rqst, { application: Application.application, domain: globule.config.Domain, token: token })
+                    globule.resourceService.setCall(rqst, { application: Application.application, domain: globule.domain, token: token })
                 }, err => ApplicationView.displayMessage(err, 3000))
             }
         })

@@ -485,8 +485,8 @@ export class VideoPlayer extends HTMLElement {
         generatePeerToken(globule, token => {
             let url = path;
             if (!url.startsWith("http")) {
-                url = globule.config.Protocol + "://" + globule.config.Domain
-                if (window.location != globule.config.Domain) {
+                url = globule.config.Protocol + "://" + globule.domain
+                if (window.location != globule.domain) {
                     if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
                         url = globule.config.Protocol + "://" + window.location.host
                     }
@@ -710,9 +710,9 @@ export class VideoPlayer extends HTMLElement {
 
         // set the complete url.
         // Get image from the globule.
-        let url = globule.config.Protocol + "://" + globule.config.Domain
+        let url = globule.config.Protocol + "://" + globule.domain
 
-        if (window.location != globule.config.Domain) {
+        if (window.location != globule.domain) {
             if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
                 url = globule.config.Protocol + "://" + window.location.host
             }

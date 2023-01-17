@@ -132,7 +132,7 @@ export function getTitleInfo(globule, file, callback) {
 
     rqst.setFilepath(file.path)
 
-    globule.titleService.getFileTitles(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
+    globule.titleService.getFileTitles(rqst, { application: Application.application, domain: globule.domain, token: localStorage.getItem("user_token") })
         .then(rsp => {
             callback(rsp.getTitles().getTitlesList())
         })
@@ -150,7 +150,7 @@ export function getVideoInfo(globule, file, callback) {
     rqst.setIndexpath(globule.config.DataPath + "/search/videos")
     rqst.setFilepath(file.path)
 
-    globule.titleService.getFileVideos(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
+    globule.titleService.getFileVideos(rqst, { application: Application.application, domain: globule.domain, token: localStorage.getItem("user_token") })
         .then(rsp => {
             let videos = rsp.getVideos().getVideosList()
             callback(videos)
@@ -166,7 +166,7 @@ export function getAudioInfo(globule, file, callback) {
     rqst.setIndexpath(globule.config.DataPath + "/search/audios")
     rqst.setFilepath(file.path)
 
-    globule.titleService.getFileAudios(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
+    globule.titleService.getFileAudios(rqst, { application: Application.application, domain: globule.domain, token: localStorage.getItem("user_token") })
         .then(rsp => {
             let audios = rsp.getAudios().getAudiosList()
             callback(audios)
@@ -233,7 +233,7 @@ export function getImage(callback, images, files, index, globule) {
 
     } else {
         // Get image from the globule.
-        url = globule.config.Protocol + "://" + globule.config.Domain
+        url = globule.config.Protocol + "://" + globule.domain
         if (globule.config.Protocol == "https") {
             if (globule.config.PortHttps != 443)
                 url += ":" + globule.config.PortHttps
@@ -256,7 +256,7 @@ export function getImage(callback, images, files, index, globule) {
 
     generatePeerToken(globule, token => {
         // Set url query parameter.
-        url += "?domain=" + globule.config.Domain
+        url += "?domain=" + globule.domain
         url += "&application=" + Model.application
         if (localStorage.getItem("user_token") != undefined) {
             url += "&token=" + token
@@ -267,7 +267,7 @@ export function getImage(callback, images, files, index, globule) {
         xhr.open('GET', url, true);
         xhr.setRequestHeader("token", token);
         xhr.setRequestHeader("application", Model.application);
-        xhr.setRequestHeader("domain", globule.config.Domain);
+        xhr.setRequestHeader("domain", globule.domain);
 
         // Set responseType to 'arraybuffer', we want raw binary data buffer
         xhr.responseType = 'blob';
@@ -298,7 +298,7 @@ let dirs = {}
 
 // Usefull to get dir like /shared or /public that dosent exist on the server.
 export function getLocalDir(globule, path) {
-    let key = getUuidByString(globule.config.Domain + "@" + path)
+    let key = getUuidByString(globule.domain + "@" + path)
     let dir = dirs[key]
 
     if (dir != null) {
@@ -316,7 +316,7 @@ export function getLocalDir(globule, path) {
  * @param {*} force If set the dir will be read from the server.
  */
 function _readDir(path, callback, errorCallback, globule, force = false) {
-    let key = getUuidByString(globule.config.Domain + "@" + path)
+    let key = getUuidByString(globule.domain + "@" + path)
     if (!force || path == "/public" || path == "/shared") {
         let dir = dirs[key]
         if (dir != null) {
@@ -497,7 +497,7 @@ export class FilesView extends HTMLElement {
                 globule.fileService.startProcessVideo(rqst, {
                     token: token,
                     application: Model.application,
-                    domain: globule.config.Domain,
+                    domain: globule.domain,
                     address: globule.config.address
                 }).then(() => {
                     ApplicationView.displayMessage("informations are now updated", 3000)
@@ -569,7 +569,7 @@ export class FilesView extends HTMLElement {
 
         this.openInNewTabItem.action = () => {
             let globule = this._file_explorer_.globule
-            let url = globule.config.Protocol + "://" + globule.config.Domain + ":"
+            let url = globule.config.Protocol + "://" + globule.domain + ":"
 
 
             if (globule.config.Protocol == "https") {
@@ -604,7 +604,7 @@ export class FilesView extends HTMLElement {
 
         this.copyUrlItem.action = () => {
             let globule = this._file_explorer_.globule
-            let url = globule.config.Protocol + "://" + globule.config.Domain + ":"
+            let url = globule.config.Protocol + "://" + globule.domain + ":"
 
 
             if (globule.config.Protocol == "https") {
@@ -786,16 +786,16 @@ export class FilesView extends HTMLElement {
                     let globule = this._file_explorer_.globule
                     if (f.isDir) {
 
-                        this._file_explorer_.globule.fileService.getPublicDirs(new GetPublicDirsRequest, { application: Application.application, domain: this._file_explorer_.globule.config.Domain, token: localStorage.getItem("user_token") })
+                        this._file_explorer_.globule.fileService.getPublicDirs(new GetPublicDirsRequest, { application: Application.application, domain: this._file_explorer_.globule.domain, token: localStorage.getItem("user_token") })
                             .then(rsp => {
                                 // if the dir is public I will remove it entry from the list and keep the directory...
                                 let dirs = rsp.getDirsList()
                                 if (dirs.includes(f.path)) {
                                     const rqst = new RemovePublicDirRequest
                                     rqst.setPath(f.path)
-                                    globule.fileService.removePublicDir(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
+                                    globule.fileService.removePublicDir(rqst, { application: Application.application, domain: globule.domain, token: localStorage.getItem("user_token") })
                                         .then(rsp => {
-                                            delete dirs[getUuidByString(this._file_explorer_.globule.config.Domain + "@/public")]
+                                            delete dirs[getUuidByString(this._file_explorer_.globule.domain + "@/public")]
                                             Model.publish("reload_dir_event", "/public", false);
                                         })
                                         .catch(err => { ApplicationView.displayMessage(err, 3000) })
@@ -803,7 +803,7 @@ export class FilesView extends HTMLElement {
                                     generatePeerToken(globule, token => {
                                         deleteDir(globule, f.path,
                                             () => {
-                                                delete dirs[getUuidByString(this._file_explorer_.globule.config.Domain + "@" + path)]
+                                                delete dirs[getUuidByString(this._file_explorer_.globule.domain + "@" + path)]
                                                 Model.eventHub.publish("reload_dir_event", path, false);
                                                 if (index < Object.keys(this.selected).length) {
                                                     deleteFile_()
@@ -820,7 +820,7 @@ export class FilesView extends HTMLElement {
                     } else {
                         deleteFile(globule, f.path,
                             () => {
-                                delete dirs[getUuidByString(this._file_explorer_.globule.config.Domain + "@" + path)]
+                                delete dirs[getUuidByString(this._file_explorer_.globule.domain + "@" + path)]
                                 Model.publish("reload_dir_event", path, false);
                                 if (index < Object.keys(this.selected).length) {
                                     deleteFile_()
@@ -933,7 +933,7 @@ export class FilesView extends HTMLElement {
 
             rqst.setPath(path)
             ApplicationView.displayMessage("Create timeline for file at path </br>" + path, 3500)
-            globule.fileService.createVideoTimeLine(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
+            globule.fileService.createVideoTimeLine(rqst, { application: Application.application, domain: globule.domain, token: localStorage.getItem("user_token") })
                 .then(rsp => {
                     ApplicationView.displayMessage("Timeline is created </br>" + path, 3500)
                 })
@@ -964,7 +964,7 @@ export class FilesView extends HTMLElement {
 
             rqst.setPath(path)
             ApplicationView.displayMessage("Create preview for file at path </br>" + path, 3500)
-            globule.fileService.createVideoPreview(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
+            globule.fileService.createVideoPreview(rqst, { application: Application.application, domain: globule.domain, token: localStorage.getItem("user_token") })
                 .then(rsp => {
                     ApplicationView.displayMessage("Preview are created </br>" + path, 3500)
                     Model.publish("refresh_dir_evt", file.path.substring(0, file.path.lastIndexOf("/")), false);
@@ -991,7 +991,7 @@ export class FilesView extends HTMLElement {
             rqst.setPath(path)
 
             ApplicationView.displayMessage("Convert file at path </br>" + path, 3500)
-            globule.fileService.convertVideoToMpeg4H264(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
+            globule.fileService.convertVideoToMpeg4H264(rqst, { application: Application.application, domain: globule.domain, token: localStorage.getItem("user_token") })
                 .then(rsp => {
                     ApplicationView.displayMessage("Conversion done </br>" + path, 3500)
                     Model.eventHub.publish("refresh_dir_evt", file.path.substring(0, file.path.lastIndexOf("/")), false);
@@ -1018,7 +1018,7 @@ export class FilesView extends HTMLElement {
             rqst.setPath(path)
 
             ApplicationView.displayMessage("Convert file at path </br>" + path, 3500)
-            globule.fileService.convertVideoToHls(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
+            globule.fileService.convertVideoToHls(rqst, { application: Application.application, domain: globule.domain, token: localStorage.getItem("user_token") })
                 .then(rsp => {
                     ApplicationView.displayMessage("Conversion done </br>" + path, 3500)
                     Model.publish("refresh_dir_evt", file.path.substring(0, file.path.lastIndexOf("/")), false);
@@ -1192,11 +1192,11 @@ export class FilesView extends HTMLElement {
             .copy(rqst, {
                 token: token,
                 application: Application.application,
-                domain: globule.config.Domain
+                domain: globule.domain
             }).then(() => {
                 this.paperTray = []
                 this.edit = ""
-                delete dirs[getUuidByString(this._file_explorer_.globule.config.Domain + "@" + path)]
+                delete dirs[getUuidByString(this._file_explorer_.globule.domain + "@" + path)]
                 Model.eventHub.publish("reload_dir_event", path, false);
             })
             .catch(err => {
@@ -1223,17 +1223,17 @@ export class FilesView extends HTMLElement {
             .move(rqst, {
                 token: token,
                 application: Application.application,
-                domain: globule.config.Domain
+                domain: globule.domain
             }).then(() => {
                 for (var i = 0; i < this.paperTray.length; i++) {
                     let f = this.paperTray[i]
                     let path_ = f.substring(0, f.lastIndexOf("/"))
-                    delete dirs[getUuidByString(this._file_explorer_.globule.config.Domain + "@" + path)]
+                    delete dirs[getUuidByString(this._file_explorer_.globule.domain + "@" + path)]
                     Model.publish("reload_dir_event", path_, false);
                 }
                 this.paperTray = []
                 this.edit = ""
-                delete dirs[getUuidByString(this._file_explorer_.globule.config.Domain + "@" + path)]
+                delete dirs[getUuidByString(this._file_explorer_.globule.domain + "@" + path)]
                 Model.publish("reload_dir_event", path, false);
             })
             .catch(err => {
@@ -1396,7 +1396,7 @@ export class FilesView extends HTMLElement {
                 renameFile(this._file_explorer_.globule, path, input.value, f.name,
                     () => {
                         // Refresh the parent folder...
-                        delete dirs[getUuidByString(this._file_explorer_.globule.config.Domain + "@" + path)]
+                        delete dirs[getUuidByString(this._file_explorer_.globule.domain + "@" + path)]
                         Model.eventHub.publish("reload_dir_event", path, false);
                     }, err => { ApplicationView.displayMessage(err, 3000) }, token)
             })
@@ -1426,7 +1426,7 @@ export class FilesView extends HTMLElement {
                 rqst.setSeed(true) // Can be an option in the console interface...
 
                 // Display the message.
-                this._file_explorer_.globule.torrentService.downloadTorrent(rqst, { application: Application.application, domain: this._file_explorer_.globule.config.domain, token: localStorage.getItem("user_token") })
+                this._file_explorer_.globule.torrentService.downloadTorrent(rqst, { application: Application.application, domain: this._file_explorer_.globule.domain, token: localStorage.getItem("user_token") })
                     .then(() => {
                         ApplicationView.displayMessage("your torrent was added and will start download soon...", 3000)
                         // Here I will 
@@ -1520,7 +1520,7 @@ export class FilesView extends HTMLElement {
 
                     generatePeerToken(this._file_explorer_.globule, token => {
 
-                        let stream = this._file_explorer_.globule.fileService.uploadVideo(rqst, { application: Application.application, domain: this._file_explorer_.globule.config.Domain, token: token })
+                        let stream = this._file_explorer_.globule.fileService.uploadVideo(rqst, { application: Application.application, domain: this._file_explorer_.globule.domain, token: token })
                         let pid = -1;
 
                         // Here I will create a local event to be catch by the file uploader...
@@ -2179,7 +2179,7 @@ export class FilesIconView extends FilesView {
 
                     let copyUrl = (path) => {
                         let globule = this._file_explorer_.globule
-                        let url = globule.config.Protocol + "://" + globule.config.Domain + ":"
+                        let url = globule.config.Protocol + "://" + globule.domain + ":"
 
 
                         if (globule.config.Protocol == "https") {
@@ -2234,7 +2234,7 @@ export class FilesIconView extends FilesView {
                                 let stream = globule.fileService.readFile(rqst, {
                                     token: token,
                                     application: Model.application,
-                                    domain: globule.config.Domain,
+                                    domain: globule.domain,
                                     address: globule.config.address
                                 })
 
@@ -2267,7 +2267,7 @@ export class FilesIconView extends FilesView {
                                     rqst.setFormat(playlist.format)
                                     rqst.setUrl(playlist.url)
 
-                                    let stream = this._file_explorer_.globule.fileService.uploadVideo(rqst, { application: Application.application, domain: this._file_explorer_.globule.config.Domain, token: token })
+                                    let stream = this._file_explorer_.globule.fileService.uploadVideo(rqst, { application: Application.application, domain: this._file_explorer_.globule.domain, token: token })
                                     let pid = -1;
 
                                     // Here I will create a local event to be catch by the file uploader...
@@ -2298,7 +2298,7 @@ export class FilesIconView extends FilesView {
                                     globule.fileService.startProcessVideo(rqst, {
                                         token: token,
                                         application: Model.application,
-                                        domain: globule.config.Domain,
+                                        domain: globule.domain,
                                         address: globule.config.address
                                     }).then(() => {
                                         ApplicationView.displayMessage("playlist and audios informations are now updated", 3000)
@@ -2318,7 +2318,7 @@ export class FilesIconView extends FilesView {
                                     // I will refresh the playlist on the server before playing it...
                                     let rqst = new GeneratePlaylistRequest
                                     rqst.setDir(dir.path)
-                                    globule.fileService.generatePlaylist(rqst, { application: Application.application, domain: globule.config.Domain, token: token })
+                                    globule.fileService.generatePlaylist(rqst, { application: Application.application, domain: globule.domain, token: token })
                                         .then(rsp => {
                                             playAudio(dir.__audioPlaylist__.path, () => { }, () => { }, null, globule)
                                         })
@@ -2351,7 +2351,7 @@ export class FilesIconView extends FilesView {
                                 let stream = globule.fileService.readFile(rqst, {
                                     token: token,
                                     application: Model.application,
-                                    domain: globule.config.Domain,
+                                    domain: globule.domain,
                                     address: globule.config.address
                                 })
 
@@ -2383,7 +2383,7 @@ export class FilesIconView extends FilesView {
                                     rqst.setFormat(playlist.format)
                                     rqst.setUrl(playlist.url)
 
-                                    let stream = this._file_explorer_.globule.fileService.uploadVideo(rqst, { application: Application.application, domain: this._file_explorer_.globule.config.Domain, token: token })
+                                    let stream = this._file_explorer_.globule.fileService.uploadVideo(rqst, { application: Application.application, domain: this._file_explorer_.globule.domain, token: token })
                                     let pid = -1;
 
                                     // Here I will create a local event to be catch by the file uploader...
@@ -2413,7 +2413,7 @@ export class FilesIconView extends FilesView {
                                     globule.fileService.startProcessVideo(rqst, {
                                         token: token,
                                         application: Model.application,
-                                        domain: globule.config.Domain,
+                                        domain: globule.domain,
                                         address: globule.config.address
                                     }).then(() => {
                                         ApplicationView.displayMessage("Playlist is updated. Informations will be update...", 3000)
@@ -2967,7 +2967,7 @@ export class FilesIconView extends FilesView {
         rqst.setTitle(title)
 
         // Now I will create the title info...
-        this._file_explorer_.globule.titleService.createTitle(rqst, { application: Application.application, domain: this._file_explorer_.globule.config.Domain, token: localStorage.getItem("user_token") })
+        this._file_explorer_.globule.titleService.createTitle(rqst, { application: Application.application, domain: this._file_explorer_.globule.domain, token: localStorage.getItem("user_token") })
             .then(rsp => {
                 // Now I will asscociated the file and the title.
                 let rqst_ = new AssociateFileWithTitleRequest
@@ -2975,7 +2975,7 @@ export class FilesIconView extends FilesView {
                 rqst_.setTitleid(title.getId())
                 rqst_.setIndexpath(indexPath)
 
-                this._file_explorer_.globule.titleService.associateFileWithTitle(rqst_, { application: Application.application, domain: this._file_explorer_.globule.config.Domain, token: localStorage.getItem("user_token") })
+                this._file_explorer_.globule.titleService.associateFileWithTitle(rqst_, { application: Application.application, domain: this._file_explorer_.globule.domain, token: localStorage.getItem("user_token") })
                     .then(rsp => {
                     }).catch(err => ApplicationView.displayMessage(err, 3000))
 
@@ -3378,7 +3378,7 @@ export class FileNavigator extends HTMLElement {
         peers.forEach((p, index) => {
             let option = document.createElement("option")
             option.value = index
-            option.innerHTML = p.config.Domain
+            option.innerHTML = p.domain
             this.shadowRoot.querySelector("select").appendChild(option)
 
         })
@@ -3398,7 +3398,7 @@ export class FileNavigator extends HTMLElement {
         let index = 0
         let peers = Model.getGlobules()
         peers.forEach(p => {
-            if (p.config.Domain == this._file_explorer_.globule.config.Domain) {
+            if (p.domain == this._file_explorer_.globule.domain) {
                 this.shadowRoot.querySelector("select").value = index;
             }
             index++
@@ -3420,17 +3420,17 @@ export class FileNavigator extends HTMLElement {
 
     // remove div and reload it from it content...
     reload(dir, callback) {
-        if (this.dirs[this._file_explorer_.globule.config.Domain + "@" + dir.path] != undefined) {
-            let div = this.div.querySelector(`#${this.dirs[this._file_explorer_.globule.config.Domain + "@" + dir.path].id}`)
+        if (this.dirs[this._file_explorer_.globule.domain + "@" + dir.path] != undefined) {
+            let div = this.div.querySelector(`#${this.dirs[this._file_explorer_.globule.domain + "@" + dir.path].id}`)
             // force reading from the server...
-            delete dirs[getUuidByString(this._file_explorer_.globule.config.Domain + "@" + dir.path)]
+            delete dirs[getUuidByString(this._file_explorer_.globule.domain + "@" + dir.path)]
 
             if (div != null) {
                 let parent = div.parentNode
-                let level = this.dirs[this._file_explorer_.globule.config.Domain + "@" + dir.path].level
+                let level = this.dirs[this._file_explorer_.globule.domain + "@" + dir.path].level
                 if (div != null) {
                     parent.removeChild(div)
-                    delete this.dirs[this._file_explorer_.globule.config.Domain + "@" + dir.path]
+                    delete this.dirs[this._file_explorer_.globule.domain + "@" + dir.path]
                 }
                 // reload the div...
                 this.initPublic(callback)
@@ -3457,7 +3457,7 @@ export class FileNavigator extends HTMLElement {
         let id = "_" + getUuid(dir.path).split("-").join("_")
 
         // keep it in memory 
-        this.dirs[this._file_explorer_.globule.config.Domain + "@" + dir.path] = { id: id, level: level }
+        this.dirs[this._file_explorer_.globule.domain + "@" + dir.path] = { id: id, level: level }
 
         // Remove existing values and renit the tree view...
         let dir_ = this.div.querySelector(`#${id}`)
@@ -3676,7 +3676,7 @@ export class FileNavigator extends HTMLElement {
             }, false, this)
 
 
-        this._file_explorer_.globule.fileService.getPublicDirs(new GetPublicDirsRequest, { application: Application.application, domain: this._file_explorer_.globule.config.Domain, token: localStorage.getItem("user_token") })
+        this._file_explorer_.globule.fileService.getPublicDirs(new GetPublicDirsRequest, { application: Application.application, domain: this._file_explorer_.globule.domain, token: localStorage.getItem("user_token") })
             .then(rsp => {
                 let index = 0;
                 let publicDirs = rsp.getDirsList()
@@ -3704,7 +3704,7 @@ export class FileNavigator extends HTMLElement {
 
                 // Init
                 initPublicDir(() => {
-                    let key = getUuidByString(this._file_explorer_.globule.config.Domain + "@" + "/public")
+                    let key = getUuidByString(this._file_explorer_.globule.domain + "@" + "/public")
                     dirs[key] = this.public_
                     this.initTreeView(this.public_, this.publicDiv, 0)
                     if (initCallback) {
@@ -3834,7 +3834,7 @@ export class FileNavigator extends HTMLElement {
 
         // Get file shared by account.
         let globule = this._file_explorer_.globule
-        globule.rbacService.getSharedResource(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
+        globule.rbacService.getSharedResource(rqst, { application: Application.application, domain: globule.domain, token: localStorage.getItem("user_token") })
             .then(rsp => {
 
                 // Here I need to sync the funtion and init the tree view once all is done...
@@ -3848,7 +3848,7 @@ export class FileNavigator extends HTMLElement {
                             let shared = this.shared[id]
                             // this.initTreeView(shared, this.sharedDiv, 0)
                             this.initTreeView(this.shared_, this.sharedDiv, 0)
-                            delete dirs[getUuidByString(this._file_explorer_.globule.config.Domain + "@" + shared.path)]
+                            delete dirs[getUuidByString(this._file_explorer_.globule.domain + "@" + shared.path)]
                             //Model.eventHub.publish("reload_dir_event", shared.path, false);
                         }
 
@@ -4475,7 +4475,7 @@ export class FileExplorer extends HTMLElement {
                         .addPublicDir(rqst, {
                             token: token,
                             application: Application.application,
-                            domain: this.globule.config.Domain
+                            domain: this.globule.domain
                         })
                         .then(() => {
                             // The new directory was created.
@@ -4498,7 +4498,7 @@ export class FileExplorer extends HTMLElement {
                         .createDir(rqst, {
                             token: token,
                             application: Application.application,
-                            domain: this.globule.config.Domain
+                            domain: this.globule.domain
                         })
                         .then(() => {
                             // The new directory was created.
@@ -4639,10 +4639,10 @@ export class FileExplorer extends HTMLElement {
 
         // Service configuration change event...
 
-        if (this.listeners[`update_globular_service_configuration_${this.globule.config.Domain}_evt`] == undefined) {
+        if (this.listeners[`update_globular_service_configuration_${this.globule.domain}_evt`] == undefined) {
             this.globule.eventHub.subscribe(`update_globular_service_configuration_evt`,
                 (uuid) => {
-                    this.listeners[`update_globular_service_configuration_${this.globule.config.Domain}_evt`] = uuid;
+                    this.listeners[`update_globular_service_configuration_${this.globule.domain}_evt`] = uuid;
                 }, (event) => {
                     let config = JSON.parse(event)
                     if (config.Name == "file.FileService") {
@@ -4653,10 +4653,10 @@ export class FileExplorer extends HTMLElement {
         }
 
         // File rename event.
-        if (this.listeners[`file_rename_${this.globule.config.domain}_event`] == undefined) {
+        if (this.listeners[`file_rename_${this.globule.domain}_event`] == undefined) {
             this.globule.eventHub.subscribe("file_rename_event",
                 (uuid) => {
-                    this.listeners[`file_rename_${this.globule.config.Domain}_event`] = uuid;
+                    this.listeners[`file_rename_${this.globule.domain}_event`] = uuid;
                 }, (path) => {
                     if (path.startsWith(this.getRoot())) {
                         _publishSetDirEvent(this.path, this)
@@ -4665,10 +4665,10 @@ export class FileExplorer extends HTMLElement {
         }
 
         // Permissions 
-        if (this.listeners[`display_permission_manager_${this.globule.config.Domain}_event`] == undefined) {
+        if (this.listeners[`display_permission_manager_${this.globule.domain}_event`] == undefined) {
             this.globule.eventHub.subscribe(`display_permission_manager_event`,
                 (uuid) => {
-                    this.listeners[`display_permission_manager_${this.globule.config.Domain}_event`] = uuid;
+                    this.listeners[`display_permission_manager_${this.globule.domain}_event`] = uuid;
                 }, (path) => {
 
                     this.permissionManager.permissions = null
@@ -4682,10 +4682,10 @@ export class FileExplorer extends HTMLElement {
         }
 
         // Informations
-        if (this.listeners[`display_media_infos_${this.globule.config.Domain}_event`] == undefined) {
+        if (this.listeners[`display_media_infos_${this.globule.domain}_event`] == undefined) {
             this.globule.eventHub.subscribe(`display_media_infos_event`,
                 (uuid) => {
-                    this.listeners[`display_media_infos_${this.globule.config.Domain}_event`] = uuid;
+                    this.listeners[`display_media_infos_${this.globule.domain}_event`] = uuid;
                 }, (file) => {
 
                     if (file.titles != undefined) {
@@ -4702,10 +4702,10 @@ export class FileExplorer extends HTMLElement {
                 }, false)
         }
 
-        if (this.listeners[`display_file_infos_${this.globule.config.Domain}_event`] == undefined) {
+        if (this.listeners[`display_file_infos_${this.globule.domain}_event`] == undefined) {
             this.globule.eventHub.subscribe(`display_file_infos_event`,
                 (uuid) => {
-                    this.listeners[`display_file_infos_${this.globule.config.Domain}_event`] = uuid;
+                    this.listeners[`display_file_infos_${this.globule.domain}_event`] = uuid;
                 }, (file) => {
 
                     // display the file information itself.
@@ -4720,10 +4720,10 @@ export class FileExplorer extends HTMLElement {
 
         // Reload the content of a dir with the actual dir content description on the server.
         // must be call after file are deleted or renamed
-        if (this.listeners[`reload_dir_${this.globule.config.Domain}_event`] == undefined) {
+        if (this.listeners[`reload_dir_${this.globule.domain}_event`] == undefined) {
             this.globule.eventHub.subscribe("reload_dir_event",
                 (uuid) => {
-                    this.listeners[`reload_dir_${this.globule.config.Domain}_event`] = uuid
+                    this.listeners[`reload_dir_${this.globule.domain}_event`] = uuid
                 }, (path) => {
 
 
@@ -4748,14 +4748,14 @@ export class FileExplorer extends HTMLElement {
         }
 
         // Refresh the interface.
-        if (this.listeners[`upload_files_${this.globule.config.Domain}_event`] == undefined) {
+        if (this.listeners[`upload_files_${this.globule.domain}_event`] == undefined) {
             this.globule.eventHub.subscribe("upload_files_event", (uuid) => {
-                this.listeners[`upload_files_${this.globule.config.Domain}_event`] = uuid
+                this.listeners[`upload_files_${this.globule.domain}_event`] = uuid
             },
                 evt => {
                     if (evt == this.path) {
                         // refresh the interface.
-                        delete dirs[getUuidByString(this.globule.config.Domain + "@" + this.path)]
+                        delete dirs[getUuidByString(this.globule.domain + "@" + this.path)]
                         this.refreshBtn.click();
                     }
                 }, false)
@@ -5898,7 +5898,7 @@ export class FilesUploader extends HTMLElement {
                 let rqst = new DropTorrentRequest
                 rqst.setName(torrent.getName())
                 let globule = this._file_explorer_.globule
-                globule.torrentService.dropTorrent(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
+                globule.torrentService.dropTorrent(rqst, { application: Application.application, domain: globule.domain, token: localStorage.getItem("user_token") })
                     .then(rsp => {
                         row.parentNode.removeChild(row)
                     }).catch(err => ApplicationView.displayMessage(err, 3000))
@@ -6080,7 +6080,7 @@ export class FilesUploader extends HTMLElement {
         // Start file upload!
         uploadFile(0, () => {
             ApplicationView.displayMessage("All files are now uploaded!", 2000)
-            delete dirs[getUuidByString(this._file_explorer_.globule.config.Domain + "@" + path)]
+            delete dirs[getUuidByString(this._file_explorer_.globule.domain + "@" + path)]
             Model.publish("reload_dir_event", path, false)
         })
 
@@ -6090,7 +6090,7 @@ export class FilesUploader extends HTMLElement {
     getTorrentLnks(globule, callback) {
         generatePeerToken(globule, token => {
             let rqst = new GetTorrentLnksRequest
-            globule.torrentService.getTorrentLnks(rqst, { application: Application.application, domain: globule.config.Domain, token: token })
+            globule.torrentService.getTorrentLnks(rqst, { application: Application.application, domain: globule.domain, token: token })
                 .then(lnks => callback(lnks))
         }, err => ApplicationView.displayMessage(err, 3000))
 
@@ -6104,7 +6104,7 @@ export class FilesUploader extends HTMLElement {
         generatePeerToken(globule, token => {
             let rqst = new GetTorrentInfosRequest
 
-            let stream = globule.torrentService.getTorrentInfos(rqst, { application: Application.application, domain: globule.config.Domain, token: token })
+            let stream = globule.torrentService.getTorrentInfos(rqst, { application: Application.application, domain: globule.domain, token: token })
             stream.on("data", (rsp) => {
                 /** Local event... */
                 rsp.getInfosList().forEach(torrent => {
