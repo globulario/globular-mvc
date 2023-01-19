@@ -274,7 +274,7 @@ export class SharedResources extends HTMLElement {
             }
 
             // Get file shared by account.
-            globule.rbacService.getSharedResource(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
+            globule.rbacService.getSharedResource(rqst, { application: Application.application, domain: globule.domain, token: localStorage.getItem("user_token") })
                 .then(rsp => {
                     resources = resources.concat(rsp.getSharedresourceList())
                     if (globules.length == 0) {

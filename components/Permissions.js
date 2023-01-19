@@ -1611,7 +1611,7 @@ function getApplication(id, callback, errorCallback) {
     rqst.setQuery(`{"_id":"${id}"}`)
 
     let globule = Model.getGlobule(address)
-    let stream = globule.resourceService.getApplications(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
+    let stream = globule.resourceService.getApplications(rqst, { application: Application.application, domain: globule.domain, token: localStorage.getItem("user_token") })
     let applications = [];
 
     stream.on("data", (rsp) => {
@@ -1659,7 +1659,7 @@ function getBlog(id, callback, errorCallback) {
     rqst.setUuidsList([id])
 
     let globule = Model.getGlobule(address)
-    let stream = globule.blogService.getBlogPosts(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
+    let stream = globule.blogService.getBlogPosts(rqst, { application: Application.application, domain: globule.domain, token: localStorage.getItem("user_token") })
     let blogPosts = [];
 
     stream.on("data", (rsp) => {
@@ -1731,7 +1731,7 @@ function getConversation(id, callback, errorCallback) {
     rqst.setId(id)
     let globule = Model.getGlobule(address)
 
-    globule.conversationService.getConversation(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
+    globule.conversationService.getConversation(rqst, { application: Application.application, domain: globule.domain, token: localStorage.getItem("user_token") })
         .then(rsp => {
 
             let c = rsp.getConversation()
@@ -1855,7 +1855,7 @@ function getPackage(id, callback, errorCallback) {
     rqst.setQuery(`{"$and":[{"id":"${id_}"},{"name":"${name}"},{"version":"${version}"},{"publisherid":"${publisherid}"}]}`);
     let globule = Model.getGlobule(address)
 
-    let stream = globule.resourceService.getPackagesDescriptor(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
+    let stream = globule.resourceService.getPackagesDescriptor(rqst, { application: Application.application, domain: globule.domain, token: localStorage.getItem("user_token") })
 
     let descriptors = [];
 
@@ -2337,7 +2337,7 @@ export class ResourcePermissions extends HTMLElement {
                 let rqst = new DeleteResourcePermissionsRqst
                 rqst.setPath(resource.getPath())
                 let globule = Model.globular
-                globule.rbacService.deleteResourcePermissions(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
+                globule.rbacService.deleteResourcePermissions(rqst, { application: Application.application, domain: globule.domain, token: localStorage.getItem("user_token") })
                     .then(rsp => {
                         ApplicationView.displayMessage("Permission was removed", 3000)
                         this.parentNode.removeChild(this)

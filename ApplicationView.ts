@@ -15,9 +15,11 @@ import { OverflowMenu } from "./components/Menu";
 import { ApplicationsMenu } from "./components/Applications";
 import { Camera } from "./components/Camera";
 import { FilesMenu } from "./components/File";
+import { SystemInfosMenu } from "./components/SystemMonitor";
 import { SearchBar, SearchResults } from "./components/Search";
 import { ContactCard, ContactsMenu } from "./components/Contact";
 import { MessengerMenu, Messenger } from "./components/Messenger";
+
 import { CallsHistoryMenu } from "./components/Calls"
 import { SettingsMenu, SettingsPanel, StringListSetting } from "./components/Settings";
 import { Application } from "./Application";
@@ -128,6 +130,9 @@ export class ApplicationView extends View {
 
   /** The settings Menu */
   protected settingsMenu: SettingsMenu;
+
+  /** The system infos menu */
+  private systemInfosMenu: SystemInfosMenu;
 
   /** The settings Panel */
   protected settingsPanel: SettingsPanel;
@@ -258,6 +263,10 @@ export class ApplicationView extends View {
 
     // The share menu.
     this.shareMenu = new ShareMenu();
+
+    // The system infos menu
+    this.systemInfosMenu = new SystemInfosMenu();
+
 
     this._sidemenu_childnodes = new Array<any>();
     this._workspace_childnodes = new Array<any>();
@@ -619,7 +628,7 @@ export class ApplicationView extends View {
 
         let token = localStorage.getItem("user_token")
         let globule = b.globule
-        let stream = globule.blogService.getBlogPosts(rqst, { application: Application.application, domain: globule.config.Domain, token: token })
+        let stream = globule.blogService.getBlogPosts(rqst, { application: Application.application, domain: globule.domain, token: token })
 
         stream.on("data", (rsp: any) => {
           b.blogPost = rsp.getBlogPost()
@@ -662,6 +671,19 @@ export class ApplicationView extends View {
         this.getWorkspace().appendChild(evt);
 
       }, true)
+
+      Model.eventHub.subscribe("_display_system_infos_panel_event_",
+      uuid => { },
+      evt => {
+
+        // remove actual nodes
+        this.hideContent()
+
+        // Append the watching component...
+        this.getWorkspace().appendChild(evt);
+
+      }, true)
+
 
     Model.eventHub.subscribe("_open_file_explorer_event_",
       uuid => { },
@@ -764,6 +786,10 @@ export class ApplicationView extends View {
         if (this.isLogin) {
           this.overFlowMenu.show();
 
+          this.overFlowMenu.getMenuDiv().appendChild(this.systemInfosMenu);
+          this.systemInfosMenu.getMenuDiv().classList.remove("bottom");
+          this.systemInfosMenu.getMenuDiv().classList.add("left");
+
           this.overFlowMenu.getMenuDiv().appendChild(this.blogEditingMenu);
           this.blogEditingMenu.getMenuDiv().classList.remove("bottom");
           this.blogEditingMenu.getMenuDiv().classList.add("left");
@@ -776,6 +802,7 @@ export class ApplicationView extends View {
           this.overFlowMenu.getMenuDiv().appendChild(this.shareMenu);
           this.shareMenu.getMenuDiv().classList.remove("bottom");
           this.shareMenu.getMenuDiv().classList.add("left");
+
 
           this.overFlowMenu.getMenuDiv().appendChild(this.filesMenu);
           this.filesMenu.getMenuDiv().classList.remove("bottom");
@@ -815,6 +842,11 @@ export class ApplicationView extends View {
         }
         if (this.isLogin) {
           this.overFlowMenu.hide();
+
+          
+          ApplicationView.layout.toolbar().appendChild(this.systemInfosMenu);
+          this.systemInfosMenu.getMenuDiv().classList.remove("left");
+          this.systemInfosMenu.getMenuDiv().classList.add("bottom");
 
           ApplicationView.layout.toolbar().appendChild(this.blogEditingMenu);
           this.blogEditingMenu.getMenuDiv().classList.remove("left");
@@ -1061,6 +1093,7 @@ export class ApplicationView extends View {
     this.notificationMenu.init();
     this.filesMenu.init();
     this.shareMenu.init(account);
+    this.systemInfosMenu.init();
     this.watchingMenu.init();
     this.blogEditingMenu.init();
 

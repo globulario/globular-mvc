@@ -186,7 +186,7 @@ export class CallsHistoryMenu extends Menu {
                 let globule = Model.getGlobule(this.account.domain)
 
                 generatePeerToken(globule, token => {
-                    globule.resourceService.clearCalls(rqst, { application: Application.application, domain: globule.config.Domain, token: token })
+                    globule.resourceService.clearCalls(rqst, { application: Application.application, domain: globule.domain, token: token })
                         .then(rsp => {
 
                             ApplicationView.displayMessage(
@@ -251,7 +251,7 @@ export class CallsHistoryMenu extends Menu {
                 let globule = Model.getGlobule(this.account.domain)
 
                 generatePeerToken(globule, token => {
-                    globule.resourceService.clearCalls(rqst, { application: Application.application, domain: globule.config.Domain, token: token })
+                    globule.resourceService.clearCalls(rqst, { application: Application.application, domain: globule.domain, token: token })
                         .then(rsp => {
 
                             ApplicationView.displayMessage(
@@ -399,7 +399,7 @@ export class CallsHistoryMenu extends Menu {
         // Set value on the callee...
         let globule = Model.getGlobule(this.account.domain)
         generatePeerToken(globule, token => {
-            globule.resourceService.setCall(rqst, { application: Application.application, domain: globule.config.Domain, token: token })
+            globule.resourceService.setCall(rqst, { application: Application.application, domain: globule.domain, token: token })
                 .then(rsp => {
                     // releoad the history...
                     this.refreshCalls()
@@ -424,7 +424,7 @@ export class CallsHistoryMenu extends Menu {
         let globule = Model.getGlobule(this.account.domain)
 
         generatePeerToken(globule, token => {
-            globule.resourceService.getCallHistory(rqst, { application: Application.application, domain: globule.config.Domain, token: token })
+            globule.resourceService.getCallHistory(rqst, { application: Application.application, domain: globule.domain, token: token })
                 .then(rsp => {
                     // releoad the history...
                     let calls = rsp.getCallsList().sort((a, b) => {
@@ -525,7 +525,7 @@ export class CallsHistoryMenu extends Menu {
                                         // Set value on the callee...
                                         let globule = Model.getGlobule(this.account.domain)
                                         generatePeerToken(globule, token => {
-                                            globule.resourceService.deleteCall(rqst, { application: Application.application, domain: globule.config.Domain, token: token })
+                                            globule.resourceService.deleteCall(rqst, { application: Application.application, domain: globule.domain, token: token })
                                                 .then(rsp => {
                                                     // this.refreshCalls()
                                                     let div = this.getMenuDiv().querySelector(`#_${call.getUuid()}`)
@@ -609,14 +609,14 @@ export class CallsHistoryMenu extends Menu {
         // Set value on the callee...
         let globule = Model.getGlobule(Application.account.domain)
         generatePeerToken(globule, token => {
-            globule.resourceService.setCall(rqst, { application: Application.application, domain: globule.config.Domain, token: token })
+            globule.resourceService.setCall(rqst, { application: Application.application, domain: globule.domain, token: token })
                 .then(rsp => {
                     Account.getAccount(call.getCaller(), caller => {
                         Account.getAccount(call.getCallee(), callee => {
                             let globule = Application.getGlobule(caller.domain)
                             generatePeerToken(globule, token => {
-                                let url = globule.config.Protocol + "://" + globule.config.Domain
-                                if (window.location != globule.config.Domain) {
+                                let url = globule.config.Protocol + "://" + globule.domain
+                                if (window.location != globule.domain) {
                                     if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
                                         url = globule.config.Protocol + "://" + window.location.host
                                     }
@@ -797,7 +797,7 @@ export class CallsHistoryMenu extends Menu {
             if (contact.domain != Application.account.domain) {
                 let globule = Model.getGlobule(contact.domain)
                 generatePeerToken(globule, token => {
-                    globule.resourceService.setCall(rqst, { application: Application.application, domain: globule.config.Domain, token: token })
+                    globule.resourceService.setCall(rqst, { application: Application.application, domain: globule.domain, token: token })
                 }, err => ApplicationView.displayMessage(err, 3000))
             }
         })

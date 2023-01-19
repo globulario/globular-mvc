@@ -5,12 +5,46 @@
 import { getTheme } from "./Theme";
 import { Model } from '../Model';
 import { Application } from "../Application";
-import { GetProcessInfosRequest, KillProcessRequest, ProcessInfo } from "globular-web-client/admin/admin_pb";
+import { GetProcessInfosRequest, KillProcessRequest } from "globular-web-client/admin/admin_pb";
 import { ApplicationView } from "../ApplicationView";
 import { v4 as uuidv4 } from "uuid";
 import { Chart, registerables } from 'chart.js';
+import { Menu } from "./Menu";
 
 Chart.register(...registerables);
+
+/**
+ * Login/Register functionality.
+ */
+export class SystemInfosMenu extends Menu {
+
+    // Create the application view.
+    constructor() {
+        super("system_infos", "icons:error-outline", "System Infos")
+
+        // The panel to manage shared content.
+        this.system_infos_panel = null;
+
+        this.onclick = () => {
+            let icon = this.getIconDiv().querySelector("iron-icon")
+            icon.style.removeProperty("--iron-icon-fill-color")
+            if (this.system_infos_panel.parentNode == undefined) {
+                Model.eventHub.publish("_display_system_infos_panel_event_", this.system_infos_panel, true)
+            }
+
+        }
+
+    }
+
+    // Initialyse the share panel.
+    init() {
+        if (this.system_infos_panel == null) {
+            this.system_infos_panel = new SystemMonitor
+        }
+    }
+}
+
+customElements.define('globular-system-infos-menu', SystemInfosMenu)
 
 // System information (constant)
 let number_of_thread = 1;
@@ -221,6 +255,7 @@ export class SystemMonitor extends HTMLElement {
         super()
         this.onenterfullscreen = null
         this.onexitfullscreen = null
+
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
 
@@ -243,6 +278,7 @@ export class SystemMonitor extends HTMLElement {
                      transparent 1px,
                      transparent 2px
                    );
+                background-color: var(--palette-background-paper);
              }
              
              .title{
@@ -265,7 +301,7 @@ export class SystemMonitor extends HTMLElement {
 
              #container {
                 flex-grow: 1; 
-                height: 30vh; 
+                height: 100%; 
                 overflow-y: auto;
                 display: flex;
                 flex-direction: column;
@@ -356,7 +392,7 @@ export class SystemMonitor extends HTMLElement {
             this.style.bottom = ""
             this.style.right = ""
             this.style.left = ""
-            this.shadowRoot.querySelector("#container").style.height = "30vh "
+            this.style.marginBottom = ""
             document.querySelector("globular-console").style.display = ""
             if (this.onexitfullscreen) {
                 this.onexitfullscreen()
@@ -364,11 +400,12 @@ export class SystemMonitor extends HTMLElement {
         }
 
         this.enterFullScreenBtn.onclick = () => {
-            this.style.position = "absolute"
+            this.style.position = "fixed"
             this.style.top = "60px"
             this.style.bottom = "00px"
             this.style.right = "0px"
             this.style.left = "0px"
+            this.style.marginBottom = "0px"
             this.enterFullScreenBtn.style.display = "none"
             this.exitFullScreenBtn.style.display = "block"
 
@@ -445,6 +482,7 @@ export class ProcessesManager extends HTMLElement {
 
         this.sortDirection = ""
         this.sortIndex = -1
+        this.stream = null
 
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
@@ -456,6 +494,7 @@ export class ProcessesManager extends HTMLElement {
 
             #processes-table {
                 display: table;
+                width: 100%;
             }
 
             .tr {
@@ -627,6 +666,8 @@ export class ProcessesManager extends HTMLElement {
                 console.log(status.details)
             }
         })
+
+        return stream
     }
 
     sort() {
@@ -789,12 +830,12 @@ export class ProcessesManager extends HTMLElement {
      * The this is call at login time.
      */
     connectedCallback() {
-        /*
+        
         this.interval = setInterval(() => {
             
         }, 1000)
-        */
-        this.getProcessesInfo((infos) => this.displayProcess(infos))
+        
+        this.stream = this.getProcessesInfo((infos) => this.displayProcess(infos))
     }
 
     /**
@@ -802,6 +843,7 @@ export class ProcessesManager extends HTMLElement {
      */
     disconnectedCallback() {
         clearInterval(this.interval);
+        this.stream.cancel()
     }
 
 

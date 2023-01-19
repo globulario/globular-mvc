@@ -29,7 +29,7 @@ export class File extends Model {
 
     // return the file domain.
     public get domain(): string {
-        return this.globule.config.Domain;
+        return this.globule.domain;
     }
 
     private _metadata: any = {};
@@ -144,7 +144,7 @@ export class File extends Model {
         this.files = new Array<File>();
 
         if (local) {
-            let id = globule.config.Domain + "@" + this.path
+            let id = globule.domain + "@" + this.path
             File._local_files[id] = this
         }
 
@@ -232,14 +232,14 @@ export class File extends Model {
      */
     static getFile(globule: Globular, path: string, thumbnailWith: number, thumbnailHeight: number, callback: (f: File) => void, errorCallback: (err: string) => void) {
 
-        //console.log("----------> generate token for: ", globule.config.Domain)
+        console.log("----------> generate token for: ", globule.domain)
         generatePeerToken(globule, token => {
 
             let rqst = new GetFileInfoRequest()
             rqst.setPath(path)
             rqst.setThumnailheight(thumbnailHeight)
             rqst.setThumnailwidth(thumbnailWith)
-            globule.fileService.getFileInfo(rqst, { application: Application.application, domain: globule.config.Domain, token: token })
+            globule.fileService.getFileInfo(rqst, { application: Application.application, domain: globule.domain, token: token })
                 .then(rsp => {
                     let f = File.fromObject(rsp.getInfo().toObject())
                     f.globule = globule;
@@ -268,7 +268,7 @@ export class File extends Model {
 
             path = path.replace(globule.config.DataPath + "/files/", "/")
 
-            let id = globule.config.Domain + "@" + path
+            let id = globule.domain + "@" + path
             if (File._local_files[id] != undefined) {
                 callback(File._local_files[id])
                 return
@@ -323,7 +323,7 @@ export class File extends Model {
             // simply download the file.
             generatePeerToken(globule, (token: string) => {
                 let path = this.path
-                let url = globule.config.Protocol + "://" + globule.config.Domain
+                let url = globule.config.Protocol + "://" + globule.domain
 
                 if (globule.config.Protocol == "https") {
                     if (globule.config.PortHttps != 443)
@@ -349,7 +349,7 @@ export class File extends Model {
                 const req = new XMLHttpRequest();
 
                 // Set the values also as parameters...
-                url += "?domain=" + globule.config.Domain
+                url += "?domain=" + globule.domain
                 url += "&application=" + Model.application
                 if (localStorage.getItem("user_token") != undefined) {
                     url += "&token=" + token
@@ -359,8 +359,8 @@ export class File extends Model {
 
                 // Set the token to manage downlaod access.
                 req.setRequestHeader("token", token);
-                req.setRequestHeader("application", globule.config.Domain);
-                req.setRequestHeader("domain", globule.config.Domain);
+                req.setRequestHeader("application", globule.domain);
+                req.setRequestHeader("domain", globule.domain);
 
                 req.responseType = "blob";
                 req.onload = (event: any) => {

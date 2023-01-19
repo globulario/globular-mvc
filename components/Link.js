@@ -11,7 +11,7 @@ function getTitleInfo(globule, path, callback) {
 
     rqst.setFilepath(path)
 
-    globule.titleService.getFileTitles(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
+    globule.titleService.getFileTitles(rqst, { application: Application.application, domain: globule.domain, token: localStorage.getItem("user_token") })
         .then(rsp => {
             callback(rsp.getTitles().getTitlesList())
         })
@@ -28,7 +28,7 @@ function getVideoInfo(globule, path, callback) {
     rqst.setIndexpath(globule.config.DataPath + "/search/videos")
     rqst.setFilepath(path)
 
-    globule.titleService.getFileVideos(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
+    globule.titleService.getFileVideos(rqst, { application: Application.application, domain: globule.domain, token: localStorage.getItem("user_token") })
         .then(rsp => {
             let videos = rsp.getVideos().getVideosList()
             callback(videos)
@@ -44,7 +44,7 @@ function getAudioInfo(globule, path, callback) {
     rqst.setIndexpath(globule.config.DataPath + "/search/audios")
     rqst.setFilepath(path)
 
-    globule.titleService.getFileAudios(rqst, { application: Application.application, domain: globule.config.Domain, token: localStorage.getItem("user_token") })
+    globule.titleService.getFileAudios(rqst, { application: Application.application, domain: globule.domain, token: localStorage.getItem("user_token") })
         .then(rsp => {
             let audios = rsp.getAudios().getAudiosList()
             callback(audios)

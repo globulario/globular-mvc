@@ -93,11 +93,11 @@ export class Session extends Model {
                     if (lastSession != null) {
                         if (obj.getExpireAt() > lastSession.getExpireAt()) {
                             lastSession = obj
-                            lastDomain = globule.config.Domain
+                            lastDomain = globule.domain
                         }
                     } else {
                         lastSession = obj
-                        lastDomain = globule.config.Domain
+                        lastDomain = globule.domain
                     }
 
                     if (globules.length > 0) {

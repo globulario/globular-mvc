@@ -812,8 +812,8 @@ export class AudioPlayer extends HTMLElement {
                 url = path;
             } else {
 
-                url = globule.config.Protocol + "://" + globule.config.Domain
-                if (window.location != globule.config.Domain) {
+                url = globule.config.Protocol + "://" + globule.domain
+                if (window.location != globule.domain) {
                     if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
                         url = globule.config.Protocol + "://" + window.location.host
                     }

@@ -3,6 +3,7 @@ import * as GlobularWebClient from "globular-web-client";
 import { getAllPeersInfo } from "globular-web-client/api";
 import { GeneratePeerTokenRequest } from "globular-web-client/authentication/authentication_pb";
 import { Peer } from "globular-web-client/resource/resource_pb";
+import { formatBoolean } from "./components/utility";
 import { View } from "./View";
 
 
@@ -189,32 +190,11 @@ export class Model {
             Model.globules = new Map<string, GlobularWebClient.Globular>();
             Model.globules.set(Model.address, Model._globular)
 
-            // Use when globular is not the http server.
-            let domain = Model._globular.config.Name
-            if (domain.length > 0 && !Model._globular.config.Domain.startsWith(Model._globular.config.Name)) {
-                if (Model._globular.config.Domain.length > 0) {
-                    domain += "." + Model._globular.config.Domain;
-                }
-            } else {
-                domain = Model._globular.config.Domain;
-            }
-
-
-            Model.domain = domain;
-
-            if (Model._globular.config.Protocol == "https") {
-                Model.address = Model._globular.config.Protocol + ":" + Model._globular.config.PortHttps
-            } else {
-                Model.address = Model._globular.config.Protocol + ":" + Model._globular.config.PortHttp
-            }
-
-
-            Model.globules.set(domain, Model._globular)
-            Model.globules.set(domain + ":" + Model._globular.config.PortHttp, Model._globular)
-            Model.globules.set(domain + ":" + Model._globular.config.PortHttps, Model._globular)
-            Model.globules.set(Model._globular.config.Domain + ":" + Model._globular.config.PortHttp, Model._globular)
-            Model.globules.set(Model._globular.config.Domain + ":" + Model._globular.config.PortHttps, Model._globular)
-            Model.globules.set(Model.address, Model._globular)
+            // 
+            Model.domain = Model._globular.domain;
+            Model.globules.set(Model.domain, Model._globular)
+            Model.globules.set(Model.domain + ":" + Model._globular.config.PortHttp, Model._globular)
+            Model.globules.set(Model.domain + ":" + Model._globular.config.PortHttps, Model._globular)
             Model.globules.set(Model._globular.config.Mac, Model._globular)
 
             // I will also set the globule to other address...
@@ -281,9 +261,7 @@ export class Model {
             }, (err: any) => {
                 initCallback();
             });
-
-
-        }, errorCallback);
+        }, err=>{console.log(err); errorCallback(err);});
 
     }
 }

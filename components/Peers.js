@@ -182,7 +182,7 @@ export class PeersManager extends HTMLElement {
                 let globule = new GlobularWebClient.Globular(url, () => {
 
                     let peer = new Peer
-                    peer.setDomain(globule.config.Domain)
+                    peer.setDomain(globule.domain)
                     peer.setProtocol(globule.config.Protocol)
                     peer.setPorthttp(globule.config.PortHttp)
                     peer.setPorthttps(globule.config.PortHttps)
