@@ -24,7 +24,8 @@ export class SystemInfosMenu extends Menu {
 
         // The panel to manage shared content.
         this.system_infos_panel = null;
-
+        this.onclose = null;
+        
         this.onclick = () => {
             let icon = this.getIconDiv().querySelector("iron-icon")
             icon.style.removeProperty("--iron-icon-fill-color")
@@ -40,6 +41,7 @@ export class SystemInfosMenu extends Menu {
     init() {
         if (this.system_infos_panel == null) {
             this.system_infos_panel = new SystemMonitor
+            this.system_infos_panel.onclose = this.onclose;
         }
     }
 }
@@ -255,6 +257,7 @@ export class SystemMonitor extends HTMLElement {
         super()
         this.onenterfullscreen = null
         this.onexitfullscreen = null
+        this.closeBtn = null
 
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
@@ -319,6 +322,7 @@ export class SystemMonitor extends HTMLElement {
           </style>
           <paper-card>
              <div style="display: flex; width: 100%; border-bottom: 1px solid var(--palette-action-disabled);">
+                 <paper-icon-button icon="icons:close" id="close-btn"></paper-icon-button>
                  <span class="title"></span>
                  <paper-icon-button icon="icons:fullscreen" id="enter-full-screen-btn"></paper-icon-button>
                  <paper-icon-button icon="icons:fullscreen-exit" id="exit-full-screen-btn" style="display: none;"></paper-icon-button>
@@ -359,6 +363,15 @@ export class SystemMonitor extends HTMLElement {
         this.appendChild(this.processesManager)
 
 
+        this.onclose = null
+
+        // simply close the watching content...
+        this.shadowRoot.querySelector("#close-btn").onclick = () => {
+            this.parentNode.removeChild(this)
+            if (this.onclose != null) {
+                this.onclose()
+            }
+        }
 
         // Here I will connect the tab and the panel...
         hostInfosTab.onclick = () => {
@@ -393,7 +406,6 @@ export class SystemMonitor extends HTMLElement {
             this.style.right = ""
             this.style.left = ""
             this.style.marginBottom = ""
-            document.querySelector("globular-console").style.display = ""
             if (this.onexitfullscreen) {
                 this.onexitfullscreen()
             }
@@ -408,7 +420,6 @@ export class SystemMonitor extends HTMLElement {
             this.style.marginBottom = "0px"
             this.enterFullScreenBtn.style.display = "none"
             this.exitFullScreenBtn.style.display = "block"
-
             if (this.onenterfullscreen) {
                 this.onenterfullscreen()
             }
