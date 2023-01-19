@@ -232,7 +232,7 @@ export class File extends Model {
      */
     static getFile(globule: Globular, path: string, thumbnailWith: number, thumbnailHeight: number, callback: (f: File) => void, errorCallback: (err: string) => void) {
 
-        console.log("----------> generate token for: ", globule.config.Domain)
+        //console.log("----------> generate token for: ", globule.config.Domain)
         generatePeerToken(globule, token => {
 
             let rqst = new GetFileInfoRequest()
