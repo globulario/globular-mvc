@@ -565,6 +565,9 @@ export class VideoPlayer extends HTMLElement {
 
     play_(path, globule, local = false, token) {
 
+        // replace separator...
+        path = path.split("\\").join("/")
+
         this.style.zIndex = 100
         // Set the title...
         let thumbnailPath = path.replace("/playlist.m3u8", "")

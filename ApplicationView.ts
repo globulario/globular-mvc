@@ -247,8 +247,12 @@ export class ApplicationView extends View {
     // The blog editing menu...
     this.blogEditingMenu = new BlogEditingMenu();
 
+    // The system infos menu
+    this.systemInfosMenu = new SystemInfosMenu();
+
+
     // Set the close action for both blog edit and continue watching...
-    this.blogEditingMenu.onclose = this.watchingMenu.onclose = () => {
+    this.systemInfosMenu.onclose = this.blogEditingMenu.onclose = this.watchingMenu.onclose = () => {
 
       // restore the workspace
       this.restoreContent();
@@ -264,8 +268,6 @@ export class ApplicationView extends View {
     // The share menu.
     this.shareMenu = new ShareMenu();
 
-    // The system infos menu
-    this.systemInfosMenu = new SystemInfosMenu();
 
 
     this._sidemenu_childnodes = new Array<any>();

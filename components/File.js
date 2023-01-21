@@ -93,7 +93,7 @@ function getFileSize(url_, callback, errorcallback) {
     let url = window.location.protocol + "//" + window.location.host + "/file_size"
 
     var xmlhttp = new XMLHttpRequest();
-    xmlhttp.timeout = 10*1000
+    xmlhttp.timeout = 10 * 1000
 
     xmlhttp.onreadystatechange = function () {
         if (this.readyState == 4 && (this.status == 201 || this.status == 200)) {
@@ -214,10 +214,6 @@ function getElementIndex(element) {
 
 export function getImage(callback, images, files, index, globule) {
     let f = files[index];
-    if (!f) {
-        callback([])
-    }
-
     index++
 
     // set the url for the image.
@@ -243,8 +239,14 @@ export function getImage(callback, images, files, index, globule) {
         }
     }
 
+    if (f == undefined) {
+        callback([])
+        return
+    }
+
     if (!f.path) {
         callback([])
+        return
     }
 
     let path = f.path.split("/")
@@ -298,6 +300,8 @@ let dirs = {}
 
 // Usefull to get dir like /shared or /public that dosent exist on the server.
 export function getLocalDir(globule, path) {
+    // replace separator...
+    path = path.split("\\").join("/")
     let key = getUuidByString(globule.domain + "@" + path)
     let dir = dirs[key]
 
@@ -316,6 +320,8 @@ export function getLocalDir(globule, path) {
  * @param {*} force If set the dir will be read from the server.
  */
 function _readDir(path, callback, errorCallback, globule, force = false) {
+            // replace separator...
+            path = path.split("\\").join("/")
     let key = getUuidByString(globule.domain + "@" + path)
     if (!force || path == "/public" || path == "/shared") {
         let dir = dirs[key]
@@ -330,7 +336,8 @@ function _readDir(path, callback, errorCallback, globule, force = false) {
     // Here I will keep the dir info in the cache...
     File.readDir(path, false, (dir) => {
         callback(dir)
-
+        // replace separator...
+        dir.path = dir.path.split("\\").join("/")
         let parent = dir.path.substring(0, dir.path.lastIndexOf("/"))
         if (public_[parent]) {
             markAsPublic(dir, parent)
@@ -781,6 +788,7 @@ export class FilesView extends HTMLElement {
 
                 let deleteFile_ = () => {
                     let f = files[index]
+                    f.path =  f.path.split("\\").join("/")
                     let path = f.path.substring(0, f.path.lastIndexOf("/"))
                     index++
                     let globule = this._file_explorer_.globule
@@ -1575,6 +1583,7 @@ export class FilesListView extends FilesView {
      */
     setDir(dir) {
         // if the dire is hidden or the dir is the user dir... 
+        dir.path=  dir.path.split("\\").join("/")
         if (dir.name.startsWith(".") || !(dir.path.startsWith("/public") || public_[dir.path] != undefined || dir.path.startsWith("/shared") || shared[dir.path] != undefined || dir.path.startsWith("/applications/" + Application.application) || dir.path.startsWith("/users/" + Application.account.id))) {
             return;
         }
@@ -1901,7 +1910,7 @@ export class FilesIconView extends FilesView {
      * @param {*} dir 
      */
     setDir(dir) {
-
+        dir.path=  dir.path.split("\\").join("/")
         if (dir.name.startsWith(".") || !(dir.path.startsWith("/public") || public_[dir.path] != undefined || dir.path.startsWith("/shared") || shared[dir.path] != undefined || dir.path.startsWith("/applications/" + Application.application) || dir.path.startsWith("/users/" + Application.account.id))) {
             return;
         }
@@ -3107,7 +3116,7 @@ export class PathNavigator extends HTMLElement {
 
     // Set the directory.
     setDir(dir) {
-
+        dir.path=  dir.path.split("\\").join("/")
         if (this.path == dir._path || !(dir.path.startsWith("/public") || public_[dir.path] != undefined || dir.path.startsWith("/shared") || shared[dir.path] != undefined || dir.path.startsWith("/applications/" + Application.application) || dir.path.startsWith("/users/" + Application.account.id))) {
             return;
         }
@@ -3434,6 +3443,7 @@ export class FileNavigator extends HTMLElement {
                 }
                 // reload the div...
                 this.initPublic(callback)
+                dir.path=  dir.path.split("\\").join("/")
                 if (dir.path != "/public") {
                     this.initTreeView(dir, parent, level)
                 }
@@ -3639,6 +3649,7 @@ export class FileNavigator extends HTMLElement {
 
     // Set the directory.
     setDir(dir, callback) {
+        dir.path=  dir.path.split("\\").join("/")
         if (this.dir == dir || !(dir.path.startsWith("/public") || public_[dir.path] != undefined || dir.path.startsWith("/shared") || shared[dir.path] != undefined || shared[dir.path] != undefined || dir.path.startsWith("/applications/" + Application.application) || dir.path.startsWith("/users/" + Application.account.id))) {
             return;
         }
@@ -3826,7 +3837,7 @@ export class FileNavigator extends HTMLElement {
         if (Application.account == undefined) {
             return // nothing to do here...
         }
-        
+
         // The account...
         let rqst = new GetSharedResourceRqst
         rqst.setSubject(Application.account.id + "@" + Application.account.domain)
@@ -5752,7 +5763,7 @@ export class FilesUploader extends HTMLElement {
 
         // Start display torrent infos...
         this.getTorrentLnks(this._file_explorer_.globule, lnks => {
-            
+
         })
         this.getTorrentsInfo(this._file_explorer_.globule)
     }
