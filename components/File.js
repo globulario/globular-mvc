@@ -2023,7 +2023,7 @@ export class FilesIconView extends FilesView {
 
             .file-icon-div img {
                 display: block;
-                min-width: 80px;
+                min-width: 50px;
                 height: 100%;
             }
 
