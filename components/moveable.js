@@ -6,6 +6,8 @@
  */
 export function setMoveable(handle, draggable, onmove, element, offsetTop = 0) {
 
+
+
   // set the position from existing infos
   let id = "__" + draggable.name + "__position__"
   if (localStorage.getItem(id)) {
@@ -54,6 +56,8 @@ export function setMoveable(handle, draggable, onmove, element, offsetTop = 0) {
   var isMouseDown, initX, initY, height = draggable.offsetHeight, width = draggable.offsetWidth;
 
   handle.addEventListener('click', (e) => {
+    e.stopPropagation()
+
     let draggables = document.getElementsByClassName("draggable")
     for (var i = 0; i < draggables.length; i++) {
       draggables[i].style.zIndex = 100;
@@ -63,6 +67,7 @@ export function setMoveable(handle, draggable, onmove, element, offsetTop = 0) {
   })
 
   handle.addEventListener('mousedown', (e) => {
+    e.stopPropagation()
     isMouseDown = true;
     document.body.classList.add('no-select');
     initX = e.offsetX;
@@ -76,6 +81,7 @@ export function setMoveable(handle, draggable, onmove, element, offsetTop = 0) {
   })
 
   document.addEventListener('mousemove', (e) => {
+    e.stopPropagation()
     if (isMouseDown) {
       var cx = e.clientX - initX,
         cy = e.clientY - initY;
@@ -114,7 +120,7 @@ export function setMoveable(handle, draggable, onmove, element, offsetTop = 0) {
   })
 
   document.addEventListener('mouseup', (e) => {
-
+    e.stopPropagation()
     isMouseDown = false;
     document.body.classList.remove('no-select');
 
