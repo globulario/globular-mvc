@@ -267,6 +267,9 @@ export class VideoPlayer extends HTMLElement {
             this.close()
         }
 
+        // https://www.tomsguide.com/how-to/how-to-set-chrome-flags
+        // you must set enable-experimental-web-platform-features to true
+        // chrome://flags/ 
         this.video.onloadeddata = () => {
             if (this.video.audioTracks) {
                 console.log(this.video.audioTracks)
