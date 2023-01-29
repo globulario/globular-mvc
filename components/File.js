@@ -413,7 +413,7 @@ export class FilesView extends HTMLElement {
         <globular-dropdown-menu-item  id="title-infos-menu-item" icon="icons:info" text="Title Infos" action="" style="display: none;"> </globular-dropdown-menu-item>
         <globular-dropdown-menu-item  id="manage-acess-menu-item" icon="folder-shared" text="Manage access" action=""></globular-dropdown-menu-item>
         <globular-dropdown-menu-item  id="refresh-infos-menu-item" icon="icons:refresh" text="Refresh infos" action="" style="display: none;"></globular-dropdown-menu-item>
-          <globular-dropdown-menu-item separator="true" id="video-menu-item" icon="maps:local-movies" text="Movies" action="" style="display: none;"> 
+        <globular-dropdown-menu-item separator="true" id="video-menu-item" icon="maps:local-movies" text="Movies" action="" style="display: none;"> 
             <globular-dropdown-menu>
                 <globular-dropdown-menu-item id="generate-timeline-menu-item" icon="maps:local-movies" text="generate timeline" action=""> </globular-dropdown-menu-item>
                 <globular-dropdown-menu-item id="generate-preview-menu-item" icon="maps:local-movies" text="generate preview" action=""> </globular-dropdown-menu-item>
@@ -432,8 +432,10 @@ export class FilesView extends HTMLElement {
         `
 
         this.menu = new DropdownMenu("icons:more-vert")
+        this.menu.className ="file-dropdown-menu"
         this.menu.innerHTML = menuItemsHTML
 
+        this.videMenuItem = this.menu.querySelector("#video-menu-item")
         this.fileInfosMenuItem = this.menu.querySelector("#file-infos-menu-item")
         this.titleInfosMenuItem = this.menu.querySelector("#title-infos-menu-item")
         this.refreshInfoMenuItem = this.menu.querySelector("#refresh-infos-menu-item")
@@ -445,7 +447,6 @@ export class FilesView extends HTMLElement {
         this.copyUrlItem = this.menu.querySelector("#copy-url-menu-item")
 
         // video conversion menu
-        this.videMenuItem = this.menu.querySelector("#video-menu-item")
         this.generateTimeLineItem = this.menu.querySelector("#generate-timeline-menu-item")
         this.generatePreviewItem = this.menu.querySelector("#generate-preview-menu-item")
         this.toMp4MenuItem = this.menu.querySelector("#to-mp4-menu-item")
@@ -457,10 +458,6 @@ export class FilesView extends HTMLElement {
         this.pasteMenuItem = this.menu.querySelector("#paste-menu-item")
 
 
-        this.videMenuItem.action = () => {
-
-        }
-
         // Action to do when file is set
         this.menu.setFile = (f) => {
 
@@ -469,6 +466,9 @@ export class FilesView extends HTMLElement {
                 this.titleInfosMenuItem.style.display = "block"
                 this.videMenuItem.style.display = "block"
                 this.openInNewTabItem.style.display = "block"
+                this.generateTimeLineItem.style.display = "block"
+                this.generatePreviewItem.style.display = "block"
+
                 if (this.menu.file.name.endsWith(".mp4") || this.menu.file.name.endsWith(".MP4")) {
                     this.toHlsMenuItem.style.display = "block"
                     this.toMp4MenuItem.style.display = "none"
@@ -480,6 +480,8 @@ export class FilesView extends HTMLElement {
                     this.toMp4MenuItem.style.display = "block"
                 }
             } else {
+                this.videMenuItem.style.display = "none"
+
                 if (this.menu.file.mime.startsWith("audio")) {
                     this.titleInfosMenuItem.style.display = "block"
                 } else {
@@ -488,9 +490,14 @@ export class FilesView extends HTMLElement {
 
                 if (this.menu.file.isDir) {
                     this.refreshInfoMenuItem.style.display = "block"
+                    this.videMenuItem.style.display = "block"
+                    this.toHlsMenuItem.style.display = "block"
+                    this.toMp4MenuItem.style.display = "block"
+                    this.generateTimeLineItem.style.display = "none"
+                    this.generatePreviewItem.style.display = "none"
                 }
 
-                this.videMenuItem.style.display = "none"
+                
                 this.openInNewTabItem.style.display = "none"
             }
         }
@@ -502,10 +509,7 @@ export class FilesView extends HTMLElement {
 
             generatePeerToken(globule, token => {
                 globule.fileService.startProcessVideo(rqst, {
-                    token: token,
-                    application: Model.application,
-                    domain: globule.domain,
-                    address: globule.config.address
+                    
                 }).then(() => {
                     ApplicationView.displayMessage("informations are now updated", 3000)
                 })

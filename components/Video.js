@@ -10,7 +10,7 @@ import { GetFileTitlesRequest, GetFileVideosRequest } from "globular-web-client/
 import { setMoveable } from './moveable'
 import { setResizeable } from './rezieable'
 import { File } from "../File"
-import { randomUUID } from "./utility";
+import { formatBoolean, randomUUID } from "./utility";
 import { PlayList } from "./Playlist"
 
 Object.defineProperty(HTMLMediaElement.prototype, 'playing', {
@@ -40,7 +40,9 @@ export function playVideo(path, onplay, onclose, title, globule) {
     let menus = document.body.querySelectorAll("globular-dropdown-menu")
     for (var i = 0; i < menus.length; i++) {
         menus[i].close()
-        menus[i].parentNode.removeChild(menus[i])
+        if (menus[i].classList.contains("file-dropdown-menu")) {
+            menus[i].parentNode.removeChild(menus[i])
+        }
     }
 
     let videoPlayer = document.getElementById("video-player-x")
@@ -81,6 +83,7 @@ export function playVideo(path, onplay, onclose, title, globule) {
         videoPlayer.hidePlaylist()
         videoPlayer.play(path, globule)
     }
+
 
     return videoPlayer
 }
@@ -144,10 +147,19 @@ export class VideoPlayer extends HTMLElement {
                 text-overflow: ellipsis;
             }
 
+            .header select {
+                background: var(--palette-background-default); 
+                color: var(--palette-text-accent);
+                border:0px;
+                outline:0px;
+            }
+
             video{
                 display: block;
                 width:auto;
             }
+
+
 
             paper-card {
                 background: var(--palette-background-default); 
@@ -159,6 +171,7 @@ export class VideoPlayer extends HTMLElement {
             <div class="header" style="${hideheader ? "display:none;" : ""}">
                 <paper-icon-button id="video-close-btn" icon="icons:close" style="min-width: 40px; --iron-icon-fill-color: var(--palette-text-accent);"></paper-icon-button>
                 <span id="title-span"></span>
+                <select id="audio-track-selector" style="display: none"></select>
                 <paper-icon-button id="title-info-button" icon="icons:arrow-drop-down-circle"></paper-icon-button>
             </div>
             <div id="content" style="display: flex; background: black;">
@@ -230,6 +243,7 @@ export class VideoPlayer extends HTMLElement {
             }
         }
 
+
         // toggle full screen when the user double click on the header.
         this.shadowRoot.querySelector(".header").ondblclick = () => {
             var type = this.player.media.tagName.toLowerCase(),
@@ -251,6 +265,65 @@ export class VideoPlayer extends HTMLElement {
         this.player = new Plyr(this.video);
         this.shadowRoot.querySelector("#video-close-btn").onclick = () => {
             this.close()
+        }
+
+        // https://www.tomsguide.com/how-to/how-to-set-chrome-flags
+        // you must set enable-experimental-web-platform-features to true
+        // chrome://flags/ 
+        this.video.onloadeddata = () => {
+            if (this.video.audioTracks) {
+                console.log(this.video.audioTracks)
+                // This will set the video langual...
+                if (this.video.audioTracks.length > 1) {
+                    let audioTrackSelect = this.shadowRoot.querySelector("#audio-track-selector")
+                    audioTrackSelect.style.display = "block"
+                    for (let i = 0; i < this.video.audioTracks.length; i++) {
+                        let track = this.video.audioTracks[i]
+                        let option = document.createElement("option")
+                        option.innerHTML = track.language
+                        option.value = i
+                        audioTrackSelect.appendChild(option)
+                    }
+
+                    // Set the language with the browser
+                    let browser_language = navigator.language || navigator.userLanguage; // IE <= 10
+                    for (let i = 0; i < this.video.audioTracks.length; i++) {
+                        let track_language = this.video.audioTracks[i].language.substr(0, 2);
+
+                        // +++ Set the enabled audio track language +++
+                        if (track_language) {
+                            // When the track language matches the browser language, then enable that audio track
+                            if (track_language === browser_language) {
+                                // When one audio track is enabled, others are automatically disabled
+                                this.video.audioTracks[i].enabled = true;
+                                audioTrackSelect.value = i
+                                this.player.rewind(0)
+                            } else {
+                                this.video.audioTracks[i].enabled = false;
+                            }
+                        }
+                    }
+
+                    audioTrackSelect.onchange = (evt) => {
+                        if (this.player) {
+                            evt.stopPropagation()
+                            var selectElement = evt.target;
+                            var value = selectElement.value;
+                            for (let i = 0; i < this.video.audioTracks.length; i++) {
+                                let track = this.video.audioTracks[i]
+                                if (i == value) {
+                                    track.enabled = true
+
+                                    this.player.forward(0)
+                                } else {
+                                    track.enabled = false
+                                }
+                            }
+                        }
+                    }
+
+                }
+            }
         }
 
         // HLS for streamming...
@@ -477,7 +550,7 @@ export class VideoPlayer extends HTMLElement {
     }
 
     play(path, globule, titleInfo) {
-        if(titleInfo){
+        if (titleInfo) {
             this.titleInfo = titleInfo
             this.titleInfo.globule = globule
         }
@@ -497,7 +570,7 @@ export class VideoPlayer extends HTMLElement {
                         url += ":" + globule.config.PortHttps
                 } else {
                     if (globule.config.PortHttps != 80)
-                    
+
                         url += ":" + globule.config.PortHttp
                 }
 
