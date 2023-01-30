@@ -6,6 +6,127 @@ import { getAllGroups, getAllRoles } from "globular-web-client/api";
 import { Model } from "../Model";
 import { getAllOrganizations } from "./Organization";
 import { getAllPeers } from "./Peers";
+import { fireResize, randomUUID } from "./utility";
+
+export class EditableStringList extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor(list) {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+            ${getTheme()}
+
+            .string-list{
+                display: flex;
+                flex-wrap: wrap;
+            }
+
+            .string-list div{
+                align-items: center;
+                justify-content: center;
+                padding: 0px 4px 0px 4px;
+                margin-right: 5px;
+                margin-top: 5px;
+                border: 1px solid var(--palette-action-disabled);
+            }
+
+            iron-icon {
+                width: 16px;
+                height: 16px;
+                margin-left: 2px;
+                
+            }
+
+            paper-input {
+                display: none; 
+            }
+
+            iron-icon:hover {
+                cursor: pointer;
+            }
+
+        </style>
+       
+        <div class="string-list"></div>
+       
+        `
+        // give the focus to the input.
+        let stringListDiv = this.shadowRoot.querySelector(".string-list")
+        let range = document.createRange()
+        stringListDiv.onclick = ()=>{
+            this.blur()
+        }
+        
+        list.forEach(item => {
+            let uuid = "_" + randomUUID()
+            let html = `
+                <div id=${uuid} style="display: flex;">
+                    <span>${item}</span>
+                    <paper-input no-label-float style="display: none;"></paper-input>
+                    <iron-icon icon="icons:close"></iron-icon>
+                </div>
+            `
+
+            let index = stringListDiv.children.length
+            stringListDiv.appendChild(range.createContextualFragment(html))
+
+            // I will set edit event...
+            let itemDiv = stringListDiv.children[index]
+            let itemSpan = itemDiv.children[0]
+            let itemInput = itemDiv.children[1]
+
+            itemSpan.onclick = (evt) => {
+                evt.stopPropagation()
+                for (var i = 0; i < stringListDiv.children.length; i++) {
+                    stringListDiv.children[i].children[0].style.display = "block"
+                    stringListDiv.children[i].children[1].style.display = "none"
+                }
+                itemInput.style.display = "block"
+                itemInput.value = item
+                itemSpan.style.display = "none"
+                setTimeout(() => {
+                    itemInput.focus()
+                    itemInput.inputElement.inputElement.select()
+                }, 100)
+                fireResize()
+            }
+
+            itemInput.onkeyup = (evt) => {
+                evt.stopPropagation()
+                let key = evt.key;
+                if(key == "Escape"){
+                    itemSpan.innerHTML = itemInput.value = item // set back to item...
+                    itemInput.style.display = "none"
+                    itemSpan.style.display = "block"
+                }
+                if(key == "Enter"){
+                    itemSpan.innerHTML = itemInput.value
+                    itemInput.style.display = "none"
+                    itemSpan.style.display = "block"
+                }
+            }
+
+
+        })
+    }
+
+    blur(){
+        let inputs = this.shadowRoot.querySelectorAll("paper-input")
+        for(var i=0; i < inputs.length; i++){
+            inputs[i].style.display = "none"
+            inputs[i].parentNode.children[0].style.display = "block"
+        }
+    }
+}
+
+customElements.define('globular-editable-string-list', EditableStringList)
+
 
 /**
  * String seach listbox.
@@ -733,7 +854,7 @@ customElements.define('globular-searchable-role-list', SearchableRoleList)
 /**
  * Searchable Group list
  */
- export class SearchableGroupList extends SearchableList {
+export class SearchableGroupList extends SearchableList {
     // attributes.
 
     // Create the applicaiton view.
@@ -914,7 +1035,7 @@ customElements.define('globular-searchable-group-list', SearchableGroupList)
 /**
  * Searchable Organization list
  */
- export class SearchableOrganizationList extends SearchableList {
+export class SearchableOrganizationList extends SearchableList {
     // attributes.
 
     // Create the applicaiton view.
@@ -1094,7 +1215,7 @@ customElements.define('globular-searchable-organization-list', SearchableOrganiz
 /**
  * Searchable Group list
  */
- export class SearchablePeerList extends SearchableList {
+export class SearchablePeerList extends SearchableList {
     // attributes.
 
     // Create the applicaiton view.

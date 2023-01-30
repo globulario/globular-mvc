@@ -12,6 +12,7 @@ import { setResizeable } from './rezieable'
 import { File } from "../File"
 import { formatBoolean, randomUUID } from "./utility";
 import { PlayList } from "./Playlist"
+import { readDir } from "globular-web-client/api";
 
 Object.defineProperty(HTMLMediaElement.prototype, 'playing', {
     get: function () {
@@ -65,6 +66,7 @@ export function playVideo(path, onplay, onclose, title, globule) {
 
     // keep the title
     videoPlayer.titleInfo = title;
+    videoPlayer.globule = globule;
 
     if (onclose && !videoPlayer.onclose) {
         videoPlayer.onclose = onclose
@@ -89,6 +91,15 @@ export function playVideo(path, onplay, onclose, title, globule) {
 }
 
 
+function getSubtitlesFiles(globule, path, callback) {
+    let subtitlesPath = path.substr(0, path.lastIndexOf("."))
+    subtitlesPath = subtitlesPath.substring(0, subtitlesPath.lastIndexOf("/") + 1) + ".hidden" + subtitlesPath.substring(subtitlesPath.lastIndexOf("/")) + "/__subtitles__"
+
+
+    File.readDir(subtitlesPath, false, callback, err => console.log(err), globule)
+
+}
+
 /**
  * Sample empty component
  */
@@ -103,7 +114,7 @@ export class VideoPlayer extends HTMLElement {
         let hideheader = this.getAttribute("hideheader") != undefined
         this.titleInfo = null; // movie, serie title, video
         this.playlist = null; // The playlist...
-
+        this.globule = null;
         this.skipPresiousBtn = null;
         this.stopBtn = null;
         this.skipNextBtn = null;
@@ -171,6 +182,7 @@ export class VideoPlayer extends HTMLElement {
             <div class="header" style="${hideheader ? "display:none;" : ""}">
                 <paper-icon-button id="video-close-btn" icon="icons:close" style="min-width: 40px; --iron-icon-fill-color: var(--palette-text-accent);"></paper-icon-button>
                 <span id="title-span"></span>
+                
                 <select id="audio-track-selector" style="display: none"></select>
                 <paper-icon-button id="title-info-button" icon="icons:arrow-drop-down-circle"></paper-icon-button>
             </div>
@@ -204,6 +216,10 @@ export class VideoPlayer extends HTMLElement {
         this.video.id = "player"
         this.video.autoplay = true
         this.video.controls = true
+        this.video.playsinline = true
+
+
+
         this.onclose = null
         this.onplay = null
         let offsetTop = this.shadowRoot.querySelector(".header").offsetHeight
@@ -255,14 +271,20 @@ export class VideoPlayer extends HTMLElement {
             toggle.click()
         }
 
-        setMoveable(this.shadowRoot.querySelector(".header"), container, (left, top) => {
+        setMoveable(this.shadowRoot.querySelector("#title-span"), container, (left, top) => {
             /** */
         }, this, offsetTop)
 
         // Plyr give a nice visual to the video player.
         // TODO set the preview and maybe quality bitrate if possible...
         // So here I will get the vtt file if one exist...
-        this.player = new Plyr(this.video);
+        this.player = new Plyr(this.video, {
+            captions: {
+                active: true,
+                update: true,// THAT line solved my problem
+            }
+        });
+
         this.shadowRoot.querySelector("#video-close-btn").onclick = () => {
             this.close()
         }
@@ -271,6 +293,57 @@ export class VideoPlayer extends HTMLElement {
         // you must set enable-experimental-web-platform-features to true
         // chrome://flags/ 
         this.video.onloadeddata = () => {
+
+            getSubtitlesFiles(this.globule, this.path, subtitles_files => {
+
+                let globule = this.globule
+                let url = globule.config.Protocol + "://" + globule.domain
+
+                if (window.location != globule.domain) {
+                    if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
+                        url = globule.config.Protocol + "://" + window.location.host
+                    }
+                }
+
+                if (globule.config.Protocol == "https") {
+                    if (globule.config.PortHttps != 443)
+                        url += ":" + globule.config.PortHttps
+                } else {
+                    if (globule.config.PortHttps != 80)
+                        url += ":" + globule.config.PortHttp
+                }
+
+                subtitles_files.files.forEach(f => {
+                    let track = document.createElement("track")
+                    //   <track kind="captions" label="English captions" src="/path/to/captions.vtt" srclang="en" default />
+                    track.kind = "captions"
+
+                    // ex. View_From_A_Blue_Moon_Trailer-576p.fr.vtt
+                    let language_id = f.name.split(".")[f.name.split.length - 1]
+                    const languageNames = new Intl.DisplayNames([language_id], {
+                        type: 'language'
+                      });
+                      
+                    track.label =  languageNames.of(language_id)// todo set the true language.
+
+                    let url_ = f.path
+
+                    url_ = f.path
+                    if (url_.startsWith("/")) {
+                        url_ = url + url_
+                    } else {
+                        url_ = url + "/" + url_
+                    }
+
+                    track.src = url_
+
+                    track.srclang = language_id
+
+                    this.player.media.appendChild(track)
+
+                })
+            })
+
             if (this.video.audioTracks) {
                 console.log(this.video.audioTracks)
                 // This will set the video langual...
@@ -305,8 +378,9 @@ export class VideoPlayer extends HTMLElement {
                     }
 
                     audioTrackSelect.onchange = (evt) => {
+                        evt.stopPropagation()
                         if (this.player) {
-                            evt.stopPropagation()
+                           
                             var selectElement = evt.target;
                             var value = selectElement.value;
                             for (let i = 0; i < this.video.audioTracks.length; i++) {

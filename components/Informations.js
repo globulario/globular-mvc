@@ -9,6 +9,7 @@ import { randomUUID } from "./utility";
 import { playVideo } from "./Video";
 import { playAudio, secondsToTime } from "./Audio";
 import '@polymer/iron-autogrow-textarea/iron-autogrow-textarea.js';
+import { EditableStringList } from "./List";
 
 // extract the duration info from the raw data.
 function parseDuration(duration) {
@@ -929,6 +930,14 @@ export class VideoInfoEditor extends HTMLElement {
                         <paper-icon-button id="edit-video-description-btn" style="vertical-align: top;" icon="image:edit"></paper-icon-button>
                     </div>
                 </div>
+                <div style="display: table-row;">
+                    <div class="label" style="display: table-cell; font-weight: 450;">Genres:</div>
+                    <div id="video-genres-div" style="display: table-cell; width: 350px;"></div>
+                </div>
+                <div style="display: table-row;">
+                    <div class="label" style="display: table-cell; font-weight: 450;">Tags:</div>
+                    <div id="video-tags-div" style="display: table-cell; width: 350px;"></div>
+                </div>
             </div>
         </div>
         `
@@ -996,6 +1005,15 @@ export class VideoInfoEditor extends HTMLElement {
             videoVideoDescriptionDiv.style.display = "table-cell"
             videoVideoDescriptionDiv.innerHTML = videoVideoDescriptionInput.value
         }
+
+        let videoGenresDiv = this.shadowRoot.querySelector("#video-genres-div")
+        let videoGenreList = new EditableStringList(video.getGenresList())
+        videoGenresDiv.appendChild(videoGenreList)
+
+        let videoTagsDiv = this.shadowRoot.querySelector("#video-tags-div")
+        let videoTagsList = new EditableStringList(video.getTagsList())
+        videoTagsDiv.appendChild(videoTagsList)
+        
     }
 
     setVideo(video) {
