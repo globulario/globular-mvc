@@ -5,6 +5,9 @@ import { fireResize } from "./utility";
  */
 export function setResizeable(div, onresize, side, zIndex) {
 
+    // be sure the windows can be resize...
+    div.style.maxWidth = screen.width -5  + "px" 
+
     let id = div.name
     if (localStorage.getItem(`__${id}_dimension__`)) {
         let dimension = JSON.parse(localStorage.getItem(`__${id}_dimension__`))

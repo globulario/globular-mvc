@@ -886,6 +886,11 @@ export class VideoInfoEditor extends HTMLElement {
                 display: flex;
             }
 
+            .action-div{
+                display: flex;
+                justify-content: end;
+            }
+
             .button-div{
                 display: table-cell;
                 vertical-align: top;
@@ -938,6 +943,10 @@ export class VideoInfoEditor extends HTMLElement {
                     <div class="label" style="display: table-cell; font-weight: 450;">Tags:</div>
                     <div id="video-tags-div" style="display: table-cell; width: 350px;"></div>
                 </div>
+            </div>
+            <div class="action-div" style="${this.isShort ? "display: none;" : ""}">
+                <paper-button id="save-indexation-btn">Save</paper-button>
+                <paper-button id="cancel-indexation-btn">Cancel</paper-button>
             </div>
         </div>
         `
