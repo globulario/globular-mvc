@@ -1,11 +1,11 @@
 import { getTheme } from "./Theme";
 import { generatePeerToken, Model } from '../Model';
 import { Application } from "../Application";
-import { DeleteTitleRequest, DeleteVideoRequest, DissociateFileWithTitleRequest, GetTitleFilesRequest, SearchTitlesRequest } from "globular-web-client/title/title_pb";
+import { CreateVideoRequest, DeleteTitleRequest, DeleteVideoRequest, DissociateFileWithTitleRequest, GetTitleFilesRequest, SearchTitlesRequest } from "globular-web-client/title/title_pb";
 import { File } from "../File";
 import { VideoPreview, getFileSizeString } from "./File";
 import { ApplicationView } from "../ApplicationView";
-import { randomUUID } from "./utility";
+import { formatBoolean, randomUUID } from "./utility";
 import { playVideo } from "./Video";
 import { playAudio, secondsToTime } from "./Audio";
 import '@polymer/iron-autogrow-textarea/iron-autogrow-textarea.js';
@@ -58,7 +58,7 @@ const __style__ = `
 
 .title-informations-div {
     font-size: 1em;
-    max-width: 450px;
+    min-width: 350px;
   
 }
 
@@ -168,31 +168,28 @@ function getVideoPreview(parent, path, name, callback, globule) {
     let w = 128;
 
     File.getFile(globule, path, w, h, file => {
-       
 
-    
-            let fileNameSpan = document.createElement("span")
+        let fileNameSpan = document.createElement("span")
+        let preview = new VideoPreview(file, 85, () => {
+            if (preview.width > 0 && preview.height > 0) {
+                w = (preview.width / preview.height) * h
+            }
+            fileNameSpan.style.wordBreak = "break-all"
+            fileNameSpan.style.fontSize = ".85rem"
+            fileNameSpan.style.maxWidth = w + "px";
+            fileNameSpan.innerHTML = path.substring(path.lastIndexOf("/") + 1)
+        }, globule)
 
-            let preview = new VideoPreview(file, 85, () => {
-                if (preview.width > 0 && preview.height > 0) {
-                    w = (preview.width / preview.height) * h
-                }
-                fileNameSpan.style.wordBreak = "break-all"
-                fileNameSpan.style.fontSize = ".85rem"
-                fileNameSpan.style.maxWidth = w + "px";
-                fileNameSpan.innerHTML = path.substring(path.lastIndexOf("/") + 1)
-            }, globule)
+        let range = document.createRange()
+        let uuid = randomUUID()
+        preview.appendChild(range.createContextualFragment(`<paper-icon-button icon="icons:remove-circle" id="_${uuid}" style="position: absolute;"> </paper-icon-button>`))
+        let unlinkBtn = preview.querySelector(`#_${uuid}`)
 
-            let range = document.createRange()
-            let uuid = randomUUID()
-            preview.appendChild(range.createContextualFragment(`<paper-icon-button icon="icons:remove-circle" id="_${uuid}" style="position: absolute;"> </paper-icon-button>`))
-            let unlinkBtn = preview.querySelector(`#_${uuid}`)
+        // When the file will be unlink...
+        unlinkBtn.onclick = (evt) => {
+            evt.stopPropagation();
 
-            // When the file will be unlink...
-            unlinkBtn.onclick = (evt) => {
-                evt.stopPropagation();
-
-                let toast = ApplicationView.displayMessage(`
+            let toast = ApplicationView.displayMessage(`
                 <style>
                     ${getTheme()}
                 </style>
@@ -207,79 +204,79 @@ function getVideoPreview(parent, path, name, callback, globule) {
                 </div>
                 `, 60 * 1000)
 
-                let cancelBtn = toast.el.querySelector("#imdb-lnk-cancel-button")
-                cancelBtn.onclick = () => {
-                    toast.dismiss();
-                }
-
-                toast.el.querySelector("#file-name").innerHTML = path.substring(path.lastIndexOf("/") + 1)
-
-                let okBtn = toast.el.querySelector("#imdb-lnk-ok-button")
-                okBtn.onclick = () => {
-                    let rqst = new DissociateFileWithTitleRequest
-                    rqst.setFilepath(path)
-                    rqst.setTitleid(name)
-                    if (name.startsWith("tt")) {
-                        rqst.setIndexpath(globule.config.DataPath + "/search/titles")
-                    } else {
-                        rqst.setIndexpath(globule.config.DataPath + "/search/videos")
-                    }
-
-                    globule.titleService.dissociateFileWithTitle(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
-                        .then(rsp => {
-                            preview.parentNode.removeChild(preview)
-                            ApplicationView.displayMessage("association was delete", 3000)
-                            toast.dismiss();
-                        }).catch(err => ApplicationView.displayMessage(err, 3000))
-                }
-
+            let cancelBtn = toast.el.querySelector("#imdb-lnk-cancel-button")
+            cancelBtn.onclick = () => {
+                toast.dismiss();
             }
 
-            preview.showPlayBtn()
+            toast.el.querySelector("#file-name").innerHTML = path.substring(path.lastIndexOf("/") + 1)
 
-            preview.onplay = (f) => {
-                path = f.path
-                if (path.endsWith(".mp3")) {
-
-                    playAudio(path, (audio) => {
-                        let titleInfoBox = document.getElementById("title-info-box")
-                        if (titleInfoBox) {
-                            titleInfoBox.parentNode.removeChild(titleInfoBox)
-                        }
-                        //video.toggleFullscreen();
-                    }, null, null, globule)
-
+            let okBtn = toast.el.querySelector("#imdb-lnk-ok-button")
+            okBtn.onclick = () => {
+                let rqst = new DissociateFileWithTitleRequest
+                rqst.setFilepath(path)
+                rqst.setTitleid(name)
+                if (name.startsWith("tt")) {
+                    rqst.setIndexpath(globule.config.DataPath + "/search/titles")
                 } else {
-                    playVideo(path, (video) => {
-                        let titleInfoBox = document.getElementById("title-info-box")
-                        if (titleInfoBox) {
-                            titleInfoBox.parentNode.removeChild(titleInfoBox)
-                        }
-                        video.toggleFullscreen();
-                    }, null, null, globule)
+                    rqst.setIndexpath(globule.config.DataPath + "/search/videos")
                 }
 
+                globule.titleService.dissociateFileWithTitle(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+                    .then(rsp => {
+                        preview.parentNode.removeChild(preview)
+                        ApplicationView.displayMessage("association was delete", 3000)
+                        toast.dismiss();
+                    }).catch(err => ApplicationView.displayMessage(err, 3000))
             }
 
-            // keep the explorer link...
-            preview.name = name
-            preview.onpreview = () => {
-                let previews = parent.querySelectorAll("globular-video-preview")
-                previews.forEach(p => {
-                    // stop all other preview...
-                    if (preview.name != p.name) {
-                        p.stopPreview()
+        }
+
+        preview.showPlayBtn()
+
+        preview.onplay = (f) => {
+            path = f.path
+            if (path.endsWith(".mp3")) {
+
+                playAudio(path, (audio) => {
+                    let titleInfoBox = document.getElementById("title-info-box")
+                    if (titleInfoBox) {
+                        titleInfoBox.parentNode.removeChild(titleInfoBox)
                     }
-                })
+                    //video.toggleFullscreen();
+                }, null, null, globule)
+
+            } else {
+                playVideo(path, (video) => {
+                    let titleInfoBox = document.getElementById("title-info-box")
+                    if (titleInfoBox) {
+                        titleInfoBox.parentNode.removeChild(titleInfoBox)
+                    }
+                    video.toggleFullscreen();
+                }, null, null, globule)
             }
 
-            // Here I will set the filename 
-            let previewDiv = document.createElement("div")
-            previewDiv.style.display = "flex"
-            previewDiv.style.flexDirection = "column"
-            previewDiv.appendChild(preview)
-            previewDiv.appendChild(fileNameSpan)
-            callback(previewDiv)
+        }
+
+        // keep the explorer link...
+        preview.name = name
+        preview.onpreview = () => {
+            let previews = parent.querySelectorAll("globular-video-preview")
+            previews.forEach(p => {
+                // stop all other preview...
+                if (preview.name != p.name) {
+                    p.stopPreview()
+                }
+            })
+        }
+
+        // Here I will set the filename 
+        let previewDiv = document.createElement("div")
+        previewDiv.style.display = "flex"
+        previewDiv.style.flexDirection = "column"
+        previewDiv.appendChild(preview)
+        previewDiv.appendChild(fileNameSpan)
+        callback(previewDiv)
 
     }, err => ApplicationView.displayMessage(err, 3000))
 
@@ -700,8 +697,8 @@ export class VideoInfo extends HTMLElement {
                     </div>
                 </div>
                 <div class="title-informations-div">
-                    <div class="title-genres-div"></div>
                     <p class="title-synopsis-div"></p>
+                    <div class="title-genres-div"></div>
                     <div class="title-rating-div">
                         <iron-icon class="rating-star" icon="icons:star"></iron-icon>
                         <div style="display: flex; flex-direction: column;">
@@ -774,6 +771,7 @@ export class VideoInfo extends HTMLElement {
 
         // Here I will display the list of categories.
         let genresDiv = this.shadowRoot.querySelector(".title-genres-div")
+        genresDiv.innerHTML = ""
         video.getTagsList().forEach(g => {
             let genreSpan = document.createElement("span")
             genreSpan.classList.add("title-genre-span")
@@ -799,11 +797,13 @@ export class VideoInfo extends HTMLElement {
         }
 
         let filesDiv = this.shadowRoot.querySelector(".title-files-div")
+        filesDiv.innerHTML = ""
+        
         GetTitleFiles("/search/videos", video, filesDiv, (previews) => {
 
         })
 
-        let editor = new VideoInfoEditor(video)
+        let editor = new VideoInfoEditor(video, this)
 
         let editIndexationBtn = this.shadowRoot.querySelector("#edit-indexation-btn")
         editIndexationBtn.onclick = () => {
@@ -870,10 +870,11 @@ export class VideoInfoEditor extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor(video) {
+    constructor(video, videoInfosDisplay) {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
+        this.videoInfosDisplay = videoInfosDisplay
 
         // Innitialisation of the layout.
 
@@ -899,6 +900,7 @@ export class VideoInfoEditor extends HTMLElement {
             .label{
                 font-size: 1rem;
                 padding-right: 10px;
+                width: 175px;
             }
 
             div, paper-input, iron-autogrow-textarea {
@@ -910,48 +912,56 @@ export class VideoInfoEditor extends HTMLElement {
             <div style="display: flex; flex-direction: column; justify-content: flex-start;  margin-left: 15px;">
                 <img id="video-thumbnail" src="${video.getPoster().getContenturl()}" style="max-height: 180px; max-width: 300px;"></iron-icon>
             </div>
-            <div style="display: table; flex-grow: 1; margin-left: 20px;">
-                <div style="display: table-row;">
-                    <div class="label" style="display: table-cell; font-weight: 450;">Id:</div>
-                    <div style="display: table-cell; width: 350px;"  id="video-id-div">${video.getId()}</div>
-                    <paper-input style="display: none; width: 350px;" value="${video.getId()}" id="video-id-input" no-label-float></paper-input>
-                    <div class="button-div">
-                        <paper-icon-button id="edit-video-id-btn" icon="image:edit"></paper-icon-button>
+            <div style="display: flex; flex-direction: column; width: 100%;">
+                <div style="display: table; flex-grow: 1; margin-left: 20px;">
+                    <div style="display: table-row;">
+                        <div class="label" style="display: table-cell; font-weight: 450; ">Id:</div>
+                        <div style="display: table-cell; width: 100%;"  id="video-id-div">${video.getId()}</div>
+                        <paper-input style="display: none; width: 100%;" value="${video.getId()}" id="video-id-input" no-label-float></paper-input>
+                        <div class="button-div">
+                            <paper-icon-button id="edit-video-id-btn" icon="image:edit"></paper-icon-button>
+                        </div>
+                    </div>
+                    <div style="display: table-row;">
+                        <div class="label" style="display: table-cell; font-weight: 450;">URL:</div>
+                        <div id="video-url-div" style="display: table-cell; width: 100%;">${video.getUrl()}</div>
+                        <paper-input id="video-url-input" no-label-float style="display: none; width: 100%;" value="${video.getUrl()}"></paper-input>
+                        <div class="button-div">
+                            <paper-icon-button id="edit-video-url-btn" icon="image:edit"></paper-icon-button>
+                        </div>
+                    </div>
+                    <div style="display: table-row;">
+                        <div class="label" style="display: table-cell; font-weight: 450; vertical-align: top;">Description:</div>
+                        <div id="video-description-div" style="display: table-cell;width: 100%;" >${video.getDescription()}</div>
+                        <iron-autogrow-textarea id="video-description-input"  style="display: none; border: none; width: 100%;" value="${video.getDescription()}"></iron-autogrow-textarea>
+                        <div class="button-div">
+                            <paper-icon-button id="edit-video-description-btn" style="vertical-align: top;" icon="image:edit"></paper-icon-button>
+                        </div>
+                    </div>
+                    <div style="display: table-row;">
+                        <div class="label" style="display: table-cell; font-weight: 450;">Genres:</div>
+                        <div id="video-genres-div" style="display: table-cell; width: 100%;"></div>
+                    </div>
+                    <div style="display: table-row;">
+                        <div class="label" style="display: table-cell; font-weight: 450;">Tags:</div>
+                        <div id="video-tags-div" style="display: table-cell; width: 100%;"></div>
                     </div>
                 </div>
-                <div style="display: table-row;">
-                    <div class="label" style="display: table-cell; font-weight: 450;">URL:</div>
-                    <div id="video-url-div" style="display: table-cell; width: 350px;">${video.getUrl()}</div>
-                    <paper-input id="video-url-input" no-label-float style="display: none; width: 350px;" value="${video.getUrl()}"></paper-input>
-                    <div class="button-div">
-                        <paper-icon-button id="edit-video-url-btn" icon="image:edit"></paper-icon-button>
-                    </div>
+                <div class="action-div" style="${this.isShort ? "display: none;" : ""}">
+                    <paper-button id="save-indexation-btn">Save</paper-button>
+                    <paper-button id="cancel-indexation-btn">Cancel</paper-button>
                 </div>
-                <div style="display: table-row;">
-                    <div class="label" style="display: table-cell; font-weight: 450; vertical-align: top;">Description:</div>
-                    <div id="video-description-div" style="display: table-cell;width: 350px;" >${video.getDescription()}</div>
-                    <iron-autogrow-textarea id="video-description-input"  style="display: none; border: none; width: 350px;" value="${video.getDescription()}"></iron-autogrow-textarea>
-                    <div class="button-div">
-                        <paper-icon-button id="edit-video-description-btn" style="vertical-align: top;" icon="image:edit"></paper-icon-button>
-                    </div>
-                </div>
-                <div style="display: table-row;">
-                    <div class="label" style="display: table-cell; font-weight: 450;">Genres:</div>
-                    <div id="video-genres-div" style="display: table-cell; width: 350px;"></div>
-                </div>
-                <div style="display: table-row;">
-                    <div class="label" style="display: table-cell; font-weight: 450;">Tags:</div>
-                    <div id="video-tags-div" style="display: table-cell; width: 350px;"></div>
-                </div>
-            </div>
-            <div class="action-div" style="${this.isShort ? "display: none;" : ""}">
-                <paper-button id="save-indexation-btn">Save</paper-button>
-                <paper-button id="cancel-indexation-btn">Cancel</paper-button>
             </div>
         </div>
         `
 
         // Here I will set the interaction...
+        this.shadowRoot.querySelector("#cancel-indexation-btn").onclick = () => {
+            let parent = this.parentNode
+            parent.removeChild(this)
+            parent.appendChild(videoInfosDisplay)
+        }
+
 
         // The video id
         let editVideoIdBtn = this.shadowRoot.querySelector("#edit-video-id-btn")
@@ -1016,19 +1026,41 @@ export class VideoInfoEditor extends HTMLElement {
         }
 
         let videoGenresDiv = this.shadowRoot.querySelector("#video-genres-div")
-        let videoGenreList = new EditableStringList(video.getGenresList())
-        videoGenresDiv.appendChild(videoGenreList)
+        let videoGenresList = new EditableStringList(video.getGenresList())
+        videoGenresDiv.appendChild(videoGenresList)
 
         let videoTagsDiv = this.shadowRoot.querySelector("#video-tags-div")
         let videoTagsList = new EditableStringList(video.getTagsList())
         videoTagsDiv.appendChild(videoTagsList)
-        
+
+
+        this.shadowRoot.querySelector("#save-indexation-btn").onclick = () => {
+
+            // So here I will set video values back and update it in the parent...
+            video.setId(videoIdInput.value)
+            video.setUrl(videoUrlInput.value)
+            video.setDescription(videoVideoDescriptionInput.value)
+
+            video.setTagsList(videoTagsList.getItems())
+            video.setGenresList(videoGenresList.getItems())
+
+            let globule = video.globule
+            let indexPath = globule.config.DataPath + "/search/videos"
+            let rqst = new CreateVideoRequest
+            rqst.setVideo(video)
+            rqst.setIndexpath(indexPath)
+            globule.titleService.createVideo(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+                .then(rsp => {
+                    ApplicationView.displayMessage("Video Information are updated", 3000)
+                    this.videoInfosDisplay.setVideo(video)
+                })
+                .catch(err => ApplicationView.displayMessage(err, 3000))
+            let parent = this.parentNode
+            parent.removeChild(this)
+            parent.appendChild(videoInfosDisplay)
+        }
+
     }
-
-    setVideo(video) {
-
-    }
-
 
 }
 
@@ -1428,7 +1460,7 @@ export class TitleInfo extends HTMLElement {
                 page.appendChild(range.createContextualFragment(html))
 
                 let infosBtn = page.querySelector(`#infos-btn-${uuid}`)
-                infosBtn.onclick= (evt)=>{
+                infosBtn.onclick = (evt) => {
                     evt.stopPropagation()
                     this.showTitleInfo(e)
                 }
@@ -1486,7 +1518,7 @@ export class FileInfo extends HTMLElement {
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
         let mime = file.mime
- 
+
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
@@ -1836,7 +1868,7 @@ export class BlogPostInfo extends HTMLElement {
                     border-radius: 3.5px;
                     border: 1px solid var(--palette-divider);
                     height: 100%;
-                    width: 350px;
+                    width: 100%;
                     margin: 10px;
                     height: 285px;
                     margin: 10px;

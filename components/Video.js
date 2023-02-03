@@ -100,6 +100,15 @@ function getSubtitlesFiles(globule, path, callback) {
 
 }
 
+function getThumbnailFiles(globule, path, callback) {
+    let subtitlesPath = path.substr(0, path.lastIndexOf("."))
+    subtitlesPath = subtitlesPath.substring(0, subtitlesPath.lastIndexOf("/") + 1) + ".hidden" + subtitlesPath.substring(subtitlesPath.lastIndexOf("/")) + "/__thumbnail__"
+
+
+    File.readDir(subtitlesPath, false, callback, err => console.log(err), globule)
+
+}
+
 /**
  * Sample empty component
  */
@@ -294,6 +303,44 @@ export class VideoPlayer extends HTMLElement {
         // chrome://flags/ 
         this.video.onloadeddata = () => {
 
+            /*getThumbnailFiles(this.globule, this.path, thumbnail_files => {
+                for (var i = 0; i < thumbnail_files.files.length; i++) {
+                    let f = thumbnail_files.files[i]
+                    if (f.mime.startsWith("image/")) {
+                        let globule = this.globule
+                        let url = globule.config.Protocol + "://" + globule.domain
+
+                        if (window.location != globule.domain) {
+                            if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
+                                url = globule.config.Protocol + "://" + window.location.host
+                            }
+                        }
+
+                        if (globule.config.Protocol == "https") {
+                            if (globule.config.PortHttps != 443)
+                                url += ":" + globule.config.PortHttps
+                        } else {
+                            if (globule.config.PortHttps != 80)
+                                url += ":" + globule.config.PortHttp
+                        }
+
+                        let url_ = f.path
+
+                        url_ = f.path
+                        if (url_.startsWith("/")) {
+                            url_ = url + url_
+                        } else {
+                            url_ = url + "/" + url_
+                        }
+
+                        this.player.setPreviewThumbnails( { 
+                            enabled: true, 
+                            src: url_
+                        })
+                    }
+                }
+            })*/
+
             getSubtitlesFiles(this.globule, this.path, subtitles_files => {
 
                 let globule = this.globule
@@ -302,6 +349,7 @@ export class VideoPlayer extends HTMLElement {
                 if (window.location != globule.domain) {
                     if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
                         url = globule.config.Protocol + "://" + window.location.host
+
                     }
                 }
 
@@ -322,9 +370,9 @@ export class VideoPlayer extends HTMLElement {
                     let language_id = f.name.split(".")[f.name.split.length - 1]
                     const languageNames = new Intl.DisplayNames([language_id], {
                         type: 'language'
-                      });
-                      
-                    track.label =  languageNames.of(language_id)// todo set the true language.
+                    });
+
+                    track.label = languageNames.of(language_id)// todo set the true language.
 
                     let url_ = f.path
 
@@ -345,7 +393,7 @@ export class VideoPlayer extends HTMLElement {
             })
 
             if (this.video.audioTracks) {
-                console.log(this.video.audioTracks)
+              
                 // This will set the video langual...
                 if (this.video.audioTracks.length > 1) {
                     let audioTrackSelect = this.shadowRoot.querySelector("#audio-track-selector")
@@ -380,7 +428,7 @@ export class VideoPlayer extends HTMLElement {
                     audioTrackSelect.onchange = (evt) => {
                         evt.stopPropagation()
                         if (this.player) {
-                           
+
                             var selectElement = evt.target;
                             var value = selectElement.value;
                             for (let i = 0; i < this.video.audioTracks.length; i++) {

@@ -6,7 +6,8 @@ import { getAllGroups, getAllRoles } from "globular-web-client/api";
 import { Model } from "../Model";
 import { getAllOrganizations } from "./Organization";
 import { getAllPeers } from "./Peers";
-import { fireResize, randomUUID } from "./utility";
+import { fireResize, generateUUID, randomUUID } from "./utility";
+import * as getUuidByString from "uuid-by-string";
 
 export class EditableStringList extends HTMLElement {
     // attributes.
@@ -25,6 +26,7 @@ export class EditableStringList extends HTMLElement {
             .string-list{
                 display: flex;
                 flex-wrap: wrap;
+                min-height: 25px;
             }
 
             .string-list div{
@@ -53,75 +55,160 @@ export class EditableStringList extends HTMLElement {
 
         </style>
        
-        <div class="string-list"></div>
+        <div style="position: relative;">
+            <paper-icon-button id="add-item-btn" icon="icons:add" style="position: absolute; left: -40px;"></paper-icon-button>
+            <div class="string-list">
+            </div>
+        </div>
        
         `
         // give the focus to the input.
         let stringListDiv = this.shadowRoot.querySelector(".string-list")
         let range = document.createRange()
-        stringListDiv.onclick = ()=>{
+        stringListDiv.onclick = () => {
             this.blur()
         }
-        
+
+
+        this.shadowRoot.querySelector("#add-item-btn").onclick = () => {
+            this.addItem("New value", stringListDiv, range, true)
+        }
+
         list.forEach(item => {
-            let uuid = "_" + randomUUID()
-            let html = `
-                <div id=${uuid} style="display: flex;">
-                    <span>${item}</span>
-                    <paper-input no-label-float style="display: none;"></paper-input>
-                    <iron-icon icon="icons:close"></iron-icon>
-                </div>
-            `
 
-            let index = stringListDiv.children.length
-            stringListDiv.appendChild(range.createContextualFragment(html))
-
-            // I will set edit event...
-            let itemDiv = stringListDiv.children[index]
-            let itemSpan = itemDiv.children[0]
-            let itemInput = itemDiv.children[1]
-
-            itemSpan.onclick = (evt) => {
-                evt.stopPropagation()
-                for (var i = 0; i < stringListDiv.children.length; i++) {
-                    stringListDiv.children[i].children[0].style.display = "block"
-                    stringListDiv.children[i].children[1].style.display = "none"
-                }
-                itemInput.style.display = "block"
-                itemInput.value = item
-                itemSpan.style.display = "none"
-                setTimeout(() => {
-                    itemInput.focus()
-                    itemInput.inputElement.inputElement.select()
-                }, 100)
-                fireResize()
-            }
-
-            itemInput.onkeyup = (evt) => {
-                evt.stopPropagation()
-                let key = evt.key;
-                if(key == "Escape"){
-                    itemSpan.innerHTML = itemInput.value = item // set back to item...
-                    itemInput.style.display = "none"
-                    itemSpan.style.display = "block"
-                }
-                if(key == "Enter"){
-                    itemSpan.innerHTML = itemInput.value
-                    itemInput.style.display = "none"
-                    itemSpan.style.display = "block"
-                }
-            }
-
+            this.addItem(item, stringListDiv, range)
 
         })
     }
 
-    blur(){
+    // Add item to the list.
+    addItem(item, stringListDiv, range, edit) {
+        let uuid = "_" + getUuidByString(item)
+        let itemDiv = stringListDiv.querySelector(`#${uuid}`)
+        if (itemDiv) {
+            itemDiv.children[0].click()
+            return
+        }
+
+        let html = `
+            <div id=${uuid} style="display: flex;">
+                <span class="items">${item}</span>
+                <paper-input no-label-float style="display: none;"></paper-input>
+                <iron-icon id="remove-btn" icon="icons:close"></iron-icon>
+            </div>
+        `
+
+        let index = stringListDiv.children.length
+        stringListDiv.appendChild(range.createContextualFragment(html))
+
+        // I will set edit event...
+        itemDiv = stringListDiv.children[index]
+        let itemSpan = itemDiv.children[0]
+        let itemInput = itemDiv.children[1]
+        let removeBtn = itemDiv.children[2]
+
+        // Delete the item.
+        removeBtn.onclick = (evt) => {
+            evt.stopPropagation()
+            itemDiv.parentNode.removeChild(itemDiv)
+        }
+
+        itemSpan.onclick = (evt) => {
+            evt.stopPropagation()
+            for (var i = 0; i < stringListDiv.children.length; i++) {
+                stringListDiv.children[i].children[0].style.display = "block"
+                stringListDiv.children[i].children[1].style.display = "none"
+            }
+            itemInput.style.display = "block"
+            itemInput.value = itemSpan.innerHTML
+            itemSpan.style.display = "none"
+            setTimeout(() => {
+                itemInput.focus()
+                itemInput.inputElement.inputElement.select()
+            }, 100)
+            fireResize()
+        }
+
+        itemInput.onkeyup = (evt) => {
+            evt.stopPropagation()
+            let key = evt.key;
+            if (key == "Escape") {
+                itemSpan.innerHTML = itemInput.value = item // set back to item...
+                itemInput.style.display = "none"
+                itemSpan.style.display = "block"
+            }
+            if (key == "Enter") {
+                let uuid = "_" + getUuidByString(itemInput.value)
+                itemDiv.id = uuid
+                let count = 0;
+                for (var i = 0; i < stringListDiv.children.length; i++) {
+                    if (stringListDiv.children[i].id == uuid) {
+                        count++
+                    }
+                }
+
+                if (count >= 1) {
+                    let itemDiv_ = stringListDiv.querySelector("#" + uuid)
+                    itemDiv_.children[1].value = itemInput.value
+                    if (count > 1) {
+                        itemDiv.parentNode.removeChild(itemDiv)
+                        itemDiv_.children[0].click()
+                        return
+                    }
+                }
+
+                // save value
+                itemSpan.innerHTML = itemInput.value
+                itemInput.style.display = "none"
+                itemSpan.style.display = "block"
+            }
+        }
+
+        itemInput.onblur = () => {
+            // make sure there not repetead values...
+            let uuid = "_" + getUuidByString(itemInput.value)
+            itemDiv.id = uuid
+            itemSpan.innerHTML = itemInput.value
+            let count = 0;
+            for (var i = 0; i < stringListDiv.children.length; i++) {
+                if (stringListDiv.children[i].id == uuid) {
+                    count++
+                }
+            }
+
+            if (count >= 1) {
+                let itemDiv_ = stringListDiv.querySelector("#" + uuid)
+                itemDiv_.children[1].value = itemInput.value
+                if (count > 1) {
+                    itemDiv.parentNode.removeChild(itemDiv)
+                    itemDiv_.children[0].click()
+                    return
+                }
+            }
+        }
+
+        if (edit) {
+            itemSpan.click()
+        }
+
+    }
+
+    blur() {
         let inputs = this.shadowRoot.querySelectorAll("paper-input")
-        for(var i=0; i < inputs.length; i++){
+        for (var i = 0; i < inputs.length; i++) {
             inputs[i].style.display = "none"
             inputs[i].parentNode.children[0].style.display = "block"
         }
+    }
+
+    getItems(){
+        let spans = this.shadowRoot.querySelectorAll(".items")
+        let items = []
+        for(var i=0; i < spans.length; i++){
+            items.push(spans[i].innerHTML)
+        }
+        
+        return items;
     }
 }
 
