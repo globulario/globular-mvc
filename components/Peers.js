@@ -1,4 +1,3 @@
-import { getTheme } from './Theme';
 import '@polymer/iron-icons/iron-icons.js';
 import "@polymer/iron-icons/hardware-icons";
 import * as GlobularWebClient from "globular-web-client";
@@ -61,7 +60,7 @@ export class PeersManager extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
              <style>
-                 ${getTheme()}
+                
 
                 #create-peer-btn{
                     top: -42px;
@@ -273,7 +272,7 @@ export class PeerPanel extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             #container{
                 display: flex;
                 flex-direction: column;
@@ -535,7 +534,7 @@ export class PeerPanel extends HTMLElement {
 
                         let html = `
                         <style>
-                            ${getTheme()}
+                           
                             #add-peer-action-panel{
                                 position: absolute;
                                 right: 0px;
@@ -676,7 +675,7 @@ export class PeerPanel extends HTMLElement {
         let toast = ApplicationView.displayMessage(
             `
           <style>
-          ${getTheme()}
+         
             #yes-no-contact-delete-box{
               display: flex;
               flex-direction: column;

@@ -8,7 +8,7 @@ import { ApplicationView } from "../ApplicationView";
 import { Group } from "../Group";
 import { generatePeerToken, Model } from "../Model";
 import { Menu } from './Menu';
-import { getTheme } from "./Theme";
+
 import { formatBoolean, randomUUID } from "./utility";
 import { Wizard } from "./Wizard";
 import { Link } from "./Link"
@@ -70,7 +70,7 @@ export class SharePanel extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             #container {
                 display: flex;
                 flex-direction: column;
@@ -174,7 +174,7 @@ export class SharedResources extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             #container{
                 display: flex;
                 width: 100%;
@@ -316,7 +316,7 @@ export class ShareResourceMenu extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             #container{
 
             }
@@ -376,7 +376,7 @@ export class ShareResourceWizard extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
 
             paper-card{
                 display: flex;
@@ -1024,7 +1024,7 @@ export class GlobularSubjectsView extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             #subjects-div{
                 display: flex;
                 flex-direction: column;
@@ -1392,7 +1392,7 @@ export class GlobularSubjectsSelected extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
 
             #container{
                 display: flex;
@@ -1525,7 +1525,7 @@ export class SharedSubjectsPermissions extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             #permissions{
                 display: table;
                 width: 100%;

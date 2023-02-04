@@ -1,4 +1,4 @@
-import { getTheme } from "./Theme.js";
+
 import { Model } from "../Model";
 import {Tooltip} from "./tooltip.js"
 
@@ -17,7 +17,7 @@ export class Toolbar extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             #container{
 
             }
@@ -74,7 +74,7 @@ export class ToolBarButton extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
 
             #container{
                 transition: background 0.2s ease,padding 0.8s linear;

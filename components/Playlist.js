@@ -1,4 +1,4 @@
-import { getTheme } from "./Theme.js";
+
 import parser from 'iptv-playlist-parser'
 import { GetAudioByIdRequest, GetVideoByIdRequest } from "globular-web-client/title/title_pb.js";
 import { Application } from "../Application";
@@ -93,7 +93,7 @@ export class PlayList extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             #items{
                 display: table;
                 border-collapse: separate;
@@ -109,6 +109,18 @@ export class PlayList extends HTMLElement {
                 height: 100%;
                 overflow: auto;
             }
+
+            ::-webkit-scrollbar {
+                width: 5px;
+             }
+                
+             ::-webkit-scrollbar-track {
+                background: var(--palette-background-default);
+             }
+             
+             ::-webkit-scrollbar-thumb {
+                background: var(--palette-divider); 
+             }
 
             ::slotted(globular-playlist-item) {
                 display: table-row;
@@ -429,7 +441,7 @@ export class PlayListItem extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             #container{
                 
             }

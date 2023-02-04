@@ -1,4 +1,4 @@
-import { getTheme } from "./Theme";
+
 import { v4 as uuidv4 } from "uuid";
 import { Account } from "../Account";
 import { Application } from "../Application";
@@ -21,7 +21,7 @@ export class EditableStringList extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
 
             .string-list{
                 display: flex;
@@ -237,7 +237,7 @@ export class SearchableList extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             .header{
                 position: relative;
                 width: 100%;
@@ -412,7 +412,7 @@ export class SearchableAccountList extends SearchableList {
                 // Now I will display the list of available account to add to the role...
                 let html = `
                 <style>
-                    ${getTheme()}
+                   
                     #add-list-user-panel{
                         position: absolute;
                         left: 0px;
@@ -598,7 +598,7 @@ export class SearchableApplicationList extends SearchableList {
                 // Now I will display the list of available account to add to the role...
                 let html = `
                 <style>
-                    ${getTheme()}
+                   
                     #add-list-application-panel{
                         position: absolute;
                         left: 0px;
@@ -780,7 +780,7 @@ export class SearchableRoleList extends SearchableList {
                 // Now I will display the list of available account to add to the role...
                 let html = `
                 <style>
-                    ${getTheme()}
+                   
                     #add-list-role-panel{
                         position: absolute;
                         left: 0px;
@@ -958,7 +958,7 @@ export class SearchableGroupList extends SearchableList {
 
                 let html = `
                 <style>
-                    ${getTheme()}
+                   
                     #add-list-group-panel{
                         position: absolute;
                         left: 0px;
@@ -1139,7 +1139,7 @@ export class SearchableOrganizationList extends SearchableList {
 
                 let html = `
                 <style>
-                    ${getTheme()}
+                   
                     #add-list-organization-panel{
                         position: absolute;
                         left: 0px;
@@ -1319,7 +1319,7 @@ export class SearchablePeerList extends SearchableList {
 
                 let html = `
                 <style>
-                    ${getTheme()}
+                   
                     #add-list-peer-panel{
                         position: absolute;
                         left: 0px;

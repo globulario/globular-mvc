@@ -1,5 +1,5 @@
 
-import { getTheme } from "./Theme";
+
 import { generatePeerToken, Model } from '../Model';
 import { Application } from "../Application";
 import Plyr from 'plyr';
@@ -137,7 +137,7 @@ export class VideoPlayer extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             #container{
                 width: 720px;
                 position: fixed;

@@ -46,7 +46,6 @@ import "./style.css"
 import { ServerGeneralSettings } from "./serverGeneralSettings";
 import { ServicesSettings } from "./ServicesSettings";
 import * as getUuid from 'uuid-by-string'
-import { getTheme, mobileCheck } from "./components/Theme";
 import { GetBlogPostsRequest } from "globular-web-client/blog/blog_pb";
 
 // The kind of application...
@@ -471,7 +470,7 @@ export class ApplicationView extends View {
           let toast = ApplicationView.displayMessage(
             `
             <style>
-              ${getTheme()}
+             
               #yes-no-contact-delete-box{
                 display: flex;
                 flex-direction: column;
@@ -771,7 +770,8 @@ export class ApplicationView extends View {
 
       let w = ApplicationView.layout.width();
 
-      if (w <= 500 || mobileCheck()) {
+      // TODO try to set it in the css propertie instead...
+      if (w <= 500) {
 
         if (this.hasApplicationsMenu) {
           this.overFlowMenu
@@ -1402,7 +1402,7 @@ export class ApplicationView extends View {
     let toast = ApplicationView.displayMessage(
       `
       <style>
-        ${getTheme()}
+       
         #yes-no-contact-delete-box{
           display: flex;
           flex-direction: column;

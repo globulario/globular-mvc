@@ -16,7 +16,7 @@ import '@polymer/paper-tabs/paper-tabs.js';
 import '@polymer/paper-tabs/paper-tab.js';
 import '@polymer/iron-autogrow-textarea/iron-autogrow-textarea.js';
 import { Menu } from './Menu';
-import { getTheme } from "./Theme";
+
 import { Account } from "../Account"
 import { generatePeerToken, Model } from "../Model"
 import { ApplicationView } from '../ApplicationView';
@@ -146,7 +146,7 @@ export class CallsHistoryMenu extends Menu {
             let toast = ApplicationView.displayMessage(
                 `
             <style>
-              ${getTheme()}
+             
               #yes-no-calls-clear-box{
                 display: flex;
                 flex-direction: column;
@@ -209,7 +209,7 @@ export class CallsHistoryMenu extends Menu {
             let toast = ApplicationView.displayMessage(
                 `
             <style>
-              ${getTheme()}
+             
               #yes-no-calls-clear-box{
                 display: flex;
                 flex-direction: column;
@@ -654,7 +654,7 @@ export class CallsHistoryMenu extends Menu {
                                 // So here I will get the information from imdb and propose to assciate it with the file.
                                 let toast = ApplicationView.displayMessage(`
                                 <style>
-                                    ${getTheme()}
+                                   
                                     paper-icon-button {
                                         width: 40px;
                                         height: 40px;

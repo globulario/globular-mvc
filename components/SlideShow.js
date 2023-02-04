@@ -3,7 +3,7 @@ import '@polymer/paper-card/paper-card.js';
 import '@polymer/paper-ripple/paper-ripple.js';
 import '@polymer/paper-icon-button/paper-icon-button.js';
 import "@polymer/iron-icons/av-icons";
-import { getTheme } from "./Theme";
+
 import { Model } from '../Model';
 import { Countdown } from './Countdown';
 
@@ -57,7 +57,7 @@ export class SlideShow extends HTMLElement {
 
         this.shadowRoot.innerHTML = `
                 <style>
-                ${getTheme()}
+               
                     :host {
                         --slidewidth: 1080px;
                         --footerHeight: 40px;
@@ -380,7 +380,7 @@ export class Slide extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-        ${getTheme()}
+       
         :host {
             --offWhite: white;
             --slidewidth: 1080px;

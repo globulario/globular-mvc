@@ -2,7 +2,7 @@
 /**
  * This is the globular server console.
  */
-import { getTheme } from "./Theme";
+
 import { Model } from '../Model';
 import { Application } from "../Application";
 
@@ -23,7 +23,7 @@ export class Console extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
          <style>
-             ${getTheme()}
+            
              paper-card{
                 position: relative;
                 display: flex;

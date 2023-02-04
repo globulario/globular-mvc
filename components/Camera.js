@@ -5,7 +5,7 @@ import '@polymer/iron-icons/iron-icons.js';
 import '@polymer/iron-icons/image-icons';
 import '@polymer/iron-icons/av-icons';
 import '@polymer/paper-input/paper-input.js';
-import { getTheme } from "./Theme";
+
 import { dataURIToBlob } from './utility';
 export class Camera extends HTMLElement {
 
@@ -94,7 +94,7 @@ export class Camera extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
             <style>
-                ${getTheme()}
+               
 
                 .camera {
                     position: relative;
@@ -498,7 +498,7 @@ export class MediaCall extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
         </style>
         `
 

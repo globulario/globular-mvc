@@ -2,7 +2,7 @@
 import { PolymerElement, html } from '@polymer/polymer';
 import '@polymer/iron-icons/iron-icons.js';
 import '@polymer/paper-icon-button/paper-icon-button.js';
-import { getTheme } from "./Theme";
+
 import { setResizeable } from "./rezieable.js";
 /*
  * Menu item represent element contain inside a menu.
@@ -45,7 +45,7 @@ export class Dialog extends PolymerElement {
   static get template() {
     return html`
             <style>
-            ${getTheme()}
+           
             
             /** Dialog style **/
             .dialog{
@@ -115,6 +115,8 @@ export class Dialog extends PolymerElement {
             .diablog_button:active{
                 border: solid 1px lightblue;
             }
+
+            
             </style>
 
             <paper-card id="dialog_div" class="dialog modal-content">

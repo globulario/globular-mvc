@@ -1,5 +1,5 @@
 
-import { getTheme } from "./Theme";
+
 
 export class Countdown extends HTMLElement {
   constructor(delay, diameter, stroke) {
@@ -44,7 +44,7 @@ export class Countdown extends HTMLElement {
     // Connect to event.
     this.shadowRoot.innerHTML = `
       <style>
-         ${getTheme()}
+        
          #countdown {
             position: relative;
             margin: auto;

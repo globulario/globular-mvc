@@ -1,5 +1,4 @@
 import { ApplicationView } from "../../globular-mvc/ApplicationView";
-import { getTheme } from "../../globular-mvc/components/Theme"
 import { SearchVideoCard, SearchFlipCard } from "../../globular-mvc/components/Search"
 import { GetVideoByIdRequest, GetTitleByIdRequest } from "../../globular-mvc/node_modules/globular-web-client/title/title_pb"
 import { DeleteOneRqst, ReplaceOneRqst, FindOneRqst, FindRqst } from "../../globular-mvc/node_modules/globular-web-client/persistence/persistence_pb"
@@ -23,7 +22,7 @@ export class MediaWatching extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             #container {
                 display: flex;
                 flex-direction: column;
@@ -293,7 +292,7 @@ export class MediaWatchingCard extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             #container {
                 display: flex;
                 flex-direction: column;
@@ -385,7 +384,7 @@ export class MediaWatchingHistory extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
         </style>
         `
     }

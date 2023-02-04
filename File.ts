@@ -3,7 +3,6 @@ import { readDir } from "globular-web-client/api";
 import * as jwt from "jwt-decode";
 import { Globular } from 'globular-web-client';
 import { ApplicationView } from './ApplicationView';
-import { getTheme } from './components/Theme';
 import { FileInfo, GetFileInfoRequest } from 'globular-web-client/file/file_pb';
 import { Application } from './Application';
 import { formatReal } from './components/utility';
@@ -290,7 +289,7 @@ export class File extends Model {
         let globule = this.globule
         let toast = ApplicationView.displayMessage(`
         <style>
-            ${getTheme()}
+           
         </style>
         <div id="create-file-local-copy">
             <div>Your about to create a local copy of file </div>
@@ -389,7 +388,7 @@ export class File extends Model {
 
         let toast = ApplicationView.displayMessage(`
         <style>
-            ${getTheme()}
+           
         </style>
         <div id="create-file-local-copy">
             <div>Your about to remove a local copy of file </div>

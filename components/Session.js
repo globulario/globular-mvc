@@ -1,4 +1,4 @@
-import { getTheme } from "./Theme";
+
 import { Account } from "../Account"
 import { Model } from "../Model"
 
@@ -66,7 +66,7 @@ export class SessionState extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             .session-state-panel{
                 display: flex;
                 flex-direction: row;
@@ -80,6 +80,7 @@ export class SessionState extends HTMLElement {
 
             .session-state-panel span{
                 padding-left: 10px;
+                color: var(--palette-text-accent);
             }
 
             #session-state-timer{
@@ -91,12 +92,18 @@ export class SessionState extends HTMLElement {
                 font-size: .95rem;
             }
 
+            paper-toggle-button {
+                --paper-toggle-button-label-color: var(--palette-text-accent);
+            }
+
         </style>
         <div class="session-state-panel">
             <iron-icon icon="device:access-time" style="padding-left: 8px;"></iron-icon>
-            <span id="${sessionStateId}"></span>
-            <span id="${sessionTimerId}"></span>
-            <paper-toggle-button title="Appear away to other's" noink>Away</paper-toggle-button>
+            <div style="flex-grow: 1;">
+                <span id="${sessionStateId}"></span>
+                <span id="${sessionTimerId}"></span>
+            </div>
+            <paper-toggle-button title="Appear away to other's" noink></paper-toggle-button>
         </div>
         `
 
@@ -116,6 +123,7 @@ export class SessionState extends HTMLElement {
                     session.state = 2;
                     session.lastStateTime = new Date();
                     this.stateName.innerHTML = "Away"
+                   
                     away = true;
                 } else {
                     session.state = 0;

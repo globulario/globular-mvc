@@ -9,7 +9,7 @@ import '@polymer/paper-button/paper-button.js';
 import '@polymer/paper-checkbox/paper-checkbox.js';
 
 import { Model } from '../Model';
-import { getTheme } from "./Theme";
+
 /**
  * Login/Register functionality.
  */
@@ -35,7 +35,7 @@ export class Login extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
  
             #login_div span:hover{
                 cursor:pointer;
@@ -106,7 +106,7 @@ export class LoginBox extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
 
-            ${getTheme()}
+           
 
             paper-input iron-icon{
                 margin-right: 10px;
@@ -138,6 +138,32 @@ export class LoginBox extends HTMLElement {
             #login_box paper-checkbox {
                 margin: 20px 0px 10px 2px;
             }
+
+            .card-title {
+                font-size: 1.25rem;
+                text-transform: uppercase;
+                font-weight: 400;
+                letter-spacing: .25px;
+                outline: none;
+                position: fixed;
+                top: -50px;
+              }
+             
+              .card-actions {
+                font-size: 1rem;
+              }
+              
+              .card-subtitle {
+                letter-spacing: .01428571em;
+                font-family: Roboto, Arial, sans-serif;
+                font-size: .875rem;
+                font-weight: 400;
+                line-height: 1.25rem;
+                hyphens: auto;
+                word-break: break-word;
+                word-wrap: break-word;
+              }
+             
 
         </style>
 
@@ -239,8 +265,6 @@ export class RegisterBox extends HTMLElement {
         this.shadowRoot.innerHTML = `
             <style>
 
-                ${getTheme()}
-
                 paper-input iron-icon{
                     margin-right: 10px;
                 }
@@ -268,7 +292,31 @@ export class RegisterBox extends HTMLElement {
                     justify-content: flex-end;
                 }
 
-
+                .card-title {
+                    font-size: 1.25rem;
+                    text-transform: uppercase;
+                    font-weight: 400;
+                    letter-spacing: .25px;
+                    outline: none;
+                    position: fixed;
+                    top: -50px;
+                  }
+                 
+                  .card-actions {
+                    font-size: 1rem;
+                  }
+                  
+                  .card-subtitle {
+                    letter-spacing: .01428571em;
+                    font-family: Roboto, Arial, sans-serif;
+                    font-size: .875rem;
+                    font-weight: 400;
+                    line-height: 1.25rem;
+                    hyphens: auto;
+                    word-break: break-word;
+                    word-wrap: break-word;
+                  }
+                 
             </style>
 
             <paper-card id="register_box">

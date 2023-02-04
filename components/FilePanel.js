@@ -137,6 +137,18 @@ export class FilePaneElement extends PolymerElement {
   static get template() {
     return html`
             <style>
+                ::-webkit-scrollbar {
+                    width: 5px;
+                }
+                    
+                ::-webkit-scrollbar-track {
+                    background: var(--palette-background-default);
+                }
+                
+                ::-webkit-scrollbar-thumb {
+                    background: var(--palette-divider); 
+                }
+                
                 .image_picker{
                     position: relative;
                     overflow: auto;

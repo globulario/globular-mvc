@@ -14,7 +14,7 @@ import "./DiskSpace.js"
 
 import { Menu } from "./Menu";
 import { Model } from "../Model";
-import { getTheme } from "./Theme";
+
 import { Account, AddAccountRoleRqst, AddGroupMemberAccountRqst, AddOrganizationAccountRqst, DeleteAccountRqst, GetAccountsRqst, RegisterAccountRqst, RemoveAccountRoleRqst, RemoveGroupMemberAccountRqst, RemoveOrganizationAccountRqst } from "globular-web-client/resource/resource_pb";
 import { getAllGroups, getAllRoles } from 'globular-web-client/api';
 import { getAllOrganizations } from "./Organization";
@@ -152,8 +152,7 @@ export class AccountMenu extends Menu {
 
     let html = `
             <style>
-                ${getTheme()}
-
+            
                 #accout-menu-header{
                     display: flex;
                     font-size: 12pt;
@@ -346,7 +345,7 @@ export class AccountManager extends HTMLElement {
     // Innitialisation of the layout.
     this.shadowRoot.innerHTML = `
              <style>
-                 ${getTheme()}
+                
 
                 #create-account-btn{
                     top: -42px;
@@ -420,7 +419,7 @@ export class AccountManager extends HTMLElement {
     createAccountBtn.onclick = () => {
       let html = `
             <style>
-                ${getTheme()}
+               
                 #create-account-panel{
                     position: absolute;
                     right: 0px;
@@ -541,7 +540,7 @@ export class AccountPanel extends HTMLElement {
     // Innitialisation of the layout.
     this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             #container{
                 display: flex;
                 flex-direction: column;
@@ -817,7 +816,7 @@ export class AccountPanel extends HTMLElement {
     let toast = ApplicationView.displayMessage(
       `
           <style>
-          ${getTheme()}
+         
             #yes-no-contact-delete-box{
               display: flex;
               flex-direction: column;
@@ -901,7 +900,7 @@ export class ExternalAccountManager extends HTMLElement {
     // Innitialisation of the layout.
     this.shadowRoot.innerHTML = `
       <style>
-          ${getTheme()}
+         
           #container{
             display: flex;
             flex-direction: column;

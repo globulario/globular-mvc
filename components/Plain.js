@@ -1,4 +1,3 @@
-import { getTheme } from "./Theme.js";
 
 /**
  * Sample empty component
@@ -19,7 +18,7 @@ export class Empty extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             #container{
 
             }

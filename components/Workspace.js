@@ -1,4 +1,4 @@
-import { getTheme } from "./Theme";
+
 
 /**
  * That class is use to manage the content of the workspace div.
@@ -19,7 +19,7 @@ import { getTheme } from "./Theme";
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
 
             #container{
                 display: grid;

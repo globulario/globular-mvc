@@ -1,7 +1,7 @@
 import { CreateConnectionRqst, Connection, StoreType,} from "globular-web-client/monitoring/monitoring_pb";
 import { Model } from "../Model";
 import { queryTsRange, queryTs } from "globular-web-client/api";
-import { getTheme } from "./Theme";
+
 
 export class MetricsDisplay extends HTMLElement {
     // attributes.
@@ -15,7 +15,7 @@ export class MetricsDisplay extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
         </style>
 
         <div class="container"> 

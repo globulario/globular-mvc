@@ -9,7 +9,7 @@ import '@polymer/paper-badge/paper-badge.js';
 
 import { Model } from '../Model';
 import { Menu } from './Menu';
-import { getTheme } from "./Theme";
+
 import { Notification } from "../Notification"
 import { Account } from "../Account"
 import { ApplicationView } from '../ApplicationView';
@@ -30,7 +30,7 @@ export class NotificationMenu extends Menu {
         // The div inner panel.
         let html = `
         <style>
-        ${getTheme()}
+       
 
         #notifications{
             display: flex;

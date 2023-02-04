@@ -1,4 +1,4 @@
-import { getTheme } from "./Theme.js";
+
 
 /**
  * Dropdown component
@@ -16,7 +16,7 @@ export class Dropdown extends HTMLElement {
     // Innitialisation of the layout.
     this.shadowRoot.innerHTML = `  
     <style>
-        ${getTheme()}
+       
 
         #container {
             display: block;
@@ -49,6 +49,18 @@ export class Dropdown extends HTMLElement {
             box-shadow: rgba(0, 0, 0, 0.15) 0px 5px 10px;
             display: none;
             overflow: auto;
+        }
+
+        .listbox::-webkit-scrollbar {
+          width: 5px;
+        }
+            
+        .listbox::-webkit-scrollbar-track {
+            background: var(--palette-background-default);
+        }
+        
+        .listbox::-webkit-scrollbar-thumb {
+            background: var(--palette-divider); 
         }
 
         .text-item {

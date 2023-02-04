@@ -2,8 +2,6 @@
 import { PolymerElement, html } from '@polymer/polymer';
 import '@polymer/iron-icons/iron-icons.js';
 
-// List of imported functionality.
-import { getTheme } from "../Theme";
 
 /*
  * Menu item represent element contain inside a menu.
@@ -41,7 +39,7 @@ export class MenuItemElement extends PolymerElement {
         let template = document.createElement("template")
         template.innerHTML = `
           <style>
-            ${getTheme()}
+           
 
           </style>
           <slot></slot>

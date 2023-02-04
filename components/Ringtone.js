@@ -1,4 +1,4 @@
-import { getTheme } from "./Theme.js";
+
 import { createDir, deleteFile, readDir, uploadFiles } from "globular-web-client/api";
 import { Model } from '../Model'
 import { File } from '../File'
@@ -27,7 +27,7 @@ export class Ringtones extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
 
             #container{
                 display: flex;
@@ -194,7 +194,7 @@ export class Ringtones extends HTMLElement {
         let toast = ApplicationView.displayMessage(
             `
               <style>
-               ${getTheme()}
+              
                 #yes-no-contact-delete-box{
                   display: flex;
                   flex-direction: column;
@@ -335,7 +335,7 @@ export class Ringtone extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             #container{
                 display: flex;
                 align-items: center;

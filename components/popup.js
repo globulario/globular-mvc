@@ -1,4 +1,3 @@
-import { getTheme } from "./Theme.js";
 
 //************Popup */*************************** */
 
@@ -18,7 +17,7 @@ export class Popup extends HTMLElement {
     // Innitialisation of the layout.
     this.shadowRoot.innerHTML = `
           <style>
-            ${getTheme()}
+           
               #content{
                   display: none;
               }

@@ -2,7 +2,7 @@
 /**
  * This is the globular server console.
  */
-import { getTheme } from "./Theme";
+
 import { Model } from '../Model';
 import { Application } from "../Application";
 import { GetProcessInfosRequest, KillProcessRequest } from "globular-web-client/admin/admin_pb";
@@ -265,7 +265,7 @@ export class SystemMonitor extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
           <style>
-              ${getTheme()}
+             
               paper-card{
                  position: relative;
                  display: flex;
@@ -313,6 +313,18 @@ export class SystemMonitor extends HTMLElement {
              #tab-content {
                 flex-grow: 1;
                 overflow: auto;
+             }
+
+             ::-webkit-scrollbar {
+                width: 5px;
+             }
+                
+             ::-webkit-scrollbar-track {
+                background: var(--palette-background-default);
+             }
+             
+             ::-webkit-scrollbar-thumb {
+                background: var(--palette-divider); 
              }
 
              paper-tabs{
@@ -501,7 +513,7 @@ export class ProcessesManager extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
 
             #processes-table {
                 display: table;
@@ -877,7 +889,7 @@ export class ResourcesDisplay extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             #container, #cpu-div {
                 display: flex;
                 flex-direction: column;
@@ -1282,7 +1294,7 @@ export class HostInfos extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
 
             #container{
                 display: table;

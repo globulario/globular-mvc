@@ -3,7 +3,6 @@ import { PolymerElement, html } from '@polymer/polymer';
 import '@polymer/paper-icon-button/paper-icon-button.js';
 import '@polymer/iron-icons/iron-icons.js';
 import { DropdownMenuElement } from './dropdownMenu.js';
-import { getTheme } from "../Theme";
 
 // contain the base class menu.
 import './menuItem';
@@ -41,7 +40,7 @@ export class PopupMenuElement extends DropdownMenuElement {
     static get template() {
         return html`
         <style>
-            ${getTheme()}
+           
             menu-item-element{
                 display: flex; 
                 background-color: var(--palette-background-paper); 

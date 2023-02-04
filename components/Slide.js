@@ -1,5 +1,5 @@
 
-import { getTheme } from "./Theme";
+
 
 
 /**
@@ -17,7 +17,7 @@ export class SlidePanel extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
 
             #panel{
                 position: fixed;
@@ -35,6 +35,18 @@ export class SlidePanel extends HTMLElement {
                 overflow: auto;
                 direction:rtl; 
             }
+
+            ::-webkit-scrollbar {
+                width: 5px;
+             }
+                
+             ::-webkit-scrollbar-track {
+                background: var(--palette-background-default);
+             }
+             
+             ::-webkit-scrollbar-thumb {
+                background: var(--palette-divider); 
+             }
 
             #content{
                 min-width: 300px;

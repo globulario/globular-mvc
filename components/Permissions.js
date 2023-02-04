@@ -1,5 +1,5 @@
 import { Model } from "../Model";
-import { getTheme } from "./Theme";
+
 import { v4 as uuidv4 } from "uuid";
 import { DeleteResourcePermissionsRqst, GetActionResourceInfosRqst, GetResourcePermissionsByResourceTypeRqst, GetResourcePermissionsRqst, Permissions, Permission, SetResourcePermissionsRqst } from "globular-web-client/rbac/rbac_pb";
 import { Account } from "../Account";
@@ -57,7 +57,7 @@ export class PermissionsManager extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             #container{
                 display: flex;
                 flex-direction: column;
@@ -219,7 +219,7 @@ export class PermissionsManager extends HTMLElement {
         if (addPermissionPanel == null && this.permissionsNames.length > 0) {
             let html = `
             <style>
-                ${getTheme()}
+               
                 #add-permission-panel{
                     position: absolute;
                     right: 20px;
@@ -454,7 +454,7 @@ export class PermissionPanel extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
 
             .title{
                 flex-grow: 1;
@@ -853,7 +853,7 @@ export class PermissionsViewer extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             #subjects-div{
                 vertical-align: middle;
                 text-aling: center;
@@ -1930,7 +1930,7 @@ export class ResourcesPermissionsManager extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
         </style>
 
         <div>
@@ -2012,7 +2012,7 @@ export class ResourcesPermissionsType extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             paper-card {
                 background-color: transparent;
                 font-size: 1rem;
@@ -2198,7 +2198,7 @@ export class ResourcePermissions extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             #container {
                 display: flex;
                 flex-direction: column;
@@ -2313,7 +2313,7 @@ export class ResourcePermissions extends HTMLElement {
         deleteBtn.onclick = () => {
             let toast = ApplicationView.displayMessage(`
             <style>
-                ${getTheme()}
+               
             </style>
             <div>
                 <div>Your about to delete permission for resource ${resource.getHeaderText()}</div>

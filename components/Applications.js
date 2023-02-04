@@ -16,7 +16,7 @@ import '@polymer/paper-radio-group/paper-radio-group.js';
 
 import { Menu } from './Menu';
 import { Application } from '../Application';
-import { getTheme } from "./Theme";
+
 import { getAllApplicationsInfo } from 'globular-web-client/api';
 import { AddApplicationActionsRqst, AddApplicationActionsRsp, DeleteApplicationRqst, RemoveApplicationActionRqst } from 'globular-web-client/resource/resource_pb';
 import { Model } from '../Model';
@@ -36,7 +36,7 @@ export class ApplicationsMenu extends Menu {
         super("applications", "apps", "Applications")
         let html = `
             <style>
-                ${getTheme()}        
+                       
                 #applications_menu_div{
                     background-color: var(--palette-background-paper);
                 }
@@ -105,7 +105,7 @@ export class ApplicationsPanel extends HTMLElement {
 
         this.shadowRoot.innerHTML = `
         <style>
-        ${getTheme()}
+       
             .container {
                 display: inline-flex;
                 flex-flow: wrap;
@@ -265,7 +265,7 @@ export class ApplicationManager extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
              <style>
-                 ${getTheme()}
+                
                  #container{
                     display: flex;
                     flex-direction: column;
@@ -353,7 +353,7 @@ export class ApplicationPanel extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             #container{
                 display: flex;
                 flex-direction: column;
@@ -538,7 +538,7 @@ export class ApplicationPanel extends HTMLElement {
 
                         let html = `
                         <style>
-                            ${getTheme()}
+                           
                             #add-application-action-panel{
                                 position: absolute;
                                 right: 0px;
@@ -641,7 +641,7 @@ export class ApplicationPanel extends HTMLElement {
         let toast = ApplicationView.displayMessage(
             `
           <style>
-            ${getTheme()}
+           
             #yes-no-contact-delete-box{
               display: flex;
               flex-direction: column;
@@ -707,7 +707,7 @@ export class ApplicationPanel extends HTMLElement {
         let toast = ApplicationView.displayMessage(
             `
           <style>
-           ${getTheme()}
+          
             #yes-no-contact-delete-box{
               display: flex;
               flex-direction: column;

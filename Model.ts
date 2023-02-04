@@ -190,7 +190,7 @@ export class Model {
             Model.globules = new Map<string, GlobularWebClient.Globular>();
             Model.globules.set(Model.address, Model._globular)
 
-            // 
+            
             Model.domain = Model._globular.domain;
             Model.globules.set(Model.domain, Model._globular)
             Model.globules.set(Model.domain + ":" + Model._globular.config.PortHttp, Model._globular)

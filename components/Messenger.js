@@ -16,7 +16,7 @@ import '@polymer/paper-tabs/paper-tabs.js';
 import '@polymer/paper-tabs/paper-tab.js';
 import '@polymer/iron-autogrow-textarea/iron-autogrow-textarea.js';
 import { Menu } from './Menu';
-import { getTheme } from "./Theme";
+
 import { Account } from "../Account"
 import { Model } from "../Model"
 import { PermissionManager } from '../Permission';
@@ -108,7 +108,7 @@ export class MessengerMenu extends Menu {
 
         let html = `
             <style>
-            ${getTheme()}
+           
             #Messages-div {
                 display: flex;
                 flex-wrap: wrap;
@@ -123,6 +123,18 @@ export class MessengerMenu extends Menu {
                 flex: 1;
                 overflow: auto;
             }
+
+            ::-webkit-scrollbar {
+                width: 5px;
+             }
+                
+             ::-webkit-scrollbar-track {
+                background: var(--palette-background-default);
+             }
+             
+             ::-webkit-scrollbar-thumb {
+                background: var(--palette-divider); 
+             }
 
             .conversations-lst{
                 display: flex;
@@ -496,7 +508,7 @@ export class ConversationInfos extends HTMLElement {
 
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
 
             .conversation-infos{
                 transition: background 0.2s ease,padding 0.8s linear;
@@ -830,7 +842,7 @@ export class Messenger extends HTMLElement {
 
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
 
             #layout-div-1{
                 display: flex;
@@ -898,6 +910,11 @@ export class Messenger extends HTMLElement {
             #messages-list-container globular-messages-list{
                 width: 100%;
             }
+
+            globular-conversations-list {
+                border-right: 1px solid var(--palette-divider);
+            }
+            
         </style>
         
         <paper-card class="container">
@@ -917,7 +934,7 @@ export class Messenger extends HTMLElement {
                 </div>
             </div>
             <iron-collapse class="conversations-detail">
-                <globular-conversations-list style="border-right: 1px solid var(--palette-divider);"></globular-conversations-list>
+                <globular-conversations-list ></globular-conversations-list>
                 <div style="display: flex; flex-direction: column; margin-left: 10px;">
                     <paper-tabs selected="0">
                         <paper-tab id="paticipants-tab">Participants</paper-tab>
@@ -1261,7 +1278,7 @@ export class ConversationsList extends HTMLElement {
 
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
 
             .container{
                 min-height: 140px;
@@ -1375,7 +1392,7 @@ export class ParticipantsList extends HTMLElement {
 
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
 
             .container{
                 
@@ -1647,7 +1664,7 @@ export class AttachedFilesList extends HTMLElement {
 
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
 
             .container{
                 
@@ -1689,7 +1706,7 @@ export class MessagesList extends HTMLElement {
 
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
 
             .container{
                 padding-left: 40px;
@@ -1844,7 +1861,7 @@ export class MessageEditor extends HTMLElement {
 
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
 
             .container{
                 display:flex;
@@ -2059,7 +2076,7 @@ export class InvitationCard extends HTMLElement {
 
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
 
             .container{
                 position: relative;
@@ -2284,7 +2301,7 @@ export class LikeDisLikeBtn extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
 
             .like-dislike-btn{
                 --iron-icon-fill-color:var(--palette-text-primary);
@@ -2402,7 +2419,7 @@ export class GlobularMessagePanel extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             .btn{
                 display: flex; 
                 width: 32px; 

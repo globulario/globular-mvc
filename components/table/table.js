@@ -4,7 +4,6 @@ import { PolymerElement, html } from "@polymer/polymer/polymer-element.js";
 import { createElement } from "../element.js";
 import { fireResize, isString, exportToCsv, getCoords } from "../utility.js";
 import './header.js'; // The maximum allowed number of row for a grid.
-import { getTheme } from "../Theme";
 import { DropdownMenu, DropdownMenuItem} from "../dropdownMenu.js";
 
 var maxRowNumber = 1000;
@@ -75,7 +74,7 @@ export class TableElement extends PolymerElement {
     let template = document.createElement("template")
     template.innerHTML = `
         <style>
-        ${getTheme()}
+       
             ::slotted(table-header-element) {
 
             }

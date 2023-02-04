@@ -1,4 +1,4 @@
-import { getTheme } from "./Theme";
+
 import '@polymer/paper-button/paper-button.js';
 import '@polymer/paper-slider/paper-slider.js';
 import { Model } from "../Model";
@@ -149,7 +149,7 @@ export class ImageCropper extends HTMLElement {
 
     this.shadowRoot.innerHTML = `
         <style>
-          ${getTheme()}
+         
           .slidecontainer {
             width: 100%;
             display:none;
@@ -326,6 +326,18 @@ export class ImageViewer extends HTMLElement {
 
     shadowRoot.innerHTML = `
       <style>
+        ::-webkit-scrollbar {
+          width: 5px;
+        }
+            
+        ::-webkit-scrollbar-track {
+            background: var(--palette-background-default);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--palette-divider); 
+        }
+        
         .modal {
           z-index: 3000;
           display: none;

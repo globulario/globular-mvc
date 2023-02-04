@@ -1,7 +1,7 @@
 import { GetFileAudiosRequest, GetFileTitlesRequest, GetFileVideosRequest } from "globular-web-client/title/title_pb";
 import { Application } from "../Application";
 import { Model } from "../Model";
-import { getTheme } from "./Theme";
+
 
 
 // Now I will test if imdb info are allready asscociated.
@@ -76,7 +76,7 @@ export class Link extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
 
-            ${getTheme()}
+           
             #container{
 
             }

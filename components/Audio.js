@@ -1,4 +1,4 @@
-import { getTheme } from "./Theme";
+
 import { generatePeerToken, Model } from '../Model';
 import { ApplicationView } from "../ApplicationView";
 import { setMoveable } from './moveable'
@@ -100,7 +100,7 @@ export class AudioPlayer extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             #container{
                 position: fixed;
             }

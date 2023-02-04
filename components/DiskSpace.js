@@ -5,7 +5,6 @@ import { Application } from "../Application";
 import { ApplicationView } from "../ApplicationView";
 import { Model } from "../Model";
 import { getFileSizeString } from "./File";
-import { getTheme } from "./Theme.js";
 import { getCoords } from "./utility";
 
 
@@ -29,7 +28,7 @@ export class DiskSpaceManager extends HTMLElement {
     // Innitialisation of the layout.
     this.shadowRoot.innerHTML = `
     <style>
-        ${getTheme()}
+       
         #container{
           display: flex;
           flex-direction: column;

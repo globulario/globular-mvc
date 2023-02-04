@@ -1,5 +1,5 @@
 import { Model } from "../Model";
-import { getTheme } from "./Theme";
+
 import { SlidePanel } from "./Slide"
 import '@polymer/paper-input/paper-input.js';
 import '@polymer/paper-icon-button/paper-icon-button.js';
@@ -307,7 +307,7 @@ export class ContentManager extends HTMLElement {
         // Innitialisation of the element.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
 
             #container{
                 display: flex;
@@ -878,7 +878,7 @@ export class CodeManager extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
 
             #container{
                 display: flex;
@@ -1222,7 +1222,7 @@ export class Navigation extends HTMLElement {
         // Innitialisation of the element.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
 
             #container {
                 display: flex;
@@ -1575,7 +1575,7 @@ export class NavigationPageLink extends HTMLElement {
         // Innitialisation of the element.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
 
             #page-name-span {
                 font-size: 1.5rem;
@@ -1785,7 +1785,7 @@ export class WebPage extends HTMLElement {
         // Innitialisation of the element.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             #container {
                 width: 100%;
                 height: 100%;
@@ -2498,7 +2498,7 @@ export class ElementEditor extends HTMLElement {
         // Innitialisation of the element.
         this.shadowRoot.innerHTML = `
                <style>
-                   ${getTheme()}
+                  
                    #container{
                        position: absolute;
                    }
@@ -3064,7 +3064,7 @@ export class CodeEditor extends HTMLElement {
         // Innitialisation of the element.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             #container{
                 width: 720px;
                 height: 400px;
@@ -3212,7 +3212,7 @@ export class ElementSelector extends HTMLElement {
         // Innitialisation of the element.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             #container{
                 display: flex;
                 flex-direction: column;

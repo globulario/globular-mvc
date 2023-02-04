@@ -1,5 +1,5 @@
 import { ConversationServicePromiseClient } from "globular-web-client/conversation/conversation_grpc_web_pb";
-import { getTheme } from "./Theme";
+
 
 function getExtraWidth(pane) {
     const paddingLeft = extractComputedStyleValue(pane, 'paddingLeft');
@@ -41,7 +41,7 @@ export class SplitView extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             .splitter {
                 display: flex;
                 width: 100%;
@@ -51,6 +51,18 @@ export class SplitView extends HTMLElement {
             ::slotted(globular-split-pane) {
                 overflow: auto;
             }
+
+            ::-webkit-scrollbar {
+                width: 5px;
+             }
+                
+             ::-webkit-scrollbar-track {
+                background: var(--palette-background-default);
+             }
+             
+             ::-webkit-scrollbar-thumb {
+                background: var(--palette-divider); 
+             }
 
         </style>
 
@@ -101,7 +113,7 @@ export class SplitSlider extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             .splitter__slider {
                 display: block;
                 height: 100%;
@@ -156,7 +168,7 @@ export class SplitPane extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             ::slotted(globular-file-reader){
                 height: 100%;
                 overflow: hidden;
@@ -176,6 +188,18 @@ export class SplitPane extends HTMLElement {
                 right: 0px;
                 overflow: auto;
             }
+
+            ::-webkit-scrollbar {
+                width: 5px;
+             }
+                
+             ::-webkit-scrollbar-track {
+                background: var(--palette-background-default);
+             }
+             
+             ::-webkit-scrollbar-thumb {
+                background: var(--palette-divider); 
+             }
             
         </style>
         <div class="splitter__pane">

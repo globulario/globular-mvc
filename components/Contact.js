@@ -17,7 +17,7 @@ import '@polymer/paper-tabs/paper-tab.js';
 
 import { Menu } from './Menu';
 import { Ringtone } from './Ringtone'
-import { getTheme } from "./Theme";
+
 import { Account } from "../Account"
 import { Model, generatePeerToken } from "../Model"
 import { ApplicationView } from '../ApplicationView';
@@ -76,7 +76,7 @@ export class ContactsMenu extends Menu {
 
         let html = `
             <style>
-                ${getTheme()}
+               
                 #Contacts-div {
                     display: flex;
                     flex-wrap: wrap;
@@ -302,7 +302,7 @@ export class SentContactInvitations extends HTMLElement {
 
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
 
             .contact-invitations-list{
                 display: flex;
@@ -512,7 +512,7 @@ export class ReceivedContactInvitations extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             .contact-invitations-list{
                 display: flex;
                 flex-direction: column;
@@ -689,7 +689,7 @@ export class ContactList extends HTMLElement {
                         // So here I will get the information from imdb and propose to assciate it with the file.
                         let toast = ApplicationView.displayMessage(`
                         <style>
-                            ${getTheme()}
+                           
                             paper-icon-button {
                                 width: 40px;
                                 height: 40px;
@@ -773,7 +773,7 @@ export class ContactList extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             .contact-invitations-list{
                 display: flex;
                 flex-direction: column;
@@ -916,7 +916,7 @@ export class ContactList extends HTMLElement {
                             // So here I will get the information from imdb and propose to assciate it with the file.
                             let toast = ApplicationView.displayMessage(`
                         <style>
-                            ${getTheme()}
+                           
                             paper-icon-button {
                                 width: 40px;
                                 height: 40px;
@@ -1088,7 +1088,7 @@ export class AcceptDeclineContactBtns extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
         </style>
 
         <div style="display: flex;">
@@ -1162,7 +1162,7 @@ export class ContactCard extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             .contact-invitation-div{
                 transition: background 0.2s ease,padding 0.8s linear;
                 background-color: var(--palette-background-paper);

@@ -2,7 +2,7 @@
 import { GetFileInfoRequest, RunCmdRequest } from "globular-web-client/admin/admin_pb";
 import { Application } from "../Application";
 import { File } from "../File";
-import { getTheme } from "./Theme";
+
 
 
 /**
@@ -24,7 +24,7 @@ export class Terminal extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
 
             paper-card{
                 position: relative;

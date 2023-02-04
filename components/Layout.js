@@ -14,7 +14,6 @@ import "@polymer/paper-spinner/paper-spinner.js";
 import "@polymer/iron-selector/iron-selector.js";
 
 import { Model } from "../Model";
-import { getTheme, mobileCheck } from "./Theme";
 
 /**
  * This is a web-component.
@@ -32,7 +31,7 @@ export class Layout extends HTMLElement {
     // Innitialisation of the layout.
     this.shadowRoot.innerHTML = `
         <style>
-          ${getTheme()}
+         
 
           app-header {
             background-color: var(--palette-primary-accent);
@@ -176,7 +175,7 @@ export class Layout extends HTMLElement {
         sticky_side_menu = true
       }
 
-      if (this.layout.offsetWidth > 1024 && !sticky_side_menu && !mobileCheck()) {
+      if (this.layout.offsetWidth > 1024 && !sticky_side_menu) {
         // Here I will take the content of the
         this.hamburger.style.display = "none";
         this.content.insertBefore(this.sideMenuSlot, this.content.firstChild);
@@ -211,10 +210,7 @@ export class Layout extends HTMLElement {
         sideMenu_.style.marginTop = "24px";
         sideMenu_.style.marginRight = "40px";
 
-        let title = this.querySelector("#title")
-        if (mobileCheck()) {
-          title.style.flexGrow = "1";
-        }
+
         // put the navigation in the the side menu...
         let navigation = this.querySelector("#navigation")
         navigation.slot = "side-menu"

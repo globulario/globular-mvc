@@ -1,4 +1,4 @@
-import { getTheme } from "./Theme";
+
 
 export class DropdownMenuItem extends HTMLElement {
   // attributes.
@@ -25,7 +25,7 @@ export class DropdownMenuItem extends HTMLElement {
     // Innitialisation of the layout.
     this.shadowRoot.innerHTML = `
       <style>
-          ${getTheme()}
+         
 
           #container{
             display: flex;
@@ -38,7 +38,6 @@ export class DropdownMenuItem extends HTMLElement {
             min-width: 150px;
             padding: 3px;
             transition: background 0.2s ease,padding 0.8s linear;
-            background-color: var(--palette-background-paper);
             position: relative;
           }
 
@@ -49,6 +48,7 @@ export class DropdownMenuItem extends HTMLElement {
           }
 
           paper-card  {
+            background: transparent;
             display: none;
             flex-direction: column;
             position: absolute;
@@ -141,7 +141,7 @@ export class DropdownMenu extends HTMLElement {
     // Innitialisation of the layout.
     this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             #container{
               display: flex;
               flex-direction: column;
@@ -166,7 +166,7 @@ export class DropdownMenu extends HTMLElement {
               position: absolute;
               top: 30px;
               left: 10px;
-
+              background-color: var(--palette-background-paper);
             }
 
             iron-icon:hover{

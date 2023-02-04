@@ -10,7 +10,7 @@ import '@polymer/paper-radio-button/paper-radio-button.js';
 import '@polymer/paper-radio-group/paper-radio-group.js';
 import '@polymer/paper-toggle-button/paper-toggle-button.js';
 import '@polymer/paper-spinner/paper-spinner.js';
-import { getTheme } from "./Theme";
+
 import { Model } from '../Model';
 
 /**
@@ -56,7 +56,7 @@ export class Wizard extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             paper-card h3 {
                 margin-block-end: 0px;
             }

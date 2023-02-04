@@ -1,4 +1,4 @@
-import { getTheme } from "./Theme";
+
 import { generatePeerToken, Model } from '../Model';
 import { Application } from "../Application";
 import { CreateVideoRequest, DeleteTitleRequest, DeleteVideoRequest, DissociateFileWithTitleRequest, GetTitleFilesRequest, SearchTitlesRequest } from "globular-web-client/title/title_pb";
@@ -191,7 +191,7 @@ function getVideoPreview(parent, path, name, callback, globule) {
 
             let toast = ApplicationView.displayMessage(`
                 <style>
-                    ${getTheme()}
+                   
                 </style>
                 <div id="select-media-dialog">
                     <div>Your about to delete file association</div>
@@ -401,7 +401,19 @@ export class InformationsManager extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
+            ::-webkit-scrollbar {
+                width: 5px;
+            }
+                
+            ::-webkit-scrollbar-track {
+                background: var(--palette-background-default);
+            }
+            
+            ::-webkit-scrollbar-thumb {
+                background: var(--palette-divider); 
+            }
+
             #container{
                 display: flex;
                 flex-direction: column;
@@ -591,7 +603,7 @@ export class AudioInfo extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
 
             #container {
                 display: flex;
@@ -674,7 +686,7 @@ export class VideoInfo extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             ${__style__}
             .action-div{
                 display: flex;
@@ -819,7 +831,7 @@ export class VideoInfo extends HTMLElement {
         deleteIndexationBtn.onclick = () => {
             let toast = ApplicationView.displayMessage(`
             <style>
-                ${getTheme()}
+               
             </style>
             <div id="select-media-dialog">
                 <div>Your about to delete indexation</div>
@@ -881,7 +893,7 @@ export class VideoInfoEditor extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
 
             #container {
                 display: flex;
@@ -1091,7 +1103,7 @@ export class TitleInfo extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             ${__style__}
             .action-div{
                 display: flex;
@@ -1264,7 +1276,7 @@ export class TitleInfo extends HTMLElement {
         deleteIndexationBtn.onclick = () => {
             let toast = ApplicationView.displayMessage(`
                <style>
-                   ${getTheme()}
+                  
                </style>
                <div id="select-media-dialog">
                    <div>Your about to delete indexation</div>
@@ -1522,7 +1534,7 @@ export class FileInfo extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
 
             #container {
                 display: flex;
@@ -1581,7 +1593,7 @@ export class WebpageInfo extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
 
             #container {
                 display: flex;
@@ -1603,6 +1615,18 @@ export class WebpageInfo extends HTMLElement {
                 object-fit: cover;
             }
 
+            ::-webkit-scrollbar {
+                width: 5px;
+             }
+                
+             ::-webkit-scrollbar-track {
+                background: var(--palette-background-default);
+             }
+             
+             ::-webkit-scrollbar-thumb {
+                background: var(--palette-divider); 
+             }
+             
             .image-box:hover{
                 overflow: auto;
                 width: 65%;
@@ -1656,7 +1680,7 @@ export class ApplicationInfo extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
 
             #container {
                 display: flex;
@@ -1719,7 +1743,7 @@ export class GroupInfo extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
 
             #container {
                 display: flex;
@@ -1767,7 +1791,7 @@ export class OrganizationInfo extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
 
             #container {
                 display: flex;
@@ -1856,7 +1880,7 @@ export class BlogPostInfo extends HTMLElement {
         if (this.getAttribute("short") == "true") {
             this.shadowRoot.innerHTML = `
             <style>
-                ${getTheme()}
+               
                 #container {
 
                 }
@@ -1969,7 +1993,7 @@ export class BlogPostInfo extends HTMLElement {
         } else {
             this.shadowRoot.innerHTML = `
             <style>
-                ${getTheme()}
+               
                 #container {
                     display: flex;
                 }
@@ -2062,7 +2086,7 @@ export class PackageInfo extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
 
             #container {
                 display: flex;
@@ -2121,7 +2145,7 @@ export class RoleInfo extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             #container {
                 display: flex;
             }
@@ -2172,7 +2196,7 @@ export class ConversationInfo extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
 
             #container {
                 display: flex;
@@ -2232,7 +2256,7 @@ export class DomainInfo extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
 
             #container {
                 display: flex;

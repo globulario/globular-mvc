@@ -1,4 +1,4 @@
-import { getTheme } from "./Theme";
+
 import '@polymer/iron-icons/iron-icons.js';
 
 import { Model } from '../Model';
@@ -46,7 +46,7 @@ export class RoleManager extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
              <style>
-                 ${getTheme()}
+                
 
                 #create-role-btn{
                     top: -42px;
@@ -120,7 +120,7 @@ export class RoleManager extends HTMLElement {
         createRoleBtn.onclick = () => {
             let html = `
             <style>
-                ${getTheme()}
+               
                 #create-role-panel{
                     position: absolute;
                     right: 0px;
@@ -232,7 +232,7 @@ export class RolePanel extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             #container{
                 display: flex;
                 flex-direction: column;
@@ -339,7 +339,7 @@ export class RolePanel extends HTMLElement {
 
                         let html = `
                         <style>
-                            ${getTheme()}
+                           
                             #add-role-action-panel{
                                 position: absolute;
                                 right: 0px;
@@ -488,7 +488,7 @@ export class RolePanel extends HTMLElement {
         let toast = ApplicationView.displayMessage(
             `
           <style>
-          ${getTheme()}
+         
             #yes-no-contact-delete-box{
               display: flex;
               flex-direction: column;

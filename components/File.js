@@ -15,7 +15,6 @@ import '@polymer/paper-listbox/paper-listbox.js'
 import '@polymer/paper-item/paper-item.js'
 import "./DiskSpace.js"
 import "./Share.js"
-
 import * as getUuid from 'uuid-by-string'
 
 import { generatePeerToken, Model } from '../Model';
@@ -26,7 +25,6 @@ import { InformationsManager } from './Informations'
 import { playVideo } from './Video'
 import { playAudio } from './Audio'
 import { GlobularFileReader } from './Reader'
-import { getTheme } from "./Theme";
 import { v4 as uuidv4 } from "uuid";
 
 // Menu to set action on files.
@@ -49,6 +47,7 @@ import { Account } from '../Account';
 import { mergeTypedArrays, uint8arrayToStringMethod } from "../Utility";
 import { ShareResourceMenu } from './Share.js';
 
+import "../style.css"
 
 // keep track of shared directory
 var shared = {}
@@ -740,7 +739,7 @@ export class FilesView extends HTMLElement {
             let toast = ApplicationView.displayMessage(
                 `
             <style>
-              ${getTheme()}
+             
               #yes-no-files-delete-box{
                 display: flex;
                 flex-direction: column;
@@ -1046,7 +1045,7 @@ export class FilesView extends HTMLElement {
 
         this.shadowRoot.innerHTML = `
           <style>
-              ${getTheme()}
+             
 
               table {
                   text-align: left;
@@ -1131,6 +1130,18 @@ export class FilesView extends HTMLElement {
                 background-color: var(--palette-background-paper); 
                 color: var(--palette-text-primary);
               }
+
+             ::-webkit-scrollbar {
+                width: 5px;
+             }
+                
+             ::-webkit-scrollbar-track {
+                background: var(--palette-background-default);
+             }
+             
+             ::-webkit-scrollbar-thumb {
+                background: var(--palette-divider); 
+             }
 
           </style>
 
@@ -1489,7 +1500,7 @@ export class FilesView extends HTMLElement {
                 // In that case I will made use of the fabulous youtube-dl command line.
                 let toast = ApplicationView.displayMessage(`
                 <style>
-                    ${getTheme()}
+                   
                 </style>
                 <div id="select-media-dialog">
                     <span>What kind of file to you want to create?</span>
@@ -3008,7 +3019,7 @@ export class FilesIconView extends FilesView {
             // So here I will get the information from imdb and propose to assciate it with the file.
             let toast = ApplicationView.displayMessage(`
                     <style>
-                        ${getTheme()}
+                       
                     </style>
                     <div id="select-media-dialog">
                         <div>Your about to associate <span id="title-type" style="max-width: 300px;"></span> <a id="title-name" target="_blank"></a></div>
@@ -3075,7 +3086,7 @@ export class PathNavigator extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
             <style>
-                ${getTheme()}
+               
 
                 #path-navigator-box{
                     flex-grow: 1;
@@ -3345,7 +3356,7 @@ export class FileNavigator extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
 
             #file-navigator-div{
                 min-width: ${this.width}px;
@@ -3973,7 +3984,7 @@ export class FileExplorer extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             
             paper-icon-button:hover{
                 cursor: pointer;
@@ -4046,11 +4057,7 @@ export class FileExplorer extends HTMLElement {
                     margin-top: 15px;
                 }
             }
-  
-            @media only screen and (max-width: 1024px) {
 
-            }
-    
             #globular-audio-player{
                 display: none;
             }
@@ -4097,8 +4104,29 @@ export class FileExplorer extends HTMLElement {
                 align-items: center; 
                 border-bottom: 1px solid var(--palette-divider);
             }
+
+            #file-explorer-box{
+                position: relative; 
+                flex-direction: column; 
+                background-color: transparent;
+                border-left: 1px solid var(--palette-divider); 
+                border-right: 1px solid var(--palette-divider);
+            }
+
+            ::-webkit-scrollbar {
+                width: 5px;
+             }
+                
+             ::-webkit-scrollbar-track {
+                background: var(--palette-background-default);
+             }
+             
+             ::-webkit-scrollbar-thumb {
+                background: var(--palette-divider); 
+             }
+
         </style>
-        <paper-card id="file-explorer-box" class="file-explorer" style="position: relative; flex-direction: column; border-left: 1px solid var(--palette-divider); border-right: 1px solid var(--palette-divider);">
+        <paper-card id="file-explorer-box" class="file-explorer" style="">
             <div class="card-header">
                 <paper-icon-button icon="icons:close" id="file-explorer-box-close-btn" style="--iron-icon-fill-color: var(--palette-text-accent);"></paper-icon-button>
                 <span id="move-handle" class="title">File Explorer</span>
@@ -5291,7 +5319,7 @@ export class VideoPreview extends HTMLElement {
 
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
 
             #container{
                 height: ${height}px;
@@ -5525,7 +5553,7 @@ export class FilesUploader extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             #container{
                 position: relative;
             }
@@ -5545,6 +5573,18 @@ export class FilesUploader extends HTMLElement {
                 overflow: auto;
             }
 
+            ::-webkit-scrollbar {
+                width: 5px;
+             }
+                
+             ::-webkit-scrollbar-track {
+                background: var(--palette-background-default);
+             }
+             
+             ::-webkit-scrollbar-thumb {
+                background: var(--palette-divider); 
+             }
+             
             paper-icon-button .active{
 
             }

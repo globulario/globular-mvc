@@ -4,7 +4,7 @@ import { LogInfo, LogRqst } from 'globular-web-client/log/log_pb';
 import { Application } from '../Application';
 import { applicationView, ApplicationView } from '../ApplicationView';
 import { Model } from '../Model';
-import { getTheme } from "./Theme";
+
 import { setMoveable } from './moveable'
 import { setResizeable } from './rezieable'
 
@@ -57,7 +57,7 @@ export class VideoConversation extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             #container{
                 width: 720px;
                 position: fixed;

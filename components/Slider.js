@@ -1,4 +1,3 @@
-import { getTheme } from "./Theme.js";
 
 /**
  * Sample empty component
@@ -16,7 +15,7 @@ export class Slider extends HTMLElement {
     // Innitialisation of the layout.
     this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
                 .slider {
                   -webkit-appearance: none;
                   width: 100%;

@@ -5,7 +5,7 @@ import '@polymer/paper-icon-button/paper-icon-button.js';
 import { Application } from '../Application';
 import { CreateVideoRequest, DeleteVideoRequest, GetFileAudiosRequest, GetFileTitlesRequest, GetTitleByIdRequest, GetTitleFilesRequest, SearchTitlesRequest } from 'globular-web-client/title/title_pb';
 import { generatePeerToken, Model } from '../Model';
-import { getTheme } from "./Theme";
+
 import * as getUuid from 'uuid-by-string'
 import { BlogPostInfo, InformationsManager, searchEpisodes } from './Informations';
 import { playVideo } from './Video';
@@ -222,7 +222,7 @@ function playTitleListener(player, title, indexPath, globule) {
             // So here I will ask to display the next episode...
             let toast = ApplicationView.displayMessage(`
                 <style>
-                    ${getTheme()}
+                   
                 </style>
                 <div style="display: flex; flex-direction: column;">
                     <div>Play the next episode?</div>
@@ -509,7 +509,7 @@ export class SearchBar extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
 
-            ${getTheme()}
+           
 
             input {
                 width: 100%;
@@ -754,7 +754,7 @@ export class SearchResults extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
 
             #container{
                 width: 95%;
@@ -982,7 +982,7 @@ export class SearchResultsPage extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
 
             #container {
                 display: flex;
@@ -1705,7 +1705,7 @@ export class SearchAudioCard extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             #container{
                 padding: 2px;
                 position: relative;
@@ -1942,7 +1942,7 @@ export class SearchVideoCard extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
 
             .video-card{
                 border-radius: 3.5px;
@@ -2033,7 +2033,7 @@ export class SearchVideoCard extends HTMLElement {
         //let uuid = randomUUID()
         let html = `
         <style>
-            ${getTheme()}
+           
             paper-card {
                 background: var(--palette-background-default);
                 border-top: 1px solid var(--palette-background-paper);
@@ -2211,7 +2211,7 @@ export class SearchFlipCard extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             @media only screen and (min-width: 1800px){
                 globular-search-results {
                     grid-row-start: 1;
@@ -2395,7 +2395,7 @@ export class SearchTitleDetail extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
            
             .search-title-detail{
                 position: absolute;               
@@ -2705,7 +2705,7 @@ export class SearchTitleDetail extends HTMLElement {
         //let uuid = randomUUID()
         let html = `
         <style>
-            ${getTheme()}
+           
             paper-card {
                 background: var(--palette-background-default);
                 border-top: 1px solid var(--palette-background-paper);
@@ -2757,7 +2757,7 @@ export class FacetSearchFilter extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
 
             #container{
                 font-size: 1.17rem;
@@ -2818,7 +2818,7 @@ export class SearchFacetPanel extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
 
             .facet-list{
                 padding-bottom: 20px;
@@ -3105,7 +3105,7 @@ export class SearchResultsPagesNavigator extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             #container{
                 display: flex;
                 padding: 10px;
@@ -3215,7 +3215,7 @@ export class SearchResultsPageContextsSelector extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
                 <style>
-                    ${getTheme()}
+                   
                     #container{
                         display: flex;
                         margin: 5px;

@@ -1,4 +1,3 @@
-import { getTheme } from "./Theme.js";
 
 /**
  * Sample empty component
@@ -23,7 +22,7 @@ export class Sidebar extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             #container{
                 min-width: ${this.width}px;
 
@@ -87,7 +86,7 @@ export class SidebarCollapsiblePanel extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-            ${getTheme()}
+           
             #container{
                 transition: background 0.2s ease,padding 0.8s linear;
             }
