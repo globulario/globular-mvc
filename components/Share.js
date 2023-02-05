@@ -107,6 +107,10 @@ export class SharePanel extends HTMLElement {
                 flex-grow: 1;
             }
 
+            paper-card h1 {
+                font-size: 1.65rem;
+            }
+
         </style>
         <paper-card id="container">
             <div style="display: flex; justify-content: center;">

@@ -5616,6 +5616,7 @@ export class FilesUploader extends HTMLElement {
 
             table {
                 width: 100%;
+                background-color: var(--palette-background-paper);
             }
 
             td {
@@ -5672,7 +5673,7 @@ export class FilesUploader extends HTMLElement {
                 background: var(--palette-background-default); 
                 border-top: 1px solid var(--palette-divider);
                 width: 100%;
-                
+
                 /* custom CSS property */
                 --paper-tabs-selection-bar-color: var(--palette-primary-main); 
                 color: var(--palette-text-primary);

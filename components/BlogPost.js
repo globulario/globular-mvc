@@ -865,6 +865,10 @@ export class BlogPosts extends HTMLElement {
                 
             }
 
+            paper-card h1 {
+                font-size: 1.65rem;
+            }
+            
         </style>
         <div id="container">
             <paper-card id="blog-lst-div">

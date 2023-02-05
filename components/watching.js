@@ -58,6 +58,9 @@ export class MediaWatching extends HTMLElement {
                 font-size: 1.4rem;
             }
 
+            paper-card h1 {
+                font-size: 1.65rem;
+            }
             
         </style>
         <paper-card id="container">
