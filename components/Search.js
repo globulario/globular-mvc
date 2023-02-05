@@ -1054,15 +1054,12 @@ export class SearchResultsPage extends HTMLElement {
                 }
 
                 @media (max-width: 650px) {
-                    .media-cards {
+                    slot {
                         justify-content: center;
                     }
                 }
 
-                .media-cards {
-                    display: flex; 
-                    flex-wrap: wrap;
-                }
+                
              }
 
         </style>
@@ -1084,32 +1081,16 @@ export class SearchResultsPage extends HTMLElement {
 
                 <div id="results" style="display: flex; flex-direction: column; overflow: auto;">
                     <div id="mosaic-view" style="display: block;">
-                        <div class="media-cards">
-                            <slot name="mosaic_blogPosts"></slot>
-                        </div>
-                        <div class="media-cards">
-                            <slot name="mosaic_videos"></slot>
-                        </div>
-                        <div class="media-cards">
-                            <slot name="mosaic_titles"></slot>
-                        </div>
-                        <div class="media-cards">
-                            <slot name="mosaic_audios"></slot>
-                        </div>
+                        <slot name="mosaic_blogPosts" style="display: flex; flex-wrap: wrap;"></slot>
+                        <slot name="mosaic_videos" style="display: flex; flex-wrap: wrap;"></slot>
+                        <slot name="mosaic_titles" style="display: flex; flex-wrap: wrap;"></slot>
+                        <slot name="mosaic_audios" style="display: flex; flex-wrap: wrap;"></slot>
                     </div>
                     <div id="list-view" style="display: none;">
-                        <div class="media-cards">
-                            <slot name="list_blogPosts"> </slot>
-                        </div>
-                        <div class="media-cards">
-                            <slot name="list_videos"> </slot>
-                        </div>
-                        <div class="media-cards">
-                            <slot name="list_titles"> </slot>
-                        </div>
-                        <div class="media-cards">
-                            <slot name="list_audios"> </slot>
-                        </div>
+                        <slot name="list_blogPosts" style="display: flex; flex-wrap: wrap;"> </slot>
+                        <slot name="list_videos" style="display: flex; flex-wrap: wrap;"> </slot>
+                        <slot name="list_titles" style="display: flex; flex-wrap: wrap;"> </slot>
+                        <slot name="list_audios" style="display: flex; flex-wrap: wrap;"> </slot>
                     </div>
                 </div>
 
@@ -3198,8 +3179,8 @@ export class SearchResultsPagesNavigator extends HTMLElement {
                 display: flex;
                 justify-content: center;
                 align-items: center;
-                height: 40px;
-                width: 40px;
+                height: 35px;
+                width: 35px;
                 margin: 5px;
                 
                 transition: background 0.2s ease,padding 0.8s linear;
@@ -3213,8 +3194,8 @@ export class SearchResultsPagesNavigator extends HTMLElement {
                 }
 
                 .pagination-btn{
-                    height: 30px;
-                    width: 30px;
+                    height: 25px;
+                    width: 25px;
                 }
             }
 

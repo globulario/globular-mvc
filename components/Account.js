@@ -202,6 +202,10 @@ export class AccountMenu extends Menu {
                   background-color: var(--palette-background-paper);
                   color: var(--palette-text-primary);
                 }
+
+                paper-button {
+                  font-size: 1rem;
+                }
             </style>
 
             <div class="card-content">
