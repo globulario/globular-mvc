@@ -75,7 +75,7 @@
 /** The dark theme. **/
 :root[theme="dark"] {
 
-   --palette-primary-accent: #424242;
+   --palette-primary-accent: #252525;
 
    /** Typography **/
    --palette-text-primary: #fff;

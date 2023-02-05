@@ -535,6 +535,11 @@ export class ProcessesManager extends HTMLElement {
                 padding: 5px;
                 border-bottom: 1px solid var(--palette-primary-accent);
                 min-width: 80px;
+                max-width: 200px;
+                white-space: nowrap;
+                overflow: hidden !important;
+                text-overflow: ellipsis;
+
             }
 
             .theader {
@@ -1301,11 +1306,11 @@ export class HostInfos extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
            
-
             #container{
                 display: table;
                 width: 98%;
                 height: 100%;
+                background-color: var(--palette-background-paper);
             }
 
             .row {
