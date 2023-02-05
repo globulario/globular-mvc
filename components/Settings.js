@@ -39,6 +39,7 @@ export class SettingsMenu extends HTMLElement {
            display: flex;
            flex-direction: column;
            min-width: 200px;
+           
        }
 
        globular-settings-side-menu-item.active{
@@ -328,6 +329,7 @@ export class Settings extends HTMLElement {
            flex-direction: column;
            min-width: 500px;
            margin-bottom: 10px;
+           background-color: var(--palette-background-paper);
        }
 
        .card-content{
@@ -1349,7 +1351,7 @@ export class OnOffSetting extends Setting {
         }
         
         paper-toggle-button[checked]{
-          --paper-radio-button-label-color: var(--palette-text-accent);
+          --paper-toggle-button-label-color: var(--palette-text-accent);
         }
 
       </style>

@@ -1133,6 +1133,8 @@ export class FilesView extends HTMLElement {
 
              ::-webkit-scrollbar {
                 width: 5px;
+                height: 5px;
+
              }
                 
              ::-webkit-scrollbar-track {
@@ -4115,6 +4117,7 @@ export class FileExplorer extends HTMLElement {
 
             ::-webkit-scrollbar {
                 width: 5px;
+                height: 5px;
              }
                 
              ::-webkit-scrollbar-track {
@@ -4161,13 +4164,13 @@ export class FileExplorer extends HTMLElement {
             <div class="card-actions">
                 <paper-icon-button icon="icons:fullscreen-exit" id="exit-full-screen-btn" style="display: none;"></paper-icon-button>
                 <globular-disk-space-manager account="${Application.account.id + "@" + Application.account.domain}"></globular-disk-space-manager>
-                <span style="flex-grow: 1;"></span>
                 <div id="progress-div" style="display: none; flex-grow: 1; margin-right: 20px;">
                     <div style="diplay:flex; flex-direction: column;">
                         <span id="progress-message">wait...</span>
                         <paper-progress id="globular-dir-loading-progress-bar" indeterminate style=""></paper-progress>
                     </div>
                 </div>
+                <span style="flex-grow: 1;"></span>
                 <paper-icon-button id="files-icon-btn" class="active" icon="icons:view-module" style="--iron-icon-fill-color: var(--palette-action-active);"></paper-icon-button>
                 <paper-icon-button id="files-list-btn" icon="icons:view-list" style="--iron-icon-fill-color: var(--palette-action-disabled);"></paper-icon-button>
                 <globular-files-uploader></globular-files-uploader>
@@ -4177,8 +4180,9 @@ export class FileExplorer extends HTMLElement {
 
         // Give information about loading data...
         this.progressDiv = this.shadowRoot.querySelector("#progress-div")
-        this.shadowRoot.querySelector("globular-disk-space-manager").account = Application.account;
-        this.shadowRoot.querySelector("globular-disk-space-manager").globule = this.globule
+        this.diskSpaceManager =  this.shadowRoot.querySelector("globular-disk-space-manager")
+        this.diskSpaceManager.account = Application.account;
+        this.diskSpaceManager.globule = this.globule
 
         // enter full screen and exit full screen btn
         this.enterFullScreenBtn = this.shadowRoot.querySelector("#enter-full-screen-btn")
@@ -4461,7 +4465,7 @@ export class FileExplorer extends HTMLElement {
                     }
 
                 </style>
-                <paper-card id="new-dir-dialog">
+                <paper-card id="new-dir-dialog">progress-div
                     <div class="card-content">
                         <paper-textarea id="new-dir-input" label="new folder name" value="Untitled Folder"></paper-textarea>
                     </div>
@@ -4673,6 +4677,10 @@ export class FileExplorer extends HTMLElement {
                 (evt) => {
                     // keep the active path.
                     if (this.id == evt.file_explorer_id) {
+                        if(this.informationManager){
+                            if(this.informationManager.parentNode)
+                                this.informationManager.parentNode.removeChild(this.informationManager)
+                        }
                         this.setDir(evt.path)
 
                     }
@@ -5556,6 +5564,7 @@ export class FilesUploader extends HTMLElement {
            
             #container{
                 position: relative;
+                background-color: var(--palette-background-paper);
             }
 
             #collapse-panel{
@@ -5575,6 +5584,7 @@ export class FilesUploader extends HTMLElement {
 
             ::-webkit-scrollbar {
                 width: 5px;
+                height: 5px;
              }
                 
              ::-webkit-scrollbar-track {
@@ -5662,6 +5672,11 @@ export class FilesUploader extends HTMLElement {
                 background: var(--palette-background-default); 
                 border-top: 1px solid var(--palette-divider);
                 width: 100%;
+                
+                /* custom CSS property */
+                --paper-tabs-selection-bar-color: var(--palette-primary-main); 
+                color: var(--palette-text-primary);
+                --paper-tab-ink: var(--palette-action-disabled);
             }
         </style>
         <div id="container">

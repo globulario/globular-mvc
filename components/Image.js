@@ -328,6 +328,7 @@ export class ImageViewer extends HTMLElement {
       <style>
         ::-webkit-scrollbar {
           width: 5px;
+          height: 5px;
         }
             
         ::-webkit-scrollbar-track {

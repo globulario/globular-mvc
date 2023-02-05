@@ -62,6 +62,7 @@ export class PermissionsManager extends HTMLElement {
                 display: flex;
                 flex-direction: column;
                 padding: 8px;
+                background-color: var(--palette-background-paper);
             }
 
             #header {

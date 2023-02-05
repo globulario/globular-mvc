@@ -412,6 +412,20 @@ emoji-picker {
 }
 
 
+::-webkit-scrollbar {
+   width: 5px;
+   height: 5px;
+
+}
+   
+::-webkit-scrollbar-track {
+   background: var(--palette-background-default);
+}
+
+::-webkit-scrollbar-thumb {
+   background: var(--palette-divider); 
+}
+
 
 /**
   * EditorJs style

@@ -38,6 +38,7 @@ export class SlidePanel extends HTMLElement {
 
             ::-webkit-scrollbar {
                 width: 5px;
+                height: 5px;
              }
                 
              ::-webkit-scrollbar-track {

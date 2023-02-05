@@ -404,6 +404,7 @@ export class InformationsManager extends HTMLElement {
            
             ::-webkit-scrollbar {
                 width: 5px;
+                height: 5px;
             }
                 
             ::-webkit-scrollbar-track {
@@ -1409,6 +1410,13 @@ export class TitleInfo extends HTMLElement {
                 font-weight: bold;
             }
 
+            paper-tabs{
+                /* custom CSS property */
+                --paper-tabs-selection-bar-color: var(--palette-primary-main); 
+                color: var(--palette-text-primary);
+                --paper-tab-ink: var(--palette-action-disabled);
+            }
+
         </style>
         <div class="episodes-div">
             <div class="header">
@@ -1617,6 +1625,7 @@ export class WebpageInfo extends HTMLElement {
 
             ::-webkit-scrollbar {
                 width: 5px;
+                height: 5px;
              }
                 
              ::-webkit-scrollbar-track {
@@ -1795,6 +1804,7 @@ export class OrganizationInfo extends HTMLElement {
 
             #container {
                 display: flex;
+                background-color: var(--palette-background-paper);
             }
 
         </style>

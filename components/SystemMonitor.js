@@ -317,6 +317,7 @@ export class SystemMonitor extends HTMLElement {
 
              ::-webkit-scrollbar {
                 width: 5px;
+                height: 5px;
              }
                 
              ::-webkit-scrollbar-track {
@@ -329,7 +330,12 @@ export class SystemMonitor extends HTMLElement {
 
              paper-tabs{
                  min-height: 48px;
-             }
+
+                /* custom CSS property */
+                --paper-tabs-selection-bar-color: var(--palette-primary-main); 
+                color: var(--palette-text-primary);
+                --paper-tab-ink: var(--palette-action-disabled);
+              }
 
           </style>
           <paper-card>

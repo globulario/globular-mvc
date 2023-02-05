@@ -20,7 +20,8 @@ export class Empty extends HTMLElement {
         <style>
            
             #container{
-
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
             }
         </style>
         <div id="container">

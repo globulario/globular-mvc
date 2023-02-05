@@ -254,10 +254,11 @@ export class DiskSpaceManager extends HTMLElement {
   }
 
   refresh() {
+
     if (this.hasAttribute("account")) {
       let accountId = this.account.getId() + "@" + this.account.getDomain()
       if ( accountId.startsWith("sa@")) {
-        this.style.display = "none";
+        this.style.display = "none"; // nothing to show about sa account
       } else {
         this.getAllocatedSpace(accountId, SubjectType.ACCOUNT,
           () => {
@@ -276,6 +277,7 @@ export class DiskSpaceManager extends HTMLElement {
           })
       }
     } else if (this.hasAttribute("application")) {
+
       this.getAllocatedSpace(this.getAttribute("application"), SubjectType.APPLICATION, () => {
         this.setAllocatedSpace()
         this.getAvailableSpace(this.getAttribute("application"), SubjectType.APPLICATION, () => {
@@ -284,13 +286,15 @@ export class DiskSpaceManager extends HTMLElement {
 
       },
         err => {
-          console.log(err);
+          console.log("--------------->", err);
           this.errorMessageDiv.innerHTML = `no space was allocated for application ${this.getAttribute("application")}`
           this.tooltip.innerHTML = `click here to allocate space`
           this.errorMessageDiv.style.display = "block"
           this.diskUsageDiv.style.display = "none"
           this.progressBar.style.display = "none"
         })
+    }else{
+      console.log("no account or application was found...")
     }
   }
 

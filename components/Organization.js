@@ -263,6 +263,7 @@ export class OrganizationPanel extends HTMLElement {
                 flex-direction: column;
                 align-items: center;
                 border-bottom: 1px solid var(--palette-background-default);
+                background-color: var(--palette-background-paper);
             }
 
             #content{
@@ -299,6 +300,12 @@ export class OrganizationPanel extends HTMLElement {
               margin: 8px;
             }
 
+            paper-tabs {
+                /* custom CSS property */
+                --paper-tabs-selection-bar-color: var(--palette-primary-main); 
+                color: var(--palette-text-primary);
+                --paper-tab-ink: var(--palette-action-disabled);
+            }
 
         </style>
         <div id="container">

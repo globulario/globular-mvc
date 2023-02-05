@@ -172,6 +172,7 @@ export class BlogPostElement extends HTMLElement {
                 justify-content: center;
                 margin-bottom: 10px;
                 margin-top: 10px;
+                background-color: var(--palette-background-paper);
             }
 
             .blog-post-editor-div{
@@ -1204,7 +1205,19 @@ export class BlogComment extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
            
+            ::-webkit-scrollbar {
+                width: 5px;
+                height: 5px;
 
+            }
+                
+            ::-webkit-scrollbar-track {
+                background: var(--palette-background-default);
+            }
+            
+            ::-webkit-scrollbar-thumb {
+                background: var(--palette-divider); 
+            }
             .container{
                 display: flex;
                 flex-direction: column;

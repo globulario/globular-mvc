@@ -359,6 +359,7 @@ export class ApplicationPanel extends HTMLElement {
                 flex-direction: column;
                 align-items: center;
                 border-bottom: 1px solid var(--palette-background-default);
+                background-color: var(--palette-background-paper);
             }
 
             #content{

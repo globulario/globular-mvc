@@ -51,6 +51,20 @@ export class Dropdown extends HTMLElement {
             overflow: auto;
         }
 
+        ::-webkit-scrollbar {
+          width: 5px;
+          height: 5px;
+
+        }
+            
+        ::-webkit-scrollbar-track {
+            background: var(--palette-background-default);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--palette-divider); 
+        }
+
         .listbox::-webkit-scrollbar {
           width: 5px;
         }

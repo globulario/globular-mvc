@@ -94,9 +94,30 @@ export class ContactsMenu extends Menu {
                 
                 }
 
+                ::-webkit-scrollbar {
+                    width: 5px;
+                    height: 5px;
+    
+                 }
+                    
+                 ::-webkit-scrollbar-track {
+                    background: var(--palette-background-default);
+                 }
+                 
+                 ::-webkit-scrollbar-thumb {
+                    background: var(--palette-divider); 
+                 }
+
                 /* Need to position the badge to look like a text superscript */
                 paper-tab {
                   padding-right: 25px;
+                }
+
+                paper-tabs{                  
+                    /* custom CSS property */
+                    --paper-tabs-selection-bar-color: var(--palette-primary-main); 
+                    color: var(--palette-text-primary);
+                    --paper-tab-ink: var(--palette-action-disabled);
                 }
 
                 paper-tab paper-badge {

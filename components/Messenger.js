@@ -126,6 +126,7 @@ export class MessengerMenu extends Menu {
 
             ::-webkit-scrollbar {
                 width: 5px;
+                height: 5px;
              }
                 
              ::-webkit-scrollbar-track {
@@ -913,6 +914,13 @@ export class Messenger extends HTMLElement {
 
             globular-conversations-list {
                 border-right: 1px solid var(--palette-divider);
+            }
+
+            paper-tabs {
+                /* custom CSS property */
+                --paper-tabs-selection-bar-color: var(--palette-primary-main); 
+                color: var(--palette-text-primary);
+                --paper-tab-ink: var(--palette-action-disabled);
             }
             
         </style>

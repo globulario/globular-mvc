@@ -76,6 +76,20 @@ export class CallsHistoryMenu extends Menu {
             
             }
 
+            ::-webkit-scrollbar {
+                width: 5px;
+                height: 5px;
+
+             }
+                
+             ::-webkit-scrollbar-track {
+                background: var(--palette-background-default);
+             }
+             
+             ::-webkit-scrollbar-thumb {
+                background: var(--palette-divider); 
+             }
+
             /* Need to position the badge to look like a text superscript */
             paper-tab {
               padding-right: 25px;
@@ -98,6 +112,14 @@ export class CallsHistoryMenu extends Menu {
             #clear-outgoing-calls-btn, #clear-incomming-calls-btn{
                 padding: 10px;
             }
+
+            paper-tabs {
+                                
+                  /* custom CSS property */
+                  --paper-tabs-selection-bar-color: var(--palette-primary-main); 
+                  color: var(--palette-text-primary);
+                  --paper-tab-ink: var(--palette-action-disabled);
+              }
 
         </style>
         <div id="Contacts-div">

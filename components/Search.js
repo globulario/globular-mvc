@@ -775,6 +775,11 @@ export class SearchResults extends HTMLElement {
 
             paper-tabs {
                 flex-grow: 1;
+        
+                /* custom CSS property */
+                --paper-tabs-selection-bar-color: var(--palette-primary-main); 
+                color: var(--palette-text-primary);
+                --paper-tab-ink: var(--palette-action-disabled);
             }
 
             #close-all-btn {
@@ -2169,7 +2174,10 @@ export class SearchVideoCard extends HTMLElement {
         let thumbnail = this.shadowRoot.querySelector("#thumbnail-image")
         let preview = this.shadowRoot.querySelector("#preview-image")
         let card = this.shadowRoot.querySelector(".video-card")
-        thumbnail.src = video.getPoster().getContenturl()
+
+        if(video.getPoster()){
+            thumbnail.src = video.getPoster().getContenturl()
+        }
 
         // Here the image was not set properly...
         this.shadowRoot.querySelector("#video-info-button").onclick = () => {

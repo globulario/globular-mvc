@@ -277,6 +277,7 @@ export class PeerPanel extends HTMLElement {
                 display: flex;
                 flex-direction: column;
                 align-items: center;
+                background-color: var(--palette-background-paper);
             }
 
             .header{
