@@ -910,7 +910,6 @@ export class SearchResults extends HTMLElement {
                     // ApplicationView.layout.sideMenu().appendChild(resultsPage.facetFilter)
 
                 } else if (evt.summary) {
-                    resultsPage.updateSummary(evt.summary)
                     tab.totalSpan.innerHTML = resultsPage.getTotal() + ""
                 }
 
@@ -1023,16 +1022,59 @@ export class SearchResultsPage extends HTMLElement {
                 background: var(--palette-divider);
              }
 
+             .header{
+                align-items: center;
+             }
+
+             @media (max-width: 600px) {
+                #container {
+                    flex-direction: column;
+                    
+                }
+
+                #facets{
+                    max-height: 200px;
+                }
+
+                .header{
+                    flex-direction: column;
+                    align-items: flex-start;
+                }
+
+                #summary{
+                    align-self: flex-end;
+                }
+
+                globular-search-results-page-contexts-selector {
+                    font-size: 1rem;
+                }
+
+                #results{
+                    padding-bottom: 100px;
+                }
+
+                @media (max-width: 650px) {
+                    .media-cards {
+                        justify-content: center;
+                    }
+                }
+
+                .media-cards {
+                    display: flex; 
+                    flex-wrap: wrap;
+                }
+             }
+
         </style>
         <div id="container">
-            <div id="facets" style="overflow: auto;">
+            <div id="facets" style="overflow: auto; margin-right: 5px;">
                 <slot  name="facets"></slot>
             </div>
             <div style="display: flex; flex-direction: column; width: 100%;">
-                <div class="header" style="display: flex; align-items: center;">
+                <div class="header" style="display: flex;">
                     <div style="display: flex; flex-wrap: wrap; flex-grow: 1; align-items: center;">
                         <globular-search-results-page-contexts-selector ></globular-search-results-page-contexts-selector>
-                        <span style="padding: 15px; font-size: 1rem;"> ${summary.getQuery()} <span id="total-span">${summary.getTotal()}</span> results (<span id="took-span">${summary.getTook().toFixed(3)}</span> ms)</span>
+                        <globular-search-results-pages-navigator></globular-search-results-pages-navigator>
                     </div>
                     <div id="summary">
                         <paper-icon-button id="search-result-icon-view-btn" style="" icon="icons:view-module"></paper-icon-button>
@@ -1042,20 +1084,36 @@ export class SearchResultsPage extends HTMLElement {
 
                 <div id="results" style="display: flex; flex-direction: column; overflow: auto;">
                     <div id="mosaic-view" style="display: block;">
-                        <slot name="mosaic_blogPosts" style="display: flex; flex-wrap: wrap;"></slot>
-                        <slot name="mosaic_videos" style="display: flex; flex-wrap: wrap;"></slot>
-                        <slot name="mosaic_titles" style="display: flex; flex-wrap: wrap;"></slot>
-                        <slot name="mosaic_audios" style="display: flex; flex-wrap: wrap;"></slot>
+                        <div class="media-cards">
+                            <slot name="mosaic_blogPosts"></slot>
+                        </div>
+                        <div class="media-cards">
+                            <slot name="mosaic_videos"></slot>
+                        </div>
+                        <div class="media-cards">
+                            <slot name="mosaic_titles"></slot>
+                        </div>
+                        <div class="media-cards">
+                            <slot name="mosaic_audios"></slot>
+                        </div>
                     </div>
                     <div id="list-view" style="display: none;">
-                        <slot name="list_blogPosts" style="display: flex; flex-wrap: wrap;"> </slot>
-                        <slot name="list_videos" style="display: flex; flex-wrap: wrap;"> </slot>
-                        <slot name="list_titles" style="display: flex; flex-wrap: wrap;"> </slot>
-                        <slot name="list_audios" style="display: flex; flex-wrap: wrap;"> </slot>
+                        <div class="media-cards">
+                            <slot name="list_blogPosts"> </slot>
+                        </div>
+                        <div class="media-cards">
+                            <slot name="list_videos"> </slot>
+                        </div>
+                        <div class="media-cards">
+                            <slot name="list_titles"> </slot>
+                        </div>
+                        <div class="media-cards">
+                            <slot name="list_audios"> </slot>
+                        </div>
                     </div>
                 </div>
 
-                <globular-search-results-pages-navigator></globular-search-results-pages-navigator>
+                
             </div>
            
 
@@ -1320,7 +1378,6 @@ export class SearchResultsPage extends HTMLElement {
                                 e.innerHTML = newText;
                                 e.classList.add("highlighted")
 
-                                // setheight: calc(100vh - 25px) back propertie.
                                 e.lowlight = () => {
                                     e.innerHTML = text;
                                     e.classList.remove("highlighted")
@@ -1351,12 +1408,13 @@ export class SearchResultsPage extends HTMLElement {
         // set the results height
         let results = this.shadowRoot.querySelector("#results")
         let p0 = getCoords(results)
-        results.style.height = `calc(100vh - ${p0.top}px)`
+        results.style.height = `calc(100vh - ${p0.top - 35 }px)`
 
         // set the facet height
         let facets = this.shadowRoot.querySelector("#facets")
-        let p1 = getCoords(facets)
-        facets.style.height = `calc(100vh - ${p1.top}px)`
+        let p1 = getCoords(this)
+        console.log(p1)
+        facets.style.height = `calc(100vh - ${p1.top - 80 }px)`
     }
 
     clear() {
@@ -1589,22 +1647,6 @@ export class SearchResultsPage extends HTMLElement {
             return blogPostInfo
         }
 
-    }
-
-    updateSummary(summary) {
-        if (!summary.getQuery) {
-            return
-        }
-
-        let totalSpan = this.shadowRoot.querySelector("#total-span")
-        totalSpan.innerText = this.getTotal() + ""
-
-        let tookSpan = this.shadowRoot.querySelector("#took-span")
-        let took = parseFloat(tookSpan.innerText)
-        took += summary.getTook()
-        tookSpan.innerText = took.toFixed(3) + ""
-
-        this.query = summary.getQuery()
     }
 
     displayListHit(hit, context) {
@@ -3165,6 +3207,17 @@ export class SearchResultsPagesNavigator extends HTMLElement {
                 border-radius: 5px;
             }
 
+            @media (max-width: 600px) {
+                #container{
+                    padding: 2px;
+                }
+
+                .pagination-btn{
+                    height: 30px;
+                    width: 30px;
+                }
+            }
+
             .pagination-btn:hover{
                 cursor: pointer;
                 -webkit-filter: invert(30%);
@@ -3259,11 +3312,11 @@ export class SearchResultsPageContextsSelector extends HTMLElement {
                     #container{
                         display: flex;
                         margin: 5px;
-                        margin-left: 20px;
+                        margin-left: 10px;
                     }
 
                     #container div{
-                        margin-right: 35px;
+                        margin-right: 15px;
                         align-items: center;
                     }
 

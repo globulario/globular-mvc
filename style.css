@@ -213,6 +213,10 @@ paper-card {
    background-color: transparent;
 }
 
+paper-button {
+   font-size: 1rem;
+}
+
 paper-button iron-icon {
    --iron-icon-fill-color: var(--palette-text-primary);
 }

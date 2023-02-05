@@ -49,6 +49,10 @@ export class Login extends HTMLElement {
                 cursor: pointer;
             }
 
+            paper-button {
+                font-size: 1rem;
+            }
+
         </style>
         <span id="login_div">
             <paper-button id="register_btn">register</paper-button>
