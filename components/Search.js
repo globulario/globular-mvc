@@ -60,123 +60,123 @@ export function getCoverDataUrl(callback, videoId, videoUrl, videoPath, globule)
         globule = Application.globular
     }
 
-    generatePeerToken(globule, token=>{
-            // set the url for the image.
-    let url = globule.config.Protocol + "://" + globule.domain
-    if (window.location != globule.domain) {
-        if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
-            url = globule.config.Protocol + "://" + window.location.host
+    generatePeerToken(globule, token => {
+        // set the url for the image.
+        let url = globule.config.Protocol + "://" + globule.domain
+        if (window.location != globule.domain) {
+            if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
+                url = globule.config.Protocol + "://" + window.location.host
+            }
         }
-    }
 
-    if (globule.config.Protocol == "https") {
-        if (globule.config.PortHttps != 443)
-            url += ":" + globule.config.PortHttps
-    } else {
-        if (globule.config.PortHttps != 80)
-            url += ":" + globule.config.PortHttp
-    }
-
-    // set the api call
-    url += "/get_video_cover_data_url"
-
-    // Set url query parameter.
-    url += "?domain=" + Model.domain
-    url += "&application=" + Model.application
-    if (localStorage.getItem("user_token") != undefined) {
-        url += "&token=" + localStorage.getItem("user_token")
-    }
-
-    url += "&id=" + videoId
-    url += "&url=" + videoUrl
-    url += "&path=" + videoPath
-
-    if (images[url] != null) {
-        callback(images[url])
-        return
-    }
-
-    var xhr = new XMLHttpRequest();
-    xhr.timeout = 1500
-    xhr.open('GET', url, true);
-    xhr.setRequestHeader("token", token);
-    xhr.setRequestHeader("application", Model.application);
-    xhr.setRequestHeader("domain", Model.domain);
-
-    // Set responseType to 'arraybuffer', we want raw binary data buffer
-    xhr.responseType = 'text';
-    xhr.onload = (rsp) => {
-        if (rsp.currentTarget.status == 200) {
-            images[url] = rsp.currentTarget.response
-            callback(rsp.currentTarget.response)
+        if (globule.config.Protocol == "https") {
+            if (globule.config.PortHttps != 443)
+                url += ":" + globule.config.PortHttps
         } else {
-            console.log("fail to create thumbnail ", videoId, videoUrl, videoPath)
+            if (globule.config.PortHttps != 80)
+                url += ":" + globule.config.PortHttp
         }
-    };
 
-    xhr.send();
+        // set the api call
+        url += "/get_video_cover_data_url"
+
+        // Set url query parameter.
+        url += "?domain=" + Model.domain
+        url += "&application=" + Model.application
+        if (localStorage.getItem("user_token") != undefined) {
+            url += "&token=" + localStorage.getItem("user_token")
+        }
+
+        url += "&id=" + videoId
+        url += "&url=" + videoUrl
+        url += "&path=" + videoPath
+
+        if (images[url] != null) {
+            callback(images[url])
+            return
+        }
+
+        var xhr = new XMLHttpRequest();
+        xhr.timeout = 1500
+        xhr.open('GET', url, true);
+        xhr.setRequestHeader("token", token);
+        xhr.setRequestHeader("application", Model.application);
+        xhr.setRequestHeader("domain", Model.domain);
+
+        // Set responseType to 'arraybuffer', we want raw binary data buffer
+        xhr.responseType = 'text';
+        xhr.onload = (rsp) => {
+            if (rsp.currentTarget.status == 200) {
+                images[url] = rsp.currentTarget.response
+                callback(rsp.currentTarget.response)
+            } else {
+                console.log("fail to create thumbnail ", videoId, videoUrl, videoPath)
+            }
+        };
+
+        xhr.send();
     })
 }
 
 // That function will be use to asscociate file with imdb information.
 export function getImdbInfo(id, callback, errorcallback, globule) {
 
-  generatePeerToken(globule, token=>{
-    if (titles[id]) {
-        if (titles[id].ID) {
-            callback(titles[id])
-        } else {
-            titles[id].callbacks.push(callback)
-        }
-        return
-    }
-
-    titles[id] = {}
-    titles[id].callbacks = []
-    titles[id].callbacks.push(callback)
-
-    let url = globule.config.Protocol + "://" + globule.domain
-    if (window.location != globule.domain) {
-        if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
-            url = globule.config.Protocol + "://" + window.location.host
-        }
-    }
-
-    if (globule.config.Protocol == "https") {
-        if (globule.config.PortHttps != 443)
-            url += ":" + globule.config.PortHttps
-    } else {
-        if (globule.config.PortHttps != 80)
-            url += ":" + globule.config.PortHttp
-    }
-
-    url += "/imdb_title?id=" + id
-
-    console.log("call imdb_title ", id)
-
-    var xmlhttp = new XMLHttpRequest();
-    xmlhttp.timeout = 10 * 1000
-    xmlhttp.onreadystatechange = function () {
-        if (this.readyState == 4 && (this.status == 201 || this.status == 200)) {
-            var obj = JSON.parse(this.responseText);
-            while (titles[obj.ID].callbacks.length > 0) {
-                let callback = titles[obj.ID].callbacks.pop()
-                callback(obj)
+    generatePeerToken(globule, token => {
+        if (titles[id]) {
+            if (titles[id].ID) {
+                callback(titles[id])
+            } else {
+                titles[id].callbacks.push(callback)
             }
-
-            titles[obj.ID] = obj
-            // Now I will 
-
-        } else if (this.readyState == 4) {
-            errorcallback("fail to get info from query " + url + " status " + this.status)
+            return
         }
-    };
 
-    xmlhttp.open("GET", url, true);
-    xmlhttp.setRequestHeader("domain", globule.domain);
+        titles[id] = {}
+        titles[id].callbacks = []
+        titles[id].callbacks.push(callback)
 
-    xmlhttp.send();
-  })
+        let url = globule.config.Protocol + "://" + globule.domain
+        if (window.location != globule.domain) {
+            if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
+                url = globule.config.Protocol + "://" + window.location.host
+            }
+        }
+
+        if (globule.config.Protocol == "https") {
+            if (globule.config.PortHttps != 443)
+                url += ":" + globule.config.PortHttps
+        } else {
+            if (globule.config.PortHttps != 80)
+                url += ":" + globule.config.PortHttp
+        }
+
+        url += "/imdb_title?id=" + id
+
+        console.log("call imdb_title ", id)
+
+        var xmlhttp = new XMLHttpRequest();
+        xmlhttp.timeout = 10 * 1000
+        xmlhttp.onreadystatechange = function () {
+            if (this.readyState == 4 && (this.status == 201 || this.status == 200)) {
+                var obj = JSON.parse(this.responseText);
+                while (titles[obj.ID].callbacks.length > 0) {
+                    let callback = titles[obj.ID].callbacks.pop()
+                    callback(obj)
+                }
+
+                titles[obj.ID] = obj
+                // Now I will 
+
+            } else if (this.readyState == 4) {
+                errorcallback("fail to get info from query " + url + " status " + this.status)
+            }
+        };
+
+        xmlhttp.open("GET", url, true);
+        xmlhttp.setRequestHeader("domain", globule.domain);
+
+        xmlhttp.send();
+    })
 }
 
 function playTitleListener(player, title, indexPath, globule) {
@@ -550,7 +550,7 @@ export class SearchBar extends HTMLElement {
             }
 
             #search-bar {
-                width: 350px;
+                
                 display: flex;
                 align-items: center;
                 border-radius: 22px;
@@ -564,6 +564,12 @@ export class SearchBar extends HTMLElement {
                 border: 1px solid var(--palette-divider);
                 position: relative;
             }
+
+            @media (min-width: 500px) {
+                #search-bar {
+                    min-width: 325px;
+                }
+             }
 
             paper-checkbox {
                 margin-left: 16px;
@@ -755,17 +761,16 @@ export class SearchResults extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
            
+            :host{
+                padding: 10px;
+            }
 
             #container{
-                width: 95%;
-                margin-left: 2.5%;
-                height: 100%;
+                min-height: calc(100vh - 85px);
                 flex-direction: column;
-                margin-top: 15px;
                 background-color: var(--palette-background-paper);
                 color: var(--palette-text-primary);
-                margin-top: 10px;
-                margin-bottom: 10px;
+                width: calc(100vw - 25px);
             }
 
             .header {
@@ -823,11 +828,11 @@ export class SearchResults extends HTMLElement {
             Model.eventHub.publish("_hide_search_results_", {}, true)
 
             // Hide the search results...
-            let facetFilters = ApplicationView.layout.sideMenu().getElementsByTagName("globular-facet-search-filter")
+            /*let facetFilters = ApplicationView.layout.sideMenu().getElementsByTagName("globular-facet-search-filter")
             for (var i = 0; i < facetFilters.length; i++) {
                 let f = facetFilters[i]
                 f.parentNode.removeChild(f)
-            }
+            }*/
         }
 
         // So here I will create a new Search Result page if none exist...
@@ -871,12 +876,6 @@ export class SearchResults extends HTMLElement {
                         this.tabs.selected = index;
                         page.style.display = ""
 
-                        // Hide previous facets...
-                        let facetFilters = ApplicationView.layout.sideMenu().getElementsByTagName("globular-facet-search-filter")
-                        for (var i = 0; i < facetFilters.length; i++) {
-                            let f = facetFilters[i]
-                            f.style.display = "none"
-                        }
 
                         // display the filters...
                         page.facetFilter.style.display = ""
@@ -907,7 +906,9 @@ export class SearchResults extends HTMLElement {
                     }
                     this.appendChild(resultsPage)
                     this.shadowRoot.querySelector("#empty-search-msg").style.display = "none";
-                    ApplicationView.layout.sideMenu().appendChild(resultsPage.facetFilter)
+
+                    // ApplicationView.layout.sideMenu().appendChild(resultsPage.facetFilter)
+
                 } else if (evt.summary) {
                     resultsPage.updateSummary(evt.summary)
                     tab.totalSpan.innerHTML = resultsPage.getTotal() + ""
@@ -917,10 +918,7 @@ export class SearchResults extends HTMLElement {
     }
 
     connectedCallback() {
-        let pages = this.querySelectorAll("globular-search-results-page")
-        pages.forEach(page => {
-            ApplicationView.layout.sideMenu().appendChild(page.facetFilter)
-        })
+
     }
 
     isEmpty() {
@@ -939,7 +937,7 @@ export class SearchResults extends HTMLElement {
         let page = this.querySelector(`#${uuid}-results-page`)
         page.parentNode.removeChild(page)
         // page.facetFilter.parentNode.removeChild(page.facetFilter)
-        ApplicationView.layout.sideMenu().removeChild(page.facetFilter)
+        //ApplicationView.layout.sideMenu().removeChild(page.facetFilter)
 
         let tab = this.tabs.querySelector(`#${uuid}-tab`)
         tab.parentNode.removeChild(tab)
@@ -988,11 +986,8 @@ export class SearchResultsPage extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
            
-
             #container {
                 display: flex;
-                flex-direction: column;
-
             }
 
             #summary {
@@ -1016,32 +1011,69 @@ export class SearchResultsPage extends HTMLElement {
                 font-size: 1rem;
             }
 
+            ::-webkit-scrollbar {
+                width: 5px;
+             }
+             
+             ::-webkit-scrollbar-track {
+                background: var(--palette-background-default);
+             }
+             
+             ::-webkit-scrollbar-thumb {
+                background: var(--palette-divider);
+             }
+
         </style>
-        <div class="container">
-            <div id="summary">
-                <span style="padding: 15px;"> ${summary.getQuery()} <span id="total-span">${summary.getTotal()}</span> results (<span id="took-span">${summary.getTook().toFixed(3)}</span> ms)</span>
-                <paper-icon-button id="search-result-icon-view-btn" style="" icon="icons:view-module"></paper-icon-button>
-                <paper-icon-button class="disable"  id="search-result-lst-view-btn" icon="icons:view-list"></paper-icon-button>
+        <div id="container">
+            <div id="facets" style="overflow: auto;">
+                <slot  name="facets"></slot>
             </div>
-            <div id="webpage-search-results" style="display: flex; flex-direction: column;">
-                <globular-search-results-page-contexts-selector></globular-search-results-page-contexts-selector>
+            <div style="display: flex; flex-direction: column; width: 100%;">
+                <div class="header" style="display: flex; align-items: center;">
+                    <div style="display: flex; flex-wrap: wrap; flex-grow: 1; align-items: center;">
+                        <globular-search-results-page-contexts-selector ></globular-search-results-page-contexts-selector>
+                        <span style="padding: 15px; font-size: 1rem;"> ${summary.getQuery()} <span id="total-span">${summary.getTotal()}</span> results (<span id="took-span">${summary.getTook().toFixed(3)}</span> ms)</span>
+                    </div>
+                    <div id="summary">
+                        <paper-icon-button id="search-result-icon-view-btn" style="" icon="icons:view-module"></paper-icon-button>
+                        <paper-icon-button class="disable"  id="search-result-lst-view-btn" icon="icons:view-list"></paper-icon-button>
+                    </div>
+                </div>
+
+                <div id="results" style="display: flex; flex-direction: column; overflow: auto;">
+                    <div id="mosaic-view" style="display: block;">
+                        <slot name="mosaic_blogPosts" style="display: flex; flex-wrap: wrap;"></slot>
+                        <slot name="mosaic_videos" style="display: flex; flex-wrap: wrap;"></slot>
+                        <slot name="mosaic_titles" style="display: flex; flex-wrap: wrap;"></slot>
+                        <slot name="mosaic_audios" style="display: flex; flex-wrap: wrap;"></slot>
+                    </div>
+                    <div id="list-view" style="display: none;">
+                        <slot name="list_blogPosts" style="display: flex; flex-wrap: wrap;"> </slot>
+                        <slot name="list_videos" style="display: flex; flex-wrap: wrap;"> </slot>
+                        <slot name="list_titles" style="display: flex; flex-wrap: wrap;"> </slot>
+                        <slot name="list_audios" style="display: flex; flex-wrap: wrap;"> </slot>
+                    </div>
+                </div>
+
                 <globular-search-results-pages-navigator></globular-search-results-pages-navigator>
             </div>
-            <div id="mosaic-view" style="display: block;">
-                <slot name="mosaic_blogPosts" style="display: flex; flex-wrap: wrap;"></slot>
-                <slot name="mosaic_videos" style="display: flex; flex-wrap: wrap;"></slot>
-                <slot name="mosaic_titles" style="display: flex; flex-wrap: wrap;"></slot>
-                <slot name="mosaic_audios" style="display: flex; flex-wrap: wrap;"></slot>
-            </div>
-            <div id="list-view" style="display: none;">
-                <slot name="list_blogPosts" style="display: flex; flex-wrap: wrap;"> </slot>
-                <slot name="list_videos" style="display: flex; flex-wrap: wrap;"> </slot>
-                <slot name="list_titles" style="display: flex; flex-wrap: wrap;"> </slot>
-                <slot name="list_audios" style="display: flex; flex-wrap: wrap;"> </slot>
-            </div>
+           
 
         </div>
         `
+
+        // display hint about more results can be displayed.
+        let resultsDiv = this.shadowRoot.querySelector("#results")
+        resultsDiv.onscroll = () => {
+            const header = this.shadowRoot.querySelector(".header")
+            if (resultsDiv.scrollTop > 0) {
+                header.style.boxShadow = "rgb(0 0 0 / 16%) 0px 3px 6px, rgb(0 0 0 / 23%) 0px 3px 6px"
+                header.style.borderBottom = "1px solid var(--palette-divider)"
+            } else {
+                header.style.boxShadow = ""
+                header.style.borderBottom = ""
+            }
+        }
 
         this.navigator = this.shadowRoot.querySelector("globular-search-results-pages-navigator")
         this.navigator.setSearchResultsPage(this)
@@ -1052,6 +1084,8 @@ export class SearchResultsPage extends HTMLElement {
 
         // left or right side filter...
         this.facetFilter = new FacetSearchFilter(this)
+        this.facetFilter.slot = "facets"
+        this.appendChild(this.facetFilter)
 
         // Get the tow button...
         this.searchReusltLstViewBtn = this.shadowRoot.querySelector("#search-result-lst-view-btn")
@@ -1197,7 +1231,7 @@ export class SearchResultsPage extends HTMLElement {
 
                             })
                         }
-                    }else{
+                    } else {
                         // console.log(hit)
                         // There is facet for blogpost..? categorie, keywords etc...
                     }
@@ -1237,7 +1271,6 @@ export class SearchResultsPage extends HTMLElement {
                     <div style="display: flex; align-items: baseline; margin-left: 2px;">
                         <span style="font-size: 1.1rem; padding-right: 10px;">${parseFloat(r.getRank() / 1000).toFixed(3)} </span> 
                         <div id="page-${uuid}-lnk" style="font-size: 1.1rem; font-weight: 400; text-decoration: underline; ">${doc.PageName}</div>
-                        
                     </div>
                     <div id="snippets-${uuid}-div" style="padding: 15px; font-size: 1.1rem"></div>
                     <span style="border-bottom: 1px solid var(--palette-action-disabled); width: 80%;"></span>
@@ -1287,7 +1320,7 @@ export class SearchResultsPage extends HTMLElement {
                                 e.innerHTML = newText;
                                 e.classList.add("highlighted")
 
-                                // set back propertie.
+                                // setheight: calc(100vh - 25px) back propertie.
                                 e.lowlight = () => {
                                     e.innerHTML = text;
                                     e.classList.remove("highlighted")
@@ -1313,6 +1346,19 @@ export class SearchResultsPage extends HTMLElement {
         })
     }
 
+    connectedCallback() {
+
+        // set the results height
+        let results = this.shadowRoot.querySelector("#results")
+        let p0 = getCoords(results)
+        results.style.height = `calc(100vh - ${p0.top}px)`
+
+        // set the facet height
+        let facets = this.shadowRoot.querySelector("#facets")
+        let p1 = getCoords(facets)
+        facets.style.height = `calc(100vh - ${p1.top}px)`
+    }
+
     clear() {
         this.hits = {}
     }
@@ -1323,6 +1369,8 @@ export class SearchResultsPage extends HTMLElement {
         while (this.children.length > 0) {
             this.removeChild(this.children[0])
         }
+
+        this.appendChild(this.facetFilter)
 
 
         this.contexts.forEach(context => {
@@ -1955,7 +2003,7 @@ export class SearchVideoCard extends HTMLElement {
                 height: 100%;
                 max-width: 320px;
                 margin: 10px;
-                max-width: 320px;
+                min-width: 320px;
                 height: 285px;
                 margin: 10px;
                 overflow: hidden;
@@ -2029,7 +2077,7 @@ export class SearchVideoCard extends HTMLElement {
             </div>
         </div>
         `
-        
+
         this.videoPreview = this.shadowRoot.querySelector("#preview-image")
     }
 
@@ -2175,7 +2223,7 @@ export class SearchVideoCard extends HTMLElement {
         let preview = this.shadowRoot.querySelector("#preview-image")
         let card = this.shadowRoot.querySelector(".video-card")
 
-        if(video.getPoster()){
+        if (video.getPoster()) {
             thumbnail.src = video.getPoster().getContenturl()
         }
 
@@ -2220,14 +2268,6 @@ export class SearchFlipCard extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
            
-            @media only screen and (min-width: 1800px){
-                globular-search-results {
-                    grid-row-start: 1;
-                    grid-column-start: 1;
-                    grid-column-end: 18;
-                }
-            }
-
             .title-card{
                 margin: 7.5px; 
                 display: flex; 
@@ -2486,22 +2526,22 @@ export class SearchTitleDetail extends HTMLElement {
         this.titleCard = this.shadowRoot.querySelector(".search-title-detail")
         this.titlePreview = this.shadowRoot.querySelector("#title-preview")
 
-        this.titleCard.onmouseover = (evt) =>{
+        this.titleCard.onmouseover = (evt) => {
             this.titlePreview.play()
         }
 
-        this.titleCard.onmouseleave = (evt)=> {
+        this.titleCard.onmouseleave = (evt) => {
             this.titlePreview.pause()
         }
 
         this.episodePreview = this.shadowRoot.querySelector("#epsiode-preview")
-        let episodesLst = this.shadowRoot.querySelector(".season-episodes-lst") 
+        let episodesLst = this.shadowRoot.querySelector(".season-episodes-lst")
 
         episodesLst.onmouseover = (evt) => {
             this.episodePreview.play()
         }
 
-        episodesLst.onmouseleave = (evt) =>{
+        episodesLst.onmouseleave = (evt) => {
             this.episodePreview.pause()
         }
     }
@@ -2752,13 +2792,6 @@ export class FacetSearchFilter extends HTMLElement {
         this.page = page
         this.panels = {};
 
-        // hide existing facet filters...
-        let facetFilters = ApplicationView.layout.sideMenu().getElementsByTagName("globular-facet-search-filter")
-        for (var i = 0; i < facetFilters.length; i++) {
-            let f = facetFilters[i]
-            f.style.display = "none"
-        }
-
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
 
@@ -2766,7 +2799,6 @@ export class FacetSearchFilter extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
            
-
             #container{
                 font-size: 1.17rem;
                 padding: 10px;

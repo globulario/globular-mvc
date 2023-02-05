@@ -75,7 +75,7 @@ export class SharePanel extends HTMLElement {
                 display: flex;
                 flex-direction: column;
                 background-color: var(--palette-background-paper);
-                width: 95%;
+                width: 100%;
                 margin-left: 2.5%;
                 padding-left: 10px;
             }
@@ -387,6 +387,7 @@ export class ShareResourceWizard extends HTMLElement {
                 flex-direction: column;
                 border-left: 1px solid var(--palette-divider);
                 border-right: 1px solid var(--palette-divider);
+                background-color: var(--palette-background-paper);
             }
 
             .header {

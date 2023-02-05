@@ -23,22 +23,29 @@ export class MediaWatching extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
            
+            :host{
+                padding: 10px;
+            }
+
             #container {
                 display: flex;
                 flex-direction: column;
                 background-color: var(--palette-background-paper);
-                width: 95%;
-                margin-left: 2.5%;
+                width: calc(100vw - 25px);
+                min-height: calc(100vh - 85px);
             }
 
+            
             #video_div{
                 display: flex;
                 flex-wrap: wrap;
+                justify-content: center;
             }
 
             #title_div{
                 display: flex;
                 flex-wrap: wrap;
+                justify-content: center;
             }
 
             h1{
@@ -61,6 +68,17 @@ export class MediaWatching extends HTMLElement {
             paper-card h1 {
                 font-size: 1.65rem;
             }
+
+            .media-cards {
+                display: flex; 
+                flex-wrap: wrap;
+            }
+
+            @media (max-width: 650px) {
+                .media-cards {
+                    justify-content: center;
+                }
+            }
             
         </style>
         <paper-card id="container">
@@ -69,16 +87,17 @@ export class MediaWatching extends HTMLElement {
                 <h1 style="flex-grow: 1;">Continue Watching...</h1>
                 <paper-icon-button id="close-btn" icon="icons:close"></paper-icon-button>
             </div>
+
             <div id="video_div" style="display: none; flex-direction: column;">
                 <h2 id="video-title">Video(s)</h2>
-                <div style="display: flex; flex-wrap: wrap;">
+                <div class="media-cards">
                     <slot  name="video"></slot>
                 </div>
             </div>
             
             <div id="title_div" style="display: none; flex-direction: column;">
                 <h2 id="movie-title">Title(s)</h2>
-                <div style="display: flex; flex-wrap: wrap;">
+                <div class="media-cards">
                     <slot name="title"></slot>
                 </div>
             </div>

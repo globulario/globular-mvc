@@ -130,6 +130,10 @@ export class Wizard extends HTMLElement {
                 cursor: pointer;
             }
 
+            .card-actions{
+                display: flex;
+            }
+
         </style>
 
         <div id="container">

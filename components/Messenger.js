@@ -155,6 +155,13 @@ export class MessengerMenu extends Menu {
               padding-right: 25px;
             }
 
+            paper-tabs {
+                /* custom CSS property */
+                --paper-tabs-selection-bar-color: var(--palette-primary-main); 
+                color: var(--palette-text-primary);
+                --paper-tab-ink: var(--palette-action-disabled);
+            }
+
             paper-tab paper-badge {
                 --paper-badge-background: var(--palette-warning-main);
                 --paper-badge-width: 16px;

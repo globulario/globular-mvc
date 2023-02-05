@@ -330,6 +330,7 @@ export class ContentManager extends HTMLElement {
             #toolbar {
                 display: flex;
                 z-index: 100;
+                align-items: center;
             }
 
             #edit-create-css-style-btn{
@@ -503,7 +504,7 @@ export class ContentManager extends HTMLElement {
             // Delete style...
             let deleteStyle = (style) => {
                 // delete the page.
-                this.deleteStyle(style, () => {
+                this.deleteStyle(style, () => {globular-content-manager
                     if (this.styleManager.toDelete.length > 0) {
                         let style = this.styleManager.toDelete.pop()
                         deleteStyle(style)

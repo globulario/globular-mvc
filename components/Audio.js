@@ -335,7 +335,7 @@ export class AudioPlayer extends HTMLElement {
 
                 <div id="waveform"></div>
                 <div class="buttons">
-                    <div style="flex-grow: 1; display: flex; align-items: center; width: 95%;">
+                    <div style="flex-grow: 1; display: flex; align-items: center; width: 100%;">
                         <paper-slider style="flex-grow: 1;"></paper-slider>
                         <div  style="display: flex; align-items: center; padding-right: 10px;">
                             <span id="current-time"></span> <span>/</span> <span id="total-time"></span>

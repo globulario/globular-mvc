@@ -96,9 +96,6 @@ export class ApplicationView extends View {
   /** The call history menu */
   private callsHistoryMenu: CallsHistoryMenu;
 
-  /** The  overflow menu*/
-  private overFlowMenu: OverflowMenu;
-
   /** The nofitication panel */
   private notificationMenu: NotificationMenu;
 
@@ -206,11 +203,8 @@ export class ApplicationView extends View {
     // This contain account/application notification
     this.notificationMenu = new NotificationMenu();
 
-    // The overflow menu is use to hide menu that dosen't fix in the visual.
-    this.overFlowMenu = new OverflowMenu();
-
     // The applicaiton menu
-    this.hasApplicationsMenu = true;
+    this.hasApplicationsMenu = false; // set to true if needed in the futur, console is the only one application at this time.
     this.applicationsMenu = new ApplicationsMenu();
 
     // The concact menu
@@ -361,13 +355,16 @@ export class ApplicationView extends View {
     this.settingsPanel.id = "globular-setting-panel"
 
     // init listener's in the layout.
+
     ApplicationView.layout.init();
 
     this.login_.init();
     this.accountMenu.init();
     this.applicationsMenu.init();
 
+    
     ApplicationView.layout.navigation().appendChild(this.contentManager)
+
     this.contentManager.init();
 
     // Set the current webpage...
@@ -771,14 +768,13 @@ export class ApplicationView extends View {
       let w = ApplicationView.layout.width();
 
       // TODO try to set it in the css propertie instead...
-      if (w <= 500) {
+      if (w <= 700) {
 
         if (this.hasApplicationsMenu) {
-          this.overFlowMenu
-            .getMenuDiv()
+          this.getSideMenu()
             .insertBefore(
               this.applicationsMenu,
-              this.overFlowMenu.getMenuDiv().firstChild
+              this.getSideMenu().firstChild
             );
 
           this.applicationsMenu.getMenuDiv().classList.remove("bottom");
@@ -786,47 +782,46 @@ export class ApplicationView extends View {
         }
 
         if (this.isLogin) {
-          this.overFlowMenu.show();
-
-          this.overFlowMenu.getMenuDiv().appendChild(this.systemInfosMenu);
+    
+          this.getSideMenu().appendChild(this.systemInfosMenu);
           this.systemInfosMenu.getMenuDiv().classList.remove("bottom");
           this.systemInfosMenu.getMenuDiv().classList.add("left");
 
-          this.overFlowMenu.getMenuDiv().appendChild(this.blogEditingMenu);
+          this.getSideMenu().appendChild(this.blogEditingMenu);
           this.blogEditingMenu.getMenuDiv().classList.remove("bottom");
           this.blogEditingMenu.getMenuDiv().classList.add("left");
 
-          this.overFlowMenu.getMenuDiv().appendChild(this.watchingMenu);
+          this.getSideMenu().appendChild(this.watchingMenu);
           this.watchingMenu.getMenuDiv().classList.remove("bottom");
           this.watchingMenu.getMenuDiv().classList.add("left");
 
           
-          this.overFlowMenu.getMenuDiv().appendChild(this.shareMenu);
+          this.getSideMenu().appendChild(this.shareMenu);
           this.shareMenu.getMenuDiv().classList.remove("bottom");
           this.shareMenu.getMenuDiv().classList.add("left");
 
 
-          this.overFlowMenu.getMenuDiv().appendChild(this.filesMenu);
+          this.getSideMenu().appendChild(this.filesMenu);
           this.filesMenu.getMenuDiv().classList.remove("bottom");
           this.filesMenu.getMenuDiv().classList.add("left");
 
-          this.overFlowMenu.getMenuDiv().appendChild(this.contactsMenu);
+          this.getSideMenu().appendChild(this.contactsMenu);
           this.contactsMenu.getMenuDiv().classList.remove("bottom");
           this.contactsMenu.getMenuDiv().classList.add("left");
 
-          this.overFlowMenu.getMenuDiv().appendChild(this.callsHistoryMenu);
+          this.getSideMenu().appendChild(this.callsHistoryMenu);
           this.callsHistoryMenu.getMenuDiv().classList.remove("bottom");
           this.callsHistoryMenu.getMenuDiv().classList.add("left");
 
-          this.overFlowMenu.getMenuDiv().appendChild(this.messengerMenu);
+          this.getSideMenu().appendChild(this.messengerMenu);
           this.messengerMenu.getMenuDiv().classList.remove("bottom");
           this.messengerMenu.getMenuDiv().classList.add("left");
 
-          this.overFlowMenu.getMenuDiv().appendChild(this.notificationMenu);
+          this.getSideMenu().appendChild(this.notificationMenu);
           this.notificationMenu.getMenuDiv().classList.remove("bottom");
           this.notificationMenu.getMenuDiv().classList.add("left");
 
-          this.overFlowMenu.getMenuDiv().appendChild(this.accountMenu);
+          this.getSideMenu().appendChild(this.accountMenu);
           this.accountMenu.getMenuDiv().classList.remove("bottom");
           this.accountMenu.getMenuDiv().classList.add("left");
         }
@@ -843,9 +838,8 @@ export class ApplicationView extends View {
           this.applicationsMenu.getMenuDiv().classList.add("bottom");
         }
         if (this.isLogin) {
-          this.overFlowMenu.hide();
-
           
+          // set back menu item to toolbar...
           ApplicationView.layout.toolbar().appendChild(this.systemInfosMenu);
           this.systemInfosMenu.getMenuDiv().classList.remove("left");
           this.systemInfosMenu.getMenuDiv().classList.add("bottom");
@@ -1040,10 +1034,6 @@ export class ApplicationView extends View {
     ApplicationView.layout.toolbar().appendChild(this.notificationMenu);
     ApplicationView.layout.toolbar().appendChild(this.accountMenu);
 
-    // Append the over flow menu.
-    ApplicationView.layout.toolbar().appendChild(this.overFlowMenu);
-
-    this.overFlowMenu.hide(); // not show it at first.
     this.accountMenu.setAccount(account);
 
     this.settingsPanel.innerHTML = ""; // remove the content of the setting panel.
@@ -1113,8 +1103,6 @@ export class ApplicationView extends View {
    */
   onLogout() {
     this.isLogin = false;
-
-    this.overFlowMenu.hide(); // not show it at first.
 
     /** implement it as needed */
     ApplicationView.layout.toolbar().appendChild(this.login_);
@@ -1250,7 +1238,6 @@ export class ApplicationView extends View {
 
         paper-input{
           flex-grow: 1; 
-          min-width:350px;
         }
 
       </style>

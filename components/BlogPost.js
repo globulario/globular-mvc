@@ -833,7 +833,7 @@ export class BlogPosts extends HTMLElement {
            
 
             #container{
-                width: 95%;
+                width: 100%;
                 margin-left: 2.5%;
                 display: flex;
                 flex-direction: column;

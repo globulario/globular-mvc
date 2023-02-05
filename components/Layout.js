@@ -100,6 +100,7 @@ export class Layout extends HTMLElement {
           
           ::slotted(#title) {
             display: flex;
+            flex-grow: 1;
             align-items: center;
             font-family: var(--font-familly);
             font-weight: 400;
