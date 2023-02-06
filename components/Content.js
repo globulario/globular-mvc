@@ -311,7 +311,6 @@ export class ContentManager extends HTMLElement {
 
             #container{
                 display: flex;
-                align-items: center;
             }
 
             .vertical{
@@ -337,11 +336,16 @@ export class ContentManager extends HTMLElement {
                 position: relative;
             }
 
+            @media (max-width: 1024px) {
+                #toolbar {
+                    display: none;
+                }
+            }
+
         </style>
 
 
         <div id="container">
-
             <slot></slot>
             <div id="toolbar">
                 <div style="position: relative;">

@@ -11,7 +11,6 @@ import { Layout } from "./components/Layout";
 import { Login } from "./components/Login";
 import { AccountMenu } from "./components/Account";
 import { NotificationMenu } from "./components/Notification";
-import { OverflowMenu } from "./components/Menu";
 import { ApplicationsMenu } from "./components/Applications";
 import { Camera } from "./components/Camera";
 import { FilesMenu } from "./components/File";
@@ -362,7 +361,7 @@ export class ApplicationView extends View {
     this.accountMenu.init();
     this.applicationsMenu.init();
 
-    
+
     ApplicationView.layout.navigation().appendChild(this.contentManager)
 
     this.contentManager.init();
@@ -658,7 +657,7 @@ export class ApplicationView extends View {
 
       }, true)
 
-      Model.eventHub.subscribe("_display_share_panel_event_",
+    Model.eventHub.subscribe("_display_share_panel_event_",
       uuid => { },
       evt => {
 
@@ -670,7 +669,7 @@ export class ApplicationView extends View {
 
       }, true)
 
-      Model.eventHub.subscribe("_display_system_infos_panel_event_",
+    Model.eventHub.subscribe("_display_system_infos_panel_event_",
       uuid => { },
       evt => {
 
@@ -768,7 +767,7 @@ export class ApplicationView extends View {
       let w = ApplicationView.layout.width();
 
       // TODO try to set it in the css propertie instead...
-      if (w <= 700) {
+      if (w < 700) {
 
         if (this.hasApplicationsMenu) {
           this.getSideMenu()
@@ -777,53 +776,40 @@ export class ApplicationView extends View {
               this.getSideMenu().firstChild
             );
 
-          this.applicationsMenu.getMenuDiv().classList.remove("bottom");
-          this.applicationsMenu.getMenuDiv().classList.add("left");
+          this.applicationsMenu.shrink()
         }
 
         if (this.isLogin) {
-    
+
           this.getSideMenu().appendChild(this.systemInfosMenu);
-          this.systemInfosMenu.getMenuDiv().classList.remove("bottom");
-          this.systemInfosMenu.getMenuDiv().classList.add("left");
+          this.systemInfosMenu.shrink()
 
           this.getSideMenu().appendChild(this.blogEditingMenu);
-          this.blogEditingMenu.getMenuDiv().classList.remove("bottom");
-          this.blogEditingMenu.getMenuDiv().classList.add("left");
+          this.blogEditingMenu.shrink()
 
           this.getSideMenu().appendChild(this.watchingMenu);
-          this.watchingMenu.getMenuDiv().classList.remove("bottom");
-          this.watchingMenu.getMenuDiv().classList.add("left");
+          this.watchingMenu.shrink()
 
-          
           this.getSideMenu().appendChild(this.shareMenu);
-          this.shareMenu.getMenuDiv().classList.remove("bottom");
-          this.shareMenu.getMenuDiv().classList.add("left");
-
+          this.shareMenu.shrink()
 
           this.getSideMenu().appendChild(this.filesMenu);
-          this.filesMenu.getMenuDiv().classList.remove("bottom");
-          this.filesMenu.getMenuDiv().classList.add("left");
+          this.filesMenu.shrink()
 
           this.getSideMenu().appendChild(this.contactsMenu);
-          this.contactsMenu.getMenuDiv().classList.remove("bottom");
-          this.contactsMenu.getMenuDiv().classList.add("left");
+          this.contactsMenu.shrink()
 
           this.getSideMenu().appendChild(this.callsHistoryMenu);
-          this.callsHistoryMenu.getMenuDiv().classList.remove("bottom");
-          this.callsHistoryMenu.getMenuDiv().classList.add("left");
+          this.callsHistoryMenu.shrink()
 
           this.getSideMenu().appendChild(this.messengerMenu);
-          this.messengerMenu.getMenuDiv().classList.remove("bottom");
-          this.messengerMenu.getMenuDiv().classList.add("left");
+          this.messengerMenu.shrink()
 
           this.getSideMenu().appendChild(this.notificationMenu);
-          this.notificationMenu.getMenuDiv().classList.remove("bottom");
-          this.notificationMenu.getMenuDiv().classList.add("left");
+          this.notificationMenu.shrink()
 
           this.getSideMenu().appendChild(this.accountMenu);
-          this.accountMenu.getMenuDiv().classList.remove("bottom");
-          this.accountMenu.getMenuDiv().classList.add("left");
+          this.accountMenu.shrink()
         }
       } else {
         if (this.hasApplicationsMenu) {
@@ -834,51 +820,40 @@ export class ApplicationView extends View {
               ApplicationView.layout.toolbar().firstChild
             );
 
-          this.applicationsMenu.getMenuDiv().classList.remove("left");
-          this.applicationsMenu.getMenuDiv().classList.add("bottom");
+          this.applicationsMenu.expand()
         }
         if (this.isLogin) {
-          
+
           // set back menu item to toolbar...
           ApplicationView.layout.toolbar().appendChild(this.systemInfosMenu);
-          this.systemInfosMenu.getMenuDiv().classList.remove("left");
-          this.systemInfosMenu.getMenuDiv().classList.add("bottom");
+          this.systemInfosMenu.expand()
 
           ApplicationView.layout.toolbar().appendChild(this.blogEditingMenu);
-          this.blogEditingMenu.getMenuDiv().classList.remove("left");
-          this.blogEditingMenu.getMenuDiv().classList.add("bottom");
+          this.blogEditingMenu.expand()
 
           ApplicationView.layout.toolbar().appendChild(this.watchingMenu);
-          this.watchingMenu.getMenuDiv().classList.remove("left");
-          this.watchingMenu.getMenuDiv().classList.add("bottom");
+          this.watchingMenu.expand()
 
           ApplicationView.layout.toolbar().appendChild(this.shareMenu);
-          this.shareMenu.getMenuDiv().classList.remove("left");
-          this.shareMenu.getMenuDiv().classList.add("bottom");
+          this.shareMenu.expand()
 
           ApplicationView.layout.toolbar().appendChild(this.filesMenu);
-          this.filesMenu.getMenuDiv().classList.remove("left");
-          this.filesMenu.getMenuDiv().classList.add("bottom");
+          this.filesMenu.expand()
 
           ApplicationView.layout.toolbar().appendChild(this.contactsMenu);
-          this.contactsMenu.getMenuDiv().classList.remove("left");
-          this.contactsMenu.getMenuDiv().classList.add("bottom");
+          this.contactsMenu.expand()
 
           ApplicationView.layout.toolbar().appendChild(this.callsHistoryMenu);
-          this.callsHistoryMenu.getMenuDiv().classList.remove("left");
-          this.callsHistoryMenu.getMenuDiv().classList.add("bottom");
+          this.callsHistoryMenu.expand()
 
           ApplicationView.layout.toolbar().appendChild(this.messengerMenu);
-          this.messengerMenu.getMenuDiv().classList.remove("left");
-          this.messengerMenu.getMenuDiv().classList.add("bottom");
+          this.messengerMenu.expand()
 
           ApplicationView.layout.toolbar().appendChild(this.notificationMenu);
-          this.notificationMenu.getMenuDiv().classList.remove("left");
-          this.notificationMenu.getMenuDiv().classList.add("bottom");
+          this.notificationMenu.expand()
 
           ApplicationView.layout.toolbar().appendChild(this.accountMenu);
-          this.accountMenu.getMenuDiv().classList.remove("left");
-          this.accountMenu.getMenuDiv().classList.add("bottom");
+          this.accountMenu.expand()
         }
       }
     });

@@ -316,7 +316,7 @@ export class NotificationMenu extends Menu {
                     position: absolute;
                     display: flex;
                     top: 0px;
-                    right: -5px;
+                    left: -5px;
                     background-color: var(--palette-secondary-main);
                     border-radius: 10px;
                     width: 20px;

@@ -22,16 +22,16 @@
            
 
             #container{
-                display: grid;
-                grid-gap: 1em;
-
-                /** Position Element on the grid */
-                grid-template-columns: repeat(16, 1fr);
+                display: flex;
+                justify-content: center;
+                padding-left: 10px;
+                padding-right: 10px;
+                overflow: hidden;
+                min-height: calc(100vh - 65px);
             }
 
-            #container {
 
-            }
+
 
         </style>
 

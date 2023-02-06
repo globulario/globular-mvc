@@ -72,12 +72,12 @@ export class PeersManager extends HTMLElement {
                     display: flex;
                     flex-direction: column;
                     position: relative;
-                    min-width: 500px;
+                    min-width: 355px;
                 }
 
                 .card-content {
-                    min-width: 680px;
-                    max-width: 680px;
+                    min-width: 355px;
+                    
                     padding: 0px;
                 }
      
@@ -349,6 +349,12 @@ export class PeerPanel extends HTMLElement {
                 padding-left: 30px;
                 padding-right: 30px;
                 padding-bottom: 10px;
+            }
+
+            #content {
+                margin: 10px;
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
             }
 
         </style>

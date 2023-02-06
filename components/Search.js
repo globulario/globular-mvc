@@ -1012,6 +1012,7 @@ export class SearchResultsPage extends HTMLElement {
 
             ::-webkit-scrollbar {
                 width: 5px;
+                height: 5px;
              }
              
              ::-webkit-scrollbar-track {
@@ -2506,7 +2507,7 @@ export class SearchTitleDetail extends HTMLElement {
             }
 
             #episodes-select-div select {
-                heigth: 24px;
+                height: 24px;
                 margin-left: 5px;
             }
 

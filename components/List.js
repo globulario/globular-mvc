@@ -240,8 +240,8 @@ export class SearchableList extends HTMLElement {
            
             .header{
                 position: relative;
-                width: 100%;
                 transition: background 0.2s ease,padding 0.8s linear;
+                padding-left: 10px;
             }
 
             .item-div:hover{
@@ -253,11 +253,25 @@ export class SearchableList extends HTMLElement {
                 padding: 5px;
                 display: flex; 
                 align-items: center;
+                font-size: 1.125rem;
             }
 
             .icon-button{
                 cursor: pointer;
             }
+
+            ::-webkit-scrollbar {
+                width: 5px;
+                height: 5px;
+             }
+             
+             ::-webkit-scrollbar-track {
+                background: var(--palette-background-default);
+             }
+             
+             ::-webkit-scrollbar-thumb {
+                background: var(--palette-divider);
+             }
 
         </style>
         
@@ -334,7 +348,7 @@ export class SearchableList extends HTMLElement {
         let uuid = "_" + uuidv4();
         let html = `
         <div id="${uuid}" class="item-div" style="">
-            <span style="flex-grow: 1;">${item}</span>
+            <div style="flex-grow: 1; line-break: anywhere;">${item}</div>
             <paper-icon-button icon="delete"></paper-icon-button>
         </div>`
 

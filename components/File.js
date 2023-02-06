@@ -1933,7 +1933,7 @@ export class FilesIconView extends FilesView {
         }
 
         this.div.innerHTML = "";
-        let h = this.imageHeight; // the heigth of the image/icon div
+        let h = this.imageHeight; // the height of the image/icon div
         let w = this.imageHeight;
         let hiddens = {};
 
@@ -5572,6 +5572,7 @@ export class FilesUploader extends HTMLElement {
                 position: absolute;
                 bottom: 40px;
                 right: -16px;
+                width: 100%;
             }
 
             .collapse-torrent-panel{

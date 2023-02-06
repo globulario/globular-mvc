@@ -149,7 +149,10 @@ export class ImageCropper extends HTMLElement {
 
     this.shadowRoot.innerHTML = `
         <style>
-         
+          #container{
+            background-color: var(--palette-background-paper);
+            color: var(--palette-text-primary);
+          }
           .slidecontainer {
             width: 100%;
             display:none;
@@ -249,7 +252,7 @@ export class ImageCropper extends HTMLElement {
             z-index:1;
           }
         </style>
-        <div>
+        <div id="container">
           <label class='lb_uploader' for='uploader'>
             <slot name='select'>
                <paper-button class='btn' toggles raised ><slot name='selectText'>Select</slot></paper-button>

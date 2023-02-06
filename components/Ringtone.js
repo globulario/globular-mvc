@@ -49,7 +49,7 @@ export class Ringtones extends HTMLElement {
                 color: var(--palette-text-primary);
                 --iron-icon-fill-color: var(--palette-text-primary);
                 align-items: center;
-                font-size: .95rem;
+                font-size: .85rem;
                 min-width: 300px;
             }
 

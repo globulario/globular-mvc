@@ -147,6 +147,8 @@ export class VideoPlayer extends HTMLElement {
                 display: flex;
                 background: #000000;
                 justify-items: center;
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
             }
 
             .header{
@@ -179,13 +181,18 @@ export class VideoPlayer extends HTMLElement {
                 width:auto;
             }
 
-
-
             paper-card {
                 background: var(--palette-background-default); 
                 border-top: 1px solid var(--palette-background-paper);
                 border-left: 1px solid var(--palette-background-paper);
             }
+
+            #content{
+                display: flex; 
+                background: black;
+                margin: 10px;
+            }
+
         </style>
         <paper-card id="container" class="no-select">
             <div class="header" style="${hideheader ? "display:none;" : ""}">
@@ -195,7 +202,7 @@ export class VideoPlayer extends HTMLElement {
                 <select id="audio-track-selector" style="display: none"></select>
                 <paper-icon-button id="title-info-button" icon="icons:arrow-drop-down-circle"></paper-icon-button>
             </div>
-            <div id="content" style="display: flex; background: black;">
+            <div id="content" style="">
                 <globular-playlist style="display: none; min-width: 450px; overflow:hidden; height: 600px;"></globular-playlist>
                 <slot></slot>
             </div>

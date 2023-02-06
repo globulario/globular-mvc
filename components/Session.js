@@ -74,7 +74,7 @@ export class SessionState extends HTMLElement {
                 color: var(--palette-text-primary);
                 --iron-icon-fill-color: var(--palette-text-primary);
                 align-items: center;
-                font-size: .95rem;
+                font-size: .85rem;
                 min-width: 300px;
             }
 
@@ -89,7 +89,7 @@ export class SessionState extends HTMLElement {
 
             .session-state-panel paper-toggle-button{
                 padding-left: 16px;
-                font-size: .95rem;
+                font-size: .85rem;
             }
 
             paper-toggle-button {

@@ -22,7 +22,7 @@ export class Autocomplete extends HTMLElement {
 
         this.width = 300;
         if (this.hasAttribute("width")) {
-            this.width = parseInt(this.getAttribute("width"))
+            this.width = "100%"
         }
     }
 
@@ -34,7 +34,10 @@ export class Autocomplete extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
 
-           
+            paper-card {
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
+            }
 
         </style>
 

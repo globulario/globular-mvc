@@ -186,7 +186,7 @@ export class FormSection extends HTMLElement {
                     padding: 48px;
                     letter-spacing: .01428571em;
                     font-family: Roboto,Arial,sans-serif;
-                    font-size: .875rem;
+                    font-size: 1.125rem;
                     font-weight: 400;
                     line-height: 1.25rem;
                     hyphens: auto;

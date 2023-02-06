@@ -11,6 +11,7 @@ import '@polymer/paper-checkbox/paper-checkbox.js';
 import '@polymer/paper-tooltip/paper-tooltip.js';
 
 import { Model } from '../Model';
+import { ApplicationView } from '../ApplicationView';
 
 /**
  * Login/Register functionality.
@@ -18,7 +19,7 @@ import { Model } from '../Model';
 export class Menu extends HTMLElement {
     // attributes.
 
-    // Create the applicaiton view.
+    // Create the view.
     constructor(id, icon, text) {
         super()
         this.id = id;
@@ -31,7 +32,21 @@ export class Menu extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-           
+
+    
+            .sidemenu-btn{
+                padding: 8px;
+                margin:0px;
+                width: 100%;
+                transition: background 0.2s ease,padding 0.8s linear;
+                background: var(--palette-background-default);
+                border-radius: 4px;
+            }
+
+            .sidemenu-btn:hover{
+                -webkit-filter: invert(10%);
+                filter: invert(10%);
+            }
 
             #${this.id}_div {
                 display: flex;
@@ -41,6 +56,7 @@ export class Menu extends HTMLElement {
 
             .menu-btn{
                 margin: 0px 10px 0px 10px;
+                display: flex;
             }
 
             .btn{
@@ -92,14 +108,35 @@ export class Menu extends HTMLElement {
                 display: none;
             }
 
+            .big {
+                --iron-icon-height: 24px;
+                --iron-icon-width: 24px;
+             }
+
+            .label{
+                display: none;
+                overflow: hidden;
+                white-space: nowrap;
+                text-overflow: ellipsis;
+                font-family: "Roboto","Arial",sans-serif;
+                font-size: 1.2rem;
+                line-height: 2rem;
+                font-weight: 400;
+                flex: 1;
+                flex-basis: 1e-9px;
+                margin-left: 24px;
+            }
+
         </style>
 
         <div id="${this.id}_div" class="menu-btn">
             <div id="${this.id}_picture_div" class="btn">
                 <iron-icon id="${this.id}_icon" icon="${this.icon}"></iron-icon>
                 <img id="${this.id}_img"></img>
+                <span class="label" id="${this.id}_label">${text}</span>
                 <paper-ripple class="circle" recenters></paper-ripple>
             </div>
+           
             <paper-tooltip id="${this.id}_tooltip" for="${this.id}_picture_div" style="font-size: 10pt;">${text}</paper-tooltip>
             <paper-card id="${this.id}_menu_div" class="menu-div bottom">
                 <slot name="${this.id}"></slot>
@@ -190,6 +227,8 @@ export class Menu extends HTMLElement {
 
             // set the handler.
             document.addEventListener("click", handler);
+
+            //ApplicationView.layout.appDrawer.toggle()
         }
     }
 
@@ -205,6 +244,10 @@ export class Menu extends HTMLElement {
      */
     getIconDiv() {
         return this.shadowRoot.getElementById(this.id + "_picture_div")
+    }
+
+    getLabel() {
+        return this.shadowRoot.getElementById(this.id + "_label")
     }
 
     /**
@@ -245,9 +288,35 @@ export class Menu extends HTMLElement {
         }
     }
 
+    /**
+     * Display the label beside the menu
+     */
+    expand(){
+        this.getMenuDiv().classList.remove("left");
+        this.getMenuDiv().classList.add("bottom");
+        this.getIcon().classList.remove("big")
+        this.getLabel().style.display = "none"
+        this.getIconDiv().classList.remove("sidemenu-btn")
+        this.shadowRoot.querySelector("paper-tooltip").style.display = "block"
+        this.shadowRoot.querySelector("paper-ripple").classList.add("circle")
+    }
+
+    /**
+     * not display the label.
+     */
+    shrink(){
+        this.getIconDiv().classList.add("sidemenu-btn")
+        this.getMenuDiv().classList.remove("bottom");
+        this.getMenuDiv().classList.add("left");
+        this.getIcon().classList.add("big")
+        this.getLabel().style.display = "block"
+
+        this.shadowRoot.querySelector("paper-tooltip").style.display = "none"
+        this.shadowRoot.querySelector("paper-ripple").classList.remove("circle")
+    }
+
     // Set account information.
     init() {
-
         /** Nothing to do here... */
         // On logout I must reset the icon and the image.
         Model.eventHub.subscribe("logout_event_",
@@ -266,22 +335,3 @@ export class Menu extends HTMLElement {
             true, this)
     }
 }
-
-/**
- * Login/Register functionality.
- */
-export class OverflowMenu extends Menu {
-    // attributes.
-
-    // Create the applicaiton view.
-    constructor() {
-        super("overflow", "more-vert", "Application menus")
-        this.keepOpen = true;
-    }
-
-    init() {
-        /** Nothing to do here. */
-    }
-}
-
-customElements.define('globular-overflow-menu', OverflowMenu)

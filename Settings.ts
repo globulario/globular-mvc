@@ -198,7 +198,7 @@ export class RoleSettings extends Settings {
             .subtitle{
                 font-size: 1rem;
                 text-align: left;
-                padding-bottom: 15px;
+                padding-bottom: 35px;
             }
 
             </style>
@@ -299,7 +299,7 @@ export class OrganizationSettings extends Settings {
             .subtitle{
                 font-size: 1rem;
                 text-align: left;
-                padding-bottom: 15px;
+                padding-bottom: 35px;
             }
 
             </style>
@@ -438,7 +438,7 @@ export class PeersSettings extends Settings {
             .subtitle{
                 font-size: 1rem;
                 text-align: left;
-                padding-bottom: 15px;
+                padding-bottom: 35px;
             }
 
             </style>
@@ -601,7 +601,7 @@ export class VideoSettings extends Settings {
         }
 
         // The convert button will start video processing...
-        let startConvertVideoAction = new ActionSetting("Start Convert", "Convert video to MP4 or HLS", () => {
+        let startConvertVideoAction = new ActionSetting("Start", "Convert video to MP4 or HLS", () => {
             // Application.globular.ldapService.
             let rqst = new StartProcessVideoRequest
             Model.globular.fileService.startProcessVideo(rqst, {
@@ -880,7 +880,7 @@ export class UsersSettings extends Settings {
             .subtitle{
                 font-size: 1rem;
                 text-align: left;
-                padding-bottom: 15px;
+                padding-bottom: 35px;
             }
 
             </style>
@@ -1159,7 +1159,7 @@ export class LogSettings extends Settings {
                                         ${occurences.length}
                                     </div>
                                 </div>
-                                <iron-collapse class="permissions" id="collapse-panel" style="display: flex; flex-direction: column; width: 90%;">
+                                <iron-collapse class="permissions" id="collapse-panel" style="display: flex; flex-direction: column; margin: 5px;">
                 
                                 </iron-collapse>
                             </div>

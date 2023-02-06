@@ -327,14 +327,14 @@ export class Settings extends HTMLElement {
        #container {
            display: flex;
            flex-direction: column;
-           min-width: 500px;
+           min-width: 355px;
            margin-bottom: 10px;
            background-color: var(--palette-background-paper);
        }
 
        .card-content{
-            min-width: 680px;
-            max-width: 680px;
+            min-width: 355px;
+            
             padding: 0px;
         }
 
@@ -365,7 +365,7 @@ export class Settings extends HTMLElement {
           padding: 24px;
           letter-spacing: .01428571em;
           font-family: Roboto,Arial,sans-serif;
-          font-size: .875rem;
+          font-size: 1.125rem;
           font-weight: 400;
           line-height: 1.25rem;
           hyphens: auto;
@@ -440,11 +440,6 @@ export class Settings extends HTMLElement {
     this.shadowRoot.getElementById("hide-btn").onclick = this.hideSettings.bind(this);
     this.container = this.shadowRoot.getElementById("container")
     this.backBtn = this.shadowRoot.getElementById("back-btn")
-    if (this.title.length == 0) {
-      this.container.style.marginTop = "0px";
-    } else {
-      this.container.style.marginTop = "45px";
-    }
   }
 
   showAddButton() {
@@ -512,8 +507,8 @@ export class Setting extends HTMLElement {
       
 
       .setting-name{
-         line-height: 1rem;
-         font-size: .6875rem;
+         line-height: 1.1rem;
+         font-size: .85rem;
          font-weight: 500;
          flex-basis: 156px;
          letter-spacing: .07272727em;
@@ -534,10 +529,15 @@ export class Setting extends HTMLElement {
         hyphens: auto;
         word-break: break-word;
         word-wrap: break-word;
+        width: 100%;
       }
 
       #icon-left, icon-right {
         display: none;
+      }
+
+      a {
+        font-size: 1rem;
       }
 
     </style>
@@ -576,7 +576,7 @@ export class Setting extends HTMLElement {
         }
 
         let nextPageBtn = this.shadowRoot.querySelector("#icon-right")
-        nextPageBtn.style.position = "block";
+        nextPageBtn.style.position = "";
         nextPageBtn.style.right = "0px";
 
         if (w < 780) {
@@ -585,6 +585,7 @@ export class Setting extends HTMLElement {
           if (w < 600) {
             nextPageBtn.style.position = "absolute";
             this.style.flexDirection = "column";
+            nextPageBtn.style.top = "45%";
             this.shadowRoot.getElementById("name-div").style.flexBasis = "0px";
             this.shadowRoot.getElementById("description-div").style.flexBasis = "0px";
             this.style.alignItems = "flex-start"
@@ -722,7 +723,9 @@ export class ConnectionSetting extends HTMLElement {
         }
 
         #content{
-            padding-top: 15px;
+            padding: 15px;
+            background-color: var(--palette-background-paper);
+            color: var(--palette-text-primary);
         }
 
         .header{
@@ -751,7 +754,7 @@ export class ConnectionSetting extends HTMLElement {
         #collapse-panel{
             display: flex;
             flex-direction: column;
-            width: 90%;
+            width: 100%;
         }
 
         #delete-btn {
@@ -772,6 +775,14 @@ export class ConnectionSetting extends HTMLElement {
           vertical-align: middle;
         }
 
+        #content {
+            display: flex; 
+            flex-direction: column;
+            margin: 10px;
+            background-color: var(--palette-background-paper);
+            color: var(--palette-text-primary);
+        }
+
       </style>
       <div id="container">
           <div class="header">
@@ -783,7 +794,7 @@ export class ConnectionSetting extends HTMLElement {
               </div>
               
           </div>
-          <iron-collapse id="collapse-panel"  style="width: 90%;" >
+          <iron-collapse id="collapse-panel"  >
               <div id="content" class="table">
            
               </div>
@@ -1083,6 +1094,7 @@ export class ReadOnlyStringSetting extends Setting {
      
       #setting-span{
          flex-grow: 1;
+         font-size: 1rem;
         }
       </style>
       <span id="setting-span" label=""></span>
@@ -1135,6 +1147,7 @@ export class LinkSetting extends Setting {
      
       #setting-span{
          flex-grow: 1;
+         font-size: 1rem;
          color: var(--cr-primary-text-color);
         }
       </style>
@@ -1186,6 +1199,7 @@ export class StringSetting extends Setting {
      
       #setting-input{
          flex-grow: 1;
+         font-size: 1rem;
         }
       </style>
       <paper-input id="setting-input" label="" raised></paper-input>
@@ -1302,6 +1316,7 @@ export class TextAreaSetting extends Setting {
      
       #setting-input{
          flex-grow: 1;
+         font-size: 1rem;
         }
       </style>
       <paper-textarea id="setting-input" style="width: 0px;" label="" raised></paper-textarea>
@@ -1348,6 +1363,7 @@ export class OnOffSetting extends Setting {
      
       #setting-input{
          flex-grow: 1;
+         font-size: 1rem;
         }
         
         paper-toggle-button[checked]{
@@ -1575,7 +1591,7 @@ export class ImageCropperSetting extends Setting {
       <style>
      
       #setting-input{
-         
+        font-size: 1rem;
       }
       </style>
       <div style='width:100%;min-height:450px;position:relative;background-color:var(--palette-background-default);'>
@@ -1642,6 +1658,7 @@ export class DropdownSetting extends Setting {
      
       #setting-input{
          flex-grow: 1;
+         font-size: 1rem;
         }
       </style>
       <paper-dropdown-menu id="setting-input" label="The best day ever" raised>
@@ -1705,6 +1722,7 @@ export class StringListSetting extends Setting {
      
       #setting-input{
          flex-grow: 1;
+         font-size: 1rem;
         }
 
       #container{
@@ -1713,9 +1731,10 @@ export class StringListSetting extends Setting {
       }
 
       #new_item_btn{
-        position: absolute;
+        /* position: absolute;
         top: -15px;
         right: 0px;
+        */
       }
 
       </style>
@@ -1951,7 +1970,7 @@ customElements.define("globular-action-setting", ActionSetting);
         </div>
         <div style="flex-grow: 1; display: flex; flex-direction: column;">
           <div style="padding-bottom: 5px; padding-top: 5px;">${err.getPath()}</div>
-          <span style="width: 90%;  border-bottom: 1px solid var(--palette-divider)"></span>
+          <span style="margin: 5px;  border-bottom: 1px solid var(--palette-divider)"></span>
           <div style="padding-bottom: 5px; padding-top: 5px;">${err.getError()}</div>
         </div>
       </div>
@@ -2088,7 +2107,7 @@ customElements.define('globular-video-conversion-errors-manager', VideoConversio
       <div id="${uuid}" style="display: flex; align-items: center; padding-bottom: 10px; padding-top: 10px; border-bottom: 1px solid var(--palette-divider)">
         <div style="flex-grow: 1; display: flex; flex-direction: column;">
           <div style="padding-bottom: 5px; padding-top: 5px;">${log.getMsg() + " " + log.getPath()}</div>
-          <span style="width: 90%;  border-bottom: 1px solid var(--palette-divider); align-self: flex-end;"></span>
+          <span style="margin: 5px;  border-bottom: 1px solid var(--palette-divider); align-self: flex-end;"></span>
           <div style="padding-bottom: 5px; padding-top: 5px; align-self: flex-end;">${date.toLocaleDateString() + " " + date.toLocaleTimeString()} <span id="status_span"  style="margin-left: 20px;  text-transform: capitalize; font-weight: bold;">${log.getStatus()}</span></div>
         </div>
       </div>

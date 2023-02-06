@@ -153,6 +153,8 @@ export class AudioPlayer extends HTMLElement {
                 background: #000000;
                 justify-items: center;
                 overflow: hidden;
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
             }
 
             /** Audio vizualizer **/
@@ -264,7 +266,7 @@ export class AudioPlayer extends HTMLElement {
             }
 
             #waveform{
-                width: 90%;
+                margin: 5px;
                 align-self: center;
             }
 

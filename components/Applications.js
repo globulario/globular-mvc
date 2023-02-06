@@ -270,31 +270,18 @@ export class ApplicationManager extends HTMLElement {
                     display: flex;
                     flex-direction: column;
                     position: relative;
-                    min-width: 500px;
+                    min-width: 355px;
                  }
 
-                 .card-content {
-                    min-width: 680px;
-                    max-width: 680px;
-                    padding: 0px;
-                }
-     
-                @media only screen and (max-width: 800px) {
-                    .card-content{
-                      min-width: 580px;
-                    }
-                  }
-          
-                  @media only screen and (max-width: 600px) {
-                    .card-content{
-                      min-width: 380px;
-                    }
-                  }
+                 paper-card {
+                    background-color: var(--palette-background-paper);
+                    color: var(--palette-text-primary);
+                 }
           
              </style>
              <div id="container">
                 <paper-card>
-                    <div class="card-content">
+                    <div class="card-content" style="padding: 0px;">
                     </div>
                 </paper-card>
              </div>
@@ -362,8 +349,15 @@ export class ApplicationPanel extends HTMLElement {
                 background-color: var(--palette-background-paper);
             }
 
+            paper-card{
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
+            }
+
             #content{
-                padding-top: 15px;
+                padding: 15px;
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
             }
 
             .header{
@@ -391,7 +385,7 @@ export class ApplicationPanel extends HTMLElement {
             #collapse-panel{
                 display: flex;
                 flex-direction: column;
-                width: 90%;
+                width: 100%;
             }
 
             .row{
@@ -448,6 +442,10 @@ export class ApplicationPanel extends HTMLElement {
             #uninstall-application-btn{
                 font-size: .85rem;
                 max-height: 32px;
+            }
+
+            #application-action {
+                padding: 5px;
             }
 
         </style>
@@ -547,8 +545,8 @@ export class ApplicationPanel extends HTMLElement {
                             }
                             .card-content{
                                 overflow-y: auto;
-                                min-width: 400px;
                                 max-height: 260px;
+                                
                                 overflow-y: auto;
                             }
         

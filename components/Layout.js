@@ -42,7 +42,7 @@ export class Layout extends HTMLElement {
           #content{
             background-color: var(--palette-background-default);
             color: var(--palette-text-primary);
-            heigth: 100%;
+            height: 100%;
             min-height: calc(100vh - var(--toolbar-height)-1);
           }
           
@@ -96,6 +96,7 @@ export class Layout extends HTMLElement {
           ::slotted(#navigation) {
             width: 100%;
             color: var(--palette-text-accent);
+            margin-top: 10px;
           }
           
           ::slotted(#title) {
@@ -122,6 +123,19 @@ export class Layout extends HTMLElement {
             color: var(--palette-text-primary);
           }
 
+          
+          ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+          }
+          
+          ::-webkit-scrollbar-track {
+              background: var(--palette-background-default);
+          }
+          
+          ::-webkit-scrollbar-thumb {
+              background: var(--palette-divider);
+          }
 
         </style>
     

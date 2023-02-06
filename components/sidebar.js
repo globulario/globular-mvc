@@ -95,6 +95,15 @@ export class SidebarCollapsiblePanel extends HTMLElement {
                 cursor: pointer;
             }
 
+            #content {
+                display: flex; 
+                flex-direction: column;
+                margin: 10px;
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
+                display: none;
+            }
+
         </style>
         <div data-automation-id="Layout" style="display: flex; flex-direction: column; flex: 0 1 auto;">
             <div data-automation-id="Header" tabindex="0" style="outline: 0px; cursor: default; user-select: none; background: rgb(43, 43, 43); border-bottom: 1px solid rgb(33, 33, 33); height: 28px; padding-left: 4px; padding-top: 4px; padding-bottom: 4px; box-sizing: border-box; overflow: visible; display: flex; align-items: center; flex: 0 1 auto;">
@@ -125,7 +134,7 @@ export class SidebarCollapsiblePanel extends HTMLElement {
                    
                 </slot>
             </div>
-            <div id="content"  style="background-color: rgb(64, 64, 64); display: none;">
+            <div id="content"  style="">
                 <slot>
 
                 </slot>

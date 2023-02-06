@@ -20,6 +20,8 @@ export class Popup extends HTMLElement {
            
               #content{
                   display: none;
+                  background-color: var(--palette-background-paper);
+                  color: var(--palette-text-primary);
               }
               #backdrop {
                 position: fixed;

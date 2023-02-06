@@ -465,7 +465,7 @@ export class TableElement extends PolymerElement {
 
     this.scrollDiv.element.style.overflowX = "hidden"; // Display scroll as needed.
 
-    this.scrollDiv.element.scrollTop = 0; // if now row height are given i will take the header heigth as default.
+    this.scrollDiv.element.scrollTop = 0; // if now row height are given i will take the header height as default.
 
     if (this.rowheight == -1) {
       this.rowheight = this.children[0].offsetHeight;

@@ -223,7 +223,7 @@ export class FilePaneElement extends PolymerElement {
     this.panel = div.appendElement({
       "tag": "div",
       "class": "image_picker"
-    }).down(); // Set the width and heigth if specified...
+    }).down(); // Set the width and height if specified...
 
     if (this.width != 0) {
       div.element.style.width = this.width + "px";

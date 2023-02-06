@@ -188,6 +188,7 @@ export class SplitPane extends HTMLElement {
                 bottom: 0px;
                 right: 0px;
                 overflow: auto;
+                color: var(--palette-text-primary);
             }
 
             ::-webkit-scrollbar {

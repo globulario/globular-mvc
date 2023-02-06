@@ -364,8 +364,8 @@ export class AccountManager extends HTMLElement {
                  }
 
                  .card-content {
-                    min-width: 680px;
-                    max-width: 680px;
+                    min-width: 355px;
+                    
                     padding: 0px;
                 }
      
@@ -551,11 +551,11 @@ export class AccountPanel extends HTMLElement {
                 align-items: center;
                 border-bottom: 1px solid var(--palette-background-default);
                 background-color: var(--palette-background-paper);
-                min-width: 500px;
+                min-width: 355px;
             }
 
             #content{
-                padding-top: 15px;
+                padding: 15px;
             }
 
             .header{
@@ -584,7 +584,7 @@ export class AccountPanel extends HTMLElement {
             #collapse-panel{
                 display: flex;
                 flex-direction: column;
-                width: 90%;
+                width: 100%;
             }
 
             #delete-account-btn{
@@ -612,7 +612,7 @@ export class AccountPanel extends HTMLElement {
                     <paper-ripple class="circle" recenters=""></paper-ripple>
                 </div>
             </div>
-            <iron-collapse id="collapse-panel"  style="width: 90%;" >
+            <iron-collapse id="collapse-panel"  >
                 <paper-tabs selected="0">
                     <paper-tab id="account-organizations-tab">Organizations</paper-tab>
                     <paper-tab id="account-roles-tab">Roles</paper-tab>
@@ -924,7 +924,7 @@ export class ExternalAccountManager extends HTMLElement {
             font-size: 1rem;
             color: var(--cr-primary-text-color);
             padding-left: 8px;
-            padding-bottom: 15px;
+            padding-bottom: 35px;
           }
 
           .card-content{

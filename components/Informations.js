@@ -116,7 +116,6 @@ const __style__ = `
     flex-direction: column;
 }
 
-
 .title-files-div paper-progress{
     width: 100%;
 }
@@ -421,6 +420,8 @@ export class InformationsManager extends HTMLElement {
                 padding: 8px;
                 overflow: auto;
                 z-index: 100;
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
             }
 
             #header {
@@ -608,6 +609,8 @@ export class AudioInfo extends HTMLElement {
 
             #container {
                 display: flex;
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
             }
 
             img {
@@ -689,6 +692,12 @@ export class VideoInfo extends HTMLElement {
         <style>
            
             ${__style__}
+
+            .title-div {
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
+            }
+
             .action-div{
                 display: flex;
                 justify-content: end;
@@ -898,6 +907,8 @@ export class VideoInfoEditor extends HTMLElement {
 
             #container {
                 display: flex;
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
             }
 
             .action-div{
@@ -1106,6 +1117,12 @@ export class TitleInfo extends HTMLElement {
         <style>
            
             ${__style__}
+
+            .title-div{
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
+            }
+
             .action-div{
                 display: flex;
                 justify-content: end;
@@ -1422,7 +1439,7 @@ export class TitleInfo extends HTMLElement {
             <div class="header">
                 <paper-tabs selected="0" scrollable style="width: 100%;"></paper-tabs>
             </div>
-            <div id="episodes-content" style="width: 100%; height: 425px; overflow-y: auto;">
+            <div id="episodes-content" style="width: 100%; height: 355px; overflow-y: auto;">
 
             </div>
         </div>
@@ -1546,6 +1563,8 @@ export class FileInfo extends HTMLElement {
 
             #container {
                 display: flex;
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
             }
 
         </style>
@@ -1605,7 +1624,9 @@ export class WebpageInfo extends HTMLElement {
 
             #container {
                 display: flex;
-                postion:relative
+                postion:relative;
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
             }
 
             .image-box {
@@ -1693,6 +1714,8 @@ export class ApplicationInfo extends HTMLElement {
 
             #container {
                 display: flex;
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
             }
 
             img{
@@ -1756,6 +1779,8 @@ export class GroupInfo extends HTMLElement {
 
             #container {
                 display: flex;
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
             }
 
         </style>
@@ -1805,6 +1830,7 @@ export class OrganizationInfo extends HTMLElement {
             #container {
                 display: flex;
                 background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
             }
 
         </style>
@@ -1892,7 +1918,8 @@ export class BlogPostInfo extends HTMLElement {
             <style>
                
                 #container {
-
+                    background-color: var(--palette-background-paper);
+                    color: var(--palette-text-primary);
                 }
 
                 .blog-post-card {
@@ -2006,6 +2033,8 @@ export class BlogPostInfo extends HTMLElement {
                
                 #container {
                     display: flex;
+                    background-color: var(--palette-background-paper);
+                    color: var(--palette-text-primary);
                 }
     
             </style>
@@ -2100,6 +2129,8 @@ export class PackageInfo extends HTMLElement {
 
             #container {
                 display: flex;
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
             }
 
         </style>

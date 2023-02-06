@@ -54,6 +54,8 @@ export class SlidePanel extends HTMLElement {
                 width: 100%; 
                 height: 100%; 
                 direction:ltr;
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
             }
 
             #buttons-div {

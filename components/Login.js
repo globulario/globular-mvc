@@ -160,7 +160,7 @@ export class LoginBox extends HTMLElement {
               .card-subtitle {
                 letter-spacing: .01428571em;
                 font-family: Roboto, Arial, sans-serif;
-                font-size: .875rem;
+                font-size: 1.125rem;
                 font-weight: 400;
                 line-height: 1.25rem;
                 hyphens: auto;
@@ -313,7 +313,7 @@ export class RegisterBox extends HTMLElement {
                   .card-subtitle {
                     letter-spacing: .01428571em;
                     font-family: Roboto, Arial, sans-serif;
-                    font-size: .875rem;
+                    font-size: 1.125rem;
                     font-weight: 400;
                     line-height: 1.25rem;
                     hyphens: auto;

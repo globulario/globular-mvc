@@ -556,7 +556,7 @@ export class PermissionPanel extends HTMLElement {
                 </div>
                 <span class="title">${title}</span>
             </div>
-            <iron-collapse id="${uuid}-collapse-panel"  style="width: 90%;">
+            <iron-collapse id="${uuid}-collapse-panel"  style="margin: 5px;">
                 
             </iron-collapse>
         </div>
@@ -2015,15 +2015,17 @@ export class ResourcesPermissionsType extends HTMLElement {
         <style>
            
             paper-card {
-                background-color: transparent;
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
                 font-size: 1rem;
                 text-align: left;
                 border-radius: 2px;
+                width: 100%;
             }
 
             .card-content {
-                min-width: 680px;
-                max-width: 680px;
+                min-width: 355px;
+                
                 padding: 0px;
             }
 
@@ -2056,6 +2058,13 @@ export class ResourcesPermissionsType extends HTMLElement {
                 background-color: var(--palette-background-paper);
             }
 
+            #content {
+                margin: 10px;
+                display: flex; 
+                flex-direction: column;
+ 
+            }
+
         </style>
        
         <div id="container">
@@ -2072,7 +2081,7 @@ export class ResourcesPermissionsType extends HTMLElement {
                         </div>
                     </div>
                     <iron-collapse id="collapse-panel" style="width: 100%; transition-property: max-height; max-height: 0px; transition-duration: 0s;" role="group" aria-hidden="true" class="iron-collapse-closed">
-                        <div id="content" style="display: flex; flex-direction: column;">
+                        <div id="content" style="">
                             <slot></slot>
                         </div>
                     </iron-collapse>
@@ -2204,7 +2213,7 @@ export class ResourcePermissions extends HTMLElement {
                 display: flex;
                 flex-direction: column;
                 align-items: center;
-                border-bottom: 1px solid var(--palette-background-default);
+                /*border-bottom: 1px solid var(--palette-background-default);*/
             }
 
             .header:hover {
@@ -2235,6 +2244,14 @@ export class ResourcePermissions extends HTMLElement {
                 white-space: nowrap;
             }
 
+            #content {
+                display: flex; 
+                flex-direction: column;
+                margin: 10px;
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
+            }
+
         </style>
         <div id="container">
             <div class="header">
@@ -2258,12 +2275,12 @@ export class ResourcePermissions extends HTMLElement {
                 </div>
             </div>
             <iron-collapse id="info-collapse-panel" style="width: 100%; transition-property: max-height; max-height: 0px; transition-duration: 0s;" role="group" aria-hidden="true" class="iron-collapse-closed">
-                <div id="content" style="display: flex; flex-direction: column;">
+                <div id="content" style="">
                     <slot name="resource-info"></slot>
                 </div>
             </iron-collapse>
             <iron-collapse id="permissions-editor-collapse-panel" style="width: 100%; transition-property: max-height; max-height: 0px; transition-duration: 0s;" role="group" aria-hidden="true" class="iron-collapse-closed">
-                <div id="content" style="display: flex; flex-direction: column;">
+                <div id="content" style="">
                     <slot name="resource-permissions-editor"></slot>
                 </div>
             </iron-collapse>

@@ -101,8 +101,8 @@ export class ServicesSettings extends Settings {
                         Stop
                     </paper-icon-button>
                     <div style="display: flex; align-items: center; width: 100%; padding-left: 15px;">
-                        <span class="setting-name" style="flex-basis: 55px; ">Status: </span>
-                        <span id="service-state-${service.Id}"></span>
+                        <span class="setting-name" style="/*flex-basis: 55px;*/ ">Status: </span>
+                        <span id="service-state-${service.Id}" style="width: 100%"></span>
                         <span style="padding-left: 10px; color: var(--palette-error-main);" id="service-last-error-${service.Id}">
                     </div>
                 </div>

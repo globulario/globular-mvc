@@ -102,6 +102,8 @@ export class Camera extends HTMLElement {
 
                 .camera .card-actions{
                     display: flex;
+                    align-items: center;
+                    justify-items: center;
                 }
 
                 .camera .card-content{
@@ -143,6 +145,11 @@ export class Camera extends HTMLElement {
                     to {
                       visibility: hidden;
                     }
+                  }
+
+                  paper-card{
+                    background-color: var(--palette-background-paper);
+                    color: var(--palette-text-primary);
                   }
             </style>
 

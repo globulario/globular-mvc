@@ -233,7 +233,7 @@ paper-card .card-actions {
 /** Table element **/
 /** Simple table style **/
 table-element {
-   /** Set max heigth to display the scroll**/
+   /** Set max height to display the scroll**/
    max-height: 500px;
    color: var(--palette-text-primary);
    background-color: var(--palette-background-paper);
@@ -329,6 +329,7 @@ globular-web-page {
 globular-navigation {
    flex-grow: 1;
 }
+
 
 emoji-picker {
    --background: var(--palette-background-default);
@@ -476,7 +477,7 @@ emoji-picker {
    font-size: 1rem;
    text-align: left;
    padding-left: 8px;
-   padding-bottom: 15px;
+   padding-bottom: 35px;
 }
 
 .ce-block--selected .ce-block__content {
@@ -649,9 +650,9 @@ emoji-picker {
    align-items: center;
 }
 
-
 ::-webkit-scrollbar {
    width: 5px;
+   height: 5px;
 }
 
 ::-webkit-scrollbar-track {
@@ -671,6 +672,6 @@ emoji-picker {
 
    .blog-read-div {
       max-width: 650px;
-      min-width: 425px;
+      min-width: 355px;
    }
 }
