@@ -418,7 +418,7 @@ export class InformationsManager extends HTMLElement {
                 display: flex;
                 flex-direction: column;
                 padding: 8px;
-                overflow: auto;
+                /*overflow: auto;*/
                 z-index: 100;
                 background-color: var(--palette-background-paper);
                 color: var(--palette-text-primary);
