@@ -444,7 +444,7 @@ export class PlayListItem extends HTMLElement {
         <style>
            
             #container{
-                
+                background: black;
             }
 
             #container img{

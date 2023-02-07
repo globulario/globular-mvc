@@ -96,7 +96,6 @@ export class Layout extends HTMLElement {
           ::slotted(#navigation) {
             width: 100%;
             color: var(--palette-text-accent);
-            margin-top: 10px;
           }
           
           ::slotted(#title) {
@@ -203,7 +202,6 @@ export class Layout extends HTMLElement {
         sideMenu_.style.width = "auto";
         sideMenu_.style.display = "block";
         sideMenu_.style.overflow = "auto";
-        sideMenu_.style.marginRight = "40px";
 
         // put the naviagtion content into it default slot.
         let navigation = this.querySelector("#navigation")
@@ -223,12 +221,11 @@ export class Layout extends HTMLElement {
         sideMenu_.style.flexDirection = "column";
         sideMenu_.style.width = "100%";
         sideMenu_.style.marginTop = "24px";
-        sideMenu_.style.marginRight = "40px";
 
 
         // put the navigation in the the side menu...
         let navigation = this.querySelector("#navigation")
-        navigation.slot = "side-menu"
+        navigation.slot = "navigation"
         let contentManager = navigation.querySelector("globular-content-manager")
         if (contentManager)
           contentManager.setVertical()

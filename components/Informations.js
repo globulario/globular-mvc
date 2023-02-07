@@ -710,6 +710,10 @@ export class VideoInfo extends HTMLElement {
             .title-poster-img{
                 max-width: 320px;
             }
+
+            paper-button {
+                font-size: 1rem;
+            }
         </style>
         <div>
             <div class="title-div">
@@ -904,11 +908,11 @@ export class VideoInfoEditor extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
            
-
             #container {
                 display: flex;
                 background-color: var(--palette-background-paper);
                 color: var(--palette-text-primary);
+
             }
 
             .action-div{
@@ -928,6 +932,10 @@ export class VideoInfoEditor extends HTMLElement {
             }
 
             div, paper-input, iron-autogrow-textarea {
+                font-size: 1rem;
+            }
+
+            paper-button {
                 font-size: 1rem;
             }
 
@@ -1175,7 +1183,7 @@ export class TitleInfo extends HTMLElement {
     showTitleInfo(title) {
         let uuid = randomUUID()
         let html = `
-        <paper-card id="video-info-box-dialog-${uuid}" style="padding: 15px; background: var(--palette-background-default); border-top: 1px solid var(--palette-background-paper); border-left: 1px solid var(--palette-background-paper);">
+        <paper-card id="video-info-box-dialog-${uuid}" style="background: var(--palette-background-default); border-top: 1px solid var(--palette-background-paper); border-left: 1px solid var(--palette-background-paper);">
             <globular-informations-manager id="title-info-box"></globular-informations-manager>
         </paper-card>
         `

@@ -38,8 +38,6 @@ export class SettingsMenu extends HTMLElement {
        #container {
            display: flex;
            flex-direction: column;
-           min-width: 200px;
-           
        }
 
        globular-settings-side-menu-item.active{
@@ -117,11 +115,17 @@ export class SettingsSideMenuItem extends HTMLElement {
       
        #container {
            display: flex;
+           position: relative;
            align-items: center;
+           padding-left: 10px;
            padding-top: 10px;
            padding-bottom: 10px;
+           margin-right: 10px;
            font-weight: 500;
            font-size: .75em;
+           transition: background 0.2s ease,padding 0.8s linear;
+           background: var(--palette-background-default);
+           border-radius: 4px;
        }
 
        #button{
@@ -129,9 +133,11 @@ export class SettingsSideMenuItem extends HTMLElement {
           padding-right: 24px;
        }
 
-       #container div:hover{
-           cursor: pointer;
-       }
+       #container:hover{
+          cursor: pointer;
+          -webkit-filter: invert(10%);
+          filter: invert(10%);
+        }
 
     </style>
     <div id="container">
@@ -140,6 +146,7 @@ export class SettingsSideMenuItem extends HTMLElement {
           <iron-icon id="icon" icon="${icon}"></iron-icon>
         </div>
         <div id="title-div">${title}</div>
+        <paper-ripple recenters></paper-ripple>
     </div>
     `;
   }

@@ -33,7 +33,6 @@ export class Menu extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
 
-    
             .sidemenu-btn{
                 padding: 8px;
                 margin:0px;
@@ -55,7 +54,7 @@ export class Menu extends HTMLElement {
             }
 
             .menu-btn{
-                margin: 0px 10px 0px 10px;
+                margin-right: 10px;
                 display: flex;
             }
 
