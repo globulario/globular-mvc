@@ -151,6 +151,7 @@ export class Camera extends HTMLElement {
                     background-color: var(--palette-background-paper);
                     color: var(--palette-text-primary);
                   }
+                  
             </style>
 
             <paper-icon-button id="open-button" icon="image:camera-alt"></paper-icon-button>

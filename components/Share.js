@@ -485,7 +485,7 @@ export class ShareResourceWizard extends HTMLElement {
 
         })
 
-        files_page += "</div>"
+        files_page += "</div>" <paper-card
 
         wizard.appendPage(range.createContextualFragment(files_page).children[0])
 

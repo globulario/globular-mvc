@@ -388,7 +388,6 @@ export class Settings extends HTMLElement {
           }
         }
 
-
         paper-card{
           background-color: var(--palette-background-paper);
           color: var(--palette-text-primary);

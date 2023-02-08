@@ -176,10 +176,17 @@ export class VideoPlayer extends HTMLElement {
                 outline:0px;
             }
 
-            video{
+            video {
                 display: block;
-                width:auto;
+                width:100%;
+                position: "absolute";
+                top: 0;
+                left: 0;
+                bottom: 0;
+                right: 0;
+                background-color: black;
             }
+                 
 
             paper-card {
                 background: var(--palette-background-default); 
@@ -987,10 +994,6 @@ export class VideoPlayer extends HTMLElement {
                     });
                 });
             }
-        }
-
-        if (this.parentNode.offsetWidth > 0) {
-            this.video.style.maxWidth = this.parentNode.offsetWidth + "px"
         }
 
 

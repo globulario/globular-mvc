@@ -114,6 +114,11 @@ export class VideoConversation extends HTMLElement {
                 flex-grow: 1;
             }
 
+            paper-card{
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
+            }
+
         </style>
         <paper-card id="container" class="no-select">
             <div class="header" style="${hideheader ? "display:none;" : ""}">

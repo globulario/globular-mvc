@@ -110,7 +110,10 @@ export class LoginBox extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
 
-           
+            paper-card{
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
+            }
 
             paper-input iron-icon{
                 margin-right: 10px;
@@ -268,6 +271,11 @@ export class RegisterBox extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
             <style>
+
+                paper-card{
+                    background-color: var(--palette-background-paper);
+                    color: var(--palette-text-primary);
+                }
 
                 paper-input iron-icon{
                     margin-right: 10px;

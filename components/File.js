@@ -1353,6 +1353,11 @@ export class FilesView extends HTMLElement {
                         .rename-file-dialog-actions{
                             background-color: var(--palette-background-paper);
                         }
+
+                        paper-card{
+                            background-color: var(--palette-background-paper);
+                            color: var(--palette-text-primary);
+                        }
     
                     </style>
                     <paper-card id="rename-file-dialog" style="top: ${offset}px;">
@@ -3987,7 +3992,11 @@ export class FileExplorer extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
            
-            
+            paper-card{
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
+            }
+
             paper-icon-button:hover{
                 cursor: pointer;
             }
@@ -4464,8 +4473,14 @@ export class FileExplorer extends HTMLElement {
                         color: var(--palette-text-primary);
                     }
 
+                    paper-card{
+                        background-color: var(--palette-background-paper);
+                        color: var(--palette-text-primary);
+                    }
+              
+
                 </style>
-                <paper-card id="new-dir-dialog">progress-div
+                <paper-card id="new-dir-dialog">
                     <div class="card-content">
                         <paper-textarea id="new-dir-input" label="new folder name" value="Untitled Folder"></paper-textarea>
                     </div>
@@ -5668,6 +5683,11 @@ export class FilesUploader extends HTMLElement {
 
             tr.active{
                 filter: invert(10%);
+            }
+
+            paper-card{
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
             }
 
             paper-tabs{

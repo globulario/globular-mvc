@@ -61,6 +61,10 @@ export class PeersManager extends HTMLElement {
         this.shadowRoot.innerHTML = `
              <style>
                 
+                paper-card{
+                    background-color: var(--palette-background-paper);
+                    color: var(--palette-text-primary);
+                }
 
                 #create-peer-btn{
                     top: -42px;
@@ -547,6 +551,12 @@ export class PeerPanel extends HTMLElement {
                                 right: 0px;
                                 z-index: 1;
                             }
+
+                            paper-card{
+                                background-color: var(--palette-background-paper);
+                                color: var(--palette-text-primary);
+                            }
+                            
                         </style>
                         <paper-card id="add-peer-action-panel">
                             <div style="display: flex; align-items: center;">

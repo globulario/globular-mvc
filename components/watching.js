@@ -79,6 +79,11 @@ export class MediaWatching extends HTMLElement {
                     justify-content: center;
                 }
             }
+
+            paper-card{
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
+            }
             
         </style>
         <paper-card id="container">

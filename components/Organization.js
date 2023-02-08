@@ -73,7 +73,11 @@ export class OrganizationManager extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
              <style>
-                
+                    
+                paper-card{
+                    background-color: var(--palette-background-paper);
+                    color: var(--palette-text-primary);
+                }
 
                 #create-organization-btn{
                     top: -42px;
@@ -145,7 +149,11 @@ export class OrganizationManager extends HTMLElement {
         createOrganizationBtn.onclick = () => {
             let html = `
             <style>
-               
+                paper-card{
+                    background-color: var(--palette-background-paper);
+                    color: var(--palette-text-primary);
+                }
+                
                 #create-organization-panel{
                     position: absolute;
                     right: 0px;

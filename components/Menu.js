@@ -130,6 +130,11 @@ export class Menu extends HTMLElement {
                 
             }
        
+            paper-card{
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
+            }
+            
             paper-card h1 {
                 font-size: 1.65rem;
             }

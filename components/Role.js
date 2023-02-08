@@ -46,7 +46,11 @@ export class RoleManager extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
              <style>
-                
+
+                paper-card{
+                    background-color: var(--palette-background-paper);
+                    color: var(--palette-text-primary);
+                }
 
                 #create-role-btn{
                     top: -42px;
@@ -119,7 +123,11 @@ export class RoleManager extends HTMLElement {
         createRoleBtn.onclick = () => {
             let html = `
             <style>
-               
+                paper-card{
+                    background-color: var(--palette-background-paper);
+                    color: var(--palette-text-primary);
+                }
+
                 #create-role-panel{
                     position: absolute;
                     right: 0px;
@@ -352,6 +360,11 @@ export class RolePanel extends HTMLElement {
                                 min-width: 400px;
                                 max-height: 260px;
                                 overflow-y: auto;
+                            }
+
+                            paper-card{
+                                background-color: var(--palette-background-paper);
+                                color: var(--palette-text-primary);
                             }
         
                         </style>

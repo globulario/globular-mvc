@@ -884,6 +884,10 @@ export class CodeManager extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
            
+            paper-card{
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
+            }
 
             #container{
                 display: flex;

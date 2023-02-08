@@ -235,6 +235,11 @@ export class PermissionsManager extends HTMLElement {
                     min-width: 200px;
                 }
 
+                paper-card{
+                    background-color: var(--palette-background-paper);
+                    color: var(--palette-text-primary);
+                }
+
             </style>
             <paper-card id="add-permission-panel">
                 <div style="display: flex; align-items: center;">

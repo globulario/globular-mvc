@@ -317,6 +317,12 @@ export class MessengerMenu extends Menu {
                                 max-height: 450px;
                                 overflow-y: auto;
                             }
+
+                            paper-card{
+                                background-color: var(--palette-background-paper);
+                                color: var(--palette-text-primary);
+                            }
+
                         </style>
                         <paper-card id="search-conversation-results">
                             
@@ -961,6 +967,11 @@ export class Messenger extends HTMLElement {
 
             globular-conversations-list {
                 border-right: 1px solid var(--palette-divider);
+            }
+
+            paper-card{
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
             }
 
             paper-tabs {
@@ -2371,13 +2382,14 @@ export class LikeDisLikeBtn extends HTMLElement {
                 --paper-badge-margin-left: 10px;
             }
 
-            paper-card {
+            paper-card{
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
                 display: flex;
                 flex-direction: column;
                 position: absolute;
                 padding: 2px;
                 max-width: 100px;
-               
             }
 
             .liker-unliker-lst {

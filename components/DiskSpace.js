@@ -46,6 +46,11 @@ export class DiskSpaceManager extends HTMLElement {
           cursor: pointer;
         }
 
+        paper-card{
+          background-color: var(--palette-background-paper);
+          color: var(--palette-text-primary);
+        }
+
     </style>
     <div id="container">
         <div id="disk-space-div" style="display: flex; flex-direction: column;">

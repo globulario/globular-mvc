@@ -115,7 +115,11 @@ export class Dialog extends PolymerElement {
             .diablog_button:active{
                 border: solid 1px lightblue;
             }
-
+            
+            paper-card{
+              background-color: var(--palette-background-paper);
+              color: var(--palette-text-primary);
+            }
             
             </style>
 

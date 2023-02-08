@@ -561,6 +561,12 @@ export class ApplicationPanel extends HTMLElement {
                                 right: 0px;
                                 z-index: 1;
                             }
+                            
+                            paper-card{
+                                background-color: var(--palette-background-paper);
+                                color: var(--palette-text-primary);
+                            }
+
                             .card-content{
                                 overflow-y: auto;
                                 max-height: 260px;

@@ -420,7 +420,9 @@ export class InformationsManager extends HTMLElement {
                 flex-direction: column;
                 padding: 8px;
                 z-index: 100;
+                /*
                 background-color: var(--palette-background-paper);
+                */
                 color: var(--palette-text-primary);
                 font-size: 1rem;
             }
@@ -695,7 +697,7 @@ export class VideoInfo extends HTMLElement {
             ${__style__}
 
             .title-div {
-                background-color: var(--palette-background-paper);
+                /*background-color: var(--palette-background-paper);*/
                 color: var(--palette-text-primary);
             }
 
@@ -1128,8 +1130,10 @@ export class TitleInfo extends HTMLElement {
             ${__style__}
 
             .title-div{
+                /*
                 background-color: var(--palette-background-paper);
                 color: var(--palette-text-primary);
+                */
             }
 
             .action-div{
@@ -1140,6 +1144,12 @@ export class TitleInfo extends HTMLElement {
             .title-poster-img{
                 max-width: 320px;
             }
+
+            paper-card{
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
+            }
+
         </style>
         <div class="title-div" >
             <div class="title-poster-div" style="${this.isShort ? "display: none;" : ""}">

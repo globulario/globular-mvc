@@ -571,6 +571,11 @@ export class SearchBar extends HTMLElement {
                 }
              }
 
+             paper-card{
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
+            }
+
             paper-checkbox {
                 margin-left: 16px;
                 margin-bottom: 8px;
@@ -791,6 +796,11 @@ export class SearchResults extends HTMLElement {
                 width: 30px;
                 height: 30px;
                 padding: 3px;
+            }
+
+            paper-card{
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
             }
 
             paper-tab {
@@ -2111,6 +2121,11 @@ export class SearchVideoCard extends HTMLElement {
         let html = `
         <style>
            
+            paper-card{
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
+            }
+
             paper-card {
                 background: var(--palette-background-default);
                 border-top: 1px solid var(--palette-background-paper);
@@ -2777,7 +2792,7 @@ export class SearchTitleDetail extends HTMLElement {
         //let uuid = randomUUID()
         let html = `
         <style>
-           
+
             paper-card {
                 background: var(--palette-background-default);
                 border-top: 1px solid var(--palette-background-paper);

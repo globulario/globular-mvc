@@ -23,7 +23,11 @@ export class GroupManager extends HTMLElement {
         this.shadowRoot.innerHTML = `
              <style>
                 
-
+                paper-card{
+                    background-color: var(--palette-background-paper);
+                    color: var(--palette-text-primary);
+                }
+                
                 #create-group-btn{
                     top: -42px;
                     right: 0px;
@@ -107,7 +111,11 @@ export class GroupManager extends HTMLElement {
         createGroupBtn.onclick = () => {
             let html = `
             <style>
-               
+                paper-card{
+                    background-color: var(--palette-background-paper);
+                    color: var(--palette-text-primary);
+                }
+                
                 #create-group-panel{
                     position: absolute;
                     right: 0px;

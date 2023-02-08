@@ -201,6 +201,10 @@ export class FormSection extends HTMLElement {
                     flex-direction:column;
                 }
                  
+                paper-card{
+                    background-color: var(--palette-background-paper);
+                    color: var(--palette-text-primary);
+                }
 
             </style>
             <paper-card class="card" id="${this.idTitle}_form_section">
@@ -274,7 +278,6 @@ export class Field extends HTMLElement {
         // Setup basic HTML
         this.shadowRoot.innerHTML = `
             <style>
-               
 
                 .field-label {
                    line-height: 1rem;
@@ -325,6 +328,11 @@ export class Field extends HTMLElement {
                 #field-view {
                     text-align: center;
                     font-size: 1rem;
+                }
+
+                paper-card{
+                    background-color: var(--palette-background-paper);
+                    color: var(--palette-text-primary);
                 }
           
                 ${hostHtml}

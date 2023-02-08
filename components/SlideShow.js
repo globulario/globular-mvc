@@ -123,6 +123,11 @@ export class SlideShow extends HTMLElement {
                         position: relative;
                     }
                
+                    paper-card{
+                        background-color: var(--palette-background-paper);
+                        color: var(--palette-text-primary);
+                    }
+                    
                 </style>
                 <paper-icon-button id="start-btn" icon="av:play-circle-filled"></paper-icon-button>
                 <paper-card id="container" class="container slides-container">

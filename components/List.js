@@ -439,6 +439,11 @@ export class SearchableAccountList extends SearchableList {
                         min-width: 400px;
                     }
 
+                    paper-card{
+                        background-color: var(--palette-background-paper);
+                        color: var(--palette-text-primary);
+                    }
+
                 </style>
                 <paper-card id="add-list-user-panel">
                     <div style="display: flex; align-items: center;">
@@ -625,6 +630,11 @@ export class SearchableApplicationList extends SearchableList {
                         min-width: 400px;
                     }
 
+                    paper-card{
+                        background-color: var(--palette-background-paper);
+                        color: var(--palette-text-primary);
+                    }
+
                 </style>
                 <paper-card id="add-list-application-panel">
                     <div style="display: flex; align-items: center;">
@@ -807,6 +817,11 @@ export class SearchableRoleList extends SearchableList {
                         min-width: 400px;
                     }
 
+                    paper-card{
+                        background-color: var(--palette-background-paper);
+                        color: var(--palette-text-primary);
+                    }
+
                 </style>
                 <paper-card id="add-list-role-panel">
                     <div style="display: flex; align-items: center;">
@@ -983,6 +998,11 @@ export class SearchableGroupList extends SearchableList {
                     .card-content{
                         overflow-y: auto;
                         min-width: 400px;
+                    }
+
+                    paper-card{
+                        background-color: var(--palette-background-paper);
+                        color: var(--palette-text-primary);
                     }
 
                 </style>
@@ -1166,6 +1186,11 @@ export class SearchableOrganizationList extends SearchableList {
                         min-width: 400px;
                     }
 
+                    paper-card{
+                        background-color: var(--palette-background-paper);
+                        color: var(--palette-text-primary);
+                    }
+
                 </style>
                 <paper-card id="add-list-organization-panel">
                     <div style="display: flex; align-items: center;">
@@ -1344,6 +1369,11 @@ export class SearchablePeerList extends SearchableList {
                     .card-content{
                         overflow-y: auto;
                         min-width: 400px;
+                    }
+
+                    paper-card{
+                        background-color: var(--palette-background-paper);
+                        color: var(--palette-text-primary);
                     }
 
                 </style>
