@@ -33,6 +33,7 @@ export class DiskSpaceManager extends HTMLElement {
           display: flex;
           flex-direction: column;
           position: relative;
+          font-size: 1rem;
         }
 
         #error-message-div{

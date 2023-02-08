@@ -66,7 +66,7 @@ export function setMoveable(handle, draggable, onmove, element, offsetTop = 0) {
     element.style.zIndex = 1000;
   })
 
-  handle.addEventListener('mousedown', (e) => {
+  handle.addEventListener('pointerdown', (e) => {
     e.stopPropagation()
     isMouseDown = true;
     document.body.classList.add('no-select');
@@ -77,11 +77,14 @@ export function setMoveable(handle, draggable, onmove, element, offsetTop = 0) {
       draggables[i].style.zIndex = 100;
     }
 
+    console.log("pointer down")
     element.style.zIndex = 1000;
   })
 
-  document.addEventListener('mousemove', (e) => {
+  document.addEventListener('pointermove', (e) => {
     e.stopPropagation()
+
+    console.log("pointer move", isMouseDown)
     if (isMouseDown) {
       var cx = e.clientX - initX,
         cy = e.clientY - initY;
@@ -119,8 +122,9 @@ export function setMoveable(handle, draggable, onmove, element, offsetTop = 0) {
     }
   })
 
-  document.addEventListener('mouseup', (e) => {
+  document.addEventListener('pointerup', (e) => {
     e.stopPropagation()
+    console.log("pointer up")
     isMouseDown = false;
     document.body.classList.remove('no-select');
 

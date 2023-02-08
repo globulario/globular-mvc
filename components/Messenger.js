@@ -112,11 +112,34 @@ export class MessengerMenu extends Menu {
             #Messages-div {
                 display: flex;
                 flex-wrap: wrap;
-                padding: 10px;
                 height: 100%;
                 flex-direction: column;
                 overflow: hidden;
                 min-width: 200px;
+            }
+
+            #Messenger_menu_div{
+                overflow: auto;
+                height: ${this.height}px;
+                max-height: 70vh;
+                overflow-y: auto;
+            }
+
+                
+            #title{
+                display: none; 
+                justify-content: center;
+            }
+
+            @media (max-width: 700px) {
+                #Messenger_menu_div{
+                    margin-top: 25px;
+                    max-height: calc(100vh - 85px);
+                }
+
+                #title{
+                    display: flex; 
+                }
             }
                           
             #conversations-lst{
@@ -169,12 +192,30 @@ export class MessengerMenu extends Menu {
                 --paper-badge-margin-left: 10px;
             }
 
+            paper-card{
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
+                padding: 10px;
+            }
+
+            paper-card h1 {
+                font-size: 1.65rem;
+                margin: 0px;
+                margin-bottom: 10px;
+            }
+
             </style>
 
             <div id="Messages-div">
+                <div id="header" style="width: 100%;">
+                    <div id="title">
+                        <h1 style="flex-grow: 1;">Conversation's</h1>
+                        <paper-icon-button id="close-btn" icon="icons:close" role="button" tabindex="0" aria-disabled="false"></paper-icon-button>
+                    </div>
+                </div>
                 <div style="display: flex; align-items: center;">
                     <paper-input type="text" label="Search" id="search-conversation-box" width="${this.width}" style="flex-grow: 1;"></paper-input>
-                    <div id="new-conversation-btn" class="btn" style="position: relative;">
+                    <div id="new-conversation-btn" class="btn_" style="position: relative;">
                         <iron-icon style="flex-grow: 1; --iron-icon-fill-color:var(--palette-text-primary);" icon="add"></iron-icon>
                         <paper-ripple class="circle" recenters=""></paper-ripple>
                     </div>
@@ -196,12 +237,11 @@ export class MessengerMenu extends Menu {
         let range = document.createRange()
         this.getMenuDiv().innerHTML = "" // remove existing elements.
         this.getMenuDiv().appendChild(range.createContextualFragment(html));
-
-        this.getMenuDiv().style.height = this.height + "px";
-        this.getMenuDiv().style.maxHeight = "70vh"
-        this.getMenuDiv().style.overflowY = "auto";
+        this.getMenuDiv().querySelector("#close-btn").onclick = ()=>{
+            this.getMenuDiv().parentNode.removeChild(this.getMenuDiv())
+        }
+        
         this.shadowRoot.appendChild(this.getMenuDiv())
-
 
         this.conversationsTab = this.shadowRoot.querySelector("#conversations-tab")
         this.conversationsLst = this.shadowRoot.querySelector("#conversations-lst_")
@@ -934,16 +974,16 @@ export class Messenger extends HTMLElement {
         
         <paper-card class="container">
             <div class="header">
-                <div class="btn">
+                <div class="btn_">
                     <iron-icon  id="hide-btn-0"  icon="expand-more" style="" icon="add"></iron-icon>
                     <paper-ripple class="circle" recenters=""></paper-ripple>
                 </div>
-                <div class="btn">
+                <div class="btn_">
                     <paper-ripple class="circle" recenters=""></paper-ripple>
                     <iron-icon style="height: 18px;" id="leave_conversation_btn" icon="exit-to-app"></iron-icon>
                 </div>     
                 <div class="summary"></div>
-                <div class="btn">
+                <div class="btn_">
                     <iron-icon  id="hide-btn-1"  icon="unfold-less" icon="add"></iron-icon>
                     <paper-ripple class="circle" recenters=""></paper-ripple>
                 </div>
@@ -1628,7 +1668,7 @@ export class ParticipantsList extends HTMLElement {
         if (user._id + "@" + user.domain != this.account._id + "@" + this.account.domain && this.isOwner) {
             let id = `conversation_${conversation.getUuid()}_${user._id}_kickout_btn`
             let html = `
-            <div id="${id}" class="btn" title="Kickout ${user.name_} from this conversation.">
+            <div id="${id}" class="btn_" title="Kickout ${user.name_} from this conversation.">
                 <iron-icon   icon="remove-circle-outline"></iron-icon>
                 <paper-ripple class="circle" recenters=""></paper-ripple>
             </div>
@@ -1951,7 +1991,7 @@ export class MessageEditor extends HTMLElement {
             <div class="answer-bar">
                 <div class="answer-to-div">
                     <span style="display: flex; align-items: center;">You reply to <div id="reply-to"> </div></span>
-                    <div class="btn">
+                    <div class="btn_">
                         <iron-icon  id="close-answer-btn" icon="close"></iron-icon>
                         <paper-ripple class="circle" recenters=""></paper-ripple>
                     </div>
@@ -1961,11 +2001,11 @@ export class MessageEditor extends HTMLElement {
             </div>
             <div class="toolbar">
                 <iron-autogrow-textarea id="text-writer-box"></iron-autogrow-textarea>
-                <div class="btn">
+                <div class="btn_">
                     <iron-icon  id="send-btn" icon="send"></iron-icon>
                     <paper-ripple class="circle" recenters=""></paper-ripple>
                 </div>
-                <div class="btn">
+                <div class="btn_">
                     <iron-icon  id="attach-file-btn" icon="editor:insert-drive-file"></iron-icon>
                     <paper-ripple class="circle" recenters=""></paper-ripple>
                 </div>
@@ -2349,7 +2389,7 @@ export class LikeDisLikeBtn extends HTMLElement {
 
         </style>
 
-        <div class="btn" id="${id}_btn">
+        <div class="btn_" id="${id}_btn">
             <iron-icon class="like-dislike-btn" icon="${this.icon}"></iron-icon>
             <paper-ripple class="circle" recenters=""></paper-ripple>
             <paper-badge  id="${id}_count" style="display: none;" for="${id}_btn"></paper-badge>
@@ -2595,15 +2635,15 @@ export class GlobularMessagePanel extends HTMLElement {
                 </div>
                 <div class="conversation-message-infos">
                     <div class="conversation-message-actions">
-                        <div class="btn" id="reply-btn-${msg.getUuid().split("/").join("_")}">
+                        <div class="btn_" id="reply-btn-${msg.getUuid().split("/").join("_")}">
                             <iron-icon icon="reply"></iron-icon>
                             <paper-ripple class="circle" recenters=""></paper-ripple>
                         </div>
                         
-                        <globular-like-dislike-btn class="btn" id="like-btn-${msg.getUuid().split("/").join("_")}" icon="thumb-up"></globular-like-dislike-btn>
-                        <globular-like-dislike-btn class="btn" id="dislike-btn-${msg.getUuid().split("/").join("_")}" icon="thumb-down"></globular-like-dislike-btn>
+                        <globular-like-dislike-btn class="btn_" id="like-btn-${msg.getUuid().split("/").join("_")}" icon="thumb-up"></globular-like-dislike-btn>
+                        <globular-like-dislike-btn class="btn_" id="dislike-btn-${msg.getUuid().split("/").join("_")}" icon="thumb-down"></globular-like-dislike-btn>
 
-                        <div class="btn" id="delete-btn-${msg.getUuid().split("/").join("_")}">
+                        <div class="btn_" id="delete-btn-${msg.getUuid().split("/").join("_")}">
                             <iron-icon icon="delete"></iron-icon>
                             <paper-ripple class="circle" recenters=""></paper-ripple>
                         </div>

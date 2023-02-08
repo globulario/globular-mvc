@@ -115,16 +115,30 @@ export class NotificationMenu extends Menu {
             filter: invert(10%);
         }
 
+        paper-card{
+            background-color: var(--palette-background-paper);
+            color: var(--palette-text-primary);
+        }
+  
+
+        paper-card h1 {
+            font-size: 1.65rem;
+            margin: 0px;
+            margin-bottom: 10px;
+        }
+
+        #title{
+            display: none; 
+            justify-content: center;
+        }
+
     </style>
 
         <div>
-            <div class="header" style="border-bottom: 1px solid var(--palette-action-disabled);">
-                <div>Notifications</div>
-                <div class="btn_div">
-                    <div class="btn">
-                        <iron-icon id="notifications-config" icon="settings"></iron-icon>
-                        <paper-ripple class="circle" recenters></paper-ripple>
-                    </div>
+            <div id="header" style="width: 100%;">
+                <div id="title">
+                    <h1 style="flex-grow: 1;">Notification's</h1>
+                    <paper-icon-button id="close-btn" icon="icons:close" role="button" tabindex="0" aria-disabled="false"></paper-icon-button>
                 </div>
             </div>
 
@@ -153,7 +167,10 @@ export class NotificationMenu extends Menu {
 
         let range = document.createRange()
         this.getMenuDiv().appendChild(range.createContextualFragment(html));
-
+        this.getMenuDiv().querySelector("#close-btn").onclick = ()=>{
+            this.getMenuDiv().parentNode.removeChild(this.getMenuDiv())
+        }
+        
         // Action's
         this.shadowRoot.appendChild(this.getMenuDiv())
 

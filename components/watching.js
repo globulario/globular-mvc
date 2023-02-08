@@ -457,7 +457,7 @@ export class WatchingMenu extends Menu {
             let icon = this.getIconDiv().querySelector("iron-icon")
             icon.style.removeProperty("--iron-icon-fill-color")
             if(this.mediaWatching.parentNode == undefined){
-                Model.eventHub.publish("_display_watching_event_", this.mediaWatching, true)
+                Model.eventHub.publish("_display_workspace_content_event_", this.mediaWatching, true)
             }
            
         }

@@ -58,14 +58,14 @@ export class Menu extends HTMLElement {
                 display: flex;
             }
 
-            .btn{
+            .btn_{
                 display: flex;
                 justify-content: center;
                 align-items: center;
                 position: relative;
             }
 
-            .btn:hover{
+            .btn_:hover{
                 cursor: pointer;
             }
 
@@ -126,10 +126,17 @@ export class Menu extends HTMLElement {
                 margin-left: 24px;
             }
 
+            element.style {
+                
+            }
+       
+            paper-card h1 {
+                font-size: 1.65rem;
+            }
         </style>
 
         <div id="${this.id}_div" class="menu-btn">
-            <div id="${this.id}_picture_div" class="btn">
+            <div id="${this.id}_picture_div" class="btn_">
                 <iron-icon id="${this.id}_icon" icon="${this.icon}"></iron-icon>
                 <img id="${this.id}_img"></img>
                 <span class="label" id="${this.id}_label">${text}</span>
@@ -137,9 +144,11 @@ export class Menu extends HTMLElement {
             </div>
            
             <paper-tooltip id="${this.id}_tooltip" for="${this.id}_picture_div" style="font-size: 10pt;">${text}</paper-tooltip>
+
             <paper-card id="${this.id}_menu_div" class="menu-div bottom">
                 <slot name="${this.id}"></slot>
             </paper-card>
+
         </div>
     `
         // this is execute each time the element is connect in the dom.
@@ -153,6 +162,28 @@ export class Menu extends HTMLElement {
 
         // Can be use to change the onclick default handler.
         this.onclick = null;
+
+        // Move the menu in it parent if the window resize.
+        window.addEventListener("resize", (evt) => {
+            if (!ApplicationView) {
+                return;
+            }
+
+            let w = ApplicationView.layout.width();
+            
+            // TODO try to set it in the css propertie instead...
+            if (this.menu.parentNode) {
+                if (w < 700) {
+
+                    
+
+                    Model.eventHub.publish("_display_workspace_content_event_", this.menu, true)
+                } else {
+                    let menuDiv = this.shadowRoot.getElementById(this.id + "_div")
+                    menuDiv.appendChild(this.menu)
+                }
+            }
+        })
 
     }
 
@@ -180,7 +211,7 @@ export class Menu extends HTMLElement {
                 if (!overBtn && !overMenu && !this.keepOpen) {
                     document.removeEventListener("click", handler)
                     let icon = this.getIconDiv().querySelector("iron-icon")
-                    if (img.src.length == 0){
+                    if (img.src.length == 0) {
                         icon.style.removeProperty("--iron-icon-fill-color")
                     }
                     menu.parentNode.removeChild(menu)
@@ -188,9 +219,9 @@ export class Menu extends HTMLElement {
             }
         };
 
-        // Here I will display the user notification panel.
+        // The menu logic...
         menuPictureDiv.onclick = (evt) => {
-           
+
             // hide the icon div if image is not undefined.
             let img = this.shadowRoot.getElementById(this.id + "_img")
             let ico = this.shadowRoot.getElementById(this.id + "_icon")
@@ -198,12 +229,11 @@ export class Menu extends HTMLElement {
 
             if (img.src.length == 0) {
                 ico.style.display = "block";
-                //icon.style.setProperty("--iron-icon-fill-color", "var(--palette-primary-main)")
             }
 
             // test if the menu is set.
             let menu = this.shadowRoot.getElementById(this.id + "_menu_div");
-    
+
             // simply remove it if it already exist.
             if (menu != undefined) {
                 var rectMenu = menu.getBoundingClientRect();
@@ -211,23 +241,29 @@ export class Menu extends HTMLElement {
                 if (!overMenu) {
                     document.removeEventListener("click", handler)
                     menu.parentNode.removeChild(menu)
-                    if (img.src.length == 0){
+                    if (img.src.length == 0) {
                         icon.style.removeProperty("--iron-icon-fill-color")
                     }
                 }
                 return;
             }
 
-            let menuDiv = this.shadowRoot.getElementById(this.id + "_div")
-            menuDiv.appendChild(this.menu)
-            if(this.onshow){
+            let w = ApplicationView.layout.width();
+            if(w < 700){
+                Model.eventHub.publish("_display_workspace_content_event_", this.menu, true)
+            }else{
+                let menuDiv = this.shadowRoot.getElementById(this.id + "_div")
+                menuDiv.appendChild(this.menu)
+            }
+
+            if (this.onshow) {
                 this.onshow()
             }
 
             // set the handler.
             document.addEventListener("click", handler);
 
-            //ApplicationView.layout.appDrawer.toggle()
+            ApplicationView.layout.appDrawer.close()
         }
     }
 
@@ -290,7 +326,7 @@ export class Menu extends HTMLElement {
     /**
      * Display the label beside the menu
      */
-    expand(){
+    expand() {
         this.getMenuDiv().classList.remove("left");
         this.getMenuDiv().classList.add("bottom");
         this.getIcon().classList.remove("big")
@@ -303,7 +339,7 @@ export class Menu extends HTMLElement {
     /**
      * not display the label.
      */
-    shrink(){
+    shrink() {
         this.getIconDiv().classList.add("sidemenu-btn")
         this.getMenuDiv().classList.remove("bottom");
         this.getMenuDiv().classList.add("left");

@@ -158,13 +158,32 @@ export class AccountMenu extends Menu {
                     font-size: 12pt;
                     line-height: 1.6rem;
                     align-items: center;
-                    background-color: var(--palette-background-paper);
-                    color: var(--palette-text-primary);
                     margin-bottom: 16px;
                 }
 
                 #account-header-id{
                     font-weight: 500;
+                }
+
+                #title{
+                  display: none; 
+                  justify-content: center;
+                }
+
+                #account_menu_div{
+                 
+                }
+
+                @media (max-width: 700px) {
+
+                  #account_menu_div{
+                      margin-top: 25px;
+                      height: 100%;
+                  }
+
+                  #title{
+                      display: flex; 
+                  }
                 }
 
                 #account-header-id{
@@ -203,12 +222,37 @@ export class AccountMenu extends Menu {
                   color: var(--palette-text-primary);
                 }
 
+                paper-card{
+                  background-color: var(--palette-background-paper);
+                  color: var(--palette-text-primary);
+                }
+        
                 paper-button {
                   font-size: 1rem;
                 }
+
+                .card-content{
+                  display: flex;
+                  flex-direction: column;
+                  background-color: var(--palette-background-paper);
+                  color: var(--palette-text-primary);
+                }
+
+                #header h1 {
+                  font-size: 1.65rem;
+                  margin: 0px;
+                  margin-bottom: 10px;
+                }
+
             </style>
 
             <div class="card-content">
+              <div id="header" style="width: 100%;">
+                <div id="title">
+                    <h1 style="flex-grow: 1;">Session</h1>
+                    <paper-icon-button id="close-btn" icon="icons:close" role="button" tabindex="0" aria-disabled="false"></paper-icon-button>
+                </div>
+              </div>
                 <div id="accout-menu-header">
                     <div id="icon-div" title="click here to change profile picture">
                         <iron-icon id="profile-icon" icon="account-circle"></iron-icon>
@@ -238,6 +282,9 @@ export class AccountMenu extends Menu {
     let range = document.createRange();
     this.getMenuDiv().innerHTML = ""; // remove existing elements.
     this.getMenuDiv().appendChild(range.createContextualFragment(html));
+    this.getMenuDiv().querySelector("#close-btn").onclick = ()=>{
+      this.getMenuDiv().parentNode.removeChild(this.getMenuDiv())
+    }
 
     // Set the account.
     this.getMenuDiv().querySelector("globular-session-state").account = account
@@ -364,18 +411,19 @@ export class AccountManager extends HTMLElement {
                  }
 
                  .card-content {
-                    min-width: 355px;
-                    
+                    min-width: 680px;
                     padding: 0px;
-                }
+                    font-size: 1rem;
+                 }
+
      
-                @media only screen and (max-width: 800px) {
+                @media (max-width: 800px) {
                     .card-content{
                       min-width: 580px;
                     }
                   }
           
-                  @media only screen and (max-width: 600px) {
+                  @media (max-width: 600px) {
                     .card-content{
                       min-width: 380px;
                     }
@@ -551,12 +599,26 @@ export class AccountPanel extends HTMLElement {
                 align-items: center;
                 border-bottom: 1px solid var(--palette-background-default);
                 background-color: var(--palette-background-paper);
-                min-width: 355px;
+                
             }
 
             #content{
-                padding: 15px;
+                padding: 0px;
+                min-width: 680px;
+                font-size: 1rem;
             }
+
+            @media (max-width: 800px) {
+                .card-content{
+                  min-width: 580px;
+                }
+              }
+      
+              @media (max-width: 600px) {
+                .card-content{
+                  min-width: 380px;
+                }
+              }
 
             .header{
                 display: flex;

@@ -181,6 +181,9 @@ export class Layout extends HTMLElement {
       if (this.workspace() == null) {
         return;
       }
+
+      this.appDrawer.close()
+
       // Set side menu div style.
       let sideMenu_ = document.getElementById("side-menu");
 
@@ -202,7 +205,7 @@ export class Layout extends HTMLElement {
         sideMenu_.style.width = "auto";
         sideMenu_.style.display = "block";
         sideMenu_.style.overflow = "auto";
-
+       
         // put the naviagtion content into it default slot.
         let navigation = this.querySelector("#navigation")
         navigation.slot = "navigation"
@@ -211,6 +214,8 @@ export class Layout extends HTMLElement {
           contentManager.setHorizontal()
 
       } else {
+      
+
         // Set the menu in the toolbar.
         this.appToolbar.appendChild(this.sideMenuSlot);
         this.hamburger.style.display = "";

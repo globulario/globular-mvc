@@ -644,37 +644,17 @@ export class ApplicationView extends View {
     }, true)
 
     // Display user watching content...
-    Model.eventHub.subscribe("_display_watching_event_",
+    Model.eventHub.subscribe("_display_workspace_content_event_",
       uuid => { },
       evt => {
+
+        if(evt.parentNode == this.getWorkspace()){
+          return // already the parent.
+        }
 
         // remove actual nodes
         this.hideContent()
 
-
-        // Append the watching component...
-        this.getWorkspace().appendChild(evt);
-
-      }, true)
-
-    Model.eventHub.subscribe("_display_share_panel_event_",
-      uuid => { },
-      evt => {
-
-        // remove actual nodes
-        this.hideContent()
-
-        // Append the watching component...
-        this.getWorkspace().appendChild(evt);
-
-      }, true)
-
-    Model.eventHub.subscribe("_display_system_infos_panel_event_",
-      uuid => { },
-      evt => {
-
-        // remove actual nodes
-        this.hideContent()
 
         // Append the watching component...
         this.getWorkspace().appendChild(evt);

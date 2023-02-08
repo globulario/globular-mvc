@@ -30,7 +30,7 @@ export class SystemInfosMenu extends Menu {
             let icon = this.getIconDiv().querySelector("iron-icon")
             icon.style.removeProperty("--iron-icon-fill-color")
             if (this.system_infos_panel.parentNode == undefined) {
-                Model.eventHub.publish("_display_system_infos_panel_event_", this.system_infos_panel, true)
+                Model.eventHub.publish("_display_workspace_content_event_", this.system_infos_panel, true)
             }
 
         }

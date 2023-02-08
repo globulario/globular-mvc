@@ -2024,10 +2024,22 @@ export class ResourcesPermissionsType extends HTMLElement {
             }
 
             .card-content {
-                min-width: 355px;
-                
+                min-width: 680px;
+                font-size: 1rem;
                 padding: 0px;
             }
+
+            @media (max-width: 800px) {
+                .card-content{
+                  min-width: 580px;
+                }
+              }
+      
+              @media (max-width: 600px) {
+                .card-content{
+                  min-width: 380px;
+                }
+              }
 
             #container {
                 display: flex;

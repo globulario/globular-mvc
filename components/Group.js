@@ -34,22 +34,33 @@ export class GroupManager extends HTMLElement {
                     display: flex;
                     flex-direction: column;
                     position: relative;
-                    min-width: 355px;
                  }
 
-                 .card-content {
-                    min-width: 355px;
-                    
+                .card-content {
+                    min-width: 680px;
                     padding: 0px;
-                }
-     
-                @media only screen and (max-width: 800px) {
+                    font-size: 1rem;
+                 }
+
+                 @media (max-width: 800px) {
                     .card-content{
                       min-width: 580px;
                     }
                   }
           
-                  @media only screen and (max-width: 600px) {
+                  @media (max-width: 600px) {
+                    .card-content{
+                      min-width: 380px;
+                    }
+                  }
+     
+                @media (max-width: 800px) {
+                    .card-content{
+                      min-width: 580px;
+                    }
+                  }
+          
+                  @media (max-width: 600px) {
                     .card-content{
                       min-width: 380px;
                     }

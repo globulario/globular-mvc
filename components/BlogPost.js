@@ -172,7 +172,7 @@ export class BlogPostElement extends HTMLElement {
                 justify-content: center;
                 margin-bottom: 10px;
                 margin-top: 10px;
-                background-color: var(--palette-background-paper);
+               
             }
 
             .blog-post-editor-div{
@@ -241,6 +241,25 @@ export class BlogPostElement extends HTMLElement {
                 right: 0px;
                 z-index: 100;
             }
+
+            paper-card{
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
+                font-size: 1rem;
+            }
+
+            paper-radio-button {
+                --paper-radio-button-checked-color: var(--palette-primary-main);
+                --paper-radio-button-checked-ink-color: var(--palette-primary-main);
+                --paper-radio-button-unchecked-color: var(--palette-action-disabled);
+                --paper-radio-button-unchecked-ink-color: var(--palette-action-disabled);
+                --paper-radio-button-label-color: var(--palette-action-disabled);
+             }
+             
+             paper-radio-button[checked] {
+                --paper-radio-button-label-color: var(--palette-text-accent);
+             }
+             
 
         </style>
 
@@ -832,15 +851,6 @@ export class BlogPosts extends HTMLElement {
         <style>
            
 
-            #container{
-                width: 100%;
-                margin-left: 2.5%;
-                display: flex;
-                flex-direction: column;
-                margin-top: 10px;
-                margin-bottom: 10px;
-            }
-
             #blog-lst-div{
                 display: flex;
                 justify-content: center;
@@ -865,43 +875,73 @@ export class BlogPosts extends HTMLElement {
                 
             }
 
+            paper-card {
+                background-color: var(--palette-background-paper);
+                margin-top: 25px;
+                font-size: 1.65rem;
+            }
+
             paper-card h1 {
                 font-size: 1.65rem;
             }
+
+            .card-content{
+                display: flex;
+                flex-direction: column;
+                margin-top: 10px;
+                margin-bottom: 10px;
+                min-width: 680px;
+                padding: 0px;
+                font-size: 1rem;
+              }
+      
+              @media (max-width: 800px) {
+                .card-content{
+                  min-width: 580px;
+                }
+              }
+      
+              @media (max-width: 600px) {
+                .card-content{
+                  min-width: 380px;
+                }
+              }
             
         </style>
-        <div id="container">
+        
             <paper-card id="blog-lst-div">
-                <div style="display: flex; border: none;">
-                    <div style="display: flex; flex-direction: column; padding-left:10px; flex-grow: 1;">
-                        <h1 id="blog-title" style="margin:0px;" >Blog(s)</h1>
-                        <div style="display: flex; align-items: center;">
-                            <span>new post</span>
-                            <paper-icon-button id="new-blog-post-btn" icon="icons:add" title="Create new Post"></paper-icon-button>
+                <div class="card-content">
+                    <div style="display: flex; border: none;">
+                        <div style="display: flex; flex-direction: column; padding-left:10px; flex-grow: 1;">
+                            <h1 id="blog-title" style="margin:0px;" >Blog(s)</h1>
+                            <div style="display: flex; align-items: center;">
+                                <span>new post</span>
+                                <paper-icon-button id="new-blog-post-btn" icon="icons:add" title="Create new Post"></paper-icon-button>
+                            </div>
+                        </div>
+                        <paper-icon-button id="close-btn" icon="icons:close" title="Create new Post"></paper-icon-button>
+                    </div>
+                    <div class="blogs">
+                        <h2 id="draft-title">Draft(s)</h2>
+                        <div style="display: flex; flex-wrap: wrap;">
+                            <slot name="draft"></slot>
                         </div>
                     </div>
-                    <paper-icon-button id="close-btn" icon="icons:close" title="Create new Post"></paper-icon-button>
-                </div>
-                <div class="blogs">
-                    <h2 id="draft-title">Draft(s)</h2>
-                    <div style="display: flex; flex-wrap: wrap;">
-                        <slot name="draft"></slot>
+                    <div class="blogs">
+                        <h2 id="published-title">Published(s)</h2>
+                        <div style="display: flex; flex-wrap: wrap;">
+                            <slot name="published"></slot>
+                        </div>
                     </div>
-                </div>
-                <div class="blogs">
-                    <h2 id="published-title">Published(s)</h2>
-                    <div style="display: flex; flex-wrap: wrap;">
-                        <slot name="published"></slot>
-                    </div>
-                </div>
-                <div class="blogs">
-                    <h2 id="archived-title">Archived(s)</h2>
-                    <div style="display: flex; flex-wrap: wrap;">
-                        <slot name="archived"></slot>
+                    <div class="blogs">
+                        <h2 id="archived-title">Archived(s)</h2>
+                        <div style="display: flex; flex-wrap: wrap;">
+                            <slot name="archived"></slot>
+                        </div>
                     </div>
                 </div>
             </paper-card>
-        </div>
+       
         `
 
         this.onclose = null

@@ -622,7 +622,7 @@ export class VideoSettings extends Settings {
 
 
         // The convert button will start video processing...
-        let stopConvertVideoAction = new ActionSetting("Stop Convert", "Stop video conversion...", () => {
+        let stopConvertVideoAction = new ActionSetting("Stop", "Stop video conversion...", () => {
             // Application.globular.ldapService.
             let rqst = new StopProcessVideoRequest
             Model.globular.fileService.stopProcessVideo(rqst, {

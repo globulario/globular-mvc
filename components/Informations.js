@@ -59,6 +59,7 @@ const __style__ = `
 .title-informations-div {
     font-size: 1em;
     min-width: 350px;
+    max-width: 450px;
   
 }
 
@@ -418,10 +419,10 @@ export class InformationsManager extends HTMLElement {
                 display: flex;
                 flex-direction: column;
                 padding: 8px;
-                /*overflow: auto;*/
                 z-index: 100;
                 background-color: var(--palette-background-paper);
                 color: var(--palette-text-primary);
+                font-size: 1rem;
             }
 
             #header {
@@ -976,7 +977,7 @@ export class VideoInfoEditor extends HTMLElement {
                     </div>
                     <div style="display: table-row;">
                         <div class="label" style="display: table-cell; font-weight: 450;">Tags:</div>
-                        <div id="video-tags-div" style="display: table-cell; width: 100%;"></div>
+                        <div id="video-tags-div" style="display: table-cell; width: 100%; max-width: 450px;"></div>
                     </div>
                 </div>
                 <div class="action-div" style="${this.isShort ? "display: none;" : ""}">

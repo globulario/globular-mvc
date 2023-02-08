@@ -921,7 +921,7 @@ export class CodeManager extends HTMLElement {
         </style>
         <paper-card id="container">
             <div style="display: flex; border-bottom: 1px solid var(--palette-divider);">
-                <paper-icon-button id="add-element-btn" icon="icons:add" class="btn"></paper-icon-button>
+                <paper-icon-button id="add-element-btn" icon="icons:add" class="btn_"></paper-icon-button>
                 <paper-tooltip for="add-element-btn" role="tooltip" tabindex="-1">Add Style</paper-tooltip>
                 <div id="create-element-div" style="display: none; flex-grow: 1;">
                     <paper-input  style="display: flex;flex-grow: 1;" no-label-float></paper-input>
@@ -1030,9 +1030,9 @@ export class CodeManager extends HTMLElement {
             if (e.parentNode == ApplicationView.layout.workspace()) {
                 let html = `
                 <div class="element-lnk">
-                    <paper-icon-button id="edit-${e.id}-btn"  icon="icons:create" class="btn"></paper-icon-button>
+                    <paper-icon-button id="edit-${e.id}-btn"  icon="icons:create" class="btn_"></paper-icon-button>
                     <span id="edit-${e.id}-lnk" style="flex-grow: 1; padding-left: 16px;">${e.name}</span>
-                    <paper-icon-button id="delete-${e.id}-btn"  icon="icons:delete" class="btn"></paper-icon-button>
+                    <paper-icon-button id="delete-${e.id}-btn"  icon="icons:delete" class="btn_"></paper-icon-button>
                     <paper-ripple> </paper-ripple>
                 </div>
                 `
@@ -1873,13 +1873,13 @@ export class WebPage extends HTMLElement {
             <slot></slot>
             <div id="toolbar">
                 <div class="toolbar">
-                    <paper-icon-button id="add-element-btn" icon="icons:add" class="btn"></paper-icon-button>
+                    <paper-icon-button id="add-element-btn" icon="icons:add" class="btn_"></paper-icon-button>
                     <paper-tooltip for="add-element-btn" role="tooltip" tabindex="-1">Add Element</paper-tooltip>
                     <paper-button id="css-edit-btn">css</paper-button>
                     <paper-tooltip for="css-edit-btn" role="tooltip" tabindex="-1">Edit CSS</paper-tooltip>
                     <paper-button id="js-edit-btn">js</paper-button>
                     <paper-tooltip for="js-edit-btn" role="tooltip" tabindex="-1">Edit JS</paper-tooltip>
-                    <paper-icon-button id="delete-page-btn"  icon="icons:delete" class="btn"></paper-icon-button>
+                    <paper-icon-button id="delete-page-btn"  icon="icons:delete" class="btn_"></paper-icon-button>
                     <paper-tooltip for="delete-page-btn" role="tooltip" tabindex="-1">Delete Page</paper-tooltip>
                 </div>
                 <span id="current-edit-page">
@@ -2574,15 +2574,15 @@ export class ElementEditor extends HTMLElement {
                    </div>
                    <div id="toolbar">
                         <div class="toolbar">
-                            <paper-icon-button id="add-element-btn" icon="icons:add" class="btn"></paper-icon-button>
+                            <paper-icon-button id="add-element-btn" icon="icons:add" class="btn_"></paper-icon-button>
                             <paper-tooltip for="add-element-btn" role="tooltip" tabindex="-1">Add Element</paper-tooltip>
                             <paper-button id="css-edit-btn">css</paper-button>
                             <paper-tooltip for="css-edit-btn" role="tooltip" tabindex="-1">Edit CSS</paper-tooltip>
                             <paper-button id="js-edit-btn">js</paper-button>
                             <paper-tooltip for="js-edit-btn" role="tooltip" tabindex="-1">Edit JS</paper-tooltip>
-                            <paper-button id="html-edit-btn"  class="btn">HTML</paper-button>
+                            <paper-button id="html-edit-btn"  class="btn_">HTML</paper-button>
                             <paper-tooltip for="html-edit-btn" role="tooltip" tabindex="-1">Edit Text</paper-tooltip>
-                            <paper-icon-button id="delete-element-btn"  icon="icons:delete" class="btn"></paper-icon-button>
+                            <paper-icon-button id="delete-element-btn"  icon="icons:delete" class="btn_"></paper-icon-button>
                             <paper-tooltip for="delete-element-btn" role="tooltip" tabindex="-1">Delete Element</paper-tooltip>
                         </div>
                         <span id="current-edit-element">

@@ -43,6 +43,8 @@ export class ContactsMenu extends Menu {
         // The logged account.
         this.account = null;
 
+        this.inviteContactInput =  null;
+
         // Here is the class members.
         this.onInviteConctact = null;
 
@@ -80,14 +82,35 @@ export class ContactsMenu extends Menu {
                 #Contacts-div {
                     display: flex;
                     flex-wrap: wrap;
-                    padding: 10px;
                     height: 100%;
                     flex-direction: column;
                     overflow: hidden;
-
                 }
 
-                
+                #Contacts_menu_div{
+                    overflow: auto;
+                    height: ${this.height}px;
+                    max-height: 70vh;
+                    overflow-y: auto;
+                }
+
+                #title{
+                    display: none; 
+                    justify-content: center;
+                }
+
+                @media (max-width: 700px) {
+
+                    #Contacts_menu_div{
+                        margin-top: 25px;
+                        max-height: calc(100vh - 85px);
+                    }
+
+                    #title{
+                        display: flex; 
+                    }
+                }
+
                 #Contacts-list{
                     flex: 1;
                     overflow: auto;
@@ -127,11 +150,28 @@ export class ContactsMenu extends Menu {
                     --paper-badge-margin-left: 10px;
                 }
 
+                paper-card{
+                    background-color: var(--palette-background-paper);
+                    color: var(--palette-text-primary);
+                    padding: 10px;
+                }
+          
+                paper-card h1 {
+                    font-size: 1.65rem;
+                    margin: 0px;
+                    margin-bottom: 10px;
+                }
                 
             </style>
             <div id="Contacts-div">
                 <div id="header" style="width: 100%;">
-                    <globular-autocomplete type="email" label="Search Contact" id="invite_contact_input" width="${this.width - 10}" style="flex-grow: 1;"></globular-autocomplete>
+
+                    <div id="title">
+                        <h1 style="flex-grow: 1;">Contact's</h1>
+                        <paper-icon-button id="close-btn" icon="icons:close" role="button" tabindex="0" aria-disabled="false"></paper-icon-button>
+                    </div>
+        
+                    <globular-autocomplete type="email" label="Search Contact" id="invite-contact-input" width="${this.width - 10}" style="flex-grow: 1;"></globular-autocomplete>
                     <paper-tabs selected="0" style="min-width: 450px;">
                         <paper-tab id="contacts-tab">
                             <span id="contacts-label">Contacts</span>
@@ -157,9 +197,10 @@ export class ContactsMenu extends Menu {
         this.getMenuDiv().innerHTML = "" // remove existing elements.
         this.getMenuDiv().appendChild(range.createContextualFragment(html));
 
-        this.getMenuDiv().style.height = this.height + "px";
-        this.getMenuDiv().style.maxHeight = "70vh"
-        this.getMenuDiv().style.overflowY = "auto";
+        this.getMenuDiv().querySelector("#close-btn").onclick = ()=>{
+            this.getMenuDiv().parentNode.removeChild(this.getMenuDiv())
+        }
+
         this.shadowRoot.appendChild(this.getMenuDiv())
 
 
@@ -170,18 +211,18 @@ export class ContactsMenu extends Menu {
         let receivedContactInvitationsTab = this.shadowRoot.getElementById("received-contact-invitations-tab")
 
         // The invite contact action.
-        let inviteContactInput = this.shadowRoot.getElementById("invite_contact_input")
-        inviteContactInput.onkeyup = () => {
-            let val = inviteContactInput.getValue();
+        this.inviteContactInput = this.shadowRoot.getElementById("invite-contact-input")
+        this.inviteContactInput.onkeyup = () => {
+            let val = this.inviteContactInput.getValue();
             if (val.length >= 3) {
                 this.findAccountByEmail(val)
             } else {
-                inviteContactInput.clear()
+                this.inviteContactInput.clear()
             }
         }
 
         // That function must return the div that display the value that we want.
-        inviteContactInput.displayValue = (contact) => {
+        this.inviteContactInput.displayValue = (contact) => {
 
             let card = new ContactCard(account, contact, true);
 
@@ -198,7 +239,7 @@ export class ContactsMenu extends Menu {
                         if (info == undefined) {
                             card.setInviteButton((contact) => {
                                 this.onInviteConctact(contact);
-                                inviteContactInput.clear();
+                                this.inviteContactInput.clear();
                             })
                         } else if (info.status == "sent") {
                             // Here I will display the revoke invitation button.
@@ -210,7 +251,7 @@ export class ContactsMenu extends Menu {
                             // Here I will display the accept/decline button.
                             card.setInviteButton((contact) => {
                                 this.onInviteConctact(contact);
-                                inviteContactInput.clear();
+                                this.inviteContactInput.clear();
                             })
                         } else if (info.status == "accepted") {
                             // Here I will display the revoke invitation button.
@@ -221,7 +262,7 @@ export class ContactsMenu extends Menu {
                 () => {
                     card.setInviteButton((contact) => {
                         this.onInviteConctact(contact);
-                        inviteContactInput.clear();
+                        this.inviteContactInput.clear();
                     })
                 })
 
@@ -263,7 +304,8 @@ export class ContactsMenu extends Menu {
         window.dispatchEvent(new Event('resize'));
 
         // Get the list of all accounts (mab).
-        this.shadowRoot.removeChild(this.getMenuDiv())
+        if(this.getMenuDiv().parentNode)
+            this.getMenuDiv().parentNode.removeChild(this.getMenuDiv())
     }
 
     findAccountByEmail(email) {
@@ -273,9 +315,8 @@ export class ContactsMenu extends Menu {
                 return obj.id !== this.account.id;
             });
             // set the getValues function that will return the list to be use as filter.
-            let inviteContactInput = this.shadowRoot.getElementById("invite_contact_input")
-            if (inviteContactInput != undefined) {
-                inviteContactInput.setValues(accounts)
+            if (this.inviteContactInput != undefined) {
+                this.inviteContactInput.setValues(accounts)
             }
 
         }, (err) => {

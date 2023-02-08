@@ -31,7 +31,7 @@ export class ShareMenu extends Menu {
             let icon = this.getIconDiv().querySelector("iron-icon")
             icon.style.removeProperty("--iron-icon-fill-color")
             if (this.sharePanel.parentNode == undefined) {
-                Model.eventHub.publish("_display_share_panel_event_", this.sharePanel, true)
+                Model.eventHub.publish("_display_workspace_content_event_", this.sharePanel, true)
             }
 
         }
@@ -71,13 +71,10 @@ export class SharePanel extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
            
-            #container {
-                display: flex;
-                flex-direction: column;
+            paper-card {
                 background-color: var(--palette-background-paper);
-                width: 100%;
-                margin-left: 2.5%;
-                padding-left: 10px;
+                margin-top: 25px;
+                font-size: 1.65rem;
             }
 
             #share_div{
@@ -111,15 +108,41 @@ export class SharePanel extends HTMLElement {
                 font-size: 1.65rem;
             }
 
+            .card-content{
+                display: flex;
+                flex-direction: column;
+                width: 100%;
+                padding-left: 10px;
+                min-width: 680px;
+                padding: 0px;
+                font-size: 1rem;
+              }
+      
+              @media (max-width: 800px) {
+                .card-content{
+                  min-width: 580px;
+                }
+              }
+      
+              @media (max-width: 600px) {
+                .card-content{
+                  min-width: 380px;
+                }
+              }
+      
+
         </style>
         <paper-card id="container">
-            <div style="display: flex; justify-content: center;">
-                <h1 style="flex-grow: 1;">Shared Resources...</h1>
-                <paper-icon-button id="close-btn" icon="icons:close"></paper-icon-button>
-            </div>
-            <div id="share_div">
-                <globular-subjects-view></globular-subjects-view>
-                <slot></slot>
+            <div class="card-content">
+                <div style="display: flex; justify-content: center;">
+                    <h1 style="flex-grow: 1;">Shared Resources...</h1>
+                    <paper-icon-button id="close-btn" icon="icons:close"></paper-icon-button>
+                </div>
+                <div id="share_div">
+                    <globular-subjects-view></globular-subjects-view>
+                    <slot></slot>
+                </div>
+
             </div>
         </paper-card>
         `

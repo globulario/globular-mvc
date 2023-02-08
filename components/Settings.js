@@ -88,6 +88,9 @@ export class SettingsMenu extends HTMLElement {
       })
       item.classList.add("active")
       Model.eventHub.publish("set-settings-page", title, true)
+
+      // close the side menu if it's open...
+      ApplicationView.layout.appDrawer.close()
     }
     return item;
   }
@@ -203,7 +206,10 @@ export class SettingsPanel extends HTMLElement {
        #container {
            display: inline-flex;
            flex-direction: column;
+           margin-top: 25px;
        }
+
+
     </style>
     <div id="container">
       <slot></slot>
@@ -334,29 +340,9 @@ export class Settings extends HTMLElement {
        #container {
            display: flex;
            flex-direction: column;
-           min-width: 355px;
            margin-bottom: 10px;
            background-color: var(--palette-background-paper);
        }
-
-       .card-content{
-            min-width: 355px;
-            
-            padding: 0px;
-        }
-
-
-        @media only screen and (max-width: 800px) {
-          .card-content{
-            min-width: 580px;
-          }
-        }
-
-        @media only screen and (max-width: 600px) {
-          .card-content{
-            min-width: 380px;
-          }
-        }
 
         .card-title {
           font-size: 1.25rem;
@@ -385,7 +371,23 @@ export class Settings extends HTMLElement {
         .card-content{
           display: flex;
           flex-direction: column;
+          min-width: 680px;
+          padding: 0px;
+          font-size: 1rem;
         }
+
+        @media (max-width: 800px) {
+          .card-content{
+            min-width: 580px;
+          }
+        }
+
+        @media (max-width: 600px) {
+          .card-content{
+            min-width: 380px;
+          }
+        }
+
 
         paper-card{
           background-color: var(--palette-background-paper);
@@ -1508,7 +1510,7 @@ export class ImageSetting extends Setting {
           align-items: baseline;
         }
 
-        @media only screen and (max-width: 800px) {
+        @media (max-width: 800px) {
           #container{
             flex-direction: column-reverse;
           }
@@ -1884,6 +1886,10 @@ export class YesNoSetting extends Setting {
    
       #yes-no-div{
        display: flex;
+       width: 100%;
+       align-items: flex-end;
+       justify-content: flex-end;
+       padding-top: 10px;
       }
 
       #yes-no-div paper-button{

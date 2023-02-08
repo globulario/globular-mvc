@@ -24,10 +24,7 @@ export class Autocomplete extends HTMLElement {
         if (this.hasAttribute("width")) {
             this.width = "100%"
         }
-    }
 
-    // The connection callback.
-    connectedCallback() {
         let label = this.getAttribute("label");
         let type = this.getAttribute("type")
         // Innitialisation of the layout.

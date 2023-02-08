@@ -3365,7 +3365,7 @@ export class FileNavigator extends HTMLElement {
             }
 
             /** On smaller display **/
-            @media only screen and (max-width: 801px) {
+            @media (max-width: 801px) {
                 #file-navigator-div{
                     min-height: 150px;
                 }
@@ -4044,7 +4044,7 @@ export class FileExplorer extends HTMLElement {
                 overflow: hidden;
             }
 
-            @media only screen and (max-width: 800px) {
+            @media (max-width: 800px) {
                 #file-explorer-layout {
                     flex-direction: column;
                 }

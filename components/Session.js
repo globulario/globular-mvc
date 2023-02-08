@@ -96,6 +96,10 @@ export class SessionState extends HTMLElement {
                 --paper-toggle-button-label-color: var(--palette-text-accent);
             }
 
+            paper-card h1 {
+                font-size: 1.65rem;
+            }
+
         </style>
         <div class="session-state-panel">
             <iron-icon icon="device:access-time" style="padding-left: 8px;"></iron-icon>

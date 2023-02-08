@@ -99,7 +99,6 @@ export class PlayList extends HTMLElement {
                 border-collapse: separate;
                 border-spacing: 10px;
                 flex-flow: 1;
-
             }
 
             #container {
@@ -108,6 +107,7 @@ export class PlayList extends HTMLElement {
                 flex-direction: column;
                 height: 100%;
                 overflow: auto;
+                background-color: black;
             }
 
             ::-webkit-scrollbar {
@@ -443,9 +443,6 @@ export class PlayListItem extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
            
-            #container{
-                background: black;
-            }
 
             #container img{
                 height: 48px;

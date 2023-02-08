@@ -28,6 +28,7 @@ import { randomUUID } from './utility';
 import { VideoConversation } from './WebRTC';
 import { secondsToTime } from './Audio';
 import * as getUuidByString from 'uuid-by-string';
+import { TargetsRequest } from 'globular-web-client/monitoring/monitoring_pb';
 
 /**
  * Display information about calls, missed calls etc...
@@ -37,9 +38,10 @@ export class CallsHistoryMenu extends Menu {
 
     // Create the contact view.
     constructor() {
-        super("calls_history", "communication:call", "Messenger")
+        super("calls_history", "communication:call", "Call's")
 
         this.account = null;
+        this.callContactInput = null
         this.calls = {};
 
         this.width = 320;
@@ -60,14 +62,34 @@ export class CallsHistoryMenu extends Menu {
 
         let html = `
         <style>
-            #Contacts-div {
+            #Calls-div {
                 display: flex;
                 flex-wrap: wrap;
-                padding: 10px;
                 height: 100%;
                 flex-direction: column;
-                overflow: hidden;
+            }
 
+            #title{
+                display: none; 
+                justify-content: center;
+            }
+
+            #calls_history_menu_div{
+                overflow: auto;
+                height: ${this.height}px;
+                max-height: 70vh;
+                overflow-y: auto;
+            }
+
+            @media (max-width: 700px) {
+                #calls_history_menu_div{
+                    margin-top: 25px;
+                    max-height: calc(100vh - 85px);
+                }
+
+                #title{
+                    display: flex; 
+                }
             }
 
             #calls-list{
@@ -113,18 +135,36 @@ export class CallsHistoryMenu extends Menu {
                 padding: 10px;
             }
 
-            paper-tabs {
-                                
-                  /* custom CSS property */
-                  --paper-tabs-selection-bar-color: var(--palette-primary-main); 
-                  color: var(--palette-text-primary);
-                  --paper-tab-ink: var(--palette-action-disabled);
-              }
+            paper-tabs {               
+                /* custom CSS property */
+                --paper-tabs-selection-bar-color: var(--palette-primary-main); 
+                color: var(--palette-text-primary);
+                --paper-tab-ink: var(--palette-action-disabled);
+            }
+
+            paper-card{
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
+                padding: 10px;
+            }
+
+            paper-card h1 {
+                font-size: 1.65rem;
+                margin: 0px;
+                margin-bottom: 10px;
+            }
+
+            
 
         </style>
-        <div id="Contacts-div">
+        <div id="Calls-div">
+            
             <div id="header" style="width: 100%;">
-                <globular-autocomplete type="email" label="Search Contact" id="call_contact_input" width="${this.width - 10}" style="flex-grow: 1;"></globular-autocomplete>
+                <div id="title">
+                    <h1 style="flex-grow: 1;">Call's</h1>
+                    <paper-icon-button id="close-btn" icon="icons:close" role="button" tabindex="0" aria-disabled="false"></paper-icon-button>
+                </div>
+                <globular-autocomplete type="email" label="Search Contact" id="call-contact-input" width="${this.width - 10}" style="flex-grow: 1;"></globular-autocomplete>
                 <paper-tabs selected="0">
                     <paper-tab id="incomming-calls-tab">
                         <span id="incomming-calls-label" style="flex-grow: 1;">Incomming Call's</span>
@@ -147,12 +187,19 @@ export class CallsHistoryMenu extends Menu {
         </div>
         `
 
+   
         let range = document.createRange()
         this.getMenuDiv().innerHTML = "" // remove existing elements.
         this.getMenuDiv().appendChild(range.createContextualFragment(html));
 
+        this.getMenuDiv().querySelector("#close-btn").onclick = ()=>{
+            this.getMenuDiv().parentNode.removeChild(this.getMenuDiv())
+        }
+
         let outgoingCallsTab = this.getMenuDiv().querySelector("#outgoing-calls-tab")
         let outgoingCallsDiv = this.getMenuDiv().querySelector("#outgoing-calls-div")
+
+        this.callContactInput = this.getMenuDiv().querySelector("#call-contact-input")
 
         outgoingCallsTab.onclick = () => {
             outgoingCallsDiv.style.display = "flex"
@@ -295,24 +342,21 @@ export class CallsHistoryMenu extends Menu {
             incommingCallsDiv.style.display = "flex"
         }
 
-        this.getMenuDiv().style.height = this.height + "px";
-        this.getMenuDiv().style.maxHeight = "70vh"
         this.shadowRoot.appendChild(this.getMenuDiv())
 
         // The call contact action.
-        let callContactInput = this.shadowRoot.getElementById("call_contact_input")
-        callContactInput.onkeyup = () => {
-            let val = callContactInput.getValue();
+        this.callContactInput.onkeyup = () => {
+            let val = this.callContactInput.getValue();
             if (val.length >= 3) {
                 this.findAccountByEmail(val)
             } else {
-                callContactInput.clear()
+                this.callContactInput.clear()
             }
         }
 
 
         // That function must return the div that display the value that we want.
-        callContactInput.displayValue = (contact) => {
+        this.callContactInput.displayValue = (contact) => {
 
             let card = new ContactCard(account, contact, true);
 
@@ -329,7 +373,7 @@ export class CallsHistoryMenu extends Menu {
                         if (info == undefined) {
                             card.setCallButton((contact) => {
                                 this.onCallContact(contact);
-                                callContactInput.clear();
+                                this.callContactInput.clear();
                             })
                         }
                     }
@@ -401,7 +445,8 @@ export class CallsHistoryMenu extends Menu {
         this.refreshCalls()
 
         // Get the list of all accounts (mab).
-        this.shadowRoot.removeChild(this.getMenuDiv())
+        if(this.getMenuDiv().parentNode)
+            this.getMenuDiv().parentNode.removeChild(this.getMenuDiv())
 
     }
 
@@ -601,11 +646,9 @@ export class CallsHistoryMenu extends Menu {
             accounts = accounts.filter((obj) => {
                 return obj.id !== this.account.id;
             });
-            // set the getValues function that will return the list to be use as filter.
-            let callContactInput = this.shadowRoot.getElementById("call_contact_input")
-
-            if (callContactInput != undefined) {
-                callContactInput.setValues(accounts)
+ 
+            if (this.callContactInput != undefined) {
+                this.callContactInput.setValues(accounts)
             }
 
         }, (err) => {
@@ -654,6 +697,10 @@ export class CallsHistoryMenu extends Menu {
 
                                 // so here I will found the caller ringtone...
                                 let path = callee.ringtone
+                                if(!path){
+                                    ApplicationView.displayMessage(callee.id + " must be in your contact list to be able to call him", 3000)
+                                    return
+                                }
                                 path = path.replace(globule.config.WebRoot, "")
 
                                 path.split("/").forEach(item => {
