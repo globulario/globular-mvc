@@ -55,6 +55,7 @@ export function playVideo(path, onplay, onclose, title, globule) {
         videoPlayer.stop()
     }
 
+    videoPlayer.hide()
     videoPlayer.resume = false;
     videoPlayer.style.zIndex = 100
 
@@ -144,6 +145,7 @@ export class VideoPlayer extends HTMLElement {
                 background: var(--palette-background-default); 
                 border-top: 1px solid var(--palette-background-paper);
                 border-left: 1px solid var(--palette-background-paper);
+                user-select: none;
             }
 
             #content{
@@ -188,6 +190,7 @@ export class VideoPlayer extends HTMLElement {
                 bottom: 0;
                 right: 0;
                 background-color: black;
+                
             }
                  
             #content{
@@ -236,8 +239,6 @@ export class VideoPlayer extends HTMLElement {
         this.video.controls = true
         this.video.playsinline = true
 
-
-
         this.onclose = null
         this.onplay = null
         let offsetTop = this.shadowRoot.querySelector(".header").offsetHeight
@@ -248,23 +249,35 @@ export class VideoPlayer extends HTMLElement {
         this.appendChild(this.video)
 
         container.name = "video_player"
+
+
         setResizeable(container, (width, height) => {
             localStorage.setItem("__video_player_dimension__", JSON.stringify({ width: width, height: height }))
             container.style.height = "auto"
         })
 
+
         container.resizeHeightDiv.style.display = "none"
         container.style.height = "auto"
 
+
         // set the initial size of the video player to fit the played video...
         this.video.onplaying = (evt) => {
+
             if (this.resume) {
                 return
             }
 
             this.resume = true
 
-            if (this.video.videoHeight > 0 && this.video.videoWidth) {
+            if (this.video.videoHeight > 0 && this.video.videoWidth > 0) {
+
+                let maxWidth = this.video.videoWidth
+                if (maxWidth > screen.width) {
+                    maxWidth = screen.width
+                }
+
+                container.maxWidth = maxWidth
 
                 // event resize the video only if the video is new...
                 this.playlist.style.height = this.video.videoHeight + "px"
@@ -274,6 +287,7 @@ export class VideoPlayer extends HTMLElement {
                     container.style.width = this.video.videoWidth + this.playlist.offsetWidth + "px"
                 }
                 localStorage.setItem("__video_player_dimension__", JSON.stringify({ width: this.video.videoWidth, height: this.video.videoHeight }))
+
             }
         }
 
@@ -311,6 +325,9 @@ export class VideoPlayer extends HTMLElement {
         // you must set enable-experimental-web-platform-features to true
         // chrome://flags/ 
         this.video.onloadeddata = () => {
+            
+            ApplicationView.resume()
+            this.show()
 
             /*getThumbnailFiles(this.globule, this.path, thumbnail_files => {
                 for (var i = 0; i < thumbnail_files.files.length; i++) {
@@ -682,6 +699,10 @@ export class VideoPlayer extends HTMLElement {
     }
 
     play(path, globule, titleInfo) {
+
+        // make sure the player is not show before the video is loaded.
+        ApplicationView.wait("loading video...")
+
         if (titleInfo) {
             this.titleInfo = titleInfo
             this.titleInfo.globule = globule
@@ -1000,6 +1021,7 @@ export class VideoPlayer extends HTMLElement {
      * Close the player...
      */
     close() {
+        this.hide()
         this.stop()
         if (this.parentNode)
             this.parentElement.removeChild(this)
@@ -1026,6 +1048,22 @@ export class VideoPlayer extends HTMLElement {
             // keep video info in the local storage...
             localStorage.setItem(this.titleInfo.getId(), this.video.currentTime)
         }
+    }
+
+    hide(){
+        let container = this.shadowRoot.querySelector("#container")
+        container.maxWidth = 0
+        container.style.display = "none"
+        container.style.width = "0px"
+        container.style.height = "0px"
+
+        this.video.style.display = "none";
+    }
+
+    show(){
+        let container = this.shadowRoot.querySelector("#container")
+        container.style.display = ""
+        this.video.style.display = "";
     }
 
     hideHeader() {

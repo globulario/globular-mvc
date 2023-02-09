@@ -3,11 +3,12 @@ import { fireResize } from "./utility";
 /**
  * That propertie take a div and append resizeable capabilities.
  */
-export function setResizeable(div, onresize, side, zIndex) {
+export function setResizeable(div, onresize, side, zIndex, maxWidth = 0) {
 
     // be sure the windows can be resize...
     div.style.maxWidth = screen.width -5  + "px" 
 
+    // here I will stop resize...
     let id = div.name
     if (localStorage.getItem(`__${id}_dimension__`)) {
         let dimension = JSON.parse(localStorage.getItem(`__${id}_dimension__`))
@@ -199,11 +200,18 @@ export function setResizeable(div, onresize, side, zIndex) {
         var w = e.clientX - getOffsetLeft(div);
         var h = e.clientY - getOffsetTop(div);
 
+        // stop resize
+        if(div.maxWidth > 0){
+            if(w >= div.maxWidth){
+                onresize(div.offsetWidth, div.offsetHeight)
+                return;
+            }
+        }
+
         if (div.isResizeWidth && div.isResizeHeigth) {
             div.style.width = w + "px"
             div.style.height = h + "px"
             if (onresize) {
-               
                 onresize(div.offsetWidth, div.offsetHeight)
                 fireResize()
             }

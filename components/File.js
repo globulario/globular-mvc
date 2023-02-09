@@ -1969,11 +1969,13 @@ export class FilesIconView extends FilesView {
                 border-bottom: 2px solid;
                 border-color: var(--palette-divider);
                 width: 66.66%;
+                user-select: none;
             }
             
             .file-type-section .title iron-icon{
                 height: 32px;
                 width: 32px;
+                user-select: none;
             }
              
             .file-type-section .title iron-icon:hover{
@@ -2027,6 +2029,7 @@ export class FilesIconView extends FilesView {
                 justify-content: center;
                 align-items: center;
                 position: relative;
+                user-select: none;
             }
 
             .file-icon-div svg {
@@ -2078,6 +2081,7 @@ export class FilesIconView extends FilesView {
                word-break: break-all;
                font-size: 0.85rem;
                padding: 5px;
+               user-select: none;
             }
 
             .file-path {
@@ -3101,6 +3105,7 @@ export class PathNavigator extends HTMLElement {
                     color: var(--palette-text-primary);
                     display: flex;
                     align-items: center;
+                    user-select: none;
                 }
 
                 .path-navigator-box-span{
@@ -3109,6 +3114,7 @@ export class PathNavigator extends HTMLElement {
                     white-space: nowrap;
                     text-overflow: ellipsis;
                     overflow: hidden;
+                    user-select: none;
                 }
 
 
@@ -3367,6 +3373,7 @@ export class FileNavigator extends HTMLElement {
 
             #file-navigator-div{
                 min-width: ${this.width}px;
+                user-select: none;
             }
 
             /** On smaller display **/
@@ -3523,6 +3530,7 @@ export class FileNavigator extends HTMLElement {
                         white-space: nowrap;
                         overflow: hidden;
                         text-overflow: ellipsis;
+                        user-select: none;
 
                     }
                 </style>
@@ -5588,13 +5596,11 @@ export class FilesUploader extends HTMLElement {
                 position: absolute;
                 bottom: 40px;
                 right: -16px;
-                width: 100%;
             }
 
             .collapse-torrent-panel{
                 display: flex;
                 flex-direction: column;
-                width: 100%;
                 max-height: 200px;
                 overflow: auto;
             }

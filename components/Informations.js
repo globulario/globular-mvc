@@ -49,6 +49,7 @@ function listToString(lst) {
 const __style__ = `
 .title-div {
     display: flex;
+
 }
 
 .title-poster-div {
@@ -73,6 +74,7 @@ const __style__ = `
     padding-left: 5px;
     padding-right: 5px;
     margin-right: 5px;
+    user-select: none;
 }
 
 .rating-star{
@@ -100,6 +102,7 @@ const __style__ = `
     font-weight: 600;
     font-size: 1.2rem;
     color: var(--palette-text-primery);
+    user-select: none;
 }
 
 .title-credit {
@@ -430,6 +433,7 @@ export class InformationsManager extends HTMLElement {
                 */
                 color: var(--palette-text-primary);
                 font-size: 1rem;
+                user-select: none;
             }
 
             #header {
@@ -464,6 +468,7 @@ export class InformationsManager extends HTMLElement {
                 border-color: var(--palette-divider);
                 width: 66.66%;
                 margin-bottom: 0px;
+                user-select: none;
             }
 
             .title-sub-title-div{
@@ -471,6 +476,7 @@ export class InformationsManager extends HTMLElement {
             }
             title-sub-title-div span {
                 padding-right: 5px;
+                user-select: none;
             }
 
             #title-year {
@@ -589,7 +595,7 @@ export class InformationsManager extends HTMLElement {
         this.shadowRoot.querySelector(".title-div").innerHTML = `
         <div style="display: flex; align-items: center;">
             <iron-icon id="icon" icon="icons:info"> </iron-icon> 
-            <span style="flex-grow: 1; padding-left: 20px; font-size: 20px;">${file.name} <span style="color: var(--palette-text-secondary);  margin-left: 16px;">Properties</span></span>
+            <span style="flex-grow: 1; padding-left: 20px; font-size: 20px;  user-select: none;">${file.name} <span style="color: var(--palette-text-secondary);  margin-left: 16px; user-select: none;">Properties</span></span>
         </div>`
         let fileInfo = new FileInfo(file)
         this.appendChild(fileInfo)
@@ -704,6 +710,7 @@ export class VideoInfo extends HTMLElement {
             .title-div {
                 background-color: var(--palette-background-default);
                 color: var(--palette-text-primary);
+                user-select: none;
             }
 
             .action-div{

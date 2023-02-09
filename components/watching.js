@@ -33,9 +33,9 @@ export class MediaWatching extends HTMLElement {
                 background-color: var(--palette-background-paper);
                 width: calc(100vw - 25px);
                 min-height: calc(100vh - 85px);
+                user-select: none;
             }
 
-            
             #video_div{
                 display: flex;
                 flex-wrap: wrap;
@@ -49,7 +49,6 @@ export class MediaWatching extends HTMLElement {
             }
 
             h1{
-
                 margin: 0px; 
                 margin-left: 10px;
             }
@@ -330,10 +329,12 @@ export class MediaWatchingCard extends HTMLElement {
             #container span {
                 flex-grow: 1;
                 text-align: right;
+                user-select: none;
             }
 
             #title-date {
                 font-size: 1rem;
+                user-select: none;
             }
         </style>
 
