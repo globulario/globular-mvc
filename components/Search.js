@@ -547,11 +547,10 @@ export class SearchBar extends HTMLElement {
                 background-color: var(--palette-background-paper);
                 color:var(--palette-text-primary);
                 min-width: 340px;
-
             }
 
             #search-bar {
-                min-width: 340px;
+                min-width: 280px;
                 display: flex;
                 align-items: center;
                 border-radius: 22px;
@@ -566,9 +565,13 @@ export class SearchBar extends HTMLElement {
                 position: relative;
             }
 
-            @media (min-width: 500px) {
-                #search-bar {
-                    min-width: 325px;
+            @media (max-width: 500px) {
+
+                #context-search-selector {
+                    position: fixed;
+                    left: 5px;
+                    top: 75px;
+                    right: 5px;
                 }
              }
 
@@ -988,6 +991,7 @@ export class SearchResultsPage extends HTMLElement {
         this.attachShadow({ mode: 'open' });
         this.id = `${uuid}-results-page`
         this.offset = 0;
+        this.count = 0;
         this.query = summary.getQuery();
         this.contexts = contexts;
         this.tab = tab;
@@ -1021,6 +1025,33 @@ export class SearchResultsPage extends HTMLElement {
                 font-size: 1rem;
             }
 
+            #results{
+                display: flex; 
+                flex-direction: column; 
+                overflow-y: auto;
+                overflow-x: hidden;
+            }
+
+            
+            #results-actions{
+                display: none;
+                justify-content: flex-end;
+                position: fixed;
+                bottom: 0px;
+                left: 0px;
+                right: 0px;
+                margin: 10px;
+                align-items: center;
+            }
+
+            #results-actions-btns{
+                display:flex; background: var(--palette-background-default);
+                border-radius: 20px; 
+                align-items: center; 
+                border: 1px solid var(--palette-divider); 
+                margin-right: 5px;
+            }
+
             ::-webkit-scrollbar {
                 width: 5px;
                 height: 5px;
@@ -1038,6 +1069,7 @@ export class SearchResultsPage extends HTMLElement {
                 align-items: center;
              }
 
+
              @media (max-width: 600px) {
                 #container {
                     flex-direction: column;
@@ -1046,6 +1078,10 @@ export class SearchResultsPage extends HTMLElement {
 
                 #facets{
                     max-height: 200px;
+                    overflow-y: auto; 
+                    overflow-x: hidden;
+                    margin-right: 5px;
+                    min-width: 225xp;
                 }
 
                 .header{
@@ -1070,13 +1106,11 @@ export class SearchResultsPage extends HTMLElement {
                         justify-content: center;
                     }
                 }
-
-                
              }
 
         </style>
         <div id="container">
-            <div id="facets" style="overflow: auto; margin-right: 5px;">
+            <div id="facets">
                 <slot  name="facets"></slot>
             </div>
             <div style="display: flex; flex-direction: column; width: 100%;">
@@ -1091,7 +1125,7 @@ export class SearchResultsPage extends HTMLElement {
                     </div>
                 </div>
 
-                <div id="results" style="display: flex; flex-direction: column; overflow: auto;">
+                <div id="results" style="">
                     <div id="mosaic-view" style="display: block;">
                         <slot name="mosaic_blogPosts" style="display: flex; flex-wrap: wrap;"></slot>
                         <slot name="mosaic_videos" style="display: flex; flex-wrap: wrap;"></slot>
@@ -1104,14 +1138,23 @@ export class SearchResultsPage extends HTMLElement {
                         <slot name="list_titles" style="display: flex; flex-wrap: wrap;"> </slot>
                         <slot name="list_audios" style="display: flex; flex-wrap: wrap;"> </slot>
                     </div>
+                    <div id="results-actions">
+                        <div id="results-actions-btns" style="">
+                            <paper-icon-button id="previous-results-btn" icon="icons:chevron-left" style="visibility: hidden;"></paper-icon-button>
+                            <span id="results-index"></span>
+                            <paper-icon-button id="next-results-btn" icon="icons:chevron-right"></paper-icon-button>
+                        </div>
+                    </div>
                 </div>
-
-                
             </div>
-           
-
         </div>
         `
+
+        // the next and previous results buttons.
+        this.nextResultsBtn = this.shadowRoot.querySelector("#next-results-btn")
+        this.previousResultsBtn = this.shadowRoot.querySelector("#previous-results-btn")
+        this.currentPageIndex = this.shadowRoot.querySelector("#results-index")
+        this.currentActionsBtns = this.shadowRoot.querySelector("#results-actions-btns")
 
         // display hint about more results can be displayed.
         let resultsDiv = this.shadowRoot.querySelector("#results")
@@ -1128,6 +1171,15 @@ export class SearchResultsPage extends HTMLElement {
 
         this.navigator = this.shadowRoot.querySelector("globular-search-results-pages-navigator")
         this.navigator.setSearchResultsPage(this)
+
+        // connect the previous and next page buttons
+        this.nextResultsBtn.onclick = ()=>{
+            this.navigator.setIndex(this.offset + 1)
+        }
+
+        this.previousResultsBtn.onclick = ()=>{
+            this.navigator.setIndex(this.offset - 1)
+        }
 
         this.contextsSelector = this.shadowRoot.querySelector("globular-search-results-page-contexts-selector")
         this.contextsSelector.setSearchResultsPage(this)
@@ -1400,14 +1452,12 @@ export class SearchResultsPage extends HTMLElement {
 
         // set the results height
         let results = this.shadowRoot.querySelector("#results")
-        let p0 = getCoords(results)
-        results.style.height = `calc(100vh - ${p0.top - 35 }px)`
+        results.style.height = `calc(100vh  + 65px)`
 
         // set the facet height
         let facets = this.shadowRoot.querySelector("#facets")
-        let p1 = getCoords(this)
-        console.log(p1)
-        facets.style.height = `calc(100vh - ${p1.top - 80 }px)`
+        let pos = getCoords(this)
+        facets.style.height = `calc(100vh - ${pos.top - 100 }px)`
     }
 
     clear() {
@@ -1416,6 +1466,9 @@ export class SearchResultsPage extends HTMLElement {
 
     refresh() {
         console.log("page refresh call...")
+        let results = this.shadowRoot.querySelector("#results")
+        results.scrollTo({ top: 0, behavior: 'smooth' })
+        
         // this.innerHTML = ""
         while (this.children.length > 0) {
             this.removeChild(this.children[0])
@@ -1445,6 +1498,20 @@ export class SearchResultsPage extends HTMLElement {
             }
         })
 
+        // set the button...
+        this.currentPageIndex.innerHTML = this.offset + 1
+        if(this.offset == 0){
+            this.previousResultsBtn.style.visibility = "hidden"
+        }else{
+            this.previousResultsBtn.style.visibility = "visible"
+        }
+
+        if(this.offset >= (this.count / MAX_DISPLAY_RESULTS) - 1){
+            this.nextResultsBtn.style.visibility = "hidden"
+        }else{
+            this.nextResultsBtn.style.visibility = "visible"
+        }
+
     }
 
     refreshNavigatorAndContextSelector() {
@@ -1472,6 +1539,18 @@ export class SearchResultsPage extends HTMLElement {
             }
         })
         this.navigator.setTotal(count)
+
+        // display the next page button at the bottom of the reuslts page.
+        if(count / MAX_DISPLAY_RESULTS > 1){
+            this.shadowRoot.querySelector("#results-actions").style.display = "flex"
+            this.nextResultsBtn.style.visibility = "visible"
+        }else{
+            this.shadowRoot.querySelector("#results-actions").style.display = "none"
+
+        }
+
+        this.count = count
+        this.currentPageIndex.innerHTML = this.offset + 1
     }
 
     // Return the number of visible element (not filter)
@@ -2839,6 +2918,7 @@ export class FacetSearchFilter extends HTMLElement {
                 font-size: 1.17rem;
                 padding: 10px;
                 padding-right: 30px;
+                min-widht: 220px;
             }
             
         </style>
@@ -3243,6 +3323,10 @@ export class SearchResultsPagesNavigator extends HTMLElement {
     }
 
     setIndex(index, btn) {
+        if(btn == undefined){
+            btn = this.container.querySelector(`#page_${index}`)
+        }
+
         // so here I will get the new search...
         this.page.offset = index
 
@@ -3267,6 +3351,7 @@ export class SearchResultsPagesNavigator extends HTMLElement {
         if (this.nb_pages > 1) {
             for (var i = 0; i < this.nb_pages; i++) {
                 let btn = document.createElement("div")
+                btn.id = "page_" + i
                 btn.innerHTML = i + 1
                 btn.classList.add("pagination-btn")
                 if (i == this.page.offset) {

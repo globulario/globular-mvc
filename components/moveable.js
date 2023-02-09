@@ -5,7 +5,7 @@
  * @param {*} draggable The div (or any other html-element) to be move.
  */
 export function setMoveable(handle, draggable, onmove, element, offsetTop = 0) {
-  document.oncontextmenu = function() {return false;};
+  //
   handle.style.userSelect = "none"
 
   // set the position from existing infos

@@ -702,7 +702,7 @@ export class VideoInfo extends HTMLElement {
             ${__style__}
 
             .title-div {
-                /*background-color: var(--palette-background-paper);*/
+                background-color: var(--palette-background-default);
                 color: var(--palette-text-primary);
             }
 
@@ -821,7 +821,7 @@ export class VideoInfo extends HTMLElement {
         this.titleDiv.innerHTML = `
         <div class="title-sub-title-div" style="display: flex; flex-direction: column;"> 
             <h1 id="title-name" class="title" style="${this.isShort ? "font-size: 1rem; padding-bottom: 10px;" : ""}"> ${publisherName} </h1>
-            <div style="display: flex; align-items: baseline;">
+            <div style="display: flex; align-items: baseline; max-width: 700px;">
                 <h3 class="title-sub-title-div" style="${this.isShort ? "font-size: 1rem;" : ""}">          
                     <span id="title-type"><span>Genre: </span>${genres}</span>
                 </h3>    
@@ -945,9 +945,6 @@ export class VideoInfoEditor extends HTMLElement {
            
             #container {
                 display: flex;
-                background-color: var(--palette-background-paper);
-                color: var(--palette-text-primary);
-
             }
 
             .action-div{
@@ -1252,7 +1249,7 @@ export class TitleInfo extends HTMLElement {
     showTitleInfo(title) {
         let uuid = randomUUID()
         let html = `
-        <paper-card id="video-info-box-dialog-${uuid}" style="background-color: var(--palette-background-default);">
+        <paper-card id="video-info-box-dialog-${uuid}" style="background: var(--palette-background-default); border-top: 1px solid var(--palette-background-paper); border-left: 1px solid var(--palette-background-paper);">
             <globular-informations-manager id="title-info-box"></globular-informations-manager>
         </paper-card>
         `
@@ -1291,7 +1288,7 @@ export class TitleInfo extends HTMLElement {
         // Set the title div.
         this.titleDiv.innerHTML = `
            <h1 id="title-name" class="title" style="${this.isShort ? "font-size: 1.2rem;text-align: left; margin-bottom: 10px;" : ""}"> </h1>
-           <h3 class="title-sub-title-div" style="${this.isShort ? "font-size: 1rem;" : ""}">             
+           <h3 class="title-sub-title-div" style="${this.isShort ? "font-size: 1rem; max-width: 500px;" : ""}">             
                <span id="title-type"></span>
                <span id="title-year"></span>
                <span id="title-duration"></span>

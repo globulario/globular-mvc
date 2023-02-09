@@ -402,7 +402,7 @@ export class VideoPlayer extends HTMLElement {
             })
 
             if (this.video.audioTracks) {
-              
+
                 // This will set the video langual...
                 if (this.video.audioTracks.length > 1) {
                     let audioTrackSelect = this.shadowRoot.querySelector("#audio-track-selector")
@@ -632,24 +632,25 @@ export class VideoPlayer extends HTMLElement {
     showVideoInfo(video) {
         let uuid = randomUUID()
         let html = `
-        <paper-card id="video-info-box-dialog-${uuid}"background: var(--palette-background-default); border-top: 1px solid var(--palette-background-paper); border-left: 1px solid var(--palette-background-paper);">
+        <paper-card id="video-info-box-dialog-${uuid}" style="background: var(--palette-background-default); border-top: 1px solid var(--palette-background-paper); border-left: 1px solid var(--palette-background-paper);">
             <globular-informations-manager id="video-info-box"></globular-informations-manager>
         </paper-card>
         `
         let videoInfoBox = document.getElementById("video-info-box")
 
-
         if (videoInfoBox == undefined) {
             let range = document.createRange()
             document.body.appendChild(range.createContextualFragment(html))
             videoInfoBox = document.getElementById("video-info-box")
-            let parent = document.getElementById("video-info-box-dialog-" + uuid)
-            parent.style.position = "fixed"
-            parent.style.top = "75px"
-            parent.style.left = "50%"
-            parent.style.transform = "translate(-50%)"
-            videoInfoBox.onclose = () => {
-                parent.parentNode.removeChild(parent)
+            let parent = videoInfoBox.parentNode
+            if (parent) {
+                parent.style.position = "fixed"
+                parent.style.top = "75px"
+                parent.style.left = "50%"
+                parent.style.transform = "translate(-50%)"
+                videoInfoBox.onclose = () => {
+                    parent.parentNode.removeChild(parent)
+                }
             }
         }
         videoInfoBox.setVideosInformation([video])
@@ -658,7 +659,7 @@ export class VideoPlayer extends HTMLElement {
     showTitleInfo(title) {
         let uuid = randomUUID()
         let html = `
-        <paper-card id="video-info-box-dialog-${uuid}" style="background: var(--palette-background-default); border-top: 1px solid var(--palette-background-paper); border-left: 1px solid var(--palette-background-paper);">
+        <paper-card id="video-info-box-dialog-${uuid}" style="background-color: var(--palette-background-default); border-top: 1px solid var(--palette-background-paper); border-left: 1px solid var(--palette-background-paper);">
             <globular-informations-manager id="title-info-box"></globular-informations-manager>
         </paper-card>
         `

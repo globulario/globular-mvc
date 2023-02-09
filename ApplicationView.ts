@@ -179,6 +179,8 @@ export class ApplicationView extends View {
   constructor() {
     super();
 
+    // document.oncontextmenu = function() {return false;};
+
     // The web-component use as layout is named globular-application
     if (document.getElementsByTagName("globular-application") != undefined) {
       ApplicationView.layout = <Layout>(
