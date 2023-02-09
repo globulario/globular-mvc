@@ -319,8 +319,8 @@ export function getLocalDir(globule, path) {
  * @param {*} force If set the dir will be read from the server.
  */
 function _readDir(path, callback, errorCallback, globule, force = false) {
-            // replace separator...
-            path = path.split("\\").join("/")
+    // replace separator...
+    path = path.split("\\").join("/")
     let key = getUuidByString(globule.domain + "@" + path)
     if (!force || path == "/public" || path == "/shared") {
         let dir = dirs[key]
@@ -431,7 +431,7 @@ export class FilesView extends HTMLElement {
         `
 
         this.menu = new DropdownMenu("icons:more-vert")
-        this.menu.className ="file-dropdown-menu"
+        this.menu.className = "file-dropdown-menu"
         this.menu.innerHTML = menuItemsHTML
 
         this.videMenuItem = this.menu.querySelector("#video-menu-item")
@@ -496,7 +496,7 @@ export class FilesView extends HTMLElement {
                     this.generatePreviewItem.style.display = "none"
                 }
 
-                
+
                 this.openInNewTabItem.style.display = "none"
             }
         }
@@ -508,7 +508,7 @@ export class FilesView extends HTMLElement {
 
             generatePeerToken(globule, token => {
                 globule.fileService.startProcessVideo(rqst, {
-                    
+
                 }).then(() => {
                     ApplicationView.displayMessage("informations are now updated", 3000)
                 })
@@ -791,7 +791,7 @@ export class FilesView extends HTMLElement {
 
                 let deleteFile_ = () => {
                     let f = files[index]
-                    f.path =  f.path.split("\\").join("/")
+                    f.path = f.path.split("\\").join("/")
                     let path = f.path.substring(0, f.path.lastIndexOf("/"))
                     index++
                     let globule = this._file_explorer_.globule
@@ -1605,7 +1605,7 @@ export class FilesListView extends FilesView {
      */
     setDir(dir) {
         // if the dire is hidden or the dir is the user dir... 
-        dir.path=  dir.path.split("\\").join("/")
+        dir.path = dir.path.split("\\").join("/")
         if (dir.name.startsWith(".") || !(dir.path.startsWith("/public") || public_[dir.path] != undefined || dir.path.startsWith("/shared") || shared[dir.path] != undefined || dir.path.startsWith("/applications/" + Application.application) || dir.path.startsWith("/users/" + Application.account.id))) {
             return;
         }
@@ -1932,7 +1932,7 @@ export class FilesIconView extends FilesView {
      * @param {*} dir 
      */
     setDir(dir) {
-        dir.path=  dir.path.split("\\").join("/")
+        dir.path = dir.path.split("\\").join("/")
         if (dir.name.startsWith(".") || !(dir.path.startsWith("/public") || public_[dir.path] != undefined || dir.path.startsWith("/shared") || shared[dir.path] != undefined || dir.path.startsWith("/applications/" + Application.application) || dir.path.startsWith("/users/" + Application.account.id))) {
             return;
         }
@@ -3138,7 +3138,7 @@ export class PathNavigator extends HTMLElement {
 
     // Set the directory.
     setDir(dir) {
-        dir.path=  dir.path.split("\\").join("/")
+        dir.path = dir.path.split("\\").join("/")
         if (this.path == dir._path || !(dir.path.startsWith("/public") || public_[dir.path] != undefined || dir.path.startsWith("/shared") || shared[dir.path] != undefined || dir.path.startsWith("/applications/" + Application.application) || dir.path.startsWith("/users/" + Application.account.id))) {
             return;
         }
@@ -3465,7 +3465,7 @@ export class FileNavigator extends HTMLElement {
                 }
                 // reload the div...
                 this.initPublic(callback)
-                dir.path=  dir.path.split("\\").join("/")
+                dir.path = dir.path.split("\\").join("/")
                 if (dir.path != "/public") {
                     this.initTreeView(dir, parent, level)
                 }
@@ -3671,7 +3671,7 @@ export class FileNavigator extends HTMLElement {
 
     // Set the directory.
     setDir(dir, callback) {
-        dir.path=  dir.path.split("\\").join("/")
+        dir.path = dir.path.split("\\").join("/")
         if (this.dir == dir || !(dir.path.startsWith("/public") || public_[dir.path] != undefined || dir.path.startsWith("/shared") || shared[dir.path] != undefined || shared[dir.path] != undefined || dir.path.startsWith("/applications/" + Application.application) || dir.path.startsWith("/users/" + Application.account.id))) {
             return;
         }
@@ -4189,7 +4189,7 @@ export class FileExplorer extends HTMLElement {
 
         // Give information about loading data...
         this.progressDiv = this.shadowRoot.querySelector("#progress-div")
-        this.diskSpaceManager =  this.shadowRoot.querySelector("globular-disk-space-manager")
+        this.diskSpaceManager = this.shadowRoot.querySelector("globular-disk-space-manager")
         this.diskSpaceManager.account = Application.account;
         this.diskSpaceManager.globule = this.globule
 
@@ -4692,8 +4692,8 @@ export class FileExplorer extends HTMLElement {
                 (evt) => {
                     // keep the active path.
                     if (this.id == evt.file_explorer_id) {
-                        if(this.informationManager){
-                            if(this.informationManager.parentNode)
+                        if (this.informationManager) {
+                            if (this.informationManager.parentNode)
                                 this.informationManager.parentNode.removeChild(this.informationManager)
                         }
                         this.setDir(evt.path)
@@ -5313,7 +5313,8 @@ export class FilesMenu extends Menu {
     }
 
     init() {
-
+        // hide the menu div
+        this.hideMenuDiv = true
     }
 }
 

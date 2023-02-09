@@ -103,6 +103,9 @@ export class AudioPlayer extends HTMLElement {
            
             #container{
                 position: fixed;
+                background: var(--palette-background-default); 
+                border-top: 1px solid var(--palette-background-paper);
+                border-left: 1px solid var(--palette-background-paper);
             }
 
             .header{
@@ -121,12 +124,6 @@ export class AudioPlayer extends HTMLElement {
                 white-space: nowrap;
                 overflow: hidden !important;
                 text-overflow: ellipsis;
-            }
-
-            paper-card {
-                background: var(--palette-background-default); 
-                border-top: 1px solid var(--palette-background-paper);
-                border-left: 1px solid var(--palette-background-paper);
             }
 
         </style>
@@ -159,8 +156,9 @@ export class AudioPlayer extends HTMLElement {
 
             /** Audio vizualizer **/
             .vz-wrapper {
-                width: 600px;
+                width: 100%;
                 height: 600px;
+                padding: 0px 5px 0px 5px;
                 display: flex;
                 flex-direction: column;
                 justify-content: center;
@@ -266,7 +264,7 @@ export class AudioPlayer extends HTMLElement {
             }
 
             #waveform{
-                margin: 5px;
+                width: 100%;
                 align-self: center;
             }
 
@@ -537,11 +535,11 @@ export class AudioPlayer extends HTMLElement {
             }
 
             let html = `
-            <paper-card id="volume-panel" style="position: absolute; top:42px; right: 0px; z-index:100">
+            <paper-card id="volume-panel" style="position: absolute; top:24px; right: 0px; z-index:100">
                 <div style="display: flex; align-items: center;">
-                    <iron-icon id="volume-down-btn" icon="av:volume-down" style="fill: black;" ></iron-icon>
+                    <iron-icon id="volume-down-btn" icon="av:volume-down" style="fill: white;" ></iron-icon>
                     <paper-slider style=""></paper-slider>
-                    <iron-icon id="volume-up-btn" icon="av:volume-up" style="fill: black;"></iron-icon>
+                    <iron-icon id="volume-up-btn" icon="av:volume-up" style="fill: white;"></iron-icon>
                 </div>
             </paper-card>
             `

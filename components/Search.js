@@ -546,11 +546,12 @@ export class SearchBar extends HTMLElement {
                 border-radius: 5px;
                 background-color: var(--palette-background-paper);
                 color:var(--palette-text-primary);
+                min-width: 340px;
 
             }
 
             #search-bar {
-                
+                min-width: 340px;
                 display: flex;
                 align-items: center;
                 border-radius: 22px;
@@ -2122,11 +2123,7 @@ export class SearchVideoCard extends HTMLElement {
         <style>
            
             paper-card{
-                background-color: var(--palette-background-paper);
                 color: var(--palette-text-primary);
-            }
-
-            paper-card {
                 background: var(--palette-background-default);
                 border-top: 1px solid var(--palette-background-paper);
                 border-left: 1px solid var(--palette-background-paper);

@@ -254,6 +254,9 @@ export class NotificationMenu extends Menu {
     }
 
     init() {
+        
+        // hide the menu div
+        this.hideMenuDiv = true
 
         // The logout event.
         Model.eventHub.subscribe("logout_event",

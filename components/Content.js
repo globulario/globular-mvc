@@ -3078,6 +3078,9 @@ export class CodeEditor extends HTMLElement {
                 width: 720px;
                 height: 400px;
                 position: fixed;
+                background: var(--palette-background-default); 
+                border-top: 1px solid var(--palette-background-paper);
+                border-left: 1px solid var(--palette-background-paper);
             }
 
             .header{
@@ -3100,12 +3103,7 @@ export class CodeEditor extends HTMLElement {
                 text-overflow: ellipsis;
             }
 
-            paper-card {
-                background: var(--palette-background-default); 
-                border-top: 1px solid var(--palette-background-paper);
-                border-left: 1px solid var(--palette-background-paper);
-            }
-
+        
         </style>
         <paper-card id="container" class="no-select">
             <div class="header">

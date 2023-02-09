@@ -141,6 +141,9 @@ export class VideoPlayer extends HTMLElement {
             #container{
                 width: 720px;
                 position: fixed;
+                background: var(--palette-background-default); 
+                border-top: 1px solid var(--palette-background-paper);
+                border-left: 1px solid var(--palette-background-paper);
             }
 
             #content{
@@ -187,13 +190,6 @@ export class VideoPlayer extends HTMLElement {
                 background-color: black;
             }
                  
-
-            paper-card {
-                background: var(--palette-background-default); 
-                border-top: 1px solid var(--palette-background-paper);
-                border-left: 1px solid var(--palette-background-paper);
-            }
-
             #content{
                 display: flex; 
                 background: black;

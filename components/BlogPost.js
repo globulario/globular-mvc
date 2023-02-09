@@ -1759,6 +1759,9 @@ export class BlogEditingMenu extends Menu {
                 Model.eventHub.publish("_display_blogs_event_", this.blogs, true)
             }
         }
+
+        // hide the menu div
+        this.hideMenuDiv = true
     }
 
     init() {

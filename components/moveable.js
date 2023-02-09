@@ -5,8 +5,8 @@
  * @param {*} draggable The div (or any other html-element) to be move.
  */
 export function setMoveable(handle, draggable, onmove, element, offsetTop = 0) {
-
-
+  document.oncontextmenu = function() {return false;};
+  handle.style.userSelect = "none"
 
   // set the position from existing infos
   let id = "__" + draggable.name + "__position__"
@@ -57,7 +57,6 @@ export function setMoveable(handle, draggable, onmove, element, offsetTop = 0) {
 
   handle.addEventListener('click', (e) => {
     e.stopPropagation()
-
     let draggables = document.getElementsByClassName("draggable")
     for (var i = 0; i < draggables.length; i++) {
       draggables[i].style.zIndex = 100;
@@ -67,6 +66,7 @@ export function setMoveable(handle, draggable, onmove, element, offsetTop = 0) {
   })
 
   handle.addEventListener('pointerdown', (e) => {
+    
     e.stopPropagation()
     isMouseDown = true;
     document.body.classList.add('no-select');
@@ -77,15 +77,19 @@ export function setMoveable(handle, draggable, onmove, element, offsetTop = 0) {
       draggables[i].style.zIndex = 100;
     }
 
-    console.log("pointer down")
     element.style.zIndex = 1000;
   })
 
-  document.addEventListener('pointermove', (e) => {
+  let onMoveHandler = (e)=>{
     e.stopPropagation()
-
-    console.log("pointer move", isMouseDown)
+   
+    if(e.touches){
+      e.clientX = e.touches[0].clientX
+      e.clientY = e.touches[0].clientY
+    }
+  
     if (isMouseDown) {
+
       var cx = e.clientX - initX,
         cy = e.clientY - initY;
       if (cx < 0) {
@@ -120,11 +124,14 @@ export function setMoveable(handle, draggable, onmove, element, offsetTop = 0) {
   
       localStorage.setItem(id, JSON.stringify(position))
     }
-  })
+  }
+
+  document.addEventListener('touchmove', onMoveHandler)
+  document.addEventListener('mousemove', onMoveHandler)
 
   document.addEventListener('pointerup', (e) => {
     e.stopPropagation()
-    console.log("pointer up")
+
     isMouseDown = false;
     document.body.classList.remove('no-select');
 

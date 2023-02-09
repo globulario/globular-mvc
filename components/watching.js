@@ -86,6 +86,7 @@ export class MediaWatching extends HTMLElement {
             }
             
         </style>
+
         <paper-card id="container">
         
             <div style="display: flex; justify-content: center;">
@@ -457,7 +458,6 @@ export class WatchingMenu extends Menu {
         this.mediaWatching = null;
         this.onclose = null;
 
-
         this.onclick = () => {
             let icon = this.getIconDiv().querySelector("iron-icon")
             icon.style.removeProperty("--iron-icon-fill-color")
@@ -466,6 +466,9 @@ export class WatchingMenu extends Menu {
             }
            
         }
+
+        // hide the menu div
+        this.hideMenuDiv = true
     }
 
     init() {

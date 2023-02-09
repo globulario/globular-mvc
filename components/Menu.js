@@ -25,6 +25,7 @@ export class Menu extends HTMLElement {
         this.id = id;
         this.icon = icon;
         this.keepOpen = false;
+        this.hideMenuDiv = false;
 
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
@@ -134,7 +135,7 @@ export class Menu extends HTMLElement {
                 background-color: var(--palette-background-paper);
                 color: var(--palette-text-primary);
             }
-            
+
             paper-card h1 {
                 font-size: 1.65rem;
             }
@@ -169,23 +170,27 @@ export class Menu extends HTMLElement {
         this.onclick = null;
 
         // Move the menu in it parent if the window resize.
+
         window.addEventListener("resize", (evt) => {
             if (!ApplicationView) {
                 return;
             }
 
+            if (this.hideMenuDiv) {
+                return;
+            }
+
             let w = ApplicationView.layout.width();
-            
+
             // TODO try to set it in the css propertie instead...
-            if (this.menu.parentNode) {
-                if (w < 700) {
-
-                    
-
-                    Model.eventHub.publish("_display_workspace_content_event_", this.menu, true)
-                } else {
-                    let menuDiv = this.shadowRoot.getElementById(this.id + "_div")
-                    menuDiv.appendChild(this.menu)
+            if (this.menu) {
+                if (this.menu.parentNode) {
+                    if (w < 700) {
+                        Model.eventHub.publish("_display_workspace_content_event_", this.menu, true)
+                    } else {
+                        let menuDiv = this.shadowRoot.getElementById(this.id + "_div")
+                        menuDiv.appendChild(this.menu)
+                    }
                 }
             }
         })
@@ -253,12 +258,14 @@ export class Menu extends HTMLElement {
                 return;
             }
 
-            let w = ApplicationView.layout.width();
-            if(w < 700){
-                Model.eventHub.publish("_display_workspace_content_event_", this.menu, true)
-            }else{
-                let menuDiv = this.shadowRoot.getElementById(this.id + "_div")
-                menuDiv.appendChild(this.menu)
+            if (!this.hideMenuDiv) {
+                let w = ApplicationView.layout.width();
+                if (w < 700) {
+                    Model.eventHub.publish("_display_workspace_content_event_", this.menu, true)
+                } else {
+                    let menuDiv = this.shadowRoot.getElementById(this.id + "_div")
+                    menuDiv.appendChild(this.menu)
+                }
             }
 
             if (this.onshow) {
@@ -332,6 +339,9 @@ export class Menu extends HTMLElement {
      * Display the label beside the menu
      */
     expand() {
+        if (!this.getMenuDiv()) {
+            return
+        }
         this.getMenuDiv().classList.remove("left");
         this.getMenuDiv().classList.add("bottom");
         this.getIcon().classList.remove("big")
@@ -345,6 +355,9 @@ export class Menu extends HTMLElement {
      * not display the label.
      */
     shrink() {
+        if (!this.getMenuDiv()) {
+            return
+        }
         this.getIconDiv().classList.add("sidemenu-btn")
         this.getMenuDiv().classList.remove("bottom");
         this.getMenuDiv().classList.add("left");

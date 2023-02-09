@@ -158,6 +158,11 @@ const __style__ = `
         display: flex;
         justify-content: center;
         margin-bottom: 20px;
+        flex-direction: column;
+    }
+
+    globular-video-preview{
+        margin-top: 10px;
     }
 }
 `
@@ -434,15 +439,15 @@ export class InformationsManager extends HTMLElement {
             }
 
             h1 {
-                font-size: 30px;
+                font-size: 1.55rem;
             }
 
             h2 {
-                font-size: 25px;
+                font-size: 1.35rem;
             }
 
             h3 {
-                font-size: 20px;
+                font-size: 1.25rem;
             }
 
 
@@ -717,6 +722,33 @@ export class VideoInfo extends HTMLElement {
             paper-button {
                 font-size: 1rem;
             }
+
+            ::-webkit-scrollbar {
+                width: 5px;
+                height: 5px;
+             }
+                
+             ::-webkit-scrollbar-track {
+                background: var(--palette-background-default);
+             }
+             
+             ::-webkit-scrollbar-thumb {
+                background: var(--palette-divider); 
+             }
+
+            @media only screen and (max-width: 600px) {
+                .title-div{
+                    max-height: calc(100vh - 300px);
+                    overflow-y: auto;
+                    overflow-x: hidden;
+                }
+
+                .title-poster-img{
+                    max-width: 256px;
+                }
+            }
+
+
         </style>
         <div>
             <div class="title-div">
@@ -1130,10 +1162,7 @@ export class TitleInfo extends HTMLElement {
             ${__style__}
 
             .title-div{
-                /*
-                background-color: var(--palette-background-paper);
-                color: var(--palette-text-primary);
-                */
+     
             }
 
             .action-div{
@@ -1150,10 +1179,42 @@ export class TitleInfo extends HTMLElement {
                 color: var(--palette-text-primary);
             }
 
+            ::-webkit-scrollbar {
+                width: 5px;
+                height: 5px;
+
+             }
+                
+            ::-webkit-scrollbar-track {
+                background: var(--palette-background-default);
+            }
+             
+            ::-webkit-scrollbar-thumb {
+                background: var(--palette-divider); 
+            }
+
+            @media only screen and (max-width: 600px) {
+                .title-div{
+                    max-height: calc(100vh - 300px);
+                    overflow-y: auto;
+                    overflow-x: hidden;
+                }
+
+                .title-poster-img{
+                    max-width: 256px;
+                }
+            }
+
+
         </style>
         <div class="title-div" >
-            <div class="title-poster-div" style="${this.isShort ? "display: none;" : ""}">
-                <img class="title-poster-img"></img>
+            <div style="display: flex; flex-direction: column;"> 
+                <div class="title-poster-div" style="${this.isShort ? "display: none;" : ""}">
+                    <img class="title-poster-img"></img>
+                </div>
+                <div class="title-files-div" style="${this.isShort ? "display: none;" : ""}">
+                    <paper-progress indeterminate></paper-progress>
+                </div>
             </div>
             <div class="title-informations-div">
                 <div class="title-genres-div"></div>
@@ -1180,9 +1241,6 @@ export class TitleInfo extends HTMLElement {
                     </div>
                 </div>
             </div>
-            <div class="title-files-div" style="${this.isShort ? "display: none;" : ""}">
-                <paper-progress indeterminate></paper-progress>
-            </div>
         </div>
         <div class="action-div" style="${this.isShort ? "display: none;" : ""}">
             <paper-button id="delete-indexation-btn">Delete</paper-button>
@@ -1194,7 +1252,7 @@ export class TitleInfo extends HTMLElement {
     showTitleInfo(title) {
         let uuid = randomUUID()
         let html = `
-        <paper-card id="video-info-box-dialog-${uuid}" style="background: var(--palette-background-default); border-top: 1px solid var(--palette-background-paper); border-left: 1px solid var(--palette-background-paper);">
+        <paper-card id="video-info-box-dialog-${uuid}" style="background-color: var(--palette-background-default);">
             <globular-informations-manager id="title-info-box"></globular-informations-manager>
         </paper-card>
         `
@@ -1289,7 +1347,6 @@ export class TitleInfo extends HTMLElement {
 
         let filesDiv = this.shadowRoot.querySelector(".title-files-div")
         if (title.getType() != "TVSeries") {
-            filesDiv.style.paddingTop = "35px"
             filesDiv.style.paddingLeft = "15px"
             GetTitleFiles("/search/titles", title, filesDiv, (previews) => {
                 filesDiv.querySelector("paper-progress").style.display = "none"
@@ -1947,8 +2004,7 @@ export class BlogPostInfo extends HTMLElement {
 
                     border-radius: 3.5px;
                     border: 1px solid var(--palette-divider);
-                    height: 100%;
-                    width: 100%;
+                    width: 320px;
                     margin: 10px;
                     height: 285px;
                     margin: 10px;
