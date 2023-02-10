@@ -1069,19 +1069,23 @@ export class SearchResultsPage extends HTMLElement {
                 align-items: center;
              }
 
+             
+             #facets{
+                max-height: calc(100vh - 150px);
+                overflow-y: auto; 
+                overflow-x: hidden;
+                margin-right: 5px;
+                min-width: 225xp;
+            }
+
 
              @media (max-width: 600px) {
                 #container {
                     flex-direction: column;
-                    
                 }
 
                 #facets{
                     max-height: 200px;
-                    overflow-y: auto; 
-                    overflow-x: hidden;
-                    margin-right: 5px;
-                    min-width: 225xp;
                 }
 
                 .header{

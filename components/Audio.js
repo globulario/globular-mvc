@@ -127,23 +127,6 @@ export class AudioPlayer extends HTMLElement {
                 max-width: calc(100vw - 50px);
             }
 
-        </style>
-
-        <paper-card id="container" class="no-select">
-            <div class="header" style="${hideheader ? "display:none;" : ""}">
-                <paper-icon-button id="video-close-btn" icon="icons:close" style="min-width: 40px; --iron-icon-fill-color: var(--palette-text-accent);"></paper-icon-button>
-                <span id="title-span"></span>
-            </div>
-            
-            <slot></slot>
-        </paper-card>
-        `
-
-        let container = this.shadowRoot.querySelector("#container")
-
-        // so here I will use the ligth dom...
-        let content = `
-        <style>
             #content{
                 height: 600px;
                 display: flex;
@@ -154,8 +137,44 @@ export class AudioPlayer extends HTMLElement {
                 color: var(--palette-text-primary);
             }
 
+            @media (max-width: 600px) {
+                #content{
+                    height: calc(100vh - 100px);
+                    overflow-y: auto;
+                    width: 100vw;
+                    background: black;
+                    flex-direction: column-reverse;
+                }
 
+                #content {
+                    height: 420px;
+                    overflow: hidden;
+                }
+            }
 
+        </style>
+
+        <paper-card id="container" class="no-select">
+            <div class="header" style="${hideheader ? "display:none;" : ""}">
+                <paper-icon-button id="close-btn" icon="icons:close" style="min-width: 40px; --iron-icon-fill-color: var(--palette-text-accent);"></paper-icon-button>
+                <span id="title-span"></span>
+            </div>
+            <div id=content>
+                <slot></slot>
+            </div>
+        </paper-card>
+        `
+
+        let container = this.shadowRoot.querySelector("#container")
+
+        this.shadowRoot.querySelector("#close-btn").onclick = () => {
+            this.stop()
+            this.parentNode.removeChild(this)
+        }
+
+        // so here I will use the ligth dom...
+        let content = `
+        <style>
             /** Audio vizualizer **/
             .vz-wrapper {
                 width: 100%;
@@ -320,11 +339,6 @@ export class AudioPlayer extends HTMLElement {
             }
 
             @media (max-width: 600px) {
-                #content{
-                    background: black;
-                    flex-direction: column-reverse;
-                    justify-content: center;
-                }
 
                 .album-year {
                     display: none;
@@ -335,13 +349,13 @@ export class AudioPlayer extends HTMLElement {
                 }
 
                 #track-info {
-                    bottom: 40px;
+                    bottom: 50px;
+                    font-size: 1rem;
                 }
 
                 .vz-wrapper {
                     height: auto;
                     padding: 0px;
-                    width: calc(100vw - 5px);
                 }
 
                 .vz-wrapper img {
@@ -350,49 +364,47 @@ export class AudioPlayer extends HTMLElement {
                 }
 
                 globular-playlist {
-                    overflow-y: auto;
-                    margin-bottom: 40px;
+                    margin-bottom: 50px;
                 }
             }
 
         </style>
+
         <audio></audio>
-        <div id="content">
-            <globular-playlist></globular-playlist>
 
-            <div class="vz-wrapper" style="display: flex; justify-content: center; position: relative;">
-                <div id="track-info"> </div>
-                <div style="display: flex; margin-top: 10px;">
-                    <span class="album-name"></span>
-                    <span class="album-year"></span>
+        <globular-playlist></globular-playlist>
+
+        <div class="vz-wrapper" style="display: flex; justify-content: center; position: relative;">
+            <div id="track-info"> </div>
+            <div style="display: flex; margin-top: 10px;">
+                <span class="album-name"></span>
+                <span class="album-year"></span>
+            </div>
+
+            <img class="album-cover"> </img>
+            <span class="track-title"> </span>
+
+            <div id="waveform"></div>
+            <div class="buttons">
+                <div style="flex-grow: 1; display: flex; align-items: center; width: 100%;">
+                    <paper-slider style="flex-grow: 1;"></paper-slider>
+                    <div  style="display: flex; align-items: center; padding-right: 10px;">
+                        <span id="current-time"></span> <span>/</span> <span id="total-time"></span>
+                    </div>
+                    <div style="position: relative;">
+                        <iron-icon id="volume-up" icon="av:volume-up"></iron-icon>
+                    </div>
                 </div>
-
-                <img class="album-cover"> </img>
-                <span class="track-title"> </span>
-
-                <div id="waveform"></div>
-                <div class="buttons">
-                    <div style="flex-grow: 1; display: flex; align-items: center; width: 100%;">
-                        <paper-slider style="flex-grow: 1;"></paper-slider>
-                        <div  style="display: flex; align-items: center; padding-right: 10px;">
-                            <span id="current-time"></span> <span>/</span> <span id="total-time"></span>
-                        </div>
-                        <div style="position: relative;">
-                            <iron-icon id="volume-up" icon="av:volume-up"></iron-icon>
-                        </div>
-                    </div>
-                    <div class="toolbar" style="display: flex; padding-left: 10px; padding-right: 10px; align-items: center; height: 40px; margin-top: 20px;">
-                        <iron-icon title="Shuffle Playlist" id="shuffle" icon="av:shuffle"></iron-icon>
-                        <iron-icon id="skip-previous" title="Previous Track" icon="av:skip-previous"></iron-icon>
-                        <iron-icon id="fast-rewind" title="Rewind" icon="av:fast-rewind"></iron-icon>
-                        <iron-icon id="play-arrow" title="Play" icon="av:play-circle-outline"></iron-icon>
-                        <iron-icon id="pause" title="Pause" style="display: none;" icon="av:pause-circle-outline"></iron-icon>
-                        <iron-icon id="fast-forward" title="Foward" icon="av:fast-forward"></iron-icon>
-                        <iron-icon id="skip-next" title="Next Track" icon="av:skip-next"></iron-icon>
-                        <iron-icon id="stop" title="Stop" icon="av:stop"></iron-icon>
-                        <iron-icon title="Loop Playlist" id="repeat" icon="av:repeat"></iron-icon>
-                    </div>
-
+                <div class="toolbar" style="display: flex; padding-left: 10px; padding-right: 10px; align-items: center; height: 40px; margin-top: 20px;">
+                    <iron-icon title="Shuffle Playlist" id="shuffle" icon="av:shuffle"></iron-icon>
+                    <iron-icon id="skip-previous" title="Previous Track" icon="av:skip-previous"></iron-icon>
+                    <iron-icon id="fast-rewind" title="Rewind" icon="av:fast-rewind"></iron-icon>
+                    <iron-icon id="play-arrow" title="Play" icon="av:play-circle-outline"></iron-icon>
+                    <iron-icon id="pause" title="Pause" style="display: none;" icon="av:pause-circle-outline"></iron-icon>
+                    <iron-icon id="fast-forward" title="Foward" icon="av:fast-forward"></iron-icon>
+                    <iron-icon id="skip-next" title="Next Track" icon="av:skip-next"></iron-icon>
+                    <iron-icon id="stop" title="Stop" icon="av:stop"></iron-icon>
+                    <iron-icon title="Loop Playlist" id="repeat" icon="av:repeat"></iron-icon>
                 </div>
             </div>
         </div>
@@ -471,18 +483,13 @@ export class AudioPlayer extends HTMLElement {
             /** */
         }, this, offsetTop)
 
-        this.shadowRoot.querySelector("#video-close-btn").onclick = () => {
-            this.close()
-        }
 
-
-        this.querySelector("#content").onclick = () => {
+        this.querySelector(".vz-wrapper").onclick = () => {
             let volumePanel = this.volumeBtn.parentNode.querySelector("#volume-panel")
             if (volumePanel) {
                 volumePanel.parentNode.removeChild(volumePanel)
             }
         }
-
 
         // Actions...
         this.playBtn.onclick = () => {
@@ -688,7 +695,6 @@ export class AudioPlayer extends HTMLElement {
     connectedCallback() {
 
         if (this.wavesurfer) {
-
             return
         }
 
@@ -738,9 +744,9 @@ export class AudioPlayer extends HTMLElement {
             this.totalTimeSpan.innerHTML = hours_ + ":" + minutes_ + ":" + seconds_;
 
             this.wavesurfer.play();
-
             this.playBtn.style.display = "none"
             this.pauseBtn.style.display = "block"
+
             fireResize()
         })
 
@@ -794,7 +800,6 @@ export class AudioPlayer extends HTMLElement {
     }
 
     play(path, globule, audio, local = false) {
-
 
         if (this._audio_ && audio) {
             if (this._audio_.getId() == audio.getId() && this.wavesurfer.isPlaying()) {
@@ -920,6 +925,22 @@ export class AudioPlayer extends HTMLElement {
     loadPlaylist(path, globule) {
         this.playlist.clear()
         this.playlist.load(path, globule, this)
+        
+        // set the css value to display the playlist correctly...
+        window.addEventListener("resize", (evt) => {
+            let content = this.shadowRoot.querySelector("#content")
+            let w = ApplicationView.layout.width();
+            if (w < 500) {
+                content.style.height = "calc(100vh - 100px)"
+                content.style.overflowY = "auto"
+                content.scrollTop = 0
+            }else{
+                content.style.height = ""
+                content.style.overflowY = ""
+                content.scrollTop = 0
+            }
+        })
+      
     }
 
     // Pause the player...
