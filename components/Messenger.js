@@ -214,7 +214,7 @@ export class MessengerMenu extends Menu {
                     </div>
                 </div>
                 <div style="display: flex; align-items: center;">
-                    <paper-input type="text" label="Search" id="search-conversation-box" width="${this.width}" style="flex-grow: 1;"></paper-input>
+                    <paper-input type="text" label="Search Contact" id="search-conversation-box" width="${this.width}" style="flex-grow: 1;"></paper-input>
                     <div id="new-conversation-btn" class="btn_" style="position: relative;">
                         <iron-icon style="flex-grow: 1; --iron-icon-fill-color:var(--palette-text-primary);" icon="add"></iron-icon>
                         <paper-ripple class="circle" recenters=""></paper-ripple>

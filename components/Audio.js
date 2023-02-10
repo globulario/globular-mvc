@@ -124,9 +124,11 @@ export class AudioPlayer extends HTMLElement {
                 white-space: nowrap;
                 overflow: hidden !important;
                 text-overflow: ellipsis;
+                max-width: calc(100vw - 50px);
             }
 
         </style>
+
         <paper-card id="container" class="no-select">
             <div class="header" style="${hideheader ? "display:none;" : ""}">
                 <paper-icon-button id="video-close-btn" icon="icons:close" style="min-width: 40px; --iron-icon-fill-color: var(--palette-text-accent);"></paper-icon-button>
@@ -134,8 +136,6 @@ export class AudioPlayer extends HTMLElement {
             </div>
             
             <slot></slot>
-            
-            
         </paper-card>
         `
 
@@ -153,6 +153,8 @@ export class AudioPlayer extends HTMLElement {
                 background-color: var(--palette-background-paper);
                 color: var(--palette-text-primary);
             }
+
+
 
             /** Audio vizualizer **/
             .vz-wrapper {
@@ -276,7 +278,6 @@ export class AudioPlayer extends HTMLElement {
                 font-size: 1.5rem;
                 font-weight: 500;
                 color: white;
-                width: 500px;
                 white-space: nowrap;
                 overflow: hidden !important;
                 text-overflow: ellipsis;
@@ -303,11 +304,11 @@ export class AudioPlayer extends HTMLElement {
                 flex-grow: 1;
                 color: white;
                 display: inline-block;
-                width: 500px;
                 white-space: nowrap;
                 overflow: hidden !important;
                 text-overflow: ellipsis;
                 text-align: center;
+                white-space: initial;
             }
 
             #track-info{
@@ -316,6 +317,42 @@ export class AudioPlayer extends HTMLElement {
                 left: 20px;
                 color: white;
                 font-size: 1.6rem;
+            }
+
+            @media (max-width: 600px) {
+                #content{
+                    background: black;
+                    flex-direction: column-reverse;
+                    justify-content: center;
+                }
+
+                .album-year {
+                    display: none;
+                }
+
+                .track-title {
+                    font-size: 1.25rem;
+                }
+
+                #track-info {
+                    bottom: 40px;
+                }
+
+                .vz-wrapper {
+                    height: auto;
+                    padding: 0px;
+                    width: calc(100vw - 5px);
+                }
+
+                .vz-wrapper img {
+                    max-width: 180px;
+                    max-height: 180px;
+                }
+
+                globular-playlist {
+                    overflow-y: auto;
+                    margin-bottom: 40px;
+                }
             }
 
         </style>

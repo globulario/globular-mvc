@@ -1056,11 +1056,13 @@ export class VideoPlayer extends HTMLElement {
         container.style.display = "none"
         container.style.width = "0px"
         container.style.height = "0px"
+        this.hideHeader()
 
         this.video.style.display = "none";
     }
 
     show(){
+        this.showHeader()
         let container = this.shadowRoot.querySelector("#container")
         container.style.display = ""
         this.video.style.display = "";

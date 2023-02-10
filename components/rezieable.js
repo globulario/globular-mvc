@@ -6,7 +6,7 @@ import { fireResize } from "./utility";
 export function setResizeable(div, onresize, side, zIndex, maxWidth = 0) {
 
     // be sure the windows can be resize...
-    div.style.maxWidth = screen.width -5  + "px" 
+    div.style.maxWidth = screen.width - 5 + "px"
 
     // here I will stop resize...
     let id = div.name
@@ -17,11 +17,11 @@ export function setResizeable(div, onresize, side, zIndex, maxWidth = 0) {
     }
 
     // resizeable by right side...
-    if(side == undefined){
+    if (side == undefined) {
         side = "right"
     }
 
-    if(zIndex == undefined){
+    if (zIndex == undefined) {
         zIndex = 100
     }
 
@@ -40,7 +40,7 @@ export function setResizeable(div, onresize, side, zIndex, maxWidth = 0) {
     resizeWidthDiv.style.bottom = "5px"
     resizeWidthDiv.style.width = "5px"
 
-    if(side == "right")
+    if (side == "right")
         resizeWidthDiv.style.right = "-1px"
     else
         resizeWidthDiv.style.left = "-1px"
@@ -86,9 +86,9 @@ export function setResizeable(div, onresize, side, zIndex, maxWidth = 0) {
     resizeDiv.id = "resize-div"
     resizeDiv.style.position = "absolute"
     resizeDiv.style.bottom = "-1px"
-    if(side == "right"){
+    if (side == "right") {
         resizeDiv.style.right = "-1px"
-    }else{
+    } else {
         resizeDiv.style.left = "-1px"
     }
     resizeDiv.style.height = "10px"
@@ -142,7 +142,7 @@ export function setResizeable(div, onresize, side, zIndex, maxWidth = 0) {
         }
     }(div)
 
-    document.body.addEventListener("mouseup", function (div) {
+    document.body.addEventListener("pointerup", function (div) {
         return function (e) {
             div.isResizeWidth = false;
             div.isResizeHeigth = false;
@@ -156,7 +156,7 @@ export function setResizeable(div, onresize, side, zIndex, maxWidth = 0) {
         }
     }(div))
 
-    document.body.addEventListener("mousedown", function (div) {
+    document.body.addEventListener("pointerdown", function (div) {
         return function (e) {
             if (div.isOverResizeWidthDiv) {
                 div.isResizeWidth = true;
@@ -194,15 +194,19 @@ export function setResizeable(div, onresize, side, zIndex, maxWidth = 0) {
         return offsetTop;
     }
 
+    let moveHandler = (e) => {
 
-    // Here I will resize the div as needed.
-    document.body.addEventListener("mousemove", (e) => {
+        if (e.touches) {
+            e.clientX = e.touches[0].clientX
+            e.clientY = e.touches[0].clientY
+        }
+
         var w = e.clientX - getOffsetLeft(div);
         var h = e.clientY - getOffsetTop(div);
 
         // stop resize
-        if(div.maxWidth > 0){
-            if(w >= div.maxWidth){
+        if (div.maxWidth > 0) {
+            if (w >= div.maxWidth) {
                 onresize(div.offsetWidth, div.offsetHeight)
                 return;
             }
@@ -242,6 +246,9 @@ export function setResizeable(div, onresize, side, zIndex, maxWidth = 0) {
                 fireResize()
             }
         }
+    }
 
-    })
+    // Here I will resize the div as needed.
+    document.body.addEventListener("mousemove", moveHandler)
+
 }
