@@ -933,11 +933,9 @@ export class AudioPlayer extends HTMLElement {
             if (w < 500) {
                 content.style.height = "calc(100vh - 100px)"
                 content.style.overflowY = "auto"
-                content.scrollTop = 0
             }else{
                 content.style.height = ""
                 content.style.overflowY = ""
-                content.scrollTop = 0
             }
         })
       

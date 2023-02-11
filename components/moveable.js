@@ -1,3 +1,5 @@
+import { ApplicationView } from "../ApplicationView";
+
 /**
  * Move a div. The div position will be absolute.
  * The handle can be any child of the div to be move.
@@ -17,17 +19,17 @@ export function setMoveable(handle, draggable, onmove, element, offsetTop = 0) {
     }
 
     // be sure the window open at visible position
-    if(position.left > document.body.offsetWidth){
+    if (position.left > document.body.offsetWidth) {
       position.left = document.body.offsetWidth - 80;
     }
 
-    if(position.top > document.body.offsetHeight){
+    if (position.top > document.body.offsetHeight) {
       position.top = document.body.offsetHeight - 80;
     }
 
     draggable.style.top = position.top + "px"
     draggable.style.left = position.left + "px"
-    
+
   } else {
     draggable.style.left = ((document.body.offsetWidth - 720) / 2) + "px"
     draggable.style.top = "80px"
@@ -35,18 +37,27 @@ export function setMoveable(handle, draggable, onmove, element, offsetTop = 0) {
 
   // be sure the window stay visible.
   window.addEventListener('resize', () => {
-    
+
+    // set the postion to 0, 0
+    let w = ApplicationView.layout.width();
+    if (w < 500) {
+      draggable.style.top = offsetTop + "px"
+      draggable.style.left = "0px"
+      return
+    }
+
+
     if (draggable.offsetTop < offsetTop) {
       draggable.top = offsetTop + "px"
     }
 
     // be sure the window open at visible position
-    if(draggable.offsetLeft  > document.body.offsetWidth){
-      draggable.style.left  = (document.body.offsetWidth - 80) + "px";
+    if (draggable.offsetLeft > document.body.offsetWidth) {
+      draggable.style.left = (document.body.offsetWidth - 80) + "px";
     }
 
-    if(draggable.offsetTop > document.body.offsetHeight){
-      draggable.style.top  = (document.body.offsetHeight - 80)+"px";
+    if (draggable.offsetTop > document.body.offsetHeight) {
+      draggable.style.top = (document.body.offsetHeight - 80) + "px";
     }
   });
 
@@ -66,7 +77,7 @@ export function setMoveable(handle, draggable, onmove, element, offsetTop = 0) {
   })
 
   handle.addEventListener('pointerdown', (e) => {
-    
+
     e.stopPropagation()
     isMouseDown = true;
     document.body.classList.add('no-select');
@@ -80,14 +91,22 @@ export function setMoveable(handle, draggable, onmove, element, offsetTop = 0) {
     element.style.zIndex = 1000;
   })
 
-  let onMoveHandler = (e)=>{
+  let onMoveHandler = (e) => {
     e.stopPropagation()
-   
-    if(e.touches){
+
+    // set the postion to 0, 0
+    let w = ApplicationView.layout.width();
+    if (w < 500) {
+      draggable.style.top = offsetTop + "px"
+      draggable.style.left = "0px"
+      return
+    }
+
+    if (e.touches) {
       e.clientX = e.touches[0].clientX
       e.clientY = e.touches[0].clientY
     }
-  
+
     if (isMouseDown) {
 
       var cx = e.clientX - initX,
@@ -121,7 +140,7 @@ export function setMoveable(handle, draggable, onmove, element, offsetTop = 0) {
       if (position.top < offsetTop) {
         position.top = offsetTop
       }
-  
+
       localStorage.setItem(id, JSON.stringify(position))
     }
   }

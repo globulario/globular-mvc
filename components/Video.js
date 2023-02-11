@@ -10,7 +10,7 @@ import { GetFileTitlesRequest, GetFileVideosRequest } from "globular-web-client/
 import { setMoveable } from './moveable'
 import { setResizeable } from './rezieable'
 import { File } from "../File"
-import { formatBoolean, randomUUID } from "./utility";
+import { fireResize, formatBoolean, randomUUID } from "./utility";
 import { PlayList } from "./Playlist"
 import { readDir } from "globular-web-client/api";
 
@@ -198,6 +198,19 @@ export class VideoPlayer extends HTMLElement {
                 background: black;
             }
 
+            
+            @media (max-width: 600px) {
+                #content{
+                    width: 100vw;
+                    background: black;
+                    flex-direction: column-reverse;
+                }
+
+                globular-playlist{
+                    padding-bottom: 50px;
+                }
+            }
+
         </style>
         <paper-card id="container" class="no-select">
             <div class="header" style="${hideheader ? "display:none;" : ""}">
@@ -207,7 +220,7 @@ export class VideoPlayer extends HTMLElement {
                 <select id="audio-track-selector" style="display: none"></select>
                 <paper-icon-button id="title-info-button" icon="icons:arrow-drop-down-circle"></paper-icon-button>
             </div>
-            <div id="content" style="">
+            <div id="content">
                 <globular-playlist style="display: none; min-width: 450px; overflow:hidden; height: 600px;"></globular-playlist>
                 <slot></slot>
             </div>
@@ -270,24 +283,39 @@ export class VideoPlayer extends HTMLElement {
 
             this.resume = true
 
-            if (this.video.videoHeight > 0 && this.video.videoWidth > 0) {
+            let w = ApplicationView.layout.width();
+            if (w < 500) {
+                container.style.width = "100vw"
+            } else {
+                if (this.video.videoHeight > 0 && this.video.videoWidth > 0) {
 
-                let maxWidth = this.video.videoWidth
-                if (maxWidth > screen.width) {
-                    maxWidth = screen.width
+                    let height = this.video.videoHeight
+                    let maxWidth = this.video.videoWidth
+
+                    if (maxWidth > screen.width) {
+                        maxWidth = screen.width
+                        height = maxWidth * (this.video.videoHeight / this.video.videoWidth)
+                    }
+
+
+                    if (this.video.videoHeight > screen.height - 250) {
+                        height = screen.height - 250
+                        maxWidth = height * (this.video.videoWidth / this.video.videoHeight)
+                    }
+
+                    container.maxWidth = maxWidth
+
+                    // event resize the video only if the video is new...
+                    this.playlist.style.height = height + "px"
+                    if (this.playlist.style.display == "none") {
+                        container.style.width = maxWidth + "px"
+                    } else {
+                        container.style.width = maxWidth + this.playlist.offsetWidth + "px"
+                    }
+
+                    localStorage.setItem("__video_player_dimension__", JSON.stringify({ width: maxWidth, height: height }))
+
                 }
-
-                container.maxWidth = maxWidth
-
-                // event resize the video only if the video is new...
-                this.playlist.style.height = this.video.videoHeight + "px"
-                if (this.playlist.style.display == "none") {
-                    container.style.width = this.video.videoWidth + "px"
-                } else {
-                    container.style.width = this.video.videoWidth + this.playlist.offsetWidth + "px"
-                }
-                localStorage.setItem("__video_player_dimension__", JSON.stringify({ width: this.video.videoWidth, height: this.video.videoHeight }))
-
             }
         }
 
@@ -325,7 +353,7 @@ export class VideoPlayer extends HTMLElement {
         // you must set enable-experimental-web-platform-features to true
         // chrome://flags/ 
         this.video.onloadeddata = () => {
-            
+
             ApplicationView.resume()
             this.show()
 
@@ -623,6 +651,21 @@ export class VideoPlayer extends HTMLElement {
         this.playlist.clear()
         this.playlist.load(path, globule, this)
 
+        // set the css value to display the playlist correctly...
+        window.addEventListener("resize", (evt) => {
+            let content = this.shadowRoot.querySelector("#content")
+            let w = ApplicationView.layout.width();
+            if (w < 500) {
+                content.style.height = "calc(100vh - 100px)"
+                content.style.overflowY = "auto"
+
+            } else {
+                content.style.height = ""
+                content.style.overflowY = ""
+            }
+        })
+
+        setTimeout(fireResize(), 500)
     }
 
     showPlaylist() {
@@ -1050,7 +1093,7 @@ export class VideoPlayer extends HTMLElement {
         }
     }
 
-    hide(){
+    hide() {
         let container = this.shadowRoot.querySelector("#container")
         container.maxWidth = 0
         container.style.display = "none"
@@ -1061,7 +1104,7 @@ export class VideoPlayer extends HTMLElement {
         this.video.style.display = "none";
     }
 
-    show(){
+    show() {
         this.showHeader()
         let container = this.shadowRoot.querySelector("#container")
         container.style.display = ""

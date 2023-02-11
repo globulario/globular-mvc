@@ -1,19 +1,42 @@
+import { ApplicationView } from "../ApplicationView";
 import { fireResize } from "./utility";
 
 /**
  * That propertie take a div and append resizeable capabilities.
  */
-export function setResizeable(div, onresize, side, zIndex, maxWidth = 0) {
+export function setResizeable(div, onresize, side, zIndex) {
 
-    // be sure the windows can be resize...
-    div.style.maxWidth = screen.width - 5 + "px"
+    window.addEventListener("resize", (evt) => {
+        let w = ApplicationView.layout.width();
+        let id = div.name
+        if (w < 500 && div.style.width != "100vw") {
+            localStorage.setItem(`__${id}_dimension__`, JSON.stringify({ width: div.offsetWidth, height: div.offsetHeight }))
+            div.style.width = "100vw"
+        }else if( div.style.width == "100vw" && w > 500 && w > div.maxWidth && div.maxWidth > 0){
+                div.style.width = div.maxWidth + "px"
+                div.style.height = "auto"
+        }else if( w > 500 && w < div.maxWidth && div.maxWidth > 0){
+            div.style.width = w + "px"
+            div.style.height = "auto"
+        }
+    })
+
 
     // here I will stop resize...
-    let id = div.name
-    if (localStorage.getItem(`__${id}_dimension__`)) {
-        let dimension = JSON.parse(localStorage.getItem(`__${id}_dimension__`))
-        div.style.width = dimension.width + "px"
-        div.style.height = dimension.height + "px"
+    let w = ApplicationView.layout.width();
+    if (w < 500) {
+        div.style.width = "100vw"
+    }else {
+        let id = div.name
+        if (localStorage.getItem(`__${id}_dimension__`)) {
+            let dimension = JSON.parse(localStorage.getItem(`__${id}_dimension__`))
+            if(dimension.width > 0 && dimension.height > 0){
+                div.style.width = dimension.width + "px"
+                div.style.height = dimension.height + "px"
+            }else{
+                div.style.width = div.maxWidth + "px"
+            }
+        }
     }
 
     // resizeable by right side...
@@ -195,6 +218,13 @@ export function setResizeable(div, onresize, side, zIndex, maxWidth = 0) {
     }
 
     let moveHandler = (e) => {
+
+        if (ApplicationView.layout.width() < 500) {
+            div.style.width = "100vw"
+            onresize(div.offsetWidth, div.offsetHeight)
+            fireResize()
+            return
+        }
 
         if (e.touches) {
             e.clientX = e.touches[0].clientX

@@ -16,7 +16,7 @@ import { SearchDocumentsRequest } from 'globular-web-client/search/search_pb';
 import * as JwtDecode from 'jwt-decode';
 import { base64toBlob, formatBoolean, getCoords, randomUUID } from './utility';
 import { playAudio } from './Audio';
-import { setAudio } from './Playlist';
+import { setAudio, setVideo } from './Playlist';
 
 // Maximum number of results displayed...
 var MAX_DISPLAY_RESULTS = 20; // the maximum results display per page per globule...
@@ -1177,11 +1177,11 @@ export class SearchResultsPage extends HTMLElement {
         this.navigator.setSearchResultsPage(this)
 
         // connect the previous and next page buttons
-        this.nextResultsBtn.onclick = ()=>{
+        this.nextResultsBtn.onclick = () => {
             this.navigator.setIndex(this.offset + 1)
         }
 
-        this.previousResultsBtn.onclick = ()=>{
+        this.previousResultsBtn.onclick = () => {
             this.navigator.setIndex(this.offset - 1)
         }
 
@@ -1461,7 +1461,7 @@ export class SearchResultsPage extends HTMLElement {
         // set the facet height
         let facets = this.shadowRoot.querySelector("#facets")
         let pos = getCoords(this)
-        facets.style.height = `calc(100vh - ${pos.top - 100 }px)`
+        facets.style.height = `calc(100vh - ${pos.top - 100}px)`
     }
 
     clear() {
@@ -1472,7 +1472,7 @@ export class SearchResultsPage extends HTMLElement {
         console.log("page refresh call...")
         let results = this.shadowRoot.querySelector("#results")
         results.scrollTo({ top: 0, behavior: 'smooth' })
-        
+
         // this.innerHTML = ""
         while (this.children.length > 0) {
             this.removeChild(this.children[0])
@@ -1504,15 +1504,15 @@ export class SearchResultsPage extends HTMLElement {
 
         // set the button...
         this.currentPageIndex.innerHTML = this.offset + 1
-        if(this.offset == 0){
+        if (this.offset == 0) {
             this.previousResultsBtn.style.visibility = "hidden"
-        }else{
+        } else {
             this.previousResultsBtn.style.visibility = "visible"
         }
 
-        if(this.offset >= (this.count / MAX_DISPLAY_RESULTS) - 1){
+        if (this.offset >= (this.count / MAX_DISPLAY_RESULTS) - 1) {
             this.nextResultsBtn.style.visibility = "hidden"
-        }else{
+        } else {
             this.nextResultsBtn.style.visibility = "visible"
         }
 
@@ -1545,10 +1545,10 @@ export class SearchResultsPage extends HTMLElement {
         this.navigator.setTotal(count)
 
         // display the next page button at the bottom of the reuslts page.
-        if(count / MAX_DISPLAY_RESULTS > 1){
+        if (count / MAX_DISPLAY_RESULTS > 1) {
             this.shadowRoot.querySelector("#results-actions").style.display = "flex"
             this.nextResultsBtn.style.visibility = "visible"
-        }else{
+        } else {
             this.shadowRoot.querySelector("#results-actions").style.display = "none"
 
         }
@@ -1657,6 +1657,37 @@ export class SearchResultsPage extends HTMLElement {
             })
         }
         return audios
+    }
+
+    getVideos(className, field) {
+        let videos = []
+        if (this.hits_by_context["videos"]) {
+            this.hits_by_context["videos"].forEach(hit => {
+                let video = hit.getVideo()
+                if (className == undefined) {
+                    videos.push(hit.getVideo())
+                } else {
+                    if (field == "Genres") {
+                        video.getGenresList().forEach(g => {
+                            g.split(" ").forEach(g_ => {
+                                if (g_.toLowerCase() == className) {
+                                    videos.push(hit.getVideo())
+                                }
+                            })
+                        })
+                    } else if (field == "Tags"){
+                        video.getTagsList().forEach(g => {
+                            g.split(" ").forEach(g_ => {
+                                if (g_.toLowerCase() == className) {
+                                    videos.push(hit.getVideo())
+                                }
+                            })
+                        })
+                    }
+                }
+            })
+        }
+        return videos
     }
 
     setSearchResultsNavigator() {
@@ -3072,20 +3103,25 @@ export class SearchFacetPanel extends HTMLElement {
     setFacet(facet) {
         this.facet = facet;
         this.id = "_" + getUuidByString(facet.getField())
-
+        let field = facet.getField()
         this.shadowRoot.querySelector("#total_span").innerHTML = "(" + this.page.getTotal() + ")"
         this.shadowRoot.querySelector("#field_span").innerHTML = facet.getField()
 
         /** Play all results found... */
         this.shadowRoot.querySelector("#play_facet_btn").onclick = () => {
+
+            console.log("----------------> field", field)
             let audios = this.page.getAudios()
+            let videos = this.page.getVideos()
+
             // Play the audios found...
             if (audios.length > 0) {
                 this.playAudios(audios, facet.getField())
+            } else if (videos.length > 0) {
+                this.playVideos(videos, facet.getField())
             } else {
                 ApplicationView.displayMessage("no item to play!", 3000)
             }
-
         }
 
         let range = document.createRange()
@@ -3119,7 +3155,7 @@ export class SearchFacetPanel extends HTMLElement {
                 // The facet list.
                 facetList.appendChild(range.createContextualFragment(html))
 
-                if (this.getAudios(className).length > 0) {
+                if (this.getAudios(className).length > 0 || this.getVideos(className, field).length > 0) {
                     this.shadowRoot.querySelector("#" + uuid + "_play_btn").style.display = "block"
                     this.shadowRoot.querySelector("#play_facet_btn").style.display = "block"
                 } else {
@@ -3127,8 +3163,16 @@ export class SearchFacetPanel extends HTMLElement {
                 }
 
                 this.shadowRoot.querySelector("#" + uuid + "_play_btn").onclick = () => {
+                    console.log("----------------> field", field)
                     // Play the audios found...
-                    this.playAudios(this.getAudios(className), term)
+                    let audios = this.getAudios(className)
+                    if (audios.length > 0)
+                        this.playAudios(audios, term)
+
+                    let videos = this.getVideos(className, field)
+                    if (videos.length > 0)
+                        this.playVideos(videos, term)
+
                 }
 
                 // keep track of the terms...
@@ -3246,6 +3290,74 @@ export class SearchFacetPanel extends HTMLElement {
         return audios
     }
 
+    playVideos(videos, name) {
+
+        // here I will get the audi
+        let video_playList = "#EXTM3U\n"
+        video_playList += "#PLAYLIST: " + name + "\n\n"
+
+        // Generate the playlist with found audio items.
+        let generateVideoPlaylist = () => {
+            let video = videos.pop();
+            let globule = video.globule;
+
+            // keep the info in memory for further use...
+            setVideo(video)
+
+            // set the audio info
+            let indexPath = globule.config.DataPath + "/search/videos"
+
+            // get the title file path...
+            this.getTitleFiles(video.getId(), indexPath, globule, files => {
+                if (files.length > 0) {
+                    video_playList += `#EXTINF:${video.getDuration()}, ${video.getDescription()}, tvg-id="${video.getId()}"\n`
+
+                    let url = globule.config.Protocol + "://" + globule.domain
+                    if (window.location != globule.domain) {
+                        if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
+                            url = globule.config.Protocol + "://" + window.location.host
+                        }
+                    }
+
+                    if (globule.config.Protocol == "https") {
+                        if (globule.config.PortHttps != 443)
+                            url += ":" + globule.config.PortHttps
+                    } else {
+                        if (globule.config.PortHttps != 80)
+                            url += ":" + globule.config.PortHttp
+                    }
+
+                    let path = files[0].split("/")
+                    path.forEach(item => {
+                        item = item.trim()
+                        if (item.length > 0)
+                            url += "/" + encodeURIComponent(item)
+                    })
+
+                    url += "?application=" + Model.application
+                    if (localStorage.getItem("user_token") != undefined) {
+                        url += "&token=" + localStorage.getItem("user_token")
+                    }
+
+                    video_playList += url + "\n\n"
+                }
+                if (videos.length > 0) {
+                    generateVideoPlaylist()
+                } else {
+                    console.log(video_playList)
+                    playVideo(video_playList, null, null, null, globule)
+                }
+            })
+        }
+
+        generateVideoPlaylist()
+    }
+
+    getVideos(className, field) {
+        let videos = this.page.getVideos(className, field)
+        return videos
+    }
+
 }
 
 customElements.define('globular-facet', SearchFacetPanel)
@@ -3328,7 +3440,7 @@ export class SearchResultsPagesNavigator extends HTMLElement {
     }
 
     setIndex(index, btn) {
-        if(btn == undefined){
+        if (btn == undefined) {
             btn = this.container.querySelector(`#page_${index}`)
         }
 
