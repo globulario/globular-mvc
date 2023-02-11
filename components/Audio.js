@@ -362,10 +362,6 @@ export class AudioPlayer extends HTMLElement {
                     max-width: 180px;
                     max-height: 180px;
                 }
-
-                globular-playlist {
-                    margin-bottom: 50px;
-                }
             }
 
         </style>

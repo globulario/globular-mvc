@@ -2114,6 +2114,7 @@ export class BlogPostInfo extends HTMLElement {
                     display: flex;
                     background-color: var(--palette-background-paper);
                     color: var(--palette-text-primary);
+                    user-select: none;
                 }
     
             </style>

@@ -236,7 +236,7 @@ export function setResizeable(div, onresize, side, zIndex) {
 
         // stop resize
         if (div.maxWidth > 0) {
-            if (w >= div.maxWidth) {
+            if (w > div.maxWidth + 5) {
                 onresize(div.offsetWidth, div.offsetHeight)
                 return;
             }

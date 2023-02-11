@@ -140,15 +140,13 @@ export class VideoPlayer extends HTMLElement {
         <style>
            
             #container{
+                position: relative;
                 width: 720px;
-                position: fixed;
-                background: var(--palette-background-default); 
-                border-top: 1px solid var(--palette-background-paper);
-                border-left: 1px solid var(--palette-background-paper);
                 user-select: none;
             }
 
             #content{
+                position: relative;
                 display: flex;
                 background: #000000;
                 justify-items: center;
@@ -192,12 +190,6 @@ export class VideoPlayer extends HTMLElement {
                 background-color: black;
                 
             }
-                 
-            #content{
-                display: flex; 
-                background: black;
-            }
-
             
             @media (max-width: 600px) {
                 #content{
@@ -205,32 +197,34 @@ export class VideoPlayer extends HTMLElement {
                     background: black;
                     flex-direction: column-reverse;
                 }
+            }
 
-                globular-playlist{
-                    padding-bottom: 50px;
-                }
+            paper-card {
+                position: fixed;
+                background: var(--palette-background-default); 
+                border-top: 1px solid var(--palette-background-paper);
+                border-left: 1px solid var(--palette-background-paper);
             }
 
         </style>
-        <paper-card id="container" class="no-select">
-            <div class="header" style="${hideheader ? "display:none;" : ""}">
-                <paper-icon-button id="video-close-btn" icon="icons:close" style="min-width: 40px; --iron-icon-fill-color: var(--palette-text-accent);"></paper-icon-button>
-                <span id="title-span"></span>
-                
-                <select id="audio-track-selector" style="display: none"></select>
-                <paper-icon-button id="title-info-button" icon="icons:arrow-drop-down-circle"></paper-icon-button>
-            </div>
-            <div id="content">
-                <globular-playlist style="display: none; min-width: 450px; overflow:hidden; height: 600px;"></globular-playlist>
-                <slot></slot>
+        <paper-card>
+            <div id="container" style="height: auto;">
+                <div class="header" style="${hideheader ? "display:none;" : ""}">
+                    <paper-icon-button id="video-close-btn" icon="icons:close" style="min-width: 40px; --iron-icon-fill-color: var(--palette-text-accent);"></paper-icon-button>
+                    <span id="title-span"></span>
+                    
+                    <select id="audio-track-selector" style="display: none"></select>
+                    <paper-icon-button id="title-info-button" icon="icons:arrow-drop-down-circle"></paper-icon-button>
+                </div>
+                <div id="content">
+                    <globular-playlist style="display: none; min-width: 450px; overflow:hidden; height: 600px;"></globular-playlist>
+                    <slot></slot>
+                </div>
             </div>
         </paper-card>
         `
 
         let container = this.shadowRoot.querySelector("#container")
-        let content = this.shadowRoot.querySelector("#content")
-
-
         this.shadowRoot.querySelector("#title-info-button").onclick = (evt) => {
             evt.stopPropagation()
             if (this.titleInfo) {
@@ -262,8 +256,6 @@ export class VideoPlayer extends HTMLElement {
         this.appendChild(this.video)
 
         container.name = "video_player"
-
-
         setResizeable(container, (width, height) => {
             localStorage.setItem("__video_player_dimension__", JSON.stringify({ width: width, height: height }))
             container.style.height = "auto"
@@ -292,33 +284,36 @@ export class VideoPlayer extends HTMLElement {
                     let height = this.video.videoHeight
                     let maxWidth = this.video.videoWidth
 
+
                     if (maxWidth > screen.width) {
                         maxWidth = screen.width
                         height = maxWidth * (this.video.videoHeight / this.video.videoWidth)
                     }
-
 
                     if (this.video.videoHeight > screen.height - 250) {
                         height = screen.height - 250
                         maxWidth = height * (this.video.videoWidth / this.video.videoHeight)
                     }
 
+                    if (this.playlist.style.display != "none") {
+                        if(maxWidth +  this.playlist.offsetWidth < screen.width){
+                            maxWidth += this.playlist.offsetWidth
+                        }
+                    }
+
                     container.maxWidth = maxWidth
 
                     // event resize the video only if the video is new...
                     this.playlist.style.height = height + "px"
-                    if (this.playlist.style.display == "none") {
-                        container.style.width = maxWidth + "px"
-                    } else {
-                        container.style.width = maxWidth + this.playlist.offsetWidth + "px"
-                    }
+                    container.style.height = height + "px"
+                    container.style.width = maxWidth + "px"
+                   
 
                     localStorage.setItem("__video_player_dimension__", JSON.stringify({ width: maxWidth, height: height }))
 
                 }
             }
         }
-
 
         // toggle full screen when the user double click on the header.
         this.shadowRoot.querySelector(".header").ondblclick = () => {
@@ -331,7 +326,7 @@ export class VideoPlayer extends HTMLElement {
             toggle.click()
         }
 
-        setMoveable(this.shadowRoot.querySelector("#title-span"), container, (left, top) => {
+        setMoveable(this.shadowRoot.querySelector("#title-span"), this.shadowRoot.querySelector("paper-card"), (left, top) => {
             /** */
         }, this, offsetTop)
 

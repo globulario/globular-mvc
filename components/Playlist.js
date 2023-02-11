@@ -99,6 +99,8 @@ export class PlayList extends HTMLElement {
                 border-collapse: separate;
                 border-spacing: 10px;
                 flex-flow: 1;
+                padding-bottom: 50px;
+                max-width: 100vw;
             }
 
             #container {

@@ -2159,6 +2159,7 @@ export class SearchVideoCard extends HTMLElement {
                 display: flex;
                 justify-content: center;
                 flex-direction: column;
+                user-select: none;
             }
 
             .video-card:hover{
