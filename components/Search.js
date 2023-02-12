@@ -1071,15 +1071,22 @@ export class SearchResultsPage extends HTMLElement {
 
              
              #facets{
-                max-height: calc(100vh - 150px);
-                overflow-y: auto; 
-                overflow-x: hidden;
                 margin-right: 5px;
                 min-width: 225xp;
             }
 
+            #content{
+                margin-left: 270px;
+            }
 
-             @media (max-width: 600px) {
+
+            @media (max-width: 600px) {
+
+                #content{
+                    margin-left: 0px;
+                }
+
+                
                 #container {
                     flex-direction: column;
                 }
@@ -1117,7 +1124,7 @@ export class SearchResultsPage extends HTMLElement {
             <div id="facets">
                 <slot  name="facets"></slot>
             </div>
-            <div style="display: flex; flex-direction: column; width: 100%;">
+            <div id="content" style="display: flex; flex-direction: column; width: 100%;">
                 <div class="header" style="display: flex;">
                     <div style="display: flex; flex-wrap: wrap; flex-grow: 1; align-items: center;">
                         <globular-search-results-page-contexts-selector ></globular-search-results-page-contexts-selector>
@@ -1457,11 +1464,6 @@ export class SearchResultsPage extends HTMLElement {
         // set the results height
         let results = this.shadowRoot.querySelector("#results")
         results.style.height = `calc(100vh  + 65px)`
-
-        // set the facet height
-        let facets = this.shadowRoot.querySelector("#facets")
-        let pos = getCoords(this)
-        facets.style.height = `calc(100vh - ${pos.top - 100}px)`
     }
 
     clear() {
@@ -1687,7 +1689,9 @@ export class SearchResultsPage extends HTMLElement {
                 }
             })
         }
-        return videos
+
+        // remove duplicate values.
+        return [...new Map(videos.map(v => [v.getId(), v])).values()]
     }
 
     setSearchResultsNavigator() {
@@ -2955,7 +2959,33 @@ export class FacetSearchFilter extends HTMLElement {
                 font-size: 1.17rem;
                 padding: 10px;
                 padding-right: 30px;
-                min-widht: 220px;
+               
+                position: fixed;
+                top: 125px;
+                height: calc(100vh - 170px);
+                overflow-y: auto;
+
+            }
+
+            ::-webkit-scrollbar {
+                width: 5px;
+                height: 5px;
+             }
+             
+             ::-webkit-scrollbar-track {
+                background: var(--palette-background-default);
+             }
+             
+             ::-webkit-scrollbar-thumb {
+                background: var(--palette-divider);
+             }
+
+
+            @media (max-width: 600px) {
+                #container{
+                    position: initial;
+                    height: 180px;
+                }
             }
             
         </style>
@@ -3328,12 +3358,17 @@ export class SearchFacetPanel extends HTMLElement {
                             url += ":" + globule.config.PortHttp
                     }
 
+                    if(!files[0].endsWith(".mp4")){
+                        files[0] +="/playlist.m3u8"
+                    }
                     let path = files[0].split("/")
                     path.forEach(item => {
                         item = item.trim()
                         if (item.length > 0)
                             url += "/" + encodeURIComponent(item)
                     })
+
+                   
 
                     url += "?application=" + Model.application
                     if (localStorage.getItem("user_token") != undefined) {

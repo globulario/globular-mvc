@@ -108,15 +108,13 @@ export class PlayList extends HTMLElement {
                 display: flex;
                 flex-direction: column;
                 height: 100%;
-                overflow: auto;
+                overflow-y: auto;
+                overflow-x: hidden;
                 background-color: black;
             }
 
             ::-webkit-scrollbar {
-                width: 5px;
-                height: 5px;
-             }
-                
+                width: 5px;        console.log("-------------------> ", url)
              ::-webkit-scrollbar-track {
                 background: var(--palette-background-default);
              }
@@ -129,10 +127,7 @@ export class PlayList extends HTMLElement {
                 display: table-row;
                 padding: 2px;
             }
-
-            ::slotted(.playing) {
-                -webkit-box-shadow: inset 5px 5px 15px 5px #152635; 
-                box-shadow: inset 5px 5px 15px 5px #152635;
+            console.log("-------------------> ", url)
             }
 
         </style>
@@ -149,7 +144,6 @@ export class PlayList extends HTMLElement {
         this.playlist = null;
         this.audioPlayer = null;
         this.videoPlayer = null;
-        this.globule = null;
         this.items = []
     }
 
@@ -165,8 +159,9 @@ export class PlayList extends HTMLElement {
 
     play(item, restart, resume) {
         this.index = this.items.indexOf(item);
-
-        getVideoInfo(this.globule, item.id, (video, token) => {
+        let url = new URL(item.url)
+        let globule = Model.getGlobule(url.hostname)
+        getVideoInfo(globule, item.id, (video, token) => {
 
             let url = decodeURIComponent(item.url)
             url = url.split("?")[0]
@@ -180,11 +175,11 @@ export class PlayList extends HTMLElement {
                     localStorage.removeItem(video.getId()) // play the video at start...
 
                 if (resume)
-                    this.videoPlayer.play(url, this.globule, video)
+                    this.videoPlayer.play(url, globule, video)
 
             } else {
 
-                getAudioInfo(this.globule, item.id, (audio, token) => {
+                getAudioInfo(globule, item.id, (audio, token) => {
                     if (token) {
                         url += "&token=" + token
                     }
@@ -195,13 +190,13 @@ export class PlayList extends HTMLElement {
                                 if (exists) {
                                     var parser = document.createElement('a');
                                     parser.href = url
-                                    this.audioPlayer.play(decodeURIComponent(parser.pathname), this.globule, audio, true)
+                                    this.audioPlayer.play(decodeURIComponent(parser.pathname), globule, audio, true)
                                 } else {
-                                    this.audioPlayer.play(url, this.globule, audio)
+                                    this.audioPlayer.play(url, globule, audio)
                                 }
                             })
                         } else {
-                            this.audioPlayer.play(url, this.globule, audio)
+                            this.audioPlayer.play(url, globule, audio)
                         }
 
                 })
@@ -262,7 +257,6 @@ export class PlayList extends HTMLElement {
             this.videoPlayer = player;
         }
 
-        this.globule = globule
         this.itmes = []
 
         generatePeerToken(globule, token => {
@@ -356,7 +350,7 @@ export class PlayList extends HTMLElement {
                     newPlayListItem(this.items.length)
                 }
 
-            }, this.globule)
+            })
         }
 
         // start recursion
@@ -429,7 +423,7 @@ export class PlayListItem extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor(item, parent, index, callback, globule) {
+    constructor(item, parent, index, callback) {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
@@ -458,6 +452,7 @@ export class PlayListItem extends HTMLElement {
 
             :host-context(globular-playlist) {
                 display: table;
+                width: 100%;
             }
 
             .cell img {
@@ -531,13 +526,14 @@ export class PlayListItem extends HTMLElement {
         this.id = item.tvg.id;
         this.url = item.url
         this.src = item.tvg.url
-        this.globule = globule
+        let url = new URL(item.url)
+        this.globule = Model.getGlobule(url.hostname)
 
         // init the uderlying info...
-        getAudioInfo(globule, this.id, audio => {
+        getAudioInfo(this.globule, this.id, audio => {
             this.audio = audio;
             if (audio == null) {
-                getVideoInfo(globule, this.id, video => {
+                getVideoInfo(this.globule, this.id, video => {
                     if (video != null) {
                         console.log(video)
                         this.video = video

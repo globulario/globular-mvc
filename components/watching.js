@@ -190,33 +190,17 @@ export class MediaWatching extends HTMLElement {
 
 customElements.define('globular-media-watching', MediaWatching)
 
-function getVideos(id, callback) {
-
-    let globules = Model.getGlobules()
-    let index = 0
+function getVideos(id, domain, callback) {
     let videos = []
-    let __getVideos = (id, callback) => {
-        let g = globules[index]
-        index += 1
-        _getVideos(g, id, (video) => {
+    _getVideos(Model.getGlobule(domain), id, (video) => {
 
-            // append the video
-            if (video != null) {
-                video.globule = g;  // keep reference to the globule.
-                videos.push(video)
-            }
+        // append the video
+        if (video != null) {
+            videos.push(video)
+        }
 
-            if (index < globules.length) {
-                __getVideos(id, callback)
-            } else {
-                callback(videos)
-            }
-        })
-    }
-
-    // Call once
-    __getVideos(id, callback)
-
+        callback(videos)
+    })
 }
 
 /**
@@ -256,32 +240,20 @@ function _getVideos(globule, id, callback) {
  * @param {*} id 
  * @param {*} callback 
  */
-function getTitles(id, callback) {
-    let globules = Model.getGlobules()
-    let index = 0
+function getTitles(id, domain, callback) {
+
     let titles = []
-    let __getTitle = (id, callback) => {
-        let g = globules[index]
-        index += 1
-        _getTitle(g, id, (title) => {
-            // append the video
-            if (title != null) {
-                title.globule = g // keep reference to globule.
-                titles.push(title)
-            }
+    _getTitle(Model.getGlobule(domain), id, (title) => {
+        // append the video
+        if (title != null) {
+            titles.push(title)
+        }
 
-            if (index < globules.length) {
-                __getTitle(id, callback)
-            } else {
-                callback(titles)
-            }
-        })
-    }
-
-    // Call once
-    __getTitle(id, callback)
-
+        callback(titles)
+        
+    })
 }
+
 function _getTitle(globule, id, callback) {
     let token = localStorage.getItem("user_token")
     let decoded = jwt(token);
@@ -362,7 +334,7 @@ export class MediaWatchingCard extends HTMLElement {
         }
 
         if (title.isVideo) {
-            getVideos(title._id, (videos) => {
+            getVideos(title._id, title.domain, (videos) => {
                 if (videos.length > 0) {
                     let videoCard = new SearchVideoCard();
                     videoCard.id = "_" + title._id
@@ -379,7 +351,7 @@ export class MediaWatchingCard extends HTMLElement {
                 }
             })
         } else {
-            getTitles(title._id, (titles) => {
+            getTitles(title._id, title.domain, (titles) => {
                 if (titles.length > 0) {
                     let titleCard = new SearchFlipCard();
                     titleCard.id = "_" + title._id

@@ -143,12 +143,13 @@ export class VideoPlayer extends HTMLElement {
                 position: relative;
                 width: 720px;
                 user-select: none;
+                background-color: black;
             }
 
             #content{
                 position: relative;
                 display: flex;
-                background: #000000;
+                background-color: black;
                 justify-items: center;
                 background-color: var(--palette-background-paper);
                 color: var(--palette-text-primary);
@@ -201,7 +202,7 @@ export class VideoPlayer extends HTMLElement {
 
             paper-card {
                 position: fixed;
-                background: var(--palette-background-default); 
+                background: black; 
                 border-top: 1px solid var(--palette-background-paper);
                 border-left: 1px solid var(--palette-background-paper);
             }
@@ -259,17 +260,18 @@ export class VideoPlayer extends HTMLElement {
         setResizeable(container, (width, height) => {
             localStorage.setItem("__video_player_dimension__", JSON.stringify({ width: width, height: height }))
             container.style.height = "auto"
+            fireResize()
         })
 
 
         container.resizeHeightDiv.style.display = "none"
         container.style.height = "auto"
 
-
         // set the initial size of the video player to fit the played video...
         this.video.onplaying = (evt) => {
 
             if (this.resume) {
+                ApplicationView.resume()
                 return
             }
 
@@ -296,7 +298,7 @@ export class VideoPlayer extends HTMLElement {
                     }
 
                     if (this.playlist.style.display != "none") {
-                        if(maxWidth +  this.playlist.offsetWidth < screen.width){
+                        if (maxWidth + this.playlist.offsetWidth < screen.width) {
                             maxWidth += this.playlist.offsetWidth
                         }
                     }
@@ -307,7 +309,7 @@ export class VideoPlayer extends HTMLElement {
                     this.playlist.style.height = height + "px"
                     container.style.height = height + "px"
                     container.style.width = maxWidth + "px"
-                   
+
 
                     localStorage.setItem("__video_player_dimension__", JSON.stringify({ width: maxWidth, height: height }))
 
@@ -350,10 +352,24 @@ export class VideoPlayer extends HTMLElement {
         this.video.onloadeddata = () => {
 
             ApplicationView.resume()
-            this.show()
+            this.show()        // Options for the observer (which mutations to observe)
+            var config = {
+                attributes: true,
+                subtree: true
+            };
+
+
+
 
             /*getThumbnailFiles(this.globule, this.path, thumbnail_files => {
-                for (var i = 0; i < thumbnail_files.files.length; i++) {
+                for (var i = 0; i <         // Options for the observer (which mutations to observe)
+        var config = {
+            attributes: true,
+            subtree: true
+        };
+
+
+thumbnail_files.files.length; i++) {
                     let f = thumbnail_files.files[i]
                     if (f.mime.startsWith("image/")) {
                         let globule = this.globule
@@ -375,7 +391,14 @@ export class VideoPlayer extends HTMLElement {
 
                         let url_ = f.path
 
-                        url_ = f.path
+                        url_ = f.pat        // Options for the observer (which mutations to observe)
+        var config = {
+            attributes: true,
+            subtree: true
+        };
+
+
+h
                         if (url_.startsWith("/")) {
                             url_ = url + url_
                         } else {
@@ -492,6 +515,13 @@ export class VideoPlayer extends HTMLElement {
                             }
                         }
                     }
+                    // Options for the observer (which mutations to observe)
+                    var config = {
+                        attributes: true,
+                        subtree: true
+                    };
+
+
 
                 }
             }
@@ -514,6 +544,27 @@ export class VideoPlayer extends HTMLElement {
         controls.style.justifyContent = "flex-start"
 
         let plyrVideo = this.querySelector(".plyr--video")
+        plyrVideo.style.backgroundColor = "black"
+
+        let lastWidth = 0;
+
+
+        // Create an observer instance linked to a resize callback
+        var observer = new MutationObserver((mutation) => {
+            if (mutation[0].target.offsetWidth != lastWidth) {
+                lastWidth = mutation[0].target.offsetWidth;
+                fireResize();
+            }
+        });
+
+        // Options for the observer (which mutations to observe)
+        var config = {
+            attributes: true,
+            subtree: true
+        };
+
+        // Start observing the target node for configured mutations
+        observer.observe(plyrVideo, config);
 
         // add additional button for the playlist...
         let html = `
@@ -657,6 +708,14 @@ export class VideoPlayer extends HTMLElement {
             } else {
                 content.style.height = ""
                 content.style.overflowY = ""
+                if (this.video.videoHeight < content.offsetHeight) {
+                    this.playlist.style.height = this.video.videoHeight + "px"
+                } else {
+                    this.playlist.style.height = content.offsetHeight + "px"
+                }
+
+
+
             }
         })
 
@@ -783,6 +842,7 @@ export class VideoPlayer extends HTMLElement {
             }
 
             if (this.path == path) {
+
                 this.resume = true;
                 this.video.play()
                 return
@@ -1079,9 +1139,9 @@ export class VideoPlayer extends HTMLElement {
 
             // Stop the video
             if (this.video.duration != this.video.currentTime) {
-                Model.eventHub.publish("stop_video_player_evt_", { _id: this.titleInfo.getId(), isVideo: this.titleInfo.isVideo, currentTime: this.video.currentTime, date: new Date() }, true)
+                Model.eventHub.publish("stop_video_player_evt_", { _id: this.titleInfo.getId(), domain: this.titleInfo.globule.domain, isVideo: this.titleInfo.isVideo, currentTime: this.video.currentTime, date: new Date() }, true)
             } else {
-                Model.eventHub.publish("remove_video_player_evt_", { _id: this.titleInfo.getId(), isVideo: this.titleInfo.isVideo, currentTime: this.video.currentTime, date: new Date() }, true)
+                Model.eventHub.publish("remove_video_player_evt_", { _id: this.titleInfo.getId(), domain: this.titleInfo.globule.domain, isVideo: this.titleInfo.isVideo, currentTime: this.video.currentTime, date: new Date() }, true)
             }
             // keep video info in the local storage...
             localStorage.setItem(this.titleInfo.getId(), this.video.currentTime)
