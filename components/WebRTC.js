@@ -9,6 +9,7 @@ import { setMoveable } from './moveable'
 import { setResizeable } from './rezieable'
 
 import '@polymer/iron-icons/communication-icons'
+import { fireResize } from './utility';
 
 // Contains the stun server URL we will be using.
 let connectionConfig = {
@@ -62,6 +63,7 @@ export class VideoConversation extends HTMLElement {
             #container{
                 width: 720px;
                 position: fixed;
+                max-height: calc(100vh - 100px)
             }
 
             .header{
@@ -120,10 +122,35 @@ export class VideoConversation extends HTMLElement {
                 color: var(--palette-text-primary);
             }
 
+            @media (max-width: 500px) {
+                #local-video{
+                    width: 100px; 
+                    position: absolute;
+                    bottom: 0px;
+                    right: 0px;
+                }
+
+                #container{
+                    display: flex;
+                    flex-direction: column;
+                    top: 0px;
+                    left: 0px;
+                    width: 100vw;
+                    
+                }
+
+                video{
+                    max-height: 40vh;
+                    background-color: black;
+                }
+            }
+
         </style>
         <paper-card id="container" class="no-select">
+            
             <div class="header" style="${hideheader ? "display:none;" : ""}">
                 <paper-icon-button id="video-close-btn" icon="icons:close" style="min-width: 40px; --iron-icon-fill-color: var(--palette-text-accent);"></paper-icon-button>
+                <paper-icon-button id="video-options-btn" icon="icons:arrow-drop-down" style="margin-left: 20px; min-width: 40px; --iron-icon-fill-color: var(--palette-text-accent);"></paper-icon-button>
                 <span id="title-span"></span>
                 <paper-icon-button id="start-share-screen" icon="communication:screen-share" ></paper-icon-button>
             </div>
@@ -139,6 +166,189 @@ export class VideoConversation extends HTMLElement {
 
         this.shadowRoot.querySelector("#video-close-btn").onclick = () => {
             this.eventHub.publish(`leave_conversation_${conversationUuid}_evt`, JSON.stringify({ "participants": [], "participant": Application.account.id }), false)
+        }
+
+        let optionsBtn = this.shadowRoot.querySelector("#video-options-btn")
+        optionsBtn.onclick = () => {
+
+            let optionsPanel = this.shadowRoot.querySelector("#options-panel")
+            if (!optionsPanel) {
+                let html = `
+                <style>
+                    #options-panel{
+                        display: flex;
+                        flex-direction: column;
+                        background-color: var(--palette-background-paper);
+                        color: var(--palette-text-primary);
+                        position: absolute;
+                        top: 0px;
+                        left: 0px;
+                        font-size: 1rem;
+                    }
+
+                    #options-div{
+                        display: flex;
+                        flex-direction: column;
+                    }
+
+                    .table-row {
+                        display: flex;
+                        font-size: 1.1rem;
+                        padding: 5px;
+                    }
+
+                    .option {
+                       padding: 5px;
+                    }
+
+                    .label {
+                        padding: 5px;
+                        min-width: 200px;
+                    }
+
+                    paper-toggle-button{
+                        --paper-toggle-button-label-color: var(--palette-text-primary);
+                    }
+
+                    paper-toggle-button[checked]{
+                        --paper-toggle-button-label-color: var(--palette-text-accent);
+                    }
+
+                </style>
+                <paper-card id="options-panel">
+                        <div id="options-div">
+                            <div class="table-row">
+                            <div class="label">Local video</div>
+                            <paper-toggle-button id="local-video-toggle" class="option" checked>Visible</paper-toggle-button>
+                        </div>
+                        <div class="table-row">
+                            <div class="label">Video streaming</div>
+                            <paper-toggle-button id="video-toggle" class="option" checked>Enable</paper-toggle-button>
+                        </div>
+                        <div class="table-row">
+                            <div class="label">Audio streaming</div>
+                            <paper-toggle-button id="audio-toggle" class="option" checked>Enable</paper-toggle-button>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; width: 100%; justify-content: flex-end;">
+                        <paper-button id="close-btn">Close</paper-button>
+                    </div>
+
+                </paper-card>
+                `
+
+                let range = document.createRange()
+                container.querySelector(".peers-video").appendChild(range.createContextualFragment(html))
+
+                optionsPanel = this.shadowRoot.querySelector("#options-panel")
+
+                let hideShowLocalVideoToggle = container.querySelector("#local-video-toggle")
+                hideShowLocalVideoToggle._enabled_ = true;
+                hideShowLocalVideoToggle.onclick = () => {
+                    let localVideo = this.shadowRoot.querySelector("#local-video")
+                    if (hideShowLocalVideoToggle.checked) {
+                        localVideo.style.display = ""
+                        hideShowLocalVideoToggle.innerHTML = "Visible"
+                        hideShowLocalVideoToggle._enabled_ = true
+                    } else {
+                        localVideo.style.display = "none"
+                        hideShowLocalVideoToggle.innerHTML = "Hidden"
+                        hideShowLocalVideoToggle._enabled_ = false
+
+                    }
+                }
+
+                let hideShowVideoToggle = container.querySelector("#video-toggle")
+                hideShowVideoToggle.onclick = () => {
+                    let localVideo = this.shadowRoot.querySelector("#local-video")
+                    if (hideShowVideoToggle.checked) {
+                        let stream = localVideo.srcObject;
+                        // now get all tracks
+                        let tracks = stream.getTracks();
+                        // now close each track by having forEach loop
+                        tracks.forEach( (track) =>{
+                            // stopping every track
+                            if (track.kind == "video") {
+                                track.enabled = true;
+                            }
+                        });
+                        localVideo.style.display = ""
+                        if (hideShowLocalVideoToggle._enabled_) {
+                            hideShowLocalVideoToggle.innerHTML = "Visible"
+                            hideShowLocalVideoToggle.checked = true
+                            localVideo.style.display = ""
+                        } else {
+                            hideShowLocalVideoToggle.innerHTML = "Hidden"
+                            hideShowLocalVideoToggle.checked = false
+                            localVideo.style.display = "none"
+                        }
+
+                        hideShowVideoToggle.innerHTML = "Enable"
+
+                    } else {
+                        let stream = localVideo.srcObject;
+                        // now get all tracks
+                        let tracks = stream.getTracks();
+                        // now close each track by having forEach loop
+                        tracks.forEach( (track) => {
+                            // stopping every track
+                            if (track.kind == "video") {
+                                track.enabled = false;
+                            }
+                        });
+                        localVideo.style.display = "none"
+                        hideShowLocalVideoToggle.innerHTML = "Disable"
+                        hideShowVideoToggle.innerHTML = "Disable"
+                        if (hideShowLocalVideoToggle.checked) {
+                            hideShowLocalVideoToggle._enabled_ = hideShowLocalVideoToggle.checked
+                            hideShowLocalVideoToggle.checked = false;
+                        }
+                    }
+                }
+
+                let muteUnmuteVideoToggle = container.querySelector("#audio-toggle")
+                muteUnmuteVideoToggle.onclick = () => {
+
+                    let localVideo = this.shadowRoot.querySelector("#local-video")
+                    if (muteUnmuteVideoToggle.checked) {
+                        let stream = localVideo.srcObject;
+                        // now get all tracks
+                        let tracks = stream.getTracks();
+                        // now close each track by having forEach loop
+                        tracks.forEach( (track) => {
+                            // stopping every track
+                            if (track.kind == "audio") {
+                                track.enabled = true;
+                            }
+                        });
+                        muteUnmuteVideoToggle.innerHTML = "Enable"
+                    } else {
+                        let stream = localVideo.srcObject;
+                        // now get all tracks
+                        let tracks = stream.getTracks();
+                        // now close each track by having forEach loop
+                        tracks.forEach( (track) => {
+                            // stopping every track
+                            if (track.kind == "audio") {
+                                track.enabled = false;
+                            }
+                        });
+                        muteUnmuteVideoToggle.innerHTML = "Muted"
+                    }
+                }
+
+                let closeBtn = container.querySelector("#close-btn")
+                closeBtn.onclick = () => {
+                    optionsPanel.style.display = "none"
+                }
+            } else {
+                if (optionsPanel.style.display == "none") {
+                    optionsPanel.style.display = ""
+                } else {
+                    optionsPanel.style.display = "none"
+                }
+            }
         }
 
         let offsetTop = this.shadowRoot.querySelector(".header").offsetHeight
@@ -200,7 +410,6 @@ export class VideoConversation extends HTMLElement {
                                     .createOffer(offerOptions)
                                     .then((offer) => {
                                         rtcPeerConnection.setLocalDescription(offer).then(() => {
-                                            console.log("-----------> ", `on_webrtc_offer_${connectionId}_evt`)
                                             this.eventHub.publish(`on_webrtc_offer_${connectionId}_evt`, JSON.stringify({ "offer": offer, "connectionId": this.conversationUuid + "_" + Application.account._id }), false);
                                         })
                                     })
@@ -256,18 +465,19 @@ export class VideoConversation extends HTMLElement {
 
                     // Get the connections.
                     this.getConnection(connectionId, rtcPeerConnection => {
-                        let offer = new RTCSessionDescription(event.offer)
-                        rtcPeerConnection.setRemoteDescription(offer).then(() => {
+                        //let offer = new RTCSessionDescription(event.offer)
+                        rtcPeerConnection.setRemoteDescription(event.offer).then(() => {
                             // Append pending ice candidate.
                             while (this.pendingCanditates.length > 0) {
-                                rtcPeerConnection.addIceCandidate(this.pendingCanditates.pop())
+                                rtcPeerConnection.addIceCandidate(this.pendingCanditates.pop()).catch(e => {
+                                    console.error(e)
+                                });
                             }
                             // create the answer.
                             rtcPeerConnection
                                 .createAnswer()
                                 .then(answer => {
                                     rtcPeerConnection.setLocalDescription(answer).then(() => {
-                                        console.log("-----------------> ", connectionId)
                                         this.eventHub.publish(`on_webrtc_answer_${connectionId}_evt`, JSON.stringify({ "answer": answer, "connectionId": this.conversationUuid + "_" + Application.account._id }), false);
                                     })
                                 })
@@ -291,8 +501,8 @@ export class VideoConversation extends HTMLElement {
                 }, (evt) => {
                     let event = JSON.parse(evt)
                     let rtcPeerConnection = this.connections[event.connectionId]
-                    let answer = new RTCSessionDescription(event.answer)
-                    rtcPeerConnection.setRemoteDescription(answer);
+                    //let answer = new RTCSessionDescription(event.answer)
+                    rtcPeerConnection.setRemoteDescription(event.answer);
 
                 }, false, this)
         }
@@ -318,14 +528,11 @@ export class VideoConversation extends HTMLElement {
     }
 
     closeConnection(connectionId) {
-        console.log("-----------------> call close...", connectionId)
+
         let peerVideo = this.peersVideo.querySelector("#_" + connectionId + "_video")
-        if (peerVideo == undefined) {
-            return
+        if (peerVideo != undefined) {
+            this.peersVideo.removeChild(peerVideo)
         }
-
-        this.peersVideo.removeChild(peerVideo)
-
 
         // Get the local video display...
         let localVideo = this.shadowRoot.querySelector("#local-video")
@@ -336,7 +543,7 @@ export class VideoConversation extends HTMLElement {
             // now get all tracks
             let tracks = stream.getTracks();
             // now close each track by having forEach loop
-            tracks.forEach(function (track) {
+            tracks.forEach((track) =>{
                 // stopping every track
                 track.stop();
             });
@@ -344,7 +551,6 @@ export class VideoConversation extends HTMLElement {
             localVideo.srcObject = null;
             localVideo.parentNode.removeChild(localVideo)
         }
-
 
         this.connections[connectionId].close()
         delete this.connections[connectionId]
@@ -374,14 +580,14 @@ export class VideoConversation extends HTMLElement {
             return
         }
 
+        // when video is received from the remote side.
+        rtcPeerConnection.ontrack = evt => {
+            this.initRemoteVideoStream(connectionId, evt)
+        }
+
         this.initLocalVideoStream(stream => {
             // keep a ref for further use...
             this.localStream = stream;
-
-            // when video is received from the remote side.
-            rtcPeerConnection.ontrack = evt => {
-                this.initRemoteVideoStream(connectionId, evt)
-            }
 
             rtcPeerConnection.onicecandidate = (evt) => {
                 if (evt.candidate) {
@@ -390,7 +596,7 @@ export class VideoConversation extends HTMLElement {
             }
 
             // Add audio track and video track.
-            stream.getTracks().forEach(function (track) {
+            stream.getTracks().forEach( (track) =>{
                 rtcPeerConnection.addTrack(track, stream);
             });
 
@@ -482,10 +688,12 @@ export class VideoConversation extends HTMLElement {
                 localVideo.srcObject = stream;
                 localVideo.onloadedmetadata = (e) => {
                     localVideo.play();
+                    fireResize()
                     callback(stream)
                 };
+
             })
-            .catch(function (err) {
+            .catch( (err)=> {
                 /* handle the error */
                 errorCallback(err)
             });
@@ -506,7 +714,6 @@ export class VideoConversation extends HTMLElement {
             this.peersVideo.appendChild(remoteVideo)
             remoteVideo.srcObject = new MediaStream();
         }
-
         remoteVideo.srcObject.addTrack(e.track);
     }
 

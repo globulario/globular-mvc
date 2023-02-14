@@ -83,7 +83,7 @@ export class CallsHistoryMenu extends Menu {
 
             @media (max-width: 700px) {
                 #calls_history_menu_div{
-                    margin-top: 25px;
+                    margin-top: 5px;
                     max-height: calc(100vh - 85px);
                 }
 
@@ -128,7 +128,6 @@ export class CallsHistoryMenu extends Menu {
                 display: flex;
                 flex: 1;
                 flex-direction: column;
-                min-width: 450px;
             }
 
             #clear-outgoing-calls-btn, #clear-incomming-calls-btn{
@@ -154,7 +153,21 @@ export class CallsHistoryMenu extends Menu {
                 margin-bottom: 10px;
             }
 
-            
+            @media (min-width: 500px) {
+                .tab-content{
+                    min-width: 450px;
+                }
+            }
+
+            @media (max-width: 500px) {
+                paper-tabs span{    
+                    font-size: .95rem;
+                }
+
+                #calls-list{
+                    padding-bottom: 50px;
+                }
+            }
 
         </style>
         <div id="Calls-div">
@@ -524,15 +537,45 @@ export class CallsHistoryMenu extends Menu {
                                 font-size: 1.0rem;
                             }
 
+                            .call_entry_line {
+                                display: flex; 
+                                flex-direction: column; 
+                                padding: 5px 0px 5px; 
+                                border-bottom: 1px solid var(--palette-divider);
+                            }
+
+                            .contact-infos{
+                                display: flex;
+                                flex-grow: 1;
+
+                            }
+
+                            @media (max-width: 500px) {
+                                .call_entry_line {
+                                    width: calc(100vw - 40px);
+                                    padding-right: 5px;
+                                }
+
+                                .contact-infos{
+                                    flex-direction: column;
+                                }
+
+                                .contact-infos span{
+                                    font-size: 1.0rem;
+                                }
+                            }
+
                         </style>
-                        <div id="_${call.getUuid()}" style="display: flex; flex-direction: column; padding: 5px 0px 5px; border-bottom: 1px solid var(--palette-divider);">
+                        <div id="_${call.getUuid()}" class="call_entry_line">
                             <div style="display: flex;">
                                 <div id="call_date"></div>
                                 <div id="call_duration"></div>
                             </div>
                             <div style="display: flex; align-items: center;">
-                                <img></img>
-                                <span style="flex-grow: 1;"></span>
+                                <div class="contact-infos">
+                                    <img></img>
+                                    <span style="flex-grow: 1;"></span>
+                                </div>
                                 <paper-icon-button id="delete-btn" icon="icons:delete"></paper-icon-button>
                                 <paper-icon-button id="call-btn" icon="communication:call"></paper-icon-button>
                             </div>
@@ -724,21 +767,36 @@ export class CallsHistoryMenu extends Menu {
                                 let toast = ApplicationView.displayMessage(`
                                 <style>
                                    
+                                    #select-media-dialog{
+                                        display: flex; flex-direction: column; 
+                                        justify-content: center; 
+                                        width: 100%;
+                                    }
+
                                     paper-icon-button {
                                         width: 40px;
                                         height: 40px;
                                         border-radius: 50%;
                                     }
+
+                                    #call-img{
+                                        width: 185.31px; 
+                                        height: 100%; 
+                                        align-self: center; 
+                                        justify-self: center;
+                                        padding-top: 10px; 
+                                        padding-bottom: 15px;
+                                    }
     
                                 </style>
                                 <div id="select-media-dialog">
                                     <div>Outgoing Call to </div>
-                                    <div style="display: flex; flex-direction: column; justify-content: center;">
-                                        <img style="width: 185.31px; align-self: center; padding-top: 10px; padding-bottom: 15px;" src="${callee.profilePicture}"> </img>
-                                    </div>
-                                    <span style="max-width: 300px; font-size: 1.5rem;">${callee.name}</span>
-                                    <div style="display: flex; justify-content: flex-end;">
-                                        <paper-icon-button id="cancel-button" style="background-color: red " icon="communication:call-end"></paper-icon-button>
+                                    <div style="display: flex; flex-direction: column; align-items: center;">
+                                        <img  id="call-img" src="${callee.profilePicture}"> </img>
+                                        <div stye="display: flex; align-items: center;">
+                                            <span style="max-width: 300px; font-size: 1.7rem; margin-right: 16px;">${callee.name}</span>
+                                            <paper-icon-button id="cancel-button" style="background-color: red " icon="communication:call-end"></paper-icon-button>
+                                        </div>
                                     </div>
                                 </div>
                                 `)
@@ -767,7 +825,7 @@ export class CallsHistoryMenu extends Menu {
                                 }
 
                                 // Here the call succeed...
-                                
+
                                 Model.getGlobule(contact.domain).eventHub.subscribe(call.getUuid() + "_answering_call_evt", uuid => { }, evt => {
                                     // The contact has answer the call!
                                     audio.pause()
@@ -786,7 +844,6 @@ export class CallsHistoryMenu extends Menu {
                                     ApplicationView.layout.workspace().appendChild(videoConversation)
 
                                     // start the video conversation.
-                                    console.log("-----------> 788 start_video_conversation_")
                                     globule.eventHub.publish("start_video_conversation_" + call.getUuid() + "_evt", contact, true)
 
                                 }, false)

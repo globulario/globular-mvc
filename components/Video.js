@@ -198,6 +198,16 @@ export class VideoPlayer extends HTMLElement {
                     background: black;
                     flex-direction: column-reverse;
                 }
+
+                globular-playlist {
+                    min-width: 450px;
+                }
+            }
+
+            @media (min-width: 600px) {
+                globular-playlist {
+                    min-width: 450px;
+                }
             }
 
             paper-card {
@@ -218,7 +228,7 @@ export class VideoPlayer extends HTMLElement {
                     <paper-icon-button id="title-info-button" icon="icons:arrow-drop-down-circle"></paper-icon-button>
                 </div>
                 <div id="content">
-                    <globular-playlist style="display: none; min-width: 450px; overflow:hidden; height: 600px;"></globular-playlist>
+                    <globular-playlist style="display: none; overflow:hidden; height: 600px;"></globular-playlist>
                     <slot></slot>
                 </div>
             </div>

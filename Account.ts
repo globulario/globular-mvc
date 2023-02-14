@@ -171,6 +171,11 @@ export class Account extends Model {
         }
 
         let globule = Model.getGlobule(domain)
+        if(!globule){
+            errorCallback("no globule was found at domain " + domain)
+            return
+        }
+        
         generatePeerToken(globule, token => {
 
 
@@ -614,6 +619,7 @@ export class Account extends Model {
                     callback(JSON.parse(str));
                 });
             } else {
+                console.log("fail to retreive contacts with error: ", status.details)
                 // In case of error I will return an empty array
                 callback([]);
             }

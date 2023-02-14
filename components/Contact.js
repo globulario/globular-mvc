@@ -99,17 +99,6 @@ export class ContactsMenu extends Menu {
                     justify-content: center;
                 }
 
-                @media (max-width: 700px) {
-
-                    #Contacts_menu_div{
-                        margin-top: 25px;
-                        max-height: calc(100vh - 85px);
-                    }
-
-                    #title{
-                        display: flex; 
-                    }
-                }
 
                 #Contacts-list{
                     flex: 1;
@@ -162,6 +151,35 @@ export class ContactsMenu extends Menu {
                     margin-bottom: 10px;
                 }
                 
+                @media (min-width: 500px) {
+                    paper-tabs {
+                        min-width: 450px;
+                    }
+                }
+
+                
+                @media (max-width: 500px) {
+
+                    #Contacts_menu_div{
+                        margin-top: 5px;
+                        height: calc(100vh - 100px);
+                        max-height: calc(100vh - 100px);
+                    }
+
+                    #Contacts-list{
+                        width: calc(100vw - 32px);
+                        padding-bottom: 50px;
+                    }
+
+                    #title{
+                        display: flex; 
+                    }
+
+                    paper-tabs {
+                        font-size: .95rem;
+                    }
+                }
+
             </style>
             <div id="Contacts-div">
                 <div id="header" style="width: 100%;">
@@ -172,7 +190,7 @@ export class ContactsMenu extends Menu {
                     </div>
         
                     <globular-autocomplete type="email" label="Search Contact" id="invite-contact-input" width="${this.width - 10}" style="flex-grow: 1;"></globular-autocomplete>
-                    <paper-tabs selected="0" style="min-width: 450px;">
+                    <paper-tabs selected="0">
                         <paper-tab id="contacts-tab">
                             <span id="contacts-label">Contacts</span>
                             <paper-badge style="display: none;" for="contacts-label"></paper-badge>
@@ -752,19 +770,33 @@ export class ContactList extends HTMLElement {
                         let toast = ApplicationView.displayMessage(`
                         <style>
                            
+                            #select-media-dialog{
+                                display: flex; flex-direction: column; 
+                                justify-content: center; 
+                                width: 100%;
+                            }
+
                             paper-icon-button {
                                 width: 40px;
                                 height: 40px;
                                 border-radius: 50%;
-                              }
+                            }
+
+                            #call-img{
+                                width: 185.31px; 
+                                height: 100%; 
+                                align-self: center; 
+                                justify-self: center;
+                                padding-top: 10px; 
+                                padding-bottom: 15px;
+                            }
+                              
                         </style>
                         <div id="select-media-dialog">
                             <div>Incomming Call from</div>
-                            <div style="display: flex; flex-direction: column; justify-content: center;">
-                                <img style="width: 185.31px; align-self: center; padding-top: 10px; padding-bottom: 15px;" src="${caller.profilePicture}"> </img>
-                            </div>
-                            <span style="max-width: 300px; font-size: 1.5rem;">${caller.name}</span>
-                            <div style="display: flex; justify-content: flex-end;">
+                            <img style="width: 185.31px; height: 100%; align-self: center; padding-top: 10px; padding-bottom: 15px;" src="${caller.profilePicture}"> </img>
+                            <div style="display: flex; justify-content: center; align-items: center;">
+                                <span style="max-width: 300px; font-size: 1.5rem; margin-right: 16px;">${caller.name}</span>
                                 <paper-icon-button id="ok-button" style="background-color: green; margin-right: 16px;" icon="communication:call"></paper-icon-button>
                                 <paper-icon-button id="cancel-button"  style="background-color: red;" icon="communication:call-end">Dismiss</paper-button>
                             </div>

@@ -2001,10 +2001,7 @@ export class WebPage extends HTMLElement {
             showJavascriptEditor(this.script_)
         }
 
-        // Keep the container synch with the element div...
-        window.addEventListener('resize', () => {
 
-        });
 
         // hide toolbar and selectors...
         this.resetEditMode()
