@@ -311,8 +311,6 @@ export class NotificationMenu extends Menu {
                 }
                 this.setNotificationCount()
             }, false)
-
-
     }
 
     // clear the notifications.

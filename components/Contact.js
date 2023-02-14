@@ -43,7 +43,7 @@ export class ContactsMenu extends Menu {
         // The logged account.
         this.account = null;
 
-        this.inviteContactInput =  null;
+        this.inviteContactInput = null;
 
         // Here is the class members.
         this.onInviteConctact = null;
@@ -197,7 +197,7 @@ export class ContactsMenu extends Menu {
         this.getMenuDiv().innerHTML = "" // remove existing elements.
         this.getMenuDiv().appendChild(range.createContextualFragment(html));
 
-        this.getMenuDiv().querySelector("#close-btn").onclick = ()=>{
+        this.getMenuDiv().querySelector("#close-btn").onclick = () => {
             this.getMenuDiv().parentNode.removeChild(this.getMenuDiv())
         }
 
@@ -304,7 +304,7 @@ export class ContactsMenu extends Menu {
         window.dispatchEvent(new Event('resize'));
 
         // Get the list of all accounts (mab).
-        if(this.getMenuDiv().parentNode)
+        if (this.getMenuDiv().parentNode)
             this.getMenuDiv().parentNode.removeChild(this.getMenuDiv())
     }
 
@@ -776,7 +776,8 @@ export class ContactList extends HTMLElement {
                             audio.pause()
                             toast.dismiss();
                             Model.getGlobule(caller.domain).eventHub.publish(call.getUuid() + "_miss_call_evt", call.serializeBinary(), false)
-                            Model.getGlobule(callee.domain).eventHub.publish(call.getUuid() + "_miss_call_evt", call.serializeBinary(), false)
+                            if (caller.domain != caller.domain)
+                                Model.getGlobule(callee.domain).eventHub.publish(call.getUuid() + "_miss_call_evt", call.serializeBinary(), false)
 
                         }, 30 * 1000)
 
@@ -788,7 +789,8 @@ export class ContactList extends HTMLElement {
 
                             // Here I will send miss call event...
                             Model.getGlobule(caller.domain).eventHub.publish(call.getUuid() + "_miss_call_evt", call.serializeBinary(), false)
-                            Model.getGlobule(callee.domain).eventHub.publish(call.getUuid() + "_miss_call_evt", call.serializeBinary(), false)
+                            if (caller.domain != caller.domain)
+                                Model.getGlobule(callee.domain).eventHub.publish(call.getUuid() + "_miss_call_evt", call.serializeBinary(), false)
 
                         }
 
@@ -810,7 +812,9 @@ export class ContactList extends HTMLElement {
                             ApplicationView.layout.workspace().appendChild(videoConversation)
 
                             Model.getGlobule(caller.domain).eventHub.publish(call.getUuid() + "_answering_call_evt", call.serializeBinary(), false)
-                            Model.getGlobule(callee.domain).eventHub.publish(call.getUuid() + "_answering_call_evt", call.serializeBinary(), false)
+                            if (callee.domain != caller.domain) {
+                                Model.getGlobule(callee.domain).eventHub.publish(call.getUuid() + "_answering_call_evt", call.serializeBinary(), false)
+                            }
                         }
 
                         // Here the call was miss...
@@ -1004,7 +1008,8 @@ export class ContactList extends HTMLElement {
                                 audio.pause()
                                 toast.dismiss();
                                 Model.getGlobule(caller.domain).eventHub.publish(call.getUuid() + "_miss_call_evt", call.serializeBinary(), false)
-                                Model.getGlobule(callee.domain).eventHub.publish(call.getUuid() + "_miss_call_evt", call.serializeBinary(), false)
+                                if (caller.domain != caller.domain)
+                                    Model.getGlobule(callee.domain).eventHub.publish(call.getUuid() + "_miss_call_evt", call.serializeBinary(), false)
 
                             }, 30 * 1000)
 
@@ -1016,7 +1021,8 @@ export class ContactList extends HTMLElement {
 
                                 // Here I will send miss call event...
                                 Model.getGlobule(caller.domain).eventHub.publish(call.getUuid() + "_miss_call_evt", call.serializeBinary(), false)
-                                Model.getGlobule(callee.domain).eventHub.publish(call.getUuid() + "_miss_call_evt", call.serializeBinary(), false)
+                                if (caller.domain != caller.domain)
+                                    Model.getGlobule(callee.domain).eventHub.publish(call.getUuid() + "_miss_call_evt", call.serializeBinary(), false)
                             }
 
                             // Here the call succeed...
@@ -1037,7 +1043,9 @@ export class ContactList extends HTMLElement {
                                 // append it to the workspace.
                                 ApplicationView.layout.workspace().appendChild(videoConversation)
 
+
                                 // start the video conversation.
+                                console.log("----------------> 1041 ", "start_video_conversation_" + call.getUuid() + "_evt")
                                 globule.eventHub.publish("start_video_conversation_" + call.getUuid() + "_evt", contact, true)
 
                             }, false)

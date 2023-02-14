@@ -34,7 +34,7 @@ import { createArchive, deleteDir, deleteFile, downloadFileHttp, renameFile, upl
 import { ApplicationView } from '../ApplicationView';
 import { Application } from '../Application';
 import { GetSharedResourceRqst, SubjectType } from 'globular-web-client/rbac/rbac_pb';
-import { getCoords, randomUUID } from './utility';
+import { fireResize, getCoords, randomUUID } from './utility';
 import * as getUuidByString from 'uuid-by-string';
 import { ImageViewer } from './Image';
 import { AssociateFileWithTitleRequest, CreateTitleRequest, GetFileAudiosRequest, GetFileTitlesRequest, GetFileVideosRequest, Person, Poster, Title } from 'globular-web-client/title/title_pb';
@@ -3106,6 +3106,9 @@ export class PathNavigator extends HTMLElement {
                     display: flex;
                     align-items: center;
                     user-select: none;
+                    flex-wrap: wrap;
+                    padding: 0px 5px 0px 5px;
+                    margin-right: 10px;
                 }
 
                 .path-navigator-box-span{
@@ -3999,7 +4002,19 @@ export class FileExplorer extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-           
+            ::-webkit-scrollbar {
+                width: 5px;
+                height: 5px;
+            }
+                
+            ::-webkit-scrollbar-track {
+                background: var(--palette-background-default);
+            }
+            
+            ::-webkit-scrollbar-thumb {
+                background: var(--palette-divider); 
+            }
+
             paper-card{
                 background-color: var(--palette-background-paper);
                 color: var(--palette-text-primary);
@@ -4041,7 +4056,8 @@ export class FileExplorer extends HTMLElement {
 
             .card-actions{
                 border-color: var(--palette-divider);
-                background-color: var(--palette-background-paper);
+                --iron-icon-fill-color: var(--palette-text-accent);
+                
             }
 
             .card-header{
@@ -4059,22 +4075,6 @@ export class FileExplorer extends HTMLElement {
                 display: flex; 
                 flex-grow: 1;
                 overflow: hidden;
-            }
-
-            @media (max-width: 800px) {
-                #file-explorer-layout {
-                    flex-direction: column;
-                }
-                #file-explorer-content{
-                    min-width: 0px;
-                    position: relative;
-                }
-
-                #file-selection-panel{
-                    min-height: 500px;
-                    margin-left: 0px;
-                    margin-top: 15px;
-                }
             }
 
             #globular-audio-player{
@@ -4130,20 +4130,20 @@ export class FileExplorer extends HTMLElement {
                 background-color: transparent;
                 border-left: 1px solid var(--palette-divider); 
                 border-right: 1px solid var(--palette-divider);
+                min-height: 350px;
+                min-width: 500px;
             }
 
-            ::-webkit-scrollbar {
-                width: 5px;
-                height: 5px;
-             }
-                
-             ::-webkit-scrollbar-track {
-                background: var(--palette-background-default);
-             }
-             
-             ::-webkit-scrollbar-thumb {
-                background: var(--palette-divider); 
-             }
+            #file-navigation-panel{
+                border-bottom: 1px solid var(--palette-divider); 
+            }
+
+            @media (max-width: 500px) {
+                #file-explorer-box{
+                    min-width: 100vh;
+                    width: 10vh;
+                }
+            }
 
         </style>
         <paper-card id="file-explorer-box" class="file-explorer" style="">
@@ -4151,23 +4151,23 @@ export class FileExplorer extends HTMLElement {
                 <paper-icon-button icon="icons:close" id="file-explorer-box-close-btn" style="--iron-icon-fill-color: var(--palette-text-accent);"></paper-icon-button>
                 <span id="move-handle" class="title">File Explorer</span>
                 <div class="card-actions">
+                    <paper-icon-button id="navigation-cloud-upload-btn" icon="icons:cloud-upload"></paper-icon-button>
+                    <paper-icon-button id="navigation-create-dir-btn" icon="icons:create-new-folder"></paper-icon-button>
+                    <paper-icon-button id="navigation-refresh-btn" icon="icons:refresh"></paper-icon-button>
                     <paper-icon-button icon="icons:fullscreen" style="--iron-icon-fill-color: var(--palette-text-accent);background-color: var(--palette-primary-accent);" id="enter-full-screen-btn"></paper-icon-button>
                 </div>
             </div>
             <div id="file-explorer-content" class="card-content no-select">
                 <div id="file-navigation-header">
-                    <paper-icon-button id="navigation-back-btn" icon="icons:icons:arrow-back"></paper-icon-button>
-                    <paper-icon-button id="navigation-foward-btn" icon="icons:arrow-forward"></paper-icon-button>
-                    <div style="position: relative;">
-                        <iron-icon id="navigation-lst-btn" icon="icons:expand-more" style="--iron-icon-fill-color:var(--palette-action-active); display: none; height: 16px;"></iron-icon>
+                    <div id="btn-group-0" style="display: flex;">
+                        <paper-icon-button id="navigation-back-btn" icon="icons:icons:arrow-back"></paper-icon-button>
+                        <paper-icon-button id="navigation-foward-btn" icon="icons:arrow-forward"></paper-icon-button>
+                        <div style="position: relative;">
+                            <iron-icon id="navigation-lst-btn" icon="icons:expand-more" style="--iron-icon-fill-color:var(--palette-action-active); display: none; height: 16px;"></iron-icon>
+                        </div>
+                        <paper-icon-button id="navigation-upward-btn" icon="icons:arrow-upward"></paper-icon-button>
                     </div>
-                    <paper-icon-button id="navigation-upward-btn" icon="icons:arrow-upward"></paper-icon-button>
                     <globular-path-navigator id="globular-path-navigator" style="flex-grow: 1;"></globular-path-navigator>
-                    <div style="width: 120px; display: flex;">
-                        <paper-icon-button id="navigation-cloud-upload-btn" icon="icons:cloud-upload"></paper-icon-button>
-                        <paper-icon-button id="navigation-create-dir-btn" icon="icons:create-new-folder"></paper-icon-button>
-                        <paper-icon-button id="navigation-refresh-btn" icon="icons:refresh"></paper-icon-button>
-                    </div>
                 </div>
                 <globular-split-view id="file-explorer-layout">
                     <globular-split-pane id="file-navigation-panel" style="width: 360px">
@@ -4178,7 +4178,7 @@ export class FileExplorer extends HTMLElement {
                     </globular-split-pane>
                 </globular-split-view>
             </div>
-            <div class="card-actions">
+            <div class="card-actions" style="background-color: var(--palette-background-paper);">
                 <paper-icon-button icon="icons:fullscreen-exit" id="exit-full-screen-btn" style="display: none;"></paper-icon-button>
                 <globular-disk-space-manager account="${Application.account.id + "@" + Application.account.domain}"></globular-disk-space-manager>
                 <div id="progress-div" style="display: none; flex-grow: 1; margin-right: 20px;">
@@ -4190,7 +4190,7 @@ export class FileExplorer extends HTMLElement {
                 <span style="flex-grow: 1;"></span>
                 <paper-icon-button id="files-icon-btn" class="active" icon="icons:view-module" style="--iron-icon-fill-color: var(--palette-action-active);"></paper-icon-button>
                 <paper-icon-button id="files-list-btn" icon="icons:view-list" style="--iron-icon-fill-color: var(--palette-action-disabled);"></paper-icon-button>
-                <globular-files-uploader></globular-files-uploader>
+                <globular-files-uploader></globular-files-upsetVerticalloader>
             </div>
         </paper-card>
         `
@@ -4237,8 +4237,10 @@ export class FileExplorer extends HTMLElement {
             this.shadowRoot.querySelector("#file-explorer-box").style.height = dimension.height + "px"
         }
 
-        this.shadowRoot.querySelector("#file-explorer-box").name = "file_explorer"
-        setResizeable(this.shadowRoot.querySelector("#file-explorer-box"), (width, height) => {
+        let fileExplorerBox =  this.shadowRoot.querySelector("#file-explorer-box")
+        fileExplorerBox.name = "file_explorer"
+
+        setResizeable(fileExplorerBox, (width, height) => {
             if (this.filesListView.menu.parentNode) {
                 this.filesListView.menu.parentNode.removeChild(this.filesListView.menu)
                 this.filesListView.menu.close()
@@ -4249,6 +4251,39 @@ export class FileExplorer extends HTMLElement {
             }
 
             localStorage.setItem("__file_explorer_dimension__", JSON.stringify({ width: width, height: height }))
+        })
+  
+        let fileExplorerLayout = fileExplorerBox.querySelector("#file-explorer-layout")
+
+        // set the css value to display the playlist correctly...
+        window.addEventListener("resize", (evt) => {
+            let w = ApplicationView.layout.width();
+            if (w <= 500) {
+                fileExplorerBox.style.height = "calc(100vh - 60px)"
+                fileExplorerBox.style.overflowY = "auto"
+                fileExplorerBox.style.top = "0px"
+                fileExplorerBox.style.left = "0px"
+                fileExplorerBox.querySelector("#file-navigation-panel").style.width = "100vw"
+                fileExplorerBox.querySelector("#file-explorer-layout").style.width = "100vw"
+                fileExplorerBox.querySelector("#file-explorer-content").style.width = "100vw"
+                fileExplorerBox.querySelector("#file-navigation-header").style.flexDirection = "column"
+                fileExplorerBox.querySelector("#file-navigation-header").style.alignItems = "flex-start"
+                fileExplorerBox.querySelector("#file-navigation-panel").style.height = "160px"
+                this.shadowRoot.querySelector(".card-header").style.width = "100vw"
+                this.shadowRoot.querySelector("#btn-group-0").style.display = "none"
+                fileExplorerLayout.setVertical()
+            }else{
+                this.shadowRoot.querySelector(".card-header").style.width = ""
+                fileExplorerBox.querySelector("#file-navigation-header").style.alignItems = ""
+                fileExplorerBox.querySelector("#file-navigation-header").style.flexDirection = ""
+                fileExplorerBox.querySelector("#file-explorer-content").style.width = ""
+                fileExplorerBox.querySelector("#file-explorer-layout").style.width = ""
+                fileExplorerBox.querySelector("#file-navigation-panel").style.width = "360px"
+                fileExplorerBox.querySelector("#file-navigation-panel").style.height = "100%"
+                this.shadowRoot.querySelector("#btn-group-0").style.display = ""
+                fileExplorerLayout.setHorizontal()
+            }
+
         })
 
         // The file view.
@@ -4328,6 +4363,10 @@ export class FileExplorer extends HTMLElement {
             this.style.width = "";
             let box = this.shadowRoot.querySelector("#file-explorer-box")
             box.style.width = this.width_ + "px";
+            if(this.height_ > document.offsetHeight - 75){
+                this.height_ = document.offsetHeight - 75
+            }
+
             box.style.height = this.height_ + "px";
             this.isFullScreen = false
 
@@ -4344,14 +4383,14 @@ export class FileExplorer extends HTMLElement {
             this.style.top = "60px"
             this.style.bottom = "0px"
             this.style.right = "0px"
-            this.style.marginTop = "24px";
+            this.style.marginTop = "64px";
             this.style.top = "0px";
             this.style.bottom = "0px";
             this.style.right = "0px";
             this.style.left = "0px";
             // also take all the space...
             this.style.width = "100%";
-            this.style.height = "calc(100% - 24px)";
+            this.style.height = "calc(100% - 64px)";
 
             let box = this.shadowRoot.querySelector("#file-explorer-box")
             this.width_ = box.offsetWidth
@@ -4619,6 +4658,8 @@ export class FileExplorer extends HTMLElement {
 
         // init the list of peers.
         this.fileNavigator.setFileExplorer(this)
+
+        fireResize()
     }
 
     displayWaitMessage(message) {
@@ -5155,7 +5196,7 @@ export class FileExplorer extends HTMLElement {
                 navigationLst.style.padding = "5px"
                 navigationLst.style.zIndex = "100";
                 navigationLst.style.top = title.offsetHeight + "px"
-                navigationLst.style.right = "0px"
+                navigationLst.style.left = "0px"
                 navigationLst.style.backgroundColor = "var(--palette-background-paper)"
                 navigationLst.style.color = "var(--palette-text-primary)"
                 this.lstNavigationBtn.parentNode.appendChild(navigationLst)

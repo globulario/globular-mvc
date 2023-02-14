@@ -159,13 +159,13 @@ export class MediaWatching extends HTMLElement {
 
         Model.eventHub.subscribe("remove_video_player_evt_", uuid => { }, evt => {
             if (title._id == evt._id) {
-                if(!card){
+                if (!card) {
                     return
                 }
-                if(!card.parentNode){
+                if (!card.parentNode) {
                     return
                 }
-                
+
                 card.parentNode.removeChild(card)
                 let video_count = this.querySelectorAll(`[slot="video"]`).length
                 if (video_count > 0) {
@@ -250,7 +250,7 @@ function getTitles(id, domain, callback) {
         }
 
         callback(titles)
-        
+
     })
 }
 
@@ -332,38 +332,44 @@ export class MediaWatchingCard extends HTMLElement {
         closeButton.onclick = () => {
             Model.eventHub.publish("remove_video_player_evt_", title, true)
         }
+        
+        if (title.domain) {
 
-        if (title.isVideo) {
-            getVideos(title._id, title.domain, (videos) => {
-                if (videos.length > 0) {
-                    let videoCard = new SearchVideoCard();
-                    videoCard.id = "_" + title._id
-                    videoCard.setVideo(videos[0], videos[0].globule)
-                    this.appendChild(videoCard)
-                    if (callback) {
-                        callback()
+            if (title.isVideo) {
+                getVideos(title._id, title.domain, (videos) => {
+                    if (videos.length > 0) {
+                        let videoCard = new SearchVideoCard();
+                        videoCard.id = "_" + title._id
+                        videoCard.setVideo(videos[0])
+                        this.appendChild(videoCard)
+                        if (callback) {
+                            callback()
+                        }
+
+                    } else {
+                        if (errorCallback) {
+                            errorCallback(`title ${title._id} not found`)
+                        }
                     }
+                })
+            } else {
 
-                } else {
-                    if (errorCallback) {
+                getTitles(title._id, title.domain, (titles) => {
+                    if (titles.length > 0) {
+                        let titleCard = new SearchFlipCard();
+                        titleCard.id = "_" + title._id
+                        titleCard.setTitle(titles[0])
+                        this.appendChild(titleCard)
+                        if (callback) {
+                            callback()
+                        }
+                    } else {
                         errorCallback(`title ${title._id} not found`)
                     }
-                }
-            })
-        } else {
-            getTitles(title._id, title.domain, (titles) => {
-                if (titles.length > 0) {
-                    let titleCard = new SearchFlipCard();
-                    titleCard.id = "_" + title._id
-                    titleCard.setTitle(titles[0], titles[0].globule)
-                    this.appendChild(titleCard)
-                    if (callback) {
-                        callback()
-                    }
-                } else {
-                    errorCallback(`title ${title._id} not found`)
-                }
-            })
+                })
+            }
+        }else{
+            console.log("-------------------------> no domain given ", title)
         }
     }
 }
@@ -434,10 +440,10 @@ export class WatchingMenu extends Menu {
         this.onclick = () => {
             let icon = this.getIconDiv().querySelector("iron-icon")
             icon.style.removeProperty("--iron-icon-fill-color")
-            if(this.mediaWatching.parentNode == undefined){
+            if (this.mediaWatching.parentNode == undefined) {
                 Model.eventHub.publish("_display_workspace_content_event_", this.mediaWatching, true)
             }
-           
+
         }
 
         // hide the menu div
@@ -458,7 +464,7 @@ export class WatchingMenu extends Menu {
 
             Model.eventHub.subscribe("stop_video_player_evt_", uuid => { }, evt => {
                 this.saveWatchingTitle(evt, () => { })
-                this.mediaWatching.appendTitle(evt, ()=>{console.log("title ", evt._id, " was add to watching...")}, err=>{console.log("fail to add title with error: ", err)})
+                this.mediaWatching.appendTitle(evt, () => { console.log("title ", evt._id, " was add to watching...") }, err => { console.log("fail to add title with error: ", err) })
             }, true)
 
             Model.eventHub.subscribe("remove_video_player_evt_", uuid => { }, evt => {
@@ -521,7 +527,7 @@ export class WatchingMenu extends Menu {
         rqst.setQuery("{}"); // means all values.
 
         let token = localStorage.getItem("user_token")
-        let globule =  Model.getGlobule(userDomain)
+        let globule = Model.getGlobule(userDomain)
         const stream = globule.persistenceService.find(rqst, {
             application: Model.application.length > 0 ? Model.application : Model.globular.config.IndexApplication,
             domain: Model.domain, token
@@ -566,8 +572,8 @@ export class WatchingMenu extends Menu {
         // So here I will set the address from the address found in the token and not 
         // the address of the client itself.
         let token = localStorage.getItem("user_token")
-        let globule =  Model.getGlobule(userDomain)
-  
+        let globule = Model.getGlobule(userDomain)
+
         // call persist data
         globule.persistenceService
             .findOne(rqst, {
@@ -610,7 +616,7 @@ export class WatchingMenu extends Menu {
         // So here I will set the address from the address found in the token and not 
         // the address of the client itself.
         let token = localStorage.getItem("user_token")
-        let globule =  Model.getGlobule(userDomain)
+        let globule = Model.getGlobule(userDomain)
         console.log(globule)
 
         // call persist data
@@ -656,7 +662,7 @@ export class WatchingMenu extends Menu {
         // the address of the client itself.
         let token = localStorage.getItem("user_token")
 
-        let globule =  Model.getGlobule(userDomain)
+        let globule = Model.getGlobule(userDomain)
         console.log(globule)
 
         // call persist data

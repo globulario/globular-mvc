@@ -1724,7 +1724,7 @@ export class SearchResultsPage extends HTMLElement {
                     videoCard = new SearchVideoCard();
                     videoCard.id = id
                     videoCard.slot = "mosaic_" + context
-                    videoCard.setVideo(video, hit.globule)
+                    videoCard.setVideo(video)
                     videoCard.classList.add(context)
                 }
                 return videoCard
@@ -1737,7 +1737,7 @@ export class SearchResultsPage extends HTMLElement {
                     audioCard = new SearchAudioCard();
                     audioCard.id = id
                     audioCard.slot = "mosaic_" + context
-                    audioCard.setAudio(audio, hit.globule)
+                    audioCard.setAudio(audio)
                     audioCard.classList.add(context)
                 }
                 return audioCard
@@ -2061,10 +2061,10 @@ export class SearchAudioCard extends HTMLElement {
     }
 
     // Call search event.
-    setAudio(audio, globule) {
+    setAudio(audio) {
 
         this.audio = audio
-        audio.globule = globule
+        let globule = audio.globule
 
         this.classList.add("filterable")
         audio.getGenresList().forEach(g => {
@@ -2315,7 +2315,7 @@ export class SearchVideoCard extends HTMLElement {
 
                         preview.src = url
                         preview.onclick = () => {
-                            playVideo(path, null, null, null, globule)
+                            playVideo(path, null, null, video, video.globule)
                         }
 
                         /*
@@ -2351,15 +2351,11 @@ export class SearchVideoCard extends HTMLElement {
         }
     }
 
-    setVideo(video, globule) {
+    setVideo(video) {
 
-        if (!globule) {
-            globule = Application.globular
-        }
 
         this.video = video
-        this.video.globule = globule
-
+    
         this.classList.add("filterable")
         video.getGenresList().forEach(g => this.classList.add(getUuidByString(g.toLowerCase())))
         video.getTagsList().forEach(tag => this.classList.add(getUuidByString(tag.toLowerCase())))
@@ -2536,7 +2532,6 @@ export class SearchFlipCard extends HTMLElement {
         }
 
         // test create offer...
-        title.globule = globule
         this.shadowRoot.querySelector(`#search-title`).setTitle(title)
         if (title.getType() == "TVEpisode") {
             // So here I will get the series info If I can found it...
@@ -2710,7 +2705,6 @@ export class SearchTitleDetail extends HTMLElement {
         let title = this.title_
         let globule = title.globule;
         this.shadowRoot.querySelector("globular-informations-manager").setTitlesInformation([title])
-
         this.isLoaded = true;
 
         // Display the episode informations.
@@ -2776,7 +2770,7 @@ export class SearchTitleDetail extends HTMLElement {
                             this.shadowRoot.querySelector("#epsiode-preview").onclick = this.shadowRoot.querySelector("#play-episode-video-button").onclick = () => {
                                 playVideo(path, (player, title) => {
                                     playTitleListener(player, title, indexPath, globule)
-                                }, null, null, globule)
+                                }, null, title, title.globule)
                             }
 
                             this.shadowRoot.querySelector("#episode-info-button").onclick = () => {
@@ -2889,7 +2883,7 @@ export class SearchTitleDetail extends HTMLElement {
                     this.shadowRoot.querySelector("#title-preview").onclick = this.shadowRoot.querySelector("#play-video-button").onclick = () => {
                         playVideo(path, (player, title) => {
                             playTitleListener(player, title, indexPath, globule)
-                        }, null, title, globule)
+                        }, null, title, title.globule)
                     }
                 }
             }).catch(err => {
@@ -3380,7 +3374,6 @@ export class SearchFacetPanel extends HTMLElement {
                 if (videos.length > 0) {
                     generateVideoPlaylist()
                 } else {
-                    console.log(video_playList)
                     playVideo(video_playList, null, null, null, globule)
                 }
             })

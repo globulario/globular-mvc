@@ -45,6 +45,7 @@ export class VideoConversation extends HTMLElement {
 
         this.localStream = null;
         this.pendingCanditates = [];
+        this.listeners = {};
 
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
@@ -153,7 +154,7 @@ export class VideoConversation extends HTMLElement {
             localStorage.setItem("__webrtc_panel_position__", JSON.stringify({ width: width, height: height }))
             container.style.height = "auto"
         })
-        
+
         container.resizeHeightDiv.style.display = "none"
         container.style.height = "auto"
 
@@ -179,118 +180,140 @@ export class VideoConversation extends HTMLElement {
 
 
         // Start a new video conversation with a remote participant
-        Model.eventHub.subscribe(`start_video_conversation_${this.conversationUuid}_evt`,
-            (uuid) => {
+        if (this.listeners[`start_video_conversation_${this.conversationUuid}_evt`] == undefined) {
+            Model.eventHub.subscribe(`start_video_conversation_${this.conversationUuid}_evt`,
+                (uuid) => {
+                    this.listeners[`start_video_conversation_${this.conversationUuid}_evt`] = uuid
+                },
+                (participant) => {
 
-            },
-            (participant) => {
+                    // Create offer to each participants
+                    if (participant.id != Application.account._id) {
 
-                // Create offer to each participants
-                if (participant.id != Application.account._id) {
+                        let connectionId = this.conversationUuid + "_" + participant.id
 
-                    let connectionId = this.conversationUuid + "_" + participant.id
+                        // That will set the on iceconnection ready callback to create offer.
+                        this.getConnection(connectionId, rtcPeerConnection => {
+                            rtcPeerConnection.onnegotiationneeded = () => {
+                                // Set the connection.
+                                rtcPeerConnection
+                                    .createOffer(offerOptions)
+                                    .then((offer) => {
+                                        rtcPeerConnection.setLocalDescription(offer).then(() => {
+                                            console.log("-----------> ", `on_webrtc_offer_${connectionId}_evt`)
+                                            this.eventHub.publish(`on_webrtc_offer_${connectionId}_evt`, JSON.stringify({ "offer": offer, "connectionId": this.conversationUuid + "_" + Application.account._id }), false);
+                                        })
+                                    })
+                                    .catch((err) => {
+                                        ApplicationView.displayMessage(err, 3000)
+                                    });
+                            }
+                        });
 
-                    // That will set the on iceconnection ready callback to create offer.
+                    }
+
+                }, true, this)
+        }
+
+        if (this.listeners[`leave_conversation_${this.conversationUuid}_evt`] == undefined) {
+            this.eventHub.subscribe(`leave_conversation_${this.conversationUuid}_evt`,
+                (uuid) => {
+                    // todo remove listeners...
+                    this.listeners[`leave_conversation_${this.conversationUuid}_evt`] = uuid
+                },
+                (evt_) => {
+                    // Remove the participant.
+                    let evt = JSON.parse(evt_)
+
+                    // Close the connection with the client
+                    if (evt.participant == Application.account._id) {
+                        // Here I will close all conversation connections.
+                        for (let connectionId in this.connections) {
+                            if (connectionId.startsWith(this.conversationUuid)) {
+                                this.closeConnection(connectionId)
+                            }
+                        }
+
+                    } else {
+                        let connectionId = this.conversationUuid + "_" + evt.participant
+                        if (this.connections[connectionId] != null) {
+                            this.closeConnection(connectionId)
+                        }
+                    }
+                },
+                false, this);
+        }
+
+        // When we receive peer connection offer...
+        if (this.listeners[`on_webrtc_offer_${this.conversationUuid + "_" + Application.account._id}_evt`] == undefined) {
+            this.eventHub.subscribe(`on_webrtc_offer_${this.conversationUuid + "_" + Application.account._id}_evt`,
+                (uuid) => {
+                    this.listeners[`on_webrtc_offer_${this.conversationUuid + "_" + Application.account._id}_evt`] = uuid
+                }, (evt) => {
+
+                    let event = JSON.parse(evt)
+                    let connectionId = event.connectionId
+
+                    // Get the connections.
                     this.getConnection(connectionId, rtcPeerConnection => {
-                        rtcPeerConnection.onnegotiationneeded = () => {
-                            // Set the connection.
+                        let offer = new RTCSessionDescription(event.offer)
+                        rtcPeerConnection.setRemoteDescription(offer).then(() => {
+                            // Append pending ice candidate.
+                            while (this.pendingCanditates.length > 0) {
+                                rtcPeerConnection.addIceCandidate(this.pendingCanditates.pop())
+                            }
+                            // create the answer.
                             rtcPeerConnection
-                                .createOffer(offerOptions)
-                                .then((offer) => {
-                                    rtcPeerConnection.setLocalDescription(offer).then(() => {
-                                        this.eventHub.publish(`on_webrtc_offer_${connectionId}_evt`, JSON.stringify({ "offer": offer, "connectionId": this.conversationUuid + "_" + Application.account._id }), false);
+                                .createAnswer()
+                                .then(answer => {
+                                    rtcPeerConnection.setLocalDescription(answer).then(() => {
+                                        console.log("-----------------> ", connectionId)
+                                        this.eventHub.publish(`on_webrtc_answer_${connectionId}_evt`, JSON.stringify({ "answer": answer, "connectionId": this.conversationUuid + "_" + Application.account._id }), false);
                                     })
                                 })
                                 .catch((err) => {
                                     ApplicationView.displayMessage(err, 3000)
                                 });
-                        }
-                    });
 
-                }
-
-            }, true, this)
-
-        this.eventHub.subscribe(`leave_conversation_${this.conversationUuid}_evt`,
-            (uuid) => {
-                // todo remove listeners...
-            },
-            (evt_) => {
-                // Remove the participant.
-                let evt = JSON.parse(evt_)
-
-                // Close the connection with the client
-                if (evt.participant == Application.account._id) {
-                    // Here I will close all conversation connections.
-                    for (let connectionId in this.connections) {
-                        if (connectionId.startsWith(this.conversationUuid)) {
-                            this.closeConnection(connectionId)
-                        }
-                    }
-
-                } else {
-                    let connectionId = this.conversationUuid + "_" + evt.participant
-                    if (this.connections[connectionId] != null) {
-                        this.closeConnection(connectionId)
-                    }
-                }
-            },
-            false, this);
-
-        // When we receive peer connection offer...
-        this.eventHub.subscribe(`on_webrtc_offer_${this.conversationUuid + "_" + Application.account._id}_evt`, (uuid) => { }, (evt) => {
-
-            let event = JSON.parse(evt)
-            let connectionId = event.connectionId
-
-            // Get the connections.
-            this.getConnection(connectionId, rtcPeerConnection => {
-                let offer = new RTCSessionDescription(event.offer)
-                rtcPeerConnection.setRemoteDescription(offer).then(() => {
-                    // Append pending ice candidate.
-                    while (this.pendingCanditates.length > 0) {
-                        rtcPeerConnection.addIceCandidate(this.pendingCanditates.pop())
-                    }
-                    // create the answer.
-                    rtcPeerConnection
-                        .createAnswer()
-                        .then(answer => {
-                            rtcPeerConnection.setLocalDescription(answer).then(() => {
-                                this.eventHub.publish(`on_webrtc_answer_${connectionId}_evt`, JSON.stringify({ "answer": answer, "connectionId": this.conversationUuid + "_" + Application.account._id }), false);
-                            })
-                        })
-                        .catch((err) => {
+                        }, err => {
                             ApplicationView.displayMessage(err, 3000)
-                        });
+                        })
+                    })
 
-                }, err => {
-                    ApplicationView.displayMessage(err, 3000)
-                })
-            })
-
-        }, false, this)
+                }, false, this)
+        }
 
         // When we receive peers connection answer...
-        this.eventHub.subscribe(`on_webrtc_answer_${this.conversationUuid + "_" + Application.account._id}_evt`, (uuid) => { }, (evt) => {
-            let event = JSON.parse(evt)
-            let rtcPeerConnection = this.connections[event.connectionId]
-            let answer = new RTCSessionDescription(event.answer)
-            rtcPeerConnection.setRemoteDescription(answer);
+        if (this.listeners[`on_webrtc_answer_${this.conversationUuid + "_" + Application.account._id}_evt`] == undefined) {
+            this.eventHub.subscribe(`on_webrtc_answer_${this.conversationUuid + "_" + Application.account._id}_evt`,
+                (uuid) => {
+                    this.listeners[`on_webrtc_answer_${this.conversationUuid + "_" + Application.account._id}_evt`] = uuid
+                }, (evt) => {
+                    let event = JSON.parse(evt)
+                    let rtcPeerConnection = this.connections[event.connectionId]
+                    let answer = new RTCSessionDescription(event.answer)
+                    rtcPeerConnection.setRemoteDescription(answer);
 
-        }, false, this)
+                }, false, this)
+        }
 
         // When we receive a ace candidate answer
-        this.eventHub.subscribe(`on_webrtc_candidate_${this.conversationUuid + "_" + Application.account._id}_evt`, (uuid) => { }, (event) => {
-            let evt = JSON.parse(event)
-            this.getConnection(evt.connectionId, rtcPeerConnection => {
-                let icecandidate = new RTCIceCandidate(evt.candidate);
-                if (rtcPeerConnection.remoteDescription) {
-                    rtcPeerConnection.addIceCandidate(icecandidate);
-                } else {
-                    this.pendingCanditates.push(icecandidate)
-                }
-            })
-        }, false, this)
+        if (this.listeners[`on_webrtc_candidate_${this.conversationUuid + "_" + Application.account._id}_evt`] == undefined) {
+            this.eventHub.subscribe(`on_webrtc_candidate_${this.conversationUuid + "_" + Application.account._id}_evt`,
+                (uuid) => {
+                    this.listeners[`on_webrtc_candidate_${this.conversationUuid + "_" + Application.account._id}_evt`] = uuid
+                }, (event) => {
+                    let evt = JSON.parse(event)
+                    this.getConnection(evt.connectionId, rtcPeerConnection => {
+                        let icecandidate = new RTCIceCandidate(evt.candidate);
+                        if (rtcPeerConnection.remoteDescription) {
+                            rtcPeerConnection.addIceCandidate(icecandidate);
+                        } else {
+                            this.pendingCanditates.push(icecandidate)
+                        }
+                    })
+                }, false, this)
+        }
 
     }
 
@@ -332,7 +355,9 @@ export class VideoConversation extends HTMLElement {
         }
 
         this.eventHub.publish(`video_conversation_close_${connectionId}_evt`, {}, false);
-        this.eventHub.publish(`video_conversation_close_${this.conversationUuid}_evt`, {}, false);
+
+        if (this.conversationUuid != connectionId)
+            this.eventHub.publish(`video_conversation_close_${this.conversationUuid}_evt`, {}, false);
     }
 
     // init a new peer connections.
@@ -380,13 +405,15 @@ export class VideoConversation extends HTMLElement {
                         }
 
                         this.eventHub.publish(`video_conversation_open_${connectionId}_evt`, {}, false);
-                        this.eventHub.publish(`video_conversation_open_${this.conversationUuid + "_" + Application.account._id}_evt`, {}, false);
+
+                        if (this.conversationUuid + "_" + Application.account._id != connectionId)
+                            this.eventHub.publish(`video_conversation_open_${this.conversationUuid + "_" + Application.account._id}_evt`, {}, false);
 
                         break;
                     case "disconnected":
                     case "failed":
                     case "closed":
-                        
+
                         // The connection has been closed
                         this.closeConnection(connectionId)
 

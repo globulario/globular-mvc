@@ -767,6 +767,7 @@ export class CallsHistoryMenu extends Menu {
                                 }
 
                                 // Here the call succeed...
+                                
                                 Model.getGlobule(contact.domain).eventHub.subscribe(call.getUuid() + "_answering_call_evt", uuid => { }, evt => {
                                     // The contact has answer the call!
                                     audio.pause()
@@ -785,6 +786,7 @@ export class CallsHistoryMenu extends Menu {
                                     ApplicationView.layout.workspace().appendChild(videoConversation)
 
                                     // start the video conversation.
+                                    console.log("-----------> 788 start_video_conversation_")
                                     globule.eventHub.publish("start_video_conversation_" + call.getUuid() + "_evt", contact, true)
 
                                 }, false)

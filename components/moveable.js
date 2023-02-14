@@ -40,7 +40,7 @@ export function setMoveable(handle, draggable, onmove, element, offsetTop = 0) {
 
     // set the postion to 0, 0
     let w = ApplicationView.layout.width();
-    if (w < 500) {
+    if (w <= 500) {
       draggable.style.top = offsetTop + "px"
       draggable.style.left = "0px"
       return
