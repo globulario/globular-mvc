@@ -31,6 +31,19 @@ export class NotificationMenu extends Menu {
         let html = `
         <style>
        
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+
+         }
+            
+         ::-webkit-scrollbar-track {
+            background: var(--palette-background-default);
+         }
+         
+         ::-webkit-scrollbar-thumb {
+            background: var(--palette-divider); 
+         }
 
         #notifications{
             display: flex;
@@ -76,11 +89,11 @@ export class NotificationMenu extends Menu {
             flex-end;
         }
 
-        .btn {
+        .btn_ {
             position: relative;
         }
 
-        .btn:hover{
+        .btn_:hover{
             cursor: pointer;
         }
 
@@ -115,36 +128,49 @@ export class NotificationMenu extends Menu {
             filter: invert(10%);
         }
 
-        paper-card{
-            background-color: var(--palette-background-paper);
-            color: var(--palette-text-primary);
-        }
-  
-
-        paper-card h1 {
-            font-size: 1.65rem;
-            margin: 0px;
-            margin-bottom: 10px;
+        #content {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
         }
 
-        #title{
-            display: none; 
-            justify-content: center;
+        @media (max-width: 500px) {
+            #content {
+                width: calc(100vw - 20px);
+            }
+
+            .header {
+                min-width: 0px;
+                width: calc(100vw - 20px);
+                padding: 0px;
+            }
+
+            .notification-label, .btn_ {
+                padding: .5rem;
+            }
+
+            .body {
+                min-width: 0px;
+                max-height: calc(100vh - 160px);
+            }
         }
 
     </style>
 
-        <div>
-            <div id="header" style="width: 100%;">
-                <div id="title">
-                    <h1 style="flex-grow: 1;">Notification's</h1>
-                    <paper-icon-button id="close-btn" icon="icons:close" role="button" tabindex="0" aria-disabled="false"></paper-icon-button>
+        <div id="content">
+            <div class="header" style="border-bottom: 1px solid var(--palette-action-disabled);">
+                <div class="notification-label">Notifications</div>
+                <div class="btn_div">
+                    <div class="btn_">
+                        <iron-icon id="notifications-config" icon="settings"></iron-icon>
+                        <paper-ripple class="circle" recenters></paper-ripple>
+                    </div>
                 </div>
             </div>
 
             <div id="application-notifications" style="display: none;">
                 <div class="header" id="application-notifications-btn">
-                    <span>Application</span>
+                    <span class="notification-label">Application</span>
                     <paper-ripple recenters></paper-ripple>
                 </div>
                 <iron-collapse id="application-notifications-collapse" opened = "[[opened]]">
@@ -154,7 +180,7 @@ export class NotificationMenu extends Menu {
 
             <div id="user-notifications" style="display: none;">
                 <div class="header" id="user-notifications-btn">
-                    <span>User</span>
+                    <span class="notification-label">User</span>
                     <paper-ripple recenters></paper-ripple>
                 </div>
                 <iron-collapse  id="user-notifications-collapse" style="">
@@ -167,10 +193,7 @@ export class NotificationMenu extends Menu {
 
         let range = document.createRange()
         this.getMenuDiv().appendChild(range.createContextualFragment(html));
-        this.getMenuDiv().querySelector("#close-btn").onclick = ()=>{
-            this.getMenuDiv().parentNode.removeChild(this.getMenuDiv())
-        }
-        
+
         // Action's
         this.shadowRoot.appendChild(this.getMenuDiv())
 
@@ -254,9 +277,6 @@ export class NotificationMenu extends Menu {
     }
 
     init() {
-        
-        // hide the menu div
-        this.hideMenuDiv = true
 
         // The logout event.
         Model.eventHub.subscribe("logout_event",
@@ -311,6 +331,8 @@ export class NotificationMenu extends Menu {
                 }
                 this.setNotificationCount()
             }, false)
+
+
     }
 
     // clear the notifications.

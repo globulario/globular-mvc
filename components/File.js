@@ -4181,7 +4181,7 @@ export class FileExplorer extends HTMLElement {
             <div class="card-actions" style="background-color: var(--palette-background-paper);">
                 <paper-icon-button icon="icons:fullscreen-exit" id="exit-full-screen-btn" style="display: none;"></paper-icon-button>
                 <globular-disk-space-manager account="${Application.account.id + "@" + Application.account.domain}"></globular-disk-space-manager>
-                <div id="progress-div" style="display: none; flex-grow: 1; margin-right: 20px;">
+                <div id="progress-div" style="display: none; flex-grow: 1; margin-left: 10px; margin-right: 20px; font-size: 0.85rem;">
                     <div style="diplay:flex; flex-direction: column;">
                         <span id="progress-message">wait...</span>
                         <paper-progress id="globular-dir-loading-progress-bar" indeterminate style=""></paper-progress>
@@ -4280,7 +4280,7 @@ export class FileExplorer extends HTMLElement {
                 fileExplorerBox.querySelector("#file-explorer-layout").style.width = ""
                 fileExplorerBox.querySelector("#file-navigation-panel").style.width = "360px"
                 fileExplorerBox.querySelector("#file-navigation-panel").style.height = "100%"
-                this.shadowRoot.querySelector("#btn-group-0").style.display = ""
+                this.shadowRoot.querySelector("#btn-group-0").style.display = "flex"
                 fileExplorerLayout.setHorizontal()
             }
 
@@ -6083,7 +6083,7 @@ export class FilesUploader extends HTMLElement {
                 let fileRow = filesDiv.querySelector(`#${id}`)
                 if (fileRow == undefined) {
                     let html = `
-                        <div id="${id}" style="display: flex; flex-direction: column;"> 
+                        <div id="${id}" style="display: flex; flex-direction: column; font-size: 0.85rem;"> 
                             <div style="display: flex;">
                                 <span>${f.getPath().split("/")[f.getPath().split("/").length - 1]}</span>
                             </div>
@@ -6128,7 +6128,7 @@ export class FilesUploader extends HTMLElement {
             cellSource.style.textAlign = "left"
             cellSource.style.paddingLeft = "5px"
             cellSource.innerHTML = `
-                <div style="display: flex; flex-direction: column;width: 400px;">
+                <div style="display: flex; flex-direction: column;width: 400px; font-size: 0.85rem;">
                     <span style="background-color:var(--palette-background-default);">${f.name}</span>
                     <paper-progress value=0 style="width: 100%;"></paper-progress>
                 </div>`;

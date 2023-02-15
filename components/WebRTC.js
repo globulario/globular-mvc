@@ -683,8 +683,8 @@ export class VideoConversation extends HTMLElement {
                 audio: true,
                 video: true,
             })
-            .then((stream) => {
-                /* use the stream */
+            /*.then((stream) => {
+                
                 localVideo.srcObject = stream;
                 localVideo.onloadedmetadata = (e) => {
                     localVideo.play();
@@ -692,7 +692,19 @@ export class VideoConversation extends HTMLElement {
                     callback(stream)
                 };
 
-            })
+            })*/
+            .then(function(stream) {
+                if ("srcObject" in localVideo) {
+                    localVideo.srcObject = stream;
+                  } else {
+                    localVideo.src = window.URL.createObjectURL(stream);
+                  }
+                  localVideo.onloadedmetadata = (e) =>{
+                    localVideo.play();
+                    fireResize()
+                    callback(stream)
+                  };
+              })
             .catch( (err)=> {
                 /* handle the error */
                 errorCallback(err)
