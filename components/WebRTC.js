@@ -165,7 +165,7 @@ export class VideoConversation extends HTMLElement {
         let container = this.shadowRoot.querySelector("#container")
 
         this.shadowRoot.querySelector("#video-close-btn").onclick = () => {
-            this.eventHub.publish(`leave_conversation_${conversationUuid}_evt`, JSON.stringify({ "participants": [], "participant": Application.account.id }), false)
+            this.eventHub.publish(`leave_conversation_${conversationUuid}_evt`, JSON.stringify({ "conversationUuid":conversationUuid, "participants": [], "participant": Application.account.id }), false)
         }
 
         let optionsBtn = this.shadowRoot.querySelector("#video-options-btn")

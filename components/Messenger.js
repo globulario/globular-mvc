@@ -25,8 +25,10 @@ import { Invitation } from 'globular-web-client/conversation/conversation_pb';
 import { decode } from 'uint8-to-base64';
 import { v4 as uuidv4 } from "uuid";
 import { ApplicationView } from '../ApplicationView';
-import { getCoords } from "./utility.js"
+import { getCoords, mobileCheck } from "./utility.js"
 import { Application } from '../Application';
+import { setMoveable } from './moveable'
+import { setResizeable } from './rezieable'
 
 /**
  * Communication with your contact's
@@ -104,11 +106,22 @@ export class MessengerMenu extends Menu {
                 }
             }, true)
 
-
-
         let html = `
             <style>
-           
+            ::-webkit-scrollbar {
+                width: 5px;
+                height: 5px;
+
+             }
+                
+             ::-webkit-scrollbar-track {
+                background: var(--palette-background-default);
+             }
+             
+             ::-webkit-scrollbar-thumb {
+                background: var(--palette-divider); 
+             }
+
             #Messages-div {
                 display: flex;
                 flex-wrap: wrap;
@@ -165,7 +178,7 @@ export class MessengerMenu extends Menu {
                 flex-direction: column;
             }
 
-            .btn: hover{
+            .btn_: hover{
                 cursor: pointer;
             }
 
@@ -237,10 +250,10 @@ export class MessengerMenu extends Menu {
         let range = document.createRange()
         this.getMenuDiv().innerHTML = "" // remove existing elements.
         this.getMenuDiv().appendChild(range.createContextualFragment(html));
-        this.getMenuDiv().querySelector("#close-btn").onclick = ()=>{
+        this.getMenuDiv().querySelector("#close-btn").onclick = () => {
             this.getMenuDiv().parentNode.removeChild(this.getMenuDiv())
         }
-        
+
         this.shadowRoot.appendChild(this.getMenuDiv())
 
         this.conversationsTab = this.shadowRoot.querySelector("#conversations-tab")
@@ -307,6 +320,20 @@ export class MessengerMenu extends Menu {
                     (conversations) => {
                         let html = `
                         <style>
+                            ::-webkit-scrollbar {
+                                width: 5px;
+                                height: 5px;
+                
+                            }
+                                
+                            ::-webkit-scrollbar-track {
+                                background: var(--palette-background-default);
+                            }
+                            
+                            ::-webkit-scrollbar-thumb {
+                                background: var(--palette-divider); 
+                            }
+
                             #search-conversation-results{
                                 position: absolute;
                                 top: 0px;
@@ -442,7 +469,9 @@ export class MessengerMenu extends Menu {
             (uuid) => {
                 //
             },
-            (participant) => {
+            (evt) => {
+                let participant = evt.accountId
+                let conversationUuid = evt.conversationUuid
                 // check for kickout...
                 if (participant == this.account.id + "@" + this.account.domain) {
                     let conversationInfos = this.conversationsLst.querySelector("#conversation_" + conversationUuid + "_infos")
@@ -597,7 +626,7 @@ export class ConversationInfos extends HTMLElement {
             }
 
             .conversation-infos paper-button{
-                font-size:.85em; 
+                font-size:.85rem; 
                 width: 20px;
             }
 
@@ -646,11 +675,27 @@ export class ConversationInfos extends HTMLElement {
                 --paper-icon-button-ink-color: var(--paper-indigo-500);
             }
 
+            .header-actions{
+                display: flex; 
+                width: 32px; 
+                height: 32px; 
+                justify-content: center; 
+                align-items: center;
+                position: relative;
+            }
+
+            @media (max-width: 500px) {
+                .header-actions {
+                    --iron-icon-height: 32px;
+                    --iron-icon-width: 32px;
+                }
+            }
+
         </style>
         <div class="conversation-infos">
             <div class="header">
                 <span class="title"></span>
-                <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
+                <div class="header-actions" style="">
                     <iron-icon  id="hide-btn"  icon="unfold-less" style="flex-grow: 1; --iron-icon-fill-color:var(--palette-text-primary);" icon="add"></iron-icon>
                     <paper-ripple class="circle" recenters=""></paper-ripple>
                 </div>
@@ -773,7 +818,7 @@ export class ConversationInfos extends HTMLElement {
         }
         this.innerHtml = ""
         let range = document.createRange()
-        this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.85em; width: 20px;" id="invite_${this.conversation.getUuid()}_btn">Invite</paper-button>`))
+        this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.85rem; width: 20px;" id="invite_${this.conversation.getUuid()}_btn">Invite</paper-button>`))
 
         this.querySelector(`#invite_${this.conversation.getUuid()}_btn`).onclick = () => {
             Model.eventHub.publish("__invite_conversation_evt__", this.conversation, true)
@@ -787,7 +832,7 @@ export class ConversationInfos extends HTMLElement {
         }
         this.innerHtml = ""
         let range = document.createRange()
-        this.appendChild(range.createContextualFragment(`</div><paper-button style="display:none; font-size:.85em; width: 20px;" id="leave_${this.conversation.getUuid()}_btn">Leave</paper-button>`))
+        this.appendChild(range.createContextualFragment(`</div><paper-button style="display:none; font-size:.85rem; width: 20px;" id="leave_${this.conversation.getUuid()}_btn">Leave</paper-button>`))
         this.leaveBtn = this.querySelector(`#leave_${this.conversation.getUuid()}_btn`)
         this.leaveBtn.onclick = () => {
             ConversationManager.leaveConversation(this.conversation,
@@ -816,7 +861,7 @@ export class ConversationInfos extends HTMLElement {
 
         this.innerHtml = ""
         let range = document.createRange()
-        this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.85em; width: 20px;" id="join_${this.conversation.getUuid()}_btn">Join</paper-button>`))
+        this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.85rem; width: 20px;" id="join_${this.conversation.getUuid()}_btn">Join</paper-button>`))
 
         this.joinBtn = this.querySelector(`#join_${this.conversation.getUuid()}_btn`)
         this.joinBtn.onclick = () => {
@@ -860,7 +905,7 @@ export class ConversationInfos extends HTMLElement {
         }
         this.innerHtml = ""
         let range = document.createRange()
-        this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.85em; width: 20px;" id="delete_${this.conversation.getUuid()}_btn">Delete</paper-button>`))
+        this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.85rem; width: 20px;" id="delete_${this.conversation.getUuid()}_btn">Delete</paper-button>`))
 
         this.querySelector(`#delete_${this.conversation.getUuid()}_btn`).onclick = () => {
             Model.eventHub.publish("__delete_conversation_evt__", this.conversation, true)
@@ -897,6 +942,19 @@ export class Messenger extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
            
+            ::-webkit-scrollbar {
+                width: 5px;
+                height: 5px;
+
+             }
+                
+             ::-webkit-scrollbar-track {
+                background: var(--palette-background-default);
+             }
+             
+             ::-webkit-scrollbar-thumb {
+                background: var(--palette-divider); 
+             }
 
             #layout-div-1{
                 display: flex;
@@ -925,13 +983,10 @@ export class Messenger extends HTMLElement {
             }
 
             .summary{
-                display: flex;
-                flex-grow: 1;
                 font-size: 1.1rem;
-                align-items: center;
             }
 
-            .btn{
+            .btn_{
                 display: flex; 
                 width: 32px; 
                 height: 32px; 
@@ -940,11 +995,11 @@ export class Messenger extends HTMLElement {
                 center;position: relative;
             }
 
-            .btn iron-icon{
+            .btn_ iron-icon{
                 --iron-icon-fill-color:var(--palette-text-primary);
             }
 
-            .btn:hover{
+            .btn_:hover{
                 cursor:pointer;
             }
 
@@ -953,12 +1008,17 @@ export class Messenger extends HTMLElement {
                 display: flex;
             }
 
+            .messenger-content {
+                flex-grow: 1;
+                display: flex;
+                flex-direction: column;
+            }
+
             #messages-list-container{
                 background-color: var(--palette-background-default);
+                display: flex;
+                flex-grow: 1;
                 overflow-y: auto;
-                max-height: 75vh;
-                min-height: 58vh;
-                display: grid;
             }
 
             #messages-list-container globular-messages-list{
@@ -980,7 +1040,49 @@ export class Messenger extends HTMLElement {
                 color: var(--palette-text-primary);
                 --paper-tab-ink: var(--palette-action-disabled);
             }
+
+            #conversations-detail-content{
+                display: flex;
+                flex-direction: column;
+                width: 100%;
+            }
+
+            globular-paticipants-list{
+                width: 100%;
+            }
+
+            .current-conversation{
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                flex-grow: 1;
+            }
             
+            @media (max-width: 500px) {
+
+                .conversations-detail{
+                    flex-direction: column;
+                    
+                }
+
+                globular-conversations-list {
+                    border-right: none;
+                    border-bottom: 1px solid var(--palette-divider);
+                }
+
+                .messenger-content {
+                    width: 100vw;
+                    height: 100vh;
+                }
+
+                paper-card {
+                    min-width: 0px;
+                    height: calc(100vh - 60px);
+                }
+
+
+            }
+
         </style>
         
         <paper-card class="container">
@@ -989,19 +1091,17 @@ export class Messenger extends HTMLElement {
                     <iron-icon  id="hide-btn-0"  icon="expand-more" style="" icon="add"></iron-icon>
                     <paper-ripple class="circle" recenters=""></paper-ripple>
                 </div>
-                <div class="btn_">
-                    <paper-ripple class="circle" recenters=""></paper-ripple>
-                    <iron-icon style="height: 18px;" id="leave_conversation_btn" icon="exit-to-app"></iron-icon>
-                </div>     
-                <div class="summary"></div>
-                <div class="btn_">
-                    <iron-icon  id="hide-btn-1"  icon="unfold-less" icon="add"></iron-icon>
-                    <paper-ripple class="circle" recenters=""></paper-ripple>
+                <div class="current-conversation">
+                    <div class="summary"></div>
+                    <div class="btn_">
+                        <paper-ripple class="circle" recenters=""></paper-ripple>
+                        <iron-icon style="height: 18px;" id="leave_conversation_btn" icon="exit-to-app"></iron-icon>
+                    </div>     
                 </div>
             </div>
             <iron-collapse class="conversations-detail">
                 <globular-conversations-list ></globular-conversations-list>
-                <div style="display: flex; flex-direction: column; margin-left: 10px;">
+                <div id="conversations-detail-content">
                     <paper-tabs selected="0">
                         <paper-tab id="paticipants-tab">Participants</paper-tab>
                         <paper-tab id="attached-files-tab">Files</paper-tab>
@@ -1012,49 +1112,91 @@ export class Messenger extends HTMLElement {
                     </div>
                 </div>
             </iron-collapse>
-            <iron-collapse class="messenger-content" opened = "[[opened]]">
+            <div class="messenger-content">
 
                 <div id="messages-list-container">
-                    <globular-messages-list style="align-self: end;"></globular-messages-list>
+                    <globular-messages-list style="align-self: end; height: 100%;"></globular-messages-list>
                 </div>
 
                 <globular-message-editor></globular-message-editor>
-            </iron-collapse>
+            </div>
         </paper-card>
         `
+
+        let container = this.shadowRoot.querySelector(".container")
+        let messageList = this.shadowRoot.querySelector("#messages-list-container")
+        let conversationsDetail = this.shadowRoot.querySelector(".conversations-detail")
+
+
+        let offsetTop = this.shadowRoot.querySelector(".header").offsetHeight
+        if (offsetTop == 0) {
+            offsetTop = 60
+        }
+
+        container.name = "messenger"
+
+        setMoveable(this.shadowRoot.querySelector(".header"), container, (left, top) => {
+            /** */
+        }, this, offsetTop)
+
+
+
+        // Set resizable properties...
+        setResizeable(container, (width, height) => {
+            localStorage.setItem("__messenger_dimension__", JSON.stringify({ width: width, height: height }))
+            let w = ApplicationView.layout.width();
+            if (w < 500) {
+                container.style.height = "calc(100vh - 60px)"
+            }
+
+            // 80 is the heigth of the header plus the height of the search bar
+            messageList.style.height = container.offsetHeight - 80 - conversationsDetail.offsetHeight + "px"
+            this.setScroll()
+        })
+
+
+        if (localStorage.getItem("__messenger_dimension__")) {
+
+            let dimension = JSON.parse(localStorage.getItem("__messenger_dimension__"))
+            if (!dimension) {
+                dimension = { with: 600, height: 400 }
+            }
+            container.style.width = dimension.width + "px"
+            container.style.height = dimension.height + "px"
+            messageList.style.height = dimension.height - 80 - conversationsDetail.offsetHeight + "px"
+            this.setScroll()
+        }
+
         this.shadowRoot.querySelector("#hide-btn-0").onclick = () => {
             let button = this.shadowRoot.querySelector("#hide-btn-0")
             let content = this.shadowRoot.querySelector(".conversations-detail")
             if (button && content) {
+                var messagesListContainer = this.shadowRoot.querySelector("#messages-list-container");
                 if (!content.opened) {
                     button.icon = "expand-less"
-                    var element = this.shadowRoot.querySelector("#messages-list-container");
-                    element.style.maxHeight = "58vh"
-                    element.scrollTop = element.scrollHeight - element.clientHeight;
                 } else {
                     button.icon = "expand-more"
-                    this.shadowRoot.querySelector("#messages-list-container").style.maxHeight = "75vh"
                 }
+
                 content.toggle();
             }
         }
 
-        this.shadowRoot.querySelector("#hide-btn-1").onclick = () => {
-            let button = this.shadowRoot.querySelector("#hide-btn-1")
-            let content = this.shadowRoot.querySelector(".messenger-content")
-            if (button && content) {
-                if (!content.opened) {
-                    button.icon = "unfold-more"
-                } else {
-                    button.icon = "unfold-less"
-                }
-                content.toggle();
-                let messagesList = this.shadowRoot.querySelector("globular-messages-list")
-                if (messagesList.setScroll != undefined) {
-                    messagesList.setScroll();
-                }
-            }
-        }
+
+        // Create an observer instance linked to a resize callback
+        var observer = new MutationObserver((mutation) => {
+            messageList.style.height = messageList.offsetHeight - conversationsDetail.offsetHeight + "px"
+            this.setScroll()
+        });
+
+        // Options for the observer (which mutations to observe)
+        var config = {
+            attributes: true,
+            subtree: true
+        };
+
+        // Start observing the target node for configured mutations
+        observer.observe(conversationsDetail, config);
 
         // Here I will get interfaces components and initialyse each of them.
         this.conversationsList = this.shadowRoot.querySelector("globular-conversations-list");
@@ -1118,6 +1260,7 @@ export class Messenger extends HTMLElement {
                 // Open the conversation.
                 this.openConversation(conversation, evt.messages)
 
+
             }, true)
 
         Model.eventHub.subscribe(`__new_message_evt__`,
@@ -1127,14 +1270,22 @@ export class Messenger extends HTMLElement {
             }, true)
     }
 
+    connectedCallback() {
+        // set the message list height
+        let container = this.shadowRoot.querySelector(".container")
+        let messageList = this.shadowRoot.querySelector("#messages-list-container")
+        let conversationsDetail = this.shadowRoot.querySelector(".conversations-detail")
+        messageList.style.height = container.offsetHeight - 80 - conversationsDetail.offsetHeight + "px"
+    }
+
     hide() {
         this.shadowRoot.querySelector(".summary").innerHTML = "";
         this.shadowRoot.querySelector(".container").style.display = "none";
     }
 
     setScroll() {
-        let container = this.shadowRoot.querySelector("#messages-list-container");
-        container.scrollTop = container.scrollHeight;
+        let messageList = this.shadowRoot.querySelector("#messages-list-container");
+        messageList.scrollTop = messageList.scrollHeight;
     }
 
     setConversation(conversationUuid) {
@@ -1145,7 +1296,7 @@ export class Messenger extends HTMLElement {
         // Set the leave conversation button.
         this.shadowRoot.querySelector("#leave_conversation_btn").onclick = () => {
             this.shadowRoot.querySelector("#leave_conversation_btn").style.display = "none"
-            ConversationManager.leaveConversation(conversationUuid,
+            ConversationManager.leaveConversation(conversation,
                 () => {
                     Model.eventHub.publish("__leave_conversation_evt__", conversationUuid, true)
                 }, err => { })
@@ -1249,15 +1400,17 @@ export class Messenger extends HTMLElement {
             (uuid) => {
                 this.listeners[conversationUuid].push({ evt: `__leave_conversation_evt__`, listener: uuid })
             },
-            () => {
-                this.closeConversation(conversationUuid)
+            (conversationUuid_) => {
+                this.closeConversation(conversationUuid_)
             }, true)
 
         Model.eventHub.subscribe(`kickout_conversation_${conversationUuid}_evt`,
             (uuid) => {
                 this.listeners[conversationUuid].push({ evt: `kickout_conversation_${conversationUuid}_evt`, listener: uuid })
             },
-            (participant) => {
+            (evt) => {
+                let participant = evt.accountId
+                let conversationUuid = evt.conversationUuid
                 // check for kickout...
                 if (participant == this.account.id + "@" + this.account.domain) {
                     // That's mean the user get kickout from the conversation...
@@ -1274,10 +1427,10 @@ export class Messenger extends HTMLElement {
                 // Remove the participant.
                 evt = JSON.parse(evt)
 
-                this.conversations[conversationUuid].conversation.setParticipantsList(evt.participants)
+                this.conversations[evt.conversationUuid].conversation.setParticipantsList(evt.participants)
 
                 // Here I will unsubscribe to each event from it...
-                this.participantsList.setConversation(this.conversations[conversationUuid].conversation, this.conversations[conversationUuid].messages)
+                this.participantsList.setConversation(this.conversations[evt.conversationUuid].conversation, this.conversations[evt.conversationUuid].messages)
             },
             false);
 
@@ -1294,6 +1447,7 @@ export class Messenger extends HTMLElement {
         this.participantsList.setConversation(conversation, messages)
 
     }
+
 
     closeConversation(conversationUuid) {
 
@@ -1345,13 +1499,10 @@ export class ConversationsList extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
            
-
             .container{
-                min-height: 140px;
                 font-size: 14px;
                 font-weight: 400;
                 padding-top: 5px;
- 
             }
 
             .container .active{
@@ -1399,6 +1550,7 @@ export class ConversationsList extends HTMLElement {
                     transition: background 0.2s ease,padding 0.8s linear;
                     padding: 10px;
                     position: relative;
+                    user-select: none;
                 }
 
                 .conversation-list-row .active{
@@ -1459,14 +1611,15 @@ export class ParticipantsList extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
            
-
+        
             .container{
-                
+                    
             }
 
             #paticipants-lst{
                 display: flex;
                 flex-direction: column;
+                user-select: none;
             }
 
             .participant-table-row{
@@ -1481,12 +1634,6 @@ export class ParticipantsList extends HTMLElement {
                 filter: invert(10%);
             }
 
-            .participant-table-row div{
-                display: flex;
-                flex-direction: column;
-                padding: 5px;
-            }
-
             .participant-table-row img{
                 height: 48px;
                 width: 48px;
@@ -1497,7 +1644,7 @@ export class ParticipantsList extends HTMLElement {
                 width: 48px;
             }
 
-            .btn{
+            .btn_{
                 display: flex; 
                 width: 32px; 
                 height: 32px; 
@@ -1506,14 +1653,22 @@ export class ParticipantsList extends HTMLElement {
                 position: relative;
             }
           
-            .btn:hover{
+            .btn_:hover{
                 cursor: pointer;
             }
           
-            .btn iron-icon{
+            .btn_ iron-icon{
                 --iron-icon-fill-color:var(--palette-text-primary);
                 width: 24px; 
                 height: 24px;
+            }
+
+            .participant-infos {
+                align-items: center;
+                display: flex;
+                flex-grow: 1;
+                flex-direction: row;
+                padding-left: 20px;
             }
 
         </style>
@@ -1622,7 +1777,7 @@ export class ParticipantsList extends HTMLElement {
                         <img style="width: 48px; height: 48px; display: ${p.profilePicture_ == undefined ? "none" : "block"};" src="${p.profilePicture_}"></img>
                         <iron-icon icon="account-circle" style="width: 48px; height: 48px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${p.profilePicture_ != undefined ? "none" : "block"};"></iron-icon>
                     </div>
-                    <div style="flex-grow: 1;">
+                    <div class="participant-infos">
                         <span><span style="font-style: italic;">${p.name_}</span> ${p.firstName_} ${p.lastName_}</span>
                         <globular-session-state account=${p._id + "@" + p.domain}></globular-session-state>
                     </div>
@@ -1640,7 +1795,7 @@ export class ParticipantsList extends HTMLElement {
         }
 
         startVideoBtn.onclick = () => {
-           /** Todo use ion-sfu */
+            /** Todo use ion-sfu */
         }
 
 
@@ -1772,18 +1927,25 @@ export class MessagesList extends HTMLElement {
 
         this.shadowRoot.innerHTML = `
         <style>
-           
 
             .container{
                 padding-left: 40px;
                 padding-right: 8px;
+                padding-bottom: 100px;
+                display: flex;
+                flex-direction: column;
             }
 
             .conversation-messages {
-                max-width: 520px;
                 display: flex;
                 flex-direction: column-reverse;
             }
+
+            ::slotted(globular-message-panel){
+                width: calc(100% - 20px);
+                max-width: 600px;
+            }
+
         </style>
 
         <div class="container">
@@ -1874,6 +2036,10 @@ export class MessagesList extends HTMLElement {
                 this.container.style.paddingTop = "16px";
             }
 
+            if (msg.getAuthor() == this.account.id + "@" + this.account.domain) {
+                message.style.alignSelf = "flex-end";
+            }
+
             // Set display based if multiples messages are received from the same author before somebody else write something.
             let messageDiv = message.getMessageDiv()
             let accountDiv = message.getAccountDiv()
@@ -1928,24 +2094,40 @@ export class MessageEditor extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
            
+            ::-webkit-scrollbar {
+                width: 5px;
+                height: 5px;
+
+             }
+                
+             ::-webkit-scrollbar-track {
+                background: var(--palette-background-default);
+             }
+             
+             ::-webkit-scrollbar-thumb {
+                background: var(--palette-divider); 
+             }
 
             .container{
+                position: relative;
                 display:flex;
                 flex-direction: column;
                 padding: 2px;
                 border-top: 1px solid var(--palette-divider);
-                max-width: 580px;
             }
 
             .toolbar {
                 display: flex;
+                align-items: center;
+                background-color: var(--palette-background-paper);
             }
 
             #text-writer-box{
                 width: 100%;
+                background: var(--palette-background-default);
             }
 
-            .btn{
+            .btn_{
                 display: flex; 
                 width: 32px; 
                 height: 32px; 
@@ -1954,11 +2136,11 @@ export class MessageEditor extends HTMLElement {
                 position: relative;
             }
 
-            .btn:hover{
+            .btn_:hover{
                 cursor: pointer;
             }
 
-            .btn iron-icon{
+            .btn_ iron-icon{
                 flex-grow: 1; 
                 --iron-icon-fill-color:var(--palette-text-primary);
             }
@@ -1989,11 +2171,25 @@ export class MessageEditor extends HTMLElement {
             }
 
             .answer-to-text{
-                max-width: 500px;
+                /* max-width: 500px;*/
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
                 padding: 3px;
+            }
+
+            @media (max-width: 500px) {
+
+                .toolbar{
+                    position: fixed;
+                    left: 0px;
+                    width: 100%;
+                    bottom: 0px;
+                    font-size: 1.5rem;
+
+                    --iron-icon-height: 32px;
+                    --iron-icon-width: 32px;
+                }
             }
 
 
@@ -2012,7 +2208,7 @@ export class MessageEditor extends HTMLElement {
             </div>
             <div class="toolbar">
                 <iron-autogrow-textarea id="text-writer-box"></iron-autogrow-textarea>
-                <div class="btn_">
+                <div class="btn_" >
                     <iron-icon  id="send-btn" icon="send"></iron-icon>
                     <paper-ripple class="circle" recenters=""></paper-ripple>
                 </div>
@@ -2026,6 +2222,18 @@ export class MessageEditor extends HTMLElement {
 
         this.send = this.shadowRoot.querySelector("#send-btn")
         this.textWriterBox = this.shadowRoot.querySelector("#text-writer-box")
+
+        this.textWriterBox.onfocus = () => {
+            if (mobileCheck()) {
+                console.log("-----------------> keyboard is focus ", window.visualViewport.height)
+            }
+        }
+
+        this.textWriterBox.onblur = () => {
+            if (mobileCheck()) {
+                console.log("-----------------> keyboard is focus", window.visualViewport.height)
+            }
+        }
 
         Model.eventHub.subscribe("__answer_message_evt__",
             uuid => {
@@ -2303,7 +2511,7 @@ export class InvitationCard extends HTMLElement {
         this.innerHtml = ""
         let range = document.createRange()
         let uuid = uuidv4()
-        this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.85em; width: 20px; align-self: flex-end;" id="accept_${uuid}_btn">Accept</paper-button>`))
+        this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.85rem; width: 20px; align-self: flex-end;" id="accept_${uuid}_btn">Accept</paper-button>`))
         this.querySelector(`#accept_${uuid}_btn`).onclick = () => {
             if (onAccpect != null) {
                 onAccpect(this.invitation)
@@ -2316,7 +2524,7 @@ export class InvitationCard extends HTMLElement {
         this.innerHtml = ""
         let range = document.createRange()
         let uuid = uuidv4()
-        this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.85em; width: 20px; align-self: flex-end;" id="decline_${uuid}_btn">Decline</paper-button>`))
+        this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.85rem; width: 20px; align-self: flex-end;" id="decline_${uuid}_btn">Decline</paper-button>`))
 
         this.querySelector(`#decline_${uuid}_btn`).onclick = () => {
             if (onDecline != null) {
@@ -2330,7 +2538,7 @@ export class InvitationCard extends HTMLElement {
         this.innerHtml = ""
         let range = document.createRange()
         let uuid = uuidv4()
-        this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.85em; width: 20px; align-self: flex-end;" id="revoke_${uuid}_btn">Revoke</paper-button>`))
+        this.appendChild(range.createContextualFragment(`<paper-button style="font-size:.85rem; width: 20px; align-self: flex-end;" id="revoke_${uuid}_btn">Revoke</paper-button>`))
 
         this.querySelector(`#revoke_${uuid}_btn`).onclick = () => {
             if (onRevoke != null) {
@@ -2410,25 +2618,25 @@ export class LikeDisLikeBtn extends HTMLElement {
         </paper-card>
         `
         this.badge = this.shadowRoot.querySelector(`#${id}_count`)
-        this.btn = this.shadowRoot.querySelector(`#${id}_btn`)
+        this.btn_ = this.shadowRoot.querySelector(`#${id}_btn`)
         this.card = this.shadowRoot.querySelector(`#${id}_card`)
 
-        this.btn.onmouseover = () => {
+        this.btn_.onmouseover = () => {
             if (this.card.children.length == 0) {
                 return
             }
             this.card.style.display = "flex"
             document.body.appendChild(this.card)
-            let coord = getCoords(this.btn)
+            let coord = getCoords(this.btn_)
             this.card.style.maxWidth = "150px"
             this.card.style.fontSize = ".85rem"
             this.card.style.padding = "3px"
-            this.card.style.top = coord.top + this.btn.offsetHeight + 5 + "px"
+            this.card.style.top = coord.top + this.btn_.offsetHeight + 5 + "px"
             this.card.style.left = coord.left + 5 + "px"
 
         }
 
-        this.btn.onmouseout = () => {
+        this.btn_.onmouseout = () => {
             this.card.style.display = "none"
             this.shadowRoot.appendChild(this.card)
         }
@@ -2487,7 +2695,7 @@ export class GlobularMessagePanel extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
            
-            .btn{
+            .btn_{
                 display: flex; 
                 width: 32px; 
                 height: 32px; 
@@ -2496,11 +2704,11 @@ export class GlobularMessagePanel extends HTMLElement {
                 position: relative;
             }
           
-            .btn:hover{
+            .btn_:hover{
                 cursor: pointer;
             }
           
-            .btn iron-icon{
+            .btn_ iron-icon{
                 flex-grow: 1; 
                 --iron-icon-fill-color:var(--palette-text-primary);
                 width: 18px; 
@@ -2514,11 +2722,13 @@ export class GlobularMessagePanel extends HTMLElement {
                 background-color: var(--palette-background-paper);
                 border: 2px solid var(--palette-divider);
                 border-radius: 10px;
+                user-select: none;
             }
 
             .conversation-message .body{
                 padding: 10px;
                 font-size: 1rem;
+                user-select: none;
             }
 
             .conversation-participant-info{
@@ -2544,11 +2754,13 @@ export class GlobularMessagePanel extends HTMLElement {
                 display: flex;
                 font-size: .85rem;
                 padding: 3px;
+                user-select: none;
             }
 
             .conversation-message-actions{
                 display: flex;
                 flex-grow: 1;
+                user-select: none;
             }
 
         </style>
@@ -2633,7 +2845,7 @@ export class GlobularMessagePanel extends HTMLElement {
 
         if (this.shadowRoot.querySelector(`#msg_uuid_${msg.getUuid().split("/").join("_")}`) == undefined) {
             let html = `
-                <div id="msg_uuid_${msg.getUuid().split("/").join("_")}" style="display: flex; flex-direction: column; margin-top: 5px;">
+            <div class="message-box" id="msg_uuid_${msg.getUuid().split("/").join("_")}" style="display: flex; flex-direction: column; margin-top: 5px;">
                 <div class="conversation-message">
                     <div id="msg_participant_${msg.getUuid().split("/").join("_")}" style="display: none;" class="conversation-participant-info">
                         <img class="conversation-participant-img" style="display: none;"></img>

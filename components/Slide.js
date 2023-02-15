@@ -50,7 +50,6 @@ export class SlidePanel extends HTMLElement {
              }
 
             #content{
-                min-width: 300px;
                 width: 100%; 
                 height: 100%; 
                 direction:ltr;

@@ -171,7 +171,7 @@ export class AccountMenu extends Menu {
                 }
 
                 #account_menu_div{
-                 
+                  min-width: 300px;
                 }
 
                 @media (max-width: 700px) {

@@ -174,7 +174,7 @@ export class ConversationManager {
         address: Model.address
       }).then((rsp: DeleteConversationResponse) => {
         succesCallback()
-        Model.publish(`kickout_conversation_${conversationUuid}_evt`, account, false)
+        Model.publish(`kickout_conversation_${conversationUuid}_evt`, { accountId: account, conversationUuid:conversationUuid }, false)
       }).catch(errorCallback)
     }, errorCallback)
   }
@@ -287,7 +287,7 @@ export class ConversationManager {
             succesCallback(conversation, messages)
             let participants = conversation.getParticipantsList()
             // network event.
-            Model.publish(`leave_conversation_${conversationUuid}_evt`, JSON.stringify({ "participants": participants, "participant": Application.account.id + "@" + Application.account.domain }), false)
+            Model.publish(`leave_conversation_${conversationUuid}_evt`, JSON.stringify({ "conversationUuid":conversation.getUuid(), "participants": participants, "participant": Application.account.id + "@" + Application.account.domain }), false)
             return
           }
           // An error happen
@@ -321,7 +321,7 @@ export class ConversationManager {
         let participants = rsp.getConversation().getParticipantsList()
 
         // network event.
-        Model.publish(`leave_conversation_${conversationUuid}_evt`, JSON.stringify({ "participants": participants, "participant": Application.account.id + "@" + Application.account.domain }), false)
+        Model.publish(`leave_conversation_${conversationUuid}_evt`, JSON.stringify({ "conversationUuid":conversation.getUuid(), "participants": participants, "participant": Application.account.id + "@" + Application.account.domain }), false)
 
       }).catch(errorCallback)
     }, errorCallback)

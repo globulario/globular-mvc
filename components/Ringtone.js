@@ -50,7 +50,6 @@ export class Ringtones extends HTMLElement {
                 --iron-icon-fill-color: var(--palette-text-primary);
                 align-items: center;
                 font-size: .85rem;
-                min-width: 300px;
             }
 
         </style>
