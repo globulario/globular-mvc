@@ -980,10 +980,15 @@ export class Messenger extends HTMLElement {
 
             .header{
                 display: flex;
+                justify-content: center;
+                align-items: center;
             }
 
             .summary{
                 font-size: 1.1rem;
+                flex-grow: 1;
+                text-align: center;
+
             }
 
             .btn_{
@@ -1051,13 +1056,6 @@ export class Messenger extends HTMLElement {
                 width: 100%;
             }
 
-            .current-conversation{
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                flex-grow: 1;
-            }
-            
             @media (max-width: 500px) {
 
                 .conversations-detail{
@@ -1091,13 +1089,13 @@ export class Messenger extends HTMLElement {
                     <iron-icon  id="hide-btn-0"  icon="expand-more" style="" icon="add"></iron-icon>
                     <paper-ripple class="circle" recenters=""></paper-ripple>
                 </div>
-                <div class="current-conversation">
+                
                     <div class="summary"></div>
                     <div class="btn_">
                         <paper-ripple class="circle" recenters=""></paper-ripple>
                         <iron-icon style="height: 18px;" id="leave_conversation_btn" icon="exit-to-app"></iron-icon>
                     </div>     
-                </div>
+                
             </div>
             <iron-collapse class="conversations-detail">
                 <globular-conversations-list ></globular-conversations-list>
@@ -1126,16 +1124,18 @@ export class Messenger extends HTMLElement {
         let container = this.shadowRoot.querySelector(".container")
         let messageList = this.shadowRoot.querySelector("#messages-list-container")
         let conversationsDetail = this.shadowRoot.querySelector(".conversations-detail")
+        let messageEditor = this.shadowRoot.querySelector("globular-message-editor")
+        let header = this.shadowRoot.querySelector(".header")
 
 
-        let offsetTop = this.shadowRoot.querySelector(".header").offsetHeight
+        let offsetTop = header.offsetHeight
         if (offsetTop == 0) {
             offsetTop = 60
         }
 
         container.name = "messenger"
 
-        setMoveable(this.shadowRoot.querySelector(".header"), container, (left, top) => {
+        setMoveable(header, container, (left, top) => {
             /** */
         }, this, offsetTop)
 
@@ -1150,7 +1150,7 @@ export class Messenger extends HTMLElement {
             }
 
             // 80 is the heigth of the header plus the height of the search bar
-            messageList.style.height = container.offsetHeight - 80 - conversationsDetail.offsetHeight + "px"
+            messageList.style.height = container.offsetHeight - (header.offsetHeight + messageEditor.offsetHeight) - conversationsDetail.offsetHeight + "px"
             this.setScroll()
         })
 
@@ -1163,7 +1163,7 @@ export class Messenger extends HTMLElement {
             }
             container.style.width = dimension.width + "px"
             container.style.height = dimension.height + "px"
-            messageList.style.height = dimension.height - 80 - conversationsDetail.offsetHeight + "px"
+            messageList.style.height = dimension.height - (header.offsetHeight + messageEditor.offsetHeight) - conversationsDetail.offsetHeight + "px"
             this.setScroll()
         }
 
@@ -1183,11 +1183,6 @@ export class Messenger extends HTMLElement {
         }
 
 
-        // Create an observer instance linked to a resize callback
-        var observer = new MutationObserver((mutation) => {
-            messageList.style.height = messageList.offsetHeight - conversationsDetail.offsetHeight + "px"
-            this.setScroll()
-        });
 
         // Options for the observer (which mutations to observe)
         var config = {
@@ -1195,8 +1190,24 @@ export class Messenger extends HTMLElement {
             subtree: true
         };
 
+
+        // Create an observer instance linked to a resize callback
+        var conversationDetailsObserver = new MutationObserver((mutation) => {
+            messageList.style.height = messageList.offsetHeight - (header.offsetHeight + messageEditor.offsetHeight) - conversationsDetail.offsetHeight + "px"
+            this.setScroll()
+        });
+
         // Start observing the target node for configured mutations
-        observer.observe(conversationsDetail, config);
+        conversationDetailsObserver.observe(conversationsDetail, config);
+
+        // Create an observer instance linked to a resize callback
+        var messageEditorObserver = new MutationObserver((mutation) => {
+            messageList.style.height = messageList.offsetHeight - (header.offsetHeight + messageEditor.offsetHeight) - conversationsDetail.offsetHeight + "px"
+            this.setScroll()
+        });
+
+        // Start observing the target node for configured mutations
+        messageEditorObserver.observe(messageEditor, config);
 
         // Here I will get interfaces components and initialyse each of them.
         this.conversationsList = this.shadowRoot.querySelector("globular-conversations-list");
@@ -1275,7 +1286,9 @@ export class Messenger extends HTMLElement {
         let container = this.shadowRoot.querySelector(".container")
         let messageList = this.shadowRoot.querySelector("#messages-list-container")
         let conversationsDetail = this.shadowRoot.querySelector(".conversations-detail")
-        messageList.style.height = container.offsetHeight - 80 - conversationsDetail.offsetHeight + "px"
+        let messageEditor = this.shadowRoot.querySelector("globular-message-editor")
+        let header = this.shadowRoot.querySelector(".header")
+        messageList.style.height = container.offsetHeight - (header.offsetHeight + messageEditor.offsetHeight) - conversationsDetail.offsetHeight + "px"
     }
 
     hide() {
@@ -1623,6 +1636,7 @@ export class ParticipantsList extends HTMLElement {
             }
 
             .participant-table-row{
+                font-size: 1rem;
                 display: flex;
                 align-items: center;
                 transition: background 0.2s ease,padding 0.8s linear;
@@ -2114,12 +2128,13 @@ export class MessageEditor extends HTMLElement {
                 flex-direction: column;
                 padding: 2px;
                 border-top: 1px solid var(--palette-divider);
+                background-color: var(--palette-background-paper);
             }
 
             .toolbar {
                 display: flex;
                 align-items: center;
-                background-color: var(--palette-background-paper);
+               
             }
 
             #text-writer-box{
@@ -2179,12 +2194,16 @@ export class MessageEditor extends HTMLElement {
             }
 
             @media (max-width: 500px) {
+                .container{
 
-                .toolbar{
                     position: fixed;
                     left: 0px;
                     width: 100%;
                     bottom: 0px;
+                }
+
+                .toolbar{
+
                     font-size: 1.5rem;
 
                     --iron-icon-height: 32px;
@@ -2576,7 +2595,6 @@ export class LikeDisLikeBtn extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
            
-
             .like-dislike-btn{
                 --iron-icon-fill-color:var(--palette-text-primary);
                 width: 18px; 
@@ -2607,6 +2625,12 @@ export class LikeDisLikeBtn extends HTMLElement {
                 font-size: .85rem;
             }
 
+            paper-card{
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
+                padding: 10px;
+            }
+
         </style>
 
         <div class="btn_" id="${id}_btn">
@@ -2614,7 +2638,7 @@ export class LikeDisLikeBtn extends HTMLElement {
             <paper-ripple class="circle" recenters=""></paper-ripple>
             <paper-badge  id="${id}_count" style="display: none;" for="${id}_btn"></paper-badge>
         </div>
-        <paper-card  id="${id}_card" style="display: none;">
+        <paper-card  id="${id}_card" style="background-color: var(--palette-background-paper); display: none;">
         </paper-card>
         `
         this.badge = this.shadowRoot.querySelector(`#${id}_count`)
@@ -2643,7 +2667,7 @@ export class LikeDisLikeBtn extends HTMLElement {
     }
 
     setAccounts(accounts) {
-
+       
         this.card.innerHTML = ""
         this.card.style.display = "none"
 
@@ -2656,7 +2680,21 @@ export class LikeDisLikeBtn extends HTMLElement {
                 Account.getAccount(a, account => {
                     let div = document.createElement("div");
                     div.className = "liker-unliker-lst"
-                    div.innerHTML = `<span style="padding-right: 2px;">${account.firstName}</span><span>${account.lastName}</span>`
+                    let userId = account.id
+                    if(account.firstName && account.lastName){
+                        userId = account.firstName + " " + account.lastName
+                    }
+                    if(account.profilePicture.length == 0){
+                        div.innerHTML = `<span>${userId}</span>`
+                    }else{
+                        div.innerHTML = `
+                        <div style="display: flex; align-items: center; border-bottom: 1px solid var(--palette-divider); width: 100%;">
+                            <img style="width: 32px;height: 32px;border-radius: 16px;border: 1px solid transparent;" src="${account.profilePicture}"></img>
+                            <span style="margin-left: 8px;">${userId}</span>
+                        </div>
+                        `
+                    }
+
                     this.card.appendChild(div)
                 }, err => {
                     ApplicationView.displayMessage(err, 3000)
