@@ -1832,7 +1832,7 @@ export class ParticipantsList extends HTMLElement {
                     <iron-icon icon="account-circle" style="width: 48px; height: 48px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${p.profilePicture_ != undefined ? "none" : "block"};"></iron-icon>
                 </div>
                 <div style="flex-grow: 1;">
-                    <span><span style="font-style: italic;">${p.name_}</span> ${p.firstName_} ${p.lastName_}</span>
+                    <span style="padding-left: 20px;"><span style="font-style: italic;">${p.name_}</span> ${p.firstName_} ${p.lastName_}</span>
                     <span>Not available</span>
                 </div>
             </div>
@@ -2601,13 +2601,6 @@ export class LikeDisLikeBtn extends HTMLElement {
                 height: 18px;
             }
 
-            paper-badge {
-                --paper-badge-background: var(--palette-primary-accent);
-                --paper-badge-width: 16px;
-                --paper-badge-height: 16px;
-                --paper-badge-margin-left: 10px;
-            }
-
             paper-card{
                 background-color: var(--palette-background-paper);
                 color: var(--palette-text-primary);
@@ -2631,6 +2624,13 @@ export class LikeDisLikeBtn extends HTMLElement {
                 padding: 10px;
             }
 
+            paper-badge {
+                --paper-badge-background: var(--palette-warning-main);
+                --paper-badge-width: 20px;
+                --paper-badge-height: 20px;
+                --paper-badge-margin-left: 10px;
+            }
+
         </style>
 
         <div class="btn_" id="${id}_btn">
@@ -2645,7 +2645,8 @@ export class LikeDisLikeBtn extends HTMLElement {
         this.btn_ = this.shadowRoot.querySelector(`#${id}_btn`)
         this.card = this.shadowRoot.querySelector(`#${id}_card`)
 
-        this.btn_.onmouseover = () => {
+        this.btn_.ontouchmove = this.btn_.onmouseover = (evt) => {
+            evt.stopPropagation()
             if (this.card.children.length == 0) {
                 return
             }
@@ -2660,7 +2661,8 @@ export class LikeDisLikeBtn extends HTMLElement {
 
         }
 
-        this.btn_.onmouseout = () => {
+        this.btn_.ontouchend = this.btn_.onmouseout = (evt) => {
+            evt.stopPropagation()
             this.card.style.display = "none"
             this.shadowRoot.appendChild(this.card)
         }
