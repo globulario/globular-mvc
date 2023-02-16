@@ -4138,10 +4138,26 @@ export class FileExplorer extends HTMLElement {
                 border-bottom: 1px solid var(--palette-divider); 
             }
 
+            #progress-div{
+                position: absolute; 
+                bottom: 0px; 
+                left: 10px;
+                right: 0px;
+                display: none; 
+                font-size: 0.85rem;
+                background-color: var(--palette-background-default);
+            }
+
             @media (max-width: 500px) {
-                #file-explorer-box{
-                    min-width: 100vh;
-                    width: 10vh;
+               
+                .footer{
+                    width: calc(100vw - 35px);
+                    bottom: 0px;
+                    position: fixed;
+                }
+
+                #file-explorer-content {
+                    margin-bottom: 40px;
                 }
             }
 
@@ -4170,23 +4186,24 @@ export class FileExplorer extends HTMLElement {
                     <globular-path-navigator id="globular-path-navigator" style="flex-grow: 1;"></globular-path-navigator>
                 </div>
                 <globular-split-view id="file-explorer-layout">
-                    <globular-split-pane id="file-navigation-panel" style="width: 360px">
+                    <globular-split-pane id="file-navigation-panel" style="width: 360px;">
                         <globular-file-navigator id="globular-file-navigator"></globular-file-navigator>
+
                     </globular-split-pane>
-                    <globular-split-pane id="file-selection-panel">
+                    <globular-split-pane id="file-selection-panel" style="position: relative;">
                         <slot></slot>
+                        <div id="progress-div">
+                            <div style="diplay:flex; flex-direction: column; width: 100%;">
+                                <span id="progress-message">wait...</span>
+                                <paper-progress id="globular-dir-loading-progress-bar" indeterminate style="width: 100%;"></paper-progress>
+                            </div>
+                        </div>
                     </globular-split-pane>
                 </globular-split-view>
             </div>
-            <div class="card-actions" style="background-color: var(--palette-background-paper);">
+            <div class="card-actions footer" style="background-color: var(--palette-background-paper);">
                 <paper-icon-button icon="icons:fullscreen-exit" id="exit-full-screen-btn" style="display: none;"></paper-icon-button>
                 <globular-disk-space-manager account="${Application.account.id + "@" + Application.account.domain}"></globular-disk-space-manager>
-                <div id="progress-div" style="display: none; flex-grow: 1; margin-left: 10px; margin-right: 20px; font-size: 0.85rem;">
-                    <div style="diplay:flex; flex-direction: column;">
-                        <span id="progress-message">wait...</span>
-                        <paper-progress id="globular-dir-loading-progress-bar" indeterminate style=""></paper-progress>
-                    </div>
-                </div>
                 <span style="flex-grow: 1;"></span>
                 <paper-icon-button id="files-icon-btn" class="active" icon="icons:view-module" style="--iron-icon-fill-color: var(--palette-action-active);"></paper-icon-button>
                 <paper-icon-button id="files-list-btn" icon="icons:view-list" style="--iron-icon-fill-color: var(--palette-action-disabled);"></paper-icon-button>
