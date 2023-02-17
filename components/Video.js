@@ -60,8 +60,6 @@ export function playVideo(path, onplay, onclose, title, globule) {
     videoPlayer.resume = false;
     videoPlayer.style.zIndex = 100
 
-    ApplicationView.layout.workspace().appendChild(videoPlayer)
-
     if (onplay && !videoPlayer.onplay) {
         videoPlayer.onplay = onplay
     }
@@ -82,12 +80,17 @@ export function playVideo(path, onplay, onclose, title, globule) {
     // play a given title.
     if (path.endsWith("video.m3u") || path.startsWith("#EXTM3U")) {
         videoPlayer.loadPlaylist(path, globule)
-        videoPlayer.showPlaylist()
+     
     } else {
-        videoPlayer.hidePlaylist()
         videoPlayer.play(path, globule)
     }
 
+
+    if (!videoPlayer.isMinimized) {
+        ApplicationView.layout.workspace().appendChild(videoPlayer)
+    } else {
+        videoPlayer.minimize()
+    }
 
     return videoPlayer
 }
@@ -214,14 +217,15 @@ export class VideoPlayer extends HTMLElement {
 
             paper-card {
                 position: fixed;
+                height: auto;
                 background: black; 
                 border-top: 1px solid var(--palette-divider);
                 border-left: 1px solid var(--palette-divider);
             }
 
         </style>
-        <paper-card>
-            <div id="container" style="height: auto;">
+        <paper-card id="container" style="height: auto;">
+            
                 <div class="header" style="${hideheader ? "display:none;" : ""}">
                     <paper-icon-button id="video-close-btn" icon="icons:close" style="min-width: 40px; --iron-icon-fill-color: var(--palette-text-accent);"></paper-icon-button>
                     <span id="title-span"></span>
@@ -233,11 +237,19 @@ export class VideoPlayer extends HTMLElement {
                     <globular-playlist style="display: none; overflow:hidden; height: 600px;"></globular-playlist>
                     <slot></slot>
                 </div>
-            </div>
+           
         </paper-card>
         `
 
-        let container = this.shadowRoot.querySelector("#container")
+        this.container = this.shadowRoot.querySelector("#container")
+        this.container.onclick = (evt) => {
+            evt.stopPropagation()
+            // not interfere with plyr click event... do not remove this line.
+        }
+
+        this.content = this.shadowRoot.querySelector("#content")
+        this.header = this.shadowRoot.querySelector(".header")
+
         this.shadowRoot.querySelector("#title-info-button").onclick = (evt) => {
             evt.stopPropagation()
             if (this.titleInfo) {
@@ -261,23 +273,23 @@ export class VideoPlayer extends HTMLElement {
 
         this.onclose = null
         this.onplay = null
-        let offsetTop = this.shadowRoot.querySelector(".header").offsetHeight
+        let offsetTop = this.header.offsetHeight
         if (offsetTop == 0) {
             offsetTop = 60
         }
         this.path = ""
         this.appendChild(this.video)
 
-        container.name = "video_player"
-        setResizeable(container, (width, height) => {
+        this.container.name = "video_player"
+        setResizeable(this.container, (width, height) => {
             localStorage.setItem("__video_player_dimension__", JSON.stringify({ width: width, height: height }))
-            container.style.height = "auto"
+            this.container.style.height = "auto"
             fireResize()
         })
 
 
-        container.resizeHeightDiv.style.display = "none"
-        container.style.height = "auto"
+        this.container.resizeHeightDiv.style.display = "none"
+        this.container.style.height = "auto"
 
         // set the initial size of the video player to fit the played video...
         this.video.onplaying = (evt) => {
@@ -292,7 +304,7 @@ export class VideoPlayer extends HTMLElement {
 
             let w = ApplicationView.layout.width();
             if (w < 500) {
-                container.style.width = "100vw"
+                this.container.style.width = "100vw"
             } else {
                 if (this.video.videoHeight > 0 && this.video.videoWidth > 0) {
 
@@ -316,12 +328,12 @@ export class VideoPlayer extends HTMLElement {
                         }
                     }
 
-                    container.maxWidth = maxWidth
+                    this.container.maxWidth = maxWidth
 
                     // event resize the video only if the video is new...
                     this.playlist.style.height = height + "px"
-                    container.style.height = height + "px"
-                    container.style.width = maxWidth + "px"
+                    this.container.style.height = height + "px"
+                    this.container.style.width = maxWidth + "px"
 
 
                     localStorage.setItem("__video_player_dimension__", JSON.stringify({ width: maxWidth, height: height }))
@@ -331,7 +343,7 @@ export class VideoPlayer extends HTMLElement {
         }
 
         // toggle full screen when the user double click on the header.
-        this.shadowRoot.querySelector(".header").ondblclick = () => {
+        this.header.ondblclick = () => {
             var type = this.player.media.tagName.toLowerCase(),
                 toggle = document.querySelector("[data-plyr='fullscreen']");
 
@@ -341,11 +353,11 @@ export class VideoPlayer extends HTMLElement {
             toggle.click()
         }
 
-        setMoveable(this.shadowRoot.querySelector("#title-span"), this.shadowRoot.querySelector("paper-card"), (left, top) => {
+        setMoveable(this.shadowRoot.querySelector("#title-span"), this.container, (left, top) => {
             /** */
         }, this, offsetTop)
 
-        setMinimizeable(this.shadowRoot.querySelector(".header"), this, "video_player", "Video", "icons:theaters")
+        setMinimizeable(this.header, this, "video_player", "Video", "icons:theaters")
 
         // Plyr give a nice visual to the video player.
         // TODO set the preview and maybe quality bitrate if possible...
@@ -372,61 +384,6 @@ export class VideoPlayer extends HTMLElement {
                 attributes: true,
                 subtree: true
             };
-
-
-
-
-            /*getThumbnailFiles(this.globule, this.path, thumbnail_files => {
-                for (var i = 0; i <         // Options for the observer (which mutations to observe)
-        var config = {
-            attributes: true,
-            subtree: true
-        };
-
-
-thumbnail_files.files.length; i++) {
-                    let f = thumbnail_files.files[i]
-                    if (f.mime.startsWith("image/")) {
-                        let globule = this.globule
-                        let url = globule.config.Protocol + "://" + globule.domain
-
-                        if (window.location != globule.domain) {
-                            if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
-                                url = globule.config.Protocol + "://" + window.location.host
-                            }
-                        }
-
-                        if (globule.config.Protocol == "https") {
-                            if (globule.config.PortHttps != 443)
-                                url += ":" + globule.config.PortHttps
-                        } else {
-                            if (globule.config.PortHttps != 80)
-                                url += ":" + globule.config.PortHttp
-                        }
-
-                        let url_ = f.path
-
-                        url_ = f.pat        // Options for the observer (which mutations to observe)
-        var config = {
-            attributes: true,
-            subtree: true
-        };
-
-
-h
-                        if (url_.startsWith("/")) {
-                            url_ = url + url_
-                        } else {
-                            url_ = url + "/" + url_
-                        }
-
-                        this.player.setPreviewThumbnails( { 
-                            enabled: true, 
-                            src: url_
-                        })
-                    }
-                }
-            })*/
 
             getSubtitlesFiles(this.globule, this.path, subtitles_files => {
 
@@ -554,6 +511,14 @@ h
             return
         }
 
+        // hide plyr function not us
+        let items = this.querySelectorAll(".plyr__controls__item") 
+        for(var i=0; i < items.length; i++){
+            if(items[i].getAttribute("data-plyr")=="pip"){
+                items[i].style.display = "none"
+            }
+        }
+
         let controls = this.querySelector(".plyr__controls")
         controls.style.flexWrap = "wrap"
         controls.style.justifyContent = "flex-start"
@@ -601,6 +566,12 @@ h
         this.loopBtn = this.querySelector("#repeat")
         this.shuffleBtn = this.querySelector("#shuffle")
         this.trackInfo = this.querySelector("#track-info")
+
+        
+        if(this.playlist.count() <= 1){
+            this.hidePlaylist()
+        }
+
 
         let playPauseBtn = controls.children[0]
         playPauseBtn.addEventListener("click", evt => {
@@ -710,23 +681,26 @@ h
 
     loadPlaylist(path, globule) {
         this.playlist.clear()
-        this.playlist.load(path, globule, this)
+        this.playlist.load(path, globule, this, ()=>{
+            // show playlist after loading it... (hide it if number of item is less than one)
+            this.showPlaylist()
+        })
 
         // set the css value to display the playlist correctly...
         window.addEventListener("resize", (evt) => {
-            let content = this.shadowRoot.querySelector("#content")
+
             let w = ApplicationView.layout.width();
             if (w < 500) {
-                content.style.height = "calc(100vh - 100px)"
-                content.style.overflowY = "auto"
+                this.content.style.height = "calc(100vh - 100px)"
+                this.content.style.overflowY = "auto"
 
             } else {
-                content.style.height = ""
-                content.style.overflowY = ""
-                if (this.video.videoHeight < content.offsetHeight) {
+                this.content.style.height = ""
+                this.content.style.overflowY = ""
+                if (this.video.videoHeight < this.content.offsetHeight) {
                     this.playlist.style.height = this.video.videoHeight + "px"
                 } else {
-                    this.playlist.style.height = content.offsetHeight + "px"
+                    this.playlist.style.height = this.content.offsetHeight + "px"
                 }
 
 
@@ -738,19 +712,26 @@ h
     }
 
     showPlaylist() {
-        this.playlist.style.display = "block"
-        let playlistButtons = this.querySelectorAll("iron-icon")
-        for (var i = 0; i < playlistButtons.length; i++) {
-            playlistButtons[i].style.display = "block"
+        if (this.playlist.count() > 1) {
+            this.playlist.style.display = "block"
+            let playlistButtons = this.querySelectorAll("iron-icon")
+            for (var i = 0; i < playlistButtons.length; i++) {
+                playlistButtons[i].style.display = "block"
+            }
+        } else {
+            this.hidePlaylist()
         }
     }
 
     hidePlaylist() {
+
         this.playlist.style.display = "none"
-        let playlistButtons = this.querySelectorAll("iron-icon")
-        for (var i = 0; i < playlistButtons.length; i++) {
-            playlistButtons[i].style.display = "none"
-        }
+        this.shuffleBtn.style.display = "none"
+        this.skipNextBtn.style.display = "none"
+        this.skipPresiousBtn.style.display = "none"
+        this.stopBtn.style.display = "none"
+        this.loopBtn.style.display = "none"
+        this.trackInfo.style.display = "none"
     }
 
     setTarckInfo(index, total) {
@@ -1164,11 +1145,11 @@ h
     }
 
     hide() {
-        let container = this.shadowRoot.querySelector("paper-card")
-        container.maxWidth = 0
-        container.style.display = "none"
-        container.style.width = "0px"
-        container.style.height = "0px"
+
+        this.container.maxWidth = 0
+        this.container.style.display = "none"
+        this.container.style.width = "0px"
+        this.container.style.height = "0px"
         this.hideHeader()
 
         this.video.style.display = "none";
@@ -1176,18 +1157,20 @@ h
 
     show() {
         this.showHeader()
-        let container = this.shadowRoot.querySelector("paper-card")
-        container.style.display = ""
+        this.container.style.display = ""
         this.video.style.display = "";
     }
 
     hideHeader() {
-        this.shadowRoot.querySelector(".header").style.display = "none";
+        this.header.style.display = "none";
     }
 
     showHeader() {
-        this.shadowRoot.querySelector(".header").style.display = "";
+        if (!this.isMinimized) {
+            this.header.style.display = "";
+        }
     }
+
 
     setHeight(h) {
         this.querySelector("video").style.maxHeight = h + "px"
@@ -1201,14 +1184,66 @@ h
      * Minimize the element
      */
     minimize() {
+        if (this.isMinimized) {
+            return
+        }
+
+
         this.isMinimized = true
+        this.hidePlaylist()
+        this.header.style.display = "none"
+
+        // the container
+        this.container.style.__maxWidth__ = this.container.style.maxWidth
+        this.container.style.maxWidth = "300px"
+
+        this.container.style.__width__ = this.container.style.width
+        this.container.style.width = "300px"
+
+        this.container.style.__maxHeight__ = this.container.style.maxHeight
+        this.container.style.maxHeight = "300px"
+        this.container.style.height = "auto"
+
+        this.container.__top__ = this.container.style.top
+        this.container.style.top = ""
+        this.container.style.__left__ = this.container.style.left
+        this.container.style.left = "0px";
+        this.container.style.bottom = "45px"
+        this.container.style.__position__ = this.container.style.position
+        this.container.style.position = "absolute";
+
+        if (this.playlist.count() > 1) {
+            this.skipNextBtn.style.display = ""
+            this.skipPresiousBtn.style.display = ""
+        }
     }
 
     /**
      * Maximize (restore to it normal size) the element
      */
     maximize() {
+
+        if (!this.isMinimized) {
+            return
+        }
+
+
         this.isMinimized = false
+        this.header.style.display = ""
+
+        // set back values...
+        this.container.style.top = this.container.__top__
+        this.container.style.left = this.container.style.__left__
+        this.container.style.position = this.container.style.__position__
+        this.container.style.bottom = ""
+
+        this.container.style.width = this.container.style.__width__
+        this.container.style.maxWidth = this.container.style.__maxWidth__
+        this.container.style.maxHeight = this.container.style.__maxHeight__
+
+        this.showPlaylist()
+
+        ApplicationView.layout.workspace().appendChild(this)
     }
 }
 

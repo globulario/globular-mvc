@@ -117,6 +117,10 @@ export class MininizeableBar extends HTMLElement {
                 left: 50%;
             }
 
+            ::slotted(globular-minimizeable-group){
+                margin-right: 12px;
+            }
+
         </style>
         <div id="container">
             <slot></slot>

@@ -249,7 +249,7 @@ export class PlayList extends HTMLElement {
         }
     }
 
-    load(txt, globule, player) {
+    load(txt, globule, player, callback) {
         // keep refrence to the audio player.
         if (player.constructor.name == "Audio_AudioPlayer") {
             this.audioPlayer = player;
@@ -264,7 +264,7 @@ export class PlayList extends HTMLElement {
             if (txt.startsWith("#EXTM3U")) {
                 const result = parser.parse(txt)
                 this.playlist = result;
-                this.refresh()
+                this.refresh(callback)
                 fireResize()
             } else {
                 let url = globule.config.Protocol + "://" + globule.domain
@@ -303,7 +303,7 @@ export class PlayList extends HTMLElement {
                 xhr.onload = (evt) => {
                     const result = parser.parse(evt.target.response)
                     this.playlist = result;
-                    this.refresh()
+                    this.refresh(callback)
                     fireResize()
                 };
 
@@ -313,7 +313,7 @@ export class PlayList extends HTMLElement {
 
     }
 
-    refresh() {
+    refresh(callback) {
         // clear the content...
         this.innerHTML = ""
    
@@ -346,6 +346,8 @@ export class PlayList extends HTMLElement {
                     if (this.items.length > 0) {
                         this.setPlaying(this.items[0], true, true)
                     }
+
+                    callback()
                 } else {
                     newPlayListItem(this.items.length)
                 }

@@ -61,7 +61,7 @@ export function playAudio(path, onplay, onclose, title, globule) {
     // play a given title.
     if (path.endsWith("audio.m3u") || path.startsWith("#EXTM3U")) {
         audioPlayer.loadPlaylist(path, globule)
-        audioPlayer.showPlaylist()
+        
     } else {
         if (File.hasLocal) {
             File.hasLocal(path, exists => {
@@ -178,6 +178,10 @@ export class AudioPlayer extends HTMLElement {
         `
 
         this.container = this.shadowRoot.querySelector("#container")
+        this.container.onclick = (evt) => {
+            evt.stopPropagation()
+            // not interfere with plyr click event... do not remove this line.
+        }
 
         this.content = this.shadowRoot.querySelector("#content")
         this.titleSpan = this.shadowRoot.querySelector("#title-span")
@@ -959,7 +963,7 @@ export class AudioPlayer extends HTMLElement {
     // load the playlist...
     loadPlaylist(path, globule) {
         this.playlist.clear()
-        this.playlist.load(path, globule, this)
+        this.playlist.load(path, globule, this, ()=>this.showPlaylist())
 
         // set the css value to display the playlist correctly...
         window.addEventListener("resize", (evt) => {
@@ -1079,7 +1083,7 @@ export class AudioPlayer extends HTMLElement {
         this.container.__top__ = this.container.style.top
         this.container.style.top = ""
         this.container.style.__left__ = this.container.style.left
-        this.container.style.left = "-10px";
+        this.container.style.left = "0px";
         this.container.style.bottom = "45px"
         this.container.style.__position__ = this.container.style.position
         this.container.style.position = "absolute";
