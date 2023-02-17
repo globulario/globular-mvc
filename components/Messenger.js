@@ -970,6 +970,7 @@ export class Messenger extends HTMLElement {
                 flex-grow: 1;
             }
             
+
             paper-card{
                 display: none;
                 flex-direction: column;
@@ -1079,6 +1080,10 @@ export class Messenger extends HTMLElement {
                 }
 
 
+                .container{
+                    min-height: 200px;
+                    min-width: 200px;
+                }
             }
 
         </style>

@@ -4,8 +4,10 @@ import { ApplicationView } from "../ApplicationView";
 import { setMoveable } from './moveable'
 import WaveSurfer from "wavesurfer.js";
 import { PlayList } from "./Playlist"
+import { setMinimizeable } from "./minimizable"
 import { fireResize } from "./utility";
 import { File } from "../File";
+import { TargetsRequest } from 'globular-web-client/monitoring/monitoring_pb';
 
 export function secondsToTime(secs) {
     var hours = Math.floor(secs / (60 * 60));
@@ -44,7 +46,6 @@ export function playAudio(path, onplay, onclose, title, globule) {
 
     audioPlayer.style.zIndex = 100
 
-    ApplicationView.layout.workspace().appendChild(audioPlayer)
 
     if (onplay && !audioPlayer.onplay) {
         audioPlayer.onplay = onplay
@@ -78,6 +79,13 @@ export function playAudio(path, onplay, onclose, title, globule) {
     }
 
 
+    // append to the workspace...
+    if (!audioPlayer.isMinimized) {
+        ApplicationView.layout.workspace().appendChild(audioPlayer)
+    } else {
+        audioPlayer.minimize()
+    }
+
     return audioPlayer
 }
 
@@ -96,6 +104,7 @@ export class AudioPlayer extends HTMLElement {
         this.attachShadow({ mode: 'open' });
         let hideheader = this.getAttribute("hideheader") != undefined
         this.wavesurfer = null;
+        this.isMinimized = false;
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -104,8 +113,9 @@ export class AudioPlayer extends HTMLElement {
             #container{
                 position: fixed;
                 background: var(--palette-background-default); 
-                border-top: 1px solid var(--palette-background-paper);
-                border-left: 1px solid var(--palette-background-paper);
+                border-top: 1px solid var(--palette-divider);
+                border-left: 1px solid var(--palette-divider);
+
             }
 
             .header{
@@ -129,6 +139,7 @@ export class AudioPlayer extends HTMLElement {
 
             #content{
                 height: 600px;
+                min-width: 650px;
                 display: flex;
                 background: #000000;
                 justify-items: center;
@@ -144,6 +155,7 @@ export class AudioPlayer extends HTMLElement {
                     width: 100vw;
                     background: black;
                     flex-direction: column-reverse;
+                
                 }
 
                 #content {
@@ -159,13 +171,17 @@ export class AudioPlayer extends HTMLElement {
                 <paper-icon-button id="close-btn" icon="icons:close" style="min-width: 40px; --iron-icon-fill-color: var(--palette-text-accent);"></paper-icon-button>
                 <span id="title-span"></span>
             </div>
-            <div id=content>
+            <div id="content">
                 <slot></slot>
             </div>
         </paper-card>
         `
 
-        let container = this.shadowRoot.querySelector("#container")
+        this.container = this.shadowRoot.querySelector("#container")
+
+        this.content = this.shadowRoot.querySelector("#content")
+        this.titleSpan = this.shadowRoot.querySelector("#title-span")
+        this.header = this.shadowRoot.querySelector(".header")
 
         this.shadowRoot.querySelector("#close-btn").onclick = () => {
             this.stop()
@@ -178,7 +194,7 @@ export class AudioPlayer extends HTMLElement {
             /** Audio vizualizer **/
             .vz-wrapper {
                 width: 100%;
-                height: 600px;
+
                 padding: 0px 5px 0px 5px;
                 display: flex;
                 flex-direction: column;
@@ -284,6 +300,14 @@ export class AudioPlayer extends HTMLElement {
                 
             }
 
+            #controls{
+                flex-grow: 1; 
+                display: flex; 
+                align-items: 
+                center; 
+                width: 100%;
+            }
+
             #waveform{
                 width: 100%;
                 align-self: center;
@@ -356,6 +380,7 @@ export class AudioPlayer extends HTMLElement {
                 .vz-wrapper {
                     height: auto;
                     padding: 0px;
+                    min-width: 0px;
                 }
 
                 .vz-wrapper img {
@@ -382,7 +407,7 @@ export class AudioPlayer extends HTMLElement {
 
             <div id="waveform"></div>
             <div class="buttons">
-                <div style="flex-grow: 1; display: flex; align-items: center; width: 100%;">
+                <div id="controls">
                     <paper-slider style="flex-grow: 1;"></paper-slider>
                     <div  style="display: flex; align-items: center; padding-right: 10px;">
                         <span id="current-time"></span> <span>/</span> <span id="total-time"></span>
@@ -424,6 +449,8 @@ export class AudioPlayer extends HTMLElement {
         this.trackInfo = this.querySelector("#track-info")
 
         // Now the buttons actions.
+        this.controls = this.querySelector("#controls")
+        this.waveform = this.querySelector("#waveform")
         this.skipPresiousBtn = this.querySelector("#skip-previous")
         this.fastRewindBtn = this.querySelector("#fast-rewind")
         this.playBtn = this.querySelector("#play-arrow")
@@ -462,22 +489,22 @@ export class AudioPlayer extends HTMLElement {
             this.shuffleBtn.style.fill = "#424242"
         }
 
+        let header = this.shadowRoot.querySelector(".header")
 
         // give the focus to the input.
-        let offsetTop = this.shadowRoot.querySelector(".header").offsetHeight
+        let offsetTop = header.offsetHeight
         if (offsetTop == 0) {
             offsetTop = 60
         }
 
-        // toggle full screen when the user double click on the header.
-        this.shadowRoot.querySelector(".header").ondblclick = () => {
+        this.container.name = "audio_player"
 
-        }
-
-        container.name = "audio_player"
-        setMoveable(this.shadowRoot.querySelector(".header"), container, (left, top) => {
+        setMoveable(header, this.container, (left, top) => {
             /** */
         }, this, offsetTop)
+
+
+        setMinimizeable(header, this, "audio_player", "Audio", "image:music-note")
 
 
         this.querySelector(".vz-wrapper").onclick = () => {
@@ -797,6 +824,18 @@ export class AudioPlayer extends HTMLElement {
 
     play(path, globule, audio, local = false) {
 
+        // show sine of life...
+        if (this.style.display == "none") {
+            this.style.display = ""
+            if (this.isMinimized) {
+                setTimeout(() => {
+                    if(this.isMinimized){
+                        this.style.display = "none"
+                    }
+                }, 2000) // 2 second
+            }
+        }
+
         if (this._audio_ && audio) {
             if (this._audio_.getId() == audio.getId() && this.wavesurfer.isPlaying()) {
                 // be sure the audio player is visible...
@@ -813,7 +852,7 @@ export class AudioPlayer extends HTMLElement {
             }
         }
 
-        this.shadowRoot.querySelector("#container").style.display = "block"
+        this.container.style.display = "block"
 
         this.stop()
         this.playBtn.style.display = "block"
@@ -921,7 +960,7 @@ export class AudioPlayer extends HTMLElement {
     loadPlaylist(path, globule) {
         this.playlist.clear()
         this.playlist.load(path, globule, this)
-        
+
         // set the css value to display the playlist correctly...
         window.addEventListener("resize", (evt) => {
             let content = this.shadowRoot.querySelector("#content")
@@ -929,12 +968,12 @@ export class AudioPlayer extends HTMLElement {
             if (w < 500) {
                 content.style.height = "calc(100vh - 100px)"
                 content.style.overflowY = "auto"
-            }else{
+            } else {
                 content.style.height = ""
                 content.style.overflowY = ""
             }
         })
-      
+
     }
 
     // Pause the player...
@@ -984,11 +1023,105 @@ export class AudioPlayer extends HTMLElement {
     }
 
     showPlaylist() {
-        this.playlist.style.display = ""
-        this.shuffleBtn.style.display = ""
-        this.skipNextBtn.style.display = ""
-        this.skipPresiousBtn.style.display = ""
-        this.trackInfo.style.display = ""
+        if (this.playlist.count() > 1) {
+            this.playlist.style.display = ""
+            this.shuffleBtn.style.display = ""
+            this.skipNextBtn.style.display = ""
+            this.skipPresiousBtn.style.display = ""
+            this.trackInfo.style.display = ""
+        } else {
+            this.hidePlaylist()
+        }
+    }
+
+    /**
+     * Minimize the element
+     */
+    minimize() {
+        if(this.isMinimized){
+            return
+        }
+
+        this.isMinimized = true
+        this.hidePlaylist()
+        this.waveform.style.display = "none"
+        this.controls.style.display = "none"
+        this.albumYear.style.display = "none"
+        this.albumName.style.display = "none"
+        this.header.style.display = "none"
+
+        if (this.playlist.count() > 1) {
+            this.skipNextBtn.style.display = ""
+            this.skipPresiousBtn.style.display = ""
+        }
+
+        this.trackTitle.style.fontSize = "1.1rem"
+        this.ablumCover.style.maxHeight = "120px"
+
+        // the content
+        this.content.style.__minWidth__ = this.content.style.minWidth
+        this.content.style.minWidth = "0px"
+
+        this.content.style.__maxHeight__ = this.content.style.maxHeight
+        this.content.style.maxHeight = "300px"
+
+        this.content.style.__height__ = this.content.style.height
+        this.content.style.height = "300px"
+
+        this.titleSpan.style.__maxWidth__ = this.titleSpan.style.maxWidth
+        this.content.style.__maxWidth__ = this.content.style.maxWidth
+        this.titleSpan.style.maxWidth = this.content.style.maxWidth = "300px"
+
+        this.content.style.__width__ = this.content.style.width
+        this.content.style.width = "300px"
+
+        // the container
+        this.container.__top__ = this.container.style.top
+        this.container.style.top = ""
+        this.container.style.__left__ = this.container.style.left
+        this.container.style.left = "-10px";
+        this.container.style.bottom = "45px"
+        this.container.style.__position__ = this.container.style.position
+        this.container.style.position = "absolute";
+    }
+
+    /**
+     * Maximize (restore to it normal size) the element
+     */
+    maximize() {
+
+        if(!this.isMinimized){
+            return
+        }
+
+        this.isMinimized = false
+
+        // set back values...
+        this.container.style.top = this.container.__top__
+        this.container.style.left = this.container.style.__left__
+        this.container.style.position = this.container.style.__position__
+        this.container.style.bottom = ""
+
+        this.content.style.minWidth = this.content.style.__minWidth__
+        this.content.style.maxHeight = this.content.style.__maxHeight__
+        this.content.style.height = this.content.style.__height__
+        this.titleSpan.style.maxWidth = this.titleSpan.style.__maxWidth__
+        this.content.style.width = this.content.style.__width__
+        this.content.style.maxWidth = this.content.style.__maxWidth__
+
+        this.waveform.style.display = ""
+        this.controls.style.display = ""
+        this.albumYear.style.display = ""
+        this.albumName.style.display = ""
+        this.header.style.display = ""
+
+        this.trackTitle.style.fontSize = ""
+        this.ablumCover.style.maxHeight = ""
+
+        this.showPlaylist()
+
+        ApplicationView.layout.workspace().appendChild(this)
+
     }
 }
 

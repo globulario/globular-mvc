@@ -412,6 +412,10 @@ export class PlayList extends HTMLElement {
 
         this.items.forEach(item => this.appendChild(item))
     }
+
+    count(){
+        return  this.items.length
+    }
 }
 
 customElements.define('globular-playlist', PlayList)
@@ -474,6 +478,8 @@ export class PlayListItem extends HTMLElement {
                 cursor: pointer;
             }
 
+            
+
         </style>
 
         <div class="cell">
@@ -487,7 +493,7 @@ export class PlayListItem extends HTMLElement {
             <div style="display: flex; flex-direction: column; padding-left: 10px; padding-rigth: 10px;">
                 <div id="title-div" class="title"></div>
                 <div style="font-size: .85rem; display: flex;">
-                    <span id="title-artist-span" style="flex-grow: 1; max-width: 400px;" class="author"></span>
+                    <span id="title-artist-span" style="flex-grow: 1; max-width: 400px;  min-width: 160px;" class="author"></span>
                     <span id="title-duration-span"> </span>
                 </div>
             </div>

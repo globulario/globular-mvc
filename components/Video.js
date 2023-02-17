@@ -13,6 +13,7 @@ import { File } from "../File"
 import { fireResize, formatBoolean, randomUUID } from "./utility";
 import { PlayList } from "./Playlist"
 import { readDir } from "globular-web-client/api";
+import { setMinimizeable } from "./minimizable"
 
 Object.defineProperty(HTMLMediaElement.prototype, 'playing', {
     get: function () {
@@ -134,6 +135,7 @@ export class VideoPlayer extends HTMLElement {
         this.loop = true;
         this.shuffle = false;
         this.resume = false;
+        this.isMinimized = false;
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -213,8 +215,8 @@ export class VideoPlayer extends HTMLElement {
             paper-card {
                 position: fixed;
                 background: black; 
-                border-top: 1px solid var(--palette-background-paper);
-                border-left: 1px solid var(--palette-background-paper);
+                border-top: 1px solid var(--palette-divider);
+                border-left: 1px solid var(--palette-divider);
             }
 
         </style>
@@ -281,6 +283,7 @@ export class VideoPlayer extends HTMLElement {
         this.video.onplaying = (evt) => {
 
             if (this.resume) {
+                this.show()
                 ApplicationView.resume()
                 return
             }
@@ -341,6 +344,8 @@ export class VideoPlayer extends HTMLElement {
         setMoveable(this.shadowRoot.querySelector("#title-span"), this.shadowRoot.querySelector("paper-card"), (left, top) => {
             /** */
         }, this, offsetTop)
+
+        setMinimizeable(this.shadowRoot.querySelector(".header"), this, "video_player", "Video", "icons:theaters")
 
         // Plyr give a nice visual to the video player.
         // TODO set the preview and maybe quality bitrate if possible...
@@ -1159,7 +1164,7 @@ h
     }
 
     hide() {
-        let container = this.shadowRoot.querySelector("#container")
+        let container = this.shadowRoot.querySelector("paper-card")
         container.maxWidth = 0
         container.style.display = "none"
         container.style.width = "0px"
@@ -1171,7 +1176,7 @@ h
 
     show() {
         this.showHeader()
-        let container = this.shadowRoot.querySelector("#container")
+        let container = this.shadowRoot.querySelector("paper-card")
         container.style.display = ""
         this.video.style.display = "";
     }
@@ -1190,6 +1195,20 @@ h
 
     resetHeight() {
         this.querySelector("video").style.maxHeight = ""
+    }
+
+    /**
+     * Minimize the element
+     */
+    minimize() {
+        this.isMinimized = true
+    }
+
+    /**
+     * Maximize (restore to it normal size) the element
+     */
+    maximize() {
+        this.isMinimized = false
     }
 }
 
