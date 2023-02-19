@@ -1944,6 +1944,10 @@ export class SearchAudioCard extends HTMLElement {
                 border-top-right-radius: 3.5px;
             }
 
+            .audio-card img:hover{
+                cursor: pointer;
+            }
+
             #artist, #album {
                 font-weight: 500;
                 font-size: 1.2rem;
@@ -2085,7 +2089,7 @@ export class SearchAudioCard extends HTMLElement {
 
 
         // Now the action...
-        this.shadowRoot.querySelector("#play-title-btn").onclick = () => {
+        this.shadowRoot.querySelector("img").onclick = this.shadowRoot.querySelector("#play-title-btn").onclick = () => {
             // paly only the first file...
             let rqst = new GetTitleFilesRequest
             rqst.setTitleid(audio.getId())

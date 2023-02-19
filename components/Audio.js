@@ -61,7 +61,7 @@ export function playAudio(path, onplay, onclose, title, globule) {
     // play a given title.
     if (path.endsWith("audio.m3u") || path.startsWith("#EXTM3U")) {
         audioPlayer.loadPlaylist(path, globule)
-        
+
     } else {
         if (File.hasLocal) {
             File.hasLocal(path, exists => {
@@ -149,17 +149,18 @@ export class AudioPlayer extends HTMLElement {
             }
 
             @media (max-width: 600px) {
+                .header{
+                    width: 100vw; 
+                }
+                
                 #content{
-                    height: calc(100vh - 100px);
                     overflow-y: auto;
                     width: 100vw;
+                    max-width: 100vw;
+                    min-width: 0px;
                     background: black;
                     flex-direction: column-reverse;
-                
-                }
-
-                #content {
-                    height: 420px;
+                    height: 410px;
                     overflow: hidden;
                 }
             }
@@ -310,6 +311,7 @@ export class AudioPlayer extends HTMLElement {
                 align-items: 
                 center; 
                 width: 100%;
+                margin-right: 10px;
             }
 
             #waveform{
@@ -504,7 +506,7 @@ export class AudioPlayer extends HTMLElement {
         this.container.name = "audio_player"
 
         setMoveable(header, this.container, (left, top) => {
-            /** */
+
         }, this, offsetTop)
 
 
@@ -519,7 +521,8 @@ export class AudioPlayer extends HTMLElement {
         }
 
         // Actions...
-        this.playBtn.onclick = () => {
+        this.playBtn.onclick = (evt) => {
+            evt.stopPropagation()
             this.wavesurfer.play()
             this.playBtn.style.display = "none"
             this.pauseBtn.style.display = "block"
@@ -528,7 +531,18 @@ export class AudioPlayer extends HTMLElement {
             }
         }
 
-        this.pauseBtn.onclick = () => {
+        this.ablumCover.onclick = (evt) => {
+            evt.stopPropagation()
+            if (this.playBtn.style.display == "none") {
+                this.pauseBtn.click()
+            } else {
+                this.playBtn.click()
+            }
+
+        }
+
+        this.pauseBtn.onclick = (evt) => {
+            evt.stopPropagation()
             if (this.playlist) {
                 this.playlist.pausePlaying()
             }
@@ -833,10 +847,10 @@ export class AudioPlayer extends HTMLElement {
             this.style.display = ""
             if (this.isMinimized) {
                 setTimeout(() => {
-                    if(this.isMinimized){
+                    if (this.isMinimized) {
                         this.style.display = "none"
                     }
-                }, 2000) // 2 second
+                }, 3500) // 2 second
             }
         }
 
@@ -963,7 +977,7 @@ export class AudioPlayer extends HTMLElement {
     // load the playlist...
     loadPlaylist(path, globule) {
         this.playlist.clear()
-        this.playlist.load(path, globule, this, ()=>this.showPlaylist())
+        this.playlist.load(path, globule, this, () => this.showPlaylist())
 
         // set the css value to display the playlist correctly...
         window.addEventListener("resize", (evt) => {
@@ -1038,15 +1052,33 @@ export class AudioPlayer extends HTMLElement {
         }
     }
 
+    setVertical() {
+        if (this.isMinimized) {
+            this.container.style.left = "36px"
+            this.container.style.top = "-33px"
+            this.container.style.bottom = ""
+        }
+    }
+
+    setHorizontal() {
+        if (this.isMinimized) {
+            this.container.style.bottom = "36px"
+            this.container.style.left = "0px"
+            this.container.style.top = ""
+        }
+    }
+
     /**
      * Minimize the element
      */
     minimize() {
-        if(this.isMinimized){
+        if (this.isMinimized) {
             return
         }
 
         this.isMinimized = true
+        this.container.isMinimized = true
+
         this.hidePlaylist()
         this.waveform.style.display = "none"
         this.controls.style.display = "none"
@@ -1084,9 +1116,17 @@ export class AudioPlayer extends HTMLElement {
         this.container.style.top = ""
         this.container.style.__left__ = this.container.style.left
         this.container.style.left = "0px";
-        this.container.style.bottom = "45px"
+        this.container.style.bottom = "36px"
         this.container.style.__position__ = this.container.style.position
         this.container.style.position = "absolute";
+
+        let w = ApplicationView.layout.width();
+        if (w < 500) {
+            this.setVertical()
+        } else {
+
+            this.setHorizontal()
+        }
     }
 
     /**
@@ -1094,11 +1134,12 @@ export class AudioPlayer extends HTMLElement {
      */
     maximize() {
 
-        if(!this.isMinimized){
+        if (!this.isMinimized) {
             return
         }
 
         this.isMinimized = false
+        this.container.isMinimized = false
 
         // set back values...
         this.container.style.top = this.container.__top__
@@ -1118,9 +1159,9 @@ export class AudioPlayer extends HTMLElement {
         this.albumYear.style.display = ""
         this.albumName.style.display = ""
         this.header.style.display = ""
-
         this.trackTitle.style.fontSize = ""
         this.ablumCover.style.maxHeight = ""
+        this.container.style.position = "fixed"; // set back position to fixed
 
         this.showPlaylist()
 

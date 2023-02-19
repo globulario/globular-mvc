@@ -80,11 +80,9 @@ export function playVideo(path, onplay, onclose, title, globule) {
     // play a given title.
     if (path.endsWith("video.m3u") || path.startsWith("#EXTM3U")) {
         videoPlayer.loadPlaylist(path, globule)
-     
     } else {
         videoPlayer.play(path, globule)
     }
-
 
     if (!videoPlayer.isMinimized) {
         ApplicationView.layout.workspace().appendChild(videoPlayer)
@@ -198,9 +196,11 @@ export class VideoPlayer extends HTMLElement {
             }
             
             @media (max-width: 600px) {
-                #content{
+                #container{
                     width: 100vw;
-                    background: black;
+                }
+
+                #content{
                     flex-direction: column-reverse;
                 }
 
@@ -329,10 +329,11 @@ export class VideoPlayer extends HTMLElement {
                     }
 
                     this.container.maxWidth = maxWidth
+                    this.container.style.maxHeight = height + "px"
+                    this.container.style.height = "auto"
 
                     // event resize the video only if the video is new...
                     this.playlist.style.height = height + "px"
-                    this.container.style.height = height + "px"
                     this.container.style.width = maxWidth + "px"
 
 
@@ -512,9 +513,9 @@ export class VideoPlayer extends HTMLElement {
         }
 
         // hide plyr function not us
-        let items = this.querySelectorAll(".plyr__controls__item") 
-        for(var i=0; i < items.length; i++){
-            if(items[i].getAttribute("data-plyr")=="pip"){
+        let items = this.querySelectorAll(".plyr__controls__item")
+        for (var i = 0; i < items.length; i++) {
+            if (items[i].getAttribute("data-plyr") == "pip") {
                 items[i].style.display = "none"
             }
         }
@@ -567,8 +568,8 @@ export class VideoPlayer extends HTMLElement {
         this.shuffleBtn = this.querySelector("#shuffle")
         this.trackInfo = this.querySelector("#track-info")
 
-        
-        if(this.playlist.count() <= 1){
+
+        if (this.playlist.count() <= 1) {
             this.hidePlaylist()
         }
 
@@ -681,7 +682,7 @@ export class VideoPlayer extends HTMLElement {
 
     loadPlaylist(path, globule) {
         this.playlist.clear()
-        this.playlist.load(path, globule, this, ()=>{
+        this.playlist.load(path, globule, this, () => {
             // show playlist after loading it... (hide it if number of item is less than one)
             this.showPlaylist()
         })
@@ -691,8 +692,12 @@ export class VideoPlayer extends HTMLElement {
 
             let w = ApplicationView.layout.width();
             if (w < 500) {
-                this.content.style.height = "calc(100vh - 100px)"
-                this.content.style.overflowY = "auto"
+                if (!this.isMinimized) {
+                    this.content.style.height = "calc(100vh - 100px)"
+                    this.content.style.overflowY = "auto"
+                }else{
+                    this.content.style.height = "auto"
+                }
 
             } else {
                 this.content.style.height = ""
@@ -702,9 +707,6 @@ export class VideoPlayer extends HTMLElement {
                 } else {
                     this.playlist.style.height = this.content.offsetHeight + "px"
                 }
-
-
-
             }
         })
 
@@ -801,6 +803,17 @@ export class VideoPlayer extends HTMLElement {
             this.titleInfo.globule = globule
         }
 
+        if (this.style.display == "none") {
+            this.style.display = ""
+            if (this.isMinimized) {
+                setTimeout(() => {
+                    if (this.isMinimized) {
+                        this.style.display = "none"
+                    }
+                }, 3500) // 2 second
+            }
+        }
+
         generatePeerToken(globule, token => {
             let url = path;
             if (!url.startsWith("http")) {
@@ -838,7 +851,6 @@ export class VideoPlayer extends HTMLElement {
             }
 
             if (this.path == path) {
-
                 this.resume = true;
                 this.video.play()
                 return
@@ -1144,6 +1156,23 @@ export class VideoPlayer extends HTMLElement {
         }
     }
 
+    // The position when the video is minimized
+    setVertical() {
+        if (this.isMinimized) {
+            this.container.style.left = "36px"
+            this.container.style.top = "-33px"
+            this.container.style.bottom = ""
+        }
+    }
+
+    setHorizontal() {
+        if (this.isMinimized) {
+            this.container.style.bottom = "36px"
+            this.container.style.left = "0px"
+            this.container.style.top = ""
+        }
+    }
+
     hide() {
 
         this.container.maxWidth = 0
@@ -1208,7 +1237,14 @@ export class VideoPlayer extends HTMLElement {
         this.container.style.top = ""
         this.container.style.__left__ = this.container.style.left
         this.container.style.left = "0px";
-        this.container.style.bottom = "45px"
+
+        let w = ApplicationView.layout.width();
+        if (w < 500) {
+            this.setVertical()
+        } else {
+            this.setHorizontal()
+        }
+
         this.container.style.__position__ = this.container.style.position
         this.container.style.position = "absolute";
 

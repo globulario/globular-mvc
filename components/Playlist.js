@@ -94,27 +94,26 @@ export class PlayList extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
            
+            #container { 
+                overflow-y: auto;
+                overflow-x: hidden;
+                background-color: black;
+                height: 100%;
+            }
+
             #items{
                 display: table;
                 border-collapse: separate;
-                border-spacing: 10px;
                 flex-flow: 1;
                 padding-bottom: 50px;
                 max-width: 100vw;
             }
 
-            #container {
-                position: relative;
-                display: flex;
-                flex-direction: column;
-                height: 100%;
-                overflow-y: auto;
-                overflow-x: hidden;
-                background-color: black;
-            }
-
             ::-webkit-scrollbar {
-                width: 5px;        console.log("-------------------> ", url)
+                width: 5px;
+                height: 5px;
+             }
+                
              ::-webkit-scrollbar-track {
                 background: var(--palette-background-default);
              }
@@ -122,12 +121,13 @@ export class PlayList extends HTMLElement {
              ::-webkit-scrollbar-thumb {
                 background: var(--palette-divider); 
              }
-
             ::slotted(globular-playlist-item) {
                 display: table-row;
                 padding: 2px;
             }
-            console.log("-------------------> ", url)
+            ::slotted(.playing) {
+                -webkit-box-shadow: inset 5px 5px 15px 5px #152635; 
+                box-shadow: inset 5px 5px 15px 5px #152635;
             }
 
         </style>
@@ -237,7 +237,8 @@ export class PlayList extends HTMLElement {
         })
 
         let item = this.items[this.index]
-        this.shadowRoot.querySelector("#container").scrollTo({ top: item.offsetTop - 10, behavior: 'smooth' });
+        // set the scoll position...
+        item.scrollIntoView({ behavior: 'smooth' })
     }
 
     playPrevious() {
@@ -316,7 +317,7 @@ export class PlayList extends HTMLElement {
     refresh(callback) {
         // clear the content...
         this.innerHTML = ""
-   
+
         let newPlayListItem = (index) => {
             let item = this.playlist.items[index]
 
@@ -380,7 +381,7 @@ export class PlayList extends HTMLElement {
 
 
         // set the scoll position...
-        this.shadowRoot.querySelector("#container").scrollTo({ top: item.offsetTop - 10, behavior: 'smooth' });
+        item.scrollIntoView({ behavior: 'smooth' })
     }
 
     pausePlaying() {
@@ -415,8 +416,8 @@ export class PlayList extends HTMLElement {
         this.items.forEach(item => this.appendChild(item))
     }
 
-    count(){
-        return  this.items.length
+    count() {
+        return this.items.length
     }
 }
 
@@ -472,15 +473,13 @@ export class PlayListItem extends HTMLElement {
             .cell {
                 display: table-cell;
                 vertical-align: middle;
-                padding: 5px;
+                padding: 10px 5px 10px 5px;
                 color: white;
             }
 
             iron-icon:hover {
                 cursor: pointer;
             }
-
-            
 
         </style>
 

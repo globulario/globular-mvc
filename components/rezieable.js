@@ -9,15 +9,17 @@ export function setResizeable(div, onresize, side, zIndex) {
     window.addEventListener("resize", (evt) => {
         let w = ApplicationView.layout.width();
         let id = div.name
-        if (w < 500 && div.style.width != "100vw") {
-            localStorage.setItem(`__${id}_dimension__`, JSON.stringify({ width: div.offsetWidth, height: div.offsetHeight }))
-            div.style.width = "100vw"
-        }else if( div.style.width == "100vw" && w > 500 && w > div.maxWidth && div.maxWidth > 0){
+        if (div.style.position == "fixed") {
+            if (w < 500 && div.style.width != "100vw") {
+                localStorage.setItem(`__${id}_dimension__`, JSON.stringify({ width: div.offsetWidth, height: div.offsetHeight }))
+                div.style.width = "100vw"
+            } else if (div.style.width == "100vw" && w > 500 && w > div.maxWidth && div.maxWidth > 0) {
                 div.style.width = div.maxWidth + "px"
                 div.style.height = "auto"
-        }else if( w > 500 && w < div.maxWidth && div.maxWidth > 0){
-            div.style.width = w + "px"
-            div.style.height = "auto"
+            } else if (w > 500 && w < div.maxWidth && div.maxWidth > 0) {
+                div.style.width = w + "px"
+                div.style.height = "auto"
+            }
         }
     })
 
@@ -25,15 +27,17 @@ export function setResizeable(div, onresize, side, zIndex) {
     // here I will stop resize...
     let w = ApplicationView.layout.width();
     if (w < 500) {
-        div.style.width = "100vw"
-    }else {
+        if (div.style.position == "fixed") {
+            div.style.width = "100vw"
+        }
+    } else {
         let id = div.name
         if (localStorage.getItem(`__${id}_dimension__`)) {
             let dimension = JSON.parse(localStorage.getItem(`__${id}_dimension__`))
-            if(dimension.width > 0 && dimension.height > 0){
+            if (dimension.width > 0 && dimension.height > 0) {
                 div.style.width = dimension.width + "px"
                 div.style.height = dimension.height + "px"
-            }else{
+            } else {
                 div.style.width = div.maxWidth + "px"
             }
         }
@@ -217,12 +221,16 @@ export function setResizeable(div, onresize, side, zIndex) {
         return offsetTop;
     }
 
+
     let moveHandler = (e) => {
 
         if (ApplicationView.layout.width() < 500) {
-            div.style.width = "100vw"
-            onresize(div.offsetWidth, div.offsetHeight)
-            fireResize()
+            if (div.style.position == "fixed") {
+                div.style.width = "100vw"
+                onresize(div.offsetWidth, div.offsetHeight)
+                fireResize()
+            }
+           
             return
         }
 

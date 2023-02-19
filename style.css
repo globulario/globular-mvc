@@ -230,6 +230,17 @@ paper-card .card-actions {
    display: flex;
 }
 
+/**
+ * That bar is use to minimize dialog.
+ */
+globular-mininizeable-bar{
+   position: fixed;
+   bottom: 5px;
+   transform: translateX(-50%);
+   left: 50%;
+   z-index: 100;
+}
+
 /** Table element **/
 /** Simple table style **/
 table-element {
@@ -663,7 +674,7 @@ emoji-picker {
    background: var(--palette-divider);
 }
 
-@media (max-width: 650px) {
+@media (max-width: 500px) {
    .ce-toolbar {
       background-color: var(--palette-background-paper);
       color: var(--palette-text-primary);
@@ -671,7 +682,13 @@ emoji-picker {
    }
 
    .blog-read-div {
-      max-width: 650px;
-      min-width: 355px;
+      max-width: 500px;
+      min-width: 350px;
+   }
+
+   globular-mininizeable-bar{
+      top: 0px;
+      transform: translateY(150px);
+      left: 5px;
    }
 }

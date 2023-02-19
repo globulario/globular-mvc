@@ -6216,7 +6216,7 @@ export class FilesUploader extends HTMLElement {
                             let progress = this.files_upload_table.children[0].querySelector("paper-progress")
                             progress.value = (event.loaded / event.total) * 100
                             if (event.loaded == event.total) {
-                                ApplicationView.displayMessage("File " + f.name + " was uploaded", 2000)
+                                ApplicationView.displayMessage("File " + f.name + " was uploaded", 3000)
                                 this.files_upload_table.removeChild(this.files_upload_table.children[0])
                                 if (this.files_upload_table.children.length == 0) {
                                     this.btn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
@@ -6236,7 +6236,7 @@ export class FilesUploader extends HTMLElement {
 
         // Start file upload!
         uploadFile(0, () => {
-            ApplicationView.displayMessage("All files are now uploaded!", 2000)
+            ApplicationView.displayMessage("All files are now uploaded!", 3000)
             delete dirs[getUuidByString(this._file_explorer_.globule.domain + "@" + path)]
             Model.publish("reload_dir_event", path, false)
         })

@@ -40,12 +40,13 @@ export function setMoveable(handle, draggable, onmove, element, offsetTop = 0) {
 
     // set the postion to 0, 0
     let w = ApplicationView.layout.width();
-    if (w <= 500) {
-      draggable.style.top = offsetTop + "px"
-      draggable.style.left = "0px"
+    if (w <= 500 ) {
+      if(draggable.style.position == "fixed"){
+        draggable.style.top = offsetTop + "px"
+        draggable.style.left = "0px"
+      }
       return
     }
-
 
     if (draggable.offsetTop < offsetTop) {
       draggable.top = offsetTop + "px"
@@ -97,8 +98,10 @@ export function setMoveable(handle, draggable, onmove, element, offsetTop = 0) {
     // set the postion to 0, 0
     let w = ApplicationView.layout.width();
     if (w < 500) {
-      draggable.style.top = offsetTop + "px"
-      draggable.style.left = "0px"
+      if(draggable.style.position == "fixed"){
+        draggable.style.top = offsetTop + "px"
+        draggable.style.left = "0px"
+      }
       return
     }
 
