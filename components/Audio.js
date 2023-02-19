@@ -4,7 +4,7 @@ import { ApplicationView } from "../ApplicationView";
 import { setMoveable } from './moveable'
 import WaveSurfer from "wavesurfer.js";
 import { PlayList } from "./Playlist"
-import { setMinimizeable } from "./minimizable"
+import { setMinimizeable } from "./minimizeable"
 import { fireResize } from "./utility";
 import { File } from "../File";
 import { TargetsRequest } from 'globular-web-client/monitoring/monitoring_pb';

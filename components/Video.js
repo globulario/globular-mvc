@@ -13,7 +13,7 @@ import { File } from "../File"
 import { fireResize, formatBoolean, randomUUID } from "./utility";
 import { PlayList } from "./Playlist"
 import { readDir } from "globular-web-client/api";
-import { setMinimizeable } from "./minimizable"
+import { setMinimizeable } from "./minimizeable"
 
 Object.defineProperty(HTMLMediaElement.prototype, 'playing', {
     get: function () {
