@@ -217,16 +217,13 @@ export class VideoPlayer extends HTMLElement {
             }
 
             paper-card {
-                position: fixed;
-                height: auto;
                 background: black; 
                 border-top: 1px solid var(--palette-divider);
                 border-left: 1px solid var(--palette-divider);
             }
 
         </style>
-        <paper-card id="container" style="height: auto;">
-            
+        <paper-card id="container">
                 <div class="header" style="${hideheader ? "display:none;" : ""}">
                     <paper-icon-button id="video-close-btn" icon="icons:close" style="min-width: 40px; --iron-icon-fill-color: var(--palette-text-accent);"></paper-icon-button>
                     <span id="title-span"></span>
@@ -278,19 +275,22 @@ export class VideoPlayer extends HTMLElement {
         if (offsetTop == 0) {
             offsetTop = 60
         }
+
         this.path = ""
         this.appendChild(this.video)
-
+        this.container.style.height = "auto"
         this.container.name = "video_player"
+
         setResizeable(this.container, (width, height) => {
             localStorage.setItem("__video_player_dimension__", JSON.stringify({ width: width, height: height }))
             this.container.style.height = "auto"
             fireResize()
         })
 
-
         this.container.resizeHeightDiv.style.display = "none"
-        this.container.style.height = "auto"
+
+
+
 
         // set the initial size of the video player to fit the played video...
         this.video.onplaying = (evt) => {
@@ -303,15 +303,16 @@ export class VideoPlayer extends HTMLElement {
 
             this.resume = true
 
+            
             let w = ApplicationView.layout.width();
             if (w < 500) {
+                if(!this.minimize)
                 this.container.style.width = "100vw"
             } else {
                 if (this.video.videoHeight > 0 && this.video.videoWidth > 0) {
 
                     let height = this.video.videoHeight
                     let maxWidth = this.video.videoWidth
-
 
                     if (maxWidth > screen.width) {
                         maxWidth = screen.width
@@ -325,21 +326,20 @@ export class VideoPlayer extends HTMLElement {
 
                     if (this.playlist.style.display != "none") {
                         if (maxWidth + this.playlist.offsetWidth < screen.width) {
+                            this.playlist.__width__ = this.playlist.offsetWidth
                             maxWidth += this.playlist.offsetWidth
                         }
+                    }else if(this.playlist.count() > 1){
+                        maxWidth += this.playlist.__width__
                     }
 
                     this.container.maxWidth = maxWidth
-                    this.container.style.maxHeight = height + "px"
                     this.container.style.height = "auto"
 
                     // event resize the video only if the video is new...
                     this.playlist.style.height = height + "px"
                     this.container.style.width = maxWidth + "px"
-
-
                     localStorage.setItem("__video_player_dimension__", JSON.stringify({ width: maxWidth, height: height }))
-
                 }
             }
         }
@@ -690,16 +690,17 @@ export class VideoPlayer extends HTMLElement {
 
         // set the css value to display the playlist correctly...
         window.addEventListener("resize", (evt) => {
-            if(this.isMinimized){
+            if (this.isMinimized) {
                 this.content.style.height = "auto"
                 return
             }
 
             let w = ApplicationView.layout.width();
             if (w < 500) {
-                    this.content.style.height = "calc(100vh - 100px)"
-                    this.content.style.overflowY = "auto"
-            } else  {
+
+                this.content.style.height = "calc(100vh - 100px)"
+                this.content.style.overflowY = "auto"
+            } else {
                 this.content.style.height = ""
                 this.content.style.overflowY = ""
                 if (this.video.videoHeight < this.content.offsetHeight) {
@@ -708,6 +709,7 @@ export class VideoPlayer extends HTMLElement {
                     this.playlist.style.height = this.content.offsetHeight + "px"
                 }
             }
+
         })
 
         setTimeout(fireResize(), 500)
@@ -797,6 +799,9 @@ export class VideoPlayer extends HTMLElement {
 
         // make sure the player is not show before the video is loaded.
         ApplicationView.wait("loading video...")
+        if (this.isMinimized) {
+            this.minimize()
+        }
 
         if (titleInfo) {
             this.titleInfo = titleInfo
@@ -886,6 +891,7 @@ export class VideoPlayer extends HTMLElement {
     }
 
     play_(path, globule, local = false, token) {
+
 
         // replace separator...
         path = path.split("\\").join("/")
@@ -1168,11 +1174,11 @@ export class VideoPlayer extends HTMLElement {
 
 
     setHeight(h) {
-        this.querySelector("video").style.maxHeight = h + "px"
+        this.querySelector("video").style.height = h + "px"
     }
 
     resetHeight() {
-        this.querySelector("video").style.maxHeight = ""
+        this.querySelector("video").style.height = ""
     }
 
     /**
@@ -1180,7 +1186,7 @@ export class VideoPlayer extends HTMLElement {
      */
     minimize() {
         if (this.isMinimized) {
-            if(this.onMinimize){
+            if (this.onMinimize) {
                 this.onMinimize()
             }
             return
@@ -1192,13 +1198,13 @@ export class VideoPlayer extends HTMLElement {
         this.header.style.display = "none"
 
         // the container
-        this.container.style.__maxWidth__ = this.container.style.maxWidth
+        this.container.style.__max_width__ = this.container.style.maxWidth
         this.container.style.maxWidth = "300px"
 
         this.container.style.__width__ = this.container.style.width
         this.container.style.width = "300px"
 
-        this.container.style.__maxHeight__ = this.container.style.maxHeight
+        // Fix the container height
         this.container.style.maxHeight = "300px"
         this.container.style.height = "auto"
         this.container.style.position = "initial"
@@ -1208,7 +1214,7 @@ export class VideoPlayer extends HTMLElement {
             this.skipPresiousBtn.style.display = ""
         }
 
-        if(this.onMinimize){
+        if (this.onMinimize) {
             this.onMinimize()
         }
     }
@@ -1222,16 +1228,13 @@ export class VideoPlayer extends HTMLElement {
             return
         }
 
-
         this.isMinimized = false
-        this.header.style.display = ""
-
-
         this.container.style.width = this.container.style.__width__
-        this.container.style.maxWidth = this.container.style.__maxWidth__
-        this.container.style.maxHeight = this.container.style.__maxHeight__
+        this.container.style.maxWidth = this.container.maxWidth + "px"
         this.container.style.position = "fixed"
-
+        this.container.style.height = "auto"
+        this.container.style.maxHeight = ""
+        this.showHeader()
         this.showPlaylist()
 
         ApplicationView.layout.workspace().appendChild(this)

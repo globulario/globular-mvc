@@ -228,9 +228,9 @@ export function setResizeable(div, onresize, side, zIndex) {
             if (div.style.position == "fixed") {
                 div.style.width = "100vw"
                 onresize(div.offsetWidth, div.offsetHeight)
-                fireResize()
             }
-           
+            fireResize()
+
             return
         }
 
@@ -249,13 +249,13 @@ export function setResizeable(div, onresize, side, zIndex) {
                 return;
             }
         }
-
+        
         if (div.isResizeWidth && div.isResizeHeigth) {
             div.style.width = w + "px"
             div.style.height = h + "px"
             if (onresize) {
                 onresize(div.offsetWidth, div.offsetHeight)
-                fireResize()
+               
             }
         } else if (div.isResizeWidth) {
             if (div.offsetWidth > w) {
@@ -268,7 +268,6 @@ export function setResizeable(div, onresize, side, zIndex) {
             div.style.width = w + "px"
             if (onresize) {
                 onresize(div.offsetWidth, div.offsetHeight)
-                fireResize()
             }
         } else if (div.isResizeHeigth) {
             if (div.offsetHeight > h) {
@@ -281,9 +280,9 @@ export function setResizeable(div, onresize, side, zIndex) {
             div.style.height = h + "px"
             if (onresize) {
                 onresize(div.offsetWidth, div.offsetHeight)
-                fireResize()
             }
         }
+        fireResize()
     }
 
     // Here I will resize the div as needed.

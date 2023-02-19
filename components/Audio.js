@@ -857,6 +857,11 @@ export class AudioPlayer extends HTMLElement {
 
     play(path, globule, audio, local = false) {
 
+        // display playing
+        if(this.isMinimized){
+            this.minimize()
+        }
+
         if (this._audio_ && audio) {
             if (this._audio_.getId() == audio.getId() && this.wavesurfer.isPlaying()) {
                 // be sure the audio player is visible...
