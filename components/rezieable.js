@@ -229,7 +229,8 @@ export function setResizeable(div, onresize, side, zIndex) {
                 div.style.width = "100vw"
                 onresize(div.offsetWidth, div.offsetHeight)
             }
-            fireResize()
+            if(div.isResizeHeigth || div.isResizeWidth)
+                fireResize()
 
             return
         }
@@ -249,7 +250,7 @@ export function setResizeable(div, onresize, side, zIndex) {
                 return;
             }
         }
-        
+
         if (div.isResizeWidth && div.isResizeHeigth) {
             div.style.width = w + "px"
             div.style.height = h + "px"
@@ -282,7 +283,8 @@ export function setResizeable(div, onresize, side, zIndex) {
                 onresize(div.offsetWidth, div.offsetHeight)
             }
         }
-        fireResize()
+        if(div.isResizeHeigth || div.isResizeWidth)
+            fireResize()
     }
 
     // Here I will resize the div as needed.

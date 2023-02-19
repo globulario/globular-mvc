@@ -214,7 +214,8 @@ export class AudioPlayer extends HTMLElement {
             /** Audio vizualizer **/
             .vz-wrapper {
                 width: 100%;
-
+                max-height: calc(100vh - 100px);
+                max-width: 100vw;
                 padding: 0px 5px 0px 5px;
                 display: flex;
                 flex-direction: column;
