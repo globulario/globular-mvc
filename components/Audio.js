@@ -105,6 +105,7 @@ export class AudioPlayer extends HTMLElement {
         let hideheader = this.getAttribute("hideheader") != undefined
         this.wavesurfer = null;
         this.isMinimized = false;
+        this.onMinimize = null;
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -856,18 +857,6 @@ export class AudioPlayer extends HTMLElement {
 
     play(path, globule, audio, local = false) {
 
-        // show sine of life...
-        if (this.style.display == "none") {
-            this.style.display = ""
-            if (this.isMinimized) {
-                setTimeout(() => {
-                    if (this.isMinimized) {
-                        this.style.display = "none"
-                    }
-                }, 3500) // 2 second
-            }
-        }
-
         if (this._audio_ && audio) {
             if (this._audio_.getId() == audio.getId() && this.wavesurfer.isPlaying()) {
                 // be sure the audio player is visible...
@@ -1066,27 +1055,14 @@ export class AudioPlayer extends HTMLElement {
         }
     }
 
-    setVertical() {
-        if (this.isMinimized) {
-            this.container.style.left = "36px"
-            this.container.style.top = "-33px"
-            this.container.style.bottom = ""
-        }
-    }
-
-    setHorizontal() {
-        if (this.isMinimized) {
-            this.container.style.bottom = "36px"
-            this.container.style.left = "0px"
-            this.container.style.top = ""
-        }
-    }
-
     /**
      * Minimize the element
      */
     minimize() {
         if (this.isMinimized) {
+            if(this.onMinimize != undefined){
+                this.onMinimize()
+            }
             return
         }
 
@@ -1124,23 +1100,12 @@ export class AudioPlayer extends HTMLElement {
 
         this.content.style.__width__ = this.content.style.width
         this.content.style.width = "300px"
+        this.container.style.position = "initial"
 
-        // the container
-        this.container.__top__ = this.container.style.top
-        this.container.style.top = ""
-        this.container.style.__left__ = this.container.style.left
-        this.container.style.left = "0px";
-        this.container.style.bottom = "36px"
-        this.container.style.__position__ = this.container.style.position
-        this.container.style.position = "absolute";
-
-        let w = ApplicationView.layout.width();
-        if (w < 500) {
-            this.setVertical()
-        } else {
-
-            this.setHorizontal()
+        if(this.onMinimize != undefined){
+            this.onMinimize()
         }
+
     }
 
     /**
@@ -1154,12 +1119,7 @@ export class AudioPlayer extends HTMLElement {
 
         this.isMinimized = false
         this.container.isMinimized = false
-
-        // set back values...
-        this.container.style.top = this.container.__top__
-        this.container.style.left = this.container.style.__left__
-        this.container.style.position = this.container.style.__position__
-        this.container.style.bottom = ""
+        this.container.style.position = "fixed"
 
         this.content.style.minWidth = this.content.style.__minWidth__
         this.content.style.maxHeight = this.content.style.__maxHeight__
@@ -1175,7 +1135,6 @@ export class AudioPlayer extends HTMLElement {
         this.header.style.display = ""
         this.trackTitle.style.fontSize = ""
         this.ablumCover.style.maxHeight = ""
-        this.container.style.position = "fixed"; // set back position to fixed
 
         this.showPlaylist()
 

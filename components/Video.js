@@ -137,6 +137,7 @@ export class VideoPlayer extends HTMLElement {
         this.shuffle = false;
         this.resume = false;
         this.isMinimized = false;
+        this.onMinimize = null;
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -689,17 +690,16 @@ export class VideoPlayer extends HTMLElement {
 
         // set the css value to display the playlist correctly...
         window.addEventListener("resize", (evt) => {
+            if(this.isMinimized){
+                this.content.style.height = "auto"
+                return
+            }
 
             let w = ApplicationView.layout.width();
             if (w < 500) {
-                if (!this.isMinimized) {
                     this.content.style.height = "calc(100vh - 100px)"
                     this.content.style.overflowY = "auto"
-                }else{
-                    this.content.style.height = "auto"
-                }
-
-            } else {
+            } else  {
                 this.content.style.height = ""
                 this.content.style.overflowY = ""
                 if (this.video.videoHeight < this.content.offsetHeight) {
@@ -801,17 +801,6 @@ export class VideoPlayer extends HTMLElement {
         if (titleInfo) {
             this.titleInfo = titleInfo
             this.titleInfo.globule = globule
-        }
-
-        if (this.style.display == "none") {
-            this.style.display = ""
-            if (this.isMinimized) {
-                setTimeout(() => {
-                    if (this.isMinimized) {
-                        this.style.display = "none"
-                    }
-                }, 3500) // 2 second
-            }
         }
 
         generatePeerToken(globule, token => {
@@ -1156,38 +1145,15 @@ export class VideoPlayer extends HTMLElement {
         }
     }
 
-    // The position when the video is minimized
-    setVertical() {
-        if (this.isMinimized) {
-            this.container.style.left = "36px"
-            this.container.style.top = "-33px"
-            this.container.style.bottom = ""
-        }
-    }
-
-    setHorizontal() {
-        if (this.isMinimized) {
-            this.container.style.bottom = "36px"
-            this.container.style.left = "0px"
-            this.container.style.top = ""
-        }
-    }
-
     hide() {
 
-        this.container.maxWidth = 0
         this.container.style.display = "none"
-        this.container.style.width = "0px"
-        this.container.style.height = "0px"
         this.hideHeader()
-
-        this.video.style.display = "none";
     }
 
     show() {
         this.showHeader()
         this.container.style.display = ""
-        this.video.style.display = "";
     }
 
     hideHeader() {
@@ -1214,6 +1180,9 @@ export class VideoPlayer extends HTMLElement {
      */
     minimize() {
         if (this.isMinimized) {
+            if(this.onMinimize){
+                this.onMinimize()
+            }
             return
         }
 
@@ -1232,25 +1201,15 @@ export class VideoPlayer extends HTMLElement {
         this.container.style.__maxHeight__ = this.container.style.maxHeight
         this.container.style.maxHeight = "300px"
         this.container.style.height = "auto"
-
-        this.container.__top__ = this.container.style.top
-        this.container.style.top = ""
-        this.container.style.__left__ = this.container.style.left
-        this.container.style.left = "0px";
-
-        let w = ApplicationView.layout.width();
-        if (w < 500) {
-            this.setVertical()
-        } else {
-            this.setHorizontal()
-        }
-
-        this.container.style.__position__ = this.container.style.position
-        this.container.style.position = "absolute";
+        this.container.style.position = "initial"
 
         if (this.playlist.count() > 1) {
             this.skipNextBtn.style.display = ""
             this.skipPresiousBtn.style.display = ""
+        }
+
+        if(this.onMinimize){
+            this.onMinimize()
         }
     }
 
@@ -1267,15 +1226,11 @@ export class VideoPlayer extends HTMLElement {
         this.isMinimized = false
         this.header.style.display = ""
 
-        // set back values...
-        this.container.style.top = this.container.__top__
-        this.container.style.left = this.container.style.__left__
-        this.container.style.position = this.container.style.__position__
-        this.container.style.bottom = ""
 
         this.container.style.width = this.container.style.__width__
         this.container.style.maxWidth = this.container.style.__maxWidth__
         this.container.style.maxHeight = this.container.style.__maxHeight__
+        this.container.style.position = "fixed"
 
         this.showPlaylist()
 

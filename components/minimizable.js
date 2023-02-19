@@ -1,4 +1,5 @@
 import { ApplicationView } from "../ApplicationView"
+import { fireResize } from "./utility"
 
 var mininizeableBar = null
 
@@ -14,12 +15,6 @@ export function setMinimizeable(header, element, id, name, icon) {
 
     // append it to the workspace.
     ApplicationView.layout.workspace().appendChild(mininizeableBar)
-    let w = ApplicationView.layout.width();
-    if (w < 500 ) {
-        element.setVertical()
-    }else{
-        element.setHorizontal()
-    }
 
     // first of all I will find the close button
     let buttons = header.querySelectorAll("paper-icon-button")
@@ -29,6 +24,14 @@ export function setMinimizeable(header, element, id, name, icon) {
 
                 // append minimizeable element to the bar...
                 let group = mininizeableBar.insertMinimizable(element, id, name, icon)
+
+                // Set the minimize listener...
+                element.onMinimize = ()=>{
+                    group.showContent()
+                    setTimeout(()=>{
+                        group.hideContent()
+                    }, 3500)
+                }
 
                 let maximizeBtn = document.createElement("paper-icon-button")
                 maximizeBtn.icon = "icons:add"
@@ -48,9 +51,7 @@ export function setMinimizeable(header, element, id, name, icon) {
                     evt.stopPropagation()
                     if (element.isMinimized) {
                         maximizeBtn.style.display = "none"
-                        element.maximize()
-                        element.style.display = ""
-                        group.parentNode.style.display = ""
+                        group.maximize(id)
 
                         // set back the close button to it original place.
                         closeBtn.style.position = ""
@@ -119,7 +120,7 @@ export class MininizeableBar extends HTMLElement {
             }
 
             ::slotted(globular-minimizeable-group){
-                margin-right: 6px;
+                margin-left: 6px;
                 margin-top: 6px;
             }
 
@@ -138,27 +139,22 @@ export class MininizeableBar extends HTMLElement {
             // set the postion to 0, 0
             let w = ApplicationView.layout.width();
             let container = this.shadowRoot.querySelector("#container")
-            let elements = document.getElementsByTagName("globular-minimizeable-element")
-            if (w < 500 ) {
+            if (w < 500) {
                 container.style.flexDirection = "column"
-                for (var i = 0; i < elements.length; i++) {
-                    elements[i].setVertical()
+                for (var i = 0; i < this.children.length; i++) {
+                    this.children[i].setVertical()
                 }
-            }else{
+            } else {
                 container.style.flexDirection = "row"
-                for (var i = 0; i < elements.length; i++) {
-                    elements[i].setHorizontal()
+                for (var i = 0; i < this.children.length; i++) {
+                    this.children[i].setHorizontal()
                 }
             }
         })
     }
 
-    connectedCallback(){
-        let w = ApplicationView.layout.width();
-        if (w < 500) {
-            let container = this.shadowRoot.querySelector("#container")
-            container.style.flexDirection = "column"
-        }
+    connectedCallback() {
+        fireResize()
     }
 
     /**
@@ -178,6 +174,7 @@ export class MininizeableBar extends HTMLElement {
             minimizeables = new MinimizeableGroup(name, icon)
             minimizeables.id = name
             this.appendChild(minimizeables)
+            fireResize() // set the group direction...
         }
 
         minimizeables.insertMinimizable(element, id, name, icon)
@@ -196,14 +193,7 @@ export class MininizeableBar extends HTMLElement {
         // Hide the div...
         let minimizeables = this.querySelector("#" + name)
         minimizeables.minimize(id)
-
-        // 
     }
-
-    maximize(div) {
-
-    }
-
 }
 
 customElements.define('globular-mininizeable-bar', MininizeableBar)
@@ -242,13 +232,21 @@ export class MinimizeableGroup extends HTMLElement {
                 border-bottom: 1px solid rgb(12, 72, 98);
             }
 
+            #content{
+                display: flex;
+                position: absolute;
+            }
+
         </style>
         <div id="container">
             <div style="position: relative;">
                 <iron-icon style="padding: 5px;" class="big" icon="${icon}"></iron-icon>
                 <paper-ripple style="border-radius: 3px;" recenters></paper-ripple>
+                <div id="content">
+                    <slot><slot>
+                </div>
             </div>
-            <slot><slot>
+            
         </div>
         `
         // give the focus to the input.
@@ -256,52 +254,52 @@ export class MinimizeableGroup extends HTMLElement {
 
         container.onclick = () => {
 
-            let isVisible = this.isVisible()
-
-            let elements = document.getElementsByTagName("globular-minimizeable-element")
-            for (var i = 0; i < elements.length; i++) {
-                elements[i].hide()
-            }
+            let isVisible = this.isContentVisible()
 
             let groups = document.getElementsByTagName("globular-minimizeable-group")
             for (var i = 0; i < groups.length; i++) {
                 groups[i].resetActive()
+                groups[i].hideContent()
             }
 
             if (!isVisible) {
-                this.show()
+                this.showContent()
                 this.setActive();
             } else {
-                this.hide()
+                this.hideContent()
             }
 
         }
     }
 
     isVisible() {
-        let elements = this.querySelectorAll("globular-minimizeable-element")
-        for (var i = 0; i < elements.length; i++) {
-            if (elements[i].isVisible()) {
-                return true
-            }
-        }
-        return false;
+        let container = this.shadowRoot.querySelector("#container")
+        return container.style.display != "none"
+    }
+
+    isContentVisible() {
+        let content = this.shadowRoot.querySelector("#content")
+        return content.style.display != "none"
     }
 
     hide() {
-
-        let elements = this.querySelectorAll("globular-minimizeable-element")
-        for (var i = 0; i < elements.length; i++) {
-            elements[i].hide()
-        }
-
+        let container = this.shadowRoot.querySelector("#container")
+        container.style.display = "none"
     }
 
     show() {
-        let elements = this.querySelectorAll("globular-minimizeable-element")
-        for (var i = 0; i < elements.length; i++) {
-            elements[i].show()
-        }
+        let container = this.shadowRoot.querySelector("#container")
+        container.style.display = "block"
+    }
+
+    hideContent() {
+        let content = this.shadowRoot.querySelector("#content")
+        content.style.display = "none"
+    }
+
+    showContent() {
+        let content = this.shadowRoot.querySelector("#content")
+        content.style.display = "block"
     }
 
     setActive() {
@@ -324,7 +322,6 @@ export class MinimizeableGroup extends HTMLElement {
     }
 
     removeMinimizable(id) {
-
         let minimizeable = this.querySelector("#" + id)
         if (minimizeable) {
             minimizeable.parentNode.removeChild(minimizeable)
@@ -338,21 +335,47 @@ export class MinimizeableGroup extends HTMLElement {
 
     minimize(id) {
 
+        let minimizeableElement = this.querySelector("#" + id)
+        minimizeableElement.style.display = "";
+        minimizeableElement.minimize()
+    
         let groups = document.getElementsByTagName("globular-minimizeable-group")
         for (var i = 0; i < groups.length; i++) {
             if (this.id != groups[i].id)
-                groups[i].hide()
+                groups[i].hideContent()
             groups[i].resetActive()
         }
 
-        let minimizeable = this.querySelector("#" + id)
-        minimizeable.minimize()
-        this.shadowRoot.querySelector("#container").style.display = "block"
         this.resetActive()
+        this.show()
+        this.showContent()
+
+        setTimeout(() => {
+            this.hideContent()
+        }, 3500)
     }
 
     maximize(id) {
-        this.shadowRoot.querySelector("#container").style.display = "none"
+        let minimizeableElement = this.querySelector("#" + id)
+        minimizeableElement.style.display = "none";
+        minimizeableElement.maximize()
+
+    }
+
+    setVertical() {
+        let content = this.shadowRoot.querySelector("#content")
+        content.style.flexDirection = "column"
+        content.style.bottom = ""
+        content.style.left = "40px"
+        content.style.top = "0px"
+    }
+
+    setHorizontal() {
+        let content = this.shadowRoot.querySelector("#content")
+        content.style.flexDirection = "row"
+        content.style.bottom = "40px"
+        content.style.left = "0px"
+        content.style.top = ""
     }
 
 }
@@ -388,33 +411,14 @@ export class MinimizeableElement extends HTMLElement {
         let container = this.shadowRoot.querySelector("#container")
     }
 
-    setVertical(){
-        this.element.setVertical()
-    }
-
-    setHorizontal(){
-        this.element.setHorizontal()
-    }
 
     minimize() {
         this.element.minimize()
         this.appendChild(this.element)
-        setTimeout(() => {
-            if (this.element.isMinimized) {
-                this.hide()
-            }
-        }, 3500)
     }
 
-    isVisible() {
-        return this.element.style.display != "none"
-    }
-
-    hide() {
-        this.element.style.display = "none"
-    }
-
-    show() {
+    maximize(){
+        this.element.maximize()
         this.element.style.display = ""
     }
 
