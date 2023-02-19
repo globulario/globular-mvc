@@ -94,6 +94,19 @@ export class PlayList extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
            
+            ::-webkit-scrollbar {
+                width: 5px;
+                height: 5px;
+            }
+                
+            ::-webkit-scrollbar-track {
+                background: var(--palette-background-default);
+            }
+            
+            ::-webkit-scrollbar-thumb {
+                background: var(--palette-divider); 
+            }
+
             #container { 
                 overflow-y: auto;
                 overflow-x: hidden;
@@ -109,22 +122,12 @@ export class PlayList extends HTMLElement {
                 max-width: 100vw;
             }
 
-            ::-webkit-scrollbar {
-                width: 5px;
-                height: 5px;
-             }
-                
-             ::-webkit-scrollbar-track {
-                background: var(--palette-background-default);
-             }
-             
-             ::-webkit-scrollbar-thumb {
-                background: var(--palette-divider); 
-             }
+
             ::slotted(globular-playlist-item) {
                 display: table-row;
                 padding: 2px;
             }
+
             ::slotted(.playing) {
                 -webkit-box-shadow: inset 5px 5px 15px 5px #152635; 
                 box-shadow: inset 5px 5px 15px 5px #152635;

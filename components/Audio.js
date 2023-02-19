@@ -137,6 +137,20 @@ export class AudioPlayer extends HTMLElement {
                 max-width: calc(100vw - 50px);
             }
 
+            ::-webkit-scrollbar {
+                width: 5px;
+                height: 5px;
+            }
+                
+            ::-webkit-scrollbar-track {
+                background: var(--palette-background-default);
+            }
+            
+            ::-webkit-scrollbar-thumb {
+                background: var(--palette-divider); 
+            }
+
+
             #content{
                 height: 600px;
                 min-width: 650px;

@@ -260,7 +260,10 @@ function getVideoPreview(parent, path, name, callback, globule) {
                     if (titleInfoBox) {
                         titleInfoBox.parentNode.removeChild(titleInfoBox)
                     }
-                    video.toggleFullscreen();
+                    if(video.toggleFullscreen){
+                        video.toggleFullscreen();
+                    }
+                   
                 }, null, null, globule)
             }
 
