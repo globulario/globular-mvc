@@ -2598,8 +2598,7 @@ export class SearchTitleDetail extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-           
-           
+
             .search-title-detail{
                 position: absolute;               
                 max-width: 256px;
@@ -2645,6 +2644,12 @@ export class SearchTitleDetail extends HTMLElement {
             .title-div{
                 position: relative;
             }
+
+            .video-div #title-info-button, #play-video-button, #play-episode-video-button{
+                --paper-icon-button-ink-color: #1976d2;
+                --iron-icon-fill-color: #1976d2;
+            }
+
 
         </style>
 
@@ -2839,12 +2844,14 @@ export class SearchTitleDetail extends HTMLElement {
 
             }
 
-            seasonSelect.onchange = () => {
+            seasonSelect.onchange = (evt) => {
+                evt.stopPropagation()
                 var opt = seasonSelect.options[seasonSelect.selectedIndex];
                 setEpisodeOptions(opt.episodes)
             }
 
-            episodeSelect.onchange = () => {
+            episodeSelect.onchange = (evt) => {
+                evt.stopPropagation()
                 var opt = episodeSelect.options[episodeSelect.selectedIndex];
                 setEpisodeOption(opt.episode)
             }
