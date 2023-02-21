@@ -249,6 +249,9 @@ export class Ringtones extends HTMLElement {
     }
 
     setRingtone(ringtone) {
+        if(!ringtone){
+            return
+        }
 
         // set back the actual ringtone in the list
         ringtone.hideSetButton()

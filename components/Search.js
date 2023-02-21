@@ -2642,37 +2642,43 @@ export class SearchTitleDetail extends HTMLElement {
                 margin-left: 5px;
             }
 
+            .title-div{
+                position: relative;
+            }
+
         </style>
 
         
         <div class="search-title-detail">
-            <div class="video-div">
-                <div class="title-title-div"></div>
+            <div class="video-div"  style="position: relative;">
+                <div class="title-div"></div>
                 <video muted autoplay loop class="preview" id="title-preview"></video>
+                <div class="title-interaction-div" style="display: flex; position: absolute; top:0px; right: 10px; left:10px;">
+                    <paper-icon-button id="play-video-button" icon="av:play-circle-filled"></paper-icon-button>
+                    <span style="flex-grow: 1;"></span>
+                    <paper-icon-button id="title-info-button" icon="icons:arrow-drop-down-circle"></paper-icon-button>              
+                </div>
             </div>
 
-            <div class="title-interaction-div" style="display: flex;">
-                <paper-icon-button id="play-video-button" icon="av:play-circle-filled"></paper-icon-button>
-                <paper-icon-button icon="av:icons:add-circle"></paper-icon-button>
-                <span style="flex-grow: 1;"></span>
-                <paper-icon-button id="title-info-button" icon="icons:arrow-drop-down-circle"></paper-icon-button>              
-            </div>
-            <div>
+            <div id="informations-div"  style="position: relative;">
                 <globular-informations-manager short></globular-informations-manager>
             </div>
-            <div class="season-episodes-lst">
+            <div class="season-episodes-lst" style="display:none;">
                 <div id="loading-episodes-infos" style="diplay:flex; flex-direction: column; width: 100%;">
                     <span id="progress-message">loading episodes infos wait...</span>
                     <paper-progress indeterminate style="width: 100%;"></paper-progress>
                 </div>
-                <div id="episodes-select-div" style="display:none;">
+                <div id="episodes-select-div" style="position: absolute; bottom: 0px; left: 0px;">
                     <select id="season-select" style="max-width: 80px;"></select>
                     <select id="episode-select" style="max-width: 102px;"></select>
-                    <span style="flex-grow: 1;"></span>
-                    <paper-icon-button id="play-episode-video-button" icon="av:play-circle-filled"></paper-icon-button>
                     <paper-icon-button id="episode-info-button" icon="icons:arrow-drop-down-circle"></paper-icon-button>
                 </div>
-                <video autoplay muted loop class="preview" id="epsiode-preview"></video>
+                <div style="position: relative;">
+                    <video autoplay muted loop class="preview" id="epsiode-preview"></video>
+                    <div style="position: absolute; top: 0px; right: 10px">
+                        <paper-icon-button id="play-episode-video-button" icon="av:play-circle-filled"></paper-icon-button>
+                    </div>
+                </div>
             </div>
         </div>
         `
@@ -2682,22 +2688,26 @@ export class SearchTitleDetail extends HTMLElement {
         this.titlePreview = this.shadowRoot.querySelector("#title-preview")
 
         this.titleCard.onmouseover = (evt) => {
-            this.titlePreview.play()
+            if(episodesLst.style.display != "flex")
+                this.titlePreview.play()
         }
 
         this.titleCard.onmouseleave = (evt) => {
-            this.titlePreview.pause()
+            if(episodesLst.style.display != "flex")
+                this.titlePreview.pause()
         }
 
         this.episodePreview = this.shadowRoot.querySelector("#epsiode-preview")
         let episodesLst = this.shadowRoot.querySelector(".season-episodes-lst")
 
         episodesLst.onmouseover = (evt) => {
-            this.episodePreview.play()
+            if(episodesLst.style.display == "flex")
+                this.episodePreview.play()
         }
 
         episodesLst.onmouseleave = (evt) => {
-            this.episodePreview.pause()
+            if(episodesLst.style.display == "flex")
+                this.episodePreview.pause()
         }
     }
 
@@ -2718,7 +2728,14 @@ export class SearchTitleDetail extends HTMLElement {
             }
 
             this.shadowRoot.querySelector("#loading-episodes-infos").style.display = "none"
-            this.shadowRoot.querySelector("#episodes-select-div").style.display = "flex"
+            this.shadowRoot.querySelector(".season-episodes-lst").style.display = "flex"
+            this.shadowRoot.querySelector(".video-div").style.display = "none"
+            let serieInfoBtn = this.shadowRoot.querySelector("#title-info-button")
+            serieInfoBtn.style.position = "absolute"
+            serieInfoBtn.style.right = "0px"
+            serieInfoBtn.style.bottom = "0px"
+
+            this.shadowRoot.querySelector("#informations-div").appendChild(serieInfoBtn)
 
             let infos = {}
             episodes.forEach(e => {

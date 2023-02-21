@@ -726,6 +726,7 @@ export class VideoInfo extends HTMLElement {
 
             .title-poster-img{
                 max-width: 320px;
+                max-height: 350px;
             }
 
             paper-button {
@@ -754,6 +755,7 @@ export class VideoInfo extends HTMLElement {
 
                 .title-poster-img{
                     max-width: 256px;
+                    max-height: 256px;
                 }
             }
 
@@ -1178,6 +1180,7 @@ export class TitleInfo extends HTMLElement {
 
             .title-poster-img{
                 max-width: 320px;
+                max-height: 350px;
             }
 
             paper-card{
@@ -1208,6 +1211,7 @@ export class TitleInfo extends HTMLElement {
 
                 .title-poster-img{
                     max-width: 256px;
+                    max-height: 256px;
                 }
             }
 

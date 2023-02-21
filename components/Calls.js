@@ -547,6 +547,7 @@ export class CallsHistoryMenu extends Menu {
                             .contact-infos{
                                 display: flex;
                                 flex-grow: 1;
+                                align-items: center;
 
                             }
 
@@ -558,6 +559,7 @@ export class CallsHistoryMenu extends Menu {
 
                                 .contact-infos{
                                     flex-direction: column;
+                                    
                                 }
 
                                 .contact-infos span{
@@ -573,7 +575,8 @@ export class CallsHistoryMenu extends Menu {
                             </div>
                             <div style="display: flex; align-items: center;">
                                 <div class="contact-infos">
-                                    <img></img>
+                                    <img id="account-img" style="display: none;"></img>
+                                    <iron-icon id="account-icon" icon="account-circle" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled);"></iron-icon>
                                     <span style="flex-grow: 1;"></span>
                                 </div>
                                 <paper-icon-button id="delete-btn" icon="icons:delete"></paper-icon-button>
@@ -583,7 +586,8 @@ export class CallsHistoryMenu extends Menu {
                         `
                         let fragment = range.createContextualFragment(html)
                         let div = fragment.querySelector(`#_${call.getUuid()}`)
-                        let img = fragment.querySelector("img")
+                        let img = fragment.querySelector("#account-img")
+                        let icon = fragment.querySelector("#account-icon")
                         let span = fragment.querySelector("span")
                         let call_btn = fragment.querySelector("#call-btn")
                         let delete_btn = fragment.querySelector("#delete-btn")
@@ -604,7 +608,12 @@ export class CallsHistoryMenu extends Menu {
                                     incommingCallsDiv.appendChild(fragment)
                                 }
                                 if (contact) {
-                                    img.src = contact.profilePicture
+                                    if(contact.profilePicture.length > 0){
+                                        img.src = contact.profilePicture
+                                        img.style.display = "block"
+                                        icon.style.display = "none"
+                                    }
+
                                     span.innerHTML = contact.email
                                     let call_start = new Date(call.getStarttime() * 1000)
                                     date_div.innerHTML = call_start.toLocaleDateString() + " " + call_start.toLocaleTimeString()
@@ -779,7 +788,7 @@ export class CallsHistoryMenu extends Menu {
                                         border-radius: 50%;
                                     }
 
-                                    #call-img{
+                                    #call-icon, #call-img{
                                         width: 185.31px; 
                                         height: 100%; 
                                         align-self: center; 
@@ -792,7 +801,8 @@ export class CallsHistoryMenu extends Menu {
                                 <div id="select-media-dialog">
                                     <div>Outgoing Call to </div>
                                     <div style="display: flex; flex-direction: column; align-items: center;">
-                                        <img  id="call-img" src="${callee.profilePicture}"> </img>
+                                        <img id="call-img" style="display: ${callee.profilePicture.length == 0 ? "none" : "block"};" src="${callee.profilePicture}"></img>
+                                        <iron-icon id="call-icon" icon="account-circle" style="--iron-icon-fill-color:var(--palette-action-disabled); display: ${callee.profilePicture.length != 0 ? "none" : "block"};"></iron-icon>
                                         <div stye="display: flex; align-items: center;">
                                             <span style="max-width: 300px; font-size: 1.7rem; margin-right: 16px;">${callee.name}</span>
                                             <paper-icon-button id="cancel-button" style="background-color: red " icon="communication:call-end"></paper-icon-button>

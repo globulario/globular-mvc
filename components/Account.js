@@ -674,8 +674,8 @@ export class AccountPanel extends HTMLElement {
         </style>
         <div id="container">
             <div class="header">
-            <img style="width: 32px; height: 32px; display: ${this.account.profilePicture_ == undefined ? "none" : "block"};" src="${this.account.profilePicture_}"></img>
-            <iron-icon icon="account-circle" style="width: 32px; height: 32px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${this.account.profilePicture_ != undefined ? "none" : "block"};"></iron-icon>
+            <img style="width: 32px; height: 32px; display: ${this.account.getProfilepicture() == undefined ? "none" : "block"};" src="${this.account.getProfilepicture()}"></img>
+            <iron-icon icon="account-circle" style="width: 32px; height: 32px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${this.account.getProfilepicture() != undefined ? "none" : "block"};"></iron-icon>
                 <span class="title">${this.account.getName() + "@" + this.account.getDomain()}</span>
                 <globular-disk-space-manager editable="true" account="${this.account.getId() + "@" + this.account.getDomain()}"></globular-disk-space-manager>
                 <paper-button id="delete-account-btn">Delete</paper-button>

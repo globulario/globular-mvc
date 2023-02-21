@@ -1289,8 +1289,8 @@ export class ContactCard extends HTMLElement {
         </style>
         <div class="contact-invitation-div" style="display: flex; flex-direction: column;">
             <div style="display: flex; align-items: center; padding: 5px;"> 
-                <img style="width: 40px; height: 40px; display: ${this.contact.profilePicture_ == undefined ? "none" : "block"};" src="${this.contact.profilePicture_}"></img>
-                <iron-icon icon="account-circle" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${this.contact.profilePicture_ != undefined ? "none" : "block"};"></iron-icon>
+                <img style="width: 40px; height: 40px; display: ${this.contact.profilePicture.length == 0 ? "none" : "block"};" src="${this.contact.profilePicture}"></img>
+                <iron-icon icon="account-circle" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${this.contact.profilePicture.length != 0 ? "none" : "block"};"></iron-icon>
                 <div style="display: flex; flex-direction: column; width:300px; font-size: .85em; padding-left: 8px;">
                     <span>${this.contact.name}</span>
                     <span>${this.contact.email_}</span>

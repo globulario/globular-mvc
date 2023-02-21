@@ -1013,8 +1013,8 @@ export class PermissionsViewer extends HTMLElement {
         </style>
         <div id="${uuid}" class="item-div" style="">
             <div style="display: flex; align-items: center; padding: 5px; width: 100%;"> 
-                <img style="width: 40px; height: 40px; display: ${account.profilePicture_ == undefined ? "none" : "block"};" src="${account.profilePicture_}"></img>
-                <iron-icon icon="account-circle" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${account.profilePicture_ != undefined ? "none" : "block"};"></iron-icon>
+                <img style="width: 40px; height: 40px; display: ${account.profilePicture.length == 0 ? "none" : "block"};" src="${account.profilePicture_}"></img>
+                <iron-icon icon="account-circle" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${account.profilePicture.length != 0 ? "none" : "block"};"></iron-icon>
                 <div style="display: flex; flex-direction: column; width:250px; font-size: .85em; padding-left: 8px;">
                     <span>${account.name}</span>
                     <span>${account.email_}</span>
