@@ -437,6 +437,7 @@ export class InformationsManager extends HTMLElement {
                 color: var(--palette-text-primary);
                 font-size: 1rem;
                 user-select: none;
+                max-height: calc(100vh - 100px);
             }
 
             #header {
@@ -490,8 +491,6 @@ export class InformationsManager extends HTMLElement {
             .permissions{
                 padding: 10px;
             }
-
- 
 
         </style>
         <div id="container">

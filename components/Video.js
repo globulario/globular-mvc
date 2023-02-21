@@ -1030,7 +1030,6 @@ export class VideoPlayer extends HTMLElement {
         } else if (!path.endsWith("/playlist.m3u8")) {
             path += "/playlist.m3u8"
         } else {
-
             if (!(path.endsWith("/playlist.m3u8") || path.endsWith(".mp4") || path.endsWith(".webm"))) {
                 ApplicationView.displayMessage("the file cannot be play by the video player", 3000)
                 return
@@ -1084,8 +1083,6 @@ export class VideoPlayer extends HTMLElement {
 
         url += "?application=" + Model.application
         url += "&token=" + token
-
-
         if (local) {
             url = "local-media://" + path
         }

@@ -4132,6 +4132,7 @@ export class FileExplorer extends HTMLElement {
                 border-right: 1px solid var(--palette-divider);
                 min-height: 350px;
                 min-width: 500px;
+                max-height: calc(100vh - 60px);
             }
 
             #file-navigation-panel{

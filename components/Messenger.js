@@ -977,6 +977,7 @@ export class Messenger extends HTMLElement {
                 min-width: 477.58px;
                 background-color: var(--palette-background-paper);
                 color: var(--palette-text-primary);
+                max-height: calc(100vh - 60px);
             }
 
             .header{
@@ -1024,7 +1025,16 @@ export class Messenger extends HTMLElement {
                 background-color: var(--palette-background-default);
                 display: flex;
                 flex-grow: 1;
-                overflow-y: auto;
+                posistion: relative;
+            }
+
+            globular-messages-list{
+                overflow-y: auto;   
+                posistion: absolute;
+                top: 0px;
+                left: 0px;
+                bottom: 0px;
+                right: 0px;
             }
 
             #messages-list-container globular-messages-list{
@@ -1068,6 +1078,8 @@ export class Messenger extends HTMLElement {
                     border-right: none;
                     border-bottom: 1px solid var(--palette-divider);
                 }
+
+
 
                 .messenger-content {
                     width: 100vw;
@@ -1116,11 +1128,9 @@ export class Messenger extends HTMLElement {
                 </div>
             </iron-collapse>
             <div class="messenger-content">
-
                 <div id="messages-list-container">
-                    <globular-messages-list style="align-self: end; height: 100%;"></globular-messages-list>
+                    <globular-messages-list></globular-messages-list>
                 </div>
-
                 <globular-message-editor></globular-message-editor>
             </div>
         </paper-card>
@@ -1302,7 +1312,7 @@ export class Messenger extends HTMLElement {
     }
 
     setScroll() {
-        let messageList = this.shadowRoot.querySelector("#messages-list-container");
+        let messageList = this.shadowRoot.querySelector("globular-messages-list");
         messageList.scrollTop = messageList.scrollHeight;
     }
 
@@ -1950,7 +1960,7 @@ export class MessagesList extends HTMLElement {
             .container{
                 padding-left: 40px;
                 padding-right: 8px;
-                padding-bottom: 100px;
+                padding-bottom: 10px;
                 display: flex;
                 flex-direction: column;
             }
