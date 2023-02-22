@@ -72,7 +72,6 @@ export function playVideo(path, onplay, onclose, title, globule) {
         videoPlayer.onclose = onclose
     }
 
-
     // clear the playlist...
     if (videoPlayer.playlist)
         videoPlayer.playlist.clear()
@@ -81,13 +80,13 @@ export function playVideo(path, onplay, onclose, title, globule) {
     if (path.endsWith("video.m3u") || path.startsWith("#EXTM3U")) {
         videoPlayer.loadPlaylist(path, globule)
     } else {
+        // make sure the player is not show before the video is loaded.
+        ApplicationView.wait("loading video...")
         videoPlayer.play(path, globule)
     }
 
     if (!videoPlayer.isMinimized) {
         ApplicationView.layout.workspace().appendChild(videoPlayer)
-    } else {
-        videoPlayer.minimize()
     }
 
     return videoPlayer
@@ -155,7 +154,7 @@ export class VideoPlayer extends HTMLElement {
                 display: flex;
                 background-color: black;
                 justify-items: center;
-                background-color: var(--palette-background-paper);
+                background-color: black;
                 color: var(--palette-text-primary);
             }
 
@@ -296,14 +295,12 @@ export class VideoPlayer extends HTMLElement {
         this.video.onplaying = (evt) => {
 
             if (this.resume) {
-                this.show()
                 ApplicationView.resume()
+                this.show()
                 return
             }
 
             this.resume = true
-
-            
             let w = ApplicationView.layout.width();
             if (w < 500) {
                 if(!this.minimize)
@@ -342,6 +339,7 @@ export class VideoPlayer extends HTMLElement {
                     localStorage.setItem("__video_player_dimension__", JSON.stringify({ width: maxWidth, height: height }))
                 }
             }
+            this.show()
         }
 
         // toggle full screen when the user double click on the header.
@@ -381,7 +379,7 @@ export class VideoPlayer extends HTMLElement {
         this.video.onloadeddata = () => {
 
             ApplicationView.resume()
-            this.show()        // Options for the observer (which mutations to observe)
+            // Options for the observer (which mutations to observe)
             var config = {
                 attributes: true,
                 subtree: true
@@ -778,8 +776,7 @@ export class VideoPlayer extends HTMLElement {
 
     play(path, globule, titleInfo) {
 
-        // make sure the player is not show before the video is loaded.
-        ApplicationView.wait("loading video...")
+ 
         if (this.isMinimized) {
             this.minimize()
         }
@@ -873,6 +870,7 @@ export class VideoPlayer extends HTMLElement {
 
     play_(path, globule, local = false, token) {
 
+        this.hide()
 
         // replace separator...
         path = path.split("\\").join("/")
@@ -1130,14 +1128,18 @@ export class VideoPlayer extends HTMLElement {
     }
 
     hide() {
-
-        this.container.style.display = "none"
         this.hideHeader()
+        this.container.style.display = "none"
+        this.header.style.display = "none";
+        let plyrVideo = this.querySelector(".plyr--video")
+        plyrVideo.style.display = "none";
     }
 
     show() {
-        this.showHeader()
         this.container.style.display = ""
+        let plyrVideo = this.querySelector(".plyr--video")
+        plyrVideo.style.display = ""
+        this.showHeader()
     }
 
     hideHeader() {

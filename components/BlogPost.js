@@ -926,7 +926,7 @@ export class BlogPosts extends HTMLElement {
 
             paper-card {
                 background-color: var(--palette-background-paper);
-                margin-top: 25px;
+                margin-top: 10px;
                 font-size: 1.65rem;
             }
 

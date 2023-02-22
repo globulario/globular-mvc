@@ -594,7 +594,9 @@ emoji-picker {
    background-color: transparent;
    font-family: Playfair Display;
    width: var(--blog-page-width);
-   margin-left: 75px;
+   max-width: 728px;
+   min-width: 728px;
+   margin-left: 35px;
 }
 
 .blog-read-div iframe {
@@ -683,9 +685,9 @@ emoji-picker {
 
    .blog-read-div {
       width: calc(100vw - 20px);
+      min-width: calc(100vw - 20px);
       margin: 0px;
       padding: 0px;
-
    }
 
    .blog-read-div img{

@@ -4160,6 +4160,11 @@ export class FileExplorer extends HTMLElement {
                 #file-explorer-content {
                     margin-bottom: 40px;
                 }
+
+                #enter-full-screen-btn{
+                    display: none;
+                }
+                
             }
 
         </style>
