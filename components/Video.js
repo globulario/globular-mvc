@@ -288,8 +288,18 @@ export class VideoPlayer extends HTMLElement {
 
         this.container.resizeHeightDiv.style.display = "none"
 
+        // Set the video to full screen when orientation change.
+        window.addEventListener("orientationchange",  (event) => {
+            var orientation = (screen.orientation || {}).type || screen.mozOrientation || screen.msOrientation;
 
+            if (["landscape-primary", "landscape-secondary"].indexOf(orientation) != -1) {
+                this.becomeFullscreen();
+            }
 
+            else if (orientation === undefined) {
+                console.log("The orientation API isn't supported in this browser :(");
+            }
+        });
 
         // set the initial size of the video player to fit the played video...
         this.video.onplaying = (evt) => {
@@ -303,8 +313,8 @@ export class VideoPlayer extends HTMLElement {
             this.resume = true
             let w = ApplicationView.layout.width();
             if (w < 500) {
-                if(!this.minimize)
-                this.container.style.width = "100vw"
+                if (!this.minimize)
+                    this.container.style.width = "100vw"
             } else {
                 if (this.video.videoHeight > 0 && this.video.videoWidth > 0) {
 
@@ -326,7 +336,7 @@ export class VideoPlayer extends HTMLElement {
                             this.playlist.__width__ = this.playlist.offsetWidth
                             maxWidth += this.playlist.offsetWidth
                         }
-                    }else if(this.playlist.count() > 1){
+                    } else if (this.playlist.count() > 1) {
                         maxWidth += this.playlist.__width__
                     }
 
@@ -776,7 +786,7 @@ export class VideoPlayer extends HTMLElement {
 
     play(path, globule, titleInfo) {
 
- 
+
         if (this.isMinimized) {
             this.minimize()
         }
@@ -1092,6 +1102,21 @@ export class VideoPlayer extends HTMLElement {
         }
 
 
+    }
+
+    becomeFullscreen() {
+        if (this.video.requestFullscreen) {
+            this.video.requestFullscreen();
+        } else if (this.video.mozRequestFullScreen) {
+            /* Firefox */
+            this.video.mozRequestFullScreen();
+        } else if (this.video.webkitRequestFullscreen) {
+            /* Chrome, Safari and Opera */
+            this.video.webkitRequestFullscreen();
+        } else if (this.video.msRequestFullscreen) {
+            /* IE/Edge */
+            this.video.msRequestFullscreen();
+        }
     }
 
     /**

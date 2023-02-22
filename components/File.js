@@ -4164,7 +4164,7 @@ export class FileExplorer extends HTMLElement {
                 #enter-full-screen-btn{
                     display: none;
                 }
-                
+
             }
 
         </style>
@@ -4286,13 +4286,13 @@ export class FileExplorer extends HTMLElement {
                 fileExplorerBox.style.overflowY = "auto"
                 fileExplorerBox.style.top = "0px"
                 fileExplorerBox.style.left = "0px"
-                fileExplorerBox.querySelector("#file-navigation-panel").style.width = "100vw"
-                fileExplorerBox.querySelector("#file-explorer-layout").style.width = "100vw"
-                fileExplorerBox.querySelector("#file-explorer-content").style.width = "100vw"
+                fileExplorerBox.querySelector("#file-navigation-panel").style.width = "calc(100vw - 10px)"
+                fileExplorerBox.querySelector("#file-explorer-layout").style.width = "calc(100vw - 10px)"
+                fileExplorerBox.querySelector("#file-explorer-content").style.width = "calc(100vw - 10px)"
                 fileExplorerBox.querySelector("#file-navigation-header").style.flexDirection = "column"
                 fileExplorerBox.querySelector("#file-navigation-header").style.alignItems = "flex-start"
                 fileExplorerBox.querySelector("#file-navigation-panel").style.height = "160px"
-                this.shadowRoot.querySelector(".card-header").style.width = "100vw"
+                this.shadowRoot.querySelector(".card-header").style.width = "calc(100vw - 10px)"
                 this.shadowRoot.querySelector("#btn-group-0").style.display = "none"
                 fileExplorerLayout.setVertical()
             }else{
