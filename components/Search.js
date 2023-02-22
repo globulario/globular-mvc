@@ -779,7 +779,7 @@ export class SearchResults extends HTMLElement {
                 flex-direction: column;
                 background-color: var(--palette-background-paper);
                 color: var(--palette-text-primary);
-                width: calc(100vw - 25px);
+                width: calc(100vw - 20px);
             }
 
             .header {

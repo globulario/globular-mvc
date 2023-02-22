@@ -31,7 +31,7 @@ export class MediaWatching extends HTMLElement {
                 display: flex;
                 flex-direction: column;
                 background-color: var(--palette-background-paper);
-                width: calc(100vw - 25px);
+                width: calc(100vw - 20x);
                 min-height: calc(100vh - 85px);
                 user-select: none;
             }

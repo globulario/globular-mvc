@@ -262,11 +262,11 @@ export class BlogPostElement extends HTMLElement {
              
              @media (max-width: 500px) {
                 #container {
-                    width: calc(100vw - 10px);
+                    width: calc(100vw - 20px);
                 }
 
                 .blog-post-editor-div, .blog-post-reader-div {
-                    width: calc(100vw - 10px);
+                    width: calc(100vw - 20px);
                     position: relative;
                 }
 
@@ -298,7 +298,7 @@ export class BlogPostElement extends HTMLElement {
                 .blog-reader-title, .blog-read-div{
                     padding: 5px;
                     margin: 0px;
-                    width: calc(100vw - 10px);
+                    width: calc(100vw - 20px);
                 }
              }
 
@@ -950,21 +950,17 @@ export class BlogPosts extends HTMLElement {
                 }
               }
       
-              @media (max-width: 600px) {
-                .card-content{
-                  min-width: 380px;
-                }
-              }
-
               @media (max-width: 500px) {
-                #blog-lst-div{
-                  width: 100vw;
+
+                .card-content, #blog-lst-div{
+                  min-width: calc(100vw - 20px);
                 }
 
                 .blogs-div {
                     align-items: center;
                     justify-content: center;
                 }
+
               }
 
 
