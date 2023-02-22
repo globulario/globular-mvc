@@ -1163,6 +1163,11 @@ export class FilesView extends HTMLElement {
                     h.style.boxShadow = ""
                 }
             }
+
+            // remove the menu...
+            this.menu.close()
+            if(this.menu.parentNode)
+                this.menu.parentNode.removeChild(this.menu)
         }
 
         /** Remove the menu */
@@ -1837,7 +1842,9 @@ export class FilesListView extends FilesView {
 
                         let coords = getCoords(span)
                         this.menu.style.position = "absolute"
+                        this.menu.__top__ = coords.top + 5
                         this.menu.style.top = coords.top + 5 + "px"
+                        this.menu.__left__ = coords.left + span.offsetWidth - 20
                         this.menu.style.left = coords.left + span.offsetWidth - 20 + "px"
 
                         this.menu.setFile(f)
@@ -1921,6 +1928,7 @@ export class FilesIconView extends FilesView {
     constructor() {
         super()
         this.imageHeight = 80
+
     }
 
     /**
@@ -2756,11 +2764,17 @@ export class FilesIconView extends FilesView {
                                 img.onclick = (evt) => {
                                     evt.stopPropagation();
                                     Model.eventHub.publish("__show_image__", { file: file, file_explorer_id: this._file_explorer_.id }, true)
+                                    this.menu.close()
+                                    if (this.menu.parentNode)
+                                        this.menu.parentNode.removeChild(this.menu)
                                 }
                             } else if (fileType == "audio") {
                                 img.onclick = (evt) => {
                                     evt.stopPropagation();
                                     Model.eventHub.publish("__play_audio__", { file: file, file_explorer_id: this._file_explorer_.id }, true)
+                                    this.menu.close()
+                                    if (this.menu.parentNode)
+                                        this.menu.parentNode.removeChild(this.menu)
                                 }
 
 
@@ -2770,6 +2784,10 @@ export class FilesIconView extends FilesView {
                                 img.onclick = (evt) => {
                                     evt.stopPropagation();
                                     Model.eventHub.publish("__read_file__", { file: file, file_explorer_id: this._file_explorer_.id }, true)
+                                    this.menu.close()
+                                    if (this.menu.parentNode)
+                                        this.menu.parentNode.removeChild(this.menu)
+
                                 }
                             }
 
@@ -2914,7 +2932,9 @@ export class FilesIconView extends FilesView {
 
                                 let coords = getCoords(fileIconDiv.parentNode)
                                 this.menu.style.position = "absolute"
+                                this.menu.__top__ = coords.top + 8
                                 this.menu.style.top = coords.top + 8 + "px"
+                                this.menu.__left__ = coords.left + fileIconDiv.offsetWidth - 20
                                 this.menu.style.left = coords.left + fileIconDiv.offsetWidth - 20 + "px"
 
                                 this.menu.onmouseover = (evt) => {
@@ -4130,6 +4150,7 @@ export class FileExplorer extends HTMLElement {
                 background-color: transparent;
                 border-left: 1px solid var(--palette-divider); 
                 border-right: 1px solid var(--palette-divider);
+                border-top: 1px solid var(--palette-divider);
                 min-height: 350px;
                 min-width: 500px;
                 max-height: calc(100vh - 60px);
@@ -4239,7 +4260,7 @@ export class FileExplorer extends HTMLElement {
 
         this.name = "file_explorer"
 
-        setMoveable(this.shadowRoot.querySelector(".card-header"), this, (left, top) => {
+        setMoveable(this.shadowRoot.querySelector("#move-handle"), this, (left, top) => {
             if (this.filesListView.menu.parentNode) {
                 this.filesListView.menu.parentNode.removeChild(this.filesListView.menu)
                 this.filesListView.menu.close()
@@ -4260,7 +4281,7 @@ export class FileExplorer extends HTMLElement {
             this.shadowRoot.querySelector("#file-explorer-box").style.height = dimension.height + "px"
         }
 
-        let fileExplorerBox =  this.shadowRoot.querySelector("#file-explorer-box")
+        let fileExplorerBox = this.shadowRoot.querySelector("#file-explorer-box")
         fileExplorerBox.name = "file_explorer"
 
         setResizeable(fileExplorerBox, (width, height) => {
@@ -4275,7 +4296,7 @@ export class FileExplorer extends HTMLElement {
 
             localStorage.setItem("__file_explorer_dimension__", JSON.stringify({ width: width, height: height }))
         })
-  
+
         let fileExplorerLayout = fileExplorerBox.querySelector("#file-explorer-layout")
 
         // set the css value to display the playlist correctly...
@@ -4295,7 +4316,7 @@ export class FileExplorer extends HTMLElement {
                 this.shadowRoot.querySelector(".card-header").style.width = "calc(100vw - 10px)"
                 this.shadowRoot.querySelector("#btn-group-0").style.display = "none"
                 fileExplorerLayout.setVertical()
-            }else{
+            } else {
                 this.shadowRoot.querySelector(".card-header").style.width = ""
                 fileExplorerBox.querySelector("#file-navigation-header").style.alignItems = ""
                 fileExplorerBox.querySelector("#file-navigation-header").style.flexDirection = ""
@@ -4386,7 +4407,7 @@ export class FileExplorer extends HTMLElement {
             this.style.width = "";
             let box = this.shadowRoot.querySelector("#file-explorer-box")
             box.style.width = this.width_ + "px";
-            if(this.height_ > document.offsetHeight - 75){
+            if (this.height_ > document.offsetHeight - 75) {
                 this.height_ = document.offsetHeight - 75
             }
 
@@ -5186,6 +5207,10 @@ export class FileExplorer extends HTMLElement {
 
         // Set back the view when the image viewer is close.
         this.imageViewer.onclose = () => {
+            this.displayView()
+        }
+
+        this.fileReader.onclose = () => {
             this.displayView()
         }
 
