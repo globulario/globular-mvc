@@ -598,6 +598,10 @@ export class AccountPanel extends HTMLElement {
 
     // Keep account informations.
     this.account = a;
+    let profilePicture = this.account.getProfilepicture()
+    if(!profilePicture){
+      profilePicture = ""
+    }
 
     // Innitialisation of the layout.
     this.shadowRoot.innerHTML = `
@@ -674,15 +678,15 @@ export class AccountPanel extends HTMLElement {
         </style>
         <div id="container">
             <div class="header">
-            <img style="width: 32px; height: 32px; display: ${this.account.getProfilepicture() == undefined ? "none" : "block"};" src="${this.account.getProfilepicture()}"></img>
-            <iron-icon icon="account-circle" style="width: 32px; height: 32px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${this.account.getProfilepicture() != undefined ? "none" : "block"};"></iron-icon>
-                <span class="title">${this.account.getName() + "@" + this.account.getDomain()}</span>
-                <globular-disk-space-manager editable="true" account="${this.account.getId() + "@" + this.account.getDomain()}"></globular-disk-space-manager>
-                <paper-button id="delete-account-btn">Delete</paper-button>
-                <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
-                    <iron-icon  id="hide-btn"  icon="unfold-less" style="flex-grow: 1; --iron-icon-fill-color:var(--palette-text-primary);" icon="add"></iron-icon>
-                    <paper-ripple class="circle" recenters=""></paper-ripple>
-                </div>
+            <img style="width: 32px; height: 32px; display: ${profilePicture.length == 0 ? "none" : "block"};" src="${profilePicture}"></img>
+            <iron-icon icon="account-circle" style="width: 32px; height: 32px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${profilePicture.length > 0 ? "none" : "block"};"></iron-icon>
+            <span class="title">${this.account.getName() + "@" + this.account.getDomain()}</span>
+            <globular-disk-space-manager editable="true" account="${this.account.getId() + "@" + this.account.getDomain()}"></globular-disk-space-manager>
+            <paper-button id="delete-account-btn">Delete</paper-button>
+            <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
+                <iron-icon  id="hide-btn"  icon="unfold-less" style="flex-grow: 1; --iron-icon-fill-color:var(--palette-text-primary);" icon="add"></iron-icon>
+                <paper-ripple class="circle" recenters=""></paper-ripple>
+            </div>
             </div>
             <iron-collapse id="collapse-panel"  >
                 <paper-tabs selected="0">

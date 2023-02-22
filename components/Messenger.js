@@ -1960,7 +1960,7 @@ export class MessagesList extends HTMLElement {
             .container{
                 padding-left: 40px;
                 padding-right: 8px;
-                padding-bottom: 10px;
+                padding-bottom: 100px;
                 display: flex;
                 flex-direction: column;
             }

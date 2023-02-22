@@ -528,25 +528,6 @@ export class VideoPlayer extends HTMLElement {
         let plyrVideo = this.querySelector(".plyr--video")
         plyrVideo.style.backgroundColor = "black"
 
-        let lastWidth = 0;
-
-
-        // Create an observer instance linked to a resize callback
-        var observer = new MutationObserver((mutation) => {
-            if (mutation[0].target.offsetWidth != lastWidth) {
-                lastWidth = mutation[0].target.offsetWidth;
-                fireResize();
-            }
-        });
-
-        // Options for the observer (which mutations to observe)
-        var config = {
-            attributes: true,
-            subtree: true
-        };
-
-        // Start observing the target node for configured mutations
-        observer.observe(plyrVideo, config);
 
         // add additional button for the playlist...
         let html = `

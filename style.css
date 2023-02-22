@@ -682,8 +682,14 @@ emoji-picker {
    }
 
    .blog-read-div {
-      max-width: 500px;
-      min-width: 350px;
+      width: calc(100vw - 10px);
+      margin: 0px;
+      padding: 0px;
+
+   }
+
+   .blog-read-div img{
+      max-width: calc(100vw - 10px);
    }
 
    globular-mininizeable-bar{

@@ -16,9 +16,6 @@ export function setResizeable(div, onresize, side, zIndex) {
             } else if (div.style.width == "100vw" && w > 500 && w > div.maxWidth && div.maxWidth > 0) {
                 div.style.width = div.maxWidth + "px"
                 div.style.height = "auto"
-            } else if (w > 500 && w < div.maxWidth && div.maxWidth > 0) {
-                div.style.width = w + "px"
-                div.style.height = "auto"
             }
         }
     })

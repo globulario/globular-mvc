@@ -34,6 +34,19 @@ export class Ringtones extends HTMLElement {
                 flex-direction: column;
             }
 
+            ::-webkit-scrollbar {
+                width: 5px;
+                height: 5px;
+             }
+             
+             ::-webkit-scrollbar-track {
+                background: var(--palette-background-default);
+             }
+             
+             ::-webkit-scrollbar-thumb {
+                background: var(--palette-divider);
+             }
+
             #ringtones{
                 display: flex;
                 flex-direction: column;

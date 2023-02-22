@@ -260,6 +260,47 @@ export class BlogPostElement extends HTMLElement {
                 --paper-radio-button-label-color: var(--palette-text-accent);
              }
              
+             @media (max-width: 500px) {
+                #container {
+                    width: calc(100vw - 10px);
+                }
+
+                .blog-post-editor-div, .blog-post-reader-div {
+                    width: calc(100vw - 10px);
+                    position: relative;
+                }
+
+                .blog-post-title-div{
+                    width: 100%;
+                    flex-direction: column;
+                    align-items: flex-start;
+                    padding: 0px;
+                }
+
+                .actions-div{
+                    position: absolute;
+                    top: 0px;
+                    right: 0px;
+                }
+
+                .blog-actions{
+                    flex-direction: column;
+                }
+
+                .blog-actions paper-radio-group{
+                    align-self: flex-start;
+                }
+
+                .blog-actions div{
+                    align-self: flex-end;
+                }
+
+                .blog-reader-title, .blog-read-div{
+                    padding: 5px;
+                    margin: 0px;
+                    width: calc(100vw - 10px);
+                }
+             }
 
         </style>
 
@@ -273,8 +314,10 @@ export class BlogPostElement extends HTMLElement {
                     <span id="blog-editor-title" class="blog-editor-title">
                         ${Application.account.name}, express yourself
                     </span>
-                    <paper-icon-button icon="icons:more-horiz" id="blog-editor-menu-btn"></paper-icon-button>
-                    <paper-icon-button id="close-editor-btn" icon="icons:close"></paper-icon-button>
+                    <div class="actions-div" style="display: flex;">
+                        <paper-icon-button icon="icons:more-horiz" id="blog-editor-menu-btn"></paper-icon-button>
+                        <paper-icon-button id="close-editor-btn" icon="icons:close"></paper-icon-button>
+                    </div>
                 </div>
                 <iron-collapse opened = "[[opened]]" id="collapse-panel" style="display: flex; flex-direction: column;">
                     
@@ -294,8 +337,10 @@ export class BlogPostElement extends HTMLElement {
                             <paper-radio-button name="published">published</paper-radio-button>
                             <paper-radio-button name="archived">archived</paper-radio-button>
                         </paper-radio-group>
-                        <paper-button style="align-self: end;" id="blog-editor-delete-btn">Delete</paper-button>
-                        <paper-button id="publish-blog">Save</paper-button>
+                        <div style="display: flex;">
+                            <paper-button style="align-self: end;" id="blog-editor-delete-btn">Delete</paper-button>
+                            <paper-button id="publish-blog">Save</paper-button>
+                        </div>
                     </div>
                 </iron-collapse>
 
@@ -310,8 +355,10 @@ export class BlogPostElement extends HTMLElement {
                         <span  id="blog-reader-author-id"></span>
                     </div>
                     <h2 class="blog-reader-title"></h2>
-                    <paper-icon-button icon="icons:more-horiz" id="blog-reader-menu-btn"></paper-icon-button>
-                    <paper-icon-button id="close-reader-btn" icon="icons:close"></paper-icon-button>
+                    <div class="actions-div" style="display: flex;">
+                        <paper-icon-button icon="icons:more-horiz" id="blog-reader-menu-btn"></paper-icon-button>
+                        <paper-icon-button id="close-reader-btn" icon="icons:close"></paper-icon-button>
+                    </div>
                 </div>
                 <paper-card id="blog-reader-options-panel"  class="blog-options-panel"  style="display: none;">
                     <div class="card-content" style="background-color: transparent;"></div>
@@ -800,6 +847,8 @@ export class BlogPostElement extends HTMLElement {
 
                 }
 
+                // set request parameters
+                rqst.setUuid(this.blog.getUuid())
                 rqst.setBlogPost(this.blog)
 
                 let saveBlog = () => {
@@ -977,7 +1026,7 @@ export class BlogPosts extends HTMLElement {
         Account.getAccount(userName,
             account => {
                 // Subcribe to my own blog create event...
-                Model.eventHub.subscribe(account.id + "_publish_blog_event", uuid => this[account.getId() + "@" + account.getDomain() + "_publish_blog_listener"] = uuid,
+                Model.eventHub.subscribe(account.id + "@" + account.domain + "_publish_blog_event", uuid => this[account.getId() + "@" + account.getDomain() + "_publish_blog_listener"] = uuid,
                     evt => {
                         // Get the date from the event and create the newly
                         this.setBlog(BlogPost.deserializeBinary(Uint8Array.from(evt.split(","))), true)

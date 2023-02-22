@@ -2646,8 +2646,8 @@ export class SearchTitleDetail extends HTMLElement {
             }
 
             .video-div #title-info-button, #play-video-button, #play-episode-video-button{
-                --paper-icon-button-ink-color: #1976d2;
-                --iron-icon-fill-color: #1976d2;
+                --paper-icon-button-ink-color: white;
+                --iron-icon-fill-color: white;
             }
 
 

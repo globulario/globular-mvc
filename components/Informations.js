@@ -10,6 +10,7 @@ import { playVideo } from "./Video";
 import { playAudio, secondsToTime } from "./Audio";
 import '@polymer/iron-autogrow-textarea/iron-autogrow-textarea.js';
 import { EditableStringList } from "./List";
+import { BlogPost } from 'globular-web-client/blog/blog_pb';
 
 // extract the duration info from the raw data.
 function parseDuration(duration) {
@@ -1972,6 +1973,7 @@ export class BlogPostInfo extends HTMLElement {
 
         // Keep the blogPost source...
         this.globule = globule
+        this.blogPost = blogPost
 
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
@@ -2092,14 +2094,14 @@ export class BlogPostInfo extends HTMLElement {
             </style>
             <div id="container" class="blog-post-card">
                 <div class="image-box">
-                    <img style="display:${thumbnail.length == 0 ? "none" : "block"};" src="${thumbnail}"></img>
+                    <img  id="thumbnail_img" style="display:${thumbnail.length == 0 ? "none" : "block"};" src="${thumbnail}"></img>
                 </div>
                 <span style="flex-grow: 1;"></span>
-                <div class="blog-title">${blogPost.getTitle()}</div>
-                <div class="blog-subtitle">${blogPost.getSubtitle()}</div>
+                <div id="title_div" class="blog-title">${blogPost.getTitle()}</div>
+                <div id="sub_title_div" class="blog-subtitle">${blogPost.getSubtitle()}</div>
                 <div style="display: flex;">
-                    <div class="blog-author" style="flex-grow: 1;">${blogPost.getAuthor()}</div>
-                    <div class="blog-creation-date">${creationTime.toLocaleDateString()}</div>
+                    <div id="author_div" class="blog-author" style="flex-grow: 1;">${blogPost.getAuthor()}</div>
+                    <div id="creation_time_div" class="blog-creation-date">${creationTime.toLocaleDateString()}</div>
                 </div>
             </div>
             `
@@ -2126,7 +2128,7 @@ export class BlogPostInfo extends HTMLElement {
             </style>
             <div id="container">
                 <div>
-                   <img style="width: 128px; padding-left: 10px; padding-top: 10px; display:${thumbnail.length == 0 ? "none" : "block"};" src="${thumbnail}"></img>
+                   <img id="thumbnail_img" style="width: 128px; padding-left: 10px; padding-top: 10px; display:${thumbnail.length == 0 ? "none" : "block"};" src="${thumbnail}"></img>
                 </div>
                 <div style="display: table; flex-grow: 1; padding-left: 20px;">
                     <div style="display: table-row;">
@@ -2135,15 +2137,15 @@ export class BlogPostInfo extends HTMLElement {
                     </div>
                     <div style="display: table-row;">
                         <div style="display: table-cell; font-weight: 450;">Title:</div>
-                        <div style="display: table-cell;">${blogPost.getTitle()}</div>
+                        <div id="title_div" style="display: table-cell;">${blogPost.getTitle()}</div>
                     </div>
                     <div style="display: table-row;">
                         <div style="display: table-cell; font-weight: 450;">subtitle:</div>
-                        <div style="display: table-cell;">${blogPost.getSubtitle()}</div>
+                        <div id="sub_title_div" style="display: table-cell;">${blogPost.getSubtitle()}</div>
                     </div>
                     <div style="display: table-row;">
                         <div style="display: table-cell; font-weight: 450;">Author:</div>
-                        <div style="display: table-cell;">${blogPost.getAuthor()}</div>
+                        <div id="author_div" style="display: table-cell;">${blogPost.getAuthor()}</div>
                     </div>
                     <div style="display: table-row;">
                         <div style="display: table-cell; font-weight: 450;">Status:</div>
@@ -2155,7 +2157,7 @@ export class BlogPostInfo extends HTMLElement {
                     </div>
                     <div style="display: table-row;">
                         <div style="display: table-cell; font-weight: 450;">Date:</div>
-                        <div style="display: table-cell;">${creationTime.toLocaleDateString()}</div>
+                        <div id="creation_time_div" style="display: table-cell;">${creationTime.toLocaleDateString()}</div>
                     </div>
     
                     <div style="display: table-row;">
@@ -2165,12 +2167,33 @@ export class BlogPostInfo extends HTMLElement {
                 </div>
             </div>
             `
-
-
         }
+
+        if (this.updateListener == undefined) {
+            Model.eventHub.subscribe(blogPost.getUuid() + "_blog_updated_event", uuid => {
+                this.updateListener = uuid
+            }, evt => {
+                this.blogPost = BlogPost.deserializeBinary(Uint8Array.from(evt.split(",")))
+                let creationTime = new Date( this.blogPost.getCreationtime() * 1000)
+                let thumbnail = blogPost.getThumbnail()
+                if(!thumbnail){
+                    thumbnail = ""
+                }
+
+                // update fields
+                this.shadowRoot.querySelector("#creation_time_div").innerHTML = creationTime.toLocaleDateString()
+                this.shadowRoot.querySelector("#sub_title_div").innerHTML = this.blogPost.getSubtitle()
+                this.shadowRoot.querySelector("#title_div").innerHTML = this.blogPost.getTitle()
+                this.shadowRoot.querySelector("#author_div").innerHTML = this.blogPost.getAuthor()
+                if(thumbnail.length > 0){
+                    this.shadowRoot.querySelector("#thumbnail_img").src = thumbnail
+                }
+            }, false, this)
+        }
+
         // so here I will retreive more information about the author if it's available...
         this.shadowRoot.querySelector("#container").onclick = () => {
-            Model.eventHub.publish("_display_blog_event_", { blogPost: blogPost, globule: globule }, true)
+            Model.eventHub.publish("_display_blog_event_", { blogPost: this.blogPost, globule: globule }, true)
         }
 
         if (this.deleteListener == undefined) {
