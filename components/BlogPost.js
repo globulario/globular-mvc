@@ -955,6 +955,20 @@ export class BlogPosts extends HTMLElement {
                   min-width: 380px;
                 }
               }
+
+              @media (max-width: 500px) {
+                #blog-lst-div{
+                  width: 100vw;
+                }
+
+                .blogs-div {
+                    align-items: center;
+                    justify-content: center;
+                }
+              }
+
+
+
             
         </style>
         
@@ -972,19 +986,19 @@ export class BlogPosts extends HTMLElement {
                     </div>
                     <div class="blogs">
                         <h2 id="draft-title">Draft(s)</h2>
-                        <div style="display: flex; flex-wrap: wrap;">
+                        <div class="blogs-div" style="display: flex; flex-wrap: wrap;">
                             <slot name="draft"></slot>
                         </div>
                     </div>
                     <div class="blogs">
                         <h2 id="published-title">Published(s)</h2>
-                        <div style="display: flex; flex-wrap: wrap;">
+                        <div class="blogs-div" style="display: flex; flex-wrap: wrap;">
                             <slot name="published"></slot>
                         </div>
                     </div>
                     <div class="blogs">
                         <h2 id="archived-title">Archived(s)</h2>
-                        <div style="display: flex; flex-wrap: wrap;">
+                        <div class="blogs-div" style="display: flex; flex-wrap: wrap;">
                             <slot name="archived"></slot>
                         </div>
                     </div>
