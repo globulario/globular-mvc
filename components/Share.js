@@ -73,13 +73,19 @@ export class SharePanel extends HTMLElement {
            
             paper-card {
                 background-color: var(--palette-background-paper);
-                margin-top: 25px;
+                margin-top: 10px;
                 font-size: 1.65rem;
             }
 
             #share_div{
                 display: flex;
-                /*flex-wrap: wrap;*/
+                padding-left: 10px;
+            }
+
+            #share_content_div{
+                min-width: 728px;
+                max-width: 728px;
+                width: 728px;
             }
 
             #title_div{
@@ -108,13 +114,16 @@ export class SharePanel extends HTMLElement {
                 font-size: 1.65rem;
             }
 
+            globular-subjects-view{
+                border-right: 1px solid var(--palette-divider);
+            }
+
             .card-content{
                 display: flex;
                 flex-direction: column;
                 width: 100%;
-                padding-left: 10px;
-                min-width: 680px;
                 padding: 0px;
+                padding-bottom: 10px;
                 font-size: 1rem;
               }
       
@@ -140,7 +149,9 @@ export class SharePanel extends HTMLElement {
                 </div>
                 <div id="share_div">
                     <globular-subjects-view></globular-subjects-view>
-                    <slot></slot>
+                    <div id="share_content_div">
+                        <slot></slot>
+                    </div>
                 </div>
 
             </div>
@@ -204,20 +215,22 @@ export class SharedResources extends HTMLElement {
            
             #container{
                 display: flex;
-                width: 100%;
-                height: 95%;
+                flex-direction: column;
+                padding-left: 10px;
+                padding-right: 10px;
+                height: 100%;
             }
 
             .resource-share-div{
-                width: 50%;
+                width: 100%;
                 height: 100%;
-                padding-left: 16px;
-                border-left: 1px solid var(--palette-divider);
+                margin-left: 10px;
+                margin-top: 20px;
                 display: flex;
                 flex-direction: column;
             }
 
-            #you-share-you-div{
+            #you-share-with-div{
                 display: flex;
                 flex-wrap: wrap;
             }
@@ -227,30 +240,68 @@ export class SharedResources extends HTMLElement {
                 flex-wrap: wrap;
             }
 
+            /* Need to position the badge to look like a text superscript */
+            paper-tab {
+              padding-right: 25px;
+            }
+
+            paper-tabs{                  
+                /* custom CSS property */
+                --paper-tabs-selection-bar-color: var(--palette-primary-main); 
+                color: var(--palette-text-primary);
+                --paper-tab-ink: var(--palette-action-disabled);
+            }
+
+            paper-tab paper-badge {
+                --paper-badge-background: var(--palette-warning-main);
+                --paper-badge-width: 16px;
+                --paper-badge-height: 16px;
+                --paper-badge-margin-left: 10px;
+            }
+
         </style>
         <div id="container">
-            <div class="resource-share-div" id="share-with-you">
-                <h4>Resources ${subject.name} share with you</h4>
+            <paper-tabs selected="0">
+                <paper-tab id="share-with-you"">
+                    Resources ${subject.name} share with you
+                </paper-tab>
+                <paper-tab id="you-share-with">
+                    Resources You share with ${subject.name}
+                </paper-tab>
+            </paper-tabs>
+
+            <div class="resource-share-div">
                 <div id="share-with-you-div"></div>
+                <div id="you-share-with-div" style="display: none;"></div>
             </div>
 
-            <div class="resource-share-div" id="you-share-you">
-                <h4>Resources You share with ${subject.name}</h4>
-                <div id="you-share-you-div"></div>
-            </div>
         </div>
         `
         // give the focus to the input.
         let container = this.shadowRoot.querySelector("#container")
 
         // get resources share with a given account...
+        let youShareWithDiv = this.shadowRoot.querySelector("#you-share-with-div")
+        let shareWithYouDiv = this.shadowRoot.querySelector("#share-with-you-div")
+
+        this.shadowRoot.querySelector("#share-with-you").onclick = ()=>{
+            youShareWithDiv.style.display = "none"
+            shareWithYouDiv.style.display = "flex"
+        }
+
+
+        this.shadowRoot.querySelector("#you-share-with").onclick = ()=>{
+            youShareWithDiv.style.display = "flex"
+            shareWithYouDiv.style.display = "none"
+        }
+
 
         // The logged user... ( 'you' in the context of a session)
         this.getSharedResources(Application.account, subject, resources => {
-            this.displaySharedResources(this.shadowRoot.querySelector("#you-share-you-div"), resources)
+            this.displaySharedResources(youShareWithDiv, resources)
             console.log("resource you share ", resources)
             this.getSharedResources(subject, Application.account, resources => {
-                this.displaySharedResources(this.shadowRoot.querySelector("#share-with-you-div"), resources)
+                this.displaySharedResources(shareWithYouDiv, resources)
                 console.log("resource share whit you ", resources)
             })
         })
@@ -617,6 +668,7 @@ export class ShareResourceWizard extends HTMLElement {
                                     <iron-icon style="fill: var(--palette-success-main);" id="${uuid + "_success"}" icon="icons:check-circle"></iron-icon>
                                     <iron-icon style="fill: var(--palette-secondary-main);" id="${uuid + "_error"}" icon="icons:error"></iron-icon>
                                 </div>
+
                                 <img style="height: 72px; width: fit-content; max-width: 172px;" src="${file.thumbnail}"></img>
                             </div>
                             <span style="font-size: .85rem; padding: 2px; display: block; max-width: 128px; word-break: break-all;" title=${file.path}> ${name}</span>
@@ -733,7 +785,8 @@ export class ShareResourceWizard extends HTMLElement {
                         let uuid = "_" + getUuidByString(a.id + "@" + a.domain)
                         let html = `
                         <div id="${uuid}" class="infos">
-                            <img src="${a.profilePicture}"> </img>
+                            <img style="width: 32px; height: 32px; display: ${a.profilePicture.length == 0 ? "none" : "block"};" src="${a.profilePicture}"></img>
+                            <iron-icon icon="account-circle" style="width: 32px; height: 32px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${a.profilePicture.length > 0 ? "none" : "block"};"></iron-icon>
                             <span>${a.name}</span>
                         </div>
                         `
@@ -1292,8 +1345,9 @@ export class GlobularSubjectsView extends HTMLElement {
                     let uuid = "_" + getUuidByString(a.id + "@" + a.domain)
                     let html = `
                         <div id="${uuid}" class="infos">
-                            <img src="${a.profilePicture}"> </img>
-                            <span>${a.email}</span>
+                            <img style="width: 32px; height: 32px; display: ${a.profilePicture.length == 0 ? "none" : "block"};" src="${a.profilePicture}"></img>
+                            <iron-icon icon="account-circle" style="width: 32px; height: 32px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${a.profilePicture.length > 0 ? "none" : "block"};"></iron-icon>
+                            <span>${a.id}</span>
                         </div>
                         `
                     let fragment = range.createContextualFragment(html)
@@ -1329,70 +1383,80 @@ export class GlobularSubjectsView extends HTMLElement {
 
             accountsTab.click() // display list of account'(s)
 
-            // Now the groups.
-            Group.getGroups(groups => {
-                let range = document.createRange()
-                groupsCount.innerHTML = `(${groups.length})`
-                // init groups...
-                let getGroup = (index) => {
-                    let g = groups[index]
-                    if (g) {
-                        let uuid = "_" + getUuidByString(g.id + "@" + g.domain)
-                        let html = `
-                        <div id="${uuid}" class="infos" style="flex-direction: column;">
-                            <div style="display: flex; align-self: flex-start; align-items: center;">
-                                <iron-icon id="Contacts_icon" icon="social:people" style="display: block;"></iron-icon>
-                                <span>${g.name}</span>
-                            </div>
-                        `
-                        g.getMembers(members => {
-                            html += `<div class="group-members" style="display: flex; flex-wrap: wrap;">`
-                            members.forEach(a => {
-                                let uuid = "_" + getUuidByString(a.id + "@" + a.domain)
-                                html += `
-                                <div id="${uuid}" class="infos">
-                                    <img src="${a.profilePicture}"> </img>
-                                    <span>${a.name}</span>
-                                </div>
-                                `
-                            })
-                            html += "</div>"
-                            index++
-                            if (index < groups.length) {
-                                getGroup(index)
-                            } else {
-                                html += "</div>"
-                                groupsDiv.appendChild(range.createContextualFragment(html))
-                                let groupDiv = groupsDiv.querySelector("#" + uuid)
-                                groupDiv.onclick = (evt) => {
-                                    evt.stopPropagation()
-                                    if (this.on_group_click) {
-                                        if (groupsDiv.querySelector(`#${uuid}`)) {
-                                            this.on_group_click(groupDiv, g)
-                                            groupsCount.innerHTML = `(${groupsDiv.children.length})`
-                                        } else {
-                                            // Here the div was remove from the list and so I will simply put it back...
-                                            groupsDiv.appendChild(groupDiv)
-                                            groupsCount.innerHTML = `(${groupsDiv.children.length})`
-                                        }
-                                    }
-                                    // fire the account change event...
-                                    if (this.on_groups_change) {
-                                        this.on_groups_change()
-                                    }
-                                }
-                            }
-                        })
-
-
-                    }
-                }
-
-                let index = 0;
-                getGroup(index)
-            }, err => ApplicationView.displayMessage(err, 3000))
 
         }, err => ApplicationView.displayMessage("fail to retreive accouts with error: ", err))
+
+        // Now the groups.
+        Group.getGroups(groups => {
+            let range = document.createRange()
+            groupsCount.innerHTML = `(${groups.length})`
+            // init groups...
+            let getGroup = (index) => {
+                let g = groups[index]
+                if (g) {
+                   
+                    let group_uuid = "_" + getUuidByString(g.id + "@" + g.domain)
+                    let html = `
+                                <div id="${group_uuid}" class="infos" style="flex-direction: column;">
+                                    <div style="display: flex; align-self: flex-start; align-items: center;">
+                                        <iron-icon id="Contacts_icon" icon="social:people" style="display: block;"></iron-icon>
+                                        <div style="display: flex; flex-direction: column;">
+                                            <span>${g.name}</span>
+                                            <span style="font-size: .75rem;">${g.domain}</span>
+                                        </div>
+                                    </div>
+                                `
+
+                    g.getMembers(members => {
+                        html += `<div class="group-members" style="display: flex; flex-wrap: wrap;">`
+                        members.forEach(a => {
+                            let uuid = "_" + getUuidByString(a.id + "@" + a.domain)
+                            html += `
+                                    <div id="${uuid}" class="infos">
+                                        <img style="width: 32px; height: 32px; display: ${a.profilePicture.length == 0 ? "none" : "block"};" src="${a.profilePicture}"></img>
+                                        <iron-icon icon="account-circle" style="width: 32px; height: 32px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${a.profilePicture.length > 0 ? "none" : "block"};"></iron-icon>
+                                        <span>${a.name}</span>
+                                    </div>
+                                    `
+                        })
+
+                        html += "</div>"
+                        html += "</div>"
+
+                        groupsDiv.appendChild(range.createContextualFragment(html))
+
+                        let groupDiv = groupsDiv.querySelector("#" + group_uuid)
+                        groupDiv.onclick = (evt) => {
+                            evt.stopPropagation()
+                            if (this.on_group_click) {
+                                if (groupsDiv.querySelector(`#${group_uuid}`)) {
+                                    this.on_group_click(groupDiv, g)
+                                    groupsCount.innerHTML = `(${groupsDiv.children.length})`
+                                } else {
+                                    // Here the div was remove from the list and so I will simply put it back...
+                                    groupsDiv.appendChild(groupDiv)
+                                    groupsCount.innerHTML = `(${groupsDiv.children.length})`
+                                }
+                            }
+                            // fire the account change event...
+                            if (this.on_groups_change) {
+                                this.on_groups_change()
+                            }
+                        }
+
+                        index++
+                        if (index < groups.length) {
+                            getGroup(index)
+                        }
+
+                    })
+                }
+            }
+
+            let index = 0;
+            getGroup(index)
+        }, err => ApplicationView.displayMessage(err, 3000))
+
     }
 
 

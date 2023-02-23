@@ -3,6 +3,7 @@ import { Model } from "./Model";
 import { Account } from "./Account"
 import * as resource from "globular-web-client/resource/resource_pb";
 import { getAllGroups } from "globular-web-client/api";
+import { Globular } from "globular-web-client";
 
 /**
  * Group are use to aggregate accounts.
@@ -77,10 +78,45 @@ export class Group extends Model {
         })
     }
 
+
+    static getGroups(callback: (groups: Array<Group>) => void, errorCallback: (err: any) => void) {
+        let groups_ = new Array<Group>()
+        let connections = Model.getGlobules()
+
+        let _getGroups_ = () => {
+            let globule = connections.pop()
+
+            if (connections.length == 0) {
+                Group._getGroups(globule, (groups: Array<Group>) => {
+                    for (var i = 0; i < groups.length; i++) {
+                        let g = groups[i]
+                        if (groups_.filter(g_ => { return g.id == g_.id && g.domain == g_.domain; }).length == 0) {
+                            groups_.push(g)
+                        }
+                    }
+                    callback(groups_)
+                }, errorCallback)
+            } else {
+                Group._getGroups(globule, (groups: Array<Group>) => {
+                    for (var i = 0; i < groups.length; i++) {
+                        let g = groups[i]
+                        if (groups_.filter(g_ => { return g.id == g_.id && g.domain == g_.domain; }).length == 0) {
+                            groups_.push(g)
+                        }
+                    }
+                    _getGroups_() // get the account from the next globule.
+                }, errorCallback)
+            }
+        }
+
+        // get account from all register peers.
+        _getGroups_()
+    }
+
     // Return the list of all groups.
-    static getGroups(callback: (callback: Group[]) => void, errorCallback: (err: any) => void){
+    static _getGroups(globule:Globular, callback: (callback: Group[]) => void, errorCallback: (err: any) => void){
         let groups = new Array<Group>();
-        getAllGroups(Model.globular, groups_ =>{
+        getAllGroups(globule, groups_ =>{
             groups_.forEach(g=>{
                 let g_ = new Group(g.getId())
                 g_.fromObject(g)
@@ -147,6 +183,7 @@ export class Group extends Model {
         let members = new Array<Account>();
         if (this.members.length == 0) {
             successCallback([])
+            return
         }
 
         // Initi the group.
@@ -165,7 +202,8 @@ export class Group extends Model {
         }
 
         // start the recursion.
-        setAccount_(0)
+        let index = 0;
+        setAccount_(index)
     }
 
     // Return true if an account if member of a given group.

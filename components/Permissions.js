@@ -62,7 +62,7 @@ export class PermissionsManager extends HTMLElement {
                 display: flex;
                 flex-direction: column;
                 padding: 8px;
-                background-color: var(--palette-background-paper);
+                /*background-color: var(--palette-background-paper);*/
             }
 
             #header {
@@ -2029,7 +2029,7 @@ export class ResourcesPermissionsType extends HTMLElement {
             }
 
             .card-content {
-                min-width: 680px;
+                min-width: 728px;
                 font-size: 1rem;
                 padding: 0px;
             }

@@ -1659,7 +1659,7 @@ export class FileInfo extends HTMLElement {
 
             #container {
                 display: flex;
-                background-color: var(--palette-background-paper);
+                /*background-color: var(--palette-background-paper);*/
                 color: var(--palette-text-primary);
             }
 
@@ -1721,7 +1721,7 @@ export class WebpageInfo extends HTMLElement {
             #container {
                 display: flex;
                 postion:relative;
-                background-color: var(--palette-background-paper);
+                /*background-color: var(--palette-background-paper)*/;
                 color: var(--palette-text-primary);
             }
 
@@ -1810,7 +1810,7 @@ export class ApplicationInfo extends HTMLElement {
 
             #container {
                 display: flex;
-                background-color: var(--palette-background-paper);
+                /*background-color: var(--palette-background-paper)*/;
                 color: var(--palette-text-primary);
             }
 
@@ -1875,7 +1875,7 @@ export class GroupInfo extends HTMLElement {
 
             #container {
                 display: flex;
-                background-color: var(--palette-background-paper);
+                /*background-color: var(--palette-background-paper);*/
                 color: var(--palette-text-primary);
             }
 
@@ -1925,7 +1925,7 @@ export class OrganizationInfo extends HTMLElement {
 
             #container {
                 display: flex;
-                background-color: var(--palette-background-paper);
+                /*background-color: var(--palette-background-paper);*/
                 color: var(--palette-text-primary);
             }
 
@@ -2015,7 +2015,7 @@ export class BlogPostInfo extends HTMLElement {
             <style>
                
                 #container {
-                    background-color: var(--palette-background-paper);
+                    /*background-color: var(--palette-background-paper);*/
                     color: var(--palette-text-primary);
                 }
 
@@ -2129,7 +2129,7 @@ export class BlogPostInfo extends HTMLElement {
                
                 #container {
                     display: flex;
-                    background-color: var(--palette-background-paper);
+                    /*background-color: var(--palette-background-paper);*/
                     color: var(--palette-text-primary);
                     user-select: none;
                 }
@@ -2247,7 +2247,7 @@ export class PackageInfo extends HTMLElement {
 
             #container {
                 display: flex;
-                background-color: var(--palette-background-paper);
+                /*background-color: var(--palette-background-paper);*/
                 color: var(--palette-text-primary);
             }
 

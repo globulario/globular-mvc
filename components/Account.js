@@ -411,7 +411,7 @@ export class AccountManager extends HTMLElement {
                  }
 
                  .card-content {
-                    min-width: 680px;
+                    min-width: 728px;
                     padding: 0px;
                     font-size: 1rem;
                  }
@@ -618,7 +618,7 @@ export class AccountPanel extends HTMLElement {
 
             #content{
                 padding: 0px;
-                min-width: 680px;
+                min-width: 728px;
                 font-size: 1rem;
             }
 

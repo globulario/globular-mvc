@@ -79,7 +79,7 @@ export class PeersManager extends HTMLElement {
                 }
 
                 .card-content {
-                    min-width: 680px;
+                    min-width: 728px;
                     padding: 0px;
                     font-size: 1rem;
                 }

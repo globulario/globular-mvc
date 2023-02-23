@@ -939,7 +939,7 @@ export class BlogPosts extends HTMLElement {
                 flex-direction: column;
                 margin-top: 10px;
                 margin-bottom: 10px;
-                min-width: 680px;
+                min-width: 728px;
                 padding: 0px;
                 font-size: 1rem;
               }

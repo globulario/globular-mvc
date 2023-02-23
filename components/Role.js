@@ -65,7 +65,7 @@ export class RoleManager extends HTMLElement {
                  }
 
                  .card-content {
-                    min-width: 680px;
+                    min-width: 728px;
                     font-size: 1rem;
                     padding: 0px;
                 }
