@@ -793,11 +793,16 @@ export class VideoPlayer extends HTMLElement {
                     }
                 })
 
+                
                 url += "?application=" + Model.application
                 url += "&token=" + token
 
             } else {
                 var parser = document.createElement('a');
+                
+                url += "?application=" + Model.application
+                url += "&token=" + token
+                
                 parser.href = url
                 path = decodeURIComponent(parser.pathname)
             }

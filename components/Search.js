@@ -1988,31 +1988,31 @@ export class SearchAudioCard extends HTMLElement {
 
             // get the title file path...
             this.getTitleFiles(audio.getId(), indexPath, globule, files => {
-                if (files.length > 0) {
-                    audio_playList += `#EXTINF:${audio.getDuration()}, ${audio.getTitle()}, tvg-id="${audio.getId()}"\n`
+                generatePeerToken(audio.globule, token => {
+                    if (files.length > 0) {
+                        audio_playList += `#EXTINF:${audio.getDuration()}, ${audio.getTitle()}, tvg-id="${audio.getId()}"\n`
 
-                    let url = getUrl(globule)
+                        let url = getUrl(globule)
 
-                    let path = files[0].split("/")
-                    path.forEach(item => {
-                        item = item.trim()
-                        if (item.length > 0)
-                            url += "/" + encodeURIComponent(item)
-                    })
+                        let path = files[0].split("/")
+                        path.forEach(item => {
+                            item = item.trim()
+                            if (item.length > 0)
+                                url += "/" + encodeURIComponent(item)
+                        })
 
-                    url += "?application=" + Model.application
-                    if (localStorage.getItem("user_token") != undefined) {
-                        url += "&token=" + localStorage.getItem("user_token")
+                        url += "?application=" + Model.application
+                        url += "&token=" + token
+                        audio_playList += url + "\n\n"
                     }
 
-                    audio_playList += url + "\n\n"
-                }
-                if (audios.length > 0) {
-                    generateAudioPlaylist()
-                } else {
-                    console.log(audio_playList)
-                    playAudio(audio_playList, null, null, null, globule)
-                }
+                    if (audios.length > 0) {
+                        generateAudioPlaylist()
+                    } else {
+                        console.log(audio_playList)
+                        playAudio(audio_playList, null, null, null, globule)
+                    }
+                })
             })
         }
 
@@ -3210,7 +3210,7 @@ export class SearchFacetPanel extends HTMLElement {
 
             // get the title file path...
             this.getTitleFiles(audio.getId(), indexPath, globule, files => {
-                generatePeerToken(globule, token => {
+                generatePeerToken(audio.globule, token => {
                     if (files.length > 0) {
                         audio_playList += `#EXTINF:${audio.getDuration()}, ${audio.getTitle()}, tvg-id="${audio.getId()}"\n`
 
@@ -3224,9 +3224,8 @@ export class SearchFacetPanel extends HTMLElement {
                         })
 
                         url += "?application=" + Model.application
-                        if (localStorage.getItem("user_token") != undefined) {
-                            url += "&token=" + token
-                        }
+                        url += "&token=" + token
+                        
 
                         audio_playList += url + "\n\n"
                     }
@@ -3267,7 +3266,7 @@ export class SearchFacetPanel extends HTMLElement {
 
             // get the title file path...
             this.getTitleFiles(video.getId(), indexPath, globule, files => {
-                generatePeerToken(globule, token => {
+                generatePeerToken(video.globule, token => {
                     if (files.length > 0) {
                         video_playList += `#EXTINF:${video.getDuration()}, ${video.getDescription()}, tvg-id="${video.getId()}"\n`
 
@@ -3284,10 +3283,7 @@ export class SearchFacetPanel extends HTMLElement {
                         })
 
                         url += "?application=" + Model.application
-                        if (localStorage.getItem("user_token") != undefined) {
-                            url += "&token=" + token
-                        }
-
+                        url += "&token=" + token
                         video_playList += url + "\n\n"
                     }
                     if (videos.length > 0) {

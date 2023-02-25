@@ -343,12 +343,13 @@ export class SharedResources extends HTMLElement {
 
 
         // The logged user... ( 'you' in the context of a session)
+        ApplicationView.wait("retreive shared resources")
+
         this.getSharedResources(Application.account, subject, resources => {
             this.displaySharedResources(youShareWithDiv, resources)
-            console.log("resource you share ", resources)
             this.getSharedResources(subject, Application.account, resources => {
                 this.displaySharedResources(shareWithYouDiv, resources)
-                console.log("resource share whit you ", resources)
+                ApplicationView.resume()
             })
         })
     }

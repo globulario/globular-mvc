@@ -6,7 +6,7 @@ import { getAllGroups, getAllRoles } from "globular-web-client/api";
 import { Model } from "../Model";
 import { getAllOrganizations } from "./Organization";
 import { getAllPeers } from "./Peers";
-import { fireResize, generateUUID, randomUUID } from "./utility";
+import { fireResize } from "./utility";
 import * as getUuidByString from "uuid-by-string";
 
 export class EditableStringList extends HTMLElement {
