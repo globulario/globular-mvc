@@ -1139,13 +1139,12 @@ export class SearchResultsPage extends HTMLElement {
         // display hint about more results can be displayed.
         let resultsDiv = this.shadowRoot.querySelector("#results")
         resultsDiv.onscroll = () => {
-            const header = this.shadowRoot.querySelector(".header")
-            if (resultsDiv.scrollTop > 0) {
-                header.style.boxShadow = "rgb(0 0 0 / 16%) 0px 3px 6px, rgb(0 0 0 / 23%) 0px 3px 6px"
-                header.style.borderBottom = "1px solid var(--palette-divider)"
+            if (resultsDiv.scrollTop == 0) {
+                resultsDiv.style.boxShadow = ""
+                resultsDiv.style.borderTop = ""
             } else {
-                header.style.boxShadow = ""
-                header.style.borderBottom = ""
+                resultsDiv.style.boxShadow = "inset 0px 5px 6px -3px rgb(0 0 0 / 40%)"
+                resultsDiv.style.borderTop = "1px solid var(--palette-divider)"
             }
         }
 
@@ -2898,7 +2897,7 @@ export class FacetSearchFilter extends HTMLElement {
                 font-size: 1.17rem;
                 padding: 10px;
                 padding-right: 30px;
-               
+                max-width: 235px;
                 position: fixed;
                 top: 125px;
                 height: calc(100vh - 170px);

@@ -1138,16 +1138,14 @@ export class FilesView extends HTMLElement {
           `
         // get the div.
         this.div = this.shadowRoot.getElementById(id)
+
         this.div.onscroll = () => {
-            const headers = this.div.getElementsByClassName("files-list-view-header")
-            if (this.div.scrollTop > 0) {
-                for (var h of headers) {
-                    h.style.boxShadow = "var(--dark-mode-shadow)"
-                }
+            if (this.div.scrollTop == 0) {
+                this.div.style.boxShadow = ""
+                this.div.style.borderTop = ""
             } else {
-                for (var h of headers) {
-                    h.style.boxShadow = ""
-                }
+                this.div.style.boxShadow = "inset 0px 5px 6px -3px rgb(0 0 0 / 40%)"
+                this.div.style.borderTop = "1px solid var(--palette-divider)"
             }
 
             // remove the menu...
@@ -1155,6 +1153,7 @@ export class FilesView extends HTMLElement {
             if (this.menu.parentNode)
                 this.menu.parentNode.removeChild(this.menu)
         }
+
 
         /** Remove the menu */
         this.div.onmouseover = () => {

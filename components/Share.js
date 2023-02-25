@@ -81,6 +81,8 @@ export class SharePanel extends HTMLElement {
             #share_div{
                 display: flex;
                 padding-left: 10px;
+                height: calc(100% - 100px);
+                flex-grow: 1;
             }
 
             #share_content_div{
@@ -221,24 +223,31 @@ export class SharedResources extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
            
+            ::-webkit-scrollbar {
+                width: 5px;
+                height: 5px;
+            }
+                
+            ::-webkit-scrollbar-track {
+                background: var(--palette-background-default);
+            }
+            
+            ::-webkit-scrollbar-thumb {
+                background: var(--palette-divider); 
+            }
+         
             #container{
                 display: flex;
                 flex-direction: column;
-                padding-left: 10px;
-                padding-right: 10px;
                 height: 100%;
             }
 
             .resource-share-div{
                 width: 100%;
                 height: 100%;
-                margin-left: 10px;
-                margin-top: 20px;
                 display: flex;
                 flex-direction: column;
-                flex-grow: 1;
                 position: relative;
-               
             }
 
             #you-share-with-div{
@@ -272,13 +281,14 @@ export class SharedResources extends HTMLElement {
 
             @media(max-width: 500px){
                 #container{
-                    width: calc(100vw - 30px);
+                    width: 100vw - 10px);
+                    margin: 0px;
                 }
 
                 .resource-share-div {
-                    margin-left: 0px;
-                    margin-top: 0px;
-                    width: calc(100vw - 30px);
+                    margin: 0px;
+                    width: calc(100vw - 10px);
+                    
                 }
 
             }
@@ -295,16 +305,26 @@ export class SharedResources extends HTMLElement {
             </paper-tabs>
 
             <div class="resource-share-div">
-                <div style="position: absolute; top: 0px; left:0px; right: 0px; bottom: 0px;  overflow-y: auto;">
+                <div id="scroll-container" style="position: absolute; overflow-y: auto; top:0px; left:0px; right: 0px; bottom: 0px;">
                     <div id="share-with-you-div"></div>
                     <div id="you-share-with-div" style="display: none;"></div>
                 </div>
+                
             </div>
 
         </div>
         `
         // give the focus to the input.
-        
+        let scrollContainer = this.shadowRoot.querySelector("#scroll-container")
+        scrollContainer.onscroll = () => {
+            if (scrollContainer.scrollTop == 0) {
+                scrollContainer.style.boxShadow = ""
+                scrollContainer.style.borderTop = ""
+            } else {
+                scrollContainer.style.boxShadow = "inset 0px 5px 6px -3px rgb(0 0 0 / 40%)"
+                scrollContainer.style.borderTop = "1px solid var(--palette-divider)"
+            }
+        }
 
         // get resources share with a given account...
         let youShareWithDiv = this.shadowRoot.querySelector("#you-share-with-div")

@@ -98,9 +98,10 @@ export class Link extends HTMLElement {
         <style>
 
             #container{
-
+               
+                
             }
-
+            
             .shortcut-icon {
                 position: absolute;
                 bottom: -5px;
@@ -114,12 +115,15 @@ export class Link extends HTMLElement {
                 width: 16px;
             }
 
-            #link-div:hover{
-                cursor: pointer;
+            #content{
+                transition: background 0.2s ease,padding 0.8s linear;
+                background-color: var(--palette-background-paper);
             }
 
-            #link-div{
-                
+            #content:hover{
+                cursor: pointer;
+                -webkit-filter: invert(10%);
+                filter: invert(10%);
             }
 
             img {
@@ -127,6 +131,7 @@ export class Link extends HTMLElement {
                 width: fit-content; 
                 max-width: 96px;
             }
+
 
             span{
                 font-size: .85rem; 
@@ -167,7 +172,7 @@ export class Link extends HTMLElement {
                     <paper-ripple class="circle"></paper-ripple>
                 </div>
             </div>
-            <div style="display: flex; flex-direction: column; border: 1px solid var(--palette-divider); padding: 5px; border-radius: 2.5px;">
+            <div id="content" style="display: flex; flex-direction: column; border: 1px solid var(--palette-divider); padding: 5px; border-radius: 2.5px;">
                 <div style="position: relative;">
                     <img style="" src="${thumbnail}">
                     <div class="shortcut-icon">
