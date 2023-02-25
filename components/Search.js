@@ -4,7 +4,7 @@ import '@polymer/paper-icon-button/paper-icon-button.js';
 
 import { Application } from '../Application';
 import { CreateVideoRequest, DeleteVideoRequest, GetFileAudiosRequest, GetFileTitlesRequest, GetTitleByIdRequest, GetTitleFilesRequest, SearchTitlesRequest } from 'globular-web-client/title/title_pb';
-import { generatePeerToken, Model } from '../Model';
+import { generatePeerToken, getUrl, Model } from '../Model';
 
 import * as getUuid from 'uuid-by-string'
 import { BlogPostInfo, InformationsManager, searchEpisodes } from './Informations';
@@ -62,20 +62,7 @@ export function getCoverDataUrl(callback, videoId, videoUrl, videoPath, globule)
 
     generatePeerToken(globule, token => {
         // set the url for the image.
-        let url = globule.config.Protocol + "://" + globule.domain
-        if (window.location != globule.domain) {
-            if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
-                url = globule.config.Protocol + "://" + window.location.host
-            }
-        }
-
-        if (globule.config.Protocol == "https") {
-            if (globule.config.PortHttps != 443)
-                url += ":" + globule.config.PortHttps
-        } else {
-            if (globule.config.PortHttps != 80)
-                url += ":" + globule.config.PortHttp
-        }
+        let url = getUrl(globule)
 
         // set the api call
         url += "/get_video_cover_data_url"
@@ -83,10 +70,7 @@ export function getCoverDataUrl(callback, videoId, videoUrl, videoPath, globule)
         // Set url query parameter.
         url += "?domain=" + Model.domain
         url += "&application=" + Model.application
-        if (localStorage.getItem("user_token") != undefined) {
-            url += "&token=" + localStorage.getItem("user_token")
-        }
-
+        url += "&token=" + token
         url += "&id=" + videoId
         url += "&url=" + videoUrl
         url += "&path=" + videoPath
@@ -135,24 +119,9 @@ export function getImdbInfo(id, callback, errorcallback, globule) {
         titles[id].callbacks = []
         titles[id].callbacks.push(callback)
 
-        let url = globule.config.Protocol + "://" + globule.domain
-        if (window.location != globule.domain) {
-            if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
-                url = globule.config.Protocol + "://" + window.location.host
-            }
-        }
-
-        if (globule.config.Protocol == "https") {
-            if (globule.config.PortHttps != 443)
-                url += ":" + globule.config.PortHttps
-        } else {
-            if (globule.config.PortHttps != 80)
-                url += ":" + globule.config.PortHttp
-        }
-
+        let url = getUrl(globule)
         url += "/imdb_title?id=" + id
-
-        console.log("call imdb_title ", id)
+        url += "&token=" + token;
 
         var xmlhttp = new XMLHttpRequest();
         xmlhttp.timeout = 10 * 1000
@@ -1677,7 +1646,7 @@ export class SearchResultsPage extends HTMLElement {
                                 }
                             })
                         })
-                    } else if (field == "Tags"){
+                    } else if (field == "Tags") {
                         video.getTagsList().forEach(g => {
                             g.split(" ").forEach(g_ => {
                                 if (g_.toLowerCase() == className) {
@@ -2023,20 +1992,7 @@ export class SearchAudioCard extends HTMLElement {
                 if (files.length > 0) {
                     audio_playList += `#EXTINF:${audio.getDuration()}, ${audio.getTitle()}, tvg-id="${audio.getId()}"\n`
 
-                    let url = globule.config.Protocol + "://" + globule.domain
-                    if (window.location != globule.domain) {
-                        if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
-                            url = globule.config.Protocol + "://" + window.location.host
-                        }
-                    }
-
-                    if (globule.config.Protocol == "https") {
-                        if (globule.config.PortHttps != 443)
-                            url += ":" + globule.config.PortHttps
-                    } else {
-                        if (globule.config.PortHttps != 80)
-                            url += ":" + globule.config.PortHttp
-                    }
+                    let url = getUrl(globule)
 
                     let path = files[0].split("/")
                     path.forEach(item => {
@@ -2294,20 +2250,7 @@ export class SearchVideoCard extends HTMLElement {
                         }
                         thumbnailPath = thumbnailPath.substring(0, thumbnailPath.lastIndexOf("/") + 1) + ".hidden" + thumbnailPath.substring(thumbnailPath.lastIndexOf("/")) + "/preview.mp4"
 
-                        let url = globule.config.Protocol + "://" + globule.domain
-                        if (window.location != globule.domain) {
-                            if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
-                                url = globule.config.Protocol + "://" + window.location.host
-                            }
-                        }
-
-                        if (globule.config.Protocol == "https") {
-                            if (globule.config.PortHttps != 443)
-                                url += ":" + globule.config.PortHttps
-                        } else {
-                            if (globule.config.PortHttps != 80)
-                                url += ":" + globule.config.PortHttp
-                        }
+                        let url = getUrl(globule)
 
 
                         thumbnailPath.split("/").forEach(item => {
@@ -2359,7 +2302,7 @@ export class SearchVideoCard extends HTMLElement {
 
 
         this.video = video
-    
+
         this.classList.add("filterable")
         video.getGenresList().forEach(g => this.classList.add(getUuidByString(g.toLowerCase())))
         video.getTagsList().forEach(tag => this.classList.add(getUuidByString(tag.toLowerCase())))
@@ -2693,12 +2636,12 @@ export class SearchTitleDetail extends HTMLElement {
         this.titlePreview = this.shadowRoot.querySelector("#title-preview")
 
         this.titleCard.onmouseover = (evt) => {
-            if(episodesLst.style.display != "flex")
+            if (episodesLst.style.display != "flex")
                 this.titlePreview.play()
         }
 
         this.titleCard.onmouseleave = (evt) => {
-            if(episodesLst.style.display != "flex")
+            if (episodesLst.style.display != "flex")
                 this.titlePreview.pause()
         }
 
@@ -2706,12 +2649,12 @@ export class SearchTitleDetail extends HTMLElement {
         let episodesLst = this.shadowRoot.querySelector(".season-episodes-lst")
 
         episodesLst.onmouseover = (evt) => {
-            if(episodesLst.style.display == "flex")
+            if (episodesLst.style.display == "flex")
                 this.episodePreview.play()
         }
 
         episodesLst.onmouseleave = (evt) => {
-            if(episodesLst.style.display == "flex")
+            if (episodesLst.style.display == "flex")
                 this.episodePreview.pause()
         }
     }
@@ -2764,20 +2707,7 @@ export class SearchTitleDetail extends HTMLElement {
                     .then(rsp => {
                         if (rsp.getFilepathsList().length > 0) {
                             let path = rsp.getFilepathsList().pop()
-                            let url = globule.config.Protocol + "://" + globule.domain
-                            if (window.location != globule.domain != -1) {
-                                if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
-                                    url = globule.config.Protocol + "://" + window.location.host
-                                }
-                            }
-
-                            if (globule.config.Protocol == "https") {
-                                if (globule.config.PortHttps != 443)
-                                    url += ":" + globule.config.PortHttps
-                            } else {
-                                if (globule.config.PortHttps != 80)
-                                    url += ":" + globule.config.PortHttp
-                            }
+                            let url = getUrl(globule)
 
                             let thumbnailPath = path
                             if (thumbnailPath.lastIndexOf(".mp4") != -1 || thumbnailPath.lastIndexOf(".MP4") != -1) {
@@ -2868,20 +2798,7 @@ export class SearchTitleDetail extends HTMLElement {
             this.showTitleInfo(title)
         }
 
-        let url = globule.config.Protocol + "://" + globule.domain
-        if (window.location != globule.domain) {
-            if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
-                url = globule.config.Protocol + "://" + window.location.host
-            }
-        }
-
-        if (globule.config.Protocol == "https") {
-            if (globule.config.PortHttps != 443)
-                url += ":" + globule.config.PortHttps
-        } else {
-            if (globule.config.PortHttps != 80)
-                url += ":" + globule.config.PortHttp
-        }
+        let url = getUrl(globule)
 
         // paly only the first file...
         let rqst = new GetTitleFilesRequest
@@ -3294,44 +3211,33 @@ export class SearchFacetPanel extends HTMLElement {
 
             // get the title file path...
             this.getTitleFiles(audio.getId(), indexPath, globule, files => {
-                if (files.length > 0) {
-                    audio_playList += `#EXTINF:${audio.getDuration()}, ${audio.getTitle()}, tvg-id="${audio.getId()}"\n`
+                generatePeerToken(globule, token => {
+                    if (files.length > 0) {
+                        audio_playList += `#EXTINF:${audio.getDuration()}, ${audio.getTitle()}, tvg-id="${audio.getId()}"\n`
 
-                    let url = globule.config.Protocol + "://" + globule.domain
-                    if (window.location != globule.domain) {
-                        if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
-                            url = globule.config.Protocol + "://" + window.location.host
+                        let url = getUrl(globule)
+
+                        let path = files[0].split("/")
+                        path.forEach(item => {
+                            item = item.trim()
+                            if (item.length > 0)
+                                url += "/" + encodeURIComponent(item)
+                        })
+
+                        url += "?application=" + Model.application
+                        if (localStorage.getItem("user_token") != undefined) {
+                            url += "&token=" + token
                         }
-                    }
 
-                    if (globule.config.Protocol == "https") {
-                        if (globule.config.PortHttps != 443)
-                            url += ":" + globule.config.PortHttps
+                        audio_playList += url + "\n\n"
+                    }
+                    if (audios.length > 0) {
+                        generateAudioPlaylist()
                     } else {
-                        if (globule.config.PortHttps != 80)
-                            url += ":" + globule.config.PortHttp
+                        console.log(audio_playList)
+                        playAudio(audio_playList, null, null, null, globule)
                     }
-
-                    let path = files[0].split("/")
-                    path.forEach(item => {
-                        item = item.trim()
-                        if (item.length > 0)
-                            url += "/" + encodeURIComponent(item)
-                    })
-
-                    url += "?application=" + Model.application
-                    if (localStorage.getItem("user_token") != undefined) {
-                        url += "&token=" + localStorage.getItem("user_token")
-                    }
-
-                    audio_playList += url + "\n\n"
-                }
-                if (audios.length > 0) {
-                    generateAudioPlaylist()
-                } else {
-                    console.log(audio_playList)
-                    playAudio(audio_playList, null, null, null, globule)
-                }
+                })
             })
         }
 
@@ -3362,48 +3268,35 @@ export class SearchFacetPanel extends HTMLElement {
 
             // get the title file path...
             this.getTitleFiles(video.getId(), indexPath, globule, files => {
-                if (files.length > 0) {
-                    video_playList += `#EXTINF:${video.getDuration()}, ${video.getDescription()}, tvg-id="${video.getId()}"\n`
+                generatePeerToken(globule, token => {
+                    if (files.length > 0) {
+                        video_playList += `#EXTINF:${video.getDuration()}, ${video.getDescription()}, tvg-id="${video.getId()}"\n`
 
-                    let url = globule.config.Protocol + "://" + globule.domain
-                    if (window.location != globule.domain) {
-                        if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
-                            url = globule.config.Protocol + "://" + window.location.host
+                        let url = getUrl(globule)
+
+                        if (!files[0].endsWith(".mp4")) {
+                            files[0] += "/playlist.m3u8"
                         }
-                    }
+                        let path = files[0].split("/")
+                        path.forEach(item => {
+                            item = item.trim()
+                            if (item.length > 0)
+                                url += "/" + encodeURIComponent(item)
+                        })
 
-                    if (globule.config.Protocol == "https") {
-                        if (globule.config.PortHttps != 443)
-                            url += ":" + globule.config.PortHttps
+                        url += "?application=" + Model.application
+                        if (localStorage.getItem("user_token") != undefined) {
+                            url += "&token=" + token
+                        }
+
+                        video_playList += url + "\n\n"
+                    }
+                    if (videos.length > 0) {
+                        generateVideoPlaylist()
                     } else {
-                        if (globule.config.PortHttps != 80)
-                            url += ":" + globule.config.PortHttp
+                        playVideo(video_playList, null, null, null, globule)
                     }
-
-                    if(!files[0].endsWith(".mp4")){
-                        files[0] +="/playlist.m3u8"
-                    }
-                    let path = files[0].split("/")
-                    path.forEach(item => {
-                        item = item.trim()
-                        if (item.length > 0)
-                            url += "/" + encodeURIComponent(item)
-                    })
-
-                   
-
-                    url += "?application=" + Model.application
-                    if (localStorage.getItem("user_token") != undefined) {
-                        url += "&token=" + localStorage.getItem("user_token")
-                    }
-
-                    video_playList += url + "\n\n"
-                }
-                if (videos.length > 0) {
-                    generateVideoPlaylist()
-                } else {
-                    playVideo(video_playList, null, null, null, globule)
-                }
+                })
             })
         }
 

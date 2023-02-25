@@ -1,6 +1,6 @@
 
 import { createDir, deleteFile, readDir, uploadFiles } from "globular-web-client/api";
-import { Model } from '../Model'
+import { generatePeerToken, getUrl, Model } from '../Model'
 import { File } from '../File'
 import { ApplicationView } from "../ApplicationView";
 import * as getUuidByString from "uuid-by-string";
@@ -262,7 +262,7 @@ export class Ringtones extends HTMLElement {
     }
 
     setRingtone(ringtone) {
-        if(!ringtone){
+        if (!ringtone) {
             return
         }
 
@@ -383,20 +383,7 @@ export class Ringtone extends HTMLElement {
         this.deleteButton = this.shadowRoot.querySelector("#delete-button")
 
         let globule = Application.getGlobule(Application.account.session.domain)
-        let url = globule.config.Protocol + "://" + globule.domain
-        if (window.location != globule.domain) {
-            if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
-                url = globule.config.Protocol + "://" + window.location.host
-            }
-        }
-
-        if (globule.config.Protocol == "https") {
-            if (globule.config.PortHttps != 443)
-                url += ":" + globule.config.PortHttps
-        } else {
-            if (globule.config.PortHttps != 80)
-                url += ":" + globule.config.PortHttp
-        }
+        let url = getUrl(globule)
 
         let path = file.path
         path = path.replace(globule.config.WebRoot, "")
@@ -409,12 +396,15 @@ export class Ringtone extends HTMLElement {
         })
 
         url += "?application=" + Model.application
-        if (localStorage.getItem("user_token") != undefined) {
-            url += "&token=" + localStorage.getItem("user_token")
-        }
+        generatePeerToken(globule, token => {
+            if (localStorage.getItem("user_token") != undefined) {
+                url += "&token=" + token
+            }
+            this.url = url;
+        })
 
         this.audio = null;
-        this.url = url;
+
 
         this.playBtn.onclick = () => {
             this.play()

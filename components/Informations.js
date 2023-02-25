@@ -598,7 +598,7 @@ export class InformationsManager extends HTMLElement {
         this.shadowRoot.querySelector(".title-div").innerHTML = `
         <div style="display: flex; align-items: center;">
             <iron-icon id="icon" icon="icons:info"> </iron-icon> 
-            <span style="flex-grow: 1; padding-left: 20px; font-size: 20px;  user-select: none;">${file.name} <span style="color: var(--palette-text-secondary);  margin-left: 16px; user-select: none;">Properties</span></span>
+            <span style="flex-grow: 1; padding-left: 20px; font-size: 1.1rem;  user-select: none;">${file.name} <span style="color: var(--palette-text-secondary);  margin-left: 16px; user-select: none;">Properties</span></span>
         </div>`
         let fileInfo = new FileInfo(file)
         this.appendChild(fileInfo)

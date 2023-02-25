@@ -1,5 +1,5 @@
 
-import { generatePeerToken, Model } from '../Model';
+import { generatePeerToken, getUrl, Model } from '../Model';
 import { ApplicationView } from "../ApplicationView";
 import { setMoveable } from './moveable'
 import WaveSurfer from "wavesurfer.js";
@@ -916,20 +916,7 @@ export class AudioPlayer extends HTMLElement {
                 url = path;
             } else {
 
-                url = globule.config.Protocol + "://" + globule.domain
-                if (window.location != globule.domain) {
-                    if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
-                        url = globule.config.Protocol + "://" + window.location.host
-                    }
-                }
-
-                if (globule.config.Protocol == "https") {
-                    if (globule.config.PortHttps != 443)
-                        url += ":" + globule.config.PortHttps
-                } else {
-                    if (globule.config.PortHttps != 80)
-                        url += ":" + globule.config.PortHttp
-                }
+                url = getUrl(globule)
 
                 //url += path
                 path.split("/").forEach(item => {

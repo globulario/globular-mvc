@@ -19,7 +19,7 @@ import { Menu } from './Menu';
 import { Ringtone } from './Ringtone'
 
 import { Account } from "../Account"
-import { Model, generatePeerToken } from "../Model"
+import { Model, generatePeerToken, getUrl } from "../Model"
 import { ApplicationView } from '../ApplicationView';
 import "./Autocomplete"
 import { CreateNotificationRqst, SessionState, Notification, NotificationType, Call, SetCallRqst } from 'globular-web-client/resource/resource_pb';
@@ -730,20 +730,7 @@ export class ContactList extends HTMLElement {
 
                     let globule = Application.getGlobule(callee.domain)
                     generatePeerToken(globule, token => {
-                        let url = globule.config.Protocol + "://" + globule.domain
-                        if (window.location != globule.domain) {
-                            if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
-                                url = globule.config.Protocol + "://" + window.location.host
-                            }
-                        }
-
-                        if (globule.config.Protocol == "https") {
-                            if (globule.config.PortHttps != 443)
-                                url += ":" + globule.config.PortHttps
-                        } else {
-                            if (globule.config.PortHttps != 80)
-                                url += ":" + globule.config.PortHttp
-                        }
+                        let url = getUrl(globule)
 
                         // so here I will found the caller ringtone...
                         let path = caller.ringtone
@@ -757,10 +744,8 @@ export class ContactList extends HTMLElement {
                         })
 
                         url += "?application=" + Model.application
-                        if (localStorage.getItem("user_token") != undefined) {
-                            url += "&token=" + token
-                        }
-
+                        url += "&token=" + token
+                        
                         let audio = new Audio(url)
                         audio.setAttribute("loop", "true")
                         audio.setAttribute("autoplay", "true")
@@ -973,22 +958,7 @@ export class ContactList extends HTMLElement {
                     Account.getAccount(call.getCaller(), caller => {
                         Account.getAccount(call.getCallee(), callee => {
 
-                            let globule = Application.getGlobule(caller.domain)
-
-                            let url = globule.config.Protocol + "://" + globule.domain
-                            if (window.location != globule.domain) {
-                                if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
-                                    url = globule.config.Protocol + "://" + window.location.host
-                                }
-                            }
-
-                            if (globule.config.Protocol == "https") {
-                                if (globule.config.PortHttps != 443)
-                                    url += ":" + globule.config.PortHttps
-                            } else {
-                                if (globule.config.PortHttps != 80)
-                                    url += ":" + globule.config.PortHttp
-                            }
+                            let globule = getUrl(globule)
 
                             // so here I will found the caller ringtone...
                             let path = callee.ringtone

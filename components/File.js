@@ -17,7 +17,7 @@ import "./DiskSpace.js"
 import "./Share.js"
 import * as getUuid from 'uuid-by-string'
 
-import { generatePeerToken, Model } from '../Model';
+import { generatePeerToken, getUrl, Model } from '../Model';
 import { File } from "../File";
 import { Menu } from './Menu';
 import { PermissionsManager } from './Permissions';
@@ -89,6 +89,7 @@ export function getFileSizeString(f_size) {
 
 // Return the size of a file at url.
 function getFileSize(url_, callback, errorcallback) {
+
     let url = window.location.protocol + "//" + window.location.host + "/file_size"
 
     var xmlhttp = new XMLHttpRequest();
@@ -579,74 +580,59 @@ export class FilesView extends HTMLElement {
 
         this.openInNewTabItem.action = () => {
             let globule = this._file_explorer_.globule
-            let url = globule.config.Protocol + "://" + globule.domain + ":"
+            generatePeerToken(globule, token => {
+                let url = getUrl(globule)
 
+                this.menu.file.path.split("/").forEach(item => {
+                    let component = encodeURIComponent(item.trim())
+                    if (component.length > 0) {
+                        url += "/" + component
+                    }
+                })
 
-            if (globule.config.Protocol == "https") {
-                url += globule.config.PortHttps
-            } else {
-                url += globule.config.PortHttp
-            }
-
-            this.menu.file.path.split("/").forEach(item => {
-                let component = encodeURIComponent(item.trim())
-                if (component.length > 0) {
-                    url += "/" + component
+                if (this.menu.file.mime == "video/hls-stream") {
+                    url += "/playlist.m3u8"
                 }
 
+                url += "?application=" + Model.application;
+                url += "&token=" + token
+
+                window.open(url, '_blank', "fullscreen=yes");
+
+                // Remove it from it parent... 
+                this.menu.close()
+                this.menu.parentNode.removeChild(this.menu)
             })
-
-            if (this.menu.file.mime == "video/hls-stream") {
-                url += "/playlist.m3u8"
-            }
-
-            url += "?application=" + Model.application;
-            if (localStorage.getItem("user_token") != undefined) {
-                url += "&token=" + localStorage.getItem("user_token");
-            }
-            window.open(url, '_blank', "fullscreen=yes");
-
-            // Remove it from it parent... 
-            this.menu.close()
-            this.menu.parentNode.removeChild(this.menu)
 
         }
 
         this.copyUrlItem.action = () => {
             let globule = this._file_explorer_.globule
-            let url = globule.config.Protocol + "://" + globule.domain + ":"
+            generatePeerToken(globule, token => {
+                let url = getUrl(globule)
+                this.menu.file.path.split("/").forEach(item => {
+                    let component = encodeURIComponent(item.trim())
+                    if (component.length > 0) {
+                        url += "/" + component
+                    }
 
+                })
 
-            if (globule.config.Protocol == "https") {
-                url += globule.config.PortHttps
-            } else {
-                url += globule.config.PortHttp
-            }
-
-            this.menu.file.path.split("/").forEach(item => {
-                let component = encodeURIComponent(item.trim())
-                if (component.length > 0) {
-                    url += "/" + component
+                if (this.menu.file.mime == "video/hls-stream") {
+                    url += "/playlist.m3u8"
                 }
 
+                url += "?application=" + Model.application;
+                url += "&token=" + token
+
+                copyToClipboard(url)
+
+                ApplicationView.displayMessage("url was copy to clipboard...", 3000)
+
+                // Remove it from it parent... 
+                this.menu.close()
+                this.menu.parentNode.removeChild(this.menu)
             })
-
-            if (this.menu.file.mime == "video/hls-stream") {
-                url += "/playlist.m3u8"
-            }
-
-            url += "?application=" + Model.application;
-            if (localStorage.getItem("user_token") != undefined) {
-                url += "&token=" + localStorage.getItem("user_token");
-            }
-
-            copyToClipboard(url)
-
-            ApplicationView.displayMessage("url was copy to clipboard...", 3000)
-
-            // Remove it from it parent... 
-            this.menu.close()
-            this.menu.parentNode.removeChild(this.menu)
         }
 
         this.downloadMenuItem.action = () => {
@@ -1166,7 +1152,7 @@ export class FilesView extends HTMLElement {
 
             // remove the menu...
             this.menu.close()
-            if(this.menu.parentNode)
+            if (this.menu.parentNode)
                 this.menu.parentNode.removeChild(this.menu)
         }
 
@@ -2222,35 +2208,29 @@ export class FilesIconView extends FilesView {
 
                     let copyUrl = (path) => {
                         let globule = this._file_explorer_.globule
-                        let url = globule.config.Protocol + "://" + globule.domain + ":"
 
+                        generatePeerToken(globule, token => {
+                            let url = getUrl(globule)
 
-                        if (globule.config.Protocol == "https") {
-                            url += globule.config.PortHttps
-                        } else {
-                            url += globule.config.PortHttp
-                        }
+                            path.split("/").forEach(item => {
+                                let component = encodeURIComponent(item.trim())
+                                if (component.length > 0) {
+                                    url += "/" + component
+                                }
 
-                        path.split("/").forEach(item => {
-                            let component = encodeURIComponent(item.trim())
-                            if (component.length > 0) {
-                                url += "/" + component
+                            })
+
+                            if (this.menu.file.mime == "video/hls-stream") {
+                                url += "/playlist.m3u8"
                             }
 
+                            url += "?application=" + Model.application;
+                            url += "&token=" + token;
+
+                            copyToClipboard(url)
+
+                            ApplicationView.displayMessage("url was copy to clipboard...", 3000)
                         })
-
-                        if (this.menu.file.mime == "video/hls-stream") {
-                            url += "/playlist.m3u8"
-                        }
-
-                        url += "?application=" + Model.application;
-                        if (localStorage.getItem("user_token") != undefined) {
-                            url += "&token=" + localStorage.getItem("user_token");
-                        }
-
-                        copyToClipboard(url)
-
-                        ApplicationView.displayMessage("url was copy to clipboard...", 3000)
                     }
 
                     if (fileType == "audio" || fileType == "video") {
@@ -4078,6 +4058,10 @@ export class FileExplorer extends HTMLElement {
                 border-color: var(--palette-divider);
                 --iron-icon-fill-color: var(--palette-text-accent);
                 
+            }
+
+            paper-button {
+                font-size: 1rem;
             }
 
             .card-header{

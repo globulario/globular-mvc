@@ -159,6 +159,10 @@ export class LoginBox extends HTMLElement {
               .card-actions {
                 font-size: 1rem;
               }
+
+              paper-button {
+                font-size: 1rem;
+              }
               
               .card-subtitle {
                 letter-spacing: .01428571em;
@@ -315,6 +319,10 @@ export class RegisterBox extends HTMLElement {
                   }
                  
                   .card-actions {
+                    font-size: 1rem;
+                  }
+
+                  paper-button {
                     font-size: 1rem;
                   }
                   

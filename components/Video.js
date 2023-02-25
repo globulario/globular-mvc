@@ -1,6 +1,6 @@
 
 
-import { generatePeerToken, Model } from '../Model';
+import { generatePeerToken, getUrl, Model } from '../Model';
 import { Application } from "../Application";
 import Plyr from 'plyr';
 import "./plyr.css"
@@ -398,22 +398,7 @@ export class VideoPlayer extends HTMLElement {
             getSubtitlesFiles(this.globule, this.path, subtitles_files => {
 
                 let globule = this.globule
-                let url = globule.config.Protocol + "://" + globule.domain
-
-                if (window.location != globule.domain) {
-                    if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
-                        url = globule.config.Protocol + "://" + window.location.host
-
-                    }
-                }
-
-                if (globule.config.Protocol == "https") {
-                    if (globule.config.PortHttps != 443)
-                        url += ":" + globule.config.PortHttps
-                } else {
-                    if (globule.config.PortHttps != 80)
-                        url += ":" + globule.config.PortHttp
-                }
+                let url = getUrl(globule)
 
                 subtitles_files.files.forEach(f => {
                     let track = document.createElement("track")
@@ -799,22 +784,7 @@ export class VideoPlayer extends HTMLElement {
         generatePeerToken(globule, token => {
             let url = path;
             if (!url.startsWith("http")) {
-                url = globule.config.Protocol + "://" + globule.domain
-                if (window.location != globule.domain) {
-                    if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
-                        url = globule.config.Protocol + "://" + window.location.host
-                    }
-                }
-
-                if (globule.config.Protocol == "https") {
-                    if (globule.config.PortHttps != 443)
-                        url += ":" + globule.config.PortHttps
-                } else {
-                    if (globule.config.PortHttps != 80)
-
-                        url += ":" + globule.config.PortHttp
-                }
-
+                url = getUrl(globule)
 
                 path.split("/").forEach(item => {
                     item = item.trim()
@@ -1029,21 +999,7 @@ export class VideoPlayer extends HTMLElement {
 
         // set the complete url.
         // Get image from the globule.
-        let url = globule.config.Protocol + "://" + globule.domain
-
-        if (window.location != globule.domain) {
-            if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
-                url = globule.config.Protocol + "://" + window.location.host
-            }
-        }
-
-        if (globule.config.Protocol == "https") {
-            if (globule.config.PortHttps != 443)
-                url += ":" + globule.config.PortHttps
-        } else {
-            if (globule.config.PortHttps != 80)
-                url += ":" + globule.config.PortHttp
-        }
+        let url = getUrl(globule)
 
 
         if (thumbnailPath.startsWith("/")) {

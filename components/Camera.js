@@ -106,6 +106,10 @@ export class Camera extends HTMLElement {
                     justify-items: center;
                 }
 
+                paper-button {
+                    font-size: 1rem;
+                }
+
                 .camera .card-content{
                     padding-top: 24px;
                     position: relative;

@@ -59,7 +59,7 @@ export class Slider extends HTMLElement {
                   .css-wg001orm-box-primitive-flexbox {
                     background-color: rgb(43, 43, 43);
                     color: rgb(166, 166, 166);
-                    font-size: 20px;
+                    font-size: 1.1rem;
                     text-align: center;
                     font-size: 10px;
                     width: 60px;

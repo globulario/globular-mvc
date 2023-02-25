@@ -1,4 +1,4 @@
-import { generatePeerToken, Model } from './Model';
+import { generatePeerToken, getUrl, Model } from './Model';
 import { readDir } from "globular-web-client/api";
 import * as jwt from "jwt-decode";
 import { Globular } from 'globular-web-client';
@@ -322,16 +322,8 @@ export class File extends Model {
             // simply download the file.
             generatePeerToken(globule, (token: string) => {
                 let path = this.path
-                let url = globule.config.Protocol + "://" + globule.domain
-
-                if (globule.config.Protocol == "https") {
-                    if (globule.config.PortHttps != 443)
-                        url += ":" + globule.config.PortHttps
-                } else {
-                    if (globule.config.PortHttps != 80)
-                        url += ":" + globule.config.PortHttp
-                }
-
+                let url = getUrl(globule)
+                
                 path.split("/").forEach(item => {
                     item = item.trim()
                     if (item.length > 0) {
@@ -339,20 +331,14 @@ export class File extends Model {
                     }
                 })
 
-                url += "?application=" + Model.application
-                if (localStorage.getItem("user_token") != undefined) {
-                    url += "&token=" + token
-                }
-
 
                 const req = new XMLHttpRequest();
 
                 // Set the values also as parameters...
                 url += "?domain=" + globule.domain
                 url += "&application=" + Model.application
-                if (localStorage.getItem("user_token") != undefined) {
-                    url += "&token=" + token
-                }
+                url += "&token=" + token
+                
 
                 req.open("GET", url, true);
 

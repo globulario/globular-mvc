@@ -4,7 +4,7 @@ import { GetAudioByIdRequest, GetVideoByIdRequest } from "globular-web-client/ti
 import { Application } from "../Application";
 import { fireResize, formatBoolean } from "./utility.js";
 import { secondsToTime } from "./Audio.js";
-import { generatePeerToken, Model } from '../Model';
+import { generatePeerToken, getUrl, Model } from '../Model';
 import { SetVideoConversionRequest } from "globular-web-client/file/file_pb.js";
 import { File } from "../File";
 
@@ -271,20 +271,7 @@ export class PlayList extends HTMLElement {
                 this.refresh(callback)
                 fireResize()
             } else {
-                let url = globule.config.Protocol + "://" + globule.domain
-                if (window.location != globule.domain) {
-                    if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
-                        url = globule.config.Protocol + "://" + window.location.host
-                    }
-                }
-
-                if (globule.config.Protocol == "https") {
-                    if (globule.config.PortHttps != 443)
-                        url += ":" + globule.config.PortHttps
-                } else {
-                    if (globule.config.PortHttps != 80)
-                        url += ":" + globule.config.PortHttp
-                }
+                let url = getUrl(globule)
 
                 // url += txt
                 //url += path

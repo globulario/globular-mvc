@@ -119,11 +119,13 @@ export class Wizard extends HTMLElement {
             #pages{
                 display: flex;
                 transition: transform .6666s;
+
             }
 
             .content {
                 padding: 0px;
                 margin: 0px;
+                font-size: 1.1rem;
             }
 
             .step-number:hover{
@@ -132,6 +134,10 @@ export class Wizard extends HTMLElement {
 
             .card-actions{
                 display: flex;
+            }
+
+            paper-button {
+                font-size: 1rem;
             }
 
         </style>

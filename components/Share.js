@@ -9,7 +9,7 @@ import { Group } from "../Group";
 import { generatePeerToken, Model } from "../Model";
 import { Menu } from './Menu';
 
-import { formatBoolean, randomUUID } from "./utility";
+import { fireResize, formatBoolean, randomUUID } from "./utility";
 import { Wizard } from "./Wizard";
 import { Link } from "./Link"
 import { File } from "../File"
@@ -74,6 +74,7 @@ export class SharePanel extends HTMLElement {
             paper-card {
                 background-color: var(--palette-background-paper);
                 margin-top: 10px;
+                height: calc(100vh - 85px);
                 font-size: 1.65rem;
             }
 
@@ -122,23 +123,29 @@ export class SharePanel extends HTMLElement {
                 display: flex;
                 flex-direction: column;
                 width: 100%;
+                height: 100%;
                 padding: 0px;
                 padding-bottom: 10px;
                 font-size: 1rem;
               }
       
-              @media (max-width: 800px) {
+              @media (max-width: 500px) {
                 .card-content{
-                  min-width: 580px;
+                   width: calc(100vw - 10px);
                 }
-              }
-      
-              @media (max-width: 600px) {
-                .card-content{
-                  min-width: 380px;
+
+                #share_div{
+                    padding: 0px;
+                    flex-direction: column;
                 }
+
+                #share_content_div{
+                    min-width: 0px;
+                    max-width: 0px;
+                    width: 100%;
+                }
+
               }
-      
 
         </style>
         <paper-card id="container">
@@ -218,7 +225,6 @@ export class SharedResources extends HTMLElement {
                 flex-direction: column;
                 padding-left: 10px;
                 padding-right: 10px;
-                height: 100%;
             }
 
             .resource-share-div{
@@ -259,14 +265,27 @@ export class SharedResources extends HTMLElement {
                 --paper-badge-margin-left: 10px;
             }
 
+            @media(max-width: 500px){
+                #container{
+                    width: calc(100vw - 10px);
+                }
+
+                .resource-share-div {
+                    margin-left: 0px;
+                    margin-top: 0px;
+                    width: calc(100vw-10px);
+                }
+
+            }
+
         </style>
         <div id="container">
             <paper-tabs selected="0">
                 <paper-tab id="share-with-you"">
-                    Resources ${subject.name} share with you
+                    Share with you
                 </paper-tab>
                 <paper-tab id="you-share-with">
-                    Resources You share with ${subject.name}
+                    You share with
                 </paper-tab>
             </paper-tabs>
 
@@ -314,17 +333,25 @@ export class SharedResources extends HTMLElement {
             let r = resources.pop()
             let globule = Model.getGlobule(r.getDomain())
             File.getFile(globule, r.getPath(), 128, 85, file => {
-                let html = `<globular-link path="${file.path}" thumbnail="${file.thumbnail}" domain="${file.domain}"></globular-link>`
+                let html = `<globular-link deleteable path="${file.path}" thumbnail="${file.thumbnail}" domain="${file.domain}"></globular-link>`
                 div.appendChild(range.createContextualFragment(html))
                 if (resources.length > 0) {
                     displayLink();
                 }
+
+                let lnk = div.querySelector("globular-link")
+                lnk.ondelete = ()=>{
+                    console.log("remove share resource ", r)
+                }
+                
             }, err => {
                 console.log(err);
                 if (resources.length > 0) {
                     displayLink()
                 }
             })
+
+  
         }
 
         if (resources.length > 0) {
@@ -471,7 +498,7 @@ export class ShareResourceWizard extends HTMLElement {
                 align-items: center;
             }
 
-            .title {
+            .title-span {
                 flex-grow: 1;
             }
 
@@ -479,7 +506,7 @@ export class ShareResourceWizard extends HTMLElement {
         <paper-card>
             <div class="header">
                 <iron-icon icon="social:share" style="padding-left: 10px;"></iron-icon>
-                <span class="title"> </span>
+                <span class="title-span"> </span>
                 <paper-icon-button icon="icons:close"></paper-icon-button>
             </div>
             <slot> </slot>
@@ -522,11 +549,11 @@ export class ShareResourceWizard extends HTMLElement {
                 <div style="display: flex; flex-direction: column; border: 1px solid var(--palette-divider); padding: 5px; border-radius: 2.5px;">
                     <div style="display: flex; align-items: center; width: 100%;">
                         <paper-checkbox checked  id="${uuid + "_checkbox"}"></paper-checkbox>
-                        <span class="title" style="flex-grow: 1;"></span>
+                        <span class="title-span" style="flex-grow: 1;"></span>
                         <iron-icon class="wizard-file-infos-btn" id="${uuid + "_infos_btn"}" icon="icons:info"></iron-icon>
                     </div>
         
-                    <img style="height: 72px; width: fit-content; max-width: 172px;" src="${file.thumbnail}"></img>
+                    <img style="height: 72px; width: fit-content; max-width: 96px; margin-top: 4px;" src="${file.thumbnail}"></img>
                 </div>
                 <span style="font-size: .85rem; padding: 2px; display: block; max-width: 128px; word-break: break-all;" title=${file.path}> ${name}</span>
             </div>
@@ -591,7 +618,7 @@ export class ShareResourceWizard extends HTMLElement {
         let summary = `
         <div  class="globular-wizard-page" style="max-height: 500px; overflow-y: auto;">
             <div style="display: flex;">
-                <iron-icon style="height: 84px; width: 84px; fill: var(--palette-success-main);" icon="icons:check-circle"></iron-icon>
+                <iron-icon style="height: 64px; width: 64px; fill: var(--palette-success-main);" icon="icons:check-circle"></iron-icon>
                 <div style="display: flex; flex-direction: column; margin-left: 30px; padding-left: 30px; border-left: 1px solid var(--palette-divider);">
                     <p style="flex-grow: 1;">  
                         Resources permissions was successfully created for
@@ -664,12 +691,12 @@ export class ShareResourceWizard extends HTMLElement {
                         <div style="display: flex; flex-direction: column; align-items: center; width: fit-content; margin: 5px; height: fit-content; ">
                             <div style="display: flex; flex-direction: column; border: 1px solid var(--palette-divider); padding: 5px; border-radius: 2.5px;">
                                 <div style="display: flex; align-items: center; width: 100%;">
-                                    <span class="title" style="flex-grow: 1;"></span>
+                                    <span class="title-span" style="flex-grow: 1;"></span>
                                     <iron-icon style="fill: var(--palette-success-main);" id="${uuid + "_success"}" icon="icons:check-circle"></iron-icon>
                                     <iron-icon style="fill: var(--palette-secondary-main);" id="${uuid + "_error"}" icon="icons:error"></iron-icon>
                                 </div>
 
-                                <img style="height: 72px; width: fit-content; max-width: 172px;" src="${file.thumbnail}"></img>
+                                <img style="height: 72px; width: fit-content; max-width: 96px;" src="${file.thumbnail}"></img>
                             </div>
                             <span style="font-size: .85rem; padding: 2px; display: block; max-width: 128px; word-break: break-all;" title=${file.path}> ${name}</span>
                         </div>
@@ -776,7 +803,6 @@ export class ShareResourceWizard extends HTMLElement {
             
                         .infos span{
                             font-size: 1rem;
-                            margin-left: 10px;
                         }
                     </style>
                     `))
@@ -1094,10 +1120,6 @@ export class GlobularSubjectsView extends HTMLElement {
         this.on_group_click = null
         this.on_application_click = null
         this.on_organization_click = null
-    }
-
-    // The connection callback.
-    connectedCallback() {
 
         // set the account...
         this.account = Application.account
@@ -1115,6 +1137,7 @@ export class GlobularSubjectsView extends HTMLElement {
             .vertical-tabs {
                 display: flex;
                 flex-direction: column;
+                height: 100%;
             }
 
             .vertical-tab {
@@ -1125,7 +1148,6 @@ export class GlobularSubjectsView extends HTMLElement {
 
             .vertical-tab span{
                 position: relative;
-                width: 100%;
             }
 
             .subject-div{
@@ -1136,6 +1158,10 @@ export class GlobularSubjectsView extends HTMLElement {
                 padding-bottom: 10px;
                 margin-bottom: 10px;
                 border-bottom: 1px solid var(--palette-divider);
+            }
+
+            .active.infos {
+                border: 1px solid #2196f3;
             }
 
             .infos {
@@ -1153,6 +1179,7 @@ export class GlobularSubjectsView extends HTMLElement {
                 max-height: 64px;
                 max-width: 64px;
                 border-radius: 32px;
+                margin-right: 10px;
             }
 
             .infos iron-icon{
@@ -1162,7 +1189,7 @@ export class GlobularSubjectsView extends HTMLElement {
 
             .infos span{
                 font-size: 1rem;
-                margin-left: 10px;
+                
             }
 
             .infos:hover{
@@ -1178,10 +1205,16 @@ export class GlobularSubjectsView extends HTMLElement {
             .selector {
                 text-decoration: underline;
                 padding: 2px;
+                margin-right: 5px;
             } 
 
             .counter{
                 font-size: 1rem;
+            }
+
+            .group-members {
+                display: flex; 
+                flex-wrap: wrap;
             }
 
             .group-members .infos{
@@ -1192,12 +1225,23 @@ export class GlobularSubjectsView extends HTMLElement {
                 -webkit-filter: invert(0%);
                 filter: invert(0%);
                 cursor: default;
+                cursor: pointer;
             }
 
             .group-members .infos img{
                 max-height: 32px;
                 max-width: 32px;
                 border-radius: 16px;
+            }
+
+            .vertical-tabs {
+                font-size: 1rem;
+            }
+
+            .selectors{
+                display: flex;
+                flex-direction: column;
+                position: relative;
             }
 
             #organizations-tab {
@@ -1207,48 +1251,79 @@ export class GlobularSubjectsView extends HTMLElement {
             #applications-tab{
                 display: none;
             }
+
+            @media (max-width: 500px) {
+                #subjects-div {
+                    margin-right: 5px;
+                    /*max-width: 130px;*/
+                }
+
+                .subject-div{
+                    padding-left: 0px;
+                    flex-direction: row;
+                    overflow-x: auto;
+                }
+
+                .infos{
+                    flex-direction: column;
+                    border: 1px solid var(--palette-divider);
+                }
+
+                .Contacts_icon{
+                    display: none;
+                }
+
+                .group-members{
+                    max-width: 125px;
+                    overflow-x: auto;
+                    flex-wrap: nowrap;
+                }
+
+                .selectors{
+                    flex-direction: row;
+                }
+            }
         </style>
         
         <div id="subjects-div">
             <div class="vertical-tabs">
-                <div class="vertical-tab" id="accounts-tab">
-                    <span class="selector" id="accounts-selector">
+                <div class="selectors">
+                    <span class="selector" id="accounts-selector" style="display: none;">
                         Account's <span class="counter" id="accounts-counter"></span>
                         <paper-ripple recenters=""></paper-ripple>
                     </span>
-                
+                    <span class="selector" id="groups-selector" style="display: none;">
+                        Group's <span class="counter" id="groups-counter"></span>
+                        <paper-ripple recenters=""></paper-ripple>
+                    </span>
+                    <span class="selector" id="organizations-selector" style="display: none;">
+                        Organization's <span class="counter" id="organizations-counter"></span>
+                        <paper-ripple  recenters=""></paper-ripple>
+                    </span>
+                    <span class="selector" id="applications-selector" style="display: none;">
+                        Application's  <span class="counter" id="applications-counter"></span>
+                        <paper-ripple  recenters=""></paper-ripple>
+                    </span>
+                </div>
+                <div class="vertical-tab" id="accounts-tab">
                     <iron-collapse  id="accounts-collapse-panel" style="display: flex; flex-direction: column; width: 100%;">
                         <div class="subject-div" id="accounts-div">
                         </div>
                     </iron-collapse>
                 </div>
                 <div class="vertical-tab" id="groups-tab">
-                    <span class="selector" id="groups-selector">
-                        Group's <span class="counter" id="groups-counter">
-                        <paper-ripple recenters=""></paper-ripple>
-                    </span>
-                
                     <iron-collapse id="groups-collapse-panel" style="display: flex; flex-direction: column; width: 100%;">
                         <div class="subject-div" id="groups-div">
                         </div>
                     </iron-collapse>
                 </div>
                 <div class="vertical-tab" id="organizations-tab">
-                    <span class="selector" id="organizations-selector">
-                        Organization's <span class="counter" id="organizations-counter">
-                        <paper-ripple  recenters=""></paper-ripple>
-                    </span>
-                
                     <iron-collapse id="organizations-collapse-panel" style="display: flex; flex-direction: column; width: 100%;">
                         <div class="subject-div" id="organizations-div">
                         </div>
                     </iron-collapse>
                 </div>
                 <div class="vertical-tab" id="applications-tab">
-                    <span class="selector" id="applications-selector">
-                        Application's  <span class="counter" id="applications-counter">
-                        <paper-ripple  recenters=""></paper-ripple>
-                    </span>
                     <iron-collapse id="applications-collapse-panel" style="display: flex; flex-direction: column; width: 100%;">
                         <div class="subject-div" id="applications-div">
                         </div>
@@ -1259,20 +1334,20 @@ export class GlobularSubjectsView extends HTMLElement {
         `
 
         // Vertical tabs... (accordeon...)
-        let accountsTab = this.shadowRoot.querySelector("#accounts-tab").querySelector("#accounts-selector")
-        let accountsCount = this.shadowRoot.querySelector("#accounts-tab").querySelector("#accounts-counter")
+        let accountsSelector = this.shadowRoot.querySelector("#accounts-selector")
+        let accountsCount = this.shadowRoot.querySelector("#accounts-counter")
         let accountsDiv = this.shadowRoot.querySelector("#accounts-div")
 
-        let groupsTab = this.shadowRoot.querySelector("#groups-tab").querySelector("#groups-selector")
-        let groupsCount = this.shadowRoot.querySelector("#groups-tab").querySelector("#groups-counter")
+        let groupsSelector = this.shadowRoot.querySelector("#groups-selector")
+        let groupsCount = this.shadowRoot.querySelector("#groups-counter")
         let groupsDiv = this.shadowRoot.querySelector("#groups-div")
 
-        let organizationsTab = this.shadowRoot.querySelector("#organizations-tab").querySelector("#organizations-selector")
-        let organizationsCount = this.shadowRoot.querySelector("#organizations-tab").querySelector("#organizations-counter")
+        let organizationsSelector = this.shadowRoot.querySelector("#organizations-selector")
+        let organizationsCount = this.shadowRoot.querySelector("#organizations-counter")
         let organizationsDiv = this.shadowRoot.querySelector("#organizations-div")
 
-        let applicationsTab = this.shadowRoot.querySelector("#applications-tab").querySelector("#applications-selector")
-        let applicationsCount = this.shadowRoot.querySelector("#applications-tab").querySelector("#applications-counter")
+        let applicationsSelector = this.shadowRoot.querySelector("#applications-selector")
+        let applicationsCount = this.shadowRoot.querySelector("#applications-counter")
         let applicationsDiv = this.shadowRoot.querySelector("#applications-div")
 
 
@@ -1282,7 +1357,30 @@ export class GlobularSubjectsView extends HTMLElement {
         let organizations_collapse_panel = this.shadowRoot.querySelector("#organizations-collapse-panel")
         let applications_collapse_panel = this.shadowRoot.querySelector("#applications-collapse-panel")
 
-        accountsTab.onclick = () => {
+        // So here I will change the layout depending of the size.
+        window.addEventListener('resize', () => {
+            // set the postion to 0, 0
+            let w = ApplicationView.layout.width();
+            let accountsTab = this.shadowRoot.querySelector("#accounts-tab")
+            let groupsTab = this.shadowRoot.querySelector("#groups-tab")
+            let organizationsTab = this.shadowRoot.querySelector("#organizations-tab")
+            let applicationTab = this.shadowRoot.querySelector("#applications-tab")
+            let selectorsDiv = this.shadowRoot.querySelector(".selectors")
+
+            if (w <= 500) {
+                selectorsDiv.appendChild(accountsSelector)
+                selectorsDiv.appendChild(groupsSelector)
+                selectorsDiv.appendChild(organizationsSelector)
+                selectorsDiv.appendChild(applicationsSelector)
+            } else {
+                accountsTab.insertBefore(accountsSelector, accountsTab.firstChild)
+                groupsTab.insertBefore(groupsSelector, groupsTab.firstChild)
+                organizationsTab.insertBefore(organizationsSelector, organizationsTab.firstChild)
+                applicationTab.insertBefore(applicationsSelector, applicationTab.firstChild)
+            }
+        })
+
+        accountsSelector.onclick = () => {
             accounts_collapse_panel.toggle();
             if (organizations_collapse_panel.opened) {
                 organizations_collapse_panel.toggle()
@@ -1295,7 +1393,7 @@ export class GlobularSubjectsView extends HTMLElement {
             }
         }
 
-        groupsTab.onclick = () => {
+        groupsSelector.onclick = () => {
             groups_collapse_panel.toggle();
             if (organizations_collapse_panel.opened) {
                 organizations_collapse_panel.toggle()
@@ -1308,7 +1406,7 @@ export class GlobularSubjectsView extends HTMLElement {
             }
         }
 
-        applicationsTab.onclick = () => {
+        applicationsSelector.onclick = () => {
             applications_collapse_panel.toggle();
             if (organizations_collapse_panel.opened) {
                 organizations_collapse_panel.toggle()
@@ -1321,7 +1419,7 @@ export class GlobularSubjectsView extends HTMLElement {
             }
         }
 
-        organizationsTab.onclick = () => {
+        organizationsSelector.onclick = () => {
             organizations_collapse_panel.toggle();
             if (accounts_collapse_panel.opened) {
                 accounts_collapse_panel.toggle()
@@ -1340,7 +1438,7 @@ export class GlobularSubjectsView extends HTMLElement {
             let count = 0
 
             accounts.forEach(a => {
-
+                accountsSelector.style.display = ""
                 if (a.id != "sa" && a.id != this.account.id) {
                     let uuid = "_" + getUuidByString(a.id + "@" + a.domain)
                     let html = `
@@ -1355,6 +1453,14 @@ export class GlobularSubjectsView extends HTMLElement {
 
                     let accountDiv = accountsDiv.querySelector(`#${uuid}`)
                     accountDiv.onclick = () => {
+                        // So here I will remove all active....
+                        let infos = this.shadowRoot.querySelectorAll(".infos")
+                        for(var i=0; i < infos.length; i++){
+                            infos[i].classList.remove("active")
+                        }
+
+                        accountDiv.classList.add("active")
+
                         if (this.on_account_click) {
                             // return the account and the div.
                             if (this.on_account_click) {
@@ -1381,7 +1487,7 @@ export class GlobularSubjectsView extends HTMLElement {
 
             accountsCount.innerHTML = `(${count})`
 
-            accountsTab.click() // display list of account'(s)
+            accountsSelector.click() // display list of account'(s)
 
 
         }, err => ApplicationView.displayMessage("fail to retreive accouts with error: ", err))
@@ -1394,30 +1500,30 @@ export class GlobularSubjectsView extends HTMLElement {
             let getGroup = (index) => {
                 let g = groups[index]
                 if (g) {
-                   
+                    groupsSelector.style.display = ""
                     let group_uuid = "_" + getUuidByString(g.id + "@" + g.domain)
                     let html = `
-                                <div id="${group_uuid}" class="infos" style="flex-direction: column;">
-                                    <div style="display: flex; align-self: flex-start; align-items: center;">
-                                        <iron-icon id="Contacts_icon" icon="social:people" style="display: block;"></iron-icon>
-                                        <div style="display: flex; flex-direction: column;">
-                                            <span>${g.name}</span>
-                                            <span style="font-size: .75rem;">${g.domain}</span>
-                                        </div>
-                                    </div>
-                                `
+                        <div id="${group_uuid}" class="infos" style="flex-direction: column;">
+                            <div style="display: flex; align-self: flex-start; align-items: center;">
+                                <iron-icon class="Contacts_icon" icon="social:people" style="padding-right: 10px;"></iron-icon>
+                                <div style="display: flex; flex-direction: column;">
+                                    <span>${g.name}</span>
+                                    <span style="font-size: .85rem;">${g.domain}</span>
+                                </div>
+                            </div>
+                        `
 
                     g.getMembers(members => {
-                        html += `<div class="group-members" style="display: flex; flex-wrap: wrap;">`
+                        html += `<div class="group-members" style="display: flex;">`
                         members.forEach(a => {
                             let uuid = "_" + getUuidByString(a.id + "@" + a.domain)
                             html += `
-                                    <div id="${uuid}" class="infos">
-                                        <img style="width: 32px; height: 32px; display: ${a.profilePicture.length == 0 ? "none" : "block"};" src="${a.profilePicture}"></img>
-                                        <iron-icon icon="account-circle" style="width: 32px; height: 32px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${a.profilePicture.length > 0 ? "none" : "block"};"></iron-icon>
-                                        <span>${a.name}</span>
-                                    </div>
-                                    `
+                            <div id="${uuid}" class="infos">
+                                <img style="width: 32px; height: 32px; display: ${a.profilePicture.length == 0 ? "none" : "block"};" src="${a.profilePicture}"></img>
+                                <iron-icon icon="account-circle" style="width: 32px; height: 32px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${a.profilePicture.length > 0 ? "none" : "block"};"></iron-icon>
+                                <span>${a.name}</span>
+                            </div>
+                            `
                         })
 
                         html += "</div>"
@@ -1426,8 +1532,18 @@ export class GlobularSubjectsView extends HTMLElement {
                         groupsDiv.appendChild(range.createContextualFragment(html))
 
                         let groupDiv = groupsDiv.querySelector("#" + group_uuid)
+
                         groupDiv.onclick = (evt) => {
+
                             evt.stopPropagation()
+
+                            let infos = this.shadowRoot.querySelectorAll(".infos")
+                            for(var i=0; i < infos.length; i++){
+                                infos[i].classList.remove("active")
+                            }
+    
+                            groupDiv.classList.add("active")
+
                             if (this.on_group_click) {
                                 if (groupsDiv.querySelector(`#${group_uuid}`)) {
                                     this.on_group_click(groupDiv, g)
@@ -1457,8 +1573,9 @@ export class GlobularSubjectsView extends HTMLElement {
             getGroup(index)
         }, err => ApplicationView.displayMessage(err, 3000))
 
+        // TODO the applications and the organizations
+        fireResize()
     }
-
 
 }
 
@@ -1511,7 +1628,6 @@ export class GlobularSubjectsSelected extends HTMLElement {
 
             .infos span{
                 font-size: 1rem;
-                margin-left: 10px;
             }
 
             .infos:hover{
@@ -1662,7 +1778,6 @@ export class SharedSubjectsPermissions extends HTMLElement {
 
             .infos span{
                 font-size: 1rem;
-                margin-left: 10px;
             }
 
             #organizations-tab {
@@ -1734,6 +1849,11 @@ export class SharedSubjectsPermissions extends HTMLElement {
                 .cell iron-icon {
                     fill: var(--palette-text-primary);
                 }
+
+                img, #group-icon{
+                    margin-right: 10px;
+                }
+
             </style>
             <div class="subject-permissions-row" style="display: table-row;" id="${uuid}_row">
                 <div class="cell">

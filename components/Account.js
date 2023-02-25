@@ -216,6 +216,7 @@ export class AccountMenu extends Menu {
                 }
 
                 .card-actions{
+      
                   display: flex;
                   justify-content: flex-end;
                   background-color: var(--palette-background-paper);

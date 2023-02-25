@@ -18,7 +18,7 @@ import '@polymer/iron-autogrow-textarea/iron-autogrow-textarea.js';
 import { Menu } from './Menu';
 
 import { Account } from "../Account"
-import { generatePeerToken, Model } from "../Model"
+import { generatePeerToken, getUrl, Model } from "../Model"
 import { ApplicationView } from '../ApplicationView';
 import { Application } from '../Application';
 import { ContactCard } from './Contact';
@@ -732,20 +732,7 @@ export class CallsHistoryMenu extends Menu {
                         Account.getAccount(call.getCallee(), callee => {
                             let globule = Application.getGlobule(caller.domain)
                             generatePeerToken(globule, token => {
-                                let url = globule.config.Protocol + "://" + globule.domain
-                                if (window.location != globule.domain) {
-                                    if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
-                                        url = globule.config.Protocol + "://" + window.location.host
-                                    }
-                                }
-
-                                if (globule.config.Protocol == "https") {
-                                    if (globule.config.PortHttps != 443)
-                                        url += ":" + globule.config.PortHttps
-                                } else {
-                                    if (globule.config.PortHttps != 80)
-                                        url += ":" + globule.config.PortHttp
-                                }
+                                let url = getUrl(globule)
 
                                 // so here I will found the caller ringtone...
                                 let path = callee.ringtone
@@ -763,9 +750,8 @@ export class CallsHistoryMenu extends Menu {
                                 })
 
                                 url += "?application=" + Model.application
-                                if (localStorage.getItem("user_token") != undefined) {
-                                    url += "&token=" + token
-                                }
+                                url += "&token=" + token
+                                
 
                                 let audio = new Audio(url)
                                 audio.setAttribute("loop", "true")

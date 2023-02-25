@@ -1,6 +1,9 @@
 import { GetFileAudiosRequest, GetFileTitlesRequest, GetFileVideosRequest } from "globular-web-client/title/title_pb";
+import * as getUuidByString from "uuid-by-string";
 import { Application } from "../Application";
+import { ApplicationView } from "../ApplicationView";
 import { Model } from "../Model";
+import { generateUUID } from "./utility";
 
 
 
@@ -70,13 +73,12 @@ export class Link extends HTMLElement {
         let thumbnail = this.getAttribute("thumbnail")
         let domain = this.getAttribute("domain")
         let name = path.split("/")[path.split("/").length - 1]
-
+        this.ondelete = null;
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
 
-           
             #container{
 
             }
@@ -87,12 +89,11 @@ export class Link extends HTMLElement {
                 left: 0px;
             }
 
-
             .shortcut-icon iron-icon{
                 background: white;
                 fill: black;
-                height: 20px;
-                width: 20px;
+                height: 16px;
+                width: 16px;
             }
 
             #link-div:hover{
@@ -103,22 +104,60 @@ export class Link extends HTMLElement {
                 
             }
 
+            img {
+                height: 48px; 
+                width: fit-content; 
+                max-width: 96px;
+            }
+
+            span{
+                font-size: .85rem; 
+                padding: 2px; 
+                display: block; 
+                word-break: break-all;
+                max-width: 96px;
+            }
+
+            #close-btn {
+                height: 16px;
+                width: 16px;
+                flex-grow: 1; 
+                --iron-icon-fill-color:var(--palette-text-primary);
+            }
+
+            .btn-div{
+                position: relative;
+                display: flex; 
+                width: 16px; height: 16px; 
+                justify-content: center; 
+                align-items: center;
+                position: relative;
+                margin-bottom: 4px;
+            }
+
+            .btn-div:hover {
+                cursor: pointer;
+            }
+
         </style>
 
         <div id="link-div" style="display: flex; flex-direction: column; align-items: center; width: fit-content; margin: 5px; height: fit-content;">
             <div style="display: flex; flex-direction: column; border: 1px solid var(--palette-divider); padding: 5px; border-radius: 2.5px;">
-            <div style="display: flex; align-items: center; width: 100%;">
-                <span class="title" style="flex-grow: 1;"></span>
+            <div style="display: flex; align-items: flex-end; width: 100%;">
+                <div class="btn-div" style="display: none;">
+                    <iron-icon  id="close-btn"  icon="close"></iron-icon>
+                    <paper-ripple class="circle"></paper-ripple>
+                </div>
             </div>
             <div style="position: relative;">
-                <img style="height: 72px; width: fit-content; max-width: 172px;" src="${thumbnail}">
+                <img style="" src="${thumbnail}">
                 <div class="shortcut-icon">
                     <iron-icon icon="icons:reply"></iron-icon>
                 </div> 
                 <paper-ripple></paper-ripple>
             </div>
             </div>
-            <span id="link-name" style="font-size: .85rem; padding: 2px; display: block; max-width: 128px; word-break: break-all;">${name}</span>
+            <span id="link-name">${name}</span>
            
         </div>
         `
@@ -128,32 +167,102 @@ export class Link extends HTMLElement {
             Model.eventHub.publish("follow_link_event_", { path: path, domain: domain }, true)
         }
 
+        this.shadowRoot.querySelector(".btn-div").onclick = (evt) => {
+            evt.stopPropagation()
+
+            let id = "_" + getUuidByString(name)
+            if(document.getElementById(id)){
+                return
+            }
+
+            // Here I will ask the user for confirmation before actually delete the contact informations.
+            let toast = ApplicationView.displayMessage(
+                `
+            <style>
+             
+              #yes-no-link-delete-box{
+                display: flex;
+                flex-direction: column;
+              }
+
+              #yes-no-link-delete-box globular-link-card{
+                padding-bottom: 10px;
+              }
+
+              #yes-no-link-delete-box div{
+                display: flex;
+                padding-bottom: 10px;
+              }
+
+            </style>
+            <div id="yes-no-link-delete-box">
+              <div>Your about to delete link</div>
+              <div>
+                ${this.outerHTML}
+              </div>
+              <div>Is it what you want to do? </div>
+              <div style="justify-content: flex-end;">
+                <paper-button raised id="yes-delete-link">Yes</paper-button>
+                <paper-button raised id="no-delete-link">No</paper-button>
+              </div>
+            </div>
+            `,
+                15000 // 15 sec...
+            );
+
+            let yesBtn = document.querySelector("#yes-delete-link")
+            let noBtn = document.querySelector("#no-delete-link")
+
+            // On yes
+            yesBtn.onclick = () => {
+                toast.dismiss();
+
+                if(this.ondelete){
+                    this.ondelete()
+                }
+
+                this.parentNode.removeChild(this)
+            }
+
+            noBtn.onclick = () => {
+                toast.dismiss();
+            }
+
+            toast.id = id
+        }
+
         let globule = Model.getGlobule(domain)
         getVideoInfo(globule, path,
             videos => {
-                if(videos.length > 0){
+                if (videos.length > 0) {
                     this.shadowRoot.querySelector("#link-name").innerHTML = videos[0].getDescription()
                 }
             },
             err => {
                 getTitleInfo(globule, path,
                     titles => {
-                        if(titles.length > 0){
+                        if (titles.length > 0) {
                             this.shadowRoot.querySelector("#link-name").innerHTML = titles[0].getName()
                         }
 
                     },
                     err => {
-                        
+
                         getAudioInfo(globule, path,
                             audios => {
-                                if(audios.length > 0){
+                                if (audios.length > 0) {
                                     this.shadowRoot.querySelector("#link-name").innerHTML = audios[0].getTitle()
                                 }
                             }, err => { })
                     })
             })
 
+    }
+
+    connectedCallback() {
+        if (this.hasAttribute("deleteable")) {
+            this.shadowRoot.querySelector(".btn-div").style.display = "flex";
+        }
     }
 
 }
