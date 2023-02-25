@@ -5758,7 +5758,7 @@ export class FilesUploader extends HTMLElement {
             tbody tr {
                 background-color: var(--palette-background-default);
                 transition: background 0.2s ease,padding 0.8s linear;
-                width: 100%;
+                max-width: 300px;
             }
 
             tr.active{

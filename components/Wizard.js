@@ -134,6 +134,8 @@ export class Wizard extends HTMLElement {
 
             .card-actions{
                 display: flex;
+                width: 100%;
+                justify-content: flex-end;
             }
 
             paper-button {

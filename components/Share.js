@@ -137,12 +137,13 @@ export class SharePanel extends HTMLElement {
                 #share_div{
                     padding: 0px;
                     flex-direction: column;
+                    flex-grow: 1;
                 }
 
                 #share_content_div{
-                    min-width: 0px;
-                    max-width: 0px;
+                    min-width: auto;
                     width: 100%;
+                    height: 100%;
                 }
 
               }
@@ -225,6 +226,7 @@ export class SharedResources extends HTMLElement {
                 flex-direction: column;
                 padding-left: 10px;
                 padding-right: 10px;
+                height: 100%;
             }
 
             .resource-share-div{
@@ -234,6 +236,9 @@ export class SharedResources extends HTMLElement {
                 margin-top: 20px;
                 display: flex;
                 flex-direction: column;
+                flex-grow: 1;
+                position: relative;
+               
             }
 
             #you-share-with-div{
@@ -267,13 +272,13 @@ export class SharedResources extends HTMLElement {
 
             @media(max-width: 500px){
                 #container{
-                    width: calc(100vw - 10px);
+                    width: calc(100vw - 30px);
                 }
 
                 .resource-share-div {
                     margin-left: 0px;
                     margin-top: 0px;
-                    width: calc(100vw-10px);
+                    width: calc(100vw - 30px);
                 }
 
             }
@@ -290,14 +295,16 @@ export class SharedResources extends HTMLElement {
             </paper-tabs>
 
             <div class="resource-share-div">
-                <div id="share-with-you-div"></div>
-                <div id="you-share-with-div" style="display: none;"></div>
+                <div style="position: absolute; top: 0px; left:0px; right: 0px; bottom: 0px;  overflow-y: auto;">
+                    <div id="share-with-you-div"></div>
+                    <div id="you-share-with-div" style="display: none;"></div>
+                </div>
             </div>
 
         </div>
         `
         // give the focus to the input.
-        let container = this.shadowRoot.querySelector("#container")
+        
 
         // get resources share with a given account...
         let youShareWithDiv = this.shadowRoot.querySelector("#you-share-with-div")
@@ -350,8 +357,6 @@ export class SharedResources extends HTMLElement {
                     displayLink()
                 }
             })
-
-  
         }
 
         if (resources.length > 0) {

@@ -3,7 +3,7 @@ import * as getUuidByString from "uuid-by-string";
 import { Application } from "../Application";
 import { ApplicationView } from "../ApplicationView";
 import { Model } from "../Model";
-import { generateUUID } from "./utility";
+import { generateUUID, randomUUID } from "./utility";
 
 
 
@@ -74,6 +74,24 @@ export class Link extends HTMLElement {
         let domain = this.getAttribute("domain")
         let name = path.split("/")[path.split("/").length - 1]
         this.ondelete = null;
+        let id = "_" + randomUUID()
+
+        // Connect observer, so the attribute can be dynamic...
+        var observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.type === "attributes") {
+                    if (!mutation.target.hasAttribute("deleteable")) {
+                        mutation.target.resetDeleteable()
+                    } else {
+                        mutation.target.setDeleteable()
+                    }
+                }
+            });
+        });
+
+        observer.observe(this, {
+            attributes: true //configure it to listen to attribute changes
+        });
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -118,7 +136,7 @@ export class Link extends HTMLElement {
                 max-width: 96px;
             }
 
-            #close-btn {
+            #delete-lnk-btn {
                 height: 16px;
                 width: 16px;
                 flex-grow: 1; 
@@ -128,7 +146,8 @@ export class Link extends HTMLElement {
             .btn-div{
                 position: relative;
                 display: flex; 
-                width: 16px; height: 16px; 
+                width: 24px; 
+                height: 24px; 
                 justify-content: center; 
                 align-items: center;
                 position: relative;
@@ -141,28 +160,28 @@ export class Link extends HTMLElement {
 
         </style>
 
-        <div id="link-div" style="display: flex; flex-direction: column; align-items: center; width: fit-content; margin: 5px; height: fit-content;">
-            <div style="display: flex; flex-direction: column; border: 1px solid var(--palette-divider); padding: 5px; border-radius: 2.5px;">
+        <div id="${id}-link-div" style="display: flex; flex-direction: column; align-items: center; width: fit-content; margin: 5px; height: fit-content;">
             <div style="display: flex; align-items: flex-end; width: 100%;">
-                <div class="btn-div" style="display: none;">
-                    <iron-icon  id="close-btn"  icon="close"></iron-icon>
+                <div class="btn-div" style="visibility: hidden;">
+                    <iron-icon  id="delete-lnk-btn"  icon="close"></iron-icon>
                     <paper-ripple class="circle"></paper-ripple>
                 </div>
             </div>
-            <div style="position: relative;">
-                <img style="" src="${thumbnail}">
-                <div class="shortcut-icon">
-                    <iron-icon icon="icons:reply"></iron-icon>
-                </div> 
-                <paper-ripple></paper-ripple>
-            </div>
+            <div style="display: flex; flex-direction: column; border: 1px solid var(--palette-divider); padding: 5px; border-radius: 2.5px;">
+                <div style="position: relative;">
+                    <img style="" src="${thumbnail}">
+                    <div class="shortcut-icon">
+                        <iron-icon icon="icons:reply"></iron-icon>
+                    </div> 
+                    <paper-ripple></paper-ripple>
+                </div>
             </div>
             <span id="link-name">${name}</span>
            
         </div>
         `
 
-        let lnk = this.shadowRoot.querySelector("#link-div")
+        let lnk = this.shadowRoot.querySelector(`#${id}-link-div`)
         lnk.onclick = () => {
             Model.eventHub.publish("follow_link_event_", { path: path, domain: domain }, true)
         }
@@ -170,8 +189,7 @@ export class Link extends HTMLElement {
         this.shadowRoot.querySelector(".btn-div").onclick = (evt) => {
             evt.stopPropagation()
 
-            let id = "_" + getUuidByString(name)
-            if(document.getElementById(id)){
+            if (document.getElementById(`${id}-yes-no-link-delete-box`)) {
                 return
             }
 
@@ -183,6 +201,7 @@ export class Link extends HTMLElement {
               #yes-no-link-delete-box{
                 display: flex;
                 flex-direction: column;
+                justify-content: center;
               }
 
               #yes-no-link-delete-box globular-link-card{
@@ -195,9 +214,9 @@ export class Link extends HTMLElement {
               }
 
             </style>
-            <div id="yes-no-link-delete-box">
+            <div id="${id}-yes-no-link-delete-box">
               <div>Your about to delete link</div>
-              <div>
+              <div style="display: flex; align-items; center; justify-content: center;">
                 ${this.outerHTML}
               </div>
               <div>Is it what you want to do? </div>
@@ -207,17 +226,19 @@ export class Link extends HTMLElement {
               </div>
             </div>
             `,
-                15000 // 15 sec...
+                60000 // 1 min...
             );
 
-            let yesBtn = document.querySelector("#yes-delete-link")
-            let noBtn = document.querySelector("#no-delete-link")
+            let yesNoDiv = document.getElementById(`${id}-yes-no-link-delete-box`)
+            let yesBtn = yesNoDiv.querySelector("#yes-delete-link")
+            let noBtn = yesNoDiv.querySelector("#no-delete-link")
+            yesNoDiv.querySelector("globular-link").removeAttribute("deleteable")
 
             // On yes
             yesBtn.onclick = () => {
                 toast.dismiss();
 
-                if(this.ondelete){
+                if (this.ondelete) {
                     this.ondelete()
                 }
 
@@ -261,10 +282,17 @@ export class Link extends HTMLElement {
 
     connectedCallback() {
         if (this.hasAttribute("deleteable")) {
-            this.shadowRoot.querySelector(".btn-div").style.display = "flex";
+            this.setDeleteable()
         }
     }
 
+    setDeleteable() {
+        this.shadowRoot.querySelector(".btn-div").style.visibility = "visible";
+    }
+
+    resetDeleteable() {
+        this.shadowRoot.querySelector(".btn-div").style.visibility = "hidden";
+    }
 }
 
 customElements.define('globular-link', Link)
