@@ -1,6 +1,5 @@
 
-import { generatePeerToken, Model } from '../Model';
-import { Application } from "../Application";
+import { generatePeerToken, getUrl, Model } from '../Model';
 
 /**
  * Sample empty component

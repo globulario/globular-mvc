@@ -1803,6 +1803,7 @@ export class FilesListView extends FilesView {
 
                 row.onmouseenter = (evt) => {
                     evt.stopPropagation();
+                    
                     if (!this.menu.isOpen()) {
 
                         // Set the share menu

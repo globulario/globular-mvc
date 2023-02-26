@@ -954,11 +954,10 @@ export class ContactList extends HTMLElement {
         generatePeerToken(globule, token => {
             globule.resourceService.setCall(rqst, { application: Application.application, domain: globule.domain, token: token })
                 .then(rsp => {
-
                     Account.getAccount(call.getCaller(), caller => {
                         Account.getAccount(call.getCallee(), callee => {
 
-                            let globule = getUrl(globule)
+                            let url = getUrl(globule)
 
                             // so here I will found the caller ringtone...
                             let path = callee.ringtone
@@ -983,27 +982,26 @@ export class ContactList extends HTMLElement {
                             // So now I will display the interface the user to ask...
                             // So here I will get the information from imdb and propose to assciate it with the file.
                             let toast = ApplicationView.displayMessage(`
-                        <style>
-                           
-                            paper-icon-button {
-                                width: 40px;
-                                height: 40px;
-                                border-radius: 50%;
-                              }
+                            <style>
+                            
+                                paper-icon-button {
+                                    width: 40px;
+                                    height: 40px;
+                                    border-radius: 50%;
+                                }
 
-                        </style>
-                        <div id="select-media-dialog">
-                            <div>Outgoing Call to </div>
-                            <div style="display: flex; flex-direction: column; justify-content: center;">
-                                <img style="width: 185.31px; align-self: center; padding-top: 10px; padding-bottom: 15px;" src="${callee.profilePicture}"> </img>
+                            </style>
+                            <div id="select-media-dialog">
+                                <div>Outgoing Call to </div>
+                                <div style="display: flex; flex-direction: column; justify-content: center;">
+                                    <img style="width: 185.31px; align-self: center; padding-top: 10px; padding-bottom: 15px;" src="${callee.profilePicture}"> </img>
+                                </div>
+                                <span style="max-width: 300px; font-size: 1.5rem;">${callee.name}</span>
+                                <div style="display: flex; justify-content: flex-end;">
+                                    <paper-icon-button id="cancel-button" style="background-color: red " icon="communication:call-end"></paper-icon-button>
+                                </div>
                             </div>
-                            <span style="max-width: 300px; font-size: 1.5rem;">${callee.name}</span>
-                            <div style="display: flex; justify-content: flex-end;">
-                                <paper-icon-button id="cancel-button" style="background-color: red " icon="communication:call-end"></paper-icon-button>
-                            </div>
-                        </div>
-                        `)
-
+                            `)
 
                             // set timeout...
                             let timeout = setTimeout(() => {

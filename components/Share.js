@@ -1,5 +1,5 @@
 import "@polymer/iron-icons/social-icons";
-import { GetResourcePermissionsRqst, GetSharedResourceRqst, Permission, Permissions, SetResourcePermissionsRqst, SubjectType } from "globular-web-client/rbac/rbac_pb";
+import { GetResourcePermissionsRqst, GetSharedResourceRqst, Permission, Permissions, RemoveSubjectFromShareRqst, SetResourcePermissionsRqst, SubjectType } from "globular-web-client/rbac/rbac_pb";
 import { CreateNotificationRqst, Notification, NotificationType } from "globular-web-client/resource/resource_pb";
 import * as getUuidByString from "uuid-by-string";
 import { Account } from "../Account";
@@ -197,7 +197,6 @@ export class SharePanel extends HTMLElement {
 
     // Display resource shared with a given subject.
     displaySharedResources(subject) {
-        console.log("you click ", subject)
         this.innerHTML = "" // clear the slot...
         this.appendChild(new SharedResources(subject))
     }
@@ -330,48 +329,78 @@ export class SharedResources extends HTMLElement {
         let youShareWithDiv = this.shadowRoot.querySelector("#you-share-with-div")
         let shareWithYouDiv = this.shadowRoot.querySelector("#share-with-you-div")
 
-        this.shadowRoot.querySelector("#share-with-you").onclick = ()=>{
+        this.shadowRoot.querySelector("#share-with-you").onclick = () => {
             youShareWithDiv.style.display = "none"
             shareWithYouDiv.style.display = "flex"
         }
 
 
-        this.shadowRoot.querySelector("#you-share-with").onclick = ()=>{
+        this.shadowRoot.querySelector("#you-share-with").onclick = () => {
             youShareWithDiv.style.display = "flex"
             shareWithYouDiv.style.display = "none"
         }
 
 
         // The logged user... ( 'you' in the context of a session)
-        ApplicationView.wait("retreive shared resources")
+        ApplicationView.wait(`<div style="display: flex; flex-direction: column; justify-content: center;"><span>Retreive</span><span>shared resources with</span><span>` + subject.id + `</span><span>...</span>` )
 
         this.getSharedResources(Application.account, subject, resources => {
-            this.displaySharedResources(youShareWithDiv, resources)
+            this.displaySharedResources(youShareWithDiv, resources, subject, true)
             this.getSharedResources(subject, Application.account, resources => {
-                this.displaySharedResources(shareWithYouDiv, resources)
+                this.displaySharedResources(shareWithYouDiv, resources, subject, false)
                 ApplicationView.resume()
             })
         })
     }
 
-    displaySharedResources(div, resources) {
+    displaySharedResources(div, resources, subject, deleteable) {
 
         let range = document.createRange()
         let displayLink = () => {
             let r = resources.pop()
             let globule = Model.getGlobule(r.getDomain())
             File.getFile(globule, r.getPath(), 128, 85, file => {
-                let html = `<globular-link deleteable path="${file.path}" thumbnail="${file.thumbnail}" domain="${file.domain}"></globular-link>`
+                let id = "_" + getUuidByString(file.path)
+                let html = `<globular-link id="${id}" ${deleteable ? "deleteable" : ""} path="${file.path}" thumbnail="${file.thumbnail}" domain="${file.domain}"></globular-link>`
                 div.appendChild(range.createContextualFragment(html))
                 if (resources.length > 0) {
                     displayLink();
                 }
 
-                let lnk = div.querySelector("globular-link")
-                lnk.ondelete = ()=>{
-                    console.log("remove share resource ", r)
+                let lnk = div.querySelector(`#${id}`)
+                lnk.ondelete = () => {
+
+                    // so now I will remove share resource.
+                    let rqst = new RemoveSubjectFromShareRqst
+
+                    rqst.setDomain(file.domain)
+                    rqst.setPath(file.path)
+                    let globule = Model.getGlobule(file.domain)
+
+                    if (subject.constructor == "Account_Account") {
+                        rqst.setType(SubjectType.ACCOUNT)
+                    } else if (subject.constructor == "Group_Group") {
+                        rqst.setType(SubjectType.Group)
+                    } else if (subject.constructor == "Application_Application") {
+                        rqst.setType(SubjectType.APPLICATION)
+                    } else if (subject.constructor == "Organization_Organization") {
+                        rqst.setType(SubjectType.ORGANIZATION)
+                    }
+
+                    // set the subject domain.
+                    rqst.setSubject(subject.id + "@" + subject.domain)
+                    generatePeerToken(globule, token => {
+                        globule.rbacService.removeSubjectFromShare(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: token })
+                            .then(
+                                // Display message...
+                                ApplicationView.displayMessage("Subject " + subject.id + " was removed from shared of " + file.path, 3000)
+
+                            ).catch(err => ApplicationView.displayMessage(err))
+                    })
+
+
                 }
-                
+
             }, err => {
                 console.log(err);
                 if (resources.length > 0) {
@@ -508,7 +537,6 @@ export class ShareResourceWizard extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
            
-
             paper-card{
                 display: flex;
                 flex-direction: column;
@@ -584,9 +612,7 @@ export class ShareResourceWizard extends HTMLElement {
                 <span style="font-size: .85rem; padding: 2px; display: block; max-width: 128px; word-break: break-all;" title=${file.path}> ${name}</span>
             </div>
             `
-
             files_page += file_page;
-
         })
 
         files_page += "</div>"
@@ -621,14 +647,12 @@ export class ShareResourceWizard extends HTMLElement {
         subjectsView.on_account_click = (accountDiv, account) => {
             accountDiv.account = account;
             selectedSubjects.appendAccount(accountDiv)
-
         }
 
         // Append group
         subjectsView.on_group_click = (groupDiv, group) => {
             groupDiv.group = group;
             selectedSubjects.appendGroup(groupDiv)
-
         }
 
         // if account are remove or append...
@@ -780,6 +804,7 @@ export class ShareResourceWizard extends HTMLElement {
                                         domain: contact.domain,
                                         address: Model.address
                                     }).then((rsp) => {
+
                                         /** nothing here... */
                                         let notification_ = new Notification_
                                         notification_.id = notification.getId()
@@ -1481,7 +1506,7 @@ export class GlobularSubjectsView extends HTMLElement {
                     accountDiv.onclick = () => {
                         // So here I will remove all active....
                         let infos = this.shadowRoot.querySelectorAll(".infos")
-                        for(var i=0; i < infos.length; i++){
+                        for (var i = 0; i < infos.length; i++) {
                             infos[i].classList.remove("active")
                         }
 
@@ -1564,10 +1589,10 @@ export class GlobularSubjectsView extends HTMLElement {
                             evt.stopPropagation()
 
                             let infos = this.shadowRoot.querySelectorAll(".infos")
-                            for(var i=0; i < infos.length; i++){
+                            for (var i = 0; i < infos.length; i++) {
                                 infos[i].classList.remove("active")
                             }
-    
+
                             groupDiv.classList.add("active")
 
                             if (this.on_group_click) {

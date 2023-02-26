@@ -186,7 +186,7 @@ export class Link extends HTMLElement {
         </div>
         `
 
-        let lnk = this.shadowRoot.querySelector(`#${id}-link-div`)
+        let lnk = this.shadowRoot.querySelector(`#content`)
         lnk.onclick = () => {
             Model.eventHub.publish("follow_link_event_", { path: path, domain: domain }, true)
         }

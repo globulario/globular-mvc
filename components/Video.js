@@ -36,6 +36,8 @@ export function playVideo(path, onplay, onclose, title, globule) {
     if (title) {
         if (title.globule) {
             globule = title.globule
+        }else if(globule!=null){
+            title.globule = globule
         }
     }
 
@@ -821,6 +823,7 @@ export class VideoPlayer extends HTMLElement {
             fetch(url, { method: "HEAD" })
                 .then((response) => {
                     if (response.status == 401) {
+                        ApplicationView.resume()
                         ApplicationView.displayMessage(`unable to read the file ${path} Check your access privilege`, 3500)
                         this.close()
                         return
@@ -842,6 +845,7 @@ export class VideoPlayer extends HTMLElement {
                     }
                 })
                 .catch((error) => {
+                    ApplicationView.resume()
                     ApplicationView.displayMessage("fail to read url " + url + "with error " + error, 4000)
                     if (this.parentNode) {
                         this.parentNode.removeChild(this)
@@ -1111,6 +1115,8 @@ export class VideoPlayer extends HTMLElement {
             // keep video info in the local storage...
             localStorage.setItem(this.titleInfo.getId(), this.video.currentTime)
         }
+        // set the title info to null
+        this.titleInfo = null;
     }
 
     hide() {
