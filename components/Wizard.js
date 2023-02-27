@@ -12,6 +12,8 @@ import '@polymer/paper-toggle-button/paper-toggle-button.js';
 import '@polymer/paper-spinner/paper-spinner.js';
 
 import { Model } from '../Model';
+import { ApplicationView } from '../ApplicationView';
+import { fireResize } from './utility';
 
 /**
  * Search Box
@@ -42,6 +44,13 @@ export class Wizard extends HTMLElement {
 
         // the initial width
         this.width = width;
+
+        if (width > screen.width) {
+            // the initial width
+            this.width = screen.width
+        }
+
+
 
         // the current index.
         this.index = 0;
@@ -75,7 +84,7 @@ export class Wizard extends HTMLElement {
                 display: flex;
                 justify-content: center;
                 align-items: center;
-                 margin: 5px 10px 5px 10px;
+                margin: 5px 10px 5px 10px;
                 width: 30px;
                 height: 30px;
                 border-radius: 17px;
@@ -142,6 +151,12 @@ export class Wizard extends HTMLElement {
                 font-size: 1rem;
             }
 
+            @media(max-width: 500px){
+                #content{
+                    height: calc(100vh - 84px);
+                }
+            }
+
         </style>
 
         <div id="container">
@@ -202,7 +217,7 @@ export class Wizard extends HTMLElement {
 
             // append the summary page.
             let summaryPage = this.querySelector("#summary_page")
-            if(summaryPage){
+            if (summaryPage) {
                 summaryPage.style.display = "block"
             }
 
@@ -218,6 +233,36 @@ export class Wizard extends HTMLElement {
                 this.onclose()
             }
         }
+
+        window.addEventListener("resize",
+            (evt) => {
+
+                let w = ApplicationView.layout.width();
+
+                // TODO try to set it in the css propertie instead...
+                if (w < 500) {
+                    this.container.style.width = screen.width + "px"
+                    if (this.summaryPage)
+                        this.summaryPage.style.maxWidth = this.summaryPage.style.minWidth = this.width + "px"
+
+                    this.pages.forEach(p => {
+                        p.parentNode.style.maxWidth = p.parentNode.style.minWidth = this.width + "px"
+                    })
+                } else {
+                    this.container.style.width = width + "px"
+                    if (this.summaryPage)
+                        this.summaryPage.style.maxWidth = this.summaryPage.style.minWidth = width + "px"
+
+                    this.pages.forEach(p => {
+                        p.parentNode.style.maxWidth = p.parentNode.style.minWidth = width + "px"
+                    })
+                }
+            })
+
+    }
+
+    connectedCallback() {
+        fireResize()
     }
 
     // The first page of the wizard to explain what will follow.
@@ -237,26 +282,28 @@ export class Wizard extends HTMLElement {
 
     // Set the summary page.
     setSummaryPage(content) {
-        let summaryPage = document.createElement("div")
         content.style.padding = "15px"
-        summaryPage.id = "summary_page"
-        summaryPage.style.minWidth = this.width + "px"
-        summaryPage.style.maxWidth = this.width + "px"
-        summaryPage.style.display = "none"
-        summaryPage.slot = "summary_page"
-        summaryPage.appendChild(content)
 
-        this.appendChild(summaryPage)
+        this.summaryPage = document.createElement("div")
+        this.summaryPage.id = "summary_page"
+        this.summaryPage.style.width = this.width + "px"
+        this.summaryPage.style.display = "none"
+        this.summaryPage.slot = "summary_page"
+        this.summaryPage.appendChild(content)
+
+        this.appendChild(this.summaryPage)
     }
 
     // Append a configuration page.
     appendPage(content) {
+
         // Create the page div.
         let page = document.createElement("div")
         content.style.padding = "15px"
         page.id = "page_" + this.pages.length + 1
-        page.style.minWidth = this.width + "px"
-        page.style.maxWidth = this.width + "px"
+
+        page.style.maxWidth = page.style.minWidth = this.width + "px"
+
         page.appendChild(content)
 
         // Append the content to the slot...

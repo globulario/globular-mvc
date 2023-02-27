@@ -1803,7 +1803,7 @@ export class FilesListView extends FilesView {
 
                 row.onmouseenter = (evt) => {
                     evt.stopPropagation();
-                    
+
                     if (!this.menu.isOpen()) {
 
                         // Set the share menu
@@ -4769,10 +4769,16 @@ export class FileExplorer extends HTMLElement {
                 (evt) => {
                     // keep the active path.
                     if (this.id == evt.file_explorer_id) {
+                        // remove actual context and set back the default files view.
                         if (this.informationManager) {
                             if (this.informationManager.parentNode)
                                 this.informationManager.parentNode.removeChild(this.informationManager)
                         }
+
+                        this.fileReader.style.display = "none"
+                        this.imageViewer.style.display = "none";
+                        this.permissionManager.style.display = "none"
+
                         this.setDir(evt.path)
 
                     }
@@ -4817,7 +4823,8 @@ export class FileExplorer extends HTMLElement {
                     this.permissionManager.permissions = null
                     this.permissionManager.setPath(path)
                     this.permissionManager.setResourceType = "file"
-
+                    this.permissionManager.style.display = ""
+                    
                     // I will display the permission manager.
                     this.fileSelectionPanel.appendChild(this.permissionManager)
 
@@ -5176,8 +5183,9 @@ export class FileExplorer extends HTMLElement {
         this.displayView(dir)
 
         this.fileReader.style.display = "none"
-
         this.imageViewer.style.display = "none";
+        this.permissionManager.style.display = "none"
+
         this.imageViewer.innerHTML = "";
 
         if (this.filesListView.menu.parentNode) {

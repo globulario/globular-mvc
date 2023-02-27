@@ -361,7 +361,26 @@ export class SharedResources extends HTMLElement {
             let globule = Model.getGlobule(r.getDomain())
             File.getFile(globule, r.getPath(), 128, 85, file => {
                 let id = "_" + getUuidByString(file.path)
-                let html = `<globular-link id="${id}" ${deleteable ? "deleteable" : ""} path="${file.path}" thumbnail="${file.thumbnail}" domain="${file.domain}"></globular-link>`
+
+                // so here I will determine if I display the deleteable icon...
+                let deleteable_ = deleteable
+                if(deleteable){
+                    // Here I will make sure that the delete button has an effect on the share.
+                    // for exemple is the permission is at group level i will not display delete
+                    // button at accout level even if the resource appear in the list. To remove the
+                    // resource the user must remove group permission on it.
+                    if (subject.constructor.name == "Account_Account") {
+                        deleteable_ = r.getAccountsList().indexOf(subject.id + "@" + subject.domain) != -1
+                    } else if (subject.constructor.name == "Group_Group") {
+                        deleteable_ = r.getGroupsList().indexOf(subject.id + "@" + subject.domain) != -1
+                    } else if (subject.constructor.name == "Application_Application") {
+                        deleteable_ = r.getApplicationList().indexOf(subject.id + "@" + subject.domain) != -1
+                    } else if (subject.constructor.name == "Organization_Organization") {
+                        deleteable_ = r.getOrganizationList().indexOf(subject.id + "@" + subject.domain) != -1
+                    }
+                }
+
+                let html = `<globular-link id="${id}" ${deleteable_ ? "deleteable" : ""} path="${file.path}" thumbnail="${file.thumbnail}" domain="${file.domain}"></globular-link>`
                 div.appendChild(range.createContextualFragment(html))
                 if (resources.length > 0) {
                     displayLink();
@@ -377,13 +396,13 @@ export class SharedResources extends HTMLElement {
                     rqst.setPath(file.path)
                     let globule = Model.getGlobule(file.domain)
 
-                    if (subject.constructor == "Account_Account") {
+                    if (subject.constructor.name == "Account_Account") {
                         rqst.setType(SubjectType.ACCOUNT)
-                    } else if (subject.constructor == "Group_Group") {
-                        rqst.setType(SubjectType.Group)
-                    } else if (subject.constructor == "Application_Application") {
+                    } else if (subject.constructor.name == "Group_Group") {
+                        rqst.setType(SubjectType.GROUP)
+                    } else if (subject.constructor.name == "Application_Application") {
                         rqst.setType(SubjectType.APPLICATION)
-                    } else if (subject.constructor == "Organization_Organization") {
+                    } else if (subject.constructor.name == "Organization_Organization") {
                         rqst.setType(SubjectType.ORGANIZATION)
                     }
 
@@ -607,7 +626,7 @@ export class ShareResourceWizard extends HTMLElement {
                         <iron-icon class="wizard-file-infos-btn" id="${uuid + "_infos_btn"}" icon="icons:info"></iron-icon>
                     </div>
         
-                    <img style="height: 72px; width: fit-content; max-width: 96px; margin-top: 4px;" src="${file.thumbnail}"></img>
+                    <img style="height: 64px; width: auto; margin-top: 4px;" src="${file.thumbnail}"></img>
                 </div>
                 <span style="font-size: .85rem; padding: 2px; display: block; max-width: 128px; word-break: break-all;" title=${file.path}> ${name}</span>
             </div>
@@ -621,14 +640,28 @@ export class ShareResourceWizard extends HTMLElement {
 
         // Now the user, group application and organization page...
         let subjects_page = `
+        <style>
+
+            .globular-wizard-page-content{
+                display: flex; 
+                height: 100%;
+            }
+
+            @media(max-width: 500px){
+                .globular-wizard-page-content{
+                    flex-direction: column;
+                }
+            }
+
+        </style>
         <div class="globular-wizard-page" style="height: 500px; overflow-y: auto;">
-            <div style="display: flex; height: 100%;">
+            <div class="globular-wizard-page-content">
                 <globular-subjects-view style="height: 100%; min-width: 250px; border-right: 1px solid var(--palette-divider)"></globular-subjects-view>
                 <globular-subjects-selected style="height: 100%; margin-left: 20px; flex-grow: 1"></globular-subjects-selected>
             </div>
         </div>
         `
-        wizard.appendPage(range.createContextualFragment(subjects_page).children[0])
+        wizard.appendPage(range.createContextualFragment(subjects_page).children[1])
 
         let subjectsView = wizard.querySelector("globular-subjects-view")
         let selectedSubjects = wizard.querySelector("globular-subjects-selected")
@@ -664,12 +697,39 @@ export class ShareResourceWizard extends HTMLElement {
             sharedSubjectsPermission.setGroups(selectedSubjects.getGroups())
         }
 
-
         let summary = `
+        <style>
+
+            .globular-wizard-page-content{
+                display: flex; 
+                height: 100%;
+            }
+
+            #content{
+                display: flex; 
+                flex-direction: column; 
+                margin-left: 30px; 
+                padding-left: 30px; 
+                border-left: 1px solid var(--palette-divider)
+            }
+
+            @media(max-width: 500px){
+                .globular-wizard-page-content{
+                    flex-direction: column;
+                }
+
+                #content{
+                    border-bottom: 1px solid var(--palette-divider)
+                }
+            }
+
+        </style>
         <div  class="globular-wizard-page" style="max-height: 500px; overflow-y: auto;">
-            <div style="display: flex;">
-                <iron-icon style="height: 64px; width: 64px; fill: var(--palette-success-main);" icon="icons:check-circle"></iron-icon>
-                <div style="display: flex; flex-direction: column; margin-left: 30px; padding-left: 30px; border-left: 1px solid var(--palette-divider);">
+            <div class="globular-wizard-page-content">
+                <div>
+                    <iron-icon id="status-ico" style="height: 64px; width: 64px; fill: var(--palette-success-main);" icon="icons:check-circle"></iron-icon>
+                </div>
+                <div id="content" style="">
                     <p style="flex-grow: 1;">  
                         Resources permissions was successfully created for
                     </p>
@@ -677,14 +737,13 @@ export class ShareResourceWizard extends HTMLElement {
                     <p>
                         The following user's will be notified of their new access
                     </p>
-
                     <div style="display: flex; flex-wrap: wrap;" id="paticipants"></div>
                 </div>
             </div>
         </div>
         `
 
-        wizard.setSummaryPage(range.createContextualFragment(summary).children[0])
+        wizard.setSummaryPage(range.createContextualFragment(summary).children[1])
 
         wizard.ondone = (summary_page) => {
             // Here I will get read element from the interface to get permissions infos...
@@ -717,6 +776,9 @@ export class ShareResourceWizard extends HTMLElement {
 
                 let displayResources = () => {
                     let resourcesDiv = summary_page.querySelector("#resources")
+                    let statusIco = summary_page.querySelector("#status-ico")
+                    let nbTotal = files.length
+                    let nbFail = 0
                     files.forEach(file => {
                         let title = null
                         let name = file.name;
@@ -745,8 +807,7 @@ export class ShareResourceWizard extends HTMLElement {
                                     <iron-icon style="fill: var(--palette-success-main);" id="${uuid + "_success"}" icon="icons:check-circle"></iron-icon>
                                     <iron-icon style="fill: var(--palette-secondary-main);" id="${uuid + "_error"}" icon="icons:error"></iron-icon>
                                 </div>
-
-                                <img style="height: 72px; width: fit-content; max-width: 96px;" src="${file.thumbnail}"></img>
+                                <img style="height: 64px; width: auto;" src="${file.thumbnail}"></img>
                             </div>
                             <span style="font-size: .85rem; padding: 2px; display: block; max-width: 128px; word-break: break-all;" title=${file.path}> ${name}</span>
                         </div>
@@ -757,10 +818,17 @@ export class ShareResourceWizard extends HTMLElement {
                         if (errors[file.path]) {
                             resourcesDiv.querySelector(`#${uuid + "_success"}`).style.display = "none"
                             resourcesDiv.querySelector(`#${uuid + "_error"}`).title = errors[file.path].message
+                            nbFail++
+                            if(nbFail < nbTotal){
+                                statusIco.icon = "icons:warning"
+                                statusIco.style.fill = "var(--palette-error-main)"
+                            }else{
+                                statusIco.icon = "icons:error"
+                                statusIco.style.fill = "var(--palette-secondary-main)"
+                            }
 
                         } else {
                             resourcesDiv.querySelector(`#${uuid + "_error"}`).style.display = "none"
-
                             participants.forEach(contact => {
                                 // So here I will send a notification to the participant with the share information...
                                 let rqst = new CreateNotificationRqst
@@ -1652,7 +1720,6 @@ export class GlobularSubjectsSelected extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-           
 
             #container{
                 display: flex;

@@ -1105,7 +1105,7 @@ export class PermissionsViewer extends HTMLElement {
             <div style="display: flex; align-items: center; padding: 5px; width: 100%;"> 
                 <iron-icon icon="social:people" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display:block"};"></iron-icon>
                 <div style="display: flex; flex-direction: column; width:250px; font-size: .85em; padding-left: 8px;">
-                    <span>${group.name}</span>
+                    <span>${group.id + "@" + group.domain}</span>
                 </div>
             </div>
             
