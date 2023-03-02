@@ -338,8 +338,10 @@ export class NotificationMenu extends Menu {
 
         this.getIconDiv().addEventListener("click", () => {
             // reset the notification count.
+
             if (this.notificationCount != undefined) {
-                this.notificationCount.parentNode.removeChild(this.notificationCount)
+                if (this.notificationCount.parentNode)
+                    this.notificationCount.parentNode.removeChild(this.notificationCount)
                 this.notificationCount = undefined
             }
 
@@ -750,7 +752,9 @@ export class NotificationMenu extends Menu {
                         }
 
                         if (count == 0) {
-                            this.notificationCount.parentNode.removeChild(this.notificationCount)
+                            if (this.notificationCount)
+                                if (this.notificationCount.parentNode)
+                                    this.notificationCount.parentNode.removeChild(this.notificationCount)
                         }
 
 
