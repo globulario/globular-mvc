@@ -5,7 +5,6 @@ import { DeleteOneRqst, ReplaceOneRqst, FindOneRqst, FindRqst } from "../../glob
 import * as jwt from "jwt-decode";
 import { Model } from "../../globular-mvc/Model";
 import { Menu } from "./Menu";
-import { Application } from "../Application";
 
 /**
  * Search Box
@@ -334,7 +333,6 @@ export class MediaWatchingCard extends HTMLElement {
         }
         
         if (title.domain) {
-
             if (title.isVideo) {
                 getVideos(title._id, title.domain, (videos) => {
                     if (videos.length > 0) {
@@ -368,8 +366,6 @@ export class MediaWatchingCard extends HTMLElement {
                     }
                 })
             }
-        }else{
-            console.log("-------------------------> no domain given ", title)
         }
     }
 }
@@ -464,6 +460,7 @@ export class WatchingMenu extends Menu {
 
             Model.eventHub.subscribe("stop_video_player_evt_", uuid => { }, evt => {
                 this.saveWatchingTitle(evt, () => { })
+
                 this.mediaWatching.appendTitle(evt, () => { console.log("title ", evt._id, " was add to watching...") }, err => { console.log("fail to add title with error: ", err) })
             }, true)
 
@@ -638,6 +635,11 @@ export class WatchingMenu extends Menu {
 
     saveWatchingTitle(title, callback) {
 
+        if(!title.domain){
+            ApplicationView.displayMessage(`title ${title._id} has no domain.`, 3000)
+            return
+        }
+
         const userName = localStorage.getItem("user_name");
         const userDomain = localStorage.getItem("user_domain");
         const collection = "watching";
@@ -663,7 +665,6 @@ export class WatchingMenu extends Menu {
         let token = localStorage.getItem("user_token")
 
         let globule = Model.getGlobule(userDomain)
-        console.log(globule)
 
         // call persist data
         globule.persistenceService
@@ -674,8 +675,6 @@ export class WatchingMenu extends Menu {
             })
             .then((rsp) => {
                 // Here I will return the value with it
-                // callback(this);
-                console.log("title was added...")
                 callback()
             })
             .catch(err => {

@@ -1045,7 +1045,6 @@ export class ContactList extends HTMLElement {
 
 
                                 // start the video conversation.
-                                console.log("----------------> 1041 ", "start_video_conversation_" + call.getUuid() + "_evt")
                                 globule.eventHub.publish("start_video_conversation_" + call.getUuid() + "_evt", contact, true)
 
                             }, false)

@@ -8,6 +8,8 @@ import { setMinimizeable } from "./minimizeable"
 import { fireResize } from "./utility";
 import { File } from "../File";
 import { TargetsRequest } from 'globular-web-client/monitoring/monitoring_pb';
+import { Application } from '../Application';
+import { GetTitleFilesRequest } from 'globular-web-client/title/title_pb';
 
 export function secondsToTime(secs) {
     var hours = Math.floor(secs / (60 * 60));
@@ -25,6 +27,66 @@ export function secondsToTime(secs) {
     };
     return obj;
 }
+
+// get files associated with the titles, audios or videos...
+function getTitleFiles(id, indexPath, globule, callback) {
+    let rqst = new GetTitleFilesRequest
+    rqst.setTitleid(id)
+    rqst.setIndexpath(indexPath)
+    generatePeerToken(globule, token => {
+        globule.titleService.getTitleFiles(rqst, { application: Application.application, domain: Application.domain, token: token })
+            .then(rsp => {
+                callback(rsp.getFilepathsList())
+            }).catch(err => {
+                callback([])
+            })
+    })
+}
+
+export function playAudios(audios, name) {
+    ApplicationView.wait("loading audios playlist...")
+    // here I will get the audi
+    let audio_playList = "#EXTM3U\n"
+    audio_playList += "#PLAYLIST: " + name + "\n\n"
+
+    // Generate the playlist with found audio items.
+    let generateAudioPlaylist = () => {
+        let audio = audios.pop();
+        let globule = audio.globule;
+
+        // set the audio info
+        let indexPath = globule.config.DataPath + "/search/audios"
+
+        // get the title file path...
+        getTitleFiles(audio.getId(), indexPath, globule, files => {
+
+            if (files.length > 0) {
+                audio_playList += `#EXTINF:${audio.getDuration()}, ${audio.getTitle()}, tvg-id="${audio.getId()}"\n`
+
+                let url = getUrl(globule)
+
+                let path = files[0].split("/")
+                path.forEach(item => {
+                    item = item.trim()
+                    if (item.length > 0)
+                        url += "/" + encodeURIComponent(item)
+                })
+
+                audio_playList += url + "\n\n"
+            }
+            if (audios.length > 0) {
+                generateAudioPlaylist()
+            } else {
+                ApplicationView.resume()
+                playAudio(audio_playList, null, null, null, globule)
+            }
+
+        })
+    }
+
+    generateAudioPlaylist()
+}
+
 
 export function playAudio(path, onplay, onclose, title, globule) {
 
@@ -859,7 +921,7 @@ export class AudioPlayer extends HTMLElement {
     play(path, globule, audio, local = false) {
 
         // display playing
-        if(this.isMinimized){
+        if (this.isMinimized) {
             this.minimize()
         }
 
@@ -927,14 +989,14 @@ export class AudioPlayer extends HTMLElement {
                 })
 
                 url += "?application=" + Model.application
-
-                url += "&token=" + token
-
+               
             }
 
             if (local) {
                 url = "local-media://" + path
             }
+
+            url += "&token=" + token
 
             this.path = path;
             if (audio) {
@@ -1053,7 +1115,7 @@ export class AudioPlayer extends HTMLElement {
      */
     minimize() {
         if (this.isMinimized) {
-            if(this.onMinimize != undefined){
+            if (this.onMinimize != undefined) {
                 this.onMinimize()
             }
             return
@@ -1095,7 +1157,7 @@ export class AudioPlayer extends HTMLElement {
         this.content.style.width = "300px"
         this.container.style.position = "initial"
 
-        if(this.onMinimize != undefined){
+        if (this.onMinimize != undefined) {
             this.onMinimize()
         }
 

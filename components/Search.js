@@ -8,14 +8,14 @@ import { generatePeerToken, getUrl, Model } from '../Model';
 
 import * as getUuid from 'uuid-by-string'
 import { BlogPostInfo, InformationsManager, searchEpisodes } from './Informations';
-import { playVideo } from './Video';
+import { playVideo, playVideos } from './Video';
 import { ApplicationView } from '../ApplicationView';
 import * as getUuidByString from 'uuid-by-string';
 import { SearchBlogPostsRequest } from 'globular-web-client/blog/blog_pb';
 import { SearchDocumentsRequest } from 'globular-web-client/search/search_pb';
 import * as JwtDecode from 'jwt-decode';
 import { base64toBlob, formatBoolean, getCoords, randomUUID } from './utility';
-import { playAudio } from './Audio';
+import { playAudio, playAudios } from './Audio';
 import { setAudio, setVideo } from './Playlist';
 
 // Maximum number of results displayed...
@@ -1958,66 +1958,7 @@ export class SearchAudioCard extends HTMLElement {
     getAudio() {
         return this.audio;
     }
-
-
-    // get files associated with the titles, audios or videos...
-    getTitleFiles(id, indexPath, globule, callback) {
-        let rqst = new GetTitleFilesRequest
-        rqst.setTitleid(id)
-        rqst.setIndexpath(indexPath)
-        globule.titleService.getTitleFiles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
-            .then(rsp => {
-                callback(rsp.getFilepathsList())
-            }).catch(err => {
-                callback([])
-            })
-    }
-
-    playAudios(audios, name, globule) {
-
-        // here I will get the audi
-        let audio_playList = "#EXTM3U\n"
-        audio_playList += "#PLAYLIST: " + name + "\n\n"
-
-        // Generate the playlist with found audio items.
-        let generateAudioPlaylist = () => {
-            let audio = audios.pop();
-
-            // set the audio info
-            let indexPath = globule.config.DataPath + "/search/audios"
-
-            // get the title file path...
-            this.getTitleFiles(audio.getId(), indexPath, globule, files => {
-                generatePeerToken(audio.globule, token => {
-                    if (files.length > 0) {
-                        audio_playList += `#EXTINF:${audio.getDuration()}, ${audio.getTitle()}, tvg-id="${audio.getId()}"\n`
-
-                        let url = getUrl(globule)
-
-                        let path = files[0].split("/")
-                        path.forEach(item => {
-                            item = item.trim()
-                            if (item.length > 0)
-                                url += "/" + encodeURIComponent(item)
-                        })
-
-                        url += "?application=" + Model.application
-                        url += "&token=" + token
-                        audio_playList += url + "\n\n"
-                    }
-
-                    if (audios.length > 0) {
-                        generateAudioPlaylist()
-                    } else {
-                        console.log(audio_playList)
-                        playAudio(audio_playList, null, null, null, globule)
-                    }
-                })
-            })
-        }
-
-        generateAudioPlaylist()
-    }
+ 
 
     // Call search event.
     setAudio(audio) {
@@ -2080,7 +2021,7 @@ export class SearchAudioCard extends HTMLElement {
                         audios = audios.sort((a, b) => {
                             return b.getTracknumber() - a.getTracknumber()
                         })
-                    this.playAudios(audios, audio.getAlbum(), globule)
+                    playAudios(audios, audio.getAlbum())
                 }
             }, ["album"])
         }
@@ -3056,19 +2997,6 @@ export class SearchFacetPanel extends HTMLElement {
 
     }
 
-    // get files associated with the titles, audios or videos...
-    getTitleFiles(id, indexPath, globule, callback) {
-        let rqst = new GetTitleFilesRequest
-        rqst.setTitleid(id)
-        rqst.setIndexpath(indexPath)
-        globule.titleService.getTitleFiles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
-            .then(rsp => {
-                callback(rsp.getFilepathsList())
-            }).catch(err => {
-                callback([])
-            })
-    }
-
     setFacet(facet) {
         this.facet = facet;
         this.id = "_" + getUuidByString(facet.getField())
@@ -3079,15 +3007,14 @@ export class SearchFacetPanel extends HTMLElement {
         /** Play all results found... */
         this.shadowRoot.querySelector("#play_facet_btn").onclick = () => {
 
-            console.log("----------------> field", field)
             let audios = this.page.getAudios()
             let videos = this.page.getVideos()
 
             // Play the audios found...
             if (audios.length > 0) {
-                this.playAudios(audios, facet.getField())
+                playAudios(audios, facet.getField())
             } else if (videos.length > 0) {
-                this.playVideos(videos, facet.getField())
+                playVideos(videos, facet.getField())
             } else {
                 ApplicationView.displayMessage("no item to play!", 3000)
             }
@@ -3136,11 +3063,11 @@ export class SearchFacetPanel extends HTMLElement {
                     // Play the audios found...
                     let audios = this.getAudios(className)
                     if (audios.length > 0)
-                        this.playAudios(audios, term)
+                        playAudios(audios, term)
 
                     let videos = this.getVideos(className, field)
                     if (videos.length > 0)
-                        this.playVideos(videos, term)
+                        playVideos(videos, term)
 
                 }
 
@@ -3191,111 +3118,11 @@ export class SearchFacetPanel extends HTMLElement {
         })
     }
 
-    playAudios(audios, name) {
-
-        // here I will get the audi
-        let audio_playList = "#EXTM3U\n"
-        audio_playList += "#PLAYLIST: " + name + "\n\n"
-
-        // Generate the playlist with found audio items.
-        let generateAudioPlaylist = () => {
-            let audio = audios.pop();
-            let globule = audio.globule;
-
-            // keep the info in memory for further use...
-            setAudio(audio)
-
-            // set the audio info
-            let indexPath = globule.config.DataPath + "/search/audios"
-
-            // get the title file path...
-            this.getTitleFiles(audio.getId(), indexPath, globule, files => {
-                generatePeerToken(audio.globule, token => {
-                    if (files.length > 0) {
-                        audio_playList += `#EXTINF:${audio.getDuration()}, ${audio.getTitle()}, tvg-id="${audio.getId()}"\n`
-
-                        let url = getUrl(globule)
-
-                        let path = files[0].split("/")
-                        path.forEach(item => {
-                            item = item.trim()
-                            if (item.length > 0)
-                                url += "/" + encodeURIComponent(item)
-                        })
-
-                        url += "?application=" + Model.application
-                        url += "&token=" + token
-                        
-
-                        audio_playList += url + "\n\n"
-                    }
-                    if (audios.length > 0) {
-                        generateAudioPlaylist()
-                    } else {
-                        console.log(audio_playList)
-                        playAudio(audio_playList, null, null, null, globule)
-                    }
-                })
-            })
-        }
-
-        generateAudioPlaylist()
-    }
+ 
 
     getAudios(className) {
         let audios = this.page.getAudios(className)
         return audios
-    }
-
-    playVideos(videos, name) {
-
-        // here I will get the audi
-        let video_playList = "#EXTM3U\n"
-        video_playList += "#PLAYLIST: " + name + "\n\n"
-
-        // Generate the playlist with found audio items.
-        let generateVideoPlaylist = () => {
-            let video = videos.pop();
-            let globule = video.globule;
-
-            // keep the info in memory for further use...
-            setVideo(video)
-
-            // set the audio info
-            let indexPath = globule.config.DataPath + "/search/videos"
-
-            // get the title file path...
-            this.getTitleFiles(video.getId(), indexPath, globule, files => {
-                generatePeerToken(video.globule, token => {
-                    if (files.length > 0) {
-                        video_playList += `#EXTINF:${video.getDuration()}, ${video.getDescription()}, tvg-id="${video.getId()}"\n`
-
-                        let url = getUrl(globule)
-
-                        if (!files[0].endsWith(".mp4")) {
-                            files[0] += "/playlist.m3u8"
-                        }
-                        let path = files[0].split("/")
-                        path.forEach(item => {
-                            item = item.trim()
-                            if (item.length > 0)
-                                url += "/" + encodeURIComponent(item)
-                        })
-
-                        url += "?application=" + Model.application
-                        url += "&token=" + token
-                        video_playList += url + "\n\n"
-                    }
-                    if (videos.length > 0) {
-                        generateVideoPlaylist()
-                    } else {
-                        playVideo(video_playList, null, null, null, globule)
-                    }
-                })
-            })
-        }
-
-        generateVideoPlaylist()
     }
 
     getVideos(className, field) {

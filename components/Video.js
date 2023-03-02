@@ -6,7 +6,7 @@ import Plyr from 'plyr';
 import "./plyr.css"
 import Hls from "hls.js";
 import { ApplicationView } from "../ApplicationView";
-import { GetFileTitlesRequest, GetFileVideosRequest } from "globular-web-client/title/title_pb";
+import { GetFileTitlesRequest, GetFileVideosRequest, GetTitleFilesRequest } from "globular-web-client/title/title_pb";
 import { setMoveable } from './moveable'
 import { setResizeable } from './rezieable'
 import { File } from "../File"
@@ -14,6 +14,7 @@ import { fireResize, formatBoolean, randomUUID } from "./utility";
 import { PlayList } from "./Playlist"
 import { readDir } from "globular-web-client/api";
 import { setMinimizeable } from "./minimizeable"
+import { timeSince } from './BlogPost';
 
 Object.defineProperty(HTMLMediaElement.prototype, 'playing', {
     get: function () {
@@ -24,6 +25,70 @@ Object.defineProperty(HTMLMediaElement.prototype, 'playing', {
 String.prototype.endsWith = function (suffix) {
     return this.indexOf(suffix, this.length - suffix.length) !== -1;
 };
+
+
+// get files associated with the titles, audios or videos...
+function getTitleFiles(id, indexPath, globule, callback) {
+    let rqst = new GetTitleFilesRequest
+    rqst.setTitleid(id)
+    rqst.setIndexpath(indexPath)
+    generatePeerToken(globule, token => {
+        globule.titleService.getTitleFiles(rqst, { application: Application.application, domain: Application.domain, token: token })
+            .then(rsp => {
+                callback(rsp.getFilepathsList())
+            }).catch(err => {
+                callback([])
+            })
+    })
+}
+
+export function playVideos(videos, name) {
+
+    ApplicationView.wait("loading videos playlist...")
+    // here I will get the audi
+    let video_playList = "#EXTM3U\n"
+    video_playList += "#PLAYLIST: " + name + "\n\n"
+
+    // Generate the playlist with found audio items.
+    let generateVideoPlaylist = () => {
+        let video = videos.pop();
+        let globule = video.globule;
+
+        // set the audio info
+        let indexPath = globule.config.DataPath + "/search/videos"
+
+        // get the title file path...
+        getTitleFiles(video.getId(), indexPath, globule, files => {
+
+            if (files.length > 0) {
+                video_playList += `#EXTINF:${video.getDuration()}, ${video.getDescription()}, tvg-id="${video.getId()}"\n`
+
+                let url = getUrl(globule)
+
+                if (!files[0].endsWith(".mp4")) {
+                    files[0] += "/playlist.m3u8"
+                }
+                let path = files[0].split("/")
+                path.forEach(item => {
+                    item = item.trim()
+                    if (item.length > 0)
+                        url += "/" + encodeURIComponent(item)
+                })
+
+                video_playList += url + "\n\n"
+            }
+            if (videos.length > 0) {
+                generateVideoPlaylist()
+            } else {
+               
+                playVideo(video_playList, null, null, null, globule)
+            }
+        })
+    }
+
+    generateVideoPlaylist()
+}
+
 
 /**
  * Function to play a video on the same player.
@@ -36,7 +101,7 @@ export function playVideo(path, onplay, onclose, title, globule) {
     if (title) {
         if (title.globule) {
             globule = title.globule
-        }else if(globule!=null){
+        } else if (globule != null) {
             title.globule = globule
         }
     }
@@ -291,7 +356,7 @@ export class VideoPlayer extends HTMLElement {
         this.container.resizeHeightDiv.style.display = "none"
 
         // Set the video to full screen when orientation change.
-        window.addEventListener("orientationchange",  (event) => {
+        window.addEventListener("orientationchange", (event) => {
             var orientation = (screen.orientation || {}).type || screen.mozOrientation || screen.msOrientation;
 
             if (["landscape-primary", "landscape-secondary"].indexOf(orientation) != -1) {
@@ -306,8 +371,9 @@ export class VideoPlayer extends HTMLElement {
         // set the initial size of the video player to fit the played video...
         this.video.onplaying = (evt) => {
 
+            ApplicationView.resume()
+            
             if (this.resume) {
-                ApplicationView.resume()
                 this.show()
                 return
             }
@@ -773,6 +839,7 @@ export class VideoPlayer extends HTMLElement {
 
     play(path, globule, titleInfo) {
 
+        console.log("play video at path: ", path)
 
         if (this.isMinimized) {
             this.minimize()
@@ -780,10 +847,10 @@ export class VideoPlayer extends HTMLElement {
 
         if (titleInfo) {
             this.titleInfo = titleInfo
-            this.titleInfo.globule = globule
         }
 
         generatePeerToken(globule, token => {
+
             let url = path;
             if (!url.startsWith("http")) {
                 url = getUrl(globule)
@@ -795,16 +862,16 @@ export class VideoPlayer extends HTMLElement {
                     }
                 })
 
-                
+
                 url += "?application=" + Model.application
                 url += "&token=" + token
 
             } else {
                 var parser = document.createElement('a');
-                
+
                 url += "?application=" + Model.application
                 url += "&token=" + token
-                
+
                 parser.href = url
                 path = decodeURIComponent(parser.pathname)
             }

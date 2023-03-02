@@ -148,6 +148,11 @@ export class SharePanel extends HTMLElement {
                     height: 100%;
                 }
 
+                globular-subjects-view{
+                    border-right: none;
+                }
+    
+
               }
 
         </style>
@@ -1371,6 +1376,20 @@ export class GlobularSubjectsView extends HTMLElement {
                 display: none;
             }
 
+            ::-webkit-scrollbar {
+                width: 5px;
+                height: 5px;
+            }
+                
+            ::-webkit-scrollbar-track {
+                background: var(--palette-background-default);
+            }
+            
+            ::-webkit-scrollbar-thumb {
+                background: var(--palette-divider); 
+            }
+         
+
             @media (max-width: 500px) {
                 #subjects-div {
                     margin-right: 5px;
@@ -1486,7 +1505,7 @@ export class GlobularSubjectsView extends HTMLElement {
             let applicationTab = this.shadowRoot.querySelector("#applications-tab")
             let selectorsDiv = this.shadowRoot.querySelector(".selectors")
 
-            if (w <= 500) {
+            if (w <= 500 ) {
                 selectorsDiv.appendChild(accountsSelector)
                 selectorsDiv.appendChild(groupsSelector)
                 selectorsDiv.appendChild(organizationsSelector)

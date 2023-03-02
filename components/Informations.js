@@ -118,7 +118,12 @@ const __style__ = `
 .title-files-div {
     display: flex;
     width: 100%;
-    flex-direction: column;
+    flex-wrap: wrap;
+    max-width: 300px;
+}
+
+.title-files-div globular-video-preview {
+    margin-right: 5px;
 }
 
 .title-files-div paper-progress{

@@ -231,7 +231,6 @@ export class File extends Model {
      */
     static getFile(globule: Globular, path: string, thumbnailWith: number, thumbnailHeight: number, callback: (f: File) => void, errorCallback: (err: string) => void) {
 
-        console.log("----------> generate token for: ", globule.domain)
         generatePeerToken(globule, token => {
 
             let rqst = new GetFileInfoRequest()
@@ -246,7 +245,6 @@ export class File extends Model {
 
                 })
                 .catch(e => {
-                    console.log(`failt to get file ${path} info with error:`, e)
                     errorCallback(e)})
         }, errorCallback)
     }
@@ -273,10 +271,10 @@ export class File extends Model {
                 return
             }
 
-            console.log("read dir ", path)
-            // 
             readDir(globule, path, recursive, (dir: FileInfo) => {
+
                 callback(File.fromObject(dir.toObject()))
+
             }, errorCallback, 80, 80, token)
         }, errorCallback)
     }
@@ -339,7 +337,6 @@ export class File extends Model {
                 url += "&application=" + Model.application
                 url += "&token=" + token
                 
-
                 req.open("GET", url, true);
 
                 // Set the token to manage downlaod access.
@@ -350,8 +347,6 @@ export class File extends Model {
                 req.responseType = "blob";
                 req.onload = (event: any) => {
                     const blob = req.response;
-
-                    console.log("blob was download! ", blob.size)
                     if (File.saveLocal) {
                         File.saveLocal(this, blob)
                         callback()

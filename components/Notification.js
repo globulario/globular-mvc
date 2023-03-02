@@ -6,14 +6,17 @@ import '@polymer/paper-icon-button/paper-icon-button.js';
 import '@polymer/paper-ripple/paper-ripple.js';
 import '@polymer/iron-collapse/iron-collapse.js';
 import '@polymer/paper-badge/paper-badge.js';
-
-import { Model } from '../Model';
+import { setMoveable } from './moveable'
+import { setResizeable } from './rezieable'
+import { generatePeerToken, Model } from '../Model';
 import { Menu } from './Menu';
 
 import { Notification } from "../Notification"
 import { Account } from "../Account"
 import { ApplicationView } from '../ApplicationView';
 import { Application } from '../Application';
+import * as resource_pb from 'globular-web-client/resource/resource_pb';
+import { randomUUID } from './utility';
 
 /**
  * Login/Register functionality.
@@ -50,7 +53,7 @@ export class NotificationMenu extends Menu {
             flex-direction: column;
         }
 
-        #notifications-config{
+        #notification-create-btn{
             flex-grow: 1;
 
         }
@@ -162,7 +165,7 @@ export class NotificationMenu extends Menu {
                 <div class="notification-label">Notifications</div>
                 <div class="btn_div">
                     <div class="btn_">
-                        <iron-icon id="notifications-config" icon="settings"></iron-icon>
+                        <iron-icon id="notification-create-btn" icon="icons:add"></iron-icon>
                         <paper-ripple class="circle" recenters></paper-ripple>
                     </div>
                 </div>
@@ -207,6 +210,12 @@ export class NotificationMenu extends Menu {
         this.applicationNotificationsCollapse = this.shadowRoot.getElementById("application-notifications-collapse");
         this.applicationNotificationsPanel = this.shadowRoot.getElementById("application-notifications-panel")
         this.userNotificationsPanel = this.shadowRoot.getElementById("user-notifications-panel")
+
+        this.notificationCreateBtn = this.shadowRoot.getElementById("notification-create-btn")
+        this.notificationCreateBtn.onclick = () => {
+            let notificationEditor = new NotificationEditor()
+            ApplicationView.layout.workspace().appendChild(notificationEditor)
+        }
 
         // Now I will set the animation
         this.userNotificationsBtn.onclick = () => {
@@ -540,8 +549,14 @@ export class NotificationMenu extends Menu {
                 if (toast == undefined) {
                     return
                 }
+                let div =  toast.el.querySelector(`#div_${notification._id}_text`)
+                div.style.minWidth = "200px"
+                div.style.maxWidth = "320px"
+                div.style.marginLeft = "10px"
+                div.style.marginRight = "30px"
                 let closeBtn = toast.el.querySelector(`#div_${notification._id}_close_btn`)
                 closeBtn.style.right = "-10px"
+                closeBtn.style.top = "-10px"
                 closeBtn.style.display = "block"
                 closeBtn.onclick = () => {
                     if (this.onclose != undefined) {
@@ -576,9 +591,16 @@ export class NotificationMenu extends Menu {
                 // Here I will display notification to the Application toast...
                 if (displayNotification) {
                     let toast = ApplicationView.displayMessage(notificationDiv.outerHTML, 10000)
+                    let div =  toast.el.querySelector(`#div_${notification._id}_text`)
+                    div.style.minWidth = "200px"
+                    div.style.maxWidth = "320px"
+                    div.style.marginLeft = "10px"
+                    div.style.marginRight = "30px"
                     let closeBtn = toast.el.querySelector(`#div_${notification._id}_close_btn`)
                     closeBtn.style.display = "block"
+                    closeBtn.style.position = "absolute"
                     closeBtn.right = "-10px"
+                    closeBtn.top = "-10px"
                     closeBtn.onclick = () => {
                         Model.publish("delete_notification_event_", notification, true)
                         if (this.onclose != undefined) {
@@ -626,3 +648,279 @@ export class NotificationMenu extends Menu {
 }
 
 customElements.define('globular-notification-menu', NotificationMenu)
+
+
+/**
+ * Sample empty component
+ */
+export class NotificationEditor extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor() {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+
+        // the account to 
+        this.accounts = {}
+
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+           
+        #container{
+            position: fixed;
+            background: var(--palette-background-default); 
+            border-top: 1px solid var(--palette-divider);
+            border-left: 1px solid var(--palette-divider);
+
+        }
+
+        .header{
+            display: flex;
+            align-items: center;
+            color: var(--palette-text-accent);
+            background-color: var(--palette-primary-accent);
+        }
+
+        .header span{
+            flex-grow: 1;
+            text-align: center;
+            font-size: 1.1rem;
+            font-weight: 500;
+            display: inline-block;
+            white-space: nowrap;
+            overflow: hidden !important;
+            text-overflow: ellipsis;
+            max-width: calc(100vw - 50px);
+        }
+
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+            
+        ::-webkit-scrollbar-track {
+            background: var(--palette-background-default);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--palette-divider); 
+        }
+
+        #content{
+            display: flex;
+            background: #000000;
+            justify-items: center;
+            overflow: hidden;
+            background-color: var(--palette-background-paper);
+            color: var(--palette-text-primary);
+            height: calc(100% - 40px);
+            font-size: 1.1rem;
+        }
+
+        globular-subjects-view{
+            border-right: 1px solid var(--palette-divider);
+        }
+
+        globular-subjects-selected {
+            width: 100%;
+        }
+
+        iron-autogrow-textarea{
+            flex-grow: 1;
+        }
+
+        #text-writer-box{
+            width: calc(100% - 18px);
+            margin-left: 5px;
+            border: 1px solid var(--palette-divider);
+            border-radius: 4px;
+        }
+
+        @media (max-width: 500px) {
+            #content{
+                flex-direction: column;
+
+            }
+
+            #container{
+                top: 64px;
+                left: 0px;
+                overflow-y: auto;
+                width: 100vw;
+                height: calc(100vh - 64px);
+                max-width: 100vw;
+                min-width: 0px;
+                height: inherit;
+                bottom: 0px;
+            }
+        }
+
+        </style>
+        <paper-card id="container">
+            <div class="header">
+                <span id="handle">Notification</span>
+                <paper-icon-button id="close-btn" icon="icons:close"></paper-icon-button>
+            </div>
+            <div id="content">
+                <globular-subjects-view style="min-width: 250px; border-right: 1px solid var(--palette-divider)"></globular-subjects-view>
+                <div style="display: flex; flex-direction: column; width: 100%; flex-grow: 1;">
+                    <globular-subjects-selected ></globular-subjects-selected>
+                    <iron-autogrow-textarea id="text-writer-box"></iron-autogrow-textarea>
+                    <div style="display: flex; justify-content: flex-end;">
+                        <paper-icon-button  id="send-btn" icon="send"></paper-icon-button>
+                    </div>
+                </div>
+            </div>
+            
+        </paper-card>
+        `
+        // give the focus to the input.
+        this.container = this.shadowRoot.querySelector("#container")
+
+        this.msgBox = this.shadowRoot.querySelector("#text-writer-box")
+
+        this.sendBtn = this.shadowRoot.querySelector("#send-btn")
+        this.sendBtn.onclick = () => {
+            this.getAccounts(accounts => {
+
+                for (var id in accounts) {
+                    let a = accounts[id]
+                    // so now I will send notification...
+                    let rqst = new resource_pb.CreateNotificationRqst
+
+                    let notification = new resource_pb.Notification
+                    let date = Math.floor(Date.now() / 1000)
+                    notification.setDate(date)
+                    notification.setId(randomUUID())
+                    notification.setNotificationType(resource_pb.NotificationType.USER_NOTIFICATION)
+                    notification.setMessage(this.msgBox.value)
+                    notification.setSender(Application.account.id + "@" + Application.account.domain)
+                    notification.setRecipient(a.id + "@" + a.domain)
+                    rqst.setNotification(notification)
+
+                    // so here I will send the notification the the destination
+                    let globule = Model.getGlobule(a.domain)
+                    generatePeerToken(globule, token => {
+                        globule.resourceService.createNotification(rqst, {
+                            token: token,
+                            application: Model.application,
+                            domain: globule.domain,
+                            address: Model.address
+                        }).then((rsp) => {
+
+                            let notification_ = new Notification
+                            notification_.id = notification.getId()
+                            notification_.date = new Date()
+                            notification_.sender = notification.getSender()
+                            notification_.recipient = notification.getRecipient()
+                            notification_.text = notification.getMessage()
+                            notification_.type = 0
+
+                            // Send notification...
+                            globule.eventHub.publish(a.id + "@" + a.domain + "_notification_event", notification_.toString(), false)
+
+                        }).catch(err => ApplicationView.displayMessage(err, 3000))
+                    })
+                }
+
+                // close the notification 
+                ApplicationView.displayMessage("Notification was sent...")
+                this.parentNode.removeChild(this)
+
+            })
+
+        }
+
+        let offsetTop = 64
+        this.shadowRoot.querySelector("#close-btn").onclick = () => {
+
+            this.parentNode.removeChild(this)
+        }
+
+        this.container.name = "notification_editor"
+
+        setMoveable(this.shadowRoot.querySelector("#handle"), this.container, (left, top) => {
+            /** */
+        }, this, offsetTop)
+
+        if (localStorage.getItem("__notification_editor_dimension__")) {
+
+            let dimension = JSON.parse(localStorage.getItem("__notification_editor_dimension__"))
+            if (!dimension) {
+                dimension = { with: 600, height: 400 }
+            }
+
+            this.container.style.width = dimension.width + "px"
+            this.container.style.height = dimension.height + "px"
+        }
+
+
+        // Set resizable properties...
+        setResizeable(this.container, (width, height) => {
+            localStorage.setItem("__notification_editor_dimension__", JSON.stringify({ width: width, height: height }))
+        })
+
+        let subjectsView = this.shadowRoot.querySelector("globular-subjects-view")
+        this.selectedSubjects = this.shadowRoot.querySelector("globular-subjects-selected")
+
+        // Append account 
+        subjectsView.on_account_click = (accountDiv, account) => {
+            accountDiv.account = account;
+            this.selectedSubjects.appendAccount(accountDiv)
+        }
+
+        // Append group
+        subjectsView.on_group_click = (groupDiv, group) => {
+            groupDiv.group = group;
+            this.selectedSubjects.appendGroup(groupDiv)
+        }
+
+    }
+
+    getAccounts(callback) {
+
+        let accounts = {}
+        for (var i = 0; i < this.selectedSubjects.getAccounts().length; i++) {
+            let a = this.selectedSubjects.getAccounts()[i]
+            accounts[a.id] = a
+        }
+
+        let groups = this.selectedSubjects.getGroups()
+        if (groups.length > 0) {
+            groups.forEach(g => {
+                let index = 0;
+
+                let __getAccount__ = (index) => {
+                    let m = g.members[index]
+                    index++
+                    Account.getAccount(m, (a) => {
+                        accounts[a.id] = a
+                        if (index < g.members.length) {
+                            __getAccount__(index)
+                        } else {
+                            callback(accounts)
+                        }
+                    }, () => {
+                        if (index < g.members.length) {
+                            __getAccount__(index)
+                        } else {
+                            callback(accounts)
+                        }
+                    })
+                }
+
+                __getAccount__(index)
+            })
+        } else {
+            callback(accounts)
+        }
+
+    }
+
+}
+
+customElements.define('globular-notification-editor', NotificationEditor)

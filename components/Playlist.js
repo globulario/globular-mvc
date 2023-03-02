@@ -35,7 +35,9 @@ function getVideoInfo(globule, id, callback) {
 
         globule.titleService.getVideoById(rqst, { application: Application.application, domain: globule.domain, token: token })
             .then(rsp => {
-                callback(rsp.getVideo(), token)
+                let video = rsp.getVideo()
+                video.globule = globule
+                callback(video, token)
             })
             .catch(err => {
                 callback(null, null)
@@ -56,7 +58,9 @@ function getAudioInfo(globule, id, callback) {
 
         globule.titleService.getAudioById(rqst, { application: Application.application, domain: globule.domain, token: token })
             .then(rsp => {
-                callback(rsp.getAudio(), token)
+                let audio = rsp.getAudio()
+                audio.globule = globule
+                callback(audio, token)
             })
             .catch(err => {
                 callback(null, null)
@@ -171,9 +175,6 @@ export class PlayList extends HTMLElement {
             url += "?application=" + Model.application
 
             if (video) {
-                if (token) {
-                    url += "&token=" + token
-                }
                 if (restart)
                     localStorage.removeItem(video.getId()) // play the video at start...
 
@@ -182,10 +183,7 @@ export class PlayList extends HTMLElement {
 
             } else {
 
-                getAudioInfo(globule, item.id, (audio, token) => {
-                    if (token) {
-                        url += "&token=" + token
-                    }
+                getAudioInfo(globule, item.id, (audio) => {
                     if (audio)
                         if (File.hasLocal) {
                             // Get the file path part from the url and test if a local copy exist, if so I will use it.
@@ -310,40 +308,41 @@ export class PlayList extends HTMLElement {
 
         let newPlayListItem = (index) => {
             let item = this.playlist.items[index]
+            if (item) {
+                new PlayListItem(item, this, index, (item_) => {
 
-            new PlayListItem(item, this, index, (item_) => {
-
-                item_.onmouseover = () => {
-                    if (!item_.isPlaying) {
-                        item_.hidePauseButton()
-                        item_.showPlayButton()
-                    }
-                }
-
-                item_.onmouseleave = () => {
-                    if (!item_.isPlaying) {
-                        item_.hidePlayButton()
-                        item_.hidePauseButton()
-                    }
-                }
-
-                this.items.push(item_)
-                this.appendChild(item_)
-
-                if (this.playlist.items.length == this.items.length) {
-                    this.orderItems()
-
-                    // play the first item...
-                    if (this.items.length > 0) {
-                        this.setPlaying(this.items[0], true, true)
+                    item_.onmouseover = () => {
+                        if (!item_.isPlaying) {
+                            item_.hidePauseButton()
+                            item_.showPlayButton()
+                        }
                     }
 
-                    callback()
-                } else {
-                    newPlayListItem(this.items.length)
-                }
+                    item_.onmouseleave = () => {
+                        if (!item_.isPlaying) {
+                            item_.hidePlayButton()
+                            item_.hidePauseButton()
+                        }
+                    }
 
-            })
+                    this.items.push(item_)
+                    this.appendChild(item_)
+
+                    if (this.playlist.items.length == this.items.length) {
+                        this.orderItems()
+
+                        // play the first item...
+                        if (this.items.length > 0) {
+                            this.setPlaying(this.items[0], true, true)
+                        }
+
+                        callback()
+                    } else {
+                        newPlayListItem(this.items.length)
+                    }
+
+                })
+            }
         }
 
         // start recursion
@@ -421,6 +420,7 @@ export class PlayListItem extends HTMLElement {
 
     // Create the applicaiton view.
     constructor(item, parent, index, callback) {
+
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });

@@ -22,8 +22,8 @@ import { File } from "../File";
 import { Menu } from './Menu';
 import { PermissionsManager } from './Permissions';
 import { InformationsManager } from './Informations'
-import { playVideo } from './Video'
-import { playAudio } from './Audio'
+import { playVideo, playVideos } from './Video'
+import { playAudio, playAudios } from './Audio'
 import { GlobularFileReader } from './Reader'
 import { v4 as uuidv4 } from "uuid";
 
@@ -127,9 +127,37 @@ function copyToClipboard(text) {
 
 // Now I will test if imdb info are allready asscociated.
 export function getTitleInfo(globule, file, callback) {
+    let globules = Model.getGlobules()
+    let index = globules.findIndex(g => { globule.domain == g.domain })
+    if (index > 0) {
+        globules.splice(index, 1)
+        globules.unshift(globule)
+    }
+
+    // Now I will get titles info.
+    let ___getTitleInfo___ = () => {
+        let g = globules.shift()
+        if (g == null) {
+            callback([])
+        } else {
+            __getTitleInfo__(g, file, (_titles_) => {
+                if (_titles_.length == 0) {
+                    ___getTitleInfo___()
+                } else {
+                    _titles_.forEach(t=>t.globule = g)
+                    file.titles = _titles_
+                    callback(_titles_)
+                }
+            })
+        }
+    }
+
+    ___getTitleInfo___()
+}
+
+function __getTitleInfo__(globule, file, callback) {
     let rqst = new GetFileTitlesRequest
     rqst.setIndexpath(globule.config.DataPath + "/search/titles")
-
     rqst.setFilepath(file.path)
 
     globule.titleService.getFileTitles(rqst, { application: Application.application, domain: globule.domain, token: localStorage.getItem("user_token") })
@@ -143,8 +171,37 @@ export function getTitleInfo(globule, file, callback) {
         })
 }
 
-
 export function getVideoInfo(globule, file, callback) {
+
+    let globules = Model.getGlobules()
+    let index = globules.findIndex(g => { globule.domain == g.domain })
+    if (index > 0) {
+        globules.splice(index, 1)
+        globules.unshift(globule)
+    }
+
+    // Now I will get titles info.
+    let ___getVideoInfo___ = () => {
+        let g = globules.shift()
+        if (g == null) {
+            callback([])
+        } else {
+            __getVideoInfo__(g, file, (_videos_) => {
+                if(_videos_.length == 0){
+                ___getVideoInfo___()
+                }else{
+                    _videos_.forEach(v=>v.globule = g)
+                    file.videos = _videos_
+                    callback(_videos_)
+                }
+            })
+        }
+    }
+
+    ___getVideoInfo___()
+}
+
+function __getVideoInfo__(globule, file, callback) {
 
     let rqst = new GetFileVideosRequest
     rqst.setIndexpath(globule.config.DataPath + "/search/videos")
@@ -161,6 +218,37 @@ export function getVideoInfo(globule, file, callback) {
 }
 
 export function getAudioInfo(globule, file, callback) {
+
+    let globules = Model.getGlobules()
+    let index = globules.findIndex(g => { globule.domain == g.domain })
+    if (index > 0) {
+        globules.splice(index, 1)
+        globules.unshift(globule)
+    }
+
+    // Now I will get titles info.
+    let ___getAudioInfo___ = () => {
+        let g = globules.shift()
+        if (g == null) {
+            callback([])
+        } else {
+            __getAudioInfo__(g, file, (_audios_) => {
+                if(_audios_.length == 0){
+                ___getAudioInfo___()
+                }else{
+                    _audios_.forEach(a=>a.globule = g)
+                    file.audios = _audios_
+                    callback(_audios_)
+                }
+            })
+        }
+    }
+
+    ___getAudioInfo___()
+}
+
+
+function __getAudioInfo__(globule, file, callback) {
 
     let rqst = new GetFileAudiosRequest
     rqst.setIndexpath(globule.config.DataPath + "/search/audios")
@@ -866,9 +954,6 @@ export class FilesView extends HTMLElement {
 
                 getVideoInfo(globule, file, (videos) => {
                     if (videos.length > 0) {
-                        videos.forEach(video => {
-                            video.globule = globule
-                        })
                         file.videos = videos // keep in the file itself...
                         Model.eventHub.publish("display_media_infos_event", file, true)
                         // Remove it from it parent... 
@@ -879,14 +964,13 @@ export class FilesView extends HTMLElement {
                         // get the title infos...
                         getTitleInfo(globule, file, (titles) => {
                             if (titles.length > 0) {
-                                titles.forEach(title => {
-                                    title.globule = globule
-                                })
                                 file.titles = titles // keep in the file itself...
                                 Model.eventHub.publish("display_media_infos_event", file, true)
-                                // Remove it from it parent... 
-                                this.menu.close()
-                                this.menu.parentNode.removeChild(this.menu)
+                                if (this.menu.parentNode) {
+                                    // Remove it from it parent... 
+                                    this.menu.close()
+                                    this.menu.parentNode.removeChild(this.menu)
+                                }
                             }
                         })
                     }
@@ -894,9 +978,6 @@ export class FilesView extends HTMLElement {
             } else if (file.mime.startsWith("audio")) {
                 getAudioInfo(globule, file, (audios) => {
                     if (audios.length > 0) {
-                        audios.forEach(audio => {
-                            audio.globule = globule
-                        })
                         file.audios = audios // keep in the file itself...
                         Model.eventHub.publish("display_media_infos_event", file, true)
                         // Remove it from it parent... 
@@ -2236,7 +2317,7 @@ export class FilesIconView extends FilesView {
                     if (fileType == "audio" || fileType == "video") {
                         let playlistDiv = this.div.querySelector(`#${fileType}_playlist_div`)
 
-                        if (fileType == "audio" && dir.__audioPlaylist__) {
+                        if (fileType == "audio") {
                             playlistDiv.innerHTML = `
                                 <iron-icon id="refresh-audios-btn" icon="icons:refresh" title="refresh audios infos and playlist"></iron-icon>
                                 <iron-icon id="download-audios-btn" icon="av:playlist-add-check" title="download new audio from the channel" style="display:none;"></iron-icon>
@@ -2336,23 +2417,23 @@ export class FilesIconView extends FilesView {
                             }
 
                             playAudiosBtn.onclick = () => {
-                                let globule = this._file_explorer_.globule
-                                generatePeerToken(globule, token => {
-                                    // I will refresh the playlist on the server before playing it...
-                                    let rqst = new GeneratePlaylistRequest
-                                    rqst.setDir(dir.path)
-                                    globule.fileService.generatePlaylist(rqst, { application: Application.application, domain: globule.domain, token: token })
-                                        .then(rsp => {
-                                            playAudio(dir.__audioPlaylist__.path, () => { }, () => { }, null, globule)
-                                        })
-                                        .catch(err => ApplicationView.displayMessage(err, 3000))
+                                let audios = []
+                                dir.files.forEach(f=>{
+                                    if(f.mime.startsWith("audio")){
+                                        if(f.audios){
+                                            audios = audios.concat(f.audios)
+                                        }
+                                    }
                                 })
-
-
+                                if(audios.length > 0){
+                                    playAudios(audios, dir.name)
+                                }else{
+                                    ApplicationView.displayMessage("no audio informations found to generate a playlist")
+                                }
 
                             }
 
-                        } else if (fileType == "video" && dir.__videoPlaylist__) {
+                        } else if (fileType == "video") {
                             playlistDiv.innerHTML = `
                                 <iron-icon id="refresh-videos-btn" icon="icons:refresh" title="refresh video infos and playlist"></iron-icon>
                                 <iron-icon id="download-videos-btn" icon="av:playlist-add-check" title="download new video from the channel" style="display:none;"></iron-icon>
@@ -2454,8 +2535,19 @@ export class FilesIconView extends FilesView {
                             }
 
                             playVideosBtn.onclick = () => {
-                                let globule = this._file_explorer_.globule
-                                playVideo(dir.__videoPlaylist__.path, () => { }, () => { }, null, globule)
+                                let videos = []
+                                dir.files.forEach(f=>{
+                                    if(f.mime.startsWith("video")){
+                                        if(f.videos){
+                                            videos = videos.concat(f.videos)
+                                        }
+                                    }
+                                })
+                                if(videos.length > 0){
+                                    playVideos(videos, dir.name)
+                                }else{
+                                    ApplicationView.displayMessage("no video informations found to generate a playlist")
+                                }
                             }
 
                         }
@@ -2656,10 +2748,6 @@ export class FilesIconView extends FilesView {
                                 getVideoInfo(this._file_explorer_.globule, file, videos => {
                                     if (videos.length > 0) {
                                         file.videos = videos // keep in the file itself...
-                                        videos.forEach(video => {
-                                            video.globule = this._file_explorer_.globule
-                                        })
-
                                         fileNameSpan.innerHTML = file.videos[0].getDescription()
                                     } else {
 
@@ -2677,9 +2765,6 @@ export class FilesIconView extends FilesView {
                                             // get the title infos...
                                             getTitleInfo(this._file_explorer_.globule, file, (titles) => {
                                                 if (titles.length > 0) {
-                                                    titles.forEach(title => {
-                                                        title.globule = this._file_explorer_.globule
-                                                    })
                                                     file.titles = titles // keep in the file itself...
                                                     let title = file.titles[0]
                                                     let name = title.getName()
@@ -4824,7 +4909,7 @@ export class FileExplorer extends HTMLElement {
                     this.permissionManager.setPath(path)
                     this.permissionManager.setResourceType = "file"
                     this.permissionManager.style.display = ""
-                    
+
                     // I will display the permission manager.
                     this.fileSelectionPanel.appendChild(this.permissionManager)
 
@@ -5075,8 +5160,6 @@ export class FileExplorer extends HTMLElement {
 
         getAudioInfo(this.globule, file, audios => {
             if (audios) {
-                if (audios[0])
-                    audios[0].globule = this.globule
                 playAudio(file.path, () => { }, () => { }, audios[0], this.globule)
             }
         })
@@ -5426,6 +5509,7 @@ export class VideoPreview extends HTMLElement {
         this.onpreview = null;
         this.onplay = null;
         this.__show_play_btn__ = false;
+        this.title = file.path
 
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
