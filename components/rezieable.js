@@ -13,6 +13,7 @@ export function setResizeable(div, onresize, side, zIndex) {
             if (w < 500 && div.style.width != "100vw") {
                 localStorage.setItem(`__${id}_dimension__`, JSON.stringify({ width: div.offsetWidth, height: div.offsetHeight }))
                 div.style.width = "100vw"
+                div.style.height = "calc(100vh - 60px)"
             } else if (div.style.width == "100vw" && w > 500 && w > div.maxWidth && div.maxWidth > 0) {
                 div.style.width = div.maxWidth + "px"
                 div.style.height = "auto"
@@ -26,6 +27,7 @@ export function setResizeable(div, onresize, side, zIndex) {
     if (w < 500) {
         if (div.style.position == "fixed") {
             div.style.width = "100vw"
+            div.style.height = "calc(100vh - 60px)"
         }
     } else {
         let id = div.name

@@ -16,7 +16,7 @@ import { Account } from "../Account"
 import { ApplicationView } from '../ApplicationView';
 import { Application } from '../Application';
 import * as resource_pb from 'globular-web-client/resource/resource_pb';
-import { randomUUID } from './utility';
+import { fireResize, randomUUID } from './utility';
 
 /**
  * Login/Register functionality.
@@ -118,6 +118,7 @@ export class NotificationMenu extends Menu {
             transition: background 0.2s ease,padding 0.8s linear;
             background-color: var(--palette-background-paper);
             color: var(--palette-text-primary);
+            border-bottom: 1px solid var(--palette-action-disabled);
         }
 
         .notification_panel img {
@@ -131,10 +132,24 @@ export class NotificationMenu extends Menu {
             filter: invert(10%);
         }
 
+        #user-notifications-btn{
+            display: flex;
+            position:  relative;
+
+        }
+
+        #user-notifications-btn span{
+            flex-grow: 1;
+        }
+    
         #content {
             width: 100%;
             display: flex;
             flex-direction: column;
+        }
+
+        paper-button {
+            font-size: 1rem;
         }
 
         @media (max-width: 500px) {
@@ -184,6 +199,7 @@ export class NotificationMenu extends Menu {
             <div id="user-notifications" style="display: none;">
                 <div class="header" id="user-notifications-btn">
                     <span class="notification-label">User</span>
+                    <paper-button id="clear-user-notifications-btn">Clear</paper-button>
                     <paper-ripple recenters></paper-ripple>
                 </div>
                 <iron-collapse  id="user-notifications-collapse" style="">
@@ -194,11 +210,87 @@ export class NotificationMenu extends Menu {
         </div>
         `
 
+
+
         let range = document.createRange()
         this.getMenuDiv().appendChild(range.createContextualFragment(html));
 
         // Action's
         this.shadowRoot.appendChild(this.getMenuDiv())
+
+
+        this.shadowRoot.querySelector("#clear-user-notifications-btn").onclick = (evt) => {
+            evt.stopPropagation()
+
+            // Now I will ask the user if he want to remove all notification.
+            // Here I will ask the user for confirmation before actually delete the contact informations.
+            let toast = ApplicationView.displayMessage(
+                `
+            <style>
+             
+              #yes-no-notification-delete-box{
+                display: flex;
+                flex-direction: column;
+              }
+
+              #yes-no-notification-delete-box globular-notification-card{
+                padding-bottom: 10px;
+              }
+
+              #yes-no-notification-delete-box div{
+                display: flex;
+                padding-bottom: 10px;
+              }
+
+            </style>
+            <div id="yes-no-notification-delete-box">
+              <div>Your about to delete all user notifications</div>
+              <div>Is it what you want to do? </div>
+              <div style="justify-content: flex-end;">
+                <paper-button raised id="yes-delete-notification">Yes</paper-button>
+                <paper-button raised id="no-delete-notification">No</paper-button>
+              </div>
+            </div>
+            `,
+                15000 // 15 sec...
+            );
+
+            let yesBtn = document.querySelector("#yes-delete-notification")
+            let noBtn = document.querySelector("#no-delete-notification")
+
+            // On yes
+            yesBtn.onclick = () => {
+
+                let rqst = new resource_pb.ClearNotificationsByTypeRqst
+                rqst.setNotificationType(resource_pb.NotificationType.USER_NOTIFICATION)
+                rqst.setRecipient(Application.account.id + "@" + Application.account.domain)
+
+                let globule = Model.getGlobule(Application.account.domain)
+                generatePeerToken(globule, token => {
+                    globule.resourceService.clearNotificationsByType(rqst, {
+                        token: token,
+                        application: Model.application,
+                        domain: globule.domain,
+                        address: Model.address
+                    }).then((rsp) => {
+                        ApplicationView.displayMessage(
+                            "<iron-icon icon='icons:delete' style='margin-right: 10px;'></iron-icon><div>all user notification was removed</div>",
+                            3000
+                        );
+                    })
+                        .catch(err => ApplicationView.displayMessage(err, 3000))
+
+                })
+
+                toast.dismiss();
+
+            }
+
+            noBtn.onclick = () => {
+                toast.dismiss();
+            }
+
+        }
 
         this.applicationNotificationsDiv = this.shadowRoot.getElementById("application-notifications")
         this.userNotificationsDiv = this.shadowRoot.getElementById("user-notifications")
@@ -215,6 +307,7 @@ export class NotificationMenu extends Menu {
         this.notificationCreateBtn.onclick = () => {
             let notificationEditor = new NotificationEditor()
             ApplicationView.layout.workspace().appendChild(notificationEditor)
+            this.shadowRoot.appendChild(this.getMenuDiv())
         }
 
         // Now I will set the animation
@@ -342,21 +435,31 @@ export class NotificationMenu extends Menu {
             }, false)
 
 
+        Model.eventHub.subscribe(Application.account.id + "@" + Application.account.domain + "_clear_user_notifications_evt",
+            (uuid) => {
+
+            },
+            (evt) => {
+                // So here I will clear the notofication...
+                this.userNotificationsPanel.innerHTML = ""
+                this.userNotificationsDiv.style.display = "none"
+            }, false)
+
+
     }
 
-    // clear the notifications.
-    clear() {
-
-    }
 
     setNotificationCount() {
         let iconDiv = this.getIconDiv()
+
         for (var i = 0; i < iconDiv.children.length; i++) {
             if (iconDiv.children[i].id == "notification-count") {
                 this.notificationCount = iconDiv.children[i]
                 break
             }
         }
+
+
 
         if (this.notificationCount == undefined) {
             let html = `
@@ -461,6 +564,8 @@ export class NotificationMenu extends Menu {
 
 
         let notificationDiv = this.shadowRoot.getElementById(`div_${notification._id}`)
+        notificationDiv.notification = notification;
+
         let closeBtn = this.shadowRoot.getElementById(`div_${notification._id}_close_btn`)
 
         closeBtn.onclick = () => {
@@ -549,14 +654,16 @@ export class NotificationMenu extends Menu {
                 if (toast == undefined) {
                     return
                 }
-                let div =  toast.el.querySelector(`#div_${notification._id}_text`)
+                let div = toast.el.querySelector(`#div_${notification._id}_text`)
                 div.style.minWidth = "200px"
                 div.style.maxWidth = "320px"
                 div.style.marginLeft = "10px"
                 div.style.marginRight = "30px"
+                div.style.maxHeight = "350px"
+                div.style.overflowY = "auto"
                 let closeBtn = toast.el.querySelector(`#div_${notification._id}_close_btn`)
-                closeBtn.style.right = "-10px"
-                closeBtn.style.top = "-10px"
+                closeBtn.style.right = "-5px"
+                closeBtn.style.top = "-5px"
                 closeBtn.style.display = "block"
                 closeBtn.onclick = () => {
                     if (this.onclose != undefined) {
@@ -591,16 +698,18 @@ export class NotificationMenu extends Menu {
                 // Here I will display notification to the Application toast...
                 if (displayNotification) {
                     let toast = ApplicationView.displayMessage(notificationDiv.outerHTML, 10000)
-                    let div =  toast.el.querySelector(`#div_${notification._id}_text`)
+                    let div = toast.el.querySelector(`#div_${notification._id}_text`)
                     div.style.minWidth = "200px"
                     div.style.maxWidth = "320px"
                     div.style.marginLeft = "10px"
                     div.style.marginRight = "30px"
+                    div.style.maxHeight = "350px"
+                    div.style.overflowY = "auto"
                     let closeBtn = toast.el.querySelector(`#div_${notification._id}_close_btn`)
                     closeBtn.style.display = "block"
                     closeBtn.style.position = "absolute"
-                    closeBtn.right = "-10px"
-                    closeBtn.top = "-10px"
+                    closeBtn.right = "-5px"
+                    closeBtn.top = "-5px"
                     closeBtn.onclick = () => {
                         Model.publish("delete_notification_event_", notification, true)
                         if (this.onclose != undefined) {
@@ -617,7 +726,34 @@ export class NotificationMenu extends Menu {
                     },
                     (evt) => {
                         let notification = Notification.fromString(evt)
-                        notificationDiv.parentNode.removeChild(notificationDiv)
+                        let parent = notificationDiv.parentNode
+                        parent.removeChild(notificationDiv)
+
+                        let count = 0;
+                        let notifications_read_date = 0;
+                        if (localStorage.getItem("notifications_read_date") != undefined) {
+                            notifications_read_date = parseInt(localStorage.getItem("notifications_read_date"))
+                        }
+
+                        // if it set to true a toast will be display for that notification.
+                        for (var i = 0; i < parent.children.length; i++) {
+                            let notification = parent.children[i].notification
+                            if (notification._date.getTime() > notifications_read_date) {
+                                if (this.notificationCount != undefined) {
+                                    count = parseInt(this.notificationCount.innerHTML)
+                                } else {
+                                    this.setNotificationCount()
+                                }
+                                count++
+                                this.notificationCount.innerHTML = count.toString()
+                            }
+                        }
+
+                        if (count == 0) {
+                            this.notificationCount.parentNode.removeChild(this.notificationCount)
+                        }
+
+
                         Model.eventHub.unSubscribe(notification._id + "_delete_notification_event", deleteNotificationListener)
                         if (this.userNotificationsPanel.children.length == 0 && this.applicationNotificationsPanel.children.length == 0) {
                             this.getIcon().icon = "social:notifications-none"
@@ -626,6 +762,8 @@ export class NotificationMenu extends Menu {
                         if (this.userNotificationsPanel.children.length == 0) {
                             this.userNotificationsDiv.style.display = "none"
                         }
+
+
                     },
                     false, this
                 );
@@ -675,7 +813,6 @@ export class NotificationEditor extends HTMLElement {
             background: var(--palette-background-default); 
             border-top: 1px solid var(--palette-divider);
             border-left: 1px solid var(--palette-divider);
-
         }
 
         .header{
@@ -740,22 +877,22 @@ export class NotificationEditor extends HTMLElement {
             border-radius: 4px;
         }
 
+        #sub-content{
+            display: flex; 
+            flex-direction: column; 
+            width: 100%; 
+            flex-grow: 1;
+        }
+
         @media (max-width: 500px) {
+ 
             #content{
                 flex-direction: column;
-
             }
 
-            #container{
-                top: 64px;
-                left: 0px;
-                overflow-y: auto;
-                width: 100vw;
-                height: calc(100vh - 64px);
-                max-width: 100vw;
-                min-width: 0px;
-                height: inherit;
-                bottom: 0px;
+            #sub-content{
+                /** to make the send button visible if there is a footer bar **/
+                margin-bottom: 50px;
             }
         }
 
@@ -767,12 +904,10 @@ export class NotificationEditor extends HTMLElement {
             </div>
             <div id="content">
                 <globular-subjects-view style="min-width: 250px; border-right: 1px solid var(--palette-divider)"></globular-subjects-view>
-                <div style="display: flex; flex-direction: column; width: 100%; flex-grow: 1;">
+                <div id="sub-content">
                     <globular-subjects-selected ></globular-subjects-selected>
                     <iron-autogrow-textarea id="text-writer-box"></iron-autogrow-textarea>
-                    <div style="display: flex; justify-content: flex-end;">
-                        <paper-icon-button  id="send-btn" icon="send"></paper-icon-button>
-                    </div>
+                    <paper-icon-button style="align-self: end;"  id="send-btn" icon="send"></paper-icon-button>
                 </div>
             </div>
             
@@ -828,7 +963,7 @@ export class NotificationEditor extends HTMLElement {
                 }
 
                 // close the notification 
-                ApplicationView.displayMessage("Notification was sent...")
+                ApplicationView.displayMessage(`<div style="display: flex;"><iron-icon icon="send"></iron-icon><span style="margin-left: 20px;">Notification was sent...</span></div>`, 3000)
                 this.parentNode.removeChild(this)
 
             })
@@ -852,6 +987,15 @@ export class NotificationEditor extends HTMLElement {
             let dimension = JSON.parse(localStorage.getItem("__notification_editor_dimension__"))
             if (!dimension) {
                 dimension = { with: 600, height: 400 }
+            }
+
+            // be sure the dimension is no zeros...
+            if (dimension.width == 0) {
+                dimension.width = 600
+            }
+
+            if (dimension.height == 0) {
+                dimension.height = 400
             }
 
             this.container.style.width = dimension.width + "px"
@@ -878,6 +1022,9 @@ export class NotificationEditor extends HTMLElement {
             groupDiv.group = group;
             this.selectedSubjects.appendGroup(groupDiv)
         }
+
+        // set the size.
+        fireResize()
 
     }
 

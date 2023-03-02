@@ -146,7 +146,7 @@ export class MessengerMenu extends Menu {
 
             @media (max-width: 700px) {
                 #Messenger_menu_div{
-                    margin-top: 25px;
+                    margin-top: 5px;
                     max-height: calc(100vh - 85px);
                 }
 
@@ -2210,7 +2210,6 @@ export class MessageEditor extends HTMLElement {
 
             @media (max-width: 500px) {
                 .container{
-
                     position: fixed;
                     left: 0px;
                     width: 100%;
@@ -2256,18 +2255,6 @@ export class MessageEditor extends HTMLElement {
 
         this.send = this.shadowRoot.querySelector("#send-btn")
         this.textWriterBox = this.shadowRoot.querySelector("#text-writer-box")
-
-        this.textWriterBox.onfocus = () => {
-            if (mobileCheck()) {
-                console.log("-----------------> keyboard is focus ", window.visualViewport.height)
-            }
-        }
-
-        this.textWriterBox.onblur = () => {
-            if (mobileCheck()) {
-                console.log("-----------------> keyboard is focus", window.visualViewport.height)
-            }
-        }
 
         Model.eventHub.subscribe("__answer_message_evt__",
             uuid => {

@@ -500,7 +500,7 @@ export class Application extends Model {
                 openFileExplorer(file.globule, f,
                   (dir: File, explorer: FileExplorer) => {
                     /** nothing */
-                      explorer.readFile(file);
+                    explorer.readFile(file);
                   })
               }, err => ApplicationView.displayMessage(err, 3000))
             } else if (file.mime.startsWith("image/")) {
@@ -511,10 +511,10 @@ export class Application extends Model {
                   (dir: File, explorer: FileExplorer) => {
                     /** nothing */
                     setTimeout(() => {
-                      explorer.setDir(dir, ()=>{
+                      explorer.setDir(dir, () => {
                         explorer.showImage(file)
                       })
-                     
+
                     }, 1000)
                   })
               }, err => ApplicationView.displayMessage(err, 3000))
@@ -1398,50 +1398,55 @@ export class Application extends Model {
     errorCallback: (err: any) => void
   ) {
 
-    let globule = Model.globular
+    let globule = Model.getGlobule(Application.account.domain)
 
-    // So here I will get the list of notification for the given type.
-    let rqst = new resource.GetNotificationsRqst
+    generatePeerToken(globule, token => {
+      // So here I will get the list of notification for the given type.
+      let rqst = new resource.GetNotificationsRqst
 
-    if (type == NotificationType.Application) {
-      rqst.setRecipient(Model.application)
-    } else {
-      rqst.setRecipient(Application.account.id)
-      globule = Model.getGlobule(Application.account.domain)
-    }
-
-    let stream = globule.resourceService.getNotifications(rqst, {
-      token: localStorage.getItem("user_token"),
-      application: Model.application,
-      domain: Model.domain,
-      address: Model.address
-    });
-
-    let notifications = new Array<resource.Notification>();
-
-    stream.on("data", (rsp: resource.GetNotificationsRsp) => {
-      notifications = notifications.concat(rsp.getNotificationsList())
-    });
-
-    stream.on("status", (status) => {
-      if (status.code == 0) {
-        let notifications_ = new Array<Notification>();
-        for (var i = 0; i < notifications.length; i++) {
-          // Here I will convert the notification from resource object to 
-          // my own Notification type.
-          let n = new Notification(notifications[i].getSender(), notifications[i].getNotificationType().valueOf(), notifications[i].getRecipient(), notifications[i].getMessage(), new Date(notifications[i].getDate() * 1000))
-          n.id = notifications[i].getId();
-
-          notifications_.push(n);
-        }
-
-        callback(notifications_)
-
+      if (type == NotificationType.Application) {
+        rqst.setRecipient(Model.application)
       } else {
-        // In case of error I will return an empty array
-        callback([]);
+        rqst.setRecipient(Application.account.id)
+        globule = Model.getGlobule(Application.account.domain)
       }
-    });
+
+
+      let stream = globule.resourceService.getNotifications(rqst, {
+        token: token,
+        application: Model.application,
+        domain: Model.domain,
+        address: Model.address
+      });
+
+      let notifications = new Array<resource.Notification>();
+
+      stream.on("data", (rsp: resource.GetNotificationsRsp) => {
+        notifications = notifications.concat(rsp.getNotificationsList())
+      });
+
+      stream.on("status", (status) => {
+        if (status.code == 0) {
+          let notifications_ = new Array<Notification>();
+          for (var i = 0; i < notifications.length; i++) {
+            // Here I will convert the notification from resource object to 
+            // my own Notification type.
+            let n = new Notification(notifications[i].getSender(), notifications[i].getNotificationType().valueOf(), notifications[i].getRecipient(), notifications[i].getMessage(), new Date(notifications[i].getDate() * 1000))
+            n.id = notifications[i].getId();
+
+            notifications_.push(n);
+          }
+
+          callback(notifications_)
+
+        } else {
+          // In case of error I will return an empty array
+          callback([]);
+        }
+      });
+
+    }, err => ApplicationView.displayMessage(err, 3000))
+
   }
 
   removeNotification(notification: Notification) {
