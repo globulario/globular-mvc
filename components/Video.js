@@ -1054,7 +1054,7 @@ export class VideoPlayer extends HTMLElement {
                         let currentTime = parseFloat(localStorage.getItem(this.titleInfo.getId()))
                         this.video.currentTime = currentTime
                     }
-                    Model.eventHub.publish("play_video_player_evt_", { _id: this.titleInfo.getId(), isVideo: this.titleInfo.isVideo, currentTime: this.video.currentTime, duration: this.video.duration, date: new Date() }, true)
+                    Model.eventHub.publish("play_video_player_evt_", { _id: this.titleInfo.getId(), isVideo: this.titleInfo.isVideo, currentTime: this.video.currentTime, domain:this.titleInfo.globule.domain, duration: this.video.duration, date: new Date() }, true)
                 }
             }
         })

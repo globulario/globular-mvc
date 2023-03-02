@@ -635,6 +635,7 @@ export class WatchingMenu extends Menu {
 
     saveWatchingTitle(title, callback) {
 
+
         if(!title.domain){
             ApplicationView.displayMessage(`title ${title._id} has no domain.`, 3000)
             return
