@@ -266,10 +266,10 @@ function getVideoPreview(parent, path, name, callback, globule) {
                     if (titleInfoBox) {
                         titleInfoBox.parentNode.removeChild(titleInfoBox)
                     }
-                    if(video.toggleFullscreen){
+                    if (video.toggleFullscreen) {
                         video.toggleFullscreen();
                     }
-                   
+
                 }, null, null, globule)
             }
 
@@ -345,7 +345,32 @@ function __getTitleFiles__(globule, indexPath, title, parent, callback) {
         .catch(err => { callback([]) })
 }
 
-export function searchEpisodes(globule, serie, indexPath, callback) {
+
+export function searchEpisodes(serie, indexPath, callback) {
+    let episodes = []
+    let globules = Model.getGlobules()
+
+    let __searchEpisodes__ = (globules) => {
+        let globule = globules.pop()
+
+        // search episodes...
+        _searchEpisodes_(globule, serie, indexPath, episodes_ => {
+            episodes = episodes.concat(episodes_)
+            if (globules.length > 0) {
+                __searchEpisodes__(globules)
+            } else {
+                callback(episodes)
+            }
+        })
+    }
+
+    if(globules.length > 0){
+        __searchEpisodes__(globules)
+    }
+}
+
+
+function _searchEpisodes_(globule, serie, indexPath, callback) {
 
     // This is a simple test...
     let rqst = new SearchTitlesRequest
@@ -361,7 +386,9 @@ export function searchEpisodes(globule, serie, indexPath, callback) {
             // display the value in the console...
             hit.getSnippetsList().forEach(val => {
                 if (hit.getTitle().getType() == "TVEpisode") {
-                    episodes.push(hit.getTitle())
+                    let episode = hit.getTitle()
+                    episode.globule = globule
+                    episodes.push(episode)
                 }
             })
         }
@@ -394,7 +421,7 @@ export function GetEpisodes(indexPath, title, callback) {
         return
     }
 
-    searchEpisodes(title.globule, title.getId(), indexPath, episodes => {
+    searchEpisodes(title.getId(), indexPath, episodes => {
         title.__episodes__ = episodes
         callback(title.__episodes__)
     })
@@ -884,7 +911,7 @@ export class VideoInfo extends HTMLElement {
 
         let filesDiv = this.shadowRoot.querySelector(".title-files-div")
         filesDiv.innerHTML = ""
-        
+
         GetTitleFiles("/search/videos", video, filesDiv, (previews) => {
 
         })
@@ -1383,13 +1410,12 @@ export class TitleInfo extends HTMLElement {
             })
         } else {
             // Here the title is a series...
-            let globule = title.globule
-            let indexPath = globule.config.DataPath + "/search/titles"
+            let indexPath = title.globule.config.DataPath + "/search/titles"
             GetEpisodes(indexPath, title, (episodes) => {
                 if (title.onLoadEpisodes != null) {
                     title.onLoadEpisodes(episodes)
                 }
-                this.displayEpisodes(episodes, filesDiv, title.globule)
+                this.displayEpisodes(episodes, filesDiv)
                 filesDiv.querySelector("paper-progress").style.display = "none"
             })
         }
@@ -1448,11 +1474,10 @@ export class TitleInfo extends HTMLElement {
     }
 
     // Here I will display the list of each episodes from the list...
-    displayEpisodes(episodes, filesDiv, globule) {
+    displayEpisodes(episodes, filesDiv) {
         let seasons = {}
 
         episodes.forEach(e => {
-            e.globule = globule
             if (e.getType() == "TVEpisode") {
                 if (e.getSeason() > 0) {
                     if (seasons[e.getSeason()] == null) {
@@ -1580,7 +1605,6 @@ export class TitleInfo extends HTMLElement {
             }
 
             episodes.forEach(e => {
-                e.globule = globule;
                 let posterUrl = ""
                 if (e.getPoster() != undefined) {
                     posterUrl = e.getPoster().getContenturl()
@@ -1609,9 +1633,11 @@ export class TitleInfo extends HTMLElement {
                 }
 
                 let playBtn = page.querySelector(`#_${uuid}`)
+                
                 playBtn.onclick = () => {
-                    let indexPath = globule.config.DataPath + "/search/titles"
+                    let indexPath = e.globule.config.DataPath + "/search/titles"
                     let rqst = new GetTitleFilesRequest
+                    let globule = e.globule
                     rqst.setTitleid(e.getId())
                     rqst.setIndexpath(indexPath)
                     globule.titleService.getTitleFiles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
@@ -2193,9 +2219,9 @@ export class BlogPostInfo extends HTMLElement {
                 this.updateListener = uuid
             }, evt => {
                 this.blogPost = BlogPost.deserializeBinary(Uint8Array.from(evt.split(",")))
-                let creationTime = new Date( this.blogPost.getCreationtime() * 1000)
+                let creationTime = new Date(this.blogPost.getCreationtime() * 1000)
                 let thumbnail = blogPost.getThumbnail()
-                if(!thumbnail){
+                if (!thumbnail) {
                     thumbnail = ""
                 }
 
@@ -2204,7 +2230,7 @@ export class BlogPostInfo extends HTMLElement {
                 this.shadowRoot.querySelector("#sub_title_div").innerHTML = this.blogPost.getSubtitle()
                 this.shadowRoot.querySelector("#title_div").innerHTML = this.blogPost.getTitle()
                 this.shadowRoot.querySelector("#author_div").innerHTML = this.blogPost.getAuthor()
-                if(thumbnail.length > 0){
+                if (thumbnail.length > 0) {
                     this.shadowRoot.querySelector("#thumbnail_img").src = thumbnail
                 }
             }, false, this)

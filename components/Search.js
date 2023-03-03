@@ -148,12 +148,14 @@ export function getImdbInfo(id, callback, errorcallback, globule) {
     })
 }
 
-function playTitleListener(player, title, indexPath, globule) {
+function playTitleListener(player, title, indexPath) {
     if (!title) {
         return
     }
 
-    searchEpisodes(globule, title.getSerie(), indexPath, (episodes) => {
+    searchEpisodes(title.getSerie(), indexPath, (episodes) => {
+
+        let globule = title.globule
         let index = -1;
         episodes.forEach((e, i) => {
             if (e.getId() == title.getId()) {
@@ -216,16 +218,18 @@ function playTitleListener(player, title, indexPath, globule) {
                 let rqst = new GetTitleFilesRequest
                 rqst.setTitleid(nextEpisode.getId())
                 rqst.setIndexpath(indexPath)
-                globule.titleService.getTitleFiles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
-                    .then(rsp => {
-                        if (rsp.getFilepathsList().length > 0) {
-                            let path = rsp.getFilepathsList().pop()
-                            playVideo(path, (player, title) => {
-                                playTitleListener(player, title, indexPath, globule)
-                            }, null, null, globule)
-                        }
-                    })
-                toast.dismiss();
+                generatePeerToken(globule, token => {
+                    globule.titleService.getTitleFiles(rqst, { application: Application.application, domain: Application.domain, token: token })
+                        .then(rsp => {
+                            if (rsp.getFilepathsList().length > 0) {
+                                let path = rsp.getFilepathsList().pop()
+                                playVideo(path, (player, title) => {
+                                    playTitleListener(player, title, indexPath, globule)
+                                }, null, null, globule)
+                            }
+                        })
+                    toast.dismiss();
+                })
             }
         };
     })
@@ -254,54 +258,59 @@ function search(query, contexts_, offset) {
         offset = 0;
     }
 
-    globules.forEach(g => {
+    let search_in_globule = (globules) => {
         let contexts = [...contexts_];
+        let g = globules.pop()
+        if (g) {
+            // Search recursively...
 
-        // Search recursively...
-        let search_ = (contexts) => {
+            let search_in_context_ = (contexts) => {
+                let context = contexts.pop()
+                if (context) {
+                    let indexPath = g.config.DataPath + "/search/" + context
+                    if (context == "blogPosts") {
+                        if (contexts.length == 0) {
+                            searchBlogPosts(g, query, contexts_, indexPath, offset, MAX_RESULTS, () => {
+                                search_in_globule(globules)
+                            })
+                        } else {
+                            searchBlogPosts(g, query, contexts_, indexPath, offset, MAX_RESULTS, () => {
+                                search_in_context_(contexts)
+                            })
+                        }
+                    } else if (context == "webPages") {
 
-            let context = contexts.pop()
-            if (context) {
-                let indexPath = g.config.DataPath + "/search/" + context
-                if (context == "blogPosts") {
-                    if (contexts.length == 0) {
-                        searchBlogPosts(g, query, contexts_, indexPath, offset, MAX_RESULTS, () => {
-
-                        })
+                        if (contexts.length == 0) {
+                            searchWebpageContent(g, query, contexts_, offset, MAX_RESULTS, () => {
+                                search_in_globule(globules)
+                            })
+                        } else {
+                            searchWebpageContent(g, query, contexts_, offset, MAX_RESULTS, () => {
+                                search_in_context_(contexts)
+                            })
+                        }
                     } else {
-                        searchBlogPosts(g, query, contexts_, indexPath, offset, MAX_RESULTS, () => {
-                            search_(contexts)
-                        })
-                    }
-                } else if (context == "webPages") {
 
-                    if (contexts.length == 0) {
-                        searchWebpageContent(g, query, contexts_, offset, MAX_RESULTS, () => {
-
-                        })
-                    } else {
-                        searchWebpageContent(g, query, contexts_, offset, MAX_RESULTS, () => {
-                            search_(contexts)
-                        })
-                    }
-                } else {
-                    if (contexts.length == 0) {
-                        searchTitles(g, query, contexts_, indexPath, offset, MAX_RESULTS, () => {
-
-                        })
-                    } else {
-                        searchTitles(g, query, contexts_, indexPath, offset, MAX_RESULTS, () => {
-                            search_(contexts)
-                        })
+                        if (contexts.length == 0) {
+                            searchTitles(g, query, contexts_, indexPath, offset, MAX_RESULTS, () => {
+                                search_in_globule(globules)
+                            })
+                        } else {
+                            searchTitles(g, query, contexts_, indexPath, offset, MAX_RESULTS, () => {
+                                search_in_context_(contexts)
+                            })
+                        }
                     }
                 }
             }
+
+            // search contexts
+            search_in_context_(contexts)
         }
+    }
 
-        // search contexts
-        search_(contexts)
-
-    })
+    // start the search
+    search_in_globule(globules)
 }
 
 /** 
@@ -321,50 +330,53 @@ function searchTitles(globule, query, contexts, indexPath, offset, max, callback
 
     let hits = []
 
-    let stream = globule.titleService.searchTitles(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
-    stream.on("data", (rsp) => {
+    generatePeerToken(globule, token => {
+        let stream = globule.titleService.searchTitles(rqst, { application: Application.application, domain: Application.domain, token: token })
+        stream.on("data", (rsp) => {
 
-        if (rsp.hasSummary() && !fields) {
-            Model.eventHub.publish("_display_search_results_", {}, true)
-            Model.eventHub.publish("__new_search_event__", { query: query, summary: rsp.getSummary(), contexts: contexts, offset: offset }, true)
-        } else if (rsp.hasFacets() && !fields) {
-            let uuid = "_" + getUuid(query)
-            Model.eventHub.publish(`${uuid}_search_facets_event__`, { facets: rsp.getFacets() }, true)
-        } else if (rsp.hasHit()) {
-            let hit = rsp.getHit()
-            hit.globule = globule // keep track where the hit was found...
-            if (hit.hasAudio()) {
-                hit.getAudio().globule = globule
-            } else if (hit.hasTitle()) {
-                hit.getTitle().globule = globule
-            } else if (hit.hasVideo()) {
-                hit.getVideo().globule = globule
-            } else if (hit.hasBlog()) {
-                hit.getBlog().globule = globule
+            if (rsp.hasSummary() && !fields) {
+                Model.eventHub.publish("_display_search_results_", {}, true)
+                Model.eventHub.publish("__new_search_event__", { query: query, summary: rsp.getSummary(), contexts: contexts, offset: offset }, true)
+            } else if (rsp.hasFacets() && !fields) {
+                let uuid = "_" + getUuid(query)
+                Model.eventHub.publish(`${uuid}_search_facets_event__`, { facets: rsp.getFacets() }, true)
+            } else if (rsp.hasHit()) {
+                let hit = rsp.getHit()
+                hit.globule = globule // keep track where the hit was found...
+                if (hit.hasAudio()) {
+                    hit.getAudio().globule = globule
+                } else if (hit.hasTitle()) {
+                    hit.getTitle().globule = globule
+                } else if (hit.hasVideo()) {
+                    hit.getVideo().globule = globule
+                } else if (hit.hasBlog()) {
+                    hit.getBlog().globule = globule
+                }
+
+                if (!fields) {
+                    // display the value in the console...
+                    hit.getSnippetsList().forEach(val => {
+                        let uuid = "_" + getUuid(query)
+                        Model.eventHub.publish(`${uuid}_search_hit_event__`, { hit: hit, context: indexPath.substring(indexPath.lastIndexOf("/") + 1) }, true)
+                    })
+                } else {
+                    // keep it
+                    hits.push(hit)
+                }
+
+            }
+        });
+
+        stream.on("status", (status) => {
+            if (status.code != 0) {
+                // In case of error I will return an empty array
+                console.log(status.details)
             }
 
-            if (!fields) {
-                // display the value in the console...
-                hit.getSnippetsList().forEach(val => {
-                    let uuid = "_" + getUuid(query)
-                    Model.eventHub.publish(`${uuid}_search_hit_event__`, { hit: hit, context: indexPath.substring(indexPath.lastIndexOf("/") + 1) }, true)
-                })
-            } else {
-                // keep it
-                hits.push(hit)
-            }
-
-        }
-    });
-
-    stream.on("status", (status) => {
-        if (status.code != 0) {
-            // In case of error I will return an empty array
-            console.log(status.details)
-        } else {
             callback(hits)
-        }
-    });
+
+        });
+    })
 }
 
 function searchBlogPosts(globule, query, contexts, indexPath, offset, max, callback) {
@@ -376,34 +388,36 @@ function searchBlogPosts(globule, query, contexts, indexPath, offset, max, callb
     rqst.setOffset(offset)
     rqst.setSize(max)
 
-    let stream = globule.blogService.searchBlogPosts(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
-    stream.on("data", (rsp) => {
+    generatePeerToken(globule, token => {
+        let stream = globule.blogService.searchBlogPosts(rqst, { application: Application.application, domain: Application.domain, token: token })
+        stream.on("data", (rsp) => {
 
-        if (rsp.hasSummary()) {
-            Model.eventHub.publish("_display_search_results_", {}, true)
-            Model.eventHub.publish("__new_search_event__", { query: query, summary: rsp.getSummary(), contexts: contexts, offset: offset }, true)
-        } else if (rsp.hasFacets()) {
-            let uuid = "_" + getUuid(query)
-            Model.eventHub.publish(`${uuid}_search_facets_event__`, { facets: rsp.getFacets() }, true)
-        } else if (rsp.hasHit()) {
-            let hit = rsp.getHit()
-            hit.globule = globule // keep track where the hit was found...
-            // display the value in the console...
-            hit.getSnippetsList().forEach(val => {
+            if (rsp.hasSummary()) {
+                Model.eventHub.publish("_display_search_results_", {}, true)
+                Model.eventHub.publish("__new_search_event__", { query: query, summary: rsp.getSummary(), contexts: contexts, offset: offset }, true)
+            } else if (rsp.hasFacets()) {
                 let uuid = "_" + getUuid(query)
-                Model.eventHub.publish(`${uuid}_search_hit_event__`, { hit: hit, context: indexPath.substring(indexPath.lastIndexOf("/") + 1) }, true)
-            })
-        }
-    });
+                Model.eventHub.publish(`${uuid}_search_facets_event__`, { facets: rsp.getFacets() }, true)
+            } else if (rsp.hasHit()) {
+                let hit = rsp.getHit()
+                hit.globule = globule // keep track where the hit was found...
+                // display the value in the console...
+                hit.getSnippetsList().forEach(val => {
+                    let uuid = "_" + getUuid(query)
+                    Model.eventHub.publish(`${uuid}_search_hit_event__`, { hit: hit, context: indexPath.substring(indexPath.lastIndexOf("/") + 1) }, true)
+                })
+            }
+        });
 
-    stream.on("status", (status) => {
-        if (status.code != 0) {
-            // In case of error I will return an empty array
-            console.log(status.details)
-        } else {
+        stream.on("status", (status) => {
+            if (status.code != 0) {
+                // In case of error I will return an empty array
+                console.log(status.details)
+            }
             callback()
-        }
-    });
+        });
+    })
+
 }
 
 /**
@@ -420,33 +434,33 @@ function searchWebpageContent(globule, query, contexts, offset, max, callback) {
     rqst.setOffset(offset)
     rqst.setPagesize(max)
     rqst.setQuery(query)
-
-    let token = localStorage.getItem("user_token")
     let startTime = performance.now()
 
-    let stream = globule.searchService.searchDocuments(rqst, {
-        token: token,
-        application: Model.application,
-        domain: Model.application
-    })
+    generatePeerToken(globule, token => {
+        let stream = globule.searchService.searchDocuments(rqst, {
+            token: token,
+            application: Model.application,
+            domain: Model.application
+        })
 
-    let results = []
-    stream.on("data", (rsp) => {
-        results = results.concat(rsp.getResults().getResultsList())
-    });
+        let results = []
+        stream.on("data", (rsp) => {
+            results = results.concat(rsp.getResults().getResultsList())
+        });
 
-    stream.on("status", (status) => {
-        if (status.code != 0) {
-            // In case of error I will return an empty array
-            console.log("fail to retreive ", query, status.details)
-        } else {
-            let took = performance.now() - startTime
-            Model.eventHub.publish("__new_search_event__", { query: query, summary: { getTotal: () => { return results.length }, getTook: () => { return took } }, contexts: contexts, offset: offset }, true)
-            Model.eventHub.publish("display_webpage_search_result_" + query, results, true)
+        stream.on("status", (status) => {
+            if (status.code != 0) {
+                // In case of error I will return an empty array
+                console.log("fail to retreive ", query, status.details)
+            } else {
+                let took = performance.now() - startTime
+                Model.eventHub.publish("__new_search_event__", { query: query, summary: { getTotal: () => { return results.length }, getTook: () => { return took } }, contexts: contexts, offset: offset }, true)
+                Model.eventHub.publish("display_webpage_search_result_" + query, results, true)
+            }
+
             callback()
-        }
-    });
-
+        });
+    })
 
 }
 
@@ -572,10 +586,10 @@ export class SearchBar extends HTMLElement {
             <input id='search_input' placeholder="Search"></input>
             <paper-icon-button id="change-search-context" icon="icons:expand-more" style="--iron-icon-fill-color: var(--palette-text-accent); margin-right: 2px; height: 36px;" ></paper-icon-button>
             <paper-card id="context-search-selector">
-                <!--paper-checkbox checked name="webPages" id="context-search-selector-webpages">Webpages</paper-checkbox-->
-                <paper-checkbox checked name="blogPosts" id="context-search-selector-blog-posts">Blog Posts</paper-checkbox>
+                <!--paper-checkbox class="context" checked name="webPages" id="context-search-selector-webpages">Webpages</paper-checkbox-->
+                <paper-checkbox class="context" checked name="blogPosts" id="context-search-selector-blog-posts">Blog Posts</paper-checkbox>
                 <div style="display: flex; flex-direction: column">
-                    <paper-checkbox checked name="titles" id="context-search-selector-titles">Titles</paper-checkbox>
+                    <paper-checkbox class="context" checked name="titles" id="context-search-selector-titles">Titles</paper-checkbox>
                     <div class="context-filter">
                         <paper-checkbox checked name="movies" id="context-search-selector-movies">Movies</paper-checkbox>
                         <paper-checkbox checked name="movies" id="context-search-selector-tv-series">TV-Series</paper-checkbox>
@@ -583,13 +597,13 @@ export class SearchBar extends HTMLElement {
                     </div>
                 </div>
                 <div style="display: flex; flex-direction: column">
-                    <paper-checkbox checked name="videos" id="context-search-selector-videos">Videos</paper-checkbox>
+                    <paper-checkbox class="context" checked name="videos" id="context-search-selector-videos">Videos</paper-checkbox>
                     <div class="context-filter">
                         <paper-checkbox checked name="youtube" id="context-search-selector-youtube">Youtube</paper-checkbox>
                         <paper-checkbox  name="adult" id="context-search-selector-adult">Adult</paper-checkbox>
                     </div>
                 </div>
-                <paper-checkbox checked name="audios" id="context-search-selector-audios">Audios</paper-checkbox>
+                <paper-checkbox class="context" checked name="audios" id="context-search-selector-audios">Audios</paper-checkbox>
             </paper-card>
         </div>
         `
@@ -639,11 +653,12 @@ export class SearchBar extends HTMLElement {
         searchInput.onkeydown = (evt) => {
             if (evt.key == "Enter") {
                 let contexts = []
-                let checkboxs = this.shadowRoot.querySelectorAll("paper-checkbox")
+                let checkboxs = this.shadowRoot.querySelectorAll(".context")
                 for (var i = 0; i < checkboxs.length; i++) {
                     let c = checkboxs[i]
                     if (c.checked) {
-                        contexts.push(c.name)
+                        if(!contexts.includes(c.name))
+                            contexts.push(c.name)
                     }
                 }
 
@@ -1958,7 +1973,7 @@ export class SearchAudioCard extends HTMLElement {
     getAudio() {
         return this.audio;
     }
- 
+
 
     // Call search event.
     setAudio(audio) {
@@ -2638,6 +2653,8 @@ export class SearchTitleDetail extends HTMLElement {
 
 
             let setEpisodeOption = (episode) => {
+                
+                let globule = episode.globule
                 let rqst = new GetTitleFilesRequest
                 rqst.setTitleid(episode.getId())
                 let indexPath = globule.config.DataPath + "/search/titles"
@@ -3059,7 +3076,6 @@ export class SearchFacetPanel extends HTMLElement {
                 }
 
                 this.shadowRoot.querySelector("#" + uuid + "_play_btn").onclick = () => {
-                    console.log("----------------> field", field)
                     // Play the audios found...
                     let audios = this.getAudios(className)
                     if (audios.length > 0)
@@ -3118,7 +3134,7 @@ export class SearchFacetPanel extends HTMLElement {
         })
     }
 
- 
+
 
     getAudios(className) {
         let audios = this.page.getAudios(className)
