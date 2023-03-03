@@ -144,7 +144,7 @@ export class MessengerMenu extends Menu {
                 justify-content: center;
             }
 
-            @media (max-width: 700px) {
+            @media (max-width: 500px) {
                 #Messenger_menu_div{
                     margin-top: 5px;
                     max-height: calc(100vh - 85px);
@@ -152,6 +152,10 @@ export class MessengerMenu extends Menu {
 
                 #title{
                     display: flex; 
+                }
+
+                #search-conversation-box {
+                    max-width: calc(100vw - 70px);
                 }
             }
                           
@@ -1927,7 +1931,7 @@ export class MessagesList extends HTMLElement {
                 display: flex;
                 flex-direction: column;
                 justify-content: end;
-                height: calc(100% + 100px);
+                min-height: calc(100% + 100px);
             }
 
             .conversation-messages {
