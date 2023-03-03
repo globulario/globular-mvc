@@ -74,6 +74,10 @@ export class NotificationMenu extends Menu {
             color: var(--palette-text-primary);
         }
 
+        .header paper-icon-button {
+            min-width: 40px;
+        }
+
         .header:hover{
             cursor: pointer;
         }
@@ -1007,9 +1011,30 @@ export class NotificationEditor extends HTMLElement {
         }
 
 
+        this.container.maxWidth = 800;
+
         // Set resizable properties...
         setResizeable(this.container, (width, height) => {
+            // Make sure the width is not zeros
+            /*if(height == 0){
+                height = 400;
+            }
+
+            if(width == 0){
+                width = 600
+            }*/
+
+            
             localStorage.setItem("__notification_editor_dimension__", JSON.stringify({ width: width, height: height }))
+
+            let w = ApplicationView.layout.width();
+            if(w < 500){
+                this.container.style.height = "calc(100vh - 60px)"
+            }else{
+                this.container.style.height = height + "px"
+                this.container.style.width = width + "px"
+            }
+
         })
 
         let subjectsView = this.shadowRoot.querySelector("globular-subjects-view")

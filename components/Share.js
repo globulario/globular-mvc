@@ -576,6 +576,11 @@ export class ShareResourceWizard extends HTMLElement {
                 align-items: center;
             }
 
+            .header paper-icon-button {
+                min-width: 40px;
+            }
+
+
             .title-span {
                 flex-grow: 1;
             }
@@ -1036,6 +1041,7 @@ export class ShareResourceWizard extends HTMLElement {
             let rqst = new SetResourcePermissionsRqst
             let globule = f.globule
             rqst.setPath(f.path)
+           
             rqst.setResourcetype("file")
             rqst.setPermissions(permissions)
             generatePeerToken(globule, token => {

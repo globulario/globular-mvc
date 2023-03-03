@@ -188,6 +188,10 @@ export class AudioPlayer extends HTMLElement {
                 background-color: var(--palette-primary-accent);
             }
 
+            .header paper-icon-button {
+                min-width: 40px;
+            }
+
             .header span{
                 flex-grow: 1;
                 text-align: center;

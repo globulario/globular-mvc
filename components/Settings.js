@@ -744,6 +744,11 @@ export class ConnectionSetting extends HTMLElement {
             background-color: var(--palette-background-paper);
         }
 
+        .header paper-icon-button {
+          min-width: 40px;
+        }
+
+
         .header:hover{
             -webkit-filter: invert(10%);
             filter: invert(10%);

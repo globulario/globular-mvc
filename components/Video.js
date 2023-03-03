@@ -243,11 +243,19 @@ export class VideoPlayer extends HTMLElement {
                 text-overflow: ellipsis;
             }
 
+            .header paper-icon-button {
+                min-width: 40px;
+            }
+
             .header select {
                 background: var(--palette-background-default); 
                 color: var(--palette-text-accent);
                 border:0px;
                 outline:0px;
+            }
+
+            .header paper-icon-button {
+                min-width: 40px;
             }
 
             video {
@@ -350,7 +358,6 @@ export class VideoPlayer extends HTMLElement {
         setResizeable(this.container, (width, height) => {
             localStorage.setItem("__video_player_dimension__", JSON.stringify({ width: width, height: height }))
             this.container.style.height = "auto"
-            fireResize()
         })
 
         this.container.resizeHeightDiv.style.display = "none"

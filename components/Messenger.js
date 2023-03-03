@@ -684,6 +684,10 @@ export class ConversationInfos extends HTMLElement {
                 position: relative;
             }
 
+            .header paper-icon-button {
+                min-width: 40px;
+            }
+
             @media (max-width: 500px) {
                 .header-actions {
                     --iron-icon-height: 32px;
@@ -978,6 +982,9 @@ export class Messenger extends HTMLElement {
                 background-color: var(--palette-background-paper);
                 color: var(--palette-text-primary);
                 max-height: calc(100vh - 60px);
+                border-left: 1px solid var(--palette-divider); 
+                border-right: 1px solid var(--palette-divider);
+                border-top: 1px solid var(--palette-divider);
             }
 
             .header{
@@ -986,6 +993,11 @@ export class Messenger extends HTMLElement {
                 align-items: center;
             }
 
+            .header paper-icon-button {
+                min-width: 40px;
+            }
+
+            
             .summary{
                 font-size: 1.1rem;
                 flex-grow: 1;
@@ -1019,27 +1031,23 @@ export class Messenger extends HTMLElement {
                 flex-grow: 1;
                 display: flex;
                 flex-direction: column;
+                overflow-y: auto;
+                background-color: var(--palette-background-default);
             }
 
-            #messages-list-container{
-                background-color: var(--palette-background-default);
+            #globular-messages-list-div{
+                position: relative;
                 display: flex;
+                flex-direction: column;
                 flex-grow: 1;
-                posistion: relative;
             }
 
             globular-messages-list{
-                overflow-y: auto;   
-                posistion: absolute;
-                top: 0px;
-                left: 0px;
-                bottom: 0px;
-                right: 0px;
+                height: 100%;
+                width: 100%;
+             
             }
 
-            #messages-list-container globular-messages-list{
-                width: 100%;
-            }
 
             globular-conversations-list {
                 border-right: 1px solid var(--palette-divider);
@@ -1079,13 +1087,6 @@ export class Messenger extends HTMLElement {
                     border-bottom: 1px solid var(--palette-divider);
                 }
 
-
-
-                .messenger-content {
-                    width: 100vw;
-                    height: 100vh;
-                }
-
                 paper-card {
                     min-width: 0px;
                     height: calc(100vh - 60px);
@@ -1106,13 +1107,11 @@ export class Messenger extends HTMLElement {
                     <iron-icon  id="hide-btn-0"  icon="expand-more" style="" icon="add"></iron-icon>
                     <paper-ripple class="circle" recenters=""></paper-ripple>
                 </div>
-                
-                    <div class="summary"></div>
-                    <div class="btn_">
-                        <paper-ripple class="circle" recenters=""></paper-ripple>
-                        <iron-icon style="height: 18px;" id="leave_conversation_btn" icon="exit-to-app"></iron-icon>
-                    </div>     
-                
+                <div class="summary"></div>
+                <div class="btn_">
+                    <paper-ripple class="circle" recenters=""></paper-ripple>
+                    <iron-icon style="height: 18px;" id="leave_conversation_btn" icon="exit-to-app"></iron-icon>
+                </div>     
             </div>
             <iron-collapse class="conversations-detail">
                 <globular-conversations-list ></globular-conversations-list>
@@ -1128,8 +1127,10 @@ export class Messenger extends HTMLElement {
                 </div>
             </iron-collapse>
             <div class="messenger-content">
-                <div id="messages-list-container">
-                    <globular-messages-list></globular-messages-list>
+                <div id="globular-messages-list-div">
+                    <div id="scroll-div" style="position: absolute; top:0px; left:0px; right: 0px; bottom: 0px; overflow-y: auto;">
+                        <globular-messages-list></globular-messages-list>
+                    </div>
                 </div>
                 <globular-message-editor></globular-message-editor>
             </div>
@@ -1137,7 +1138,6 @@ export class Messenger extends HTMLElement {
         `
 
         let container = this.shadowRoot.querySelector(".container")
-        let messageList = this.shadowRoot.querySelector("#messages-list-container")
         let conversationsDetail = this.shadowRoot.querySelector(".conversations-detail")
         let messageEditor = this.shadowRoot.querySelector("globular-message-editor")
         let header = this.shadowRoot.querySelector(".header")
@@ -1154,8 +1154,6 @@ export class Messenger extends HTMLElement {
             /** */
         }, this, offsetTop)
 
-
-
         // Set resizable properties...
         setResizeable(container, (width, height) => {
             localStorage.setItem("__messenger_dimension__", JSON.stringify({ width: width, height: height }))
@@ -1165,7 +1163,6 @@ export class Messenger extends HTMLElement {
             }
 
             // 80 is the heigth of the header plus the height of the search bar
-            messageList.style.height = container.offsetHeight - (header.offsetHeight + messageEditor.offsetHeight) - conversationsDetail.offsetHeight + "px"
             this.setScroll()
         })
 
@@ -1178,7 +1175,6 @@ export class Messenger extends HTMLElement {
             }
             container.style.width = dimension.width + "px"
             container.style.height = dimension.height + "px"
-            messageList.style.height = dimension.height - (header.offsetHeight + messageEditor.offsetHeight) - conversationsDetail.offsetHeight + "px"
             this.setScroll()
         }
 
@@ -1186,7 +1182,6 @@ export class Messenger extends HTMLElement {
             let button = this.shadowRoot.querySelector("#hide-btn-0")
             let content = this.shadowRoot.querySelector(".conversations-detail")
             if (button && content) {
-                var messagesListContainer = this.shadowRoot.querySelector("#messages-list-container");
                 if (!content.opened) {
                     button.icon = "expand-less"
                 } else {
@@ -1197,32 +1192,6 @@ export class Messenger extends HTMLElement {
             }
         }
 
-
-
-        // Options for the observer (which mutations to observe)
-        var config = {
-            attributes: true,
-            subtree: true
-        };
-
-
-        // Create an observer instance linked to a resize callback
-        var conversationDetailsObserver = new MutationObserver((mutation) => {
-            messageList.style.height = messageList.offsetHeight - (header.offsetHeight + messageEditor.offsetHeight) - conversationsDetail.offsetHeight + "px"
-            this.setScroll()
-        });
-
-        // Start observing the target node for configured mutations
-        conversationDetailsObserver.observe(conversationsDetail, config);
-
-        // Create an observer instance linked to a resize callback
-        var messageEditorObserver = new MutationObserver((mutation) => {
-            messageList.style.height = messageList.offsetHeight - (header.offsetHeight + messageEditor.offsetHeight) - conversationsDetail.offsetHeight + "px"
-            this.setScroll()
-        });
-
-        // Start observing the target node for configured mutations
-        messageEditorObserver.observe(messageEditor, config);
 
         // Here I will get interfaces components and initialyse each of them.
         this.conversationsList = this.shadowRoot.querySelector("globular-conversations-list");
@@ -1297,13 +1266,7 @@ export class Messenger extends HTMLElement {
     }
 
     connectedCallback() {
-        // set the message list height
-        let container = this.shadowRoot.querySelector(".container")
-        let messageList = this.shadowRoot.querySelector("#messages-list-container")
-        let conversationsDetail = this.shadowRoot.querySelector(".conversations-detail")
-        let messageEditor = this.shadowRoot.querySelector("globular-message-editor")
-        let header = this.shadowRoot.querySelector(".header")
-        messageList.style.height = container.offsetHeight - (header.offsetHeight + messageEditor.offsetHeight) - conversationsDetail.offsetHeight + "px"
+        this.setScroll()
     }
 
     hide() {
@@ -1312,8 +1275,8 @@ export class Messenger extends HTMLElement {
     }
 
     setScroll() {
-        let messageList = this.shadowRoot.querySelector("globular-messages-list");
-        messageList.scrollTop = messageList.scrollHeight;
+        var div = this.shadowRoot.querySelector("#scroll-div");
+        div.scrollTop = div.scrollHeight;
     }
 
     setConversation(conversationUuid) {
@@ -1963,6 +1926,8 @@ export class MessagesList extends HTMLElement {
                 padding-bottom: 100px;
                 display: flex;
                 flex-direction: column;
+                justify-content: end;
+                height: calc(100% + 100px);
             }
 
             .conversation-messages {

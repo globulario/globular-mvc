@@ -452,6 +452,11 @@ export class InformationsManager extends HTMLElement {
                 padding-bottom: 10px;
             }
 
+            #header paper-icon-button {
+                min-width: 40px;
+            }
+
+
             h1 {
                 font-size: 1.55rem;
             }

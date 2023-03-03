@@ -144,7 +144,7 @@ export function getTitleInfo(globule, file, callback) {
                 if (_titles_.length == 0) {
                     ___getTitleInfo___()
                 } else {
-                    _titles_.forEach(t=>t.globule = g)
+                    _titles_.forEach(t => t.globule = g)
                     file.titles = _titles_
                     callback(_titles_)
                 }
@@ -187,10 +187,10 @@ export function getVideoInfo(globule, file, callback) {
             callback([])
         } else {
             __getVideoInfo__(g, file, (_videos_) => {
-                if(_videos_.length == 0){
-                ___getVideoInfo___()
-                }else{
-                    _videos_.forEach(v=>v.globule = g)
+                if (_videos_.length == 0) {
+                    ___getVideoInfo___()
+                } else {
+                    _videos_.forEach(v => v.globule = g)
                     file.videos = _videos_
                     callback(_videos_)
                 }
@@ -233,10 +233,10 @@ export function getAudioInfo(globule, file, callback) {
             callback([])
         } else {
             __getAudioInfo__(g, file, (_audios_) => {
-                if(_audios_.length == 0){
-                ___getAudioInfo___()
-                }else{
-                    _audios_.forEach(a=>a.globule = g)
+                if (_audios_.length == 0) {
+                    ___getAudioInfo___()
+                } else {
+                    _audios_.forEach(a => a.globule = g)
                     file.audios = _audios_
                     callback(_audios_)
                 }
@@ -2418,16 +2418,16 @@ export class FilesIconView extends FilesView {
 
                             playAudiosBtn.onclick = () => {
                                 let audios = []
-                                dir.files.forEach(f=>{
-                                    if(f.mime.startsWith("audio")){
-                                        if(f.audios){
+                                dir.files.forEach(f => {
+                                    if (f.mime.startsWith("audio")) {
+                                        if (f.audios) {
                                             audios = audios.concat(f.audios)
                                         }
                                     }
                                 })
-                                if(audios.length > 0){
+                                if (audios.length > 0) {
                                     playAudios(audios, dir.name)
-                                }else{
+                                } else {
                                     ApplicationView.displayMessage("no audio informations found to generate a playlist")
                                 }
 
@@ -2536,16 +2536,16 @@ export class FilesIconView extends FilesView {
 
                             playVideosBtn.onclick = () => {
                                 let videos = []
-                                dir.files.forEach(f=>{
-                                    if(f.mime.startsWith("video")){
-                                        if(f.videos){
+                                dir.files.forEach(f => {
+                                    if (f.mime.startsWith("video")) {
+                                        if (f.videos) {
                                             videos = videos.concat(f.videos)
                                         }
                                     }
                                 })
-                                if(videos.length > 0){
+                                if (videos.length > 0) {
                                     playVideos(videos, dir.name)
-                                }else{
+                                } else {
                                     ApplicationView.displayMessage("no video informations found to generate a playlist")
                                 }
                             }
@@ -3847,6 +3847,7 @@ export class FileNavigator extends HTMLElement {
 
     // Init shared folders
     initShared(initCallback) {
+
         this.sharedDiv.innerHTML = ""
         this.shared = {}
 
@@ -3866,12 +3867,14 @@ export class FileNavigator extends HTMLElement {
         let initShared = (share, callback) => {
             // Try to get the user id...
             let userId = share.getPath().split("/")[2];
+            console.log("--------------->   share: ", share)
             if (userId == Application.account.id || userId == Application.account.id + "@" + Application.account.domain) {
-                console.log(userId, 3729)
                 callback()
                 return // I will not display it...
             } else if (userId.indexOf("@") != -1) {
+                
                 Account.getAccount(userId, user => {
+
                     if (this.shared[userId] == undefined) {
                         this.shared[userId] = new File(userId, "/shared/" + userId, true, this._file_explorer_.globule)
                         this.shared[userId].isDir = true;
@@ -3898,8 +3901,6 @@ export class FileNavigator extends HTMLElement {
                         if (this.shared[userId]) {
                             if (this.shared[userId].files.find(f => f.path == dir.path) == undefined) {
                                 this.shared[userId].files.push(dir)
-                                console.log(userId, 3761)
-
                             }
                         }
                         callback()
@@ -3938,15 +3939,13 @@ export class FileNavigator extends HTMLElement {
                                         }
                                     }
                                     callback()
-                                }, e => { console.log(e); console.log(userId, 3801, e) })
+                                }, err => ApplicationView.displayMessage(err, 3000))
                         }
                     }, this._file_explorer_.globule)
                 }, err => {
-                    console.log(userId, 3805)
                     callback()
                 })
             } else {
-                console.log(userId, 3805)
                 callback()
             }
         }
@@ -3963,33 +3962,35 @@ export class FileNavigator extends HTMLElement {
 
         // Get file shared by account.
         let globule = this._file_explorer_.globule
-        globule.rbacService.getSharedResource(rqst, { application: Application.application, domain: globule.domain, token: localStorage.getItem("user_token") })
-            .then(rsp => {
+        generatePeerToken(globule, token => {
+            globule.rbacService.getSharedResource(rqst, { application: Application.application, domain: globule.domain, token: token })
+                .then(rsp => {
+                    // Here I need to sync the funtion and init the tree view once all is done...
+                    let callback = () => {
+                        let s = rsp.getSharedresourceList().pop()
+                       
+                        if (s != undefined) {
+                            initShared(s, callback)
+                        } else {
 
-                // Here I need to sync the funtion and init the tree view once all is done...
-                let callback = () => {
-                    let s = rsp.getSharedresourceList().pop()
-                    if (s != undefined) {
-                        initShared(s, callback)
-                    } else {
+                            for (const id in this.shared) {
+                                let shared = this.shared[id]
+                                // this.initTreeView(shared, this.sharedDiv, 0)
+                                this.initTreeView(this.shared_, this.sharedDiv, 0)
+                                delete dirs[getUuidByString(this._file_explorer_.globule.domain + "@" + shared.path)]
+                            }
 
-                        for (const id in this.shared) {
-                            let shared = this.shared[id]
-                            // this.initTreeView(shared, this.sharedDiv, 0)
-                            this.initTreeView(this.shared_, this.sharedDiv, 0)
-                            delete dirs[getUuidByString(this._file_explorer_.globule.domain + "@" + shared.path)]
-                            //Model.eventHub.publish("reload_dir_event", shared.path, false);
+                            if (initCallback)
+                                initCallback(this.shared, this.public_)
+
                         }
-
-                        if (initCallback)
-                            initCallback(this.shared, this.public_)
-
                     }
-                }
 
-                callback(); // call once
-            })
-            .catch(e => ApplicationView.displayMessage(e, 3000))
+                    callback(); // call once
+                })
+                .catch(e => ApplicationView.displayMessage(e, 3000))
+        })
+
     }
 
 
