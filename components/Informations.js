@@ -119,7 +119,7 @@ const __style__ = `
     display: flex;
     width: 100%;
     flex-wrap: wrap;
-    max-width: 300px;
+    max-width: 400px;
 }
 
 .title-files-div globular-video-preview {
