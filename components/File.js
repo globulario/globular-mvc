@@ -1396,6 +1396,9 @@ export class FilesView extends HTMLElement {
     }
 
     rename(parent, f, offset) {
+
+        parent.style.position = "relative"
+
         // Here I will use a simple paper-card with a paper input...
         let html = `
                     <style>
@@ -1443,6 +1446,7 @@ export class FilesView extends HTMLElement {
                 `
         // only one dialog open at time.
         let renameDialog = parent.querySelector("#rename-file-dialog")
+
         if (renameDialog == undefined) {
             let range = document.createRange()
             parent.appendChild(range.createContextualFragment(html))
@@ -1940,7 +1944,7 @@ export class FilesListView extends FilesView {
 
                         // set the rename function.
                         this.menu.rename = () => {
-                            this.rename(this.menu.parentNode, f, row.offsetTop + row.offsetHeight + 6)
+                            this.rename(row, f, row.offsetTop + row.offsetHeight + 6)
                         }
                     }
                 }
@@ -3028,7 +3032,7 @@ export class FilesIconView extends FilesView {
 
                                 // set the rename function.
                                 this.menu.rename = () => {
-                                    this.rename(this.menu.parentNode, file, fileIconDiv.offsetHeight + 6)
+                                    this.rename(fileIconDiv, file, fileIconDiv.offsetHeight + 6)
                                 }
                             }
                         }
