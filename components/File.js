@@ -457,6 +457,10 @@ function _publishSetDirEvent(path, file_explorer_) {
     }, err => { ApplicationView.displayMessage(err, 3000); file_explorer_.resume(); }, file_explorer_.globule)
 }
 
+// the paper tray
+var paperTray = null;
+var editMode = "";
+
 /**
  * That class is the base class of FilesListView and FilesIconView
  */
@@ -482,10 +486,6 @@ export class FilesView extends HTMLElement {
 
         // The list of files to delete
         this.selected = {};
-
-        // keep the operation to do...
-        this.edit = "";
-        this.paperTray = null;
 
         // The function will be call in case of error.
         this.onerror = err => ApplicationView.displayMessage(err, 3000);
@@ -611,15 +611,15 @@ export class FilesView extends HTMLElement {
         }
 
         this.cutMenuItem.action = () => {
-            this.edit = "cut"
-            this.paperTray = [];
+            editMode = "cut"
+            paperTray = [];
             for (var key in this.selected) {
-                this.paperTray.push(this.selected[key].path)
+                paperTray.push(this.selected[key].path)
             }
 
             // Append file to file menu
-            if (this.paperTray.length == 0) {
-                this.paperTray.push(this.menu.file.path)
+            if (paperTray.length == 0) {
+                paperTray.push(this.menu.file.path)
             }
 
             // empty the selection.
@@ -632,15 +632,15 @@ export class FilesView extends HTMLElement {
 
         this.copyMenuItem.action = () => {
 
-            this.edit = "copy"
-            this.paperTray = [];
+            editMode = "copy"
+            paperTray = [];
             for (var key in this.selected) {
-                this.paperTray.push(this.selected[key].path)
+                paperTray.push(this.selected[key].path)
             }
 
             // Append file to file menu
-            if (this.paperTray.length == 0) {
-                this.paperTray.push(this.menu.file.path)
+            if (paperTray.length == 0) {
+                paperTray.push(this.menu.file.path)
             }
 
             // empty the selection.
@@ -653,11 +653,11 @@ export class FilesView extends HTMLElement {
 
         this.pasteMenuItem.action = () => {
 
-            if (this.edit == "copy") {
+            if (editMode == "copy") {
                 // Here I will call move on the file manager
                 this.copy(this.menu.file.path)
 
-            } else if (this.edit == "cut") {
+            } else if (editMode == "cut") {
                 // Here I will call copy
                 this.move(this.menu.file.path)
             }
@@ -1278,7 +1278,7 @@ export class FilesView extends HTMLElement {
 
         let rqst = new CopyRequest
         rqst.setPath(path)
-        rqst.setFilesList(this.paperTray)
+        rqst.setFilesList(paperTray)
 
         let token = localStorage.getItem("user_token");
         let globule = this._file_explorer_.globule
@@ -1290,14 +1290,14 @@ export class FilesView extends HTMLElement {
                 application: Application.application,
                 domain: globule.domain
             }).then(() => {
-                this.paperTray = []
-                this.edit = ""
+                paperTray = []
+                editMode = ""
                 delete dirs[getUuidByString(this._file_explorer_.globule.domain + "@" + path)]
                 Model.eventHub.publish("reload_dir_event", path, false);
             })
             .catch(err => {
-                this.paperTray = []
-                this.edit = ""
+                paperTray = []
+                editMode = ""
                 ApplicationView.displayMessage(err, 3000)
             })
     }
@@ -1309,7 +1309,7 @@ export class FilesView extends HTMLElement {
     move(path) {
         let rqst = new MoveRequest
         rqst.setPath(path)
-        rqst.setFilesList(this.paperTray)
+        rqst.setFilesList(paperTray)
 
         let token = localStorage.getItem("user_token");
         let globule = this._file_explorer_.globule
@@ -1321,20 +1321,20 @@ export class FilesView extends HTMLElement {
                 application: Application.application,
                 domain: globule.domain
             }).then(() => {
-                for (var i = 0; i < this.paperTray.length; i++) {
-                    let f = this.paperTray[i]
+                for (var i = 0; i < paperTray.length; i++) {
+                    let f = paperTray[i]
                     let path_ = f.substring(0, f.lastIndexOf("/"))
                     delete dirs[getUuidByString(this._file_explorer_.globule.domain + "@" + path)]
                     Model.publish("reload_dir_event", path_, false);
                 }
-                this.paperTray = []
-                this.edit = ""
+                paperTray = []
+                editMode = ""
                 delete dirs[getUuidByString(this._file_explorer_.globule.domain + "@" + path)]
                 Model.publish("reload_dir_event", path, false);
             })
             .catch(err => {
-                this.paperTray = []
-                this.edit = ""
+                paperTray = []
+                editMode = ""
                 ApplicationView.displayMessage(err, 3000)
             })
     }
@@ -1369,23 +1369,23 @@ export class FilesView extends HTMLElement {
             }
 
 
-            if (this.edit.length == 0) {
-                this.edit = "cut"
+            if (editMode.length == 0) {
+                editMode = "cut"
             }
 
-            this.paperTray = [];
+            paperTray = [];
             for (var key in this.selected) {
-                this.paperTray.push(this.selected[key].path)
+                paperTray.push(this.selected[key].path)
             }
 
             // Append file to file menu
-            if (this.paperTray.length == 0) {
-                this.paperTray.push(infos.file)
+            if (paperTray.length == 0) {
+                paperTray.push(infos.file)
             }
 
-            if (this.edit == "cut") {
+            if (editMode == "cut") {
                 this.move(infos.dir)
-            } else if (this.edit == "copy") {
+            } else if (editMode == "copy") {
                 this.copy(infos.dir)
             }
         }, true, this)
@@ -1510,7 +1510,6 @@ export class FilesView extends HTMLElement {
         evt.stopPropagation()
 
         let lnk = evt.dataTransfer.getData('text/html');
-        let done = false;
 
         if (evt.dataTransfer.getData("Url").length > 0) {
             let url = evt.dataTransfer.getData("Url")
@@ -1654,6 +1653,19 @@ export class FilesView extends HTMLElement {
         } else if (evt.dataTransfer.files.length > 0) {
             // So here I will simply upload the files...
             Model.eventHub.publish("__upload_files_event__", { path: this.__dir__.path, files: evt.dataTransfer.files, lnk: lnk }, true)
+        } else {
+            let f = evt.dataTransfer.getData('file')
+            let id = evt.dataTransfer.getData('id')
+
+            editMode = "copy" // make the drop file copy instead of move. The user will be able to remove the existing file as he want.
+
+            // Create drop_file_event...
+            if (f != undefined && id.length > 0) {
+                this.clearSelection()
+
+                Model.eventHub.publish("drop_file_event", { file: f, dir: this.__dir__.path, id: id }, true)
+                Model.eventHub.publish("reload_dir_event", f.substring(0, f.lastIndexOf("/")), false);
+            }
         }
     }
 }
@@ -3872,7 +3884,7 @@ export class FileNavigator extends HTMLElement {
                 callback()
                 return // I will not display it...
             } else if (userId.indexOf("@") != -1) {
-                
+
                 Account.getAccount(userId, user => {
 
                     if (this.shared[userId] == undefined) {
@@ -3908,7 +3920,7 @@ export class FileNavigator extends HTMLElement {
                         // The file is not a directory so the file will simply put in the share.
                         this._file_explorer_.resume();
                         if (err.message.indexOf("is not a directory") != -1) {
-                            File.getFile(this._file_explorer_.globule, share.getPath(), 128, 85,
+                            File.getFile(this._file_explorer_.globule, share.getPath(), 100, 64,
                                 (f) => {
                                     if (f.path.indexOf(".hidden") != -1) {
                                         // In that case I need to append the file in a local dir named hidden.
@@ -3968,7 +3980,7 @@ export class FileNavigator extends HTMLElement {
                     // Here I need to sync the funtion and init the tree view once all is done...
                     let callback = () => {
                         let s = rsp.getSharedresourceList().pop()
-                       
+
                         if (s != undefined) {
                             initShared(s, callback)
                         } else {
@@ -4083,7 +4095,7 @@ export class FileExplorer extends HTMLElement {
         this.lstNavigationBtn = undefined
 
         // The paper tray
-        this.paperTray = undefined;
+        paperTray = undefined;
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -4347,14 +4359,37 @@ export class FileExplorer extends HTMLElement {
             if (!dimension) {
                 dimension = { with: 600, height: 400 }
             }
+            // be sure the dimension is no zeros...
+            if (dimension.width < 600) {
+                dimension.width = 600
+            }
+
+            if (dimension.height < 400) {
+                dimension.height = 400
+            }
+
             this.shadowRoot.querySelector("#file-explorer-box").style.width = dimension.width + "px"
             this.shadowRoot.querySelector("#file-explorer-box").style.height = dimension.height + "px"
+            localStorage.setItem("__file_explorer_dimension__", JSON.stringify({ width: dimension.width, height: dimension.height }))
+        } else {
+            this.shadowRoot.querySelector("#file-explorer-box").style.width = "600px"
+            this.shadowRoot.querySelector("#file-explorer-box").style.height = "400px"
+            localStorage.setItem("__file_explorer_dimension__", JSON.stringify({ width: 600, height: 400 }))
         }
 
         let fileExplorerBox = this.shadowRoot.querySelector("#file-explorer-box")
         fileExplorerBox.name = "file_explorer"
 
         setResizeable(fileExplorerBox, (width, height) => {
+            // fix min size.
+            if (height < 400) {
+                height = 400
+            }
+
+            if (width < 600) {
+                width = 600
+            }
+
             if (this.filesListView.menu.parentNode) {
                 this.filesListView.menu.parentNode.removeChild(this.filesListView.menu)
                 this.filesListView.menu.close()
@@ -5548,7 +5583,7 @@ export class VideoPreview extends HTMLElement {
             img {
                 display: block;
                 width:auto;
-                height: 100%;
+                height: 60px;
             }
 
             .preview{

@@ -1770,7 +1770,7 @@ function getConversation(id, callback, errorCallback) {
 function getFile(path, callback, errorCallback) {
 
 
-    File.getFile(Model.globular, path, 128, 85, f => {
+    File.getFile(Model.globular, path, 100, 64, f => {
 
         // the path that point to the resource
         f.getPath = () => {

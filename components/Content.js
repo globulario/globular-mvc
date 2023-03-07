@@ -389,7 +389,7 @@ export class ContentManager extends HTMLElement {
     init() {
         this.navigation = new Navigation()
         this.appendChild(this.navigation)
-        
+
         this.navigation.init()
 
         // load style...
@@ -508,7 +508,8 @@ export class ContentManager extends HTMLElement {
             // Delete style...
             let deleteStyle = (style) => {
                 // delete the page.
-                this.deleteStyle(style, () => {globular-content-manager
+                this.deleteStyle(style, () => {
+                    globular - content - manager
                     if (this.styleManager.toDelete.length > 0) {
                         let style = this.styleManager.toDelete.pop()
                         deleteStyle(style)
@@ -1311,7 +1312,7 @@ export class Navigation extends HTMLElement {
                     }
 
                     if (lnks.length > 0) {
-                         lnks[page.index].emphasis()
+                        lnks[page.index].emphasis()
                     }
 
                 }, true)
@@ -1324,7 +1325,7 @@ export class Navigation extends HTMLElement {
 
             // Test if the element is in the context...
             for (var i = 0; i < pages.length; i++) {
-                let page = new WebPage(pages[i]._id, pages[i].name, pages[i].style, pages[i].script, pages[i].index, pages[i].elements,  pages[i].thumbnail)
+                let page = new WebPage(pages[i]._id, pages[i].name, pages[i].style, pages[i].script, pages[i].index, pages[i].elements, pages[i].thumbnail)
                 let lnk = new NavigationPageLink(page)
                 this.appendLink(lnk)
                 if (page.index == 0) {
@@ -1414,7 +1415,7 @@ export class Navigation extends HTMLElement {
 
         getWorkspace().appendChild(page)
         page.setEditMode()
-        
+
     }
 
     appendLink(lnk) {
@@ -1620,7 +1621,7 @@ export class NavigationPageLink extends HTMLElement {
         `
 
         this.id = this.webPage.id + "_lnk"
-        
+
 
         this.editor = this.shadowRoot.querySelector("#page-name-editor")
         this.input = this.shadowRoot.querySelector("#page-name-editor-input")
@@ -1759,7 +1760,7 @@ export class WebPage extends HTMLElement {
 
         // set the thumbnail.
         this.thumbnail = ""
-        if(thumbnail){
+        if (thumbnail) {
             this.thumbnail = thumbnail
         }
 
@@ -3138,9 +3139,51 @@ export class CodeEditor extends HTMLElement {
             /** */
         }, this, offsetTop)
 
+        if (localStorage.getItem("__code_editor_dimension__")) {
+
+            let dimension = JSON.parse(localStorage.getItem("__code_editor_dimension__"))
+            if (!dimension) {
+                dimension = { with: 600, height: 400 }
+            }
+
+            // be sure the dimension is no zeros...
+            if (dimension.width < 600) {
+                dimension.width = 600
+            }
+
+            if (dimension.height < 400) {
+                dimension.height = 400
+            }
+
+            container.style.width = dimension.width + "px"
+            container.style.height = dimension.height + "px"
+            localStorage.setItem("__code_editor_dimension__", JSON.stringify({ width: dimension.width, height: dimension.height }))
+        } else {
+            container.style.width = "600px"
+            container.style.height = "400px"
+            localStorage.setItem("__code_editor_dimension__", JSON.stringify({ width: 600, height: 400 }))
+        }
+
         // Set resizable properties...
         setResizeable(container, (width, height) => {
+            // fix min size.
+            if (height < 400) {
+                height = 400
+            }
+
+            if (width < 600) {
+                width = 600
+            }
+
             localStorage.setItem("__code_editor_dimension__", JSON.stringify({ width: width, height: height }))
+            let w = ApplicationView.layout.width();
+            if (w < 500) {
+                this.container.style.height = "calc(100vh - 60px)"
+                this.container.style.width = "100vw"
+            } else {
+                this.container.style.height = height + "px"
+                this.container.style.width = width + "px"
+            }
         })
 
         this.init()

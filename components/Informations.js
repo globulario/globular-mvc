@@ -178,13 +178,13 @@ const __style__ = `
 
 // Create the video preview...
 function getVideoPreview(parent, path, name, callback, globule) {
-    let h = 85;
-    let w = 128;
+    let h = 64;
+    let w = 100;
 
     File.getFile(globule, path, w, h, file => {
 
         let fileNameSpan = document.createElement("span")
-        let preview = new VideoPreview(file, 85, () => {
+        let preview = new VideoPreview(file, 64, () => {
             if (preview.width > 0 && preview.height > 0) {
                 w = (preview.width / preview.height) * h
             }

@@ -998,16 +998,21 @@ export class NotificationEditor extends HTMLElement {
             }
 
             // be sure the dimension is no zeros...
-            if (dimension.width == 0) {
+            if (dimension.width < 600) {
                 dimension.width = 600
             }
 
-            if (dimension.height == 0) {
+            if (dimension.height < 400) {
                 dimension.height = 400
             }
 
             this.container.style.width = dimension.width + "px"
             this.container.style.height = dimension.height + "px"
+            localStorage.setItem("__notification_editor_dimension__", JSON.stringify({ width: dimension.width, height: dimension.height }))
+        } else {
+            this.container.style.width = "600px"
+            this.container.style.height = "400px"
+            localStorage.setItem("__notification_editor_dimension__", JSON.stringify({ width: 600, height: 400 }))
         }
 
 
@@ -1015,22 +1020,23 @@ export class NotificationEditor extends HTMLElement {
 
         // Set resizable properties...
         setResizeable(this.container, (width, height) => {
-            // Make sure the width is not zeros
-            /*if(height == 0){
-                height = 400;
+
+            // fix min size.
+            if (height < 400) {
+                height = 400
+            }
+            
+            if (width < 600) {
+                width = 600
             }
 
-            if(width == 0){
-                width = 600
-            }*/
-
-            
             localStorage.setItem("__notification_editor_dimension__", JSON.stringify({ width: width, height: height }))
 
             let w = ApplicationView.layout.width();
-            if(w < 500){
+            if (w < 500) {
                 this.container.style.height = "calc(100vh - 60px)"
-            }else{
+                this.container.style.width = "100vw"
+            } else {
                 this.container.style.height = height + "px"
                 this.container.style.width = width + "px"
             }

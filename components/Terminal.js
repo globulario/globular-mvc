@@ -221,7 +221,7 @@ export class Terminal extends HTMLElement {
      * @param {*} onErrorCallback 
      */
     getFiles(path, callback, errorCallback) {
-        File.getFile(Application.globular, path, 128, 85, f => {
+        File.getFile(Application.globular, path, 100, 64, f => {
             callback(f)
         }, errorCallback)
     }

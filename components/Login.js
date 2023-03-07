@@ -113,6 +113,7 @@ export class LoginBox extends HTMLElement {
             paper-card{
                 background-color: var(--palette-background-paper);
                 color: var(--palette-text-primary);
+                font-size: 1rem;
             }
 
             paper-input iron-icon{

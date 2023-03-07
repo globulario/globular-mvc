@@ -141,8 +141,30 @@ export class Session extends Model {
             this.lastStateTime = new Date(session.getLastStateTime() * 1000);
             this.domain_ = domain;
 
+            let globule = Model.getGlobule(this.account.domain)
+
+            /*let rqst = new GetSubjectAvailableSpaceRqst
+            rqst.setSubject(accountId)
+            rqst.setType(SubjectType.ACCOUNT)
+
+            let token = localStorage.getItem("user_token")
+
+            // load available space for the account on the globule...
+            globule.rbacService
+                .getSubjectAvailableSpace(rqst, {
+                    token: token,
+                    application: Model.application,
+                    domain: Model.domain
+                })
+                .then((rsp) => {
+                    console.log(rsp)
+                })
+                .catch((err) => {
+                    console.log(err)
+                });*/
+
             // So here I will lisen on session change event and keep this object with it.
-            Model.getGlobule(this.account.session.domain).eventHub.subscribe(`session_state_${this.account.id + "@" + this.account.domain}_change_event`,
+            globule.eventHub.subscribe(`session_state_${this.account.id + "@" + this.account.domain}_change_event`,
                 (uuid: string) => {
                     /** nothing special here... */
                 },
@@ -154,7 +176,7 @@ export class Session extends Model {
 
                 }, false, this)
 
-            Model.getGlobule(this.account.session.domain).eventHub.subscribe(`__session_state_${this.account.id + "@" + this.account.domain}_change_event__`,
+            globule.eventHub.subscribe(`__session_state_${this.account.id + "@" + this.account.domain}_change_event__`,
                 (uuid: string) => {
                     /** nothing special here... */
                 },
@@ -182,25 +204,6 @@ export class Session extends Model {
             }, errorCallback)
         })
 
-        let rqst = new GetSubjectAvailableSpaceRqst
-        rqst.setSubject(accountId)
-        rqst.setType(SubjectType.ACCOUNT)
-
-        let token = localStorage.getItem("user_token")
-
-        // load available space for the account on the globule...
-        Model.globular.rbacService
-            .getSubjectAvailableSpace(rqst, {
-                token: token,
-                application: Model.application,
-                domain: Model.domain
-            })
-            .then((rsp) => {
-                console.log(rsp)
-            })
-            .catch((err) => {
-                console.log(err)
-            });
     }
 
     toString(): string {

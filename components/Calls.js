@@ -884,7 +884,6 @@ export class CallsHistoryMenu extends Menu {
                                             address: Model.address
                                         }).then((rsp) => {
                                             /** nothing here... */
-
                                         }).catch(err => {
                                             ApplicationView.displayMessage(err, 3000);
                                             console.log(err)
@@ -907,9 +906,7 @@ export class CallsHistoryMenu extends Menu {
 
                                 // so here I will play the audio of the contact util it respond or the delay was done...
                                 Model.getGlobule(contact.domain).eventHub.publish("calling_" + contact.id + "@" + contact.domain + "_evt", call.serializeBinary(), false)
-                                
                                 Model.getGlobule(this.account.domain).eventHub.publish("calling_" + contact.id + "@" + contact.domain + "_evt", call, true)
-
                             })
 
                         })

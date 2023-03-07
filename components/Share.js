@@ -364,7 +364,7 @@ export class SharedResources extends HTMLElement {
         let displayLink = () => {
             let r = resources.pop()
             let globule = Model.getGlobule(r.getDomain())
-            File.getFile(globule, r.getPath(), 128, 85, file => {
+            File.getFile(globule, r.getPath(), 100, 64, file => {
                 let id = "_" + getUuidByString(file.path)
 
                 // so here I will determine if I display the deleteable icon...

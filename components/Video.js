@@ -80,7 +80,7 @@ export function playVideos(videos, name) {
             if (videos.length > 0) {
                 generateVideoPlaylist()
             } else {
-               
+
                 playVideo(video_playList, null, null, null, globule)
             }
         })
@@ -214,6 +214,9 @@ export class VideoPlayer extends HTMLElement {
                 width: 720px;
                 user-select: none;
                 background-color: black;
+                border-bottom: 1px solid var(--palette-divider);
+                border-top: 1px solid var(--palette-divider);
+                border-left: 1px solid var(--palette-divider);
             }
 
             #content{
@@ -355,6 +358,25 @@ export class VideoPlayer extends HTMLElement {
         this.container.style.height = "auto"
         this.container.name = "video_player"
 
+        if (localStorage.getItem("__video_player_dimension__")) {
+
+            let dimension = JSON.parse(localStorage.getItem("__video_player_dimension__"))
+            if (!dimension) {
+                dimension = { with: 600, height: 400 }
+            }
+
+            // be sure the dimension is no zeros...
+            if (dimension.width < 600) {
+                dimension.width = 600
+            }
+
+            this.container.style.width = dimension.width + "px"
+            localStorage.setItem("__notification_editor_dimension__", JSON.stringify({ width: dimension.width, height: dimension.height }))
+        } else {
+            this.container.style.width = "600px"
+            localStorage.setItem("__notification_editor_dimension__", JSON.stringify({ width: 600, height: 400 }))
+        }
+
         setResizeable(this.container, (width, height) => {
             localStorage.setItem("__video_player_dimension__", JSON.stringify({ width: width, height: height }))
             this.container.style.height = "auto"
@@ -379,7 +401,7 @@ export class VideoPlayer extends HTMLElement {
         this.video.onplaying = (evt) => {
 
             ApplicationView.resume()
-            
+
             if (this.resume) {
                 this.show()
                 return
@@ -1016,16 +1038,25 @@ export class VideoPlayer extends HTMLElement {
                     this.video.onended = () => {
                         console.log("the video is ended....")
                         this.resume = false;
-                        localStorage.removeItem(this.titleInfo.getId())
+                        if (this.titleInfo)
+                            localStorage.removeItem(this.titleInfo.getId())
+
                         if (this.playlist.items.length > 1) {
                             this.playlist.playNext()
                         } else if (this.loop) {
                             if (File.hasLocal) {
                                 File.hasLocal(this.path, exists => {
-                                    this.play(this.path, this.titleInfo.globule)
+                                    if (this.titleInfo) {
+                                        this.play(this.path, this.titleInfo.globule)
+                                    } else {
+                                        this.play(this.path)
+                                    }
                                 })
                             } else {
-                                this.play(this.path, this.titleInfo.globule)
+                                if (this.titleInfo)
+                                    this.play(this.path, this.titleInfo.globule)
+                                else
+                                    this.play(this.path)
                             }
                         } else {
                             this.stop()
@@ -1061,7 +1092,7 @@ export class VideoPlayer extends HTMLElement {
                         let currentTime = parseFloat(localStorage.getItem(this.titleInfo.getId()))
                         this.video.currentTime = currentTime
                     }
-                    Model.eventHub.publish("play_video_player_evt_", { _id: this.titleInfo.getId(), isVideo: this.titleInfo.isVideo, currentTime: this.video.currentTime, domain:this.titleInfo.globule.domain, duration: this.video.duration, date: new Date() }, true)
+                    Model.eventHub.publish("play_video_player_evt_", { _id: this.titleInfo.getId(), isVideo: this.titleInfo.isVideo, currentTime: this.video.currentTime, domain: this.titleInfo.globule.domain, duration: this.video.duration, date: new Date() }, true)
                 }
             }
         })
@@ -1189,8 +1220,6 @@ export class VideoPlayer extends HTMLElement {
             // keep video info in the local storage...
             localStorage.setItem(this.titleInfo.getId(), this.video.currentTime)
         }
-        // set the title info to null
-        this.titleInfo = null;
     }
 
     hide() {

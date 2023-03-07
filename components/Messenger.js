@@ -154,6 +154,7 @@ export class MessengerMenu extends Menu {
                     display: flex; 
                 }
 
+
                 #search-conversation-box {
                     max-width: calc(100vw - 70px);
                 }
@@ -1142,10 +1143,7 @@ export class Messenger extends HTMLElement {
         `
 
         let container = this.shadowRoot.querySelector(".container")
-        let conversationsDetail = this.shadowRoot.querySelector(".conversations-detail")
-        let messageEditor = this.shadowRoot.querySelector("globular-message-editor")
         let header = this.shadowRoot.querySelector(".header")
-
 
         let offsetTop = header.offsetHeight
         if (offsetTop == 0) {
@@ -1160,10 +1158,25 @@ export class Messenger extends HTMLElement {
 
         // Set resizable properties...
         setResizeable(container, (width, height) => {
+            // fix min size.
+            if (height < 600) {
+                height = 600
+            }
+
+            if (width < 400) {
+                width = 400
+            }
+
+
             localStorage.setItem("__messenger_dimension__", JSON.stringify({ width: width, height: height }))
+
             let w = ApplicationView.layout.width();
             if (w < 500) {
                 container.style.height = "calc(100vh - 60px)"
+                container.style.width = "100vw"
+            } else {
+                container.style.height = height + "px"
+                container.style.width = width + "px"
             }
 
             // 80 is the heigth of the header plus the height of the search bar
@@ -1175,12 +1188,27 @@ export class Messenger extends HTMLElement {
 
             let dimension = JSON.parse(localStorage.getItem("__messenger_dimension__"))
             if (!dimension) {
-                dimension = { with: 600, height: 400 }
+                dimension = { with: 400, height: 600 }
             }
+
+            if (dimension.width < 400) {
+                dimension.width = 400
+            }
+
+            if (dimension.height < 600) {
+                dimension.height = 600
+            }
+
             container.style.width = dimension.width + "px"
             container.style.height = dimension.height + "px"
-            this.setScroll()
+            localStorage.setItem("__messenger_dimension__", JSON.stringify({ width: dimension.width, height: dimension.height }))
+        } else {
+            container.style.width = "600px"
+            container.style.height = "400px"
+            localStorage.setItem("__messenger_dimension__", JSON.stringify({ width: 600, height: 400 }))
         }
+
+        this.setScroll()
 
         this.shadowRoot.querySelector("#hide-btn-0").onclick = () => {
             let button = this.shadowRoot.querySelector("#hide-btn-0")
@@ -2640,7 +2668,7 @@ export class LikeDisLikeBtn extends HTMLElement {
     }
 
     setAccounts(accounts) {
-       
+
         this.card.innerHTML = ""
         this.card.style.display = "none"
 
@@ -2654,12 +2682,12 @@ export class LikeDisLikeBtn extends HTMLElement {
                     let div = document.createElement("div");
                     div.className = "liker-unliker-lst"
                     let userId = account.id
-                    if(account.firstName && account.lastName){
+                    if (account.firstName && account.lastName) {
                         userId = account.firstName + " " + account.lastName
                     }
-                    if(account.profilePicture.length == 0){
+                    if (account.profilePicture.length == 0) {
                         div.innerHTML = `<span>${userId}</span>`
-                    }else{
+                    } else {
                         div.innerHTML = `
                         <div style="display: flex; align-items: center; border-bottom: 1px solid var(--palette-divider); width: 100%;">
                             <img style="width: 32px;height: 32px;border-radius: 16px;border: 1px solid transparent;" src="${account.profilePicture}"></img>

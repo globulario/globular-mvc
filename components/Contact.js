@@ -680,7 +680,7 @@ export class ContactList extends HTMLElement {
 
         this.account = account;
         this.onDeleteContact = onDeleteContact;
-        let domain = Application.domain
+        let domain = account.domain
         if (account.session) {
             domain = account.session.domain
         }
@@ -725,10 +725,12 @@ export class ContactList extends HTMLElement {
 
             // The contact has answer the call!
             let call = Call.deserializeBinary(Uint8Array.from(evt.split(",")))
+
             Account.getAccount(call.getCaller(), caller => {
                 Account.getAccount(call.getCallee(), callee => {
 
                     let globule = Application.getGlobule(callee.domain)
+
                     generatePeerToken(globule, token => {
                         let url = getUrl(globule)
 
@@ -791,9 +793,12 @@ export class ContactList extends HTMLElement {
 
                         let timeout = setTimeout(() => {
                             audio.pause()
-                            toast.dismiss();
+                            if(toast){
+                                toast.dismiss();
+                            }
+                            
                             Model.getGlobule(caller.domain).eventHub.publish(call.getUuid() + "_miss_call_evt", call.serializeBinary(), false)
-                            if (caller.domain != caller.domain)
+                            if (caller.domain != callee.domain)
                                 Model.getGlobule(callee.domain).eventHub.publish(call.getUuid() + "_miss_call_evt", call.serializeBinary(), false)
 
                         }, 30 * 1000)
@@ -806,7 +811,7 @@ export class ContactList extends HTMLElement {
 
                             // Here I will send miss call event...
                             Model.getGlobule(caller.domain).eventHub.publish(call.getUuid() + "_miss_call_evt", call.serializeBinary(), false)
-                            if (caller.domain != caller.domain)
+                            if (caller.domain != callee.domain)
                                 Model.getGlobule(callee.domain).eventHub.publish(call.getUuid() + "_miss_call_evt", call.serializeBinary(), false)
 
                         }
@@ -837,6 +842,7 @@ export class ContactList extends HTMLElement {
                         // Here the call was miss...
                         Model.getGlobule(caller.domain).eventHub.subscribe(call.getUuid() + "_miss_call_evt", uuid => { }, evt => {
 
+                            console.log("-------------> 845 miss_call_evt")
                             clearTimeout(timeout)
 
                             // The contact has answer the call!
@@ -1008,7 +1014,7 @@ export class ContactList extends HTMLElement {
                                 audio.pause()
                                 toast.dismiss();
                                 Model.getGlobule(caller.domain).eventHub.publish(call.getUuid() + "_miss_call_evt", call.serializeBinary(), false)
-                                if (caller.domain != caller.domain)
+                                if (caller.domain != callee.domain)
                                     Model.getGlobule(callee.domain).eventHub.publish(call.getUuid() + "_miss_call_evt", call.serializeBinary(), false)
 
                             }, 30 * 1000)
@@ -1021,7 +1027,7 @@ export class ContactList extends HTMLElement {
 
                                 // Here I will send miss call event...
                                 Model.getGlobule(caller.domain).eventHub.publish(call.getUuid() + "_miss_call_evt", call.serializeBinary(), false)
-                                if (caller.domain != caller.domain)
+                                if (caller.domain != callee.domain)
                                     Model.getGlobule(callee.domain).eventHub.publish(call.getUuid() + "_miss_call_evt", call.serializeBinary(), false)
                             }
 

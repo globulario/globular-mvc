@@ -591,6 +591,7 @@ export class Application extends Model {
           (account: Account) => {
             // send a refresh token event.
             // Model.eventHub.publish("refresh_token_event", account, true);
+            
             Model.eventHub.publish("login_event", account, true);
 
             // When new contact is accepted.
@@ -968,7 +969,8 @@ export class Application extends Model {
   addContactListener(contact: any) {
     Account.getAccount(contact._id, (account: Account) => {
 
-      let globule = Model.globular
+      let globule = Model.getGlobule(account.domain)
+
       if (globule) {
         // subscribe to session event change.
         globule.eventHub.subscribe(`session_state_${account.id + "@" + account.domain}_change_event`,

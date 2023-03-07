@@ -165,7 +165,7 @@ export class VideoConversation extends HTMLElement {
         let container = this.shadowRoot.querySelector("#container")
 
         this.shadowRoot.querySelector("#video-close-btn").onclick = () => {
-            this.eventHub.publish(`leave_conversation_${conversationUuid}_evt`, JSON.stringify({ "conversationUuid":conversationUuid, "participants": [], "participant": Application.account.id }), false)
+            this.eventHub.publish(`leave_conversation_${conversationUuid}_evt`, JSON.stringify({ "conversationUuid": conversationUuid, "participants": [], "participant": Application.account.id }), false)
         }
 
         let optionsBtn = this.shadowRoot.querySelector("#video-options-btn")
@@ -267,7 +267,7 @@ export class VideoConversation extends HTMLElement {
                         // now get all tracks
                         let tracks = stream.getTracks();
                         // now close each track by having forEach loop
-                        tracks.forEach( (track) =>{
+                        tracks.forEach((track) => {
                             // stopping every track
                             if (track.kind == "video") {
                                 track.enabled = true;
@@ -291,7 +291,7 @@ export class VideoConversation extends HTMLElement {
                         // now get all tracks
                         let tracks = stream.getTracks();
                         // now close each track by having forEach loop
-                        tracks.forEach( (track) => {
+                        tracks.forEach((track) => {
                             // stopping every track
                             if (track.kind == "video") {
                                 track.enabled = false;
@@ -316,7 +316,7 @@ export class VideoConversation extends HTMLElement {
                         // now get all tracks
                         let tracks = stream.getTracks();
                         // now close each track by having forEach loop
-                        tracks.forEach( (track) => {
+                        tracks.forEach((track) => {
                             // stopping every track
                             if (track.kind == "audio") {
                                 track.enabled = true;
@@ -328,7 +328,7 @@ export class VideoConversation extends HTMLElement {
                         // now get all tracks
                         let tracks = stream.getTracks();
                         // now close each track by having forEach loop
-                        tracks.forEach( (track) => {
+                        tracks.forEach((track) => {
                             // stopping every track
                             if (track.kind == "audio") {
                                 track.enabled = false;
@@ -360,9 +360,51 @@ export class VideoConversation extends HTMLElement {
         this.startShareScreenBtn = this.shadowRoot.querySelector("#start-share-screen")
         container.name = "webrtc_window"
 
+        if (localStorage.getItem("__webrtc_panel_dimension__")) {
+
+            let dimension = JSON.parse(localStorage.getItem("__webrtc_panel_dimension__"))
+            if (!dimension) {
+                dimension = { with: 400, height: 400 }
+            }
+
+            // be sure the dimension is no zeros...
+            if (dimension.width < 400) {
+                dimension.width = 400
+            }
+
+            if (dimension.height < 400) {
+                dimension.height = 400
+            }
+
+            container.style.width = dimension.width + "px"
+            container.style.height = dimension.height + "px"
+            localStorage.setItem("__webrtc_panel_dimension__", JSON.stringify({ width: dimension.width, height: dimension.height }))
+
+        } else {
+            container.style.width = "400px"
+            container.style.height = "400px"
+            localStorage.setItem("__webrtc_panel_dimension__", JSON.stringify({ width: 400, height: 400 }))
+        }
+
+
         setResizeable(container, (width, height) => {
-            localStorage.setItem("__webrtc_panel_position__", JSON.stringify({ width: width, height: height }))
+            // fix min size.
+            if (height < 400) {
+                height = 400
+            }
+
+            if (width < 400) {
+                width = 400
+            }
+
+            localStorage.setItem("__webrtc_panel_dimension__", JSON.stringify({ width: width, height: height }))
             container.style.height = "auto"
+            let w = ApplicationView.layout.width();
+            if (w < 500) {
+                this.container.style.width = "100vw"
+            } else {
+                this.container.style.width = width + "px"
+            }
         })
 
         container.resizeHeightDiv.style.display = "none"
@@ -543,7 +585,7 @@ export class VideoConversation extends HTMLElement {
             // now get all tracks
             let tracks = stream.getTracks();
             // now close each track by having forEach loop
-            tracks.forEach((track) =>{
+            tracks.forEach((track) => {
                 // stopping every track
                 track.stop();
             });
@@ -596,7 +638,7 @@ export class VideoConversation extends HTMLElement {
             }
 
             // Add audio track and video track.
-            stream.getTracks().forEach( (track) =>{
+            stream.getTracks().forEach((track) => {
                 rtcPeerConnection.addTrack(track, stream);
             });
 
@@ -693,19 +735,19 @@ export class VideoConversation extends HTMLElement {
                 };
 
             })*/
-            .then(function(stream) {
+            .then(function (stream) {
                 if ("srcObject" in localVideo) {
                     localVideo.srcObject = stream;
-                  } else {
+                } else {
                     localVideo.src = window.URL.createObjectURL(stream);
-                  }
-                  localVideo.onloadedmetadata = (e) =>{
+                }
+                localVideo.onloadedmetadata = (e) => {
                     localVideo.play();
                     fireResize()
                     callback(stream)
-                  };
-              })
-            .catch( (err)=> {
+                };
+            })
+            .catch((err) => {
                 /* handle the error */
                 errorCallback(err)
             });
