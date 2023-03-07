@@ -401,9 +401,9 @@ export class VideoConversation extends HTMLElement {
             container.style.height = "auto"
             let w = ApplicationView.layout.width();
             if (w < 500) {
-                this.container.style.width = "100vw"
+                container.style.width = "100vw"
             } else {
-                this.container.style.width = width + "px"
+                container.style.width = width + "px"
             }
         })
 
