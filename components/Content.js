@@ -550,15 +550,13 @@ export class ContentManager extends HTMLElement {
                         this.deleteScript(this.scriptManager.toDelete.pop(), () => {
                             if (this.styleManager.toDelete.length > 0) {
                                 this.deleteStyle(this.styleManager.toDelete.pop(), () => {
-                                    console.log("all style and scipt are delete...")
+                                    
                                 }, err => ApplicationView.displayMessage(err, 3000))
-                            } else {
-                                console.log("all scipt are delete...")
                             }
                         }, err => ApplicationView.displayMessage(err, 3000))
                     } else if (this.styleManager.toDelete.length > 0) {
                         this.deleteStyle(this.styleManager.toDelete.pop(), () => {
-                            console.log("all style are delete...")
+                            
                         }, err => ApplicationView.displayMessage(err, 3000))
                     }
                 })
@@ -1156,7 +1154,7 @@ export class CodeManager extends HTMLElement {
             evt.stopPropagation();
 
             if (evt.code === 'Enter' || evt.code === "NumpadEnter") {
-                console.log("Enter key press!")
+
                 let name = input.value;
                 let id = ""
 
@@ -1280,7 +1278,7 @@ export class Navigation extends HTMLElement {
         // delete page event.
         if (!this.delete_page_listener)
             Model.eventHub.subscribe("_delete_web_page_", uuid => this.delete_page_listener = uuid, page => {
-                console.log("delete page...", page)
+  
                 this.toDelete.push(page)
 
                 // so here I will delete the page lnk...
@@ -1526,7 +1524,7 @@ export class Navigation extends HTMLElement {
         let links = this.querySelectorAll("globular-page-link")
         let savePages_ = (index) => {
             if (index < links.length) {
-                console.log(index, links[index])
+
                 links[index].webPage.index = index
 
                 links[index].save(() => {
@@ -2167,7 +2165,6 @@ export class WebPage extends HTMLElement {
                     removeSearchIndex_(dataElements)
                 }
             }, err => {
-                console.log("fail to remove index for ", element, err)
                 if (dataElements.length == 0) {
                     callback()
                 } else {
@@ -2212,10 +2209,8 @@ export class WebPage extends HTMLElement {
                 domain: domain
             }
         ).then(() => {
-            console.log("remove indexation success!")
             callback(this)
         }).catch(err => {
-            console.log("fail to remove indexation", err)
             errorCallback(err)
         })
 
@@ -2432,7 +2427,6 @@ export class WebPage extends HTMLElement {
 
                                         // set the resource owner...
                                         PermissionManager.addResourceOwner(this.id, "webpage", Application.account.id + "@" + Application.account.domain, SubjectType.ACCOUNT, () => {
-                                            console.log("Web Page " + this.name, " is owned by " + Application.account.name)
 
                                             // Here I will return the value with it
                                             Model.publish(`update_page_${this.id}_evt`, str, false)

@@ -492,7 +492,7 @@ export class BlogPostElement extends HTMLElement {
         if (this.getAttribute("editable") != undefined) {
             if (this.getAttribute("editable") == "true") {
                 this.edit(() => {
-                    console.log("editor is ready!")
+                   
                 })
             }
         }

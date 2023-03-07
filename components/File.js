@@ -3883,7 +3883,6 @@ export class FileNavigator extends HTMLElement {
         let initShared = (share, callback) => {
             // Try to get the user id...
             let userId = share.getPath().split("/")[2];
-            console.log("--------------->   share: ", share)
             if (userId == Application.account.id || userId == Application.account.id + "@" + Application.account.domain) {
                 callback()
                 return // I will not display it...

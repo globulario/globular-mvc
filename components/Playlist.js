@@ -23,7 +23,7 @@ export function setAudio(audio) {
 
 // retreive video with a given id.
 function getVideoInfo(globule, id, callback) {
-    console.log("get video with id: ", id)
+
     if (__videos__[id]) {
         callback(__videos__[id])
         return
@@ -230,7 +230,6 @@ export class PlayList extends HTMLElement {
     }
 
     stop() {
-        console.log("stop was call")
         this.index = 0
         this.items.forEach(item => {
             item.stopPlaying()
@@ -246,8 +245,6 @@ export class PlayList extends HTMLElement {
         if (this.index > 0) {
             this.index--
             this.setPlaying(this.items[this.index], true, true)
-        } else {
-            console.log("no more item to play!")
         }
     }
 
@@ -532,7 +529,6 @@ export class PlayListItem extends HTMLElement {
             if (audio == null) {
                 getVideoInfo(this.globule, this.id, video => {
                     if (video != null) {
-                        console.log(video)
                         this.video = video
                         this.shadowRoot.querySelector("#title-div").innerHTML = video.getDescription()
                         this.shadowRoot.querySelector("#title-artist-span").innerHTML = video.getPublisherid().getName()
@@ -541,8 +537,6 @@ export class PlayListItem extends HTMLElement {
                             this.titleDuration.innerHTML = this.parseDuration(this.video.getDuration())
 
                         callback(this)
-                    } else {
-                        console.log("no information found for item ", item)
                     }
                 })
             } else {

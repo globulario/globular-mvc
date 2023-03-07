@@ -1727,7 +1727,6 @@ function getDomain(domain, callback, errorCallback) {
  */
 function getConversation(id, callback, errorCallback) {
     let rqst = new GetConversationRequest
-    console.log("get conversation with id ", id)
     let address = Model.domain; // default domain
     if (id.indexOf("@") != -1) {
         address = id.split("@")[1] // take the domain given with the id.
@@ -2176,7 +2175,6 @@ export class ResourcesPermissionsType extends HTMLElement {
 
     // Get the list of permission by type...
     getResourcePermissionsByResourceType(callback) {
-        console.log("try to find resource permissions for ", this.resource_type)
         let rqst = new GetResourcePermissionsByResourceTypeRqst
         rqst.setResourcetype(this.resource_type)
         let permissions = [];
@@ -2198,7 +2196,6 @@ export class ResourcesPermissionsType extends HTMLElement {
             if (status.code == 0) {
                 callback(permissions)
             } else {
-                console.log(status.details)
                 callback([])
             }
         });

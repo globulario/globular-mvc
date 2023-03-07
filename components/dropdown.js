@@ -165,11 +165,6 @@ export class Dropdown extends HTMLElement {
         this.listBox.style.display = "none";
       });
      
-
-      // Add mouseover
-      item.onmouseover = () => {
-        console.log("you are over....");
-      };
     }
 
     let UnitSelect = this.shadowRoot.querySelector("#unit-selected");
@@ -177,8 +172,6 @@ export class Dropdown extends HTMLElement {
       this.listBox.style.display = "block";
     };
 
-  
-    //console.log(this.unitList)
   }
 
   hideInput(){

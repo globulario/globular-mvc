@@ -532,8 +532,7 @@ export class ImageViewer extends HTMLElement {
       var newPic = document.createElement('img');
       newPic.setAttribute('slot', 'images');
       newPic.setAttribute('src', src);
-      console.log(src)
-
+      
       //if have data-info
       if (el[i].getAttribute('data-info'))
         newPic.setAttribute('data-info', el[i].getAttribute('data-info'));

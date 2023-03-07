@@ -868,8 +868,6 @@ export class VideoPlayer extends HTMLElement {
 
     play(path, globule, titleInfo) {
 
-        console.log("play video at path: ", path)
-
         if (this.isMinimized) {
             this.minimize()
         }
@@ -1036,7 +1034,6 @@ export class VideoPlayer extends HTMLElement {
                     }
 
                     this.video.onended = () => {
-                        console.log("the video is ended....")
                         this.resume = false;
                         if (this.titleInfo)
                             localStorage.removeItem(this.titleInfo.getId())

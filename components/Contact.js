@@ -976,7 +976,6 @@ export class ContactList extends HTMLElement {
     }
 
     onCallContact(contact) {
-        console.log("call ", contact.id + "@" + contact.domain)
 
         let call = new Call()
         call.setUuid(randomUUID())

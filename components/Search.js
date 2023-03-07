@@ -1454,7 +1454,7 @@ export class SearchResultsPage extends HTMLElement {
     }
 
     refresh() {
-        console.log("page refresh call...")
+
         let results = this.shadowRoot.querySelector("#results")
         results.scrollTo({ top: 0, behavior: 'smooth' })
 
@@ -1557,7 +1557,6 @@ export class SearchResultsPage extends HTMLElement {
 
     // Show or hide visual.
     setContextState(context, state) {
-        console.log("set context ", context, "state to", state)
         if (this.hits_by_context[context]) {
             this.hits_by_context[context].forEach((hit) => {
                 hit.enable = state;
@@ -2219,24 +2218,6 @@ export class SearchVideoCard extends HTMLElement {
                         preview.onclick = () => {
                             playVideo(path, null, null, video, video.globule)
                         }
-
-                        /*
-                        if (!thumbnail.src.startsWith("data:image")) {
-                            getCoverDataUrl(dataUrl => {
-                                thumbnail.src = dataUrl
-                                video.getPoster().setContenturl(thumbnail.src)
-                                let rqst = new CreateVideoRequest
-                                rqst.setIndexpath(globule.config.DataPath + "/search/videos")
-                                rqst.setVideo(video)
-                                globule.titleService.createVideo(rqst).then(
-                                    () => {
-                                        console.log("video was saved!", video)
-                                    }
-                                )
-                            }, video.getId(), video.getUrl(), path)
-
-                        }
-                        */
 
                     }
                 }).catch(err => {

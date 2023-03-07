@@ -292,7 +292,7 @@ export class DiskSpaceManager extends HTMLElement {
 
       },
         err => {
-          console.log("--------------->", err);
+
           this.errorMessageDiv.innerHTML = `no space was allocated for application ${this.getAttribute("application")}`
           this.tooltip.innerHTML = `click here to allocate space`
           this.errorMessageDiv.style.display = "block"

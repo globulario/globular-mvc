@@ -633,7 +633,6 @@ export class ConversationManager {
         address: Model.address
       }).then((rsp: SendMessageResponse) => {
         /** Nothing to do here... */
-        console.log("----> message was sent!", message)
 
       }).catch(errorCallback)
     }, errorCallback)

@@ -677,7 +677,6 @@ export class CallsHistoryMenu extends Menu {
         Model.getGlobule(contact_domain).eventHub.subscribe(`video_conversation_close_${call.getUuid()}_evt`, uuid => {
 
         }, evt => {
-            console.log("call is terminated !!!!")
             clearInterval(interval)
             this.setCall(call) // save last time...
         }, false)
@@ -685,7 +684,6 @@ export class CallsHistoryMenu extends Menu {
         Model.getGlobule(this.account.domain).eventHub.subscribe(`video_conversation_close_${call.getUuid()}_evt`, uuid => {
 
         }, evt => {
-            console.log("call is terminated !!!!")
             clearInterval(interval)
             this.setCall(call) // save last time...
         }, false)
@@ -713,7 +711,6 @@ export class CallsHistoryMenu extends Menu {
 
     // When you call a contact...
     onCallContact(contact) {
-        console.log("call ", contact.id + "@" + contact.domain)
 
         let call = new Call()
         call.setUuid(randomUUID())

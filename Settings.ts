@@ -32,11 +32,9 @@ export class Settings {
 
     // Those functions must be impletmented.
     public load() {
-        console.log("Load settings...")
     }
 
     public save() {
-        console.log("Save settings...")
     }
 }
 
@@ -350,7 +348,7 @@ export class ApplicationsSettings extends Settings {
         // Install application
         installApplicationBtn.onclick = () => {
             // So here I will get the list of availble package from the pacakage manager.
-            console.log("look for applications at ", Model.globular.config.Discoveries)
+
             // Get all package infos from that localisation.
         }
 
@@ -552,12 +550,10 @@ export class VideoSettings extends Settings {
             // this.conversionSettings.KeepAlive = keepAlive.getValue()
             let conversion = enableConversionSetting.getValue()
             if (conversion) {
-                console.log("the automatic conversion is on")
                 enableStreamConversionSetting.style.display = "flex"
                 startConversionHour.style.display = "flex"
                 maxConversionDelay.style.display = "flex"
             } else {
-                console.log("the automatic conversion is off")
                 enableStreamConversionSetting.style.display = "none"
                 startConversionHour.style.display = "none"
                 maxConversionDelay.style.display = "none"

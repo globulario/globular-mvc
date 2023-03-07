@@ -313,7 +313,6 @@ export class Ringtones extends HTMLElement {
             })
             .then((rsp) => {
                 // Here I will return the value with it
-                console.log("contact was save!")
             })
             .catch(err => ApplicationView(err, 3000));
     }

@@ -99,23 +99,7 @@ export class MetricsDisplay extends HTMLElement {
             .catch((err) => {
                 console.log(err);
             });
-        //  queryTsRange(Model.globular, "")
 
-        // Get a range from start to end time
-        /*let endTime = new Date().getTime();
-        let startTime = endTime - (1000);
-        queryTs(
-            Model.globular,
-            "dashboard_connection",
-            "globular_services_memory_usage_counter",
-            endTime / 1000,
-            (values) => {
-                console.log(values)
-            },
-            (err) => {
-                console.log(err)
-            }
-        );*/
         let endTime = new Date().getTime();
         let startTime = endTime - (1000);
 
