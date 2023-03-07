@@ -1753,7 +1753,7 @@ export class ParticipantsList extends HTMLElement {
                             }
 
                             // Here if the session state change...
-                            Model.getGlobule(p.session.domain).eventHub.subscribe(`session_state_${p._id + "@" + p.domain}_change_event`,
+                            Model.getGlobule(p.domain).eventHub.subscribe(`session_state_${p._id + "@" + p.domain}_change_event`,
                                 (uuid) => {
                                 },
                                 (evt) => {

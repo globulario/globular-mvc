@@ -108,7 +108,7 @@ export class Ringtones extends HTMLElement {
                 const files = evt.target.files
                 if (files && files[0]) {
 
-                    let globule = Application.getGlobule(Application.account.session.domain)
+                    let globule = Application.getGlobule(Application.account.domain)
 
                     // set the path...
                     let path = "/applications/" + Model.application + "/ringtones"
@@ -245,7 +245,7 @@ export class Ringtones extends HTMLElement {
         // On yes
         yesBtn.onclick = () => {
 
-            let globule = Application.getGlobule(Application.account.session.domain)
+            let globule = Application.getGlobule(Application.account.domain)
             deleteFile(globule, ringtone.file.path,
                 () => {
                     this.removeChild(ringtone)
@@ -382,7 +382,7 @@ export class Ringtone extends HTMLElement {
         this.setButton = this.shadowRoot.querySelector("#set-button")
         this.deleteButton = this.shadowRoot.querySelector("#delete-button")
 
-        let globule = Application.getGlobule(Application.account.session.domain)
+        let globule = Application.getGlobule(Application.account.domain)
         let url = getUrl(globule)
 
         let path = file.path

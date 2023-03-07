@@ -84,11 +84,7 @@ export class Model {
 
     // That function will return a 
     public static getGlobule(address: string): GlobularWebClient.Globular {
-        let globule = Model.globules.get(address);
-        if (globule == undefined) {
-            console.log("-----------> globules: ", Model.globules, address)
-        }
-        return globule;
+        return Model.globules.get(address);
     }
 
     public static getGlobules(): Array<GlobularWebClient.Globular> {
@@ -156,6 +152,7 @@ export class Model {
             }
         }
         this.listeners = new Array<any>();
+
     }
 
     // Append a listener.
@@ -202,6 +199,67 @@ export class Model {
     }
 
     /**
+     * Initialyse the peer.
+     * @param peer The peer to initialyse
+     * @param callback The success callback
+     * @param errorCallback The error callback
+     */
+    initPeer(peer: Peer, callback: () => void, errorCallback: (err: any) => void) {
+        let port = 80
+        if (Model._globular.config.Protocol == "https") {
+            port = 443
+            if (peer.getProtocol() == "https") {
+                port = peer.getPorthttps()
+            }
+        } else {
+            port = peer.getPorthttps()
+        }
+
+
+        let url = Model._globular.config.Protocol + "://" + peer.getDomain() + ":" + port + "/config"
+        let globule = new GlobularWebClient.Globular(url, () => {
+
+            // append the globule to the list.
+            Model.globules.set(Model._globular.config.Protocol + "://" + peer.getDomain() + ":" + port, globule)
+            Model.globules.set(url, globule)
+
+            Model.globules.set(peer.getDomain(), globule)
+            Model.globules.set(peer.getMac(), globule)
+
+            callback()
+
+        }, (err: any) => {
+            console.log(err)
+            errorCallback(err)
+        })
+    }
+
+    /**
+     * Remove the peer from the list of active globule.
+     * @param peer 
+     */
+    removePeer(peer: Peer) {
+        let port = 80
+        if (Model._globular.config.Protocol == "https") {
+            port = 443
+            if (peer.getProtocol() == "https") {
+                port = peer.getPorthttps()
+            }
+        } else {
+            port = peer.getPorthttps()
+        }
+
+        let url = Model._globular.config.Protocol + "://" + peer.getDomain() + ":" + port + "/config"
+
+        // append the globule to the list.
+        Model.globules.delete(Model._globular.config.Protocol + "://" + peer.getDomain() + ":" + port)
+        Model.globules.delete(url)
+        Model.globules.delete(peer.getDomain())
+        Model.globules.delete(peer.getMac())
+
+    }
+
+    /**
      * Connect with the backend and get the initial configuration.
      * @param initCallback On success callback
      * @param errorCallback On error callback
@@ -214,6 +272,43 @@ export class Model {
 
             // set the event hub.
             Model.eventHub = Model._globular.eventHub;
+
+            Model.eventHub.subscribe("stop_peer_evt", uuid => { }, evt => {
+
+                let obj = JSON.parse(evt)
+                let peer = new Peer
+                peer.setDomain(obj.domain)
+                peer.setHostname(obj.hostname)
+                peer.setMac(obj.mac)
+                peer.setPorthttp(obj.portHttp)
+                peer.setPorthttps(obj.portHttps)
+
+                // remove the peer from the map.
+                this.removePeer(peer)
+
+                Model.eventHub.publish("stop_peer_evt_", peer, true)
+
+            }, false)
+
+            // If a new peers is connected...
+            Model.eventHub.subscribe("update_peers_evt", uuid => { },
+                evt => {
+                    let obj = JSON.parse(evt)
+                    let peer = new Peer
+                    peer.setDomain(obj.domain)
+                    peer.setHostname(obj.hostname)
+                    peer.setMac(obj.mac)
+                    peer.setPorthttp(obj.portHttp)
+                    peer.setPorthttps(obj.portHttps)
+                    obj.actions.forEach((a: string) => {
+                        peer.getActionsList().push(a)
+                    })
+
+                    this.initPeer(peer, () => {
+                        // dispatch the event locally...
+                        Model.eventHub.publish("update_peers_evt_", peer, true)
+                    }, err => console.log(err))
+                }, false)
 
             // So here I will create connection to peers know by globular...
             Model.globules = new Map<string, GlobularWebClient.Globular>();
@@ -248,41 +343,21 @@ export class Model {
                     let peer = peers[index]
                     if (index < peers.length) {
                         index++
-                        let port = 80
-                        if (Model._globular.config.Protocol == "https") {
-                            port = 443
-                            if (peer.getProtocol() == "https") {
-                                port = peer.getPorthttps()
-                            }
-                        } else {
-                            port = peer.getPorthttps()
-                        }
-
-                       
-                        let url = Model._globular.config.Protocol + "://" + peer.getDomain() + ":" + port + "/config"
-                        let globule = new GlobularWebClient.Globular(url, () => {
-                            
-                            // append the globule to the list.
-                            Model.globules.set(Model._globular.config.Protocol + "://" + peer.getDomain() + ":" + port, globule)
-                            Model.globules.set(url, globule)
-                            Model.globules.set(peer.getDomain(), globule)
-                            Model.globules.set(peer.getMac(), globule)
-
+                        this.initPeer(peer, () => {
                             if (index < peers.length) {
                                 connectToPeers()
                             } else {
                                 initCallback();
                             }
-
-                        }, (err: any) => {
-                            if (index < peers.length) {
-                                connectToPeers()
-                            } else {
-                                initCallback();
-                            }
-                        })
-                    } else {
-                        initCallback();
+                        },
+                            err => {
+                                console.log(err)
+                                if (index < peers.length) {
+                                    connectToPeers()
+                                } else {
+                                    initCallback();
+                                }
+                            })
                     }
                 }
 

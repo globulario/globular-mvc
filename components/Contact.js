@@ -29,6 +29,7 @@ import { Application } from '../Application';
 import { LogRqst } from 'globular-web-client/log/log_pb';
 import { VideoConversation } from './WebRTC';
 import * as getUuidByString from 'uuid-by-string';
+import { GetThumbnailsRequest } from 'globular-web-client/file/file_pb';
 
 /**
  * Login/Register functionality.
@@ -75,6 +76,8 @@ export class ContactsMenu extends Menu {
     init(account) {
 
         this.account = account;
+
+
 
         let html = `
             <style>
@@ -524,7 +527,7 @@ export class ReceivedContactInvitations extends HTMLElement {
 
         let domain = Application.domain
         if (account.session) {
-            domain = account.session.domain
+            domain = account.domain
         }
 
         let globule = Model.getGlobule(domain) // connect to the local event hub...
@@ -681,11 +684,8 @@ export class ContactList extends HTMLElement {
         this.account = account;
         this.onDeleteContact = onDeleteContact;
         let domain = account.domain
-        if (account.session) {
-            domain = account.session.domain
-        }
-
         let globule = Model.getGlobule(domain)
+
 
         globule.eventHub.subscribe("accepted_" + account.id + "@" + account.domain + "_evt",
             (uuid) => { },
@@ -747,7 +747,7 @@ export class ContactList extends HTMLElement {
 
                         url += "?application=" + Model.application
                         url += "&token=" + token
-                        
+
                         let audio = new Audio(url)
                         audio.setAttribute("loop", "true")
                         audio.setAttribute("autoplay", "true")
@@ -793,10 +793,10 @@ export class ContactList extends HTMLElement {
 
                         let timeout = setTimeout(() => {
                             audio.pause()
-                            if(toast){
+                            if (toast) {
                                 toast.dismiss();
                             }
-                            
+
                             Model.getGlobule(caller.domain).eventHub.publish(call.getUuid() + "_miss_call_evt", call.serializeBinary(), false)
                             if (caller.domain != callee.domain)
                                 Model.getGlobule(callee.domain).eventHub.publish(call.getUuid() + "_miss_call_evt", call.serializeBinary(), false)
@@ -842,7 +842,6 @@ export class ContactList extends HTMLElement {
                         // Here the call was miss...
                         Model.getGlobule(caller.domain).eventHub.subscribe(call.getUuid() + "_miss_call_evt", uuid => { }, evt => {
 
-                            console.log("-------------> 845 miss_call_evt")
                             clearTimeout(timeout)
 
                             // The contact has answer the call!
@@ -876,7 +875,32 @@ export class ContactList extends HTMLElement {
             <slot></slot>
         </div>
         `
-        // The connection callback.
+        // if the peer is not connected when the user is log in the contact card will not be displayed...
+        Model.eventHub.subscribe("update_peers_evt_", uuid => { }, peer => {
+            Account.getContacts(this.account, `{"status":"accepted"}`, (invitations) => {
+                for (var i = 0; i < invitations.length; i++) {
+                    let invitation = invitations[i]
+                    Account.getAccount(invitation._id,
+                        (contact) => {
+                            if (invitation.profilePicture)
+                                contact.profilePicture = invitation.profilePicture
+                            contact.ringtone = invitation.ringtone
+                            this.appendContact(contact);
+                        },
+                        err => {
+                            ApplicationView.displayMessage(err, 3000)
+                            console.log(err)
+                        })
+                }
+            }, err => {
+                ApplicationView.displayMessage(err, 3000);
+            })
+        }, true)
+
+        Model.eventHub.subscribe("stop_peer_evt_", uuid => { },
+            peer => {
+                Model.eventHub.publish("remove_contact_card_" + peer.getDomain() + "_evt_", {}, true)
+            }, true)
 
         // So here I will get the list of sent invitation for the account.
         Account.getContacts(this.account, `{"status":"accepted"}`, (invitations) => {
@@ -908,6 +932,7 @@ export class ContactList extends HTMLElement {
     }
 
     appendContact(contact) {
+
         let id = "_" + getUuidByString(contact.id + "@" + contact.domain + "_accepted_invitation")
         if (this.querySelector("#" + id) != undefined) {
             return
@@ -918,15 +943,22 @@ export class ContactList extends HTMLElement {
         let card = new ContactCard(this.account, contact)
         card.id = id
 
+
         card.setCallButton(this.onCallContact)
 
         card.setDeleteButton(this.onDeleteContact)
         card.showRingtone()
         this.appendChild(card)
 
-
         this.badge.label = this.children.length
         this.badge.style.display = "block"
+
+        // if the globule is disconnected I will remove the contact...
+        Model.eventHub.subscribe("remove_contact_card_" + contact.domain + "_evt_", uuid => { }, evt => {
+            if (card.parentNode) {
+                card.parentNode.removeChild(card)
+            }
+        }, true)
     }
 
     removeContact(contact) {

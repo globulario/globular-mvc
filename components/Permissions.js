@@ -1567,7 +1567,7 @@ function getWebpage(id, callback, errorCallback) {
     // So here I will set the address from the address found in the token and not 
     // the address of the client itself.
     let token = localStorage.getItem("user_token")
-    let domain = Application.account.session.domain
+    let domain = Application.account.domain
 
     // call persist data
     Model.getGlobule(domain).persistenceService

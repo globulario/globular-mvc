@@ -5608,10 +5608,10 @@ export class VideoPreview extends HTMLElement {
             this.firstImage = document.createElement("img")
             this.firstImage.src = this.file.thumbnail
             this.firstImage.onload = () => {
-                let ratio = this.height / this.firstImage.height
-                this.width = this.firstImage.width * ratio;
-                this.playBtn.style.top = this.height / 2 + "px"
-                this.playBtn.style.left = this.width / 2 + "px"
+                let ratio = this.height / this.firstImage.offsetHeight
+                this.width = this.firstImage.offsetWidth * ratio;
+                this.playBtn.style.top = "50%"
+                this.playBtn.style.left = "50%"
                 if (this.onresize != undefined) {
                     this.onresize()
                 }

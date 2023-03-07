@@ -643,7 +643,7 @@ export class ContentManager extends HTMLElement {
             // So here I will set the address from the address found in the token and not 
             // the address of the client itself.
             let token = localStorage.getItem("user_token")
-            let domain = Application.account.session.domain
+            let domain = Application.account.domain
 
 
             // call persist data
@@ -698,7 +698,7 @@ export class ContentManager extends HTMLElement {
         // the address of the client itself.
         let token = localStorage.getItem("user_token")
         let decoded = JwtDecode(token);
-        let domain = Application.account.session.domain
+        let domain = Application.account.domain
 
 
         // call persist data
@@ -788,7 +788,7 @@ export class ContentManager extends HTMLElement {
             // the address of the client itself.
             let token = localStorage.getItem("user_token")
             let decoded = JwtDecode(token);
-            let domain = Application.account.session.domain
+            let domain = Application.account.domain
 
 
             // call persist data
@@ -842,7 +842,7 @@ export class ContentManager extends HTMLElement {
         // So here I will set the address from the address found in the token and not 
         // the address of the client itself.
         let token = localStorage.getItem("user_token")
-        let domain = Application.account.session.domain
+        let domain = Application.account.domain
 
 
         // call persist data
@@ -2202,7 +2202,7 @@ export class WebPage extends HTMLElement {
         // So here I will set the address from the address found in the token and not 
         // the address of the client itself.
         let token = localStorage.getItem("user_token")
-        let domain = Application.account.session.domain
+        let domain = Application.account.domain
 
         // call persist data
         Model.getGlobule(domain).searchService.deleteDocument(rqst,
@@ -2242,7 +2242,7 @@ export class WebPage extends HTMLElement {
             // So here I will set the address from the address found in the token and not 
             // the address of the client itself.
             let token = localStorage.getItem("user_token")
-            let domain = Application.account.session.domain
+            let domain = Application.account.domain
 
 
             // call persist data
@@ -2294,7 +2294,7 @@ export class WebPage extends HTMLElement {
             rqst.setId("Id")
             rqst.setIndexsList(["PageId", "Id", "Text"])
             let token = localStorage.getItem("user_token")
-            let domain = Application.account.session.domain
+            let domain = Application.account.domain
 
 
             // call persist data
@@ -2329,7 +2329,7 @@ export class WebPage extends HTMLElement {
         // So here I will set the address from the address found in the token and not 
         // the address of the client itself.
         let token = localStorage.getItem("user_token")
-        let domain = Application.account.session.domain
+        let domain = Application.account.domain
 
         // call persist data
         Model.getGlobule(domain).persistenceService
@@ -2418,7 +2418,7 @@ export class WebPage extends HTMLElement {
                                 // So here I will set the address from the address found in the token and not 
                                 // the address of the client itself.
                                 let token = localStorage.getItem("user_token")
-                                let domain = Application.account.session.domain
+                                let domain = Application.account.domain
 
 
                                 // call persist data

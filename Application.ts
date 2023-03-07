@@ -1014,7 +1014,7 @@ export class Application extends Model {
           }, false, this)
 
       } else {
-        console.log("fail to connect to ", account.session.domain)
+        console.log("fail to connect to ", account.domain)
       }
 
     }, err => console.log(err))
@@ -1117,7 +1117,7 @@ export class Application extends Model {
             onLogin(account);
 
             // When new contact is accepted.
-            Model.eventHub.subscribe("accepted_" + account.id + "@" + account.session.domain + "_evt",
+            Model.eventHub.subscribe("accepted_" + account.id + "@" + account.domain + "_evt",
               (uuid) => { },
               (evt) => {
                 let invitation = JSON.parse(evt);
@@ -1125,7 +1125,7 @@ export class Application extends Model {
               },
               false, this)
 
-            Model.eventHub.subscribe("deleted_" + account.id + "@" + account.session.domain + "_evt",
+            Model.eventHub.subscribe("deleted_" + account.id + "@" + account.domain + "_evt",
               (uuid) => { },
               (evt) => {
                 let invitation = JSON.parse(evt);
@@ -1134,7 +1134,7 @@ export class Application extends Model {
               false, this)
 
 
-            Model.getGlobule(Application.account.session.domain).eventHub.publish(`__session_state_${Application.account.id + "@" + Application.account.domain}_change_event__`, Application.account.session, true)
+            Model.getGlobule(Application.account.domain).eventHub.publish(`__session_state_${Application.account.id + "@" + Application.account.domain}_change_event__`, Application.account.session, true)
 
             // retreive the contacts
             Account.getContacts(Application.account, `{"status":"accepted"}`, (contacts: Array<Account>) => {
@@ -1199,7 +1199,7 @@ export class Application extends Model {
       Application.account.session.state = SessionState.Offline;
 
       Model.eventHub.publish("logout_event", Application.account, true);
-      Model.getGlobule(Application.account.session.domain).eventHub.publish(`__session_state_${Application.account.id + "@" + Application.account.domain}_change_event__`, Application.account.session, true)
+      Model.getGlobule(Application.account.domain).eventHub.publish(`__session_state_${Application.account.id + "@" + Application.account.domain}_change_event__`, Application.account.session, true)
       Model.publish(`session_state_${Application.account.id + "@" + Application.account.domain}_change_event`, Application.account.session.toString(), false)
 
       // Set room to undefined.

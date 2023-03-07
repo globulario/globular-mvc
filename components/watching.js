@@ -119,9 +119,7 @@ export class MediaWatching extends HTMLElement {
                 this.onclose()
             }
         }
-
     }
-
 
     appendTitle(title, callback, errorCallback) {
         if (this.querySelector("#_" + title._id)) {
@@ -136,54 +134,64 @@ export class MediaWatching extends HTMLElement {
 
             return
         }
+
         let card = new MediaWatchingCard
-        card.setTitle(title, callback, errorCallback)
         card.id = title._id
 
-        if (title.isVideo) {
-            card.slot = "video"
-        } else {
-            card.slot = "title"
-        }
+        card.setTitle(title, () => {
+            this.appendChild(card)
 
-        this.appendChild(card)
-
-        if (title.isVideo) {
-            this.shadowRoot.querySelector("#video_div").style.display = "flex"
-            this.shadowRoot.querySelector("#video-title").innerHTML = `Video(${this.querySelectorAll(`[slot="video"]`).length})`
-        } else {
-            this.shadowRoot.querySelector("#title_div").style.display = "flex"
-            this.shadowRoot.querySelector("#movie-title").innerHTML = `Title(${this.querySelectorAll(`[slot="title"]`).length})`
-        }
-
-        Model.eventHub.subscribe("remove_video_player_evt_", uuid => { }, evt => {
-            if (title._id == evt._id) {
-                if (!card) {
-                    return
-                }
-                if (!card.parentNode) {
-                    return
-                }
-
-                card.parentNode.removeChild(card)
-                let video_count = this.querySelectorAll(`[slot="video"]`).length
-                if (video_count > 0) {
-                    this.shadowRoot.querySelector("#video_div").style.display = "flex"
-                    this.shadowRoot.querySelector("#video-title").innerHTML = `Video(${video_count})`
-                } else {
-                    this.shadowRoot.querySelector("#video_div").style.display = "none"
-                }
-
-                let movie_count = this.querySelectorAll(`[slot="title"]`).length
-                if (movie_count > 0) {
-                    this.shadowRoot.querySelector("#title_div").style.display = "flex"
-                    this.shadowRoot.querySelector("#movie-title").innerHTML = `Title(${movie_count})`
-                } else {
-                    this.shadowRoot.querySelector("#title_div").style.display = "none"
-                }
-
+            if (title.isVideo) {
+                card.slot = "video"
+            } else {
+                card.slot = "title"
             }
-        }, true)
+
+
+            if (title.isVideo) {
+                this.shadowRoot.querySelector("#video_div").style.display = "flex"
+                this.shadowRoot.querySelector("#video-title").innerHTML = `Video(${this.querySelectorAll(`[slot="video"]`).length})`
+            } else {
+                this.shadowRoot.querySelector("#title_div").style.display = "flex"
+                this.shadowRoot.querySelector("#movie-title").innerHTML = `Title(${this.querySelectorAll(`[slot="title"]`).length})`
+            }
+
+            Model.eventHub.subscribe("remove_video_player_evt_", uuid => { }, evt => {
+                if (title._id == evt._id) {
+                    if (!card) {
+                        return
+                    }
+                    if (!card.parentNode) {
+                        return
+                    }
+
+                    card.parentNode.removeChild(card)
+                    let video_count = this.querySelectorAll(`[slot="video"]`).length
+                    if (video_count > 0) {
+                        this.shadowRoot.querySelector("#video_div").style.display = "flex"
+                        this.shadowRoot.querySelector("#video-title").innerHTML = `Video(${video_count})`
+                    } else {
+                        this.shadowRoot.querySelector("#video_div").style.display = "none"
+                    }
+
+                    let movie_count = this.querySelectorAll(`[slot="title"]`).length
+                    if (movie_count > 0) {
+                        this.shadowRoot.querySelector("#title_div").style.display = "flex"
+                        this.shadowRoot.querySelector("#movie-title").innerHTML = `Title(${movie_count})`
+                    } else {
+                        this.shadowRoot.querySelector("#title_div").style.display = "none"
+                    }
+
+                }
+            }, true)
+
+            if (callback) {
+                callback()
+            }
+
+        }, errorCallback)
+
+
     }
 }
 
@@ -191,15 +199,20 @@ customElements.define('globular-media-watching', MediaWatching)
 
 function getVideos(id, domain, callback) {
     let videos = []
-    _getVideos(Model.getGlobule(domain), id, (video) => {
+    let globule = Model.getGlobule(domain)
+    if (globule) {
+        _getVideos(globule, id, (video) => {
 
-        // append the video
-        if (video != null) {
-            videos.push(video)
-        }
+            // append the video
+            if (video != null) {
+                videos.push(video)
+            }
 
+            callback(videos)
+        })
+    } else {
         callback(videos)
-    })
+    }
 }
 
 /**
@@ -242,15 +255,20 @@ function _getVideos(globule, id, callback) {
 function getTitles(id, domain, callback) {
 
     let titles = []
-    _getTitle(Model.getGlobule(domain), id, (title) => {
-        // append the video
-        if (title != null) {
-            titles.push(title)
-        }
+    let globule = Model.getGlobule(domain)
+    if (globule) {
+        _getTitle(globule, id, (title) => {
+            // append the video
+            if (title != null) {
+                titles.push(title)
+            }
 
+            callback(titles)
+
+        })
+    } else {
         callback(titles)
-
-    })
+    }
 }
 
 function _getTitle(globule, id, callback) {
@@ -331,7 +349,13 @@ export class MediaWatchingCard extends HTMLElement {
         closeButton.onclick = () => {
             Model.eventHub.publish("remove_video_player_evt_", title, true)
         }
-        
+
+        Model.eventHub.subscribe("remove_media_watching_card_" + title.domain + "_evt_", uuid=>{}, 
+        evt=>{
+            if(this.parentNode)
+                this.parentNode.removeChild(this)
+        }, true)
+
         if (title.domain) {
             if (title.isVideo) {
                 getVideos(title._id, title.domain, (videos) => {
@@ -444,10 +468,49 @@ export class WatchingMenu extends Menu {
 
         // hide the menu div
         this.hideMenuDiv = true
+
+
     }
 
     init() {
+
+
         if (this.mediaWatching == null) {
+            // Here I will connect the update peer event to react of peer connections.
+            Model.eventHub.subscribe("update_peers_evt_", uuid => { }, evt => {
+                this.getWatchingTitles(titles => {
+
+                    let appendTitle = () => {
+                        if (titles.length == 0) {
+                            return
+                        }
+                        let t = titles.pop()
+
+                        this.mediaWatching.appendTitle(t, () => {
+                            localStorage.setItem(t._id, t.currentTime)
+                            if (titles.length > 0) {
+                                appendTitle()
+                            } else {
+                                this.mediaWatching.style.display = ""
+                            }
+                        },
+                            err => {
+                                if (titles.length > 0) {
+                                    appendTitle()
+                                }
+                            })
+
+                    }
+                    appendTitle()
+                })
+            }, true)
+
+            // stop peer event received.
+            Model.eventHub.subscribe("stop_peer_evt_", uuid => { },
+                peer => {
+                    Model.eventHub.publish("remove_media_watching_card_" + peer.getDomain() + "_evt_", {}, true)
+                }, true)
+
             // Initialyse the watching content...
             this.mediaWatching = new MediaWatching()
             this.mediaWatching.onclose = this.onclose
@@ -636,7 +699,7 @@ export class WatchingMenu extends Menu {
     saveWatchingTitle(title, callback) {
 
 
-        if(!title.domain){
+        if (!title.domain) {
             ApplicationView.displayMessage(`title ${title._id} has no domain.`, 3000)
             return
         }
