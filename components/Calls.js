@@ -200,12 +200,12 @@ export class CallsHistoryMenu extends Menu {
         </div>
         `
 
-   
+
         let range = document.createRange()
         this.getMenuDiv().innerHTML = "" // remove existing elements.
         this.getMenuDiv().appendChild(range.createContextualFragment(html));
 
-        this.getMenuDiv().querySelector("#close-btn").onclick = ()=>{
+        this.getMenuDiv().querySelector("#close-btn").onclick = () => {
             this.getMenuDiv().parentNode.removeChild(this.getMenuDiv())
         }
 
@@ -454,11 +454,17 @@ export class CallsHistoryMenu extends Menu {
 
             }, err => ApplicationView.displayMessage(err, 3000))
 
+        // I will refresh the list of calls...
+        Model.eventHub.subscribe("start_peer_evt_", uuid => { }, evt => {
+            // populate infos.
+            this.refreshCalls()
+        })
+
         // populate infos.
         this.refreshCalls()
 
         // Get the list of all accounts (mab).
-        if(this.getMenuDiv().parentNode)
+        if (this.getMenuDiv().parentNode)
             this.getMenuDiv().parentNode.removeChild(this.getMenuDiv())
 
     }
@@ -597,8 +603,6 @@ export class CallsHistoryMenu extends Menu {
 
                         Account.getAccount(call.getCallee(), callee => {
                             Account.getAccount(call.getCaller(), caller => {
-
-
                                 let contact = null
                                 if (caller.id == this.account.id) {
                                     contact = callee
@@ -608,7 +612,7 @@ export class CallsHistoryMenu extends Menu {
                                     incommingCallsDiv.appendChild(fragment)
                                 }
                                 if (contact) {
-                                    if(contact.profilePicture.length > 0){
+                                    if (contact.profilePicture.length > 0) {
                                         img.src = contact.profilePicture
                                         img.style.display = "block"
                                         icon.style.display = "none"
@@ -657,8 +661,8 @@ export class CallsHistoryMenu extends Menu {
 
                                 }
 
-                            }, err => ApplicationView.displayMessage(err, 3000))
-                        }, err => ApplicationView.displayMessage(err, 3000))
+                            }, err => console.log("fail to get account infos with error ", err))
+                        }, err => console.log("fail to get account infos with error ", err))
                     })
                 }).catch(err => { })
         })
@@ -696,7 +700,7 @@ export class CallsHistoryMenu extends Menu {
             accounts = accounts.filter((obj) => {
                 return obj.id !== this.account.id;
             });
- 
+
             if (this.callContactInput != undefined) {
                 this.callContactInput.setValues(accounts)
             }
@@ -727,13 +731,34 @@ export class CallsHistoryMenu extends Menu {
                 .then(rsp => {
                     Account.getAccount(call.getCaller(), caller => {
                         Account.getAccount(call.getCallee(), callee => {
-                            let globule = Application.getGlobule(caller.domain)
-                            generatePeerToken(globule, token => {
+                            if (!Application.getGlobule(callee.domain)) {
+                                ApplicationView.displayMessage(`
+                                <style>
+                                    #call-icon, #call-img{
+                                        height: 48px;
+                                        width: 48px;
+                                        border-radius: 32px;
+                                        padding-right: 5px;
+                                    }
+                                </style>
+                                <div style="display: flex;">
+                                    
+                                    <img id="call-img" style="display: ${callee.profilePicture.length == 0 ? "none" : "block"};" src="${callee.profilePicture}"></img>
+                                    <iron-icon id="call-icon" icon="account-circle" style="--iron-icon-fill-color:var(--palette-action-disabled); display: ${callee.profilePicture.length != 0 ? "none" : "block"};"></iron-icon>
+                                
+                                    <div style="display: flex; flex-direction: column;">
+                                        <span>fail to call ${callee.id}</span>
+                                        <span>globule <span style="font-weight: bold;">${callee.domain}</span> is unreachable</span>
+                                    </div>
+                                </div>`, 4500)
+                                return
+                            } else {
+
                                 let url = getUrl(globule)
 
                                 // so here I will found the caller ringtone...
                                 let path = callee.ringtone
-                                if(!path){
+                                if (!path) {
                                     ApplicationView.displayMessage(callee.id + " must be in your contact list to be able to call him", 3000)
                                     return
                                 }
@@ -748,7 +773,7 @@ export class CallsHistoryMenu extends Menu {
 
                                 url += "?application=" + Model.application
                                 url += "&token=" + token
-                                
+
 
                                 let audio = new Audio(url)
                                 audio.setAttribute("loop", "true")
@@ -848,7 +873,6 @@ export class CallsHistoryMenu extends Menu {
                                     audio.pause()
                                     toast.dismiss();
                                     clearTimeout(timeout)
-
                                     generatePeerToken(Model.getGlobule(contact.domain), token => {
                                         let rqst = new CreateNotificationRqst
                                         let notification = new Notification
@@ -904,9 +928,9 @@ export class CallsHistoryMenu extends Menu {
                                 // so here I will play the audio of the contact util it respond or the delay was done...
                                 Model.getGlobule(contact.domain).eventHub.publish("calling_" + contact.id + "@" + contact.domain + "_evt", call.serializeBinary(), false)
                                 Model.getGlobule(this.account.domain).eventHub.publish("calling_" + contact.id + "@" + contact.domain + "_evt", call, true)
-                            })
-
+                            }
                         })
+
 
                     }, err => ApplicationView.displayMessage(err, 3000))
 

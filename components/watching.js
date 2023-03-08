@@ -477,7 +477,7 @@ export class WatchingMenu extends Menu {
 
         if (this.mediaWatching == null) {
             // Here I will connect the update peer event to react of peer connections.
-            Model.eventHub.subscribe("update_peers_evt_", uuid => { }, evt => {
+            Model.eventHub.subscribe("start_peer_evt_", uuid => { }, evt => {
                 this.getWatchingTitles(titles => {
 
                     let appendTitle = () => {

@@ -2926,7 +2926,7 @@ export class FilesIconView extends FilesView {
                                     this.setImdbTitleInfo(url, file)
                                 } else if (evt.dataTransfer.files.length > 0) {
                                     // So here I will simply upload the files...
-                                    Model.eventHub.publish("__upload_files_event__", { path: file.path, files: evt.dataTransfer.files,  globule: this._file_explorer_.globule}, true)
+                                    Model.eventHub.publish("__upload_files_event__", { path: file.path, files: evt.dataTransfer.files, globule: this._file_explorer_.globule }, true)
                                 } else {
                                     let f = evt.dataTransfer.getData('file')
                                     let id = evt.dataTransfer.getData('id')
@@ -5781,15 +5781,14 @@ export class FilesUploader extends HTMLElement {
            
             #container{
                 position: relative;
-                background-color: var(--palette-background-paper);
                 font-size: 1rem;
+                display: flex;
+                flex-direction: column;
             }
 
             #collapse-panel{
+                background-color: var(--palette-background-paper);
                 display: none;
-                position: absolute;
-                bottom: 36px;
-                right: -0px;
             }
 
             .collapse-torrent-panel{
@@ -5817,7 +5816,7 @@ export class FilesUploader extends HTMLElement {
             }
 
             paper-icon-button {
-
+                
             }
 
             .content{
@@ -5841,6 +5840,13 @@ export class FilesUploader extends HTMLElement {
                 vertical-align: middle;
                 white-space: nowrap;
                 padding: 0px 5px 0px 5px;
+                font-size: .85rem;
+            }
+
+            td span {
+                display: block;
+                white-space: break-spaces;
+                margin-bottom: 4px;
             }
 
             .file-name {
@@ -5903,6 +5909,7 @@ export class FilesUploader extends HTMLElement {
             }
         </style>
         <div id="container">
+            <paper-icon-button style="align-self: flex-end;" icon="icons:file-upload"> </paper-icon-button>
             <iron-collapse id="collapse-panel">
                 <paper-card class="content">
                     <paper-tabs selected="0" style="">
@@ -5916,7 +5923,6 @@ export class FilesUploader extends HTMLElement {
                                 <tr>
                                     <th></th>
                                     <th class="name_header_div files-list-view-header">Name</th>
-                                    <th class="mime_header_div files-list-view-header" style="min-width: 110px;">Destination</th>
                                     <th class="size_header_div files-list-view-header" style="min-width: 80px;">Size</th>
                                 </tr>
                             </thead>
@@ -5928,7 +5934,6 @@ export class FilesUploader extends HTMLElement {
                                 <tr>
                                     <th></th>
                                     <th class="name_header_div files-list-view-header">Detail</th>
-                                    <th class="mime_header_div files-list-view-header" style="min-width: 110px;">Destination</th>
                                 </tr>
                             </thead>
                             <tbody id="links-download-tbody" class="files-list-view-info">
@@ -5939,7 +5944,6 @@ export class FilesUploader extends HTMLElement {
                                 <tr>
                                     <th></th>
                                     <th class="name_header_div files-list-view-header">Detail</th>
-                                    <th class="mime_header_div files-list-view-header" style="min-width: 110px;">Destination</th>
                                 </tr>
                             </thead>
                             <tbody id="torrent-download-tbody" class="files-list-view-info">
@@ -5948,7 +5952,7 @@ export class FilesUploader extends HTMLElement {
                     </div>
                 </paper-card>
             </iron-collapse>
-            <paper-icon-button icon="icons:file-upload"> </paper-icon-button>
+            
         </div>
         `
         // The body where upload files info are displayed
@@ -6038,9 +6042,9 @@ export class FilesUploader extends HTMLElement {
             }
             , true, this
         )
-  
+
         // Append the globule to the list.
-        Model.eventHub.subscribe("update_peers_evt_", 
+        Model.eventHub.subscribe("start_peer_evt_",
             uuid => { },
             p => {
 
@@ -6048,18 +6052,18 @@ export class FilesUploader extends HTMLElement {
                 this.getTorrentLnks(globule, lnks => {
 
                 })
-        
+
                 this.getTorrentsInfo(globule)
 
             }, true)
 
 
         // Connect events...
-        Model.globules.forEach(globule=>{
+        Model.globules.forEach(globule => {
             this.getTorrentLnks(globule, lnks => {
 
             })
-    
+
             this.getTorrentsInfo(globule)
         })
 
@@ -6085,8 +6089,12 @@ export class FilesUploader extends HTMLElement {
                 let info = span_title.innerHTML
 
                 // row.parentNode.removeChild(row)
-                row.children[1].innerHTML = `<span>${info.split(": ")[1]} (done)</span>`
-                row.children[2].innerHTML = `<span>${path}</span>`
+                row.children[1].innerHTML = `
+                <div style="display: flex; flex-direction: column; width: 400px; align-items: flex-start; font-size: 0.85rem;">
+                    <span>${info.split(": ")[1]} (done)</span>
+                    <span>${path}</span>
+                </div>
+                `
             }
             return
         }
@@ -6102,24 +6110,20 @@ export class FilesUploader extends HTMLElement {
             let cancelBtn = document.createElement("paper-icon-button")
             cancelBtn.icon = "icons:close"
             cancelCell.appendChild(cancelBtn)
+
             let cellSource = document.createElement("td")
-            cellSource.style.textAlign = "left"
             cellSource.style.paddingLeft = "5px"
+            cellSource.style.display = "table-cell"
 
             cellSource.innerHTML = `
-            <div style="display: flex; flex-direction: column;">
-                <span id="${id}_title" style="background-color:var(--palette-background-default);">${infos}</span>
-                <span id="${id}_infos" style="background-color:var(--palette-background-default);"></span>
+            <div style="display: flex; flex-direction: column; width: 400px; align-items: flex-start; font-size: 0.85rem;">
+                <span id="${id}_title" style="text-align: left; background-color:var(--palette-background-default); width: 100%;">${infos}</span>
+                <p id="${id}_infos" style="text-align: left; background-color:var(--palette-background-default); width: 100%; white-space: pre-line; margin: 0px;"></p>
+                <span class="file-path" style="text-align: left; background-color:var(--palette-background-default);  width: 100%">${path}</span>
             </div>`;
-
-            let cellDest = document.createElement("td")
-            cellDest.style.textAlign = "left"
-            cellDest.style.paddingLeft = "5px"
-            cellDest.innerHTML = `<span class="file-path" style="background-color:var(--palette-background-default);">${path}</span>`;
 
             row.appendChild(cancelCell)
             row.appendChild(cellSource);
-            row.appendChild(cellDest);
             row.querySelector(".file-path").onclick = () => {
                 /*
                 _readDir(torrent.getDestination(), dir => {
@@ -6127,6 +6131,7 @@ export class FilesUploader extends HTMLElement {
                 }, err => ApplicationView.displayMessage(err, 3000), this.globule)
                 */
             }
+
             cancelBtn.onclick = () => {
                 row.style.display = "none";
             }
@@ -6176,7 +6181,7 @@ export class FilesUploader extends HTMLElement {
             cellSource.style.paddingLeft = "5px"
 
             cellSource.innerHTML = `
-            <div style="display: flex; flex-direction: column;">
+            <div style="display: flex; flex-direction: column; width: 400px; align-items: flex-start; font-size: 0.85rem;">
                 <div style="display: flex; align-items: center; ">
                     <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
                         <iron-icon  id="_${uuid}-collapse-btn"  icon="unfold-less" --iron-icon-fill-color:var(--palette-text-primary);"></iron-icon>
@@ -6191,16 +6196,12 @@ export class FilesUploader extends HTMLElement {
                     </div>
                 </iron-collapse>
 
+                <span title="${torrent.getDestination()}" class="file-path">${torrent.getDestination().split("/")[torrent.getDestination().split("/").length - 1]}</span>
                 <paper-progress  id="${id}_progress_bar"  style="width: 100%; margin-top: 5px;"></paper-progress>
             </div>`;
-            let cellDest = document.createElement("td")
-            cellDest.style.textAlign = "left"
-            cellDest.style.paddingLeft = "5px"
-            cellDest.innerHTML = `<span title="${torrent.getDestination()}" class="file-path">${torrent.getDestination().split("/")[torrent.getDestination().split("/").length - 1]}</span>`;
 
             row.appendChild(cancelCell)
             row.appendChild(cellSource);
-            row.appendChild(cellDest);
 
 
             row.querySelector(".file-path").onclick = () => {
@@ -6215,11 +6216,11 @@ export class FilesUploader extends HTMLElement {
                 // So here I will remove the torrent from the list...
                 let rqst = new DropTorrentRequest
                 rqst.setName(torrent.getName())
-                generatePeerToken(globule, token=>{
-                    globule.torrentService.dropTorrent(rqst, { application: Application.application, domain: globule.domain, token: token})
-                    .then(rsp => {
-                        row.parentNode.removeChild(row)
-                    }).catch(err => ApplicationView.displayMessage(err, 3000))
+                generatePeerToken(globule, token => {
+                    globule.torrentService.dropTorrent(rqst, { application: Application.application, domain: globule.domain, token: token })
+                        .then(rsp => {
+                            row.parentNode.removeChild(row)
+                        }).catch(err => ApplicationView.displayMessage(err, 3000))
                 })
             }
 
@@ -6307,19 +6308,16 @@ export class FilesUploader extends HTMLElement {
             cellSource.style.textAlign = "left"
             cellSource.style.paddingLeft = "5px"
             cellSource.innerHTML = `
-                <div style="display: flex; flex-direction: column;width: 400px; font-size: 0.85rem;">
+                <div style="display: flex; flex-direction: column; width: 400px; align-items: flex-start; font-size: 0.85rem;">
                     <span style="background-color:var(--palette-background-default);">${f.name}</span>
+                    <span class="file-path" style="background-color:var(--palette-background-default);">${path.split("/")[path.split("/").length - 1]}</span>
                     <paper-progress value=0 style="width: 100%;"></paper-progress>
                 </div>`;
-            let cellDest = document.createElement("td")
-            cellDest.style.textAlign = "left"
-            cellDest.style.paddingLeft = "5px"
-            cellDest.innerHTML = `<span class="file-path" style="background-color:var(--palette-background-default);">${path.split("/")[path.split("/").length - 1]}</span>`;
+
             let cellSize = document.createElement("td")
             cellSize.innerHTML = size;
             row.appendChild(cancelCell)
             row.appendChild(cellSource);
-            row.appendChild(cellDest);
             row.appendChild(cellSize);
 
             cancelBtn.onclick = () => {
@@ -6380,8 +6378,9 @@ export class FilesUploader extends HTMLElement {
                             progress.value = (event.loaded / event.total) * 100
                             if (event.loaded == event.total) {
                                 ApplicationView.displayMessage("File " + f.name + " was uploaded", 3000)
-                                // this.files_upload_table.removeChild(this.files_upload_table.children[0])
+                                progress.parentNode.removeChild(progress)
                                 if (this.files_upload_table.children.length == 0) {
+                                    // Test if there is some files...
                                     this.btn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
                                     this.shadowRoot.querySelector("iron-collapse").style.display = "none";
                                 }

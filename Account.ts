@@ -171,11 +171,17 @@ export class Account extends Model {
         }
 
         let globule = Model.getGlobule(domain)
-        if(!globule){
-            errorCallback("no globule was found at domain " + domain)
+        if (!globule) {
+            let jsonStr = localStorage.getItem(accountId)
+            if(jsonStr){
+                let account = Account.fromString(jsonStr)
+                successCallback(account)
+            }else{
+                errorCallback("no globule was found at domain " + domain)
+            }
             return
         }
-        
+
         generatePeerToken(globule, token => {
 
 
@@ -185,7 +191,6 @@ export class Account extends Model {
 
             let globule = Model.getGlobule(domain)
             if (globule) {
-
 
                 let stream = globule.resourceService.getAccounts(rqst, { domain: domain, application: Model.application, token: token })
                 let data: ResourceService.Account;
@@ -227,13 +232,23 @@ export class Account extends Model {
                                     successCallback(account)
                                 }, errorCallback)
                             } else {
+
+                                // I will keep the account in the cache...
+                                localStorage.setItem(account.id + "@" + account.domain, account.toString())
+
                                 successCallback(account)
                             }
 
                         }, errorCallback)
 
                     } else {
-                        errorCallback(status.details);
+                        let jsonStr = localStorage.getItem(accountId)
+                        if(jsonStr){
+                            let account = Account.fromString(jsonStr)
+                            successCallback(account)
+                        }else{
+                            errorCallback(status.details);
+                        }
                     }
                 })
             }
@@ -429,7 +444,7 @@ export class Account extends Model {
             this.profilePicture = data["profilePicture_"];
 
             // keep the user data into the localstore.
-            localStorage.setItem(this.id, JSON.stringify(data))
+            localStorage.setItem(this.id + "@" + this.domain, JSON.stringify(data))
         }
 
     }
@@ -568,7 +583,15 @@ export class Account extends Model {
     }
 
     toString(): string {
-        return JSON.stringify({ _id: this.id, firstName_: this.firstName, lastName_: this.lastName, middleName_: this.middleName, profilePicture_: this.profilePicture });
+        return JSON.stringify({ _id: this.id, email_: this.email, firstName_: this.firstName, lastName_: this.lastName, middleName_: this.middleName, profilePicture_: this.profilePicture, domain_:this.domain });
+    }
+
+    static fromObject(obj: any): any {
+        return new Account(obj._id, obj.email_, obj.name_, obj.domain_, obj.firstName_, obj.lastName_, obj.middleName_, obj.profilePicture_)  
+    }
+
+    static fromString(jsonStr:string):any{
+        return Account.fromObject(JSON.parse(jsonStr))
     }
 
     getId(): string {

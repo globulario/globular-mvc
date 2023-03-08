@@ -20,9 +20,7 @@ export class ConversationManager {
   // Open conversation channels with each globule.
   static connect(errorCallback: (err: any) => void) {
 
-    ConversationManager.uuid = uuidv4();
-
-    Model.getGlobules().forEach(globule => {
+    let __connect__ = (globule:Globular)=>{
       generatePeerToken(globule, token => {
         // This will open the connection with the conversation manager.
         let rqst = new ConnectRequest
@@ -45,8 +43,19 @@ export class ConversationManager {
           }
         });
       }, errorCallback)
+    }
+    ConversationManager.uuid = uuidv4();
+
+    Model.getGlobules().forEach(globule => {
+      __connect__(globule)
 
     })
+
+    // connect / reconnect to globule that get online.
+    Model.eventHub.subscribe("start_peer_evt_", uuid => { }, evt => {
+      let globule = Model.getGlobule(evt.getDomain())
+      __connect__(globule)
+    }, false)
   }
 
   /**
@@ -174,7 +183,7 @@ export class ConversationManager {
         address: Model.address
       }).then((rsp: DeleteConversationResponse) => {
         succesCallback()
-        Model.publish(`kickout_conversation_${conversationUuid}_evt`, { accountId: account, conversationUuid:conversationUuid }, false)
+        Model.publish(`kickout_conversation_${conversationUuid}_evt`, { accountId: account, conversationUuid: conversationUuid }, false)
       }).catch(errorCallback)
     }, errorCallback)
   }
@@ -287,7 +296,7 @@ export class ConversationManager {
             succesCallback(conversation, messages)
             let participants = conversation.getParticipantsList()
             // network event.
-            Model.publish(`leave_conversation_${conversationUuid}_evt`, JSON.stringify({ "conversationUuid":conversation.getUuid(), "participants": participants, "participant": Application.account.id + "@" + Application.account.domain }), false)
+            Model.publish(`leave_conversation_${conversationUuid}_evt`, JSON.stringify({ "conversationUuid": conversation.getUuid(), "participants": participants, "participant": Application.account.id + "@" + Application.account.domain }), false)
             return
           }
           // An error happen
@@ -321,7 +330,7 @@ export class ConversationManager {
         let participants = rsp.getConversation().getParticipantsList()
 
         // network event.
-        Model.publish(`leave_conversation_${conversationUuid}_evt`, JSON.stringify({ "conversationUuid":conversation.getUuid(), "participants": participants, "participant": Application.account.id + "@" + Application.account.domain }), false)
+        Model.publish(`leave_conversation_${conversationUuid}_evt`, JSON.stringify({ "conversationUuid": conversation.getUuid(), "participants": participants, "participant": Application.account.id + "@" + Application.account.domain }), false)
 
       }).catch(errorCallback)
     }, errorCallback)

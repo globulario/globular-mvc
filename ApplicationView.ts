@@ -366,8 +366,6 @@ export class ApplicationView extends View {
     // Init the file uploader.
     ApplicationView.filesUploader.init();
 
-    // test only...
-    document.body.appendChild(ApplicationView.filesUploader)
 
     this.login_.init();
     this.accountMenu.init();
@@ -988,6 +986,9 @@ export class ApplicationView extends View {
       return
     }
 
+    // test only...
+    document.body.appendChild(ApplicationView.filesUploader)
+
     // Test if the user can edit the website...
     this.contentManager.setEditMode()
 
@@ -1071,6 +1072,10 @@ export class ApplicationView extends View {
    */
   onLogout() {
     this.isLogin = false;
+
+
+    /** Remove it from the body */
+    ApplicationView.filesUploader.parentNode.removeChild(ApplicationView.filesUploader)
 
     /** implement it as needed */
     ApplicationView.layout.toolbar().appendChild(this.login_);

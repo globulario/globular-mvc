@@ -214,9 +214,9 @@ export class VideoPlayer extends HTMLElement {
                 width: 720px;
                 user-select: none;
                 background-color: black;
-                border-bottom: 1px solid var(--palette-divider);
+                border-left: 1px solid var(--palette-divider); 
+                border-right: 1px solid var(--palette-divider);
                 border-top: 1px solid var(--palette-divider);
-                border-left: 1px solid var(--palette-divider);
             }
 
             #content{

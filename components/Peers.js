@@ -646,7 +646,6 @@ export class PeerPanel extends HTMLElement {
         } else {
             address += ":" + this.peer.getPorthttp()
         }
-        console.log("remote peer address ", address)
 
         rqst.setRemotePeerAddress(address)
         Model.globular.resourceService.getPeerApprovalState(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
@@ -654,7 +653,7 @@ export class PeerPanel extends HTMLElement {
                 callback(rsp.getState())
             })
             .catch((err) => {
-                ApplicationView.displayMessage(err, 3000)
+                console.log("fail to get peer approval state with error ", err)
                 callback(-1)
             })
 
