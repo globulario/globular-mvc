@@ -311,6 +311,7 @@ export class ContentManager extends HTMLElement {
 
             #container{
                 display: flex;
+                align-items: center;
             }
 
             .vertical{
@@ -328,7 +329,6 @@ export class ContentManager extends HTMLElement {
 
             #toolbar {
                 display: flex;
-                z-index: 100;
                 align-items: center;
             }
 
@@ -340,6 +340,19 @@ export class ContentManager extends HTMLElement {
                 #toolbar {
                     display: none;
                 }
+            }
+
+            #set-create-mode-btn:hover{
+                cursor: pointer;
+            }
+
+            paper-tooltip {
+                position: absolute;
+                top: 40px;
+            }
+
+            paper-button {
+                font-size: 1rem;
             }
 
         </style>
@@ -359,14 +372,20 @@ export class ContentManager extends HTMLElement {
                     <slot name="css-manager"/>
                 </div>
 
-                <paper-icon-button id="create-page-btn" icon="icons:note-add"></paper-icon-button>
-                <paper-tooltip for="create-page-btn" role="tooltip" tabindex="-1">Create Web Page</paper-tooltip>
-                
-                <paper-icon-button id="set-create-mode-btn" icon="icons:create"></paper-icon-button>
-                <paper-tooltip for="set-create-mode-btn" role="tooltip" tabindex="-1">Enter Edit Mode</paper-tooltip>
+                <div style="position: relative;">
+                    <paper-icon-button id="create-page-btn" icon="icons:note-add"></paper-icon-button>
+                    <paper-tooltip for="create-page-btn" role="tooltip" tabindex="-1">Create Web Page</paper-tooltip>
+                </div>
 
-                <paper-icon-button id="save-all-btn" icon="icons:save"></paper-icon-button>
-                <paper-tooltip for="save-all-btn" role="tooltip" tabindex="-1">Save All Change</paper-tooltip>
+                <div style="position: relative;">
+                    <paper-icon-button id="set-create-mode-btn" icon="icons:create"></paper-icon-button>
+                    <paper-tooltip for="set-create-mode-btn" role="tooltip" tabindex="-1">Enter Edit Mode</paper-tooltip>
+                </div>
+
+                <div style="position: relative;">
+                    <paper-icon-button id="save-all-btn" icon="icons:save"></paper-icon-button>
+                    <paper-tooltip for="save-all-btn" role="tooltip" tabindex="-1">Save All Change</paper-tooltip>
+                </div>
             </div>
         </div>
         `
@@ -552,11 +571,13 @@ export class ContentManager extends HTMLElement {
                                 this.deleteStyle(this.styleManager.toDelete.pop(), () => {
                                     
                                 }, err => ApplicationView.displayMessage(err, 3000))
+                            } else {
+                                console.log("all scipt are delete...")
                             }
                         }, err => ApplicationView.displayMessage(err, 3000))
                     } else if (this.styleManager.toDelete.length > 0) {
                         this.deleteStyle(this.styleManager.toDelete.pop(), () => {
-                            
+                            console.log("all style are delete...")
                         }, err => ApplicationView.displayMessage(err, 3000))
                     }
                 })
@@ -889,6 +910,7 @@ export class CodeManager extends HTMLElement {
             }
 
             #container{
+                font-size: 1rem;
                 display: flex;
                 flex-direction: column;
                 position: absolute;
@@ -919,6 +941,11 @@ export class CodeManager extends HTMLElement {
             .element-lnk:hover{
                 filter: invert(10%);
                 cursor: pointer;
+            }
+
+            paper-input {
+                background: transparent;
+                color: var(--palette-text-primary);
             }
 
         </style>
@@ -1154,7 +1181,7 @@ export class CodeManager extends HTMLElement {
             evt.stopPropagation();
 
             if (evt.code === 'Enter' || evt.code === "NumpadEnter") {
-
+                console.log("Enter key press!")
                 let name = input.value;
                 let id = ""
 
@@ -1278,7 +1305,7 @@ export class Navigation extends HTMLElement {
         // delete page event.
         if (!this.delete_page_listener)
             Model.eventHub.subscribe("_delete_web_page_", uuid => this.delete_page_listener = uuid, page => {
-  
+                console.log("delete page...", page)
                 this.toDelete.push(page)
 
                 // so here I will delete the page lnk...
@@ -1524,7 +1551,7 @@ export class Navigation extends HTMLElement {
         let links = this.querySelectorAll("globular-page-link")
         let savePages_ = (index) => {
             if (index < links.length) {
-
+                console.log(index, links[index])
                 links[index].webPage.index = index
 
                 links[index].save(() => {
@@ -1584,7 +1611,6 @@ export class NavigationPageLink extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
            
-
             #page-name-span {
                 font-size: 1.5rem;
             }
@@ -1598,6 +1624,8 @@ export class NavigationPageLink extends HTMLElement {
                 border: none;
                 font-size: 1.5rem;
                 width: fit-content;
+                background-color: transparent;
+                color: var(--palette-text-primary);
             }
             
             #page-name-editor-input:focus{
@@ -1610,12 +1638,12 @@ export class NavigationPageLink extends HTMLElement {
 
 
         </style>
-        <div>
-            <span id="page-name-span"></span>
-            <span id="page-name-editor" style="display: none;">
-                <input id="page-name-editor-input" type="text"></input>
-            </span>
-        </div>
+   
+        <span id="page-name-span"></span>
+        <span id="page-name-editor">
+            <input id="page-name-editor-input" type="text"></input>
+        </span>
+       
         `
 
         this.id = this.webPage.id + "_lnk"
@@ -1626,7 +1654,6 @@ export class NavigationPageLink extends HTMLElement {
 
         // contain the name of the link...
         this.span = this.shadowRoot.querySelector("#page-name-span")
-
 
         // Set the page...
         this.span.onclick = () => {
@@ -1642,9 +1669,9 @@ export class NavigationPageLink extends HTMLElement {
 
         // enter edit mode.
         this.span.addEventListener('dblclick', () => {
-            if (this.edit) {
+            //if (!this.edit) {
                 this.setEditMode()
-            }
+            //}
         });
 
         // set initial values.
@@ -1802,6 +1829,7 @@ export class WebPage extends HTMLElement {
 
 
             #selectors{
+                min-width: 350px;
                 display: flex;
                 flex-direction: column;
                 margin-left: 10px;
@@ -1832,10 +1860,10 @@ export class WebPage extends HTMLElement {
                 position: fixed;
                 top: 75px;
                 left: 10px;
-                z-index: 100;
             }
 
             .toolbar{
+                font-size: 1rem;
                 display: flex;
                 flex-direction: column;
                 flex-direction: row;
@@ -2165,6 +2193,7 @@ export class WebPage extends HTMLElement {
                     removeSearchIndex_(dataElements)
                 }
             }, err => {
+                console.log("fail to remove index for ", element, err)
                 if (dataElements.length == 0) {
                     callback()
                 } else {
@@ -2209,8 +2238,10 @@ export class WebPage extends HTMLElement {
                 domain: domain
             }
         ).then(() => {
+            console.log("remove indexation success!")
             callback(this)
         }).catch(err => {
+            console.log("fail to remove indexation", err)
             errorCallback(err)
         })
 
@@ -2427,6 +2458,7 @@ export class WebPage extends HTMLElement {
 
                                         // set the resource owner...
                                         PermissionManager.addResourceOwner(this.id, "webpage", Application.account.id + "@" + Application.account.domain, SubjectType.ACCOUNT, () => {
+                                            console.log("Web Page " + this.name, " is owned by " + Application.account.name)
 
                                             // Here I will return the value with it
                                             Model.publish(`update_page_${this.id}_evt`, str, false)
@@ -2521,11 +2553,12 @@ export class ElementEditor extends HTMLElement {
                         position: fixed;
                         top: 75px;
                         left: 10px;
-                        z-index: 100;
                     }
         
 
                     .toolbar{
+                        z-index: 1000;
+                        font-size: 1rem;
                         display: flex;
                         flex-direction: column;
                         flex-direction: row;
@@ -2612,7 +2645,7 @@ export class ElementEditor extends HTMLElement {
             this.element = parent.querySelector("#" + data.id)
             if (this.element == undefined) {
 
-                // I will create the element it-self
+                // I will create the element itself
                 this.element = document.createElement(data.tagName)
                 if (this.element == null) {
                     this.element = document.createElement("DIV")
@@ -3081,7 +3114,6 @@ export class CodeEditor extends HTMLElement {
                 color: var(--palette-text-accent);
                 background-color: var(--palette-primary-accent);
                 border-bottom: 1px solid var(--palette-divider);
-                z-index: 100;
             }
 
             .header span{
@@ -3172,11 +3204,11 @@ export class CodeEditor extends HTMLElement {
             localStorage.setItem("__code_editor_dimension__", JSON.stringify({ width: width, height: height }))
             let w = ApplicationView.layout.width();
             if (w < 500) {
-                this.container.style.height = "calc(100vh - 60px)"
-                this.container.style.width = "100vw"
+                container.style.height = "calc(100vh - 60px)"
+                container.style.width = "100vw"
             } else {
-                this.container.style.height = height + "px"
-                this.container.style.width = width + "px"
+                container.style.height = height + "px"
+                container.style.width = width + "px"
             }
         })
 

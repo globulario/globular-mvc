@@ -49,6 +49,7 @@ import { ShareResourceMenu } from './Share.js';
 
 import "../style.css"
 
+
 // keep track of shared directory
 var shared = {}
 var public_ = {}
@@ -1570,7 +1571,7 @@ export class FilesView extends HTMLElement {
                 getFileObject(url, (fileObject) => {
                     generatePeerToken(this._file_explorer_.globule, token => {
                         uploadFiles(this._file_explorer_.globule, token, this.__dir__.path, [fileObject], () => {
-                            Model.eventHub.publish("__upload_files_event__", { path: this.__dir__.path, files: [fileObject], lnk: lnk }, true)
+                            Model.eventHub.publish("__upload_files_event__", { path: this.__dir__.path, files: [fileObject], lnk: lnk, globule: this._file_explorer_.globule }, true)
                         }, err => ApplicationView.displayMessage(err, 3000))
                     })
                 });
@@ -1656,7 +1657,7 @@ export class FilesView extends HTMLElement {
 
         } else if (evt.dataTransfer.files.length > 0) {
             // So here I will simply upload the files...
-            Model.eventHub.publish("__upload_files_event__", { path: this.__dir__.path, files: evt.dataTransfer.files, lnk: lnk }, true)
+            Model.eventHub.publish("__upload_files_event__", { path: this.__dir__.path, files: evt.dataTransfer.files, lnk: lnk, globule: this._file_explorer_.globule }, true)
         } else {
             let f = evt.dataTransfer.getData('file')
             let id = evt.dataTransfer.getData('id')
@@ -2925,7 +2926,7 @@ export class FilesIconView extends FilesView {
                                     this.setImdbTitleInfo(url, file)
                                 } else if (evt.dataTransfer.files.length > 0) {
                                     // So here I will simply upload the files...
-                                    Model.eventHub.publish("__upload_files_event__", { path: file.path, files: evt.dataTransfer.files }, true)
+                                    Model.eventHub.publish("__upload_files_event__", { path: file.path, files: evt.dataTransfer.files,  globule: this._file_explorer_.globule}, true)
                                 } else {
                                     let f = evt.dataTransfer.getData('file')
                                     let id = evt.dataTransfer.getData('id')
@@ -3522,16 +3523,12 @@ export class FileNavigator extends HTMLElement {
             option.value = index
             option.innerHTML = p.domain
             this.shadowRoot.querySelector("select").appendChild(option)
-
         })
-
 
         // Select the peer.
         this.shadowRoot.querySelector("select").onchange = () => {
             let index = this.shadowRoot.querySelector("select").value
-
             this._file_explorer_.setGlobule(peers[index])
-
         }
     }
 
@@ -4319,7 +4316,6 @@ export class FileExplorer extends HTMLElement {
                 <span style="flex-grow: 1;"></span>
                 <paper-icon-button id="files-icon-btn" class="active" icon="icons:view-module" style="--iron-icon-fill-color: var(--palette-action-active);"></paper-icon-button>
                 <paper-icon-button id="files-list-btn" icon="icons:view-list" style="--iron-icon-fill-color: var(--palette-action-disabled);"></paper-icon-button>
-                <globular-files-uploader></globular-files-upsetVerticalloader>
             </div>
         </paper-card>
         `
@@ -4460,11 +4456,6 @@ export class FileExplorer extends HTMLElement {
 
         // The information manager
         this.informationManager = new InformationsManager()
-
-        // The file uploader
-        this.filesUploader = this.shadowRoot.querySelector("globular-files-uploader")
-        this.filesUploader._file_explorer_ = this
-
 
         // The path navigator
         this.pathNavigator = this.shadowRoot.querySelector("#globular-path-navigator")
@@ -4803,7 +4794,7 @@ export class FileExplorer extends HTMLElement {
             fileInput.click()
             // this.pathNavigator
             fileInput.onchange = () => {
-                this.filesUploader.uploadFiles(this.path, fileInput.files)
+                ApplicationView.filesUploader.uploadFiles(this.path, fileInput.files)
             }
         }
 
@@ -4878,8 +4869,6 @@ export class FileExplorer extends HTMLElement {
         this.filesListView.init();
         this.filesIconView.init();
 
-        // Init file upload event listener...
-        this.filesUploader.init();
 
         // set the available space on the globule.
         this.shadowRoot.querySelector("globular-disk-space-manager").refresh()
@@ -5793,13 +5782,14 @@ export class FilesUploader extends HTMLElement {
             #container{
                 position: relative;
                 background-color: var(--palette-background-paper);
+                font-size: 1rem;
             }
 
             #collapse-panel{
                 display: none;
                 position: absolute;
-                bottom: 40px;
-                right: -16px;
+                bottom: 36px;
+                right: -0px;
             }
 
             .collapse-torrent-panel{
@@ -6013,9 +6003,6 @@ export class FilesUploader extends HTMLElement {
             if (this.files_upload_table.children.length > 0) {
                 this.btn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-active)")
                 this.shadowRoot.querySelector("iron-collapse").style.display = "block";
-            } else {
-                //this.btn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
-                //this.shadowRoot.querySelector("iron-collapse").style.display = "none";
             }
         }
 
@@ -6028,7 +6015,7 @@ export class FilesUploader extends HTMLElement {
         Model.eventHub.subscribe(
             "__upload_files_event__", (uuid) => { },
             (evt) => {
-                this.uploadFiles(evt.path, evt.files)
+                this.uploadFiles(evt.path, evt.files, evt.globule)
 
             }
             , true, this
@@ -6051,13 +6038,31 @@ export class FilesUploader extends HTMLElement {
             }
             , true, this
         )
+  
+        // Append the globule to the list.
+        Model.eventHub.subscribe("update_peers_evt_", 
+            uuid => { },
+            p => {
+
+                let globule = Model.getGlobule(p.getDomain())
+                this.getTorrentLnks(globule, lnks => {
+
+                })
+        
+                this.getTorrentsInfo(globule)
+
+            }, true)
 
 
-        // Start display torrent infos...
-        this.getTorrentLnks(this._file_explorer_.globule, lnks => {
+        // Connect events...
+        Model.globules.forEach(globule=>{
+            this.getTorrentLnks(globule, lnks => {
 
+            })
+    
+            this.getTorrentsInfo(globule)
         })
-        this.getTorrentsInfo(this._file_explorer_.globule)
+
     }
 
 
@@ -6077,7 +6082,11 @@ export class FilesUploader extends HTMLElement {
             let span_title = this.links_download_table.querySelector("#" + id + "_title")
             if (span_title) {
                 ApplicationView.displayMessage("File " + span_title.innerHTML + " was now uploaded!", 3000)
-                row.parentNode.removeChild(row)
+                let info = span_title.innerHTML
+
+                // row.parentNode.removeChild(row)
+                row.children[1].innerHTML = `<span>${info.split(": ")[1]} (done)</span>`
+                row.children[2].innerHTML = `<span>${path}</span>`
             }
             return
         }
@@ -6096,24 +6105,27 @@ export class FilesUploader extends HTMLElement {
             let cellSource = document.createElement("td")
             cellSource.style.textAlign = "left"
             cellSource.style.paddingLeft = "5px"
+
             cellSource.innerHTML = `
             <div style="display: flex; flex-direction: column;">
                 <span id="${id}_title" style="background-color:var(--palette-background-default);">${infos}</span>
                 <span id="${id}_infos" style="background-color:var(--palette-background-default);"></span>
             </div>`;
+
             let cellDest = document.createElement("td")
             cellDest.style.textAlign = "left"
             cellDest.style.paddingLeft = "5px"
-            cellDest.innerHTML = `<span class="file-path" style="background-color:var(--palette-background-default);">${path.split("/")[path.split("/").length - 1]}</span>`;
+            cellDest.innerHTML = `<span class="file-path" style="background-color:var(--palette-background-default);">${path}</span>`;
 
             row.appendChild(cancelCell)
             row.appendChild(cellSource);
             row.appendChild(cellDest);
             row.querySelector(".file-path").onclick = () => {
+                /*
                 _readDir(torrent.getDestination(), dir => {
                     Model.eventHub.publish("__set_dir_event__", { path: dir, file_explorer_id: this._file_explorer_.id }, true)
                 }, err => ApplicationView.displayMessage(err, 3000), this.globule)
-
+                */
             }
             cancelBtn.onclick = () => {
                 row.style.display = "none";
@@ -6142,6 +6154,7 @@ export class FilesUploader extends HTMLElement {
      * @returns 
      */
     uploadTorrent(torrent) {
+        let globule = torrent.globule
         let uuid = getUuid(torrent.getName())
         let id = "torrent-download-row-" + uuid
         let row = this.shadowRoot.querySelector("#" + id)
@@ -6189,22 +6202,25 @@ export class FilesUploader extends HTMLElement {
             row.appendChild(cellSource);
             row.appendChild(cellDest);
 
-            row.querySelector(".file-path").onclick = () => {
-                _readDir(torrent.getDestination(), dir => {
-                    Model.eventHub.publish("__set_dir_event__", { path: dir, file_explorer_id: this._file_explorer_.id }, true)
-                }, err => ApplicationView.displayMessage(err, 3000), this._file_explorer_.globule)
 
+            row.querySelector(".file-path").onclick = () => {
+                /** 
+                 * _readDir(torrent.getDestination(), dir => {
+                    Model.eventHub.publish("__set_dir_event__", { path: dir, file_explorer_id: this._file_explorer_.id }, true)
+                }, err => ApplicationView.displayMessage(err, 3000), globule)
+                */
             }
 
             cancelBtn.onclick = () => {
                 // So here I will remove the torrent from the list...
                 let rqst = new DropTorrentRequest
                 rqst.setName(torrent.getName())
-                let globule = this._file_explorer_.globule
-                globule.torrentService.dropTorrent(rqst, { application: Application.application, domain: globule.domain, token: localStorage.getItem("user_token") })
+                generatePeerToken(globule, token=>{
+                    globule.torrentService.dropTorrent(rqst, { application: Application.application, domain: globule.domain, token: token})
                     .then(rsp => {
                         row.parentNode.removeChild(row)
                     }).catch(err => ApplicationView.displayMessage(err, 3000))
+                })
             }
 
             // Append to files panels.
@@ -6269,7 +6285,7 @@ export class FilesUploader extends HTMLElement {
      * @param {*} path 
      * @param {*} files 
      */
-    uploadFiles(path, files) {
+    uploadFiles(path, files, globule) {
 
         // So here I will try to get the most information from the backend to be able to keep the user inform about what append 
         // with uploading files process.
@@ -6311,10 +6327,12 @@ export class FilesUploader extends HTMLElement {
             }
 
             row.querySelector(".file-path").onclick = () => {
+                console.log("open dir ", dir)
+                /**
                 _readDir(torrent.getDestination(), dir => {
                     Model.eventHub.publish("__set_dir_event__", { path: dir, file_explorer_id: this._file_explorer_.id }, true)
-                }, err => ApplicationView.displayMessage(err, 3000), this.globule)
-
+                }, err => ApplicationView.displayMessage(err, 3000), globule)
+                */
             }
 
             // Append to files panels.
@@ -6322,24 +6340,22 @@ export class FilesUploader extends HTMLElement {
             this.btn.click()
         }
 
-
-
         // Upload file one by one and 
         let uploadFile = (index, callback) => {
             let f = files[index]
             index++
             if (this.files_upload_table.children[0].style.display == "none") {
                 // simply pass over...
-                this.files_upload_table.removeChild(this.files_upload_table.children[0])
+                // this.files_upload_table.removeChild(this.files_upload_table.children[0])
                 if (index < files.length) {
                     uploadFile(index, callback)
                 } else {
+                    delete dirs[getUuidByString(globule.domain + "@" + path)]
                     callback()
                 }
             } else {
 
                 // Take the port number from actual globular service conection.
-                let globule = this._file_explorer_.globule
                 let port = globule.config.PortHttp
                 if (globule.config.Protocol == "https") {
                     port = globule.config.PortHttps
@@ -6352,6 +6368,7 @@ export class FilesUploader extends HTMLElement {
                             if (index < files.length) {
                                 uploadFile(index, callback)
                             } else {
+                                delete dirs[getUuidByString(globule.domain + "@" + path)]
                                 callback()
                             }
                         },
@@ -6363,7 +6380,7 @@ export class FilesUploader extends HTMLElement {
                             progress.value = (event.loaded / event.total) * 100
                             if (event.loaded == event.total) {
                                 ApplicationView.displayMessage("File " + f.name + " was uploaded", 3000)
-                                this.files_upload_table.removeChild(this.files_upload_table.children[0])
+                                // this.files_upload_table.removeChild(this.files_upload_table.children[0])
                                 if (this.files_upload_table.children.length == 0) {
                                     this.btn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
                                     this.shadowRoot.querySelector("iron-collapse").style.display = "none";
@@ -6375,18 +6392,14 @@ export class FilesUploader extends HTMLElement {
                         },
                         port)
                 }, err => ApplicationView.displayMessage(err, 3000))
-
-
             }
         }
 
         // Start file upload!
         uploadFile(0, () => {
             ApplicationView.displayMessage("All files are now uploaded!", 3000)
-            delete dirs[getUuidByString(this._file_explorer_.globule.domain + "@" + path)]
             Model.publish("reload_dir_event", path, false)
         })
-
     }
 
     /** Get the list of torrent */
@@ -6406,11 +6419,11 @@ export class FilesUploader extends HTMLElement {
 
         generatePeerToken(globule, token => {
             let rqst = new GetTorrentInfosRequest
-
             let stream = globule.torrentService.getTorrentInfos(rqst, { application: Application.application, domain: globule.domain, token: token })
             stream.on("data", (rsp) => {
                 /** Local event... */
                 rsp.getInfosList().forEach(torrent => {
+                    torrent.globule = globule
                     Model.eventHub.publish("__upload_torrent_event__", torrent, true);
                 })
             });
@@ -6421,7 +6434,6 @@ export class FilesUploader extends HTMLElement {
                 }
             });
         }, err => ApplicationView.displayMessage(err, 3000))
-
 
     }
 

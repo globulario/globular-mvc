@@ -13,7 +13,7 @@ import { AccountMenu } from "./components/Account";
 import { NotificationMenu } from "./components/Notification";
 import { ApplicationsMenu } from "./components/Applications";
 import { Camera } from "./components/Camera";
-import { FilesMenu } from "./components/File";
+import { FilesMenu, FilesUploader } from "./components/File";
 import { SystemInfosMenu } from "./components/SystemMonitor";
 import { SearchBar, SearchResults } from "./components/Search";
 import { ContactCard, ContactsMenu } from "./components/Contact";
@@ -79,6 +79,9 @@ export class ApplicationView extends View {
   public set type(value: ApplicationType) {
     this._type = value;
   }
+
+  /** Display upload activities */
+  private static filesUploader: FilesUploader;
 
   /** The application view component. */
   private static layout: Layout;
@@ -263,6 +266,8 @@ export class ApplicationView extends View {
     this.shareMenu = new ShareMenu();
 
 
+    // Init file upload event listener...
+    ApplicationView.filesUploader = new FilesUploader()
 
     this._sidemenu_childnodes = new Array<any>();
     this._workspace_childnodes = new Array<any>();
@@ -356,8 +361,13 @@ export class ApplicationView extends View {
     this.settingsPanel.id = "globular-setting-panel"
 
     // init listener's in the layout.
-
     ApplicationView.layout.init();
+
+    // Init the file uploader.
+    ApplicationView.filesUploader.init();
+
+    // test only...
+    document.body.appendChild(ApplicationView.filesUploader)
 
     this.login_.init();
     this.accountMenu.init();
@@ -650,7 +660,7 @@ export class ApplicationView extends View {
       uuid => { },
       evt => {
 
-        if(evt.parentNode == this.getWorkspace()){
+        if (evt.parentNode == this.getWorkspace()) {
           return // already the parent.
         }
 
@@ -763,8 +773,6 @@ export class ApplicationView extends View {
 
         if (this.isLogin) {
 
-          this.getSideMenu().appendChild(this.systemInfosMenu);
-          this.systemInfosMenu.shrink()
 
           this.getSideMenu().appendChild(this.blogEditingMenu);
           this.blogEditingMenu.shrink()
@@ -789,6 +797,9 @@ export class ApplicationView extends View {
 
           this.getSideMenu().appendChild(this.notificationMenu);
           this.notificationMenu.shrink()
+
+          this.getSideMenu().appendChild(this.systemInfosMenu);
+          this.systemInfosMenu.shrink()
 
           this.getSideMenu().appendChild(this.accountMenu);
           this.accountMenu.shrink()
@@ -1390,7 +1401,7 @@ export class ApplicationView extends View {
         // Publish the list of participant with the account removed from it.
         let participants = conversation.getParticipantsList()
         participants.splice(participants.indexOf(Application.account.id + "@" + Application.account.domain), 1)
-        Model.publish(`leave_conversation_${conversation.getUuid()}_evt`, JSON.stringify({ "conversationUuid":conversation.getUuid(), "participants": participants, "participant": Application.account.id + "@" + Application.account.domain }), false)
+        Model.publish(`leave_conversation_${conversation.getUuid()}_evt`, JSON.stringify({ "conversationUuid": conversation.getUuid(), "participants": participants, "participant": Application.account.id + "@" + Application.account.domain }), false)
         ApplicationView.displayMessage(
           "<iron-icon icon='communication:message' style='margin-right: 10px;'></iron-icon><div>Conversation named " +
           conversation.getName() +

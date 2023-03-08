@@ -230,6 +230,19 @@ paper-card .card-actions {
    display: flex;
 }
 
+/** overide those rules to set page **/
+globular-web-page{
+   position: relative;
+   width: 100%;
+   min-height: calc(100vh - 60px);
+}
+
+globular-files-uploader{
+   position: fixed;
+   right: 0px;
+   bottom: 0px;
+}
+
 /**
  * That bar is use to minimize dialog.
  */
@@ -676,6 +689,8 @@ emoji-picker {
    background: var(--palette-divider);
 }
 
+
+
 @media (max-width: 500px) {
    .ce-toolbar {
       background-color: var(--palette-background-paper);
@@ -700,5 +715,4 @@ emoji-picker {
       left: 5px;
    }
 
-   
 }
