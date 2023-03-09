@@ -1635,12 +1635,12 @@ export class FilesView extends HTMLElement {
                             }
 
                             // Publish local event.
-                            Model.eventHub.publish("__upload_link_event__", { pid: pid, path: this.__dir__.path, infos: rsp.getResult(), done: false, lnk: lnk }, true);
+                            Model.eventHub.publish("__upload_link_event__", { pid: pid, path: this.__dir__.path, infos: rsp.getResult(), done: false, lnk: lnk, globule: this._file_explorer_.globule }, true);
                         })
 
                         stream.on("status", (status) => {
                             if (status.code === 0) {
-                                Model.eventHub.publish("__upload_link_event__", { pid: pid, path: this.__dir__.path, infos: "", done: true, lnk: lnk }, true);
+                                Model.eventHub.publish("__upload_link_event__", { pid: pid, path: this.__dir__.path, infos: "", done: true, lnk: lnk, globule: this._file_explorer_.globule }, true);
                             }
                         });
                     }, err => ApplicationView.displayMessage(err, 3000))
@@ -2397,12 +2397,12 @@ export class FilesIconView extends FilesView {
                                         }
 
                                         // Publish local event.
-                                        Model.eventHub.publish("__upload_link_event__", { pid: pid, path: playlist.path, infos: rsp.getResult(), done: false, lnk: playlist.url }, true);
+                                        Model.eventHub.publish("__upload_link_event__", { pid: pid, path: playlist.path, infos: rsp.getResult(), done: false, lnk: playlist.url, globule: this._file_explorer_.globule }, true);
                                     })
 
                                     stream.on("status", (status) => {
                                         if (status.code === 0) {
-                                            Model.eventHub.publish("__upload_link_event__", { pid: pid, path: playlist.path, infos: "", done: true, lnk: playlist.url }, true);
+                                            Model.eventHub.publish("__upload_link_event__", { pid: pid, path: playlist.path, infos: "", done: true, lnk: playlist.url, globule: this._file_explorer_.globule }, true);
                                         }
                                     });
                                 })
@@ -2513,12 +2513,12 @@ export class FilesIconView extends FilesView {
                                         }
 
                                         // Publish local event.
-                                        Model.eventHub.publish("__upload_link_event__", { pid: pid, path: playlist.path, infos: rsp.getResult(), done: false, lnk: playlist.url }, true);
+                                        Model.eventHub.publish("__upload_link_event__", { pid: pid, path: playlist.path, infos: rsp.getResult(), done: false, lnk: playlist.url, globule: this._file_explorer_.globule }, true);
                                     })
 
                                     stream.on("status", (status) => {
                                         if (status.code === 0) {
-                                            Model.eventHub.publish("__upload_link_event__", { pid: pid, path: playlist.path, infos: "", done: true, lnk: playlist.url }, true);
+                                            Model.eventHub.publish("__upload_link_event__", { pid: pid, path: playlist.path, infos: "", done: true, lnk: playlist.url, globule: this._file_explorer_.globule }, true);
                                         }
                                     });
                                 })
@@ -2547,7 +2547,10 @@ export class FilesIconView extends FilesView {
                             }
 
                             copyVideosBtn.onclick = () => {
-                                copyUrl(dir.__videoPlaylist__.path)
+                                if (dir.__videoPlaylist__)
+                                    copyUrl(dir.__videoPlaylist__.path)
+                                else
+                                    ApplicationView.displayMessage("no playlist found at path ", dir.path)
                             }
 
                             playVideosBtn.onclick = () => {
@@ -5844,29 +5847,38 @@ export class FilesUploader extends Menu {
                 min-height: 300px;
             }
 
-            table {
+            .table {
                 width: 470px;
+                display: flex;
+                flex-direction: column;
             }
 
-            td {
-                text-align: center;
-                vertical-align: middle;
-                white-space: nowrap;
-                font-size: .85rem;
+            .table-header {
+                border-bottom: 1px solid var(--palette-divider); 
+                padding-bottom: 5px;
             }
 
-            th {
-                border-top: 1px solid var(--palette-divider); 
+            .table-body{
+                position: relative;
+                width: 100%;
+                display: flex;
+                flex-direction: column;
             }
 
-            th, td {
+            .table-header, .table-row {
+                display: flex;
+                flex-direction: row;
+                width: 100%;
+            }
+
+            .table-row{
                 border-bottom: 1px solid var(--palette-divider); 
             }
 
-            td span {
-                display: block;
-                white-space: break-spaces;
-                padding: 2px 5px 2px 5px;
+            .table-cell {
+                padding: 5px;
+                align-item: center;
+                justify-content: flex-start;
             }
 
             .file-name {
@@ -5895,20 +5907,6 @@ export class FilesUploader extends Menu {
                 text-align: right;
             }
 
-            tbody{
-                position: relative;
-                width: 100%;
-            }
-
-            tbody tr, th {
-        
-                transition: background 0.2s ease,padding 0.8s linear;
-            }
-            // test only...
-            this.getWorkspace().appendChild(ApplicationView.filesUploader)
-        
-            }
-
             paper-card{
                 background-color: var(--palette-background-paper);
                 color: var(--palette-text-primary);
@@ -5935,37 +5933,24 @@ export class FilesUploader extends Menu {
                     <paper-tab id="torrents-dowload-tab">Torrents</paper-tab>
                 </paper-tabs>
                 <div class="card-content" style="padding: 0px;">
-                    <table id="files-upload-table">
-                        <thead class="files-list-view-header">
-                            <tr>
-                                <th></th>
-                                <th class="name_header_div files-list-view-header">Name</th>
-                                <th class="size_header_div files-list-view-header" style="min-width: 80px;">Size</th>
-                            </tr>
-                        </thead>
-                        <tbody id="file-upload-tbody" class="files-list-view-info">
-                        </tbody>
-                    </table>
-                    <table id="links-download-table" style="display: none;">
-                        <thead class="files-list-view-header">
-                            <tr>
-                                <th></th>
-                                <th class="name_header_div files-list-view-header">Detail</th>
-                            </tr>
-                        </thead>
-                        <tbody id="links-download-tbody" class="files-list-view-info">
-                        </tbody>
-                    </table>
-                    <table id="torrents-download-table" style="display: none;">
-                        <thead class="files-list-view-header">
-                            <tr>
-                                <th></th>
-                                <th class="name_header_div files-list-view-header">Detail</th>
-                            </tr>
-                        </thead>
-                        <tbody id="torrent-download-tbody" class="files-list-view-info">
-                        </tbody>
-                    </table>
+                    <div class="table" id="files-upload-table">
+                        <div class="table-header" class="files-list-view-header">
+                        </div>
+                        <div class="table-body" id="file-upload-tbody" class="files-list-view-info">
+                        </div>
+                    </div>
+                    <div class="table" id="links-download-table" style="display: none;">
+                        <div class="table-header" class="files-list-view-header">
+                        </div>
+                        <div class="table-body" id="links-download-tbody" class="files-list-view-info">
+                        </div>
+                    </div>
+                    <div class="table" id="torrents-download-table" style="display: none;">
+                        <div class="table-header" class="files-list-view-header">
+                        </div>
+                        <div class="table-body" id="torrent-download-tbody" class="files-list-view-info">
+                        </div>
+                    </div>
                 </div>
             </paper-card>
             
@@ -5992,7 +5977,7 @@ export class FilesUploader extends Menu {
 
         // So here I will set the tab interractions.
         this.filesUploadTab.onclick = () => {
-            let tables = this.getMenuDiv().querySelectorAll("table")
+            let tables = this.getMenuDiv().querySelectorAll(".table")
             for (var i = 0; i < tables.length; i++) {
                 tables[i].style.display = "none"
             }
@@ -6002,7 +5987,7 @@ export class FilesUploader extends Menu {
         }
 
         this.torrentsDowloadTab.onclick = () => {
-            let tables = this.getMenuDiv().querySelectorAll("table")
+            let tables = this.getMenuDiv().querySelectorAll(".table")
             for (var i = 0; i < tables.length; i++) {
                 tables[i].style.display = "none"
             }
@@ -6012,7 +5997,7 @@ export class FilesUploader extends Menu {
         }
 
         this.linksDownloadTab.onclick = () => {
-            let tables = this.getMenuDiv().querySelectorAll("table")
+            let tables = this.getMenuDiv().querySelectorAll(".table")
             for (var i = 0; i < tables.length; i++) {
                 tables[i].style.display = "none"
             }
@@ -6035,7 +6020,7 @@ export class FilesUploader extends Menu {
         Model.eventHub.subscribe(
             "__upload_link_event__", (uuid) => { },
             (evt) => {
-                this.uploadLink(evt.pid, evt.path, evt.infos, evt.lnk, evt.done)
+                this.uploadLink(evt.pid, evt.path, evt.infos, evt.lnk, evt.done, evt.globule)
             }
             , true, this
         )
@@ -6083,7 +6068,7 @@ export class FilesUploader extends Menu {
      * @param {*} path The path on the server where the video will be saved
      * @param {*} infos The infos receive about the file transfert.
      */
-    uploadLink(pid, path, infos, lnk, done) {
+    uploadLink(pid, path, infos, lnk, done, globule) {
 
         let id = "link-download-row-" + pid
         let row = this.getMenuDiv().querySelector("#" + id)
@@ -6097,42 +6082,58 @@ export class FilesUploader extends Menu {
                 // row.parentNode.removeChild(row)
                 row.children[1].innerHTML = `
                 <div style="display: flex; flex-direction: column; width: 100%; align-items: flex-start; font-size: 0.85rem;">
-                    <span>${info.split(": ")[1]} (done)</span>
-                    <span>${path}</span>
+                    <span id="file-lnk" class="file-path">${info.split(": ")[1]}</span>
+                    <span id="dir-lnk" class="file-path">${path}</span>
                 </div>
                 `
+
+                // Open the file
+                row.querySelector("#file-lnk").onclick = () => {
+                    Model.eventHub.publish("follow_link_event_", { path: path + "/" + info.split(": ")[1], domain: globule.domain }, true)
+                }
+
+                // Open the containing dir.
+                row.querySelector("#dir-lnk").onclick = () => {
+                    Model.eventHub.publish("follow_link_event_", { path: path, domain: globule.domain }, true)
+                }
+
             }
             return
         }
 
         // display the button.
         if (row == undefined) {
-            let row = document.createElement("tr")
+
+            let row = document.createElement("div")
+            row.className = "table-row"
             row.id = id
-            let cancelCell = document.createElement("td")
+
+            let cancelCell = document.createElement("div")
+            cancelCell.className = "table-cell"
+
             let cancelBtn = document.createElement("paper-icon-button")
             cancelBtn.icon = "icons:close"
             cancelCell.appendChild(cancelBtn)
 
-            let cellSource = document.createElement("td")
-            cellSource.style.paddingLeft = "5px"
-            cellSource.style.display = "table-cell"
+            let cellSource = document.createElement("div")
+            cellSource.className = "table-cell"
+            cellSource.style.flexGrow = "1"
 
-            cellSource.innerHTML = `
+            let html = `
             <div style="display: flex; flex-direction: column; width: 100%; align-items: flex-start; font-size: 0.85rem;">
                 <span id="${id}_title" style="text-align: left; width: 100%;">${infos}</span>
                 <p id="${id}_infos" style="text-align: left; width: 100%; white-space: pre-line; margin: 0px;"></p>
                 <span class="file-path" style="text-align: left; width: 100%">${path}</span>
             </div>`;
 
+            cellSource.innerHTML = html
+
             row.appendChild(cancelCell)
             row.appendChild(cellSource);
+
+            // So here if the user click on the lnk...
             row.querySelector(".file-path").onclick = () => {
-                /*
-                _readDir(torrent.getDestination(), dir => {
-                    Model.eventHub.publish("__set_dir_event__", { path: dir, file_explorer_id: this._file_explorer_.id }, true)
-                }, err => ApplicationView.displayMessage(err, 3000), this.globule)
-                */
+                Model.eventHub.publish("follow_link_event_", { path: path, domain: globule.domain }, true)
             }
 
             cancelBtn.onclick = () => {
@@ -6141,6 +6142,9 @@ export class FilesUploader extends Menu {
 
             // Append to files panels.
             this.links_download_table.appendChild(row)
+
+            // So here I will display a message to the user to inform that the file will be downloaded...
+            let toat = ApplicationView.displayMessage(`<div style="display: flex; flex-direction: column; justify-content: center;"><span>Start download file</span>${html}<span style="aling-self: center;">...<span></div>`, 3000)
 
         } else {
 
@@ -6167,16 +6171,20 @@ export class FilesUploader extends Menu {
 
         // display the button.
         if (row == undefined) {
-            let row = document.createElement("tr")
+            let row = document.createElement("div")
+            row.className = "table-row"
             row.done = false
             row.id = id
-            let cancelCell = document.createElement("td")
+
+            let cancelCell = document.createElement("div")
+            cancelCell.className = "table-cell"
             let cancelBtn = document.createElement("paper-icon-button")
             cancelBtn.icon = "icons:close"
             cancelCell.appendChild(cancelBtn)
-            let cellSource = document.createElement("td")
-            cellSource.style.textAlign = "left"
-            cellSource.style.padding = "5px"
+
+            let cellSource = document.createElement("div")
+            cellSource.className = "table-cell"
+            cellSource.style.flexGrow = "1"
 
             cellSource.innerHTML = `
             <div style="display: flex; flex-direction: column; width: 100%; align-items: flex-start; font-size: 0.85rem;">
@@ -6186,7 +6194,7 @@ export class FilesUploader extends Menu {
                         <iron-icon  id="_${uuid}-collapse-btn"  icon="unfold-less" --iron-icon-fill-color:var(--palette-text-primary);"></iron-icon>
                         <paper-ripple class="circle" recenters=""></paper-ripple>
                     </div>
-                    <span id="${id}_title" class="file-name" style="flex-grow: 1;  max-width: 600px;">${torrent.getName()}</span>
+                    <span id="${id}_title" class="file-path" style="flex-grow: 1;  max-width: 320px;">${torrent.getName()}</span>
                     <span class="speedometer-div"></span>
                 </div>
    
@@ -6195,18 +6203,19 @@ export class FilesUploader extends Menu {
                     </div>
                 </iron-collapse>
 
-                <span class="file-path">${torrent.getDestination()}</span>
+                <span id="${id}_dest_path" class="file-path">${torrent.getDestination()}</span>
                 <paper-progress  id="${id}_progress_bar"  style="width: 100%; margin-top: 5px;"></paper-progress>
             </div>`;
 
             row.appendChild(cancelCell)
             row.appendChild(cellSource);
-            row.querySelector(".file-path").onclick = () => {
-                /** 
-                 * _readDir(torrent.getDestination(), dir => {
-                    Model.eventHub.publish("__set_dir_event__", { path: dir, file_explorer_id: this._file_explorer_.id }, true)
-                }, err => ApplicationView.displayMessage(err, 3000), globule)
-                */
+
+            row.querySelector(`#${id}_dest_path`).onclick = () => {
+                Model.eventHub.publish("follow_link_event_", { path: torrent.getDestination(), domain: globule.domain }, true)
+            }
+
+            row.querySelector(`#${id}_title`).onclick = () => {
+                Model.eventHub.publish("follow_link_event_", { path: torrent.getDestination() + "/" + torrent.getName(), domain: globule.domain }, true)
             }
 
             cancelBtn.onclick = () => {
@@ -6262,7 +6271,7 @@ export class FilesUploader extends Menu {
                     let html = `
                         <div id="${id}" style="display: flex; flex-direction: column; font-size: 0.85rem;"> 
                             <div style="display: flex;">
-                                <span>${f.getPath().split("/")[f.getPath().split("/").length - 1]}</span>
+                                <span id="file-lnk" >${f.getPath().split("/")[f.getPath().split("/").length - 1]}</span>
                             </div>
                             <paper-progress id="${id}_progress_bar" style="width: 100%;"></paper-progress>
                         </div>
@@ -6273,6 +6282,16 @@ export class FilesUploader extends Menu {
 
                 let progressBar_ = fileRow.querySelector(`#${id}_progress_bar`)
                 progressBar_.value = f.getPercent()
+                if(f.getPercent() == 100){
+                    progressBar_.style.display = "none"
+                    // Open the file
+                    let fileLnk = fileRow.querySelector("#file-lnk")
+                    fileLnk.classList.add("file-path")
+                    //ApplicationView.displayMessage("Torrent File " + f.getPath() + " was uploaded", 3000)
+                    fileLnk.onclick = () => {
+                        Model.eventHub.publish("follow_link_event_", { path: torrent.getDestination() + "/" + f.getPath(), domain: globule.domain }, true)
+                    }
+                }
             })
         }
     }
@@ -6291,23 +6310,33 @@ export class FilesUploader extends Menu {
         for (var i = 0; i < files.length; i++) {
             let f = files[i]
             let size = getFileSizeString(f.size)
-            let row = document.createElement("tr")
-            let cancelCell = document.createElement("td")
+
+            let row = document.createElement("div")
+            row.className = "table-row"
+            row.id = "_" + getUuidByString(path + "/" + f.name)
+
+            let cancelCell = document.createElement("div")
+            cancelCell.className = "table-cell"
+
             let cancelBtn = document.createElement("paper-icon-button")
             cancelBtn.icon = "icons:close"
             cancelCell.appendChild(cancelBtn)
-            let cellSource = document.createElement("td")
-            cellSource.style.textAlign = "left"
-            cellSource.style.paddingLeft = "5px"
+
+            let cellSource = document.createElement("div")
+            cancelCell.className = "table-cell"
+            cellSource.style.flexGrow = "1"
+
             cellSource.innerHTML = `
                 <div style="display: flex; flex-direction: column; width: 100%; align-items: flex-start; font-size: 0.85rem;">
-                    <span style="background-color:var(--palette-background-default);">${f.name}</span>
-                    <span class="file-path" style="background-color:var(--palette-background-default);">${path.split("/")[path.split("/").length - 1]}</span>
+                    <span id="file-lnk" style="">${f.name}</span>
+                    <span id="dest-lnk" class="file-path" style="">${path}</span>
                     <paper-progress value=0 style="width: 100%;"></paper-progress>
                 </div>`;
 
-            let cellSize = document.createElement("td")
+            let cellSize = document.createElement("div")
+            cellSize.className = "table-cell"
             cellSize.innerHTML = size;
+
             row.appendChild(cancelCell)
             row.appendChild(cellSource);
             row.appendChild(cellSize);
@@ -6316,13 +6345,11 @@ export class FilesUploader extends Menu {
                 row.style.display = "none";
             }
 
-            row.querySelector(".file-path").onclick = () => {
-                console.log("open dir ", dir)
-                /**
-                _readDir(torrent.getDestination(), dir => {
-                    Model.eventHub.publish("__set_dir_event__", { path: dir, file_explorer_id: this._file_explorer_.id }, true)
-                }, err => ApplicationView.displayMessage(err, 3000), globule)
-                */
+            // Display message to the user.
+            ApplicationView.displayMessage("Upload file " + f.name + " to " + path, 3000)
+
+            row.querySelector("#dest-lnk").onclick = () => {
+                Model.eventHub.publish("follow_link_event_", { path: path, domain: globule.domain }, true)
             }
 
             // Append to files panels.
@@ -6365,11 +6392,21 @@ export class FilesUploader extends Menu {
                             ApplicationView.displayMessage("Upload failed!", 3000)
                         },
                         event => {
-                            let progress = this.files_upload_table.children[0].querySelector("paper-progress")
+
+                            // retreive the row and the progress bar...
+                            let row = this.files_upload_table.querySelector("#_" + getUuidByString(path + "/" + f.name))
+                            let progress = row.querySelector("paper-progress")
+
                             progress.value = (event.loaded / event.total) * 100
                             if (event.loaded == event.total) {
                                 ApplicationView.displayMessage("File " + f.name + " was uploaded", 3000)
                                 progress.parentNode.removeChild(progress)
+
+                                // Set the lnk...
+                                row.querySelector("#file-lnk").classList.add("file-path")
+                                row.querySelector("#file-lnk").onclick = () => {
+                                    Model.eventHub.publish("follow_link_event_", { path: path + "/" + f.name , domain: globule.domain }, true)
+                                }
                             }
                         },
                         event => {
@@ -6382,6 +6419,7 @@ export class FilesUploader extends Menu {
 
         // Start file upload!
         uploadFile(0, () => {
+            // When all file are uploaded...
             ApplicationView.displayMessage("All files are now uploaded!", 3000)
             Model.publish("reload_dir_event", path, false)
         })
