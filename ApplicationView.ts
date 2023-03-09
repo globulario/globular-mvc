@@ -363,9 +363,6 @@ export class ApplicationView extends View {
     // init listener's in the layout.
     ApplicationView.layout.init();
 
-    // Init the file uploader.
-    ApplicationView.filesUploader.init();
-
 
     this.login_.init();
     this.accountMenu.init();
@@ -784,6 +781,9 @@ export class ApplicationView extends View {
           this.getSideMenu().appendChild(this.filesMenu);
           this.filesMenu.shrink()
 
+          this.getSideMenu().appendChild(ApplicationView.filesUploader);
+          ApplicationView.filesUploader.shrink()
+
           this.getSideMenu().appendChild(this.contactsMenu);
           this.contactsMenu.shrink()
 
@@ -830,6 +830,9 @@ export class ApplicationView extends View {
 
           ApplicationView.layout.toolbar().appendChild(this.filesMenu);
           this.filesMenu.expand()
+
+          ApplicationView.layout.toolbar().appendChild(ApplicationView.filesUploader);
+          ApplicationView.filesUploader.expand()
 
           ApplicationView.layout.toolbar().appendChild(this.contactsMenu);
           this.contactsMenu.expand()
@@ -986,8 +989,6 @@ export class ApplicationView extends View {
       return
     }
 
-    // test only...
-    document.body.appendChild(ApplicationView.filesUploader)
 
     // Test if the user can edit the website...
     this.contentManager.setEditMode()
@@ -1057,6 +1058,9 @@ export class ApplicationView extends View {
     this.systemInfosMenu.init();
     this.watchingMenu.init();
     this.blogEditingMenu.init();
+
+    // Init the file uploader.
+    ApplicationView.filesUploader.init();
 
     this.isLogin = true;
 

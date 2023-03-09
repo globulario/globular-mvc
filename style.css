@@ -237,12 +237,6 @@ globular-web-page{
    min-height: calc(100vh - 60px);
 }
 
-globular-files-uploader{
-   position: fixed;
-   right: 0px;
-   bottom: 0px;
-}
-
 /**
  * That bar is use to minimize dialog.
  */

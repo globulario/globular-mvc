@@ -2041,7 +2041,6 @@ export class FilesIconView extends FilesView {
                 display: flex;
                 flex-direction: column;
                 padding: 8px;
-                /*min-height: 400px;*/
                 height: 100%;
             }
 
@@ -5764,31 +5763,51 @@ customElements.define('globular-video-preview', VideoPreview)
 /**
  * That object is use to help make applications more responding when files are uploading...
  */
-export class FilesUploader extends HTMLElement {
+export class FilesUploader extends Menu {
     // attributes.
 
     // Create the applicaiton view.
     constructor() {
-        super()
-        // Set the shadow dom.
-        this.attachShadow({ mode: 'open' });
 
-        this._file_explorer_ = null;
+        super("file_uploader", "icons:file-upload", "Files Uploader")
+
+
+        this.width = 320;
+        if (this.hasAttribute("width")) {
+            this.width = parseInt(this.getAttribute("width"));
+        }
+
+        this.height = 550;
+        if (this.hasAttribute("height")) {
+            this.height = parseInt(this.getAttribute("height"));
+        }
+    }
+
+    init() {
 
         // Innitialisation of the layout.
-        this.shadowRoot.innerHTML = `
+        let html = `
         <style>
-           
+        
+            ::-webkit-scrollbar {
+                width: 5px;
+                height: 5px;
+            }
+                
+            ::-webkit-scrollbar-track {
+                background: var(--palette-background-default);
+            }
+            
+            ::-webkit-scrollbar-thumb {
+                background: var(--palette-divider); 
+            }
+
             #container{
+                background-color: var(--palette-background-paper);
                 position: relative;
                 font-size: 1rem;
                 display: flex;
                 flex-direction: column;
-            }
-
-            #collapse-panel{
-                background-color: var(--palette-background-paper);
-                display: none;
             }
 
             .collapse-torrent-panel{
@@ -5796,21 +5815,14 @@ export class FilesUploader extends HTMLElement {
                 flex-direction: column;
                 max-height: 200px;
                 overflow: auto;
+                width: 100%;
             }
 
-            ::-webkit-scrollbar {
-                width: 5px;
-                height: 5px;
-             }
+            // test only...
+            this.getWorkspace().appendChild(ApplicationView.filesUploader)
+        
+            }
                 
-             ::-webkit-scrollbar-track {
-                background: var(--palette-background-default);
-             }
-             
-             ::-webkit-scrollbar-thumb {
-                background: var(--palette-divider); 
-             }
-             
             paper-icon-button .active{
 
             }
@@ -5820,43 +5832,49 @@ export class FilesUploader extends HTMLElement {
             }
 
             .content{
-                min-width: 350px;
-
+                display: flex;
+                flex-direction: column;
             }
 
             .card-content{
+                border-left: 1px solid var(--palette-divider); 
                 overflow-y: auto;
-                width: 100%;
-
+                flex-grow: 1;
+                max-height: calc(100vh - 200px);
+                min-height: 300px;
             }
 
             table {
-                width: 100%;
-                background-color: var(--palette-background-paper);
+                width: 470px;
             }
 
             td {
                 text-align: center;
                 vertical-align: middle;
                 white-space: nowrap;
-                padding: 0px 5px 0px 5px;
                 font-size: .85rem;
+            }
+
+            th {
+                border-top: 1px solid var(--palette-divider); 
+            }
+
+            th, td {
+                border-bottom: 1px solid var(--palette-divider); 
             }
 
             td span {
                 display: block;
                 white-space: break-spaces;
-                margin-bottom: 4px;
+                padding: 2px 5px 2px 5px;
             }
 
             .file-name {
-               
                 overflow: hidden;
                 white-space:nowrap;
                 text-overflow:ellipsis;
                 max-width:500px;
                 display:inline-block;
-                background-color:var(--palette-background-default);
             }
 
             .file-path {
@@ -5865,7 +5883,6 @@ export class FilesUploader extends HTMLElement {
                 text-overflow:ellipsis;
                 max-width:300px;
                 display:inline-block;
-                background-color:var(--palette-background-default);
                 text-decoration: underline;
             }
 
@@ -5877,19 +5894,19 @@ export class FilesUploader extends HTMLElement {
                 min-width: 60px;
                 text-align: right;
             }
+
             tbody{
                 position: relative;
                 width: 100%;
             }
 
-            tbody tr {
-                background-color: var(--palette-background-default);
+            tbody tr, th {
+        
                 transition: background 0.2s ease,padding 0.8s linear;
-                max-width: 300px;
             }
-
-            tr.active{
-                filter: invert(10%);
+            // test only...
+            this.getWorkspace().appendChild(ApplicationView.filesUploader)
+        
             }
 
             paper-card{
@@ -5898,8 +5915,10 @@ export class FilesUploader extends HTMLElement {
             }
 
             paper-tabs{
-                background: var(--palette-background-default); 
+                background: var(--palette-primary-accent); 
                 border-top: 1px solid var(--palette-divider);
+                border-left: 1px solid var(--palette-divider); 
+
                 width: 100%;
 
                 /* custom CSS property */
@@ -5909,112 +5928,99 @@ export class FilesUploader extends HTMLElement {
             }
         </style>
         <div id="container">
-            <paper-icon-button style="align-self: flex-end;" icon="icons:file-upload"> </paper-icon-button>
-            <iron-collapse id="collapse-panel">
-                <paper-card class="content">
-                    <paper-tabs selected="0" style="">
-                        <paper-tab id="file-upload-tab">Files</paper-tab>
-                        <paper-tab id="links-download-tab">Links</paper-tab>
-                        <paper-tab id="torrents-dowload-tab">Torrents</paper-tab>
-                    </paper-tabs>
-                    <div class="card-content" style="padding: 0px;">
-                        <table id="files-upload-table">
-                            <thead class="files-list-view-header">
-                                <tr>
-                                    <th></th>
-                                    <th class="name_header_div files-list-view-header">Name</th>
-                                    <th class="size_header_div files-list-view-header" style="min-width: 80px;">Size</th>
-                                </tr>
-                            </thead>
-                            <tbody id="file-upload-tbody" class="files-list-view-info">
-                            </tbody>
-                        </table>
-                        <table id="links-download-table" style="display: none;">
-                            <thead class="files-list-view-header">
-                                <tr>
-                                    <th></th>
-                                    <th class="name_header_div files-list-view-header">Detail</th>
-                                </tr>
-                            </thead>
-                            <tbody id="links-download-tbody" class="files-list-view-info">
-                            </tbody>
-                        </table>
-                        <table id="torrents-download-table" style="display: none;">
-                            <thead class="files-list-view-header">
-                                <tr>
-                                    <th></th>
-                                    <th class="name_header_div files-list-view-header">Detail</th>
-                                </tr>
-                            </thead>
-                            <tbody id="torrent-download-tbody" class="files-list-view-info">
-                            </tbody>
-                        </table>
-                    </div>
-                </paper-card>
-            </iron-collapse>
+            <paper-card class="content">
+                <paper-tabs selected="0" style="">
+                    <paper-tab id="file-upload-tab">Files</paper-tab>
+                    <paper-tab id="links-download-tab">Links</paper-tab>
+                    <paper-tab id="torrents-dowload-tab">Torrents</paper-tab>
+                </paper-tabs>
+                <div class="card-content" style="padding: 0px;">
+                    <table id="files-upload-table">
+                        <thead class="files-list-view-header">
+                            <tr>
+                                <th></th>
+                                <th class="name_header_div files-list-view-header">Name</th>
+                                <th class="size_header_div files-list-view-header" style="min-width: 80px;">Size</th>
+                            </tr>
+                        </thead>
+                        <tbody id="file-upload-tbody" class="files-list-view-info">
+                        </tbody>
+                    </table>
+                    <table id="links-download-table" style="display: none;">
+                        <thead class="files-list-view-header">
+                            <tr>
+                                <th></th>
+                                <th class="name_header_div files-list-view-header">Detail</th>
+                            </tr>
+                        </thead>
+                        <tbody id="links-download-tbody" class="files-list-view-info">
+                        </tbody>
+                    </table>
+                    <table id="torrents-download-table" style="display: none;">
+                        <thead class="files-list-view-header">
+                            <tr>
+                                <th></th>
+                                <th class="name_header_div files-list-view-header">Detail</th>
+                            </tr>
+                        </thead>
+                        <tbody id="torrent-download-tbody" class="files-list-view-info">
+                        </tbody>
+                    </table>
+                </div>
+            </paper-card>
             
         </div>
         `
+
+        let range = document.createRange()
+        this.getMenuDiv().innerHTML = "" // remove existing elements.
+        this.getMenuDiv().appendChild(range.createContextualFragment(html));
+
         // The body where upload files info are displayed
-        this.files_upload_table = this.shadowRoot.querySelector("#file-upload-tbody")
+        this.files_upload_table = this.getMenuDiv().querySelector("#file-upload-tbody")
 
         // The body where torrents files will be displayed.
-        this.torrent_download_table = this.shadowRoot.querySelector("#torrent-download-tbody")
+        this.torrent_download_table = this.getMenuDiv().querySelector("#torrent-download-tbody")
 
         // The list of link where link's 
-        this.links_download_table = this.shadowRoot.querySelector("#links-download-tbody")
+        this.links_download_table = this.getMenuDiv().querySelector("#links-download-tbody")
 
         // The tabs...
-        this.filesUploadTab = this.shadowRoot.querySelector("#file-upload-tab")
-        this.torrentsDowloadTab = this.shadowRoot.querySelector("#torrents-dowload-tab")
-        this.linksDownloadTab = this.shadowRoot.querySelector("#links-download-tab")
+        this.filesUploadTab = this.getMenuDiv().querySelector("#file-upload-tab")
+        this.torrentsDowloadTab = this.getMenuDiv().querySelector("#torrents-dowload-tab")
+        this.linksDownloadTab = this.getMenuDiv().querySelector("#links-download-tab")
 
         // So here I will set the tab interractions.
         this.filesUploadTab.onclick = () => {
-            let tables = this.shadowRoot.querySelectorAll("table")
+            let tables = this.getMenuDiv().querySelectorAll("table")
             for (var i = 0; i < tables.length; i++) {
                 tables[i].style.display = "none"
             }
 
-            this.shadowRoot.querySelector("#files-upload-table").style.display = "block"
+            let table = this.getMenuDiv().querySelector("#files-upload-table")
+            table.style.display = ""
         }
 
         this.torrentsDowloadTab.onclick = () => {
-            let tables = this.shadowRoot.querySelectorAll("table")
+            let tables = this.getMenuDiv().querySelectorAll("table")
             for (var i = 0; i < tables.length; i++) {
                 tables[i].style.display = "none"
             }
 
-            this.shadowRoot.querySelector("#torrents-download-table").style.display = "block"
+            let table = this.getMenuDiv().querySelector("#torrents-download-table")
+            table.style.display = ""
         }
 
         this.linksDownloadTab.onclick = () => {
-            let tables = this.shadowRoot.querySelectorAll("table")
+            let tables = this.getMenuDiv().querySelectorAll("table")
             for (var i = 0; i < tables.length; i++) {
                 tables[i].style.display = "none"
             }
 
-            this.shadowRoot.querySelector("#links-download-table").style.display = "block"
+            let table = this.getMenuDiv().querySelector("#links-download-table")
+            table.style.display = ""
         }
 
-        // The hide and show button.
-        this.btn = this.shadowRoot.querySelector("paper-icon-button")
-
-        let content = this.shadowRoot.querySelector("#collapse-panel")
-        // give the focus to the input.
-        this.btn.onclick = () => {
-            content.toggle();
-            if (this.files_upload_table.children.length > 0) {
-                this.btn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-active)")
-                this.shadowRoot.querySelector("iron-collapse").style.display = "block";
-            }
-        }
-
-        this.btn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
-
-    }
-
-    init() {
         // Upload file event.
         Model.eventHub.subscribe(
             "__upload_files_event__", (uuid) => { },
@@ -6067,9 +6073,9 @@ export class FilesUploader extends HTMLElement {
             this.getTorrentsInfo(globule)
         })
 
+        if (this.getMenuDiv().parentNode)
+            this.getMenuDiv().parentNode.removeChild(this.getMenuDiv())
     }
-
-
 
     /**
      * Dowload a video on globular server from a link.
@@ -6080,7 +6086,7 @@ export class FilesUploader extends HTMLElement {
     uploadLink(pid, path, infos, lnk, done) {
 
         let id = "link-download-row-" + pid
-        let row = this.shadowRoot.querySelector("#" + id)
+        let row = this.getMenuDiv().querySelector("#" + id)
 
         if (done || infos == "done") {
             let span_title = this.links_download_table.querySelector("#" + id + "_title")
@@ -6090,7 +6096,7 @@ export class FilesUploader extends HTMLElement {
 
                 // row.parentNode.removeChild(row)
                 row.children[1].innerHTML = `
-                <div style="display: flex; flex-direction: column; width: 400px; align-items: flex-start; font-size: 0.85rem;">
+                <div style="display: flex; flex-direction: column; width: 100%; align-items: flex-start; font-size: 0.85rem;">
                     <span>${info.split(": ")[1]} (done)</span>
                     <span>${path}</span>
                 </div>
@@ -6100,9 +6106,6 @@ export class FilesUploader extends HTMLElement {
         }
 
         // display the button.
-        this.btn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-active)")
-        this.shadowRoot.querySelector("iron-collapse").style.display = "block";
-
         if (row == undefined) {
             let row = document.createElement("tr")
             row.id = id
@@ -6116,10 +6119,10 @@ export class FilesUploader extends HTMLElement {
             cellSource.style.display = "table-cell"
 
             cellSource.innerHTML = `
-            <div style="display: flex; flex-direction: column; width: 400px; align-items: flex-start; font-size: 0.85rem;">
-                <span id="${id}_title" style="text-align: left; background-color:var(--palette-background-default); width: 100%;">${infos}</span>
-                <p id="${id}_infos" style="text-align: left; background-color:var(--palette-background-default); width: 100%; white-space: pre-line; margin: 0px;"></p>
-                <span class="file-path" style="text-align: left; background-color:var(--palette-background-default);  width: 100%">${path}</span>
+            <div style="display: flex; flex-direction: column; width: 100%; align-items: flex-start; font-size: 0.85rem;">
+                <span id="${id}_title" style="text-align: left; width: 100%;">${infos}</span>
+                <p id="${id}_infos" style="text-align: left; width: 100%; white-space: pre-line; margin: 0px;"></p>
+                <span class="file-path" style="text-align: left; width: 100%">${path}</span>
             </div>`;
 
             row.appendChild(cancelCell)
@@ -6138,8 +6141,7 @@ export class FilesUploader extends HTMLElement {
 
             // Append to files panels.
             this.links_download_table.appendChild(row)
-            this.btn.click()
-            this.linksDownloadTab.click();
+
         } else {
 
             if (infos.startsWith("[download] Destination:")) {
@@ -6150,7 +6152,6 @@ export class FilesUploader extends HTMLElement {
                 span_infos.innerHTML = infos.trim();
             }
         }
-
     }
 
     /**
@@ -6162,12 +6163,9 @@ export class FilesUploader extends HTMLElement {
         let globule = torrent.globule
         let uuid = getUuid(torrent.getName())
         let id = "torrent-download-row-" + uuid
-        let row = this.shadowRoot.querySelector("#" + id)
+        let row = this.getMenuDiv().querySelector("#" + id)
 
         // display the button.
-        this.btn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-active)")
-        this.shadowRoot.querySelector("iron-collapse").style.display = "block";
-
         if (row == undefined) {
             let row = document.createElement("tr")
             row.done = false
@@ -6178,11 +6176,12 @@ export class FilesUploader extends HTMLElement {
             cancelCell.appendChild(cancelBtn)
             let cellSource = document.createElement("td")
             cellSource.style.textAlign = "left"
-            cellSource.style.paddingLeft = "5px"
+            cellSource.style.padding = "5px"
 
             cellSource.innerHTML = `
-            <div style="display: flex; flex-direction: column; width: 400px; align-items: flex-start; font-size: 0.85rem;">
-                <div style="display: flex; align-items: center; ">
+            <div style="display: flex; flex-direction: column; width: 100%; align-items: flex-start; font-size: 0.85rem;">
+            
+                <div style="display: flex; align-items: center; width: 100%;">
                     <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
                         <iron-icon  id="_${uuid}-collapse-btn"  icon="unfold-less" --iron-icon-fill-color:var(--palette-text-primary);"></iron-icon>
                         <paper-ripple class="circle" recenters=""></paper-ripple>
@@ -6192,18 +6191,16 @@ export class FilesUploader extends HTMLElement {
                 </div>
    
                 <iron-collapse id="_${uuid}-collapse-torrent-panel" class="collapse-torrent-panel">
-                    <div id="_${uuid}-file-list-div" style="display: flex; flex-direction: column;">
+                    <div id="_${uuid}-file-list-div" style="display: flex; flex-direction: column; padding-left: 15px; padding-right: 5px">
                     </div>
                 </iron-collapse>
 
-                <span title="${torrent.getDestination()}" class="file-path">${torrent.getDestination().split("/")[torrent.getDestination().split("/").length - 1]}</span>
+                <span class="file-path">${torrent.getDestination()}</span>
                 <paper-progress  id="${id}_progress_bar"  style="width: 100%; margin-top: 5px;"></paper-progress>
             </div>`;
 
             row.appendChild(cancelCell)
             row.appendChild(cellSource);
-
-
             row.querySelector(".file-path").onclick = () => {
                 /** 
                  * _readDir(torrent.getDestination(), dir => {
@@ -6219,15 +6216,15 @@ export class FilesUploader extends HTMLElement {
                 generatePeerToken(globule, token => {
                     globule.torrentService.dropTorrent(rqst, { application: Application.application, domain: globule.domain, token: token })
                         .then(rsp => {
-                            row.parentNode.removeChild(row)
+
                         }).catch(err => ApplicationView.displayMessage(err, 3000))
                 })
+                row.parentNode.removeChild(row)
             }
 
             // Append to files panels.
             this.torrent_download_table.appendChild(row)
-            this.btn.click()
-            this.torrentsDowloadTab.click();
+
         } else {
 
             let progressBar = row.querySelector(`#${id}_progress_bar`)
@@ -6278,7 +6275,6 @@ export class FilesUploader extends HTMLElement {
                 progressBar_.value = f.getPercent()
             })
         }
-
     }
 
     /**
@@ -6290,10 +6286,6 @@ export class FilesUploader extends HTMLElement {
 
         // So here I will try to get the most information from the backend to be able to keep the user inform about what append 
         // with uploading files process.
-        if (files.length > 0) {
-            this.btn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-active)")
-            this.shadowRoot.querySelector("iron-collapse").style.display = "block";
-        }
 
         // Upload files panel...
         for (var i = 0; i < files.length; i++) {
@@ -6308,7 +6300,7 @@ export class FilesUploader extends HTMLElement {
             cellSource.style.textAlign = "left"
             cellSource.style.paddingLeft = "5px"
             cellSource.innerHTML = `
-                <div style="display: flex; flex-direction: column; width: 400px; align-items: flex-start; font-size: 0.85rem;">
+                <div style="display: flex; flex-direction: column; width: 100%; align-items: flex-start; font-size: 0.85rem;">
                     <span style="background-color:var(--palette-background-default);">${f.name}</span>
                     <span class="file-path" style="background-color:var(--palette-background-default);">${path.split("/")[path.split("/").length - 1]}</span>
                     <paper-progress value=0 style="width: 100%;"></paper-progress>
@@ -6335,7 +6327,6 @@ export class FilesUploader extends HTMLElement {
 
             // Append to files panels.
             this.files_upload_table.appendChild(row)
-            this.btn.click()
         }
 
         // Upload file one by one and 
@@ -6379,11 +6370,6 @@ export class FilesUploader extends HTMLElement {
                             if (event.loaded == event.total) {
                                 ApplicationView.displayMessage("File " + f.name + " was uploaded", 3000)
                                 progress.parentNode.removeChild(progress)
-                                if (this.files_upload_table.children.length == 0) {
-                                    // Test if there is some files...
-                                    this.btn.style.setProperty("--iron-icon-fill-color", "var(--palette-action-disabled)")
-                                    this.shadowRoot.querySelector("iron-collapse").style.display = "none";
-                                }
                             }
                         },
                         event => {
