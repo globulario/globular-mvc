@@ -6189,9 +6189,53 @@ export class FilesUploader extends Menu {
             }
 
             cancelBtn.onclick = () => {
-                // so here I will also send an event to cancel the upload process...
-                globule.eventHub.publish("cancel_upload_event", JSON.stringify({pid:pid, path: path}), false)
-                row.style.display = "none";
+                // Here I will ask the user for confirmation before actually delete the contact informations.
+                let toast = ApplicationView.displayMessage(
+                    `
+                <style>
+                
+                #yes-no-upload-video-delete-box{
+                    display: flex;
+                    flex-direction: column;
+                }
+
+                #yes-no-upload-video-delete-box globular-contact-card{
+                    padding-bottom: 10px;
+                }
+
+                #yes-no-upload-video-delete-box div{
+                    display: flex;
+                    padding-bottom: 10px;
+                }
+
+                </style>
+                <div id="yes-no-upload-video-delete-box">
+                <div>Your about to cancel video upload</div>
+                <div>Is it what you want to do? </div>
+                <div style="justify-content: flex-end;">
+                    <paper-button raised id="yes-delete-upload-video">Yes</paper-button>
+                    <paper-button raised id="no-delete-upload-video">No</paper-button>
+                </div>
+                </div>
+                `,
+                    15000 // 15 sec...
+                );
+
+                let yesBtn = document.querySelector("#yes-delete-upload-video")
+                let noBtn = document.querySelector("#no-delete-upload-video")
+
+                // On yes
+                yesBtn.onclick = () => {
+                    toast.dismiss();
+
+                    // so here I will also send an event to cancel the upload process...
+                    globule.eventHub.publish("cancel_upload_event", JSON.stringify({ pid: pid, path: path }), false)
+                    row.style.display = "none";
+                }
+
+                noBtn.onclick = () => {
+                    toast.dismiss();
+                }
             }
 
             // Append to files panels.
@@ -6270,19 +6314,69 @@ export class FilesUploader extends Menu {
             }
 
             cancelBtn.onclick = () => {
-                // remove the row firt to prevent the user to click more than once...
-                row.parentNode.removeChild(row)
 
-                // So here I will remove the torrent from the list...
-                let rqst = new DropTorrentRequest
-                rqst.setName(torrent.getName())
-                generatePeerToken(globule, token => {
-                    globule.torrentService.dropTorrent(rqst, { application: Application.application, domain: globule.domain, token: token })
-                        .then(rsp => {
+                // Here I will ask the user for confirmation before actually delete the contact informations.
+                let toast = ApplicationView.displayMessage(
+                    `
+                    <style>
+                    
+                    #yes-no-torrent-delete-box{
+                        display: flex;
+                        flex-direction: column;
+                    }
+    
+                    #yes-no-torrent-delete-box globular-contact-card{
+                        padding-bottom: 10px;
+                    }
+    
+                    #yes-no-torrent-delete-box div{
+                        display: flex;
+                        padding-bottom: 10px;
+                    }
+    
+                    </style>
 
-                        }).catch(err => ApplicationView.displayMessage(err, 3000))
-                })
-               
+                    <div id="yes-no-torrent-delete-box">
+                    <div>Your about to remove torrent</div>
+                    <div style="font-style: bold;">${torrent.getName()}</div>
+                    <div>Is it what you want to do? </div>
+                    <div style="justify-content: flex-end;">
+                        <paper-button raised id="yes-delete-torrent">Yes</paper-button>
+                        <paper-button raised id="no-delete-torrent">No</paper-button>
+                    </div>
+                    </div>
+                    `,
+                    15000 // 15 sec...
+                );
+
+                let yesBtn = document.querySelector("#yes-delete-torrent")
+                let noBtn = document.querySelector("#no-delete-torrent")
+
+                // On yes
+                yesBtn.onclick = () => {
+                    toast.dismiss();
+
+                    // remove the row firt to prevent the user to click more than once...
+                    row.parentNode.removeChild(row)
+
+                    // So here I will remove the torrent from the list...
+                    let rqst = new DropTorrentRequest
+                    rqst.setName(torrent.getName())
+                    generatePeerToken(globule, token => {
+                        globule.torrentService.dropTorrent(rqst, { application: Application.application, domain: globule.domain, token: token })
+                            .then(rsp => {
+                                ApplicationView.displayMessage(
+                                    "Torrent was download was remove",
+                                    3000
+                                );
+                            }).catch(err => ApplicationView.displayMessage(err, 3000))
+                    })
+
+                }
+
+                noBtn.onclick = () => {
+                    toast.dismiss();
+                }
             }
 
             // Append to files panels.
@@ -6475,9 +6569,52 @@ export class FilesUploader extends Menu {
 
                     // overide the onclik event to cancel the file upload in that case.
                     cancelBtn.onclick = () => {
-                        // send abort signal...
-                        xhr.abort()
-                        row.style.display = "none";
+                        let toast = ApplicationView.displayMessage(
+                            `
+                        <style>
+                        
+                        #yes-no-upload-delete-box{
+                            display: flex;
+                            flex-direction: column;
+                        }
+        
+                        #yes-no-upload-delete-box globular-contact-card{
+                            padding-bottom: 10px;
+                        }
+        
+                        #yes-no-upload-delete-box div{
+                            display: flex;
+                            padding-bottom: 10px;
+                        }
+        
+                        </style>
+                        <div id="yes-no-upload-delete-box">
+                        <div>Your about to cancel file upload</div>
+                        <div>Is it what you want to do? </div>
+                        <div style="justify-content: flex-end;">
+                            <paper-button raised id="yes-delete-upload">Yes</paper-button>
+                            <paper-button raised id="no-delete-upload">No</paper-button>
+                        </div>
+                        </div>
+                        `,
+                            15000 // 15 sec...
+                        );
+
+                        let yesBtn = document.querySelector("#yes-delete-upload")
+                        let noBtn = document.querySelector("#no-delete-upload")
+
+                        // On yes
+                        yesBtn.onclick = () => {
+                            toast.dismiss();
+
+                            // send abort signal...
+                            xhr.abort()
+                            row.style.display = "none";
+                        }
+
+                        noBtn.onclick = () => {
+                            toast.dismiss();
+                        }
                     }
 
                 }, err => ApplicationView.displayMessage(err, 3000))
