@@ -5853,6 +5853,8 @@ export class FilesUploader extends Menu {
                 flex-direction: column;
             }
 
+            
+
             .table-header {
                 border-bottom: 1px solid var(--palette-divider); 
                 padding-bottom: 5px;
@@ -5896,6 +5898,8 @@ export class FilesUploader extends Menu {
                 max-width:300px;
                 display:inline-block;
                 text-decoration: underline;
+                flex-grow: 1;
+                max-width: 320px;
             }
 
             .file-path:hover {
@@ -5914,7 +5918,6 @@ export class FilesUploader extends Menu {
 
             paper-tabs{
                 background: var(--palette-primary-accent); 
-                border-top: 1px solid var(--palette-divider);
                 border-left: 1px solid var(--palette-divider); 
 
                 width: 100%;
@@ -5924,14 +5927,49 @@ export class FilesUploader extends Menu {
                 color: var(--palette-text-primary);
                 --paper-tab-ink: var(--palette-action-disabled);
             }
+
+            #close-btn{
+                display: none;
+            }
+
+            @media (max-width: 500px) {
+                .table {
+                    width: calc(100vw - 5px);
+                }
+
+                .table-cell {
+                    padding: 0px;
+                }
+
+                .card-content {
+                    max-height: calc(100vh - 120px);
+                    height: calc(100vh - 120px);
+                }
+
+                #container{
+                    height: 100%;
+                }
+
+                #close-btn{
+                    display: block;
+                }
+
+                .file-path{
+                    max-width: calc(100vw - 160px);
+                }
+            }
+
         </style>
         <div id="container">
             <paper-card class="content">
-                <paper-tabs selected="0" style="">
-                    <paper-tab id="file-upload-tab">Files</paper-tab>
-                    <paper-tab id="links-download-tab">Links</paper-tab>
-                    <paper-tab id="torrents-dowload-tab">Torrents</paper-tab>
-                </paper-tabs>
+                <div style="display: flex; align-items: center; background: var(--palette-primary-accent); ">
+                    <paper-tabs selected="0" style="">
+                        <paper-tab id="file-upload-tab">Files</paper-tab>
+                        <paper-tab id="links-download-tab">Videos</paper-tab>
+                        <paper-tab id="torrents-dowload-tab">Torrents</paper-tab>
+                    </paper-tabs>
+                    <paper-icon-button id="close-btn" icon="icons:close"></paper-icon-button>
+                </div>
                 <div class="card-content" style="padding: 0px;">
                     <div class="table" id="files-upload-table">
                         <div class="table-header" class="files-list-view-header">
@@ -5960,6 +5998,11 @@ export class FilesUploader extends Menu {
         let range = document.createRange()
         this.getMenuDiv().innerHTML = "" // remove existing elements.
         this.getMenuDiv().appendChild(range.createContextualFragment(html));
+
+        // The close button menu.
+        this.getMenuDiv().querySelector("#close-btn").onclick = ()=>{
+            this.getMenuDiv().parentNode.removeChild(this.getMenuDiv())
+        }
 
         // The body where upload files info are displayed
         this.files_upload_table = this.getMenuDiv().querySelector("#file-upload-tbody")
@@ -6194,7 +6237,7 @@ export class FilesUploader extends Menu {
                         <iron-icon  id="_${uuid}-collapse-btn"  icon="unfold-less" --iron-icon-fill-color:var(--palette-text-primary);"></iron-icon>
                         <paper-ripple class="circle" recenters=""></paper-ripple>
                     </div>
-                    <span id="${id}_title" class="file-path" style="flex-grow: 1;  max-width: 320px;">${torrent.getName()}</span>
+                    <span id="${id}_title" class="file-path" style="flex-grow: 1;">${torrent.getName()}</span>
                     <span class="speedometer-div"></span>
                 </div>
    

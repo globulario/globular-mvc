@@ -159,6 +159,7 @@ export class NotificationMenu extends Menu {
         @media (max-width: 500px) {
             #content {
                 width: calc(100vw - 20px);
+                margin-top: 10px;
             }
 
             .header {
