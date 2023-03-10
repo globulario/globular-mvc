@@ -748,7 +748,6 @@ export class VideoInfo extends HTMLElement {
             ${__style__}
 
             .title-div {
-                background-color: var(--palette-background-default);
                 color: var(--palette-text-primary);
                 user-select: none;
             }

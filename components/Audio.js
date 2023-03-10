@@ -281,6 +281,7 @@ export class AudioPlayer extends HTMLElement {
             .vz-wrapper {
                 width: 100%;
                 max-height: calc(100vh - 100px);
+                min-width: 600px;
                 max-width: 100vw;
                 padding: 0px 5px 0px 5px;
                 display: flex;
