@@ -1575,6 +1575,7 @@ export class FilesView extends HTMLElement {
                         }, err => ApplicationView.displayMessage(err, 3000))
                     })
                 });
+
             } else {
 
                 // Just beat it!
@@ -1650,6 +1651,7 @@ export class FilesView extends HTMLElement {
 
                 let cancelBtn = toast.el.querySelector("#upload-lnk-cancel-button")
                 cancelBtn.onclick = () => {
+
                     toast.dismiss();
                 }
 
@@ -6000,7 +6002,7 @@ export class FilesUploader extends Menu {
         this.getMenuDiv().appendChild(range.createContextualFragment(html));
 
         // The close button menu.
-        this.getMenuDiv().querySelector("#close-btn").onclick = ()=>{
+        this.getMenuDiv().querySelector("#close-btn").onclick = () => {
             this.getMenuDiv().parentNode.removeChild(this.getMenuDiv())
         }
 
@@ -6130,6 +6132,12 @@ export class FilesUploader extends Menu {
                 </div>
                 `
 
+                let cancelBtn = row.querySelector("#cancel-btn")
+                cancelBtn.onclick = () => {
+                    // so here I will also send an event to cancel the upload process...
+                    row.style.display = "none";
+                }
+
                 // Open the file
                 row.querySelector("#file-lnk").onclick = () => {
                     Model.eventHub.publish("follow_link_event_", { path: path + "/" + info.split(": ")[1], domain: globule.domain }, true)
@@ -6156,6 +6164,7 @@ export class FilesUploader extends Menu {
 
             let cancelBtn = document.createElement("paper-icon-button")
             cancelBtn.icon = "icons:close"
+            cancelBtn.id = "cancel-btn"
             cancelCell.appendChild(cancelBtn)
 
             let cellSource = document.createElement("div")
@@ -6180,14 +6189,13 @@ export class FilesUploader extends Menu {
             }
 
             cancelBtn.onclick = () => {
+                // so here I will also send an event to cancel the upload process...
+                globule.eventHub.publish("cancel_upload_event", JSON.stringify({pid:pid, path: path}), false)
                 row.style.display = "none";
             }
 
             // Append to files panels.
             this.links_download_table.appendChild(row)
-
-            // So here I will display a message to the user to inform that the file will be downloaded...
-            let toat = ApplicationView.displayMessage(`<div style="display: flex; flex-direction: column; justify-content: center;"><span>Start download file</span>${html}<span style="aling-self: center;">...<span></div>`, 3000)
 
         } else {
 
@@ -6262,6 +6270,9 @@ export class FilesUploader extends Menu {
             }
 
             cancelBtn.onclick = () => {
+                // remove the row firt to prevent the user to click more than once...
+                row.parentNode.removeChild(row)
+
                 // So here I will remove the torrent from the list...
                 let rqst = new DropTorrentRequest
                 rqst.setName(torrent.getName())
@@ -6271,7 +6282,7 @@ export class FilesUploader extends Menu {
 
                         }).catch(err => ApplicationView.displayMessage(err, 3000))
                 })
-                row.parentNode.removeChild(row)
+               
             }
 
             // Append to files panels.
@@ -6325,7 +6336,7 @@ export class FilesUploader extends Menu {
 
                 let progressBar_ = fileRow.querySelector(`#${id}_progress_bar`)
                 progressBar_.value = f.getPercent()
-                if(f.getPercent() == 100){
+                if (f.getPercent() == 100) {
                     progressBar_.style.display = "none"
                     // Open the file
                     let fileLnk = fileRow.querySelector("#file-lnk")
@@ -6365,8 +6376,13 @@ export class FilesUploader extends Menu {
             cancelBtn.icon = "icons:close"
             cancelCell.appendChild(cancelBtn)
 
+            cancelBtn.onclick = () => {
+                row.style.display = "none";
+            }
+
             let cellSource = document.createElement("div")
             cancelCell.className = "table-cell"
+            cancelCell.id = "cancel-btn"
             cellSource.style.flexGrow = "1"
 
             cellSource.innerHTML = `
@@ -6383,10 +6399,6 @@ export class FilesUploader extends Menu {
             row.appendChild(cancelCell)
             row.appendChild(cellSource);
             row.appendChild(cellSize);
-
-            cancelBtn.onclick = () => {
-                row.style.display = "none";
-            }
 
             // Display message to the user.
             ApplicationView.displayMessage("Upload file " + f.name + " to " + path, 3000)
@@ -6422,7 +6434,15 @@ export class FilesUploader extends Menu {
 
                 // generate a token... 
                 generatePeerToken(globule, token => {
-                    uploadFiles(globule, token, path, [f],
+
+                    // retreive the row and the progress bar...
+                    let id = "_" + getUuidByString(path + "/" + f.name)
+                    let row = this.files_upload_table.querySelector("#" + id)
+                    let progress = row.querySelector("paper-progress")
+                    let cancelBtn = row.querySelector("#cancel-btn")
+
+                    // Start upload files.
+                    let xhr = uploadFiles(globule, token, path, [f],
                         () => {
                             if (index < files.length) {
                                 uploadFile(index, callback)
@@ -6432,13 +6452,9 @@ export class FilesUploader extends Menu {
                             }
                         },
                         event => {
-                            ApplicationView.displayMessage("Upload failed!", 3000)
+                            ApplicationView.displayMessage("File upload for " + path + "/" + f.name + " fail", 3000)
                         },
                         event => {
-
-                            // retreive the row and the progress bar...
-                            let row = this.files_upload_table.querySelector("#_" + getUuidByString(path + "/" + f.name))
-                            let progress = row.querySelector("paper-progress")
 
                             progress.value = (event.loaded / event.total) * 100
                             if (event.loaded == event.total) {
@@ -6448,14 +6464,22 @@ export class FilesUploader extends Menu {
                                 // Set the lnk...
                                 row.querySelector("#file-lnk").classList.add("file-path")
                                 row.querySelector("#file-lnk").onclick = () => {
-                                    Model.eventHub.publish("follow_link_event_", { path: path + "/" + f.name , domain: globule.domain }, true)
+                                    Model.eventHub.publish("follow_link_event_", { path: path + "/" + f.name, domain: globule.domain }, true)
                                 }
                             }
                         },
                         event => {
-                            console.log("abort file upload event", event);
+                            ApplicationView.displayMessage("File upload for " + path + "/" + f.name + " was cancel", 3000)
                         },
                         port)
+
+                    // overide the onclik event to cancel the file upload in that case.
+                    cancelBtn.onclick = () => {
+                        // send abort signal...
+                        xhr.abort()
+                        row.style.display = "none";
+                    }
+
                 }, err => ApplicationView.displayMessage(err, 3000))
             }
         }
