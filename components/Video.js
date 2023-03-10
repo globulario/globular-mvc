@@ -16,6 +16,10 @@ import { readDir } from "globular-web-client/api";
 import { setMinimizeable } from "./minimizeable"
 import { timeSince } from './BlogPost';
 
+import "../style.css"
+
+
+
 Object.defineProperty(HTMLMediaElement.prototype, 'playing', {
     get: function () {
         return !!(this.currentTime > 0 && !this.paused && !this.ended && this.readyState > 2);
@@ -208,15 +212,12 @@ export class VideoPlayer extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-           
+
             #container{
                 position: relative;
                 width: 720px;
                 user-select: none;
                 background-color: black;
-                border-left: 1px solid var(--palette-divider); 
-                border-right: 1px solid var(--palette-divider);
-                border-top: 1px solid var(--palette-divider);
             }
 
             #content{
@@ -295,8 +296,6 @@ export class VideoPlayer extends HTMLElement {
 
             paper-card {
                 background: black; 
-                border-top: 1px solid var(--palette-divider);
-                border-left: 1px solid var(--palette-divider);
             }
 
         </style>
@@ -817,7 +816,7 @@ export class VideoPlayer extends HTMLElement {
     showVideoInfo(video) {
         let uuid = randomUUID()
         let html = `
-        <paper-card id="video-info-box-dialog-${uuid}" style="background: var(--palette-background-default); border-top: 1px solid var(--palette-background-paper); border-left: 1px solid var(--palette-background-paper);">
+        <paper-card id="video-info-box-dialog-${uuid}" style="background: var(--palette-background-default); ">
             <globular-informations-manager id="video-info-box"></globular-informations-manager>
         </paper-card>
         `
@@ -844,7 +843,7 @@ export class VideoPlayer extends HTMLElement {
     showTitleInfo(title) {
         let uuid = randomUUID()
         let html = `
-        <paper-card id="video-info-box-dialog-${uuid}" style="background-color: var(--palette-background-default); border-top: 1px solid var(--palette-background-paper); border-left: 1px solid var(--palette-background-paper);">
+        <paper-card id="video-info-box-dialog-${uuid}" style="background-color: var(--palette-background-default);">
             <globular-informations-manager id="title-info-box"></globular-informations-manager>
         </paper-card>
         `
