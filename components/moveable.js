@@ -135,6 +135,15 @@ export function setMoveable(handle, draggable, onmove, element, offsetTop = 0) {
 
       if (onmove) {
         onmove(cx, cy)
+
+        // also dispatch the custom event...
+        draggable.dispatchEvent(
+          new CustomEvent("move", {
+            bubbles: true,
+            detail: { cx: cx, cy: cy },
+          })
+        );
+
       }
 
       let id = "__" + draggable.name + "__position__"

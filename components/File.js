@@ -633,7 +633,8 @@ export class FilesView extends HTMLElement {
 
         this.copyMenuItem.action = () => {
 
-            editMode = "copy"
+            // So here I will display choice to the user and set the edit mode penpending it response.
+
             paperTray = [];
             for (var key in this.selected) {
                 paperTray.push(this.selected[key].path)
@@ -1369,7 +1370,6 @@ export class FilesView extends HTMLElement {
                 console.log("div with id ", infos.id, "dosent exist in ", this.div)
             }
 
-
             if (editMode.length == 0) {
                 editMode = "cut"
             }
@@ -1384,11 +1384,18 @@ export class FilesView extends HTMLElement {
                 paperTray.push(infos.file)
             }
 
-            if (editMode == "cut") {
-                this.move(infos.dir)
-            } else if (editMode == "copy") {
-                this.copy(infos.dir)
+            if (infos.domain != this._file_explorer_.globule.domain) {
+                console.log("------------------------> move between globule's ", infos.domain, this._file_explorer_.globule.domain)
+            } else {
+                if (editMode == "cut") {
+                    this.move(infos.dir)
+                } else if (editMode == "copy") {
+                    this.copy(infos.dir)
+                } else if (editMode == "lnks") {
+                    console.log("create lnk's!!!!")
+                }
             }
+
         }, true, this)
     }
 
@@ -1663,17 +1670,127 @@ export class FilesView extends HTMLElement {
         } else {
             let f = evt.dataTransfer.getData('file')
             let id = evt.dataTransfer.getData('id')
+            let domain = evt.dataTransfer.getData('domain')
 
-            editMode = "copy" // make the drop file copy instead of move. The user will be able to remove the existing file as he want.
+            let html = `
+            <style>
+                paper-card{
+                    background-color: var(--palette-background-paper); 
+                    color: var(--palette-text-primary);
+                    position: absolute;
+                    min-width: 140px;
+                }
 
-            // Create drop_file_event...
-            if (f != undefined && id.length > 0) {
-                this.clearSelection()
+                .menu-item{
+                    font-size: 1rem;
+                    padding: 2px 5px 2px 5px;
+                    position: relative;
+                    display: flex;
+                    justify-content: center;
+                    transition: background 0.2s ease,padding 0.8s linear;
+                }
 
-                Model.eventHub.publish("drop_file_event", { file: f, dir: this.__dir__.path, id: id }, true)
-                Model.eventHub.publish("reload_dir_event", f.substring(0, f.lastIndexOf("/")), false);
+                .menu-item span{
+                    margin-left: 10px;
+                    flex-grow: 1;
+                }
+
+                .menu-item:hover{
+                    cursor: pointer;
+                    background-color: var(--palette-primary-accent);
+                }
+
+            </style>
+            <paper-card id="file-actions-menu">
+
+                <div id="copy-menu-item" class="menu-item">
+                    <iron-icon icon="icons:content-copy"></iron-icon>
+                    <span>Copy</span>
+                    <paper-ripple></paper-ripple>
+                </div>
+
+                <div id="move-menu-item" class="menu-item">
+                    <iron-icon icon="icons:compare-arrows"></iron-icon>
+                    <span>Move</span>
+                    <paper-ripple></paper-ripple>
+                </div>
+
+                <div id="create-lnks-menu-item" class="menu-item">
+                    <iron-icon icon="icons:link"></iron-icon>
+                    <span>Create lnk's</span>
+                    <paper-ripple></paper-ripple>
+                </div>
+
+                <div id="cancel-menu-item" class="menu-item">
+                    <iron-icon icon="icons:cancel"></iron-icon>
+                    <span>Cancel</span>
+                    <paper-ripple></paper-ripple>
+                </div>
+
+            </paper-card>
+            `
+
+            if (document.getElementById("file-actions-menu")) {
+                return; // nothing todo here.
+            }
+
+            let range = document.createRange()
+            document.body.appendChild(range.createContextualFragment(html))
+            let menu = document.getElementById("file-actions-menu")
+
+            let coords = getCoords(this._file_explorer_.filesIconView)
+
+            menu.style.top = coords.top + 44 + "px"
+            menu.style.left = coords.left + 10 + "px"
+
+            // connect the move event.
+            this._file_explorer_.addEventListener("move", (e) => {
+                // console.log(e.detail.cx, e.detail.cy)
+                // I will simply recalculate the menu position.
+                if (menu.parentNode != undefined) {
+                    let coords = getCoords(this._file_explorer_.filesIconView)
+                    menu.style.top = coords.top + 44 + "px"
+                    menu.style.left = coords.left + 10 + "px"
+                }
+            });
+
+            let fct = () => {
+                if (f != undefined && id.length > 0) {
+                    this.clearSelection()
+
+                    Model.eventHub.publish("drop_file_event", { file: f, dir: this.__dir__.path, id: id, domain: domain }, true)
+                    Model.eventHub.publish("reload_dir_event", f.substring(0, f.lastIndexOf("/")), false);
+                }
+            }
+
+            // Now I will set the actions...
+            let copyMenuItem = menu.querySelector("#copy-menu-item")
+            copyMenuItem.onclick = () => {
+                editMode = "copy"
+                fct()
+                menu.parentNode.removeChild(menu)
+            }
+
+            let moveMenuItem = menu.querySelector("#move-menu-item")
+            moveMenuItem.onclick = () => {
+                editMode = "cut"
+                fct()
+                menu.parentNode.removeChild(menu)
+            }
+
+            let createLnksMenuItem = menu.querySelector("#create-lnks-menu-item")
+            createLnksMenuItem.onclick = () => {
+                editMode = "lnks"
+                /* fct() */
+                menu.parentNode.removeChild(menu)
+            }
+
+            let cancelMenuItem = menu.querySelector("#cancel-menu-item")
+            cancelMenuItem.onclick = () => {
+                menu.parentNode.removeChild(menu)
             }
         }
+
     }
 }
 
@@ -2229,6 +2346,7 @@ export class FilesIconView extends FilesView {
 
         this.container.ondragover = (evt) => {
             evt.preventDefault()
+            this._file_explorer_.setAtTop()
         }
 
         let filesByType = {};
@@ -2901,7 +3019,9 @@ export class FilesIconView extends FilesView {
                         fileIconDiv.draggable = true;
                         fileIconDiv.ondragstart = (evt) => {
                             evt.dataTransfer.setData('file', file.path);
-                            evt.dataTransfer.setData('id', fileIconDiv.id)
+                            evt.dataTransfer.setData('id', fileIconDiv.id);
+                            evt.dataTransfer.setData('domain', this._file_explorer_.globule.domain);
+
                             evt.stopPropagation();
                             fileIconDiv.style.opacity = '0.4';
                         }
@@ -2915,6 +3035,7 @@ export class FilesIconView extends FilesView {
                             fileIconDiv.ondragover = (evt) => {
                                 evt.preventDefault()
                                 fileIconDiv.children[0].icon = "icons:folder-open"
+                                this._file_explorer_.setAtTop()
                             }
 
                             fileIconDiv.ondragleave = () => {
@@ -3693,7 +3814,6 @@ export class FileNavigator extends HTMLElement {
                 dirIco.icon = "icons:folder-open"
             }
 
-
             dirLnk.ondragleave = () => {
                 dirIco.icon = "icons:folder"
             }
@@ -3984,7 +4104,6 @@ export class FileNavigator extends HTMLElement {
                     // Here I need to sync the funtion and init the tree view once all is done...
                     let callback = () => {
                         let s = rsp.getSharedresourceList().pop()
-
                         if (s != undefined) {
                             initShared(s, callback)
                         } else {
@@ -4355,6 +4474,23 @@ export class FileExplorer extends HTMLElement {
                 this.filesIconView.menu.close()
             }
         }, this, offsetTop)
+
+        // So now I will move the explorer if other windows exist so they will be visible to the user...
+        let id = "__" + this.name + "__position__"
+        let w = ApplicationView.layout.width();
+        if (w > 500) {
+            if (localStorage.getItem(id)) {
+
+                let position = JSON.parse(localStorage.getItem(id))
+                if (position.top < offsetTop) {
+                    position.top = offsetTop
+                }
+
+                let explorers = document.querySelectorAll("globular-file-explorer")
+                this.style.top = position.top + explorers.length * 20 + "px"
+                this.style.left = position.left + explorers.length * 20 + "px"
+            }
+        }
 
         if (localStorage.getItem("__file_explorer_dimension__")) {
 
@@ -4807,6 +4943,16 @@ export class FileExplorer extends HTMLElement {
         this.fileNavigator.setFileExplorer(this)
 
         fireResize()
+    }
+
+    setAtTop() {
+
+        let draggables = document.querySelectorAll(".draggable")
+        for (var i = 0; i < draggables.length; i++) {
+            draggables[i].style.zIndex = 100;
+        }
+
+        this.style.zIndex = 1000;
     }
 
     displayWaitMessage(message) {

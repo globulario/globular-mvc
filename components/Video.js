@@ -214,6 +214,11 @@ export class VideoPlayer extends HTMLElement {
         <style>
 
             #container{
+                /*
+                border-left: 1px solid var(--palette-divider); 
+                border-right: 1px solid var(--palette-divider) rgba(255, 255, 255, 0.12);
+                border-top: 1px solid var(--palette-divider) rgba(255, 255, 255, 0.12);
+                */
                 position: relative;
                 width: 720px;
                 user-select: none;
