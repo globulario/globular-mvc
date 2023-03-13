@@ -716,6 +716,11 @@ export class CallsHistoryMenu extends Menu {
     // When you call a contact...
     onCallContact(contact) {
 
+        let id = "call_" + contact.id + "_div"
+        if(document.querySelector(`#${id}`)){
+            return // already has a dialog...
+        }
+        
         let call = new Call()
         call.setUuid(randomUUID())
         call.setCallee(contact.id + "@" + contact.domain)
@@ -779,12 +784,13 @@ export class CallsHistoryMenu extends Menu {
                                 audio.setAttribute("loop", "true")
                                 audio.setAttribute("autoplay", "true")
 
+
                                 // So now I will display the interface the user to ask...
                                 // So here I will get the information from imdb and propose to assciate it with the file.
                                 let toast = ApplicationView.displayMessage(`
                                 <style>
                                    
-                                    #select-media-dialog{
+                                    .call-dialog{
                                         display: flex; flex-direction: column; 
                                         justify-content: center; 
                                         width: 100%;
@@ -806,7 +812,7 @@ export class CallsHistoryMenu extends Menu {
                                     }
     
                                 </style>
-                                <div id="select-media-dialog">
+                                <div id="${id}" class="call-dialog">
                                     <div>Outgoing Call to </div>
                                     <div style="display: flex; flex-direction: column; align-items: center;">
                                         <img id="call-img" style="display: ${callee.profilePicture.length == 0 ? "none" : "block"};" src="${callee.profilePicture}"></img>

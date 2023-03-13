@@ -153,8 +153,8 @@ export class File extends Model {
      * Create instance of File class from JSON object.
      * @param obj The JSON object.
      */
-    static fromObject(obj: any): any {
-        const file = new File(obj.name, obj.path)
+    static fromObject(obj: any, local?:boolean, globule?:Globular): any {
+        const file = new File(obj.name, obj.path, local, globule)
         file.isDir = obj.isDir
         file.mime = obj.mime
         file.modeTime = new Date(obj.modeTime*1000)
@@ -166,7 +166,7 @@ export class File extends Model {
         // Now the sub-file.
         if (file.isDir && obj.filesList != null) {
             for (let o of obj.filesList) {
-                let f = <File>File.fromObject(o)
+                let f = <File>File.fromObject(o, local, globule)
                 file.files.push(f)
             }
         }
@@ -272,9 +272,7 @@ export class File extends Model {
             }
 
             readDir(globule, path, recursive, (dir: FileInfo) => {
-
-                callback(File.fromObject(dir.toObject()))
-
+                callback(File.fromObject(dir.toObject(), false, globule))
             }, errorCallback, 80, 80, token)
         }, errorCallback)
     }

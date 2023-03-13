@@ -728,10 +728,12 @@ export class FilesView extends HTMLElement {
         this.downloadMenuItem.action = () => {
             // Here I will create an archive from the selected files and dowload it...
             let files = [];
+            let globule = null;
             for (var key in this.selected) {
                 files.push(this.selected[key].path)
+                globule = this.selected[key].globule
             }
-            let globule = this._file_explorer_.globule
+
             if (files.length > 0) {
                 generatePeerToken(globule, token => {
                     // Create a tempory name...
@@ -739,9 +741,25 @@ export class FilesView extends HTMLElement {
                     this._file_explorer_.displayWaitMessage("create archive before for selected files...")
                     createArchive(globule, files, uuid,
                         path => {
+
+                            let url = getUrl(globule)
+
+                            path.split("/").forEach(item => {
+                                item = item.trim()
+                                if (item.length > 0) {
+                                    url += "/" + encodeURIComponent(item)
+                                }
+                            })
+
+                            url += "?application=" + Model.application
+                            if (token) {
+                                url += "&token=" + token
+                            }
+
                             // Download the file...
                             this._file_explorer_.displayWaitMessage("start download archive " + path)
-                            downloadFileHttp(path, uuid + ".tar.gz",
+                            console.log(url)
+                            downloadFileHttp(url, uuid + ".tar.gz",
                                 () => {
                                     // Now I will remove the file from the server....
                                     this._file_explorer_.displayWaitMessage("remove archive " + path)
@@ -758,34 +776,66 @@ export class FilesView extends HTMLElement {
 
                 let path = this.menu.file.path
                 let name = path.substring(path.lastIndexOf("/") + 1)
+                let globule = this.menu.file.globule
 
                 // if the file is a directory I will create archive and download it.
                 if (this.menu.file.isDir) {
+
                     generatePeerToken(globule, token => {
                         this._file_explorer_.displayWaitMessage("create archive before for " + this.menu.file.path)
                         createArchive(globule, [path], name,
                             path_ => {
+
+                                let url = getUrl(globule)
+
+                                path_.split("/").forEach(item => {
+                                    item = item.trim()
+                                    if (item.length > 0) {
+                                        url += "/" + encodeURIComponent(item)
+                                    }
+                                })
+
+                                url += "?application=" + Model.application
+                                if (token) {
+                                    url += "&token=" + token
+                                }
+
                                 // Download the file...
                                 this._file_explorer_.displayWaitMessage("start download " + name + ".tar.gz")
-                                downloadFileHttp(path_, name + ".tar.gz",
+                                downloadFileHttp(url, name + ".tar.gz",
                                     () => {
                                         // Now I will remove the file from the server....
                                         deleteFile(globule, path_,
                                             () => {
                                                 this._file_explorer_.resume()
+                                                this.selected = {} // clear up selected files.
                                             },
-                                            err => { ApplicationView.displayMessage(err, 3000); this._file_explorer_.resume() }, token)
+                                            err => { ApplicationView.displayMessage(err, 3000); this._file_explorer_.resume(); this.selected = {}}, token)
                                     }, token)
-                            }, err => { ApplicationView.displayMessage(err, 3000); this._file_explorer_.resume() }, token)
+                            }, err => { ApplicationView.displayMessage(err, 3000); this._file_explorer_.resume(); this.selected = {} }, token)
                     })
                 } else {
                     // simply download the file.
                     generatePeerToken(globule, token => {
-                        downloadFileHttp(path, name,
+                        let url = getUrl(globule)
+
+                        path.split("/").forEach(item => {
+                            item = item.trim()
+                            if (item.length > 0) {
+                                url += "/" + encodeURIComponent(item)
+                            }
+                        })
+
+                        url += "?application=" + Model.application
+                        if (token) {
+                            url += "&token=" + token
+                        }
+
+                        downloadFileHttp(url, name,
                             () => {
                                 // Now I will remove the file from the server....
-
-                            }, token), err => { ApplicationView.displayMessage(err, 3000) }
+                                this.selected = {}
+                            }, token), err => { ApplicationView.displayMessage(err, 3000); this.selected = {} }
                     })
                 }
 
@@ -1344,6 +1394,22 @@ export class FilesView extends HTMLElement {
     init() {
 
         // The the path
+        Model.eventHub.subscribe("__create_link_event__",
+            (uuid) => {
+                /** Nothin here. */
+            },
+            (evt) => {
+                if (this._file_explorer_.id == evt.file_explorer_id) {
+                    if (!this._active_) {
+                        return
+                    }
+
+                    this._file_explorer_.createLink(evt.file)
+                }
+            }, true, this
+        )
+
+        // The the path
         Model.eventHub.subscribe("__set_dir_event__",
             (uuid) => {
                 /** Nothin here. */
@@ -1392,7 +1458,7 @@ export class FilesView extends HTMLElement {
                 } else if (editMode == "copy") {
                     this.copy(infos.dir)
                 } else if (editMode == "lnks") {
-                    console.log("create lnk's!!!!")
+                    Model.eventHub.publish("__create_link_event__", { file: infos.file, "file_explorer_id": this._file_explorer_.id }, true)
                 }
             }
 
@@ -1781,7 +1847,7 @@ export class FilesView extends HTMLElement {
             let createLnksMenuItem = menu.querySelector("#create-lnks-menu-item")
             createLnksMenuItem.onclick = () => {
                 editMode = "lnks"
-                /* fct() */
+                fct()
                 menu.parentNode.removeChild(menu)
             }
 
@@ -5343,6 +5409,14 @@ export class FileExplorer extends HTMLElement {
                 playAudio(file.path, () => { }, () => { }, audios[0], this.globule)
             }
         })
+
+    }
+
+    createLink(file) {
+        console.log("create link for ", file)
+
+        let lnk = `<globular-link path="${file.path}" thumbnail="${file.thumbnail}" domain="${file.domain}"></globular-link>`
+        console.log("-----------> create lnk: ", lnk)
 
     }
 
