@@ -453,7 +453,7 @@ function _publishSetDirEvent(path, file_explorer_) {
     file_explorer_.displayWaitMessage("load " + path)
     _readDir(path, (dir) => {
 
-        Model.eventHub.publish("__set_dir_event__", { path: dir, file_explorer_id: file_explorer_.id }, true)
+        Model.eventHub.publish("__set_dir_event__", { dir: dir, file_explorer_id: file_explorer_.id }, true)
         file_explorer_.resume()
     }, err => { ApplicationView.displayMessage(err, 3000); file_explorer_.resume(); }, file_explorer_.globule)
 }
@@ -941,7 +941,7 @@ export class FilesView extends HTMLElement {
         }
 
         this.fileInfosMenuItem.action = () => {
-            Model.eventHub.publish("display_file_infos_event", this.menu.file, true)
+            Model.eventHub.publish(`display_file_infos_${this._file_explorer_.id}_event`, this.menu.file, true)
             // Remove it from it parent... 
             this.menu.close()
             this.menu.parentNode.removeChild(this.menu)
@@ -957,7 +957,7 @@ export class FilesView extends HTMLElement {
                 getVideoInfo(globule, file, (videos) => {
                     if (videos.length > 0) {
                         file.videos = videos // keep in the file itself...
-                        Model.eventHub.publish("display_media_infos_event", file, true)
+                        Model.eventHub.publish(`display_media_infos_${this._file_explorer_.id}_event`, file, true)
                         // Remove it from it parent... 
                         this.menu.close()
                         this.menu.parentNode.removeChild(this.menu)
@@ -967,7 +967,7 @@ export class FilesView extends HTMLElement {
                         getTitleInfo(globule, file, (titles) => {
                             if (titles.length > 0) {
                                 file.titles = titles // keep in the file itself...
-                                Model.eventHub.publish("display_media_infos_event", file, true)
+                                Model.eventHub.publish(`display_media_infos_${this._file_explorer_.id}_event`, file, true)
                                 if (this.menu.parentNode) {
                                     // Remove it from it parent... 
                                     this.menu.close()
@@ -981,7 +981,7 @@ export class FilesView extends HTMLElement {
                 getAudioInfo(globule, file, (audios) => {
                     if (audios.length > 0) {
                         file.audios = audios // keep in the file itself...
-                        Model.eventHub.publish("display_media_infos_event", file, true)
+                        Model.eventHub.publish(`display_media_infos_${this._file_explorer_.id}_event`, file, true)
                         // Remove it from it parent... 
                         this.menu.close()
                         this.menu.parentNode.removeChild(this.menu)
@@ -1350,8 +1350,8 @@ export class FilesView extends HTMLElement {
             },
             (evt) => {
                 if (this._file_explorer_.id == evt.file_explorer_id) {
-                    this.__dir__ = evt.path
-                    this.setDir(evt.path)
+                    this.__dir__ = evt.dir
+                    this.setDir(evt.dir)
                 }
             }, true, this
         )
@@ -1578,7 +1578,7 @@ export class FilesView extends HTMLElement {
                 getFileObject(url, (fileObject) => {
                     generatePeerToken(this._file_explorer_.globule, token => {
                         uploadFiles(this._file_explorer_.globule, token, this.__dir__.path, [fileObject], () => {
-                            Model.eventHub.publish("__upload_files_event__", { path: this.__dir__.path, files: [fileObject], lnk: lnk, globule: this._file_explorer_.globule }, true)
+                            Model.eventHub.publish("__upload_files_event__", { dir: this.__dir__, files: [fileObject], lnk: lnk, globule: this._file_explorer_.globule }, true)
                         }, err => ApplicationView.displayMessage(err, 3000))
                     })
                 });
@@ -1666,7 +1666,7 @@ export class FilesView extends HTMLElement {
 
         } else if (evt.dataTransfer.files.length > 0) {
             // So here I will simply upload the files...
-            Model.eventHub.publish("__upload_files_event__", { path: this.__dir__.path, files: evt.dataTransfer.files, lnk: lnk, globule: this._file_explorer_.globule }, true)
+            Model.eventHub.publish("__upload_files_event__", { dir: this.__dir__, files: evt.dataTransfer.files, lnk: lnk, globule: this._file_explorer_.globule }, true)
         } else {
             let f = evt.dataTransfer.getData('file')
             let id = evt.dataTransfer.getData('id')
@@ -3051,7 +3051,7 @@ export class FilesIconView extends FilesView {
                                     this.setImdbTitleInfo(url, file)
                                 } else if (evt.dataTransfer.files.length > 0) {
                                     // So here I will simply upload the files...
-                                    Model.eventHub.publish("__upload_files_event__", { path: file.path, files: evt.dataTransfer.files, globule: this._file_explorer_.globule }, true)
+                                    Model.eventHub.publish("__upload_files_event__", { dir: file, files: evt.dataTransfer.files, globule: this._file_explorer_.globule }, true)
                                 } else {
                                     let f = evt.dataTransfer.getData('file')
                                     let id = evt.dataTransfer.getData('id')
@@ -3365,7 +3365,7 @@ export class PathNavigator extends HTMLElement {
             },
             (evt) => {
                 if (this._file_explorer_.id == evt.file_explorer_id) {
-                    this.setDir(evt.path)
+                    this.setDir(evt.dir)
                 }
             }, true, this
         )
@@ -4487,8 +4487,8 @@ export class FileExplorer extends HTMLElement {
                 }
 
                 let explorers = document.querySelectorAll("globular-file-explorer")
-                this.style.top = position.top + explorers.length * 20 + "px"
-                this.style.left = position.left + explorers.length * 20 + "px"
+                this.style.top = position.top + explorers.length * 41 + "px"
+                this.style.left = position.left + explorers.length * 41 + "px"
             }
         }
 
@@ -5042,7 +5042,7 @@ export class FileExplorer extends HTMLElement {
                         this.imageViewer.style.display = "none";
                         this.permissionManager.style.display = "none"
 
-                        this.setDir(evt.path)
+                        this.setDir(evt.dir)
 
                     }
                 }, true
@@ -5095,10 +5095,10 @@ export class FileExplorer extends HTMLElement {
         }
 
         // Informations
-        if (this.listeners[`display_media_infos_${this.globule.domain}_event`] == undefined) {
-            this.globule.eventHub.subscribe(`display_media_infos_event`,
+        if (this.listeners[`display_media_infos_${this.id}_event`] == undefined) {
+            this.globule.eventHub.subscribe(`display_media_infos_${this.id}_event`,
                 (uuid) => {
-                    this.listeners[`display_media_infos_${this.globule.domain}_event`] = uuid;
+                    this.listeners[`display_media_infos_${this.id}_event`] = uuid;
                 }, (file) => {
 
                     if (file.titles != undefined) {
@@ -5115,10 +5115,10 @@ export class FileExplorer extends HTMLElement {
                 }, false)
         }
 
-        if (this.listeners[`display_file_infos_${this.globule.domain}_event`] == undefined) {
-            this.globule.eventHub.subscribe(`display_file_infos_event`,
+        if (this.listeners[`display_file_infos_${this.id}_event`] == undefined) {
+            this.globule.eventHub.subscribe(`display_file_infos_${this.id}_event`,
                 (uuid) => {
-                    this.listeners[`display_file_infos_${this.globule.domain}_event`] = uuid;
+                    this.listeners[`display_file_infos_${this.id}_event`] = uuid;
                 }, (file) => {
 
                     // display the file information itself.
@@ -5147,8 +5147,10 @@ export class FileExplorer extends HTMLElement {
                             this.fileNavigator.reload(dir, () => {
                                 // reload dir to be sure if it's public that change will be applied.
                                 _readDir(path, (dir) => {
+
                                     if (dir.path == this.path) {
-                                        Model.eventHub.publish("__set_dir_event__", { path: dir, file_explorer_id: this.id }, true)
+                                        this.__dir__ = dir
+                                        Model.eventHub.publish("__set_dir_event__", { dir: dir, file_explorer_id: this.id }, true)
 
                                     }
                                     this.shadowRoot.querySelector("globular-disk-space-manager").refresh()
@@ -6201,7 +6203,7 @@ export class FilesUploader extends Menu {
         Model.eventHub.subscribe(
             "__upload_files_event__", (uuid) => { },
             (evt) => {
-                this.uploadFiles(evt.path, evt.files, evt.globule)
+                this.uploadFiles(evt.dir, evt.files, evt.globule)
 
             }
             , true, this
@@ -6595,7 +6597,9 @@ export class FilesUploader extends Menu {
      * @param {*} path 
      * @param {*} files 
      */
-    uploadFiles(path, files, globule) {
+    uploadFiles(dir, files, globule) {
+
+        let path = dir.path
 
         // So here I will try to get the most information from the backend to be able to keep the user inform about what append 
         // with uploading files process.
@@ -6641,8 +6645,6 @@ export class FilesUploader extends Menu {
             row.appendChild(cellSize);
 
             // Display message to the user.
-            ApplicationView.displayMessage("Upload file " + f.name + " to " + path, 3000)
-
             row.querySelector("#dest-lnk").onclick = () => {
                 Model.eventHub.publish("follow_link_event_", { path: path, domain: globule.domain }, true)
             }
@@ -6770,7 +6772,6 @@ export class FilesUploader extends Menu {
         // Start file upload!
         uploadFile(0, () => {
             // When all file are uploaded...
-            ApplicationView.displayMessage("All files are now uploaded!", 3000)
             Model.publish("reload_dir_event", path, false)
         })
     }

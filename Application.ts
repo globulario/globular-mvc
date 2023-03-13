@@ -439,11 +439,11 @@ export class Application extends Model {
             fileExplorer.init((shared: any, public_: any) => {
               let dir = shared[file.path.split("/")[2]]
               if (dir) {
-                Model.eventHub.publish("__set_dir_event__", { path: dir, file_explorer_id: fileExplorer.id }, true)
+                Model.eventHub.publish("__set_dir_event__", { dir: dir, file_explorer_id: fileExplorer.id }, true)
                 callback(dir, fileExplorer)
               } else {
                 File.readDir(file.path, false, (dir: File) => {
-                  Model.eventHub.publish("__set_dir_event__", { path: dir, file_explorer_id: fileExplorer.id }, true)
+                  Model.eventHub.publish("__set_dir_event__", { dir: dir, file_explorer_id: fileExplorer.id }, true)
                   callback(dir, fileExplorer)
                 }, err => { }, globule)
               }
