@@ -101,9 +101,13 @@ export class DiskSpaceManager extends HTMLElement {
 
   // display the allocate space input box.
   displayAllocatedSpaceInputBox() {
-    let container = this.shadowRoot.querySelector("#container")
+    let inputBox = document.body.querySelector("#allocated-space-box")
+    if (inputBox) {
+      return
+    }
+
     let html = `
-      <paper-card id="allocated-space-box" style="position: absolute; z-index: 100; display: flex; flex-direction: column; left: 0px; top: 30px; padding-left: 10px; padding-right: 10px; background-color: var(--palette-background-paper); color: var(--palette-text-primary);">
+      <paper-card id="allocated-space-box" style="position: absolute; z-index: 100; display: flex; flex-direction: column; padding-left: 10px; padding-right: 10px; background-color: var(--palette-background-paper); color: var(--palette-text-primary);">
         <paper-input id="allocated-space-input" type="number" step="1" min="0" label="Allocated Space (GB)"></paper-input>
         <div style="display: flex; width: 100%; justify-content: flex-end;">
           <paper-button id="set-space-btn" style="font-size: 1rem;">
@@ -116,26 +120,20 @@ export class DiskSpaceManager extends HTMLElement {
       </paper-card>
     `
 
-    let coord = getCoords(container)
-
-
-    if (document.body.querySelector("#allocated-space-box")) {
-      return
-    }
-
     let range = document.createRange()
     document.body.appendChild(range.createContextualFragment(html))
 
+    inputBox = document.body.querySelector("#allocated-space-box")
+    let coord = getCoords(this)
+    inputBox.style.top = coord.top + 40  + "px"
+    inputBox.style.left = coord.left + "px"
 
     let input = document.body.querySelector("#allocated-space-input")
-    input.style.top = coord.top + "px"
-    input.style.left = coord.left + "px"
-
     input.value = this.allocated_space / 1073741824
 
     // simply remove the input box
     document.body.querySelector("#cancel-btn").onclick = () => {
-      document.body.querySelector("#allocated-space-box").parentNode.removeChild(document.body.querySelector("#allocated-space-box"))
+      inputBox.parentNode.removeChild(inputBox)
     }
 
     // set the new allocated space.
@@ -172,10 +170,8 @@ export class DiskSpaceManager extends HTMLElement {
           ApplicationView.displayMessage(err, 3000)
         });
 
-        document.body.querySelector("#allocated-space-box").parentNode.removeChild(document.body.querySelector("#allocated-space-box"))
-
+        inputBox.parentNode.removeChild(inputBox)
     }
-
 
     setTimeout(() => {
       input.focus()
@@ -203,7 +199,7 @@ export class DiskSpaceManager extends HTMLElement {
   }
 
   getAllocatedSpace(id, type, callback, errorCallback) {
-   
+
     let rqst = new GetSubjectAllocatedSpaceRqst
     rqst.setSubject(id)
     rqst.setType(type)
@@ -223,7 +219,7 @@ export class DiskSpaceManager extends HTMLElement {
         callback();
       })
       .catch((err) => {
-        console.log("fail to get allocated space for ", id,  err)
+        console.log("fail to get allocated space for ", id, err)
         errorCallback(err);
       });
   }
@@ -263,7 +259,7 @@ export class DiskSpaceManager extends HTMLElement {
 
     if (this.hasAttribute("account")) {
       let accountId = this.account.getId() + "@" + this.account.getDomain()
-      if ( accountId.startsWith("sa@")) {
+      if (accountId.startsWith("sa@")) {
         this.style.display = "none"; // nothing to show about sa account
       } else {
         this.getAllocatedSpace(accountId, SubjectType.ACCOUNT,
@@ -299,7 +295,7 @@ export class DiskSpaceManager extends HTMLElement {
           this.diskUsageDiv.style.display = "none"
           this.progressBar.style.display = "none"
         })
-    }else{
+    } else {
       console.log("no account or application was found...")
     }
   }

@@ -386,7 +386,16 @@ export class SharedResources extends HTMLElement {
                     }
                 }
 
-                let html = `<globular-link id="${id}" ${deleteable_ ? "deleteable" : ""} path="${file.path}" thumbnail="${file.thumbnail}" domain="${file.domain}"></globular-link>`
+                let alias = ""
+                if(file.videos){
+                    alias = file.videos[0].getDescription()
+                }else if (file.titles){
+                    alias = file.titles[0].getName()
+                }else if (file.audios){
+                    alias = file.audio[0].getTitle()
+                }
+
+                let html = `<globular-link alias="${alias}" id="${id}" ${deleteable_ ? "deleteable" : ""} path="${file.path}" thumbnail="${file.thumbnail}" domain="${file.domain}"></globular-link>`
                 div.appendChild(range.createContextualFragment(html))
                 if (resources.length > 0) {
                     displayLink();
@@ -851,6 +860,15 @@ export class ShareResourceWizard extends HTMLElement {
                                 notification.setSender(Application.account.id + "@" + Application.account.domain)
                                 notification.setNotificationType(NotificationType.USER_NOTIFICATION)
 
+                                let alias = ""
+                                if(file.videos){
+                                    alias = file.videos[0].getDescription()
+                                }else if (file.titles){
+                                    alias = file.titles[0].getName()
+                                }else if (file.audios){
+                                    alias = file.audio[0].getTitle()
+                                }
+
                                 let date = new Date()
                                 let msg = `
                                 <div style="display: flex; flex-direction: column; padding: 16px;">
@@ -863,7 +881,7 @@ export class ShareResourceWizard extends HTMLElement {
                                                     ${Application.account.name} has share file with you,
                                                 </p>
 
-                                                <globular-link path="${file.path}" thumbnail="${file.thumbnail}" domain="${file.domain}"></globular-link>
+                                                <globular-link alias="${alias}" path="${file.path}" thumbnail="${file.thumbnail}" domain="${file.domain}"></globular-link>
       
                                             </div>
                                    

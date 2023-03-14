@@ -72,6 +72,11 @@ export class Link extends HTMLElement {
         let path = this.getAttribute("path")
         let thumbnail = this.getAttribute("thumbnail")
         let domain = this.getAttribute("domain")
+        let alias = this.getAttribute("alias")
+        if(!alias){
+            alias = ""
+        }
+        
         let name = path.split("/")[path.split("/").length - 1]
         this.ondelete = null;
         let id = "_" + randomUUID()
@@ -181,7 +186,7 @@ export class Link extends HTMLElement {
                     <paper-ripple></paper-ripple>
                 </div>
             </div>
-            <span id="link-name">${name}</span>
+            <span id="link-name">${alias.length>0?alias:name}</span>
            
         </div>
         `
