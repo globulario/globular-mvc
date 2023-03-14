@@ -1715,6 +1715,8 @@ export class FilesView extends HTMLElement {
                         stream.on("status", (status) => {
                             if (status.code === 0) {
                                 Model.eventHub.publish("__upload_link_event__", { pid: pid, path: this.__dir__.path, infos: "", done: true, lnk: lnk, globule: this._file_explorer_.globule }, true);
+                            }else{
+                                ApplicationView.displayMessage(status.details, 3000)
                             }
                         });
                     }, err => ApplicationView.displayMessage(err, 3000))
@@ -2589,6 +2591,8 @@ export class FilesIconView extends FilesView {
                                     stream.on("status", (status) => {
                                         if (status.code === 0) {
                                             Model.eventHub.publish("__upload_link_event__", { pid: pid, path: playlist.path, infos: "", done: true, lnk: playlist.url, globule: this._file_explorer_.globule }, true);
+                                        }else{
+                                            ApplicationView.displayMessage(status.details, 3000)
                                         }
                                     });
                                 })
@@ -2705,6 +2709,8 @@ export class FilesIconView extends FilesView {
                                     stream.on("status", (status) => {
                                         if (status.code === 0) {
                                             Model.eventHub.publish("__upload_link_event__", { pid: pid, path: playlist.path, infos: "", done: true, lnk: playlist.url, globule: this._file_explorer_.globule }, true);
+                                        }else{
+                                            ApplicationView.displayMessage(status.details, 3000)
                                         }
                                     });
                                 })
