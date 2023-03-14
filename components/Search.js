@@ -193,20 +193,28 @@ function playTitleListener(player, title, indexPath) {
             // So here I will ask to display the next episode...
             let toast = ApplicationView.displayMessage(`
                 <style>
-                   
+
+                    #play-next-dialog{
+                        display: flex; 
+                        flex-direction: column;
+                    }
+
                 </style>
-                <div style="display: flex; flex-direction: column;">
+                <div id="play-next-dialog">
                     <div>Play the next episode?</div>
                     <h3 style="font-size: 1.17em; font-weight: bold;">${nextEpisode.getName()}</h3>
                     <div>Season ${nextEpisode.getSeason()} Episode ${nextEpisode.getEpisode()}</div>
                     <img style="max-width: 250px; align-self: center;" src="${nextEpisode.getPoster().getContenturl()}"></img>
                     <p style="max-width: 400px;">${nextEpisode.getDescription()}</p>
                     <div style="display: flex; justify-content: flex-end;">
-                        <paper-button id="imdb-lnk-ok-button">Yes</paper-button>
-                        <paper-button id="imdb-lnk-cancel-button">No</paper-button>
+                        <paper-button id="imdb-lnk-ok-button">Play</paper-button>
+                        <paper-button id="imdb-lnk-cancel-button">Close</paper-button>
                     </div>
                 </div>
                 `)
+
+            toast.el.style.backgroundColor = "var(--palette-background-default)"
+            toast.el.style.color = "var(--palette-text-primary)"
 
             let cancelBtn = toast.el.querySelector("#imdb-lnk-cancel-button")
             cancelBtn.onclick = () => {
@@ -223,8 +231,8 @@ function playTitleListener(player, title, indexPath) {
                         .then(rsp => {
                             if (rsp.getFilepathsList().length > 0) {
                                 let path = rsp.getFilepathsList().pop()
-                                playVideo(path, (player, title) => {
-                                    playTitleListener(player, title, indexPath, globule)
+                                playVideo(path, (player, nextEpisode) => {
+                                    playTitleListener(player, nextEpisode, indexPath, globule)
                                 }, null, null, globule)
                             }
                         })
@@ -2662,9 +2670,9 @@ export class SearchTitleDetail extends HTMLElement {
                             this.episodePreview.src = url
 
                             this.shadowRoot.querySelector("#epsiode-preview").onclick = this.shadowRoot.querySelector("#play-episode-video-button").onclick = () => {
-                                playVideo(path, (player, title) => {
-                                    playTitleListener(player, title, indexPath, globule)
-                                }, null, title, title.globule)
+                                playVideo(path, (player, episode) => {
+                                    playTitleListener(player, episode, indexPath, globule)
+                                }, null, episode, episode.globule)
                             }
 
                             this.shadowRoot.querySelector("#episode-info-button").onclick = () => {
