@@ -1041,7 +1041,7 @@ export class FilesView extends HTMLElement {
 
         this.mananageAccessMenuItem.action = () => {
             // So here I will create a new permission manager object and display it for the given file.
-            Model.eventHub.publish("display_permission_manager_event", this.menu.file.path, true)
+            Model.eventHub.publish(`display_permission_manager_${this._file_explorer_.id}_event`, this.menu.file.path, true)
             // Remove it from it parent... 
             this.menu.close()
             this.menu.parentNode.removeChild(this.menu)
@@ -5175,10 +5175,10 @@ export class FileExplorer extends HTMLElement {
         }
 
         // Permissions 
-        if (this.listeners[`display_permission_manager_${this.globule.domain}_event`] == undefined) {
-            this.globule.eventHub.subscribe(`display_permission_manager_event`,
+        if (this.listeners[`display_permission_manager_${this.id}_event`] == undefined) {
+            this.globule.eventHub.subscribe(`display_permission_manager_${this.id}_event`,
                 (uuid) => {
-                    this.listeners[`display_permission_manager_${this.globule.domain}_event`] = uuid;
+                    this.listeners[`display_permission_manager_${this.id}_event`] = uuid;
                 }, (path) => {
 
                     this.permissionManager.permissions = null
