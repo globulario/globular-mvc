@@ -395,7 +395,7 @@ export class SharedResources extends HTMLElement {
                     alias = file.audio[0].getTitle()
                 }
 
-                let html = `<globular-link alias="${alias}" id="${id}" ${deleteable_ ? "deleteable" : ""} path="${file.path}" thumbnail="${file.thumbnail}" domain="${file.domain}"></globular-link>`
+                let html = `<globular-link alias="${alias}" mime="${file.mime}" id="${id}" ${deleteable_ ? "deleteable" : ""} path="${file.path}" thumbnail="${file.thumbnail}" domain="${file.domain}"></globular-link>`
                 div.appendChild(range.createContextualFragment(html))
                 if (resources.length > 0) {
                     displayLink();
@@ -881,7 +881,7 @@ export class ShareResourceWizard extends HTMLElement {
                                                     ${Application.account.name} has share file with you,
                                                 </p>
 
-                                                <globular-link alias="${alias}" path="${file.path}" thumbnail="${file.thumbnail}" domain="${file.domain}"></globular-link>
+                                                <globular-link alias="${alias}" mime="${file.mime}" path="${file.path}" thumbnail="${file.thumbnail}" domain="${file.domain}"></globular-link>
       
                                             </div>
                                    

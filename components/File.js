@@ -28,7 +28,7 @@ import { v4 as uuidv4 } from "uuid";
 
 // Menu to set action on files.
 import { DropdownMenu } from './dropdownMenu.js';
-import { AddPublicDirRequest, ConvertVideoToHlsRequest, ConvertVideoToMpeg4H264Request, CopyRequest, CreateDirRequest, CreateVideoPreviewRequest, CreateVideoTimeLineRequest, GeneratePlaylistRequest, GetPublicDirsRequest, MoveRequest, ReadFileRequest, RemovePublicDirRequest, SaveFileRequest, StartProcessVideoRequest, UploadVideoRequest } from 'globular-web-client/file/file_pb';
+import { AddPublicDirRequest, ConvertVideoToHlsRequest, ConvertVideoToMpeg4H264Request, CopyRequest, CreateDirRequest, CreateLnkRequest, CreateVideoPreviewRequest, CreateVideoTimeLineRequest, GeneratePlaylistRequest, GetPublicDirsRequest, MoveRequest, ReadFileRequest, RemovePublicDirRequest, SaveFileRequest, StartProcessVideoRequest, UploadVideoRequest } from 'globular-web-client/file/file_pb';
 import { createArchive, deleteDir, deleteFile, downloadFileHttp, renameFile, uploadFiles } from 'globular-web-client/api';
 import { ApplicationView } from '../ApplicationView';
 import { Application } from '../Application';
@@ -300,6 +300,40 @@ function getElementIndex(element) {
     return Array.from(element.parentNode.children).indexOf(element);
 }
 
+// so here I will initialyse lnk's in that directory
+function initLnks(dir, callback) {
+
+    // callback(dir)
+    let initLink_ = (index) => {
+        if (index == dir.files.length) {
+            callback(dir)
+            return
+        }
+
+        let f = dir.files[index]
+        index += 1
+        if (!f.isDir) {
+            if (f.name.endsWith(".lnk")) {
+                File__.readText(f,
+                    txt => {
+                        f.lnk = File__.fromString(txt)
+                        initLink_(index)
+                    },
+                    () => {
+                        initLink_(index)
+                    })
+            } else {
+                initLink_(index)
+            }
+        } else {
+            initLink_(index)
+        }
+    }
+
+    let index = 0;
+    initLink_(index)
+}
+
 export function getImage(callback, images, files, index, globule) {
     let f = files[index];
     index++
@@ -423,7 +457,11 @@ function _readDir(path, callback, errorCallback, globule, force = false) {
 
     // Here I will keep the dir info in the cache...
     File__.readDir(path, false, (dir) => {
-        callback(dir)
+
+        initLnks(dir, dir => {
+            callback(dir)
+        })
+
         // replace separator...
         dir.path = dir.path.split("\\").join("/")
         let parent = dir.path.substring(0, dir.path.lastIndexOf("/"))
@@ -596,9 +634,7 @@ export class FilesView extends HTMLElement {
             let globule = this._file_explorer_.globule
 
             generatePeerToken(globule, token => {
-                globule.fileService.startProcessVideo(rqst, {
-
-                }).then(() => {
+                globule.fileService.startProcessVideo(rqst, { application: Application.application, domain: globule.domain, token: token }).then(() => {
                     ApplicationView.displayMessage("informations are now updated", 3000)
                 })
                     .catch(err => ApplicationView.displayMessage(err, 3000))
@@ -662,6 +698,7 @@ export class FilesView extends HTMLElement {
                 // Here I will call copy
                 this.move(this.menu.file.path)
             }
+
             // Remove it from it parent... 
             this.menu.close()
             this.menu.parentNode.removeChild(this.menu)
@@ -849,17 +886,28 @@ export class FilesView extends HTMLElement {
             let files = []
             let fileList = ""
             for (var fileName in this.selected) {
-                fileList += `<div>${this.selected[fileName].path}</div>`
-                files.push(this.selected[fileName])
+                let file = this.selected[fileName]
+                if (file.lnk) {
+                    if (!file.name.endsWith(".lnk")) {
+                        file = file.lnk // here I will delete the lnk and not the original file.
+                    }
+                }
+                fileList += `<div>${file.path}</div>`
+                files.push(file)
             }
-
 
             // if not checked but selected with menu...
             if (fileList.length == 0) {
                 let file = this.menu.file
+                if (file.lnk) {
+                    if (!file.name.endsWith(".lnk")) {
+                        file = file.lnk // here I will delete the lnk and not the original file.
+                    }
+                }
                 fileList += `<div>${file.path}</div>`
                 files.push(file)
             }
+
 
             let toast = ApplicationView.displayMessage(
                 `
@@ -921,7 +969,6 @@ export class FilesView extends HTMLElement {
                     index++
                     let globule = this._file_explorer_.globule
                     if (f.isDir) {
-
                         this._file_explorer_.globule.fileService.getPublicDirs(new GetPublicDirsRequest, { application: Application.application, domain: this._file_explorer_.globule.domain, token: localStorage.getItem("user_token") })
                             .then(rsp => {
                                 // if the dir is public I will remove it entry from the list and keep the directory...
@@ -1002,7 +1049,6 @@ export class FilesView extends HTMLElement {
 
             let file = this.menu.file
             if (file.mime.startsWith("video")) {
-
                 getVideoInfo(globule, file, (videos) => {
                     if (videos.length > 0) {
                         file.videos = videos // keep in the file itself...
@@ -1450,7 +1496,19 @@ export class FilesView extends HTMLElement {
             }
 
             if (infos.domain != this._file_explorer_.globule.domain) {
-                console.log("------------------------> move between globule's ", infos.domain, this._file_explorer_.globule.domain)
+
+                if (editMode == "cut" || editMode == "copy") {
+                    // this.move(infos.dir)
+                    console.log("-----------> implement ")
+                    // So here I need to upload the file from on globule to the other...
+
+
+                } else if (editMode == "lnks") {
+                    let globule = Model.getGlobule(infos.domain)
+                    File__.getFile(globule, infos.file, 80, 80, file => {
+                        Model.eventHub.publish("__create_link_event__", { file: file, dest: this._file_explorer_.path, file_explorer_id: this._file_explorer_.id, globule: this._file_explorer_.globule }, true)
+                    }, err => ApplicationView.displayMessage(err, 3000))
+                }
             } else {
                 if (editMode == "cut") {
                     this.move(infos.dir)
@@ -1459,13 +1517,7 @@ export class FilesView extends HTMLElement {
                 } else if (editMode == "lnks") {
                     let globule = this._file_explorer_.globule
                     File__.getFile(globule, infos.file, 80, 80, file => {
-                        getVideoInfo(globule, file, ()=>{
-                            getAudioInfo(globule, file, ()=>{
-                                getTitleInfo(globule, file, ()=>{
-                                    Model.eventHub.publish("__create_link_event__", { file: file, dest: this._file_explorer_.path, file_explorer_id: this._file_explorer_.id, globule: globule }, true)
-                                })
-                            })
-                        })
+                        Model.eventHub.publish("__create_link_event__", { file: file, dest: this._file_explorer_.path, file_explorer_id: this._file_explorer_.id, globule: this._file_explorer_.globule }, true)
                     }, err => ApplicationView.displayMessage(err, 3000))
                 }
             }
@@ -1745,7 +1797,8 @@ export class FilesView extends HTMLElement {
             Model.eventHub.publish("__upload_files_event__", { dir: this.__dir__, files: evt.dataTransfer.files, lnk: lnk, globule: this._file_explorer_.globule }, true)
         } else {
 
- 
+
+
             let html = `
             <style>
                 paper-card{
@@ -1834,11 +1887,24 @@ export class FilesView extends HTMLElement {
 
             let fct = () => {
                 if (id.length > 0) {
-                    this.clearSelection()
-                    files.forEach(f=>{
+
+                    paperTray = [];
+                    for (var key in this.selected) {
+                        paperTray.push(this.selected[key].path)
+                    }
+
+                    // Append file to file menu
+                    if (paperTray.length == 0) {
+                        paperTray.push(this.menu.file.path)
+                    }
+
+                    // empty the selection.
+                    this.selected = {}
+
+                    files.forEach(f => {
                         Model.eventHub.publish(`drop_file_${this._file_explorer_.id}_event`, { file: f, dir: this.__dir__.path, id: id, domain: domain }, true)
                     })
-                    
+
                     //Model.eventHub.publish("reload_dir_event", f.substring(0, f.lastIndexOf("/")), false);
                 }
             }
@@ -2363,6 +2429,19 @@ export class FilesIconView extends FilesView {
                 cursor: pointer;
             }
 
+            .shortcut-icon {
+                position: absolute;
+                bottom: -5px;
+                left: 0px;
+            }
+
+            .shortcut-icon iron-icon{
+                background: white;
+                fill: black;
+                height: 16px;
+                width: 16px;
+            }
+
             .file-div span {
                word-wrap: break-word;
                text-align: center;
@@ -2434,6 +2513,7 @@ export class FilesIconView extends FilesView {
         let mime = "Dossier de fichiers"
         let icon = "icons:folder"
 
+
         // get the info div that will contain the information.
         for (let f of dir.files) {
             if (f.name == "audio.m3u") {
@@ -2443,6 +2523,13 @@ export class FilesIconView extends FilesView {
             } else {
                 if (!f.isDir) {
                     icon = "editor:insert-drive-file";
+                    if (f.name.endsWith(".lnk")) {
+                        // So here I will make little transformation...
+                        f.lnk.lnk = f
+                        f = f.lnk
+
+                    }
+
                     if (f.size > 1024) {
                         if (f.size > 1024 * 1024) {
                             if (f.size > 1024 * 1024 * 1024) {
@@ -2460,6 +2547,7 @@ export class FilesIconView extends FilesView {
                     } else {
                         size = f.size + " bytes";
                     }
+
                     mime = f.mime.split(";")[0].split("/")
                 } else {
                     size = f.files.length + " items"
@@ -2637,6 +2725,9 @@ export class FilesIconView extends FilesView {
                             playAudiosBtn.onclick = () => {
                                 let audios = []
                                 dir.files.forEach(f => {
+                                    if (f.lnk) {
+                                        f = f.lnk
+                                    }
                                     if (f.mime.startsWith("audio")) {
                                         if (f.audios) {
                                             audios = audios.concat(f.audios)
@@ -2760,6 +2851,9 @@ export class FilesIconView extends FilesView {
                             playVideosBtn.onclick = () => {
                                 let videos = []
                                 dir.files.forEach(f => {
+                                    if (f.lnk) {
+                                        f = f.lnk
+                                    }
                                     if (f.mime.startsWith("video")) {
                                         if (f.videos) {
                                             videos = videos.concat(f.videos)
@@ -2785,19 +2879,32 @@ export class FilesIconView extends FilesView {
                     if (!section.querySelector("#" + id)) {
 
                         let html = `
-                        <div class="file-div" >
-                            <div class="file-icon-div" id="${id}">
-                                <paper-checkbox></paper-checkbox>
-                                <div class="menu-div"></div>
-                                <paper-ripple recenters></paper-ripple>
-                                <svg title="keep file local" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><path d="M32 32C32 14.3 46.3 0 64 0H320c17.7 0 32 14.3 32 32s-14.3 32-32 32H290.5l11.4 148.2c36.7 19.9 65.7 53.2 79.5 94.7l1 3c3.3 9.8 1.6 20.5-4.4 28.8s-15.7 13.3-26 13.3H32c-10.3 0-19.9-4.9-26-13.3s-7.7-19.1-4.4-28.8l1-3c13.8-41.5 42.8-74.8 79.5-94.7L93.5 64H64C46.3 64 32 49.7 32 32zM160 384h64v96c0 17.7-14.3 32-32 32s-32-14.3-32-32V384z"/></svg>
+                            <div class="file-div" >
+                                <div class="file-icon-div" id="${id}">
+                                    <paper-checkbox></paper-checkbox>
+                                    <div class="menu-div"></div>
+                                    <paper-ripple recenters></paper-ripple>
+                                    <svg title="keep file local" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><path d="M32 32C32 14.3 46.3 0 64 0H320c17.7 0 32 14.3 32 32s-14.3 32-32 32H290.5l11.4 148.2c36.7 19.9 65.7 53.2 79.5 94.7l1 3c3.3 9.8 1.6 20.5-4.4 28.8s-15.7 13.3-26 13.3H32c-10.3 0-19.9-4.9-26-13.3s-7.7-19.1-4.4-28.8l1-3c13.8-41.5 42.8-74.8 79.5-94.7L93.5 64H64C46.3 64 32 49.7 32 32zM160 384h64v96c0 17.7-14.3 32-32 32s-32-14.3-32-32V384z"/></svg>
+                                </div>
+                                
                             </div>
-                            
-                        </div>
-                        `
+                            `
+
+
 
                         section.appendChild(range.createContextualFragment(html))
                         let fileIconDiv = section.querySelector(`#${id}`)
+
+                        if (file.lnk != undefined) {
+                            // here the file is a lnk...
+                            console.log("file is a link: ", file)
+                            let lnkIcon = `
+                                <div class="shortcut-icon">
+                                    <iron-icon icon="icons:reply"></iron-icon>
+                                </div> 
+                                `
+                            fileIconDiv.appendChild(range.createContextualFragment(lnkIcon))
+                        }
 
                         // Now I will append the file name span...
                         let fileNameSpan = document.createElement("span")
@@ -3109,7 +3216,7 @@ export class FilesIconView extends FilesView {
                                 files.push(this.selected[key].path)
                             }
 
-                            if(files.length == 0){
+                            if (files.length == 0) {
                                 files.push(file.path)
                             }
 
@@ -3168,7 +3275,6 @@ export class FilesIconView extends FilesView {
                         fileIconDiv.onmouseenter = (evt) => {
                             evt.stopPropagation();
 
-
                             let thumbtacks = this.div.querySelectorAll("svg")
                             for (var i = 0; i < thumbtacks.length; i++) {
                                 if (thumbtacks[i].style.fill == "var(--palette-primary-main)") {
@@ -3178,7 +3284,6 @@ export class FilesIconView extends FilesView {
                                     thumbtacks[i].style.left = ""
                                 }
                             }
-
 
                             if (File.hasLocal) {
                                 thumbtack.style.display = "block";
@@ -3262,6 +3367,7 @@ export class FilesIconView extends FilesView {
                 })
             }
         }
+
     }
 
     /**
@@ -3920,7 +4026,7 @@ export class FileNavigator extends HTMLElement {
                 let id = evt.dataTransfer.getData('id')
                 dirIco.icon = "icons:folder"
                 if (id.length > 0) {
-                    files.forEach(f=>{
+                    files.forEach(f => {
                         Model.eventHub.publish(`drop_file_${id}_event`, { file: f, dir: dir.path, id: id }, true)
                     })
                 }
@@ -5148,7 +5254,6 @@ export class FileExplorer extends HTMLElement {
         }
 
         // Service configuration change event...
-
         if (this.listeners[`update_globular_service_configuration_${this.globule.domain}_evt`] == undefined) {
             this.globule.eventHub.subscribe(`update_globular_service_configuration_evt`,
                 (uuid) => {
@@ -5451,29 +5556,23 @@ export class FileExplorer extends HTMLElement {
      * @param {*} globule 
      */
     createLink(file, dest, globule) {
-   
-        let alias = ""
-        if(file.videos){
-            alias = file.videos[0].getDescription()
-        }else if (file.titles){
-            alias = file.titles[0].getName()
-        }else if (file.audios){
-            alias = file.audio[0].getTitle()
-        }
-
-        let lnk = `<globular-link alias="${alias}" path="${file.path}" thumbnail="${file.thumbnail}" domain="${file.domain}"></globular-link>`
 
         let fileName = file.path.substring(file.path.lastIndexOf("/") + 1)
         if (fileName.indexOf(".") > 0) {
             fileName = fileName.substring(0, fileName.indexOf("."))
         }
 
-        generatePeerToken(globule, token=>{
-            let blob = new Blob([lnk], {type: 'text/html'});
-            const file = new File([blob], fileName + ".lnk");
-            uploadFiles(globule, token, dest, [file], ()=>{
+        generatePeerToken(globule, token => {
+
+            let rqst = new CreateLnkRequest
+            rqst.setName(fileName + ".lnk")
+            rqst.setPath(dest)
+            rqst.setLnk(file.toString())
+
+            globule.fileService.createLnk(rqst, { application: Application.application, domain: globule.domain, token: token }).then(() => {
                 Model.eventHub.publish("reload_dir_event", dest, false);
             })
+                .catch(err => ApplicationView.displayMessage(err, 3000))
         })
 
     }
@@ -5527,8 +5626,12 @@ export class FileExplorer extends HTMLElement {
         // get all images in the directory
         let images_ = []
         for (var i = 0; i < dir.files.length; i++) {
-            if (dir.files[i].mime.startsWith("image")) {
-                let f = dir.files[i]
+            let f = dir.files[i]
+            if (f.lnk) {
+                f = f.lnk
+            }
+
+            if (f.mime.startsWith("image")) {
                 images_.push(f)
             }
         }

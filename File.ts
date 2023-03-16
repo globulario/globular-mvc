@@ -3,9 +3,10 @@ import { readDir } from "globular-web-client/api";
 import * as jwt from "jwt-decode";
 import { Globular } from 'globular-web-client';
 import { ApplicationView } from './ApplicationView';
-import { FileInfo, GetFileInfoRequest } from 'globular-web-client/file/file_pb';
+import { FileInfo, GetFileInfoRequest, ReadFileRequest } from 'globular-web-client/file/file_pb';
 import { Application } from './Application';
 import { formatReal } from './components/utility';
+import { mergeTypedArrays, uint8arrayToStringMethod } from "./Utility";
 
 /**
  * Server side file accessor. That 
@@ -25,6 +26,16 @@ export class File extends Model {
     private static _local_files: any = {}
 
     private globule: Globular;
+
+    // If the file is a .lnk file the lnk will contain a 
+    // reference to the linked file...
+    private _lnk: File;
+    public get lnk(): File {
+        return this._lnk;
+    }
+    public set lnk(value: File) {
+        this._lnk = value;
+    }
 
     // return the file domain.
     public get domain(): string {
@@ -153,15 +164,19 @@ export class File extends Model {
      * Create instance of File class from JSON object.
      * @param obj The JSON object.
      */
-    static fromObject(obj: any, local?:boolean, globule?:Globular): any {
+    static fromObject(obj: any, local?: boolean, globule?: Globular): any {
         const file = new File(obj.name, obj.path, local, globule)
         file.isDir = obj.isDir
         file.mime = obj.mime
-        file.modeTime = new Date(obj.modeTime*1000)
+        file.modeTime = new Date(obj.modeTime * 1000)
         file.mode = obj.mode
         file.size = obj.size
         file.thumbnail = obj.thumbnail
         file.checksum = obj.checksum
+
+        if (!file.globule) {
+            file.globule = Model.getGlobule(obj.Domain)
+        }
 
         // Now the sub-file.
         if (file.isDir && obj.filesList != null) {
@@ -188,20 +203,24 @@ export class File extends Model {
      */
     toObject(): any {
         let obj = {
-            IsDir: this.isDir,
-            Mime: this.mime,
+            isDir: this.isDir,
+            mime: this.mime,
             modeTime: this.modeTime.toISOString(),
-            Mode: this.mode,
-            Name: this.name,
-            Path: this.path,
-            Size: this.size,
-            Thumbnail: this.thumbnail,
-            Files: new Array<any>()
+            mode: this.mode,
+            name: this.name,
+            path: this.path,
+            size: this.size,
+            domain: this.domain,
+            checksum: this.checksum,
+            thumbnail: this.thumbnail,
+            files: new Array<any>()
         }
 
         for (let f of this.files) {
-            obj.Files.push(f.toObject())
+            obj.files.push(f.toObject())
         }
+
+        return obj
     }
 
     /**
@@ -242,10 +261,10 @@ export class File extends Model {
                     let f = File.fromObject(rsp.getInfo().toObject())
                     f.globule = globule;
                     callback(f);
-
                 })
                 .catch(e => {
-                    errorCallback(e)})
+                    errorCallback(e)
+                })
         }, errorCallback)
     }
 
@@ -274,6 +293,41 @@ export class File extends Model {
             readDir(globule, path, recursive, (dir: FileInfo) => {
                 callback(File.fromObject(dir.toObject(), false, globule))
             }, errorCallback, 80, 80, token)
+        }, errorCallback)
+    }
+
+    static readText(file: File, callback: (text: string) => void, errorCallback: (err: any) => void) {
+        // Read the file...
+        let url = getUrl(file.globule)
+
+        file.path.split("/").forEach(item => {
+            url += "/" + encodeURIComponent(item.trim())
+        })
+
+        // Generate peer token.
+        generatePeerToken(file.globule, token => {
+  
+            let rqst = new ReadFileRequest
+            rqst.setPath(file.path)
+            let data: any = []
+
+            let stream = file.globule.fileService.readFile(rqst, { application: Application.application, domain: file.globule.domain, token: token })
+            // Here I will create a local event to be catch by the file uploader...
+            stream.on("data", (rsp) => {
+                data = mergeTypedArrays(data, rsp.getData());
+            })
+
+            stream.on("status", (status) => {
+                if (status.code == 0) {
+                    uint8arrayToStringMethod(data, (str) => {
+                        callback(str);
+                    });
+                } else {
+                    // In case of error I will return an empty array
+                    errorCallback(status.details)
+                }
+            });
+
         }, errorCallback)
     }
 
@@ -319,7 +373,7 @@ export class File extends Model {
             generatePeerToken(globule, (token: string) => {
                 let path = this.path
                 let url = getUrl(globule)
-                
+
                 path.split("/").forEach(item => {
                     item = item.trim()
                     if (item.length > 0) {
@@ -334,7 +388,7 @@ export class File extends Model {
                 url += "?domain=" + globule.domain
                 url += "&application=" + Model.application
                 url += "&token=" + token
-                
+
                 req.open("GET", url, true);
 
                 // Set the token to manage downlaod access.
