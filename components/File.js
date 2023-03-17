@@ -1522,13 +1522,14 @@ export class FilesView extends HTMLElement {
                             rqst.setDomain(infos.domain)
                             rqst.setIsdir(file.isDir)
 
-                            let stream = this._file_explorer_.globule.fileService.uploadFile(rqst, { application: Application.application, domain: this._file_explorer_.globule.domain, token: token })
+                            generatePeerToken(this._file_explorer_.globule, token_ => {
+                                let stream = this._file_explorer_.globule.fileService.uploadFile(rqst, { application: Application.application, domain: this._file_explorer_.globule.domain, token: token_ })
 
-                            let action = "Move"
-                            if (editMode == "copy") {
-                                action = "Copy"
-                            }
-                            let toast = ApplicationView.displayMessage(`
+                                let action = "Move"
+                                if (editMode == "copy") {
+                                    action = "Copy"
+                                }
+                                let toast = ApplicationView.displayMessage(`
                                     <div style="display: flex; flex-direction:column;">
                                         <div>${action} <span style="font-style: italic;">${file.name}</span></div>
                                         <div id="info-div"></div>
@@ -1538,54 +1539,54 @@ export class FilesView extends HTMLElement {
                                     </div>
                                 `)
 
-                            let progressBar = toast.el.querySelector("paper-progress")
+                                let progressBar = toast.el.querySelector("paper-progress")
 
-                            let infoDiv = toast.el.querySelector("#info-div")
+                                let infoDiv = toast.el.querySelector("#info-div")
 
-                            // Here I will create a local event to be catch by the file uploader...
-                            stream.on("data", (rsp) => {
-                                if (rsp.getInfo() != null) {
+                                // Here I will create a local event to be catch by the file uploader...
+                                stream.on("data", (rsp) => {
+                                    if (rsp.getInfo() != null) {
 
-                                    infoDiv.innerHTML = rsp.getInfo()
-                                    if (rsp.getUploaded() == rsp.getTotal()) {
-                                        progressBar.setAttribute("indeterminate", "true")
-                                    } else {
-                                        progressBar.removeAttribute("indeterminate")
-                                    }
-                                }
-                                progressBar.value = parseInt((rsp.getUploaded() / rsp.getTotal()) * 100)
-                            })
-
-                            stream.on("status", (status) => {
-                                if (status.code === 0) {
-                                    toast.dismiss()
-                                    // in case of editmode is "cut" I will remove the original file...
-                                    if (editMode == "cut") {
-                                        if (file.isDir) {
-                                            let rqst = new DeleteDirRequest
-                                            rqst.setPath(file.path)
-                                            globule.fileService.deleteDir(rqst, { application: Application.application, domain: globule.domain, token: token })
-                                                .then(rsp=>{
-                                                    delete dirs[getUuidByString(globule.domain + "@" + file.path)]
-                                                    Model.eventHub.publish("reload_dir_event", file.path, false);
-                                                })
-                                                .catch(err=>ApplicationView.displayMessage(err, 3000))
+                                        infoDiv.innerHTML = rsp.getInfo()
+                                        if (rsp.getUploaded() == rsp.getTotal()) {
+                                            progressBar.setAttribute("indeterminate", "true")
                                         } else {
-                                            let rqst = new DeleteFileRequest
-                                            rqst.setPath(file.path)
-                                            globule.fileService.deleteFile(rqst, { application: Application.application, domain: globule.domain, token: token })
-                                                .then(rsp=>{
-                                                    delete dirs[getUuidByString(globule.domain + "@" + file.path)]
-                                                    Model.eventHub.publish("reload_dir_event", file.path.substring(0, file.path.lastIndexOf("/")), false);
-                                                })
-                                                .catch(err=>ApplicationView.displayMessage(err, 3000))
+                                            progressBar.removeAttribute("indeterminate")
                                         }
                                     }
-                                } else {
-                                    ApplicationView.displayMessage(status.details, 3000)
-                                }
-                            });
+                                    progressBar.value = parseInt((rsp.getUploaded() / rsp.getTotal()) * 100)
+                                })
 
+                                stream.on("status", (status) => {
+                                    if (status.code === 0) {
+                                        toast.dismiss()
+                                        // in case of editmode is "cut" I will remove the original file...
+                                        if (editMode == "cut") {
+                                            if (file.isDir) {
+                                                let rqst = new DeleteDirRequest
+                                                rqst.setPath(file.path)
+                                                globule.fileService.deleteDir(rqst, { application: Application.application, domain: globule.domain, token: token })
+                                                    .then(rsp => {
+                                                        delete dirs[getUuidByString(globule.domain + "@" + file.path)]
+                                                        Model.eventHub.publish("reload_dir_event", file.path, false);
+                                                    })
+                                                    .catch(err => ApplicationView.displayMessage(err, 3000))
+                                            } else {
+                                                let rqst = new DeleteFileRequest
+                                                rqst.setPath(file.path)
+                                                globule.fileService.deleteFile(rqst, { application: Application.application, domain: globule.domain, token: token })
+                                                    .then(rsp => {
+                                                        delete dirs[getUuidByString(globule.domain + "@" + file.path)]
+                                                        Model.eventHub.publish("reload_dir_event", file.path.substring(0, file.path.lastIndexOf("/")), false);
+                                                    })
+                                                    .catch(err => ApplicationView.displayMessage(err, 3000))
+                                            }
+                                        }
+                                    } else {
+                                        ApplicationView.displayMessage(status.details, 3000)
+                                    }
+                                });
+                            })
                         })
                     }, err => ApplicationView.displayMessage(err, 3000))
 
