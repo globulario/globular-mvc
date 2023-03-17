@@ -5294,7 +5294,9 @@ export class FileExplorer extends HTMLElement {
     setGlobule(globule) {
         shared = {}
         public_ = {}
+
         this.globule = globule
+
         this.shadowRoot.querySelector("globular-disk-space-manager").globule = globule
         this.permissionManager.globule = globule // set the globule for get permissions...
 
@@ -5573,7 +5575,7 @@ export class FileExplorer extends HTMLElement {
             let root = "/users/" + userId + "@" + userDomain
 
             // Load the root dir...
-            delete dirs[getUuidByString(this.globule + "@" + root)]
+            delete dirs[getUuidByString(this.globule.domain + "@" + root)]
 
             this.displayWaitMessage("load " + root)
             _readDir(root, (dir) => {
