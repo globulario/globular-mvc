@@ -160,15 +160,17 @@ function __getTitleInfo__(globule, file, callback) {
     rqst.setIndexpath(globule.config.DataPath + "/search/titles")
     rqst.setFilepath(file.path)
 
-    globule.titleService.getFileTitles(rqst, { application: Application.application, domain: globule.domain, token: localStorage.getItem("user_token") })
-        .then(rsp => {
-            callback(rsp.getTitles().getTitlesList())
-        })
-        .catch(err => {
-            // so here no title was found...
+    generatePeerToken(globule, token => {
+        globule.titleService.getFileTitles(rqst, { application: Application.application, domain: globule.domain, token: token })
+            .then(rsp => {
+                callback(rsp.getTitles().getTitlesList())
+            })
+            .catch(err => {
+                // so here no title was found...
 
-            callback([])
-        })
+                callback([])
+            })
+    })
 }
 
 export function getVideoInfo(globule, file, callback) {
@@ -206,15 +208,16 @@ function __getVideoInfo__(globule, file, callback) {
     let rqst = new GetFileVideosRequest
     rqst.setIndexpath(globule.config.DataPath + "/search/videos")
     rqst.setFilepath(file.path)
-
-    globule.titleService.getFileVideos(rqst, { application: Application.application, domain: globule.domain, token: localStorage.getItem("user_token") })
-        .then(rsp => {
-            let videos = rsp.getVideos().getVideosList()
-            callback(videos)
-        })
-        .catch(err => {
-            callback([])
-        })
+    generatePeerToken(globule, token => {
+        globule.titleService.getFileVideos(rqst, { application: Application.application, domain: globule.domain, token: token })
+            .then(rsp => {
+                let videos = rsp.getVideos().getVideosList()
+                callback(videos)
+            })
+            .catch(err => {
+                callback([])
+            })
+    })
 }
 
 export function getAudioInfo(globule, file, callback) {
@@ -253,15 +256,16 @@ function __getAudioInfo__(globule, file, callback) {
     let rqst = new GetFileAudiosRequest
     rqst.setIndexpath(globule.config.DataPath + "/search/audios")
     rqst.setFilepath(file.path)
-
-    globule.titleService.getFileAudios(rqst, { application: Application.application, domain: globule.domain, token: localStorage.getItem("user_token") })
-        .then(rsp => {
-            let audios = rsp.getAudios().getAudiosList()
-            callback(audios)
-        })
-        .catch(err => {
-            callback([])
-        })
+    generatePeerToken(globule, token => {
+        globule.titleService.getFileAudios(rqst, { application: Application.application, domain: globule.domain, token: token })
+            .then(rsp => {
+                let audios = rsp.getAudios().getAudiosList()
+                callback(audios)
+            })
+            .catch(err => {
+                callback([])
+            })
+    })
 }
 
 function formatBytes(bytes, decimals = 2) {
@@ -383,9 +387,7 @@ export function getImage(callback, images, files, index, globule) {
         // Set url query parameter.
         url += "?domain=" + globule.domain
         url += "&application=" + Model.application
-        if (localStorage.getItem("user_token") != undefined) {
-            url += "&token=" + token
-        }
+        url += "&token=" + token
 
         var xhr = new XMLHttpRequest();
         xhr.timeout = 10 * 1000
@@ -970,36 +972,40 @@ export class FilesView extends HTMLElement {
                     index++
                     let globule = this._file_explorer_.globule
                     if (f.isDir) {
-                        this._file_explorer_.globule.fileService.getPublicDirs(new GetPublicDirsRequest, { application: Application.application, domain: this._file_explorer_.globule.domain, token: localStorage.getItem("user_token") })
-                            .then(rsp => {
-                                // if the dir is public I will remove it entry from the list and keep the directory...
-                                let dirs = rsp.getDirsList()
-                                if (dirs.includes(f.path)) {
-                                    const rqst = new RemovePublicDirRequest
-                                    rqst.setPath(f.path)
-                                    globule.fileService.removePublicDir(rqst, { application: Application.application, domain: globule.domain, token: localStorage.getItem("user_token") })
-                                        .then(rsp => {
-                                            delete dirs[getUuidByString(this._file_explorer_.globule.domain + "@/public")]
-                                            Model.publish("reload_dir_event", "/public", false);
+                        generatePeerToken(globule, token => {
+                            this._file_explorer_.globule.fileService.getPublicDirs(new GetPublicDirsRequest, { application: Application.application, domain: this._file_explorer_.globule.domain, token: token })
+                                .then(rsp => {
+                                    // if the dir is public I will remove it entry from the list and keep the directory...
+                                    let dirs = rsp.getDirsList()
+                                    if (dirs.includes(f.path)) {
+                                        const rqst = new RemovePublicDirRequest
+                                        rqst.setPath(f.path)
+                                        generatePeerToken(globule, token => {
+                                            globule.fileService.removePublicDir(rqst, { application: Application.application, domain: globule.domain, token: token })
+                                                .then(rsp => {
+                                                    delete dirs[getUuidByString(this._file_explorer_.globule.domain + "@/public")]
+                                                    Model.publish("reload_dir_event", "/public", false);
+                                                })
+                                                .catch(err => { ApplicationView.displayMessage(err, 3000) })
                                         })
-                                        .catch(err => { ApplicationView.displayMessage(err, 3000) })
-                                } else {
-                                    generatePeerToken(globule, token => {
-                                        deleteDir(globule, f.path,
-                                            () => {
-                                                delete dirs[getUuidByString(this._file_explorer_.globule.domain + "@" + path)]
-                                                Model.eventHub.publish("reload_dir_event", path, false);
-                                                if (index < Object.keys(this.selected).length) {
-                                                    deleteFile_()
-                                                } else {
-                                                    success()
-                                                }
-                                            },
-                                            err => { ApplicationView.displayMessage(err, 3000) }, token)
-                                    })
+                                    } else {
+                                        generatePeerToken(globule, token => {
+                                            deleteDir(globule, f.path,
+                                                () => {
+                                                    delete dirs[getUuidByString(this._file_explorer_.globule.domain + "@" + path)]
+                                                    Model.eventHub.publish("reload_dir_event", path, false);
+                                                    if (index < Object.keys(this.selected).length) {
+                                                        deleteFile_()
+                                                    } else {
+                                                        success()
+                                                    }
+                                                },
+                                                err => { ApplicationView.displayMessage(err, 3000) }, token)
+                                        })
 
-                                }
-                            })
+                                    }
+                                })
+                        })
 
                     } else {
                         deleteFile(globule, f.path,
@@ -1109,13 +1115,15 @@ export class FilesView extends HTMLElement {
 
             rqst.setPath(path)
             ApplicationView.displayMessage("Create timeline for file at path </br>" + path, 3500)
-            globule.fileService.createVideoTimeLine(rqst, { application: Application.application, domain: globule.domain, token: localStorage.getItem("user_token") })
-                .then(rsp => {
-                    ApplicationView.displayMessage("Timeline is created </br>" + path, 3500)
-                })
-                .catch(err => {
-                    ApplicationView.displayMessage(err, 3000)
-                })
+            generatePeerToken(globule, token => {
+                globule.fileService.createVideoTimeLine(rqst, { application: Application.application, domain: globule.domain, token: token })
+                    .then(rsp => {
+                        ApplicationView.displayMessage("Timeline is created </br>" + path, 3500)
+                    })
+                    .catch(err => {
+                        ApplicationView.displayMessage(err, 3000)
+                    })
+            })
 
             // Remove it from it parent... 
             this.menu.close()
@@ -1140,15 +1148,16 @@ export class FilesView extends HTMLElement {
 
             rqst.setPath(path)
             ApplicationView.displayMessage("Create preview for file at path </br>" + path, 3500)
-            globule.fileService.createVideoPreview(rqst, { application: Application.application, domain: globule.domain, token: localStorage.getItem("user_token") })
-                .then(rsp => {
-                    ApplicationView.displayMessage("Preview are created </br>" + path, 3500)
-                    Model.publish("refresh_dir_evt", file.path.substring(0, file.path.lastIndexOf("/")), false);
-                })
-                .catch(err => {
-                    ApplicationView.displayMessage(err, 3000)
-                })
-
+            generatePeerToken(globule, token => {
+                globule.fileService.createVideoPreview(rqst, { application: Application.application, domain: globule.domain, token: token })
+                    .then(rsp => {
+                        ApplicationView.displayMessage("Preview are created </br>" + path, 3500)
+                        Model.publish("refresh_dir_evt", file.path.substring(0, file.path.lastIndexOf("/")), false);
+                    })
+                    .catch(err => {
+                        ApplicationView.displayMessage(err, 3000)
+                    })
+            })
             // Remove it from it parent... 
             this.menu.close()
             this.menu.parentNode.removeChild(this.menu)
@@ -1167,15 +1176,16 @@ export class FilesView extends HTMLElement {
             rqst.setPath(path)
 
             ApplicationView.displayMessage("Convert file at path </br>" + path, 3500)
-            globule.fileService.convertVideoToMpeg4H264(rqst, { application: Application.application, domain: globule.domain, token: localStorage.getItem("user_token") })
-                .then(rsp => {
-                    ApplicationView.displayMessage("Conversion done </br>" + path, 3500)
-                    Model.eventHub.publish("refresh_dir_evt", file.path.substring(0, file.path.lastIndexOf("/")), false);
-                })
-                .catch(err => {
-                    ApplicationView.displayMessage(err, 3000)
-                })
-
+            generatePeerToken(globule, token => {
+                globule.fileService.convertVideoToMpeg4H264(rqst, { application: Application.application, domain: globule.domain, token: token })
+                    .then(rsp => {
+                        ApplicationView.displayMessage("Conversion done </br>" + path, 3500)
+                        Model.eventHub.publish("refresh_dir_evt", file.path.substring(0, file.path.lastIndexOf("/")), false);
+                    })
+                    .catch(err => {
+                        ApplicationView.displayMessage(err, 3000)
+                    })
+            })
             // Remove it from it parent... 
             this.menu.close()
             this.menu.parentNode.removeChild(this.menu)
@@ -1194,14 +1204,16 @@ export class FilesView extends HTMLElement {
             rqst.setPath(path)
 
             ApplicationView.displayMessage("Convert file at path </br>" + path, 3500)
-            globule.fileService.convertVideoToHls(rqst, { application: Application.application, domain: globule.domain, token: localStorage.getItem("user_token") })
-                .then(rsp => {
-                    ApplicationView.displayMessage("Conversion done </br>" + path, 3500)
-                    Model.publish("refresh_dir_evt", file.path.substring(0, file.path.lastIndexOf("/")), false);
-                })
-                .catch(err => {
-                    ApplicationView.displayMessage(err, 3000)
-                })
+            generatePeerToken(globule, token => {
+                globule.fileService.convertVideoToHls(rqst, { application: Application.application, domain: globule.domain, token: token })
+                    .then(rsp => {
+                        ApplicationView.displayMessage("Conversion done </br>" + path, 3500)
+                        Model.publish("refresh_dir_evt", file.path.substring(0, file.path.lastIndexOf("/")), false);
+                    })
+                    .catch(err => {
+                        ApplicationView.displayMessage(err, 3000)
+                    })
+            })
 
             // Remove it from it parent... 
             this.menu.close()
@@ -1378,26 +1390,26 @@ export class FilesView extends HTMLElement {
         rqst.setPath(path)
         rqst.setFilesList(paperTray)
 
-        let token = localStorage.getItem("user_token");
         let globule = this._file_explorer_.globule
-
-        // Create a directory at the given path.
-        globule.fileService
-            .copy(rqst, {
-                token: token,
-                application: Application.application,
-                domain: globule.domain
-            }).then(() => {
-                paperTray = []
-                editMode = ""
-                delete dirs[getUuidByString(this._file_explorer_.globule.domain + "@" + path)]
-                Model.eventHub.publish("reload_dir_event", path, false);
-            })
-            .catch(err => {
-                paperTray = []
-                editMode = ""
-                ApplicationView.displayMessage(err, 3000)
-            })
+        generatePeerToken(globule, token => {
+            // Create a directory at the given path.
+            globule.fileService
+                .copy(rqst, {
+                    token: token,
+                    application: Application.application,
+                    domain: globule.domain
+                }).then(() => {
+                    paperTray = []
+                    editMode = ""
+                    delete dirs[getUuidByString(this._file_explorer_.globule.domain + "@" + path)]
+                    Model.eventHub.publish("reload_dir_event", path, false);
+                })
+                .catch(err => {
+                    paperTray = []
+                    editMode = ""
+                    ApplicationView.displayMessage(err, 3000)
+                })
+        })
     }
 
     /**
@@ -1409,32 +1421,33 @@ export class FilesView extends HTMLElement {
         rqst.setPath(path)
         rqst.setFilesList(paperTray)
 
-        let token = localStorage.getItem("user_token");
         let globule = this._file_explorer_.globule
 
-        // Create a directory at the given path.
-        globule.fileService
-            .move(rqst, {
-                token: token,
-                application: Application.application,
-                domain: globule.domain
-            }).then(() => {
-                for (var i = 0; i < paperTray.length; i++) {
-                    let f = paperTray[i]
-                    let path_ = f.substring(0, f.lastIndexOf("/"))
+        generatePeerToken(globule, token => {
+            // Create a directory at the given path.
+            globule.fileService
+                .move(rqst, {
+                    token: token,
+                    application: Application.application,
+                    domain: globule.domain
+                }).then(() => {
+                    for (var i = 0; i < paperTray.length; i++) {
+                        let f = paperTray[i]
+                        let path_ = f.substring(0, f.lastIndexOf("/"))
+                        delete dirs[getUuidByString(this._file_explorer_.globule.domain + "@" + path)]
+                        Model.publish("reload_dir_event", path_, false);
+                    }
+                    paperTray = []
+                    editMode = ""
                     delete dirs[getUuidByString(this._file_explorer_.globule.domain + "@" + path)]
-                    Model.publish("reload_dir_event", path_, false);
-                }
-                paperTray = []
-                editMode = ""
-                delete dirs[getUuidByString(this._file_explorer_.globule.domain + "@" + path)]
-                Model.publish("reload_dir_event", path, false);
-            })
-            .catch(err => {
-                paperTray = []
-                editMode = ""
-                ApplicationView.displayMessage(err, 3000)
-            })
+                    Model.publish("reload_dir_event", path, false);
+                })
+                .catch(err => {
+                    paperTray = []
+                    editMode = ""
+                    ApplicationView.displayMessage(err, 3000)
+                })
+        })
     }
 
     init() {
@@ -1744,17 +1757,19 @@ export class FilesView extends HTMLElement {
                     path = this._file_explorer_.globule.config.DataPath + "/files" + path
                 }
 
-                let rqst = new DownloadTorrentRequest
-                rqst.setLink(url)
-                rqst.setDest(path)
-                rqst.setSeed(true) // Can be an option in the console interface...
+                generatePeerToken(this._file_explorer_.globule, token => {
+                    let rqst = new DownloadTorrentRequest
+                    rqst.setLink(url)
+                    rqst.setDest(path)
+                    rqst.setSeed(true) // Can be an option in the console interface...
 
-                // Display the message.
-                this._file_explorer_.globule.torrentService.downloadTorrent(rqst, { application: Application.application, domain: this._file_explorer_.globule.domain, token: localStorage.getItem("user_token") })
-                    .then(() => {
-                        ApplicationView.displayMessage("your torrent was added and will start download soon...", 3000)
-                        // Here I will 
-                    }).catch(err => ApplicationView.displayMessage(err, 3000))
+                    // Display the message.
+                    this._file_explorer_.globule.torrentService.downloadTorrent(rqst, { application: Application.application, domain: this._file_explorer_.globule.domain, token: token })
+                        .then(() => {
+                            ApplicationView.displayMessage("your torrent was added and will start download soon...", 3000)
+                            // Here I will 
+                        }).catch(err => ApplicationView.displayMessage(err, 3000))
+                })
 
             } else if (url.endsWith(".jpeg") || url.endsWith(".jpg") || url.startsWith(".bpm") || url.startsWith(".gif") || url.startsWith(".png")) {
                 // I will get the file from the url and save it on the server in the current directory.
@@ -3517,19 +3532,21 @@ export class FilesIconView extends FilesView {
         rqst.setTitle(title)
 
         // Now I will create the title info...
-        this._file_explorer_.globule.titleService.createTitle(rqst, { application: Application.application, domain: this._file_explorer_.globule.domain, token: localStorage.getItem("user_token") })
-            .then(rsp => {
-                // Now I will asscociated the file and the title.
-                let rqst_ = new AssociateFileWithTitleRequest
-                rqst_.setFilepath(file.path)
-                rqst_.setTitleid(title.getId())
-                rqst_.setIndexpath(indexPath)
+        generatePeerToken(this._file_explorer_, token => {
+            this._file_explorer_.globule.titleService.createTitle(rqst, { application: Application.application, domain: this._file_explorer_.globule.domain, token: token })
+                .then(rsp => {
+                    // Now I will asscociated the file and the title.
+                    let rqst_ = new AssociateFileWithTitleRequest
+                    rqst_.setFilepath(file.path)
+                    rqst_.setTitleid(title.getId())
+                    rqst_.setIndexpath(indexPath)
 
-                this._file_explorer_.globule.titleService.associateFileWithTitle(rqst_, { application: Application.application, domain: this._file_explorer_.globule.domain, token: localStorage.getItem("user_token") })
-                    .then(rsp => {
-                    }).catch(err => ApplicationView.displayMessage(err, 3000))
+                    this._file_explorer_.globule.titleService.associateFileWithTitle(rqst_, { application: Application.application, domain: this._file_explorer_.globule.domain, token: token })
+                        .then(rsp => {
+                        }).catch(err => ApplicationView.displayMessage(err, 3000))
 
-            }).catch(err => ApplicationView.displayMessage(err, 3000))
+                }).catch(err => ApplicationView.displayMessage(err, 3000))
+        })
     }
 
 
@@ -4234,42 +4251,44 @@ export class FileNavigator extends HTMLElement {
             }, false, this)
 
 
-        this._file_explorer_.globule.fileService.getPublicDirs(new GetPublicDirsRequest, { application: Application.application, domain: this._file_explorer_.globule.domain, token: localStorage.getItem("user_token") })
-            .then(rsp => {
-                let index = 0;
-                let publicDirs = rsp.getDirsList()
-                let initPublicDir = (callback, errorCallback) => {
-                    if (publicDirs.length > 0) {
-                        if (index < publicDirs.length) {
-                            let path = publicDirs[index]
-                            // Read the dir content (files and directory informations.)
-                            _readDir(path, dir => {
-                                this._file_explorer_.resume()
-                                // used by set dir...
-                                markAsPublic(dir, path)
-                                this.public_.files.push(dir)
-                                index++
-                                initPublicDir(callback, err => ApplicationView.displayMessage(err, 3000))
-                            }, err => ApplicationView.displayMessage(err, 3000), this._file_explorer_.globule, true)
+        generatePeerToken(this._file_explorer_.globule, token => {
+            this._file_explorer_.globule.fileService.getPublicDirs(new GetPublicDirsRequest, { application: Application.application, domain: this._file_explorer_.globule.domain, token: token })
+                .then(rsp => {
+                    let index = 0;
+                    let publicDirs = rsp.getDirsList()
+                    let initPublicDir = (callback, errorCallback) => {
+                        if (publicDirs.length > 0) {
+                            if (index < publicDirs.length) {
+                                let path = publicDirs[index]
+                                // Read the dir content (files and directory informations.)
+                                _readDir(path, dir => {
+                                    this._file_explorer_.resume()
+                                    // used by set dir...
+                                    markAsPublic(dir, path)
+                                    this.public_.files.push(dir)
+                                    index++
+                                    initPublicDir(callback, err => ApplicationView.displayMessage(err, 3000))
+                                }, err => ApplicationView.displayMessage(err, 3000), this._file_explorer_.globule, true)
 
+                            } else {
+                                callback()
+                            }
                         } else {
                             callback()
                         }
-                    } else {
-                        callback()
                     }
-                }
 
-                // Init
-                initPublicDir(() => {
-                    let key = getUuidByString(this._file_explorer_.globule.domain + "@" + "/public")
-                    dirs[key] = this.public_
-                    this.initTreeView(this.public_, this.publicDiv, 0)
-                    if (initCallback) {
-                        initCallback()
-                    }
+                    // Init
+                    initPublicDir(() => {
+                        let key = getUuidByString(this._file_explorer_.globule.domain + "@" + "/public")
+                        dirs[key] = this.public_
+                        this.initTreeView(this.public_, this.publicDiv, 0)
+                        if (initCallback) {
+                            initCallback()
+                        }
+                    })
                 })
-            })
+        })
     }
 
 
@@ -5152,45 +5171,45 @@ export class FileExplorer extends HTMLElement {
                     // Here I will add public directory...
                     const rqst = new AddPublicDirRequest
                     rqst.setPath(input.value)
-                    let token = localStorage.getItem("user_token");
-
-                    // Create a directory at the given path.
-                    this.globule.fileService
-                        .addPublicDir(rqst, {
-                            token: token,
-                            application: Application.application,
-                            domain: this.globule.domain
-                        })
-                        .then(() => {
-                            // The new directory was created.
-                            Model.publish("reload_dir_event", this.path, false);
-                        })
-                        .catch((err) => {
-                            ApplicationView.displayMessage(err, 3000)
-                        });
-
+                    generatePeerToken(this.globule, token => {
+                        // Create a directory at the given path.
+                        this.globule.fileService
+                            .addPublicDir(rqst, {
+                                token: token,
+                                application: Application.application,
+                                domain: this.globule.domain
+                            })
+                            .then(() => {
+                                // The new directory was created.
+                                Model.publish("reload_dir_event", this.path, false);
+                            })
+                            .catch((err) => {
+                                ApplicationView.displayMessage(err, 3000)
+                            });
+                    })
                 } else {
                     // Here I will create a new folder...
                     // Set the request.
                     const rqst = new CreateDirRequest();
                     rqst.setPath(this.path);
                     rqst.setName(input.value);
-                    let token = localStorage.getItem("user_token");
 
-                    // Create a directory at the given path.
-                    this.globule.fileService
-                        .createDir(rqst, {
-                            token: token,
-                            application: Application.application,
-                            domain: this.globule.domain
-                        })
-                        .then(() => {
-                            // The new directory was created.
-                            Model.eventHub.publish("reload_dir_event", this.path, false);
-                        })
-                        .catch((err) => {
-                            ApplicationView.displayMessage(err, 3000)
-                        });
+                    generatePeerToken(this.globule, token => {
+                        // Create a directory at the given path.
+                        this.globule.fileService
+                            .createDir(rqst, {
+                                token: token,
+                                application: Application.application,
+                                domain: this.globule.domain
+                            })
+                            .then(() => {
+                                // The new directory was created.
+                                Model.eventHub.publish("reload_dir_event", this.path, false);
+                            })
+                            .catch((err) => {
+                                ApplicationView.displayMessage(err, 3000)
+                            });
+                    })
                 }
             }
 
