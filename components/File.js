@@ -317,6 +317,7 @@ function initLnks(dir, callback) {
                 File__.readText(f,
                     txt => {
                         f.lnk = File__.fromString(txt)
+
                         initLink_(index)
                     },
                     () => {

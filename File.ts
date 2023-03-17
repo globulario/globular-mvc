@@ -165,7 +165,7 @@ export class File extends Model {
      * @param obj The JSON object.
      */
     static fromObject(obj: any, local?: boolean, globule?: Globular): any {
-        const file = new File(obj.name, obj.path, local, globule)
+        const file = new File(obj.name, obj.path, local, Model.getGlobule(obj.domain))
         file.isDir = obj.isDir
         file.mime = obj.mime
         file.modeTime = new Date(obj.modeTime * 1000)
@@ -174,18 +174,13 @@ export class File extends Model {
         file.thumbnail = obj.thumbnail
         file.checksum = obj.checksum
 
-        if (!file.globule) {
-            file.globule = Model.getGlobule(obj.Domain)
-        }
-
         // Now the sub-file.
         if (file.isDir && obj.filesList != null) {
             for (let o of obj.filesList) {
-                let f = <File>File.fromObject(o, local, globule)
+                let f = <File>File.fromObject(o, local, Model.getGlobule(obj.domain))
                 file.files.push(f)
             }
         }
-
         return file
     }
 
