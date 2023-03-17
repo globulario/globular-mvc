@@ -28,7 +28,7 @@ import { v4 as uuidv4 } from "uuid";
 
 // Menu to set action on files.
 import { DropdownMenu } from './dropdownMenu.js';
-import { AddPublicDirRequest, ConvertVideoToHlsRequest, ConvertVideoToMpeg4H264Request, CopyRequest, CreateDirRequest, CreateLnkRequest, CreateVideoPreviewRequest, CreateVideoTimeLineRequest, GeneratePlaylistRequest, GetFileInfoRequest, GetPublicDirsRequest, MoveRequest, ReadFileRequest, RemovePublicDirRequest, SaveFileRequest, StartProcessVideoRequest, UploadFileRequest, UploadVideoRequest } from 'globular-web-client/file/file_pb';
+import { AddPublicDirRequest, ConvertVideoToHlsRequest, ConvertVideoToMpeg4H264Request, CopyRequest, CreateDirRequest, CreateLnkRequest, CreateVideoPreviewRequest, CreateVideoTimeLineRequest, DeleteDirRequest, DeleteFileRequest, GeneratePlaylistRequest, GetFileInfoRequest, GetPublicDirsRequest, MoveRequest, ReadFileRequest, RemovePublicDirRequest, SaveFileRequest, StartProcessVideoRequest, UploadFileRequest, UploadVideoRequest } from 'globular-web-client/file/file_pb';
 import { createArchive, deleteDir, deleteFile, downloadFileHttp, renameFile, uploadFiles } from 'globular-web-client/api';
 import { ApplicationView } from '../ApplicationView';
 import { Application } from '../Application';
@@ -1502,33 +1502,33 @@ export class FilesView extends HTMLElement {
                     File__.getFile(globule, infos.file, 80, 80, file => {
                         generatePeerToken(globule, token => {
                             // Here I will transfert a single file...
-                            
-                                let url = getUrl(globule)
-                                file.path.split("/").forEach(item => {
-                                    let component = encodeURIComponent(item.trim())
-                                    if (component.length > 0) {
-                                        url += "/" + component
-                                    }
-                                })
 
-                                url += "?application=" + Model.application;
-                                url += "&token=" + token;
-
-                                // So here I will need to upload the file on remote server...
-                                let rqst = new UploadFileRequest
-                                rqst.setDest(this.__dir__.path)
-                                rqst.setName(file.name)
-                                rqst.setUrl(url)
-                                rqst.setDomain(infos.domain)
-                                rqst.setIsdir(file.isDir)
-
-                                let stream = this._file_explorer_.globule.fileService.uploadFile(rqst, { application: Application.application, domain: this._file_explorer_.globule.domain, token: token })
-
-                                let action = "Move"
-                                if(editMode == "copy"){
-                                    action = "Copy"
+                            let url = getUrl(globule)
+                            file.path.split("/").forEach(item => {
+                                let component = encodeURIComponent(item.trim())
+                                if (component.length > 0) {
+                                    url += "/" + component
                                 }
-                                let toast = ApplicationView.displayMessage(`
+                            })
+
+                            url += "?application=" + Model.application;
+                            url += "&token=" + token;
+
+                            // So here I will need to upload the file on remote server...
+                            let rqst = new UploadFileRequest
+                            rqst.setDest(this.__dir__.path)
+                            rqst.setName(file.name)
+                            rqst.setUrl(url)
+                            rqst.setDomain(infos.domain)
+                            rqst.setIsdir(file.isDir)
+
+                            let stream = this._file_explorer_.globule.fileService.uploadFile(rqst, { application: Application.application, domain: this._file_explorer_.globule.domain, token: token })
+
+                            let action = "Move"
+                            if (editMode == "copy") {
+                                action = "Copy"
+                            }
+                            let toast = ApplicationView.displayMessage(`
                                     <div style="display: flex; flex-direction:column;">
                                         <div>${action} <span style="font-style: italic;">${file.name}</span></div>
                                         <div id="info-div"></div>
@@ -1537,35 +1537,54 @@ export class FilesView extends HTMLElement {
                                         </div>
                                     </div>
                                 `)
- 
-                                let progressBar = toast.el.querySelector("paper-progress")
-                                
-                                let infoDiv = toast.el.querySelector("#info-div")
-                                
-                                // Here I will create a local event to be catch by the file uploader...
-                                stream.on("data", (rsp) => {
-                                    if (rsp.getInfo() != null) {
-                                        
-                                        infoDiv.innerHTML = rsp.getInfo()
-                                        if(rsp.getUploaded() == rsp.getTotal()){
-                                            progressBar.setAttribute("indeterminate", "true")
-                                        }else{
-                                            progressBar.removeAttribute("indeterminate")
+
+                            let progressBar = toast.el.querySelector("paper-progress")
+
+                            let infoDiv = toast.el.querySelector("#info-div")
+
+                            // Here I will create a local event to be catch by the file uploader...
+                            stream.on("data", (rsp) => {
+                                if (rsp.getInfo() != null) {
+
+                                    infoDiv.innerHTML = rsp.getInfo()
+                                    if (rsp.getUploaded() == rsp.getTotal()) {
+                                        progressBar.setAttribute("indeterminate", "true")
+                                    } else {
+                                        progressBar.removeAttribute("indeterminate")
+                                    }
+                                }
+                                progressBar.value = parseInt((rsp.getUploaded() / rsp.getTotal()) * 100)
+                            })
+
+                            stream.on("status", (status) => {
+                                if (status.code === 0) {
+                                    toast.dismiss()
+                                    // in case of editmode is "cut" I will remove the original file...
+                                    if (editMode == "cut") {
+                                        if (file.isDir) {
+                                            let rqst = new DeleteDirRequest
+                                            rqst.setPath(file.path)
+                                            globule.fileService.deleteDir(rqst, { application: Application.application, domain: globule.domain, token: token })
+                                                .then(rsp=>{
+                                                    delete dirs[getUuidByString(globule.domain + "@" + file.path)]
+                                                    Model.eventHub.publish("reload_dir_event", file.path, false);
+                                                })
+                                                .catch(err=>ApplicationView.displayMessage(err, 3000))
+                                        } else {
+                                            let rqst = new DeleteFileRequest
+                                            rqst.setPath(file.path)
+                                            globule.fileService.deleteFile(rqst, { application: Application.application, domain: globule.domain, token: token })
+                                                .then(rsp=>{
+                                                    delete dirs[getUuidByString(globule.domain + "@" + file.path)]
+                                                    Model.eventHub.publish("reload_dir_event", file.path.substring(0, file.path.lastIndexOf("/")), false);
+                                                })
+                                                .catch(err=>ApplicationView.displayMessage(err, 3000))
                                         }
                                     }
-                                    progressBar.value = parseInt((rsp.getUploaded() / rsp.getTotal()) * 100)
-                                })
-
-                                stream.on("status", (status) => {
-                                    if (status.code === 0) {
-                                        toast.dismiss()
-                                    } else {
-                                        ApplicationView.displayMessage(status.details, 3000)
-                                    }
-                                });
-
-
-                            
+                                } else {
+                                    ApplicationView.displayMessage(status.details, 3000)
+                                }
+                            });
 
                         })
                     }, err => ApplicationView.displayMessage(err, 3000))
@@ -3626,7 +3645,7 @@ export class PathNavigator extends HTMLElement {
     }
 
     init() {
- 
+
         // The the path
         Model.eventHub.subscribe("__set_dir_event__",
             (uuid) => {
