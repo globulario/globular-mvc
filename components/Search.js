@@ -665,7 +665,7 @@ export class SearchBar extends HTMLElement {
                 for (var i = 0; i < checkboxs.length; i++) {
                     let c = checkboxs[i]
                     if (c.checked) {
-                        if(!contexts.includes(c.name))
+                        if (!contexts.includes(c.name))
                             contexts.push(c.name)
                     }
                 }
@@ -2456,10 +2456,12 @@ export class SearchFlipCard extends HTMLElement {
             }
             seriesInfos.innerHTML = title.getName() + " S" + title.getSeason() + "E" + title.getEpisode()
         } else {
-            let url = title.getPoster().getContenturl()
-            /*toDataURL(url, (dataUrl) => {*/
-            this.shadowRoot.querySelector(`#hit-div-mosaic-front`).style.backgroundImage = `url(${url})`
-            /*})*/
+            if (title.getPoster()) {
+                let url = title.getPoster().getContenturl()
+                /*toDataURL(url, (dataUrl) => {*/
+                this.shadowRoot.querySelector(`#hit-div-mosaic-front`).style.backgroundImage = `url(${url})`
+                /*})*/
+            }
         }
 
     }
@@ -2480,7 +2482,6 @@ export class SearchTitleDetail extends HTMLElement {
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
         this.title_ = null;
-        this.isLoaded = false;
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -2604,14 +2605,14 @@ export class SearchTitleDetail extends HTMLElement {
     }
 
     connectedCallback() {
-        if (this.isLoaded) {
+
+        if (this.titlePreview.src.length > 0) {
             return
         }
 
         let title = this.title_
         let globule = title.globule;
         this.shadowRoot.querySelector("globular-informations-manager").setTitlesInformation([title])
-        this.isLoaded = true;
 
         // Display the episode informations.
         title.onLoadEpisodes = (episodes) => {
@@ -2642,7 +2643,7 @@ export class SearchTitleDetail extends HTMLElement {
 
 
             let setEpisodeOption = (episode) => {
-                
+
                 let globule = episode.globule
                 let rqst = new GetTitleFilesRequest
                 rqst.setTitleid(episode.getId())
@@ -2776,18 +2777,18 @@ export class SearchTitleDetail extends HTMLElement {
                             playTitleListener(player, title, indexPath, globule)
                         }, null, title, title.globule)
                     }
+                } else {
+                    console.log("no file are found for title ", title.getId())
                 }
             }).catch(err => {
-                console.log(err, globule)
+                console.log("-----------------> ", err, globule)
             })
 
     }
 
 
     setTitle(title) {
-
         this.title_ = title;
-
     }
 
     showTitleInfo(title) {

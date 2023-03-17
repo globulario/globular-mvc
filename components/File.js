@@ -28,7 +28,7 @@ import { v4 as uuidv4 } from "uuid";
 
 // Menu to set action on files.
 import { DropdownMenu } from './dropdownMenu.js';
-import { AddPublicDirRequest, ConvertVideoToHlsRequest, ConvertVideoToMpeg4H264Request, CopyRequest, CreateDirRequest, CreateLnkRequest, CreateVideoPreviewRequest, CreateVideoTimeLineRequest, GeneratePlaylistRequest, GetPublicDirsRequest, MoveRequest, ReadFileRequest, RemovePublicDirRequest, SaveFileRequest, StartProcessVideoRequest, UploadVideoRequest } from 'globular-web-client/file/file_pb';
+import { AddPublicDirRequest, ConvertVideoToHlsRequest, ConvertVideoToMpeg4H264Request, CopyRequest, CreateDirRequest, CreateLnkRequest, CreateVideoPreviewRequest, CreateVideoTimeLineRequest, GeneratePlaylistRequest, GetFileInfoRequest, GetPublicDirsRequest, MoveRequest, ReadFileRequest, RemovePublicDirRequest, SaveFileRequest, StartProcessVideoRequest, UploadFileRequest, UploadVideoRequest } from 'globular-web-client/file/file_pb';
 import { createArchive, deleteDir, deleteFile, downloadFileHttp, renameFile, uploadFiles } from 'globular-web-client/api';
 import { ApplicationView } from '../ApplicationView';
 import { Application } from '../Application';
@@ -1087,7 +1087,7 @@ export class FilesView extends HTMLElement {
 
         this.mananageAccessMenuItem.action = () => {
             // So here I will create a new permission manager object and display it for the given file.
-            Model.eventHub.publish(`display_permission_manager_${this._file_explorer_.id}_event`, this.menu.file.path, true)
+            Model.eventHub.publish(`display_permission_manager_${this._file_explorer_.id}_event`, this.menu.file, true)
             // Remove it from it parent... 
             this.menu.close()
             this.menu.parentNode.removeChild(this.menu)
@@ -1496,15 +1496,61 @@ export class FilesView extends HTMLElement {
             }
 
             if (infos.domain != this._file_explorer_.globule.domain) {
-
+                let globule = Model.getGlobule(infos.domain)
                 if (editMode == "cut" || editMode == "copy") {
-                    // this.move(infos.dir)
-                    console.log("-----------> implement ")
-                    // So here I need to upload the file from on globule to the other...
+                    File__.getFile(globule, infos.file, 80, 80, file => {
+                        generatePeerToken(globule, token => {
+                            // Here I will transfert a single file...
+                            if (!file.isDir) {
+                                let url = getUrl(globule)
+                                file.path.split("/").forEach(item => {
+                                    let component = encodeURIComponent(item.trim())
+                                    if (component.length > 0) {
+                                        url += "/" + component
+                                    }
+                                })
 
+                                url += "?application=" + Model.application;
+                                url += "&token=" + token;
+
+                                // So here I will need to upload the file on remote server...
+                                let rqst = new UploadFileRequest
+                                rqst.setDest(this.__dir__.path)
+                                rqst.setName(file.name)
+                                rqst.setUrl(url)
+
+                                let stream = this._file_explorer_.globule.fileService.uploadFile(rqst, { application: Application.application, domain: this._file_explorer_.globule.domain, token: token })
+                                let pid = -1;
+
+                                // Here I will create a local event to be catch by the file uploader...
+                                stream.on("data", (rsp) => {
+                                    if (rsp.getPid() != null) {
+                                        pid = rsp.getPid()
+                                    }
+
+                                    // Publish local event.
+                                    Model.eventHub.publish("__upload_file_event__", { pid: pid, path: this.__dir__.path, infos: rsp.getResult(), done: false, globule: this._file_explorer_.globule }, true);
+                                })
+
+                                stream.on("status", (status) => {
+                                    if (status.code === 0) {
+                                        Model.eventHub.publish("__upload_file_event__", { pid: pid, path: this.__dir__.path, infos: "", done: true, globule: this._file_explorer_.globule }, true);
+                                    } else {
+                                        ApplicationView.displayMessage(status.details, 3000)
+                                    }
+                                });
+
+
+                            } else {
+                                // So Here I will transfet a dire.
+                                // The first step will be to create an archive of that dir and compact it.
+
+                            }
+
+                        })
+                    }, err => ApplicationView.displayMessage(err, 3000))
 
                 } else if (editMode == "lnks") {
-                    let globule = Model.getGlobule(infos.domain)
                     File__.getFile(globule, infos.file, 80, 80, file => {
                         Model.eventHub.publish("__create_link_event__", { file: file, dest: this._file_explorer_.path, file_explorer_id: this._file_explorer_.id, globule: this._file_explorer_.globule }, true)
                     }, err => ApplicationView.displayMessage(err, 3000))
@@ -3560,6 +3606,7 @@ export class PathNavigator extends HTMLElement {
     }
 
     init() {
+ 
         // The the path
         Model.eventHub.subscribe("__set_dir_event__",
             (uuid) => {
@@ -3855,6 +3902,7 @@ export class FileNavigator extends HTMLElement {
         // Select the peer.
         this.shadowRoot.querySelector("select").onchange = () => {
             let index = this.shadowRoot.querySelector("select").value
+            this.userDiv.innerHTML = ""
             this._file_explorer_.setGlobule(peers[index])
         }
     }
@@ -5196,6 +5244,8 @@ export class FileExplorer extends HTMLElement {
 
     // Set the file explorer directory.
     init(callback) {
+
+
         // The file reader
         if (this.fileReader) {
             this.fileReader.parentNode.removeChild(this.fileReader)
@@ -5216,13 +5266,13 @@ export class FileExplorer extends HTMLElement {
         this.imageViewer.style.display = "none"
         this.appendChild(this.imageViewer)
 
+
         // Init the path navigator
         this.pathNavigator.init();
 
         // Init the files views
         this.filesListView.init();
         this.filesIconView.init();
-
 
         // set the available space on the globule.
         this.shadowRoot.querySelector("globular-disk-space-manager").refresh()
@@ -5284,10 +5334,11 @@ export class FileExplorer extends HTMLElement {
             this.globule.eventHub.subscribe(`display_permission_manager_${this.id}_event`,
                 (uuid) => {
                     this.listeners[`display_permission_manager_${this.id}_event`] = uuid;
-                }, (path) => {
+                }, (file) => {
 
                     this.permissionManager.permissions = null
-                    this.permissionManager.setPath(path)
+                    this.permissionManager.globule = file.globule
+                    this.permissionManager.setPath(file.path)
                     this.permissionManager.setResourceType = "file"
                     this.permissionManager.style.display = ""
 
@@ -5456,14 +5507,20 @@ export class FileExplorer extends HTMLElement {
                 console.log("no file icon view!")
             }
 
-            //this.setDir(dir)
+            let userId = localStorage.getItem("user_id")
+            let userDomain = localStorage.getItem("user_domain")
+
+            this.root = ""
+            let root = "/users/" + userId + "@" + userDomain
 
             // Load the root dir...
-            this.displayWaitMessage("load " + this.root)
-            _readDir(this.root, (dir) => {
+            delete dirs[getUuidByString(this.globule + "@" + root)]
+
+            this.displayWaitMessage("load " + root)
+            _readDir(root, (dir) => {
                 // set interface with the given directory.
                 this.resume()
-
+                this.root = root
                 if (this.fileNavigator != null) {
                     this.fileNavigator.setDir(dir, (shared_, public_) => { if (callback) callback(shared_, public_) })
                 } else {
@@ -5499,6 +5556,7 @@ export class FileExplorer extends HTMLElement {
 
     // The connection callback.
     connectedCallback() {
+
         // set the root...
         this.setRoot(this.root)
 
@@ -5876,10 +5934,8 @@ export class FilesMenu extends Menu {
 
             // The file explorer object.
             let fileExplorer = new FileExplorer();
-            let userId = localStorage.getItem("user_id")
-            let userDomain = localStorage.getItem("user_domain")
-            // Set the file explorer...
-            fileExplorer.setRoot("/users/" + userId + "@" + userDomain)
+
+
             fileExplorer.init();
 
             // Set the onerror callback for the component.
