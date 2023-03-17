@@ -1502,7 +1502,7 @@ export class FilesView extends HTMLElement {
                     File__.getFile(globule, infos.file, 80, 80, file => {
                         generatePeerToken(globule, token => {
                             // Here I will transfert a single file...
-                            if (!file.isDir) {
+                            
                                 let url = getUrl(globule)
                                 file.path.split("/").forEach(item => {
                                     let component = encodeURIComponent(item.trim())
@@ -1519,34 +1519,53 @@ export class FilesView extends HTMLElement {
                                 rqst.setDest(this.__dir__.path)
                                 rqst.setName(file.name)
                                 rqst.setUrl(url)
+                                rqst.setDomain(infos.domain)
+                                rqst.setIsdir(file.isDir)
 
                                 let stream = this._file_explorer_.globule.fileService.uploadFile(rqst, { application: Application.application, domain: this._file_explorer_.globule.domain, token: token })
-                                let pid = -1;
 
+                                let action = "Move"
+                                if(editMode == "copy"){
+                                    action = "Copy"
+                                }
+                                let toast = ApplicationView.displayMessage(`
+                                    <div style="display: flex; flex-direction:column;">
+                                        <div>${action} <span style="font-style: italic;">${file.name}</span></div>
+                                        <div id="info-div"></div>
+                                        <div id="progress" style="display: flex; width: 100%;">
+                                            <paper-progress style="width: 100%;"  value="0" min="0" max="100"> </paper-progress>
+                                        </div>
+                                    </div>
+                                `)
+ 
+                                let progressBar = toast.el.querySelector("paper-progress")
+                                
+                                let infoDiv = toast.el.querySelector("#info-div")
+                                
                                 // Here I will create a local event to be catch by the file uploader...
                                 stream.on("data", (rsp) => {
-                                    if (rsp.getPid() != null) {
-                                        pid = rsp.getPid()
+                                    if (rsp.getInfo() != null) {
+                                        
+                                        infoDiv.innerHTML = rsp.getInfo()
+                                        if(rsp.getUploaded() == rsp.getTotal()){
+                                            progressBar.setAttribute("indeterminate", "true")
+                                        }else{
+                                            progressBar.removeAttribute("indeterminate")
+                                        }
                                     }
-
-                                    // Publish local event.
-                                    Model.eventHub.publish("__upload_file_event__", { pid: pid, path: this.__dir__.path, infos: rsp.getResult(), done: false, globule: this._file_explorer_.globule }, true);
+                                    progressBar.value = parseInt((rsp.getUploaded() / rsp.getTotal()) * 100)
                                 })
 
                                 stream.on("status", (status) => {
                                     if (status.code === 0) {
-                                        Model.eventHub.publish("__upload_file_event__", { pid: pid, path: this.__dir__.path, infos: "", done: true, globule: this._file_explorer_.globule }, true);
+                                        toast.dismiss()
                                     } else {
                                         ApplicationView.displayMessage(status.details, 3000)
                                     }
                                 });
 
 
-                            } else {
-                                // So Here I will transfet a dire.
-                                // The first step will be to create an archive of that dir and compact it.
-
-                            }
+                            
 
                         })
                     }, err => ApplicationView.displayMessage(err, 3000))
