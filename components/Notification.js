@@ -964,6 +964,7 @@ export class NotificationEditor extends HTMLElement {
                             notification_.recipient = notification.getRecipient()
                             notification_.text = notification.getMessage()
                             notification_.type = 0
+                            notification_.mac = Model.getGlobule(a.domain).config.Mac
 
                             // Send notification...
                             globule.eventHub.publish(a.id + "@" + a.domain + "_notification_event", notification_.toString(), false)

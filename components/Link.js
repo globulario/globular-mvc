@@ -121,8 +121,15 @@ export class Link extends HTMLElement {
             }
 
             #content{
+                position: relative;
                 transition: background 0.2s ease,padding 0.8s linear;
                 background-color: var(--palette-background-paper);
+                display: flex; 
+                flex-direction: column; 
+                border: 1px solid var(--palette-divider); 
+                padding: 5px; 
+                border-radius: 2.5px; 
+                width: 100%;
             }
 
             #content:hover{
@@ -133,10 +140,9 @@ export class Link extends HTMLElement {
 
             img {
                 height: 48px; 
-                width: fit-content; 
-                max-width: 96px;
+                max-width: 100px;
+                object-fit: cover;
             }
-
 
             span{
                 font-size: .85rem; 
@@ -160,7 +166,6 @@ export class Link extends HTMLElement {
                 height: 24px; 
                 justify-content: center; 
                 align-items: center;
-                position: relative;
                 margin-bottom: 4px;
             }
 
@@ -170,21 +175,19 @@ export class Link extends HTMLElement {
 
         </style>
 
-        <div id="${id}-link-div" style="display: flex; flex-direction: column; align-items: center; width: fit-content; margin: 5px; height: fit-content;">
-            <div style="display: flex; align-items: flex-end; width: 100%;">
+        <div id="${id}-link-div" style="margin: 25px 10px 5px 10px; display: flex; flex-direction: column; align-items: center; width: fit-content; height: fit-content; position: relative;">
+            <div style="position: absolute; top: -25px; left: -10px;">
                 <div class="btn-div" style="visibility: hidden;">
                     <iron-icon  id="delete-lnk-btn"  icon="close"></iron-icon>
                     <paper-ripple class="circle"></paper-ripple>
                 </div>
             </div>
-            <div id="content" style="display: flex; flex-direction: column; border: 1px solid var(--palette-divider); padding: 5px; border-radius: 2.5px;">
-                <div style="position: relative;">
-                    <img style="" src="${thumbnail}">
-                    <div class="shortcut-icon">
-                        <iron-icon icon="icons:reply"></iron-icon>
-                    </div> 
-                    <paper-ripple></paper-ripple>
-                </div>
+            <div id="content">
+                <img style="" src="${thumbnail}">
+                <div class="shortcut-icon">
+                    <iron-icon icon="icons:reply"></iron-icon>
+                </div> 
+                <paper-ripple></paper-ripple>
             </div>
             <span id="link-name">${alias.length>0?alias:name}</span>
            
