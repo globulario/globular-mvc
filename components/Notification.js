@@ -428,7 +428,7 @@ export class NotificationMenu extends Menu {
                 }
             }, false, this)
 
-        Model.eventHub.subscribe(Application.account.id + "@" + Application.account.domain + "_notification_event",
+        Model.getGlobule(Application.account.domain).eventHub.subscribe(Application.account.id + "@" + Application.account.domain + "_notification_event",
             (uuid) => {
                 this.account_notification_listener = uuid
             },
@@ -442,7 +442,7 @@ export class NotificationMenu extends Menu {
             }, false)
 
 
-        Model.eventHub.subscribe(Application.account.id + "@" + Application.account.domain + "_clear_user_notifications_evt",
+        Model.getGlobule(Application.account.domain).eventHub.subscribe(Application.account.id + "@" + Application.account.domain + "_clear_user_notifications_evt",
             (uuid) => {
 
             },
@@ -726,7 +726,7 @@ export class NotificationMenu extends Menu {
                     }
                 }
 
-                Model.eventHub.subscribe(
+                Model.getGlobule(notification.mac).eventHub.subscribe(
                     notification._id + "_delete_notification_event",
                     (uuid) => {
                         deleteNotificationListener = uuid
@@ -944,6 +944,7 @@ export class NotificationEditor extends HTMLElement {
                     notification.setMessage(this.msgBox.value)
                     notification.setSender(Application.account.id + "@" + Application.account.domain)
                     notification.setRecipient(a.id + "@" + a.domain)
+                    notification.setMac(Model.getGlobule(a.domain).config.Mac)
                     rqst.setNotification(notification)
 
                     // so here I will send the notification the the destination
@@ -1026,7 +1027,7 @@ export class NotificationEditor extends HTMLElement {
             if (height < 400) {
                 height = 400
             }
-            
+
             if (width < 600) {
                 width = 600
             }

@@ -887,7 +887,7 @@ export class CallsHistoryMenu extends Menu {
                                         notification.setRecipient(contact.id + "@" + contact.domain)
                                         notification.setSender(Application.account.id + "@" + Application.account.domain)
                                         notification.setNotificationType(NotificationType.USER_NOTIFICATION)
-
+                                        notification.setMac(Model.getGlobule(Application.account.domain).config.Mac)
                                         let date = new Date()
                                         let msg = `
                                         <div style="display: flex; flex-direction: column; padding: 16px;">
@@ -933,7 +933,7 @@ export class CallsHistoryMenu extends Menu {
 
                                 // so here I will play the audio of the contact util it respond or the delay was done...
                                 Model.getGlobule(contact.domain).eventHub.publish("calling_" + contact.id + "@" + contact.domain + "_evt", call.serializeBinary(), false)
-                                Model.getGlobule(this.account.domain).eventHub.publish("calling_" + contact.id + "@" + contact.domain + "_evt", call, true)
+                                Model.eventHub.publish("calling_" + contact.id + "@" + contact.domain + "_evt", call, true)
                             }
                         })
 

@@ -993,7 +993,7 @@ export class FilesView extends HTMLElement {
                                             deleteDir(globule, f.path,
                                                 () => {
                                                     delete dirs[getUuidByString(this._file_explorer_.globule.domain + "@" + path)]
-                                                    Model.eventHub.publish("reload_dir_event", path, false);
+                                                    this._file_explorer_.globule.eventHub.publish("reload_dir_event", path, false);
                                                     if (index < Object.keys(this.selected).length) {
                                                         deleteFile_()
                                                     } else {
@@ -1180,7 +1180,7 @@ export class FilesView extends HTMLElement {
                 globule.fileService.convertVideoToMpeg4H264(rqst, { application: Application.application, domain: globule.domain, token: token })
                     .then(rsp => {
                         ApplicationView.displayMessage("Conversion done </br>" + path, 3500)
-                        Model.eventHub.publish("refresh_dir_evt", file.path.substring(0, file.path.lastIndexOf("/")), false);
+                        globule.eventHub.publish("refresh_dir_evt", file.path.substring(0, file.path.lastIndexOf("/")), false);
                     })
                     .catch(err => {
                         ApplicationView.displayMessage(err, 3000)
@@ -1402,7 +1402,7 @@ export class FilesView extends HTMLElement {
                     paperTray = []
                     editMode = ""
                     delete dirs[getUuidByString(this._file_explorer_.globule.domain + "@" + path)]
-                    Model.eventHub.publish("reload_dir_event", path, false);
+                    this._file_explorer_.globule.eventHub.publish("reload_dir_event", path, false);
                 })
                 .catch(err => {
                     paperTray = []
@@ -1581,7 +1581,7 @@ export class FilesView extends HTMLElement {
                                                 globule.fileService.deleteDir(rqst, { application: Application.application, domain: globule.domain, token: token })
                                                     .then(rsp => {
                                                         delete dirs[getUuidByString(globule.domain + "@" + file.path)]
-                                                        Model.eventHub.publish("reload_dir_event", file.path, false);
+                                                        globule.eventHub.publish("reload_dir_event", file.path, false);
                                                     })
                                                     .catch(err => ApplicationView.displayMessage(err, 3000))
                                             } else {
@@ -1590,7 +1590,7 @@ export class FilesView extends HTMLElement {
                                                 globule.fileService.deleteFile(rqst, { application: Application.application, domain: globule.domain, token: token })
                                                     .then(rsp => {
                                                         delete dirs[getUuidByString(globule.domain + "@" + file.path)]
-                                                        Model.eventHub.publish("reload_dir_event", file.path.substring(0, file.path.lastIndexOf("/")), false);
+                                                        globule.eventHub.publish("reload_dir_event", file.path.substring(0, file.path.lastIndexOf("/")), false);
                                                     })
                                                     .catch(err => ApplicationView.displayMessage(err, 3000))
                                             }
@@ -1735,7 +1735,7 @@ export class FilesView extends HTMLElement {
                     () => {
                         // Refresh the parent folder...
                         delete dirs[getUuidByString(this._file_explorer_.globule.domain + "@" + path)]
-                        Model.eventHub.publish("reload_dir_event", path, false);
+                        this._file_explorer_.globule.eventHub.publish("reload_dir_event", path, false);
                     }, err => { ApplicationView.displayMessage(err, 3000) }, token)
             })
 
@@ -4244,7 +4244,7 @@ export class FileNavigator extends HTMLElement {
         this.public_.mime = "";
         this.public_.modeTime = new Date()
 
-        Model.eventHub.subscribe("public_change_permission_event", uuid => { },
+        this._file_explorer_.globule.eventHub.subscribe("public_change_permission_event", uuid => { },
             evt => {
                 // refresh the shared...
                 this.initPublic()
@@ -4330,7 +4330,7 @@ export class FileNavigator extends HTMLElement {
                         this.shared[userId].modeTime = new Date()
                         this.shared_.files.push(this.shared[userId])
 
-                        Model.eventHub.subscribe(userId + "_change_permission_event", uuid => { },
+                        this._file_explorer_.globule.eventHub.subscribe(userId + "_change_permission_event", uuid => { },
                             evt => {
                                 // refresh the shared...
                                 this.initShared()
@@ -5204,7 +5204,7 @@ export class FileExplorer extends HTMLElement {
                             })
                             .then(() => {
                                 // The new directory was created.
-                                Model.eventHub.publish("reload_dir_event", this.path, false);
+                                this.globule.eventHub.publish("reload_dir_event", this.path, false);
                             })
                             .catch((err) => {
                                 ApplicationView.displayMessage(err, 3000)
@@ -5269,7 +5269,7 @@ export class FileExplorer extends HTMLElement {
     displayWaitMessage(message) {
         this.progressDiv.style.display = "block"
         let messageDiv = this.progressDiv.querySelector("#progress-message")
-        Model.eventHub.publish("refresh_dir_evt", this.path, false);
+        this.globule.eventHub.publish("refresh_dir_evt", this.path, false);
         messageDiv.innerHTML = message
         let progressBar = this.progressDiv.querySelector("paper-progress")
         if (messageDiv.offsetWidth > 0) {
@@ -5689,7 +5689,7 @@ export class FileExplorer extends HTMLElement {
             rqst.setLnk(file.toString())
 
             globule.fileService.createLnk(rqst, { application: Application.application, domain: globule.domain, token: token }).then(() => {
-                Model.eventHub.publish("reload_dir_event", dest, false);
+                globule.eventHub.publish("reload_dir_event", dest, false);
             })
                 .catch(err => ApplicationView.displayMessage(err, 3000))
         })

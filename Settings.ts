@@ -407,7 +407,7 @@ export class PeersSettings extends Settings {
 /**
  * Model to save application settings.
  */
- export class ResourcesPermissionsSettings extends Settings {
+export class ResourcesPermissionsSettings extends Settings {
 
     // The application.
     constructor(settingsMenu: SettingsMenu, settingsPanel: SettingsPanel) {
@@ -447,7 +447,7 @@ export class PeersSettings extends Settings {
         `
         // Display the file explorer...
         groupSettingPage.appendChild(document.createRange().createContextualFragment(html));
-        
+
         groupSettingPage.appendChild(new ResourcesPermissionsManager())
 
     }
@@ -679,16 +679,19 @@ export class VideoSettings extends Settings {
         getConversionLogs(logs => {
             videoConversionLogsManager.setLogs(logs)
 
-            // I will now listen for conversion event...
-            Model.eventHub.subscribe("conversion_log_event", uuid => { }, evt => {
-                let obj = JSON.parse(evt)
-                let log = new VideoConversionLog()
-                log.setLogTime(obj.logTime)
-                log.setPath(obj.path)
-                log.setStatus(obj.status)
-                log.setMsg(obj.msg)
-                videoConversionLogsManager.setLog(log)
-            }, false)
+            Model.getGlobules().forEach(g => {
+                // I will now listen for conversion event...
+                g.eventHub.subscribe("conversion_log_event", uuid => { }, evt => {
+                    let obj = JSON.parse(evt)
+                    let log = new VideoConversionLog()
+                    log.setLogTime(obj.logTime)
+                    log.setPath(obj.path)
+                    log.setStatus(obj.status)
+                    log.setMsg(obj.msg)
+                    videoConversionLogsManager.setLog(log)
+                }, false)
+            })
+
         })
 
         //////////////////// Now the conversion error //////////////////
@@ -703,14 +706,17 @@ export class VideoSettings extends Settings {
         getConversionErrors(errors => {
 
             videoConversionErrorsManager.setErrors(errors)
-            // I will now listen for conversion event...
-            Model.eventHub.subscribe("conversion_log_error", uuid => { }, evt => {
-                let obj = JSON.parse(evt)
-                let err = new VideoConversionError
-                err.setError(obj.error)
-                err.setPath(obj.path)
-                videoConversionErrorsManager.setError(err)
-            }, false)
+            Model.getGlobules().forEach(g => {
+                // I will now listen for conversion event...
+                g.eventHub.subscribe("conversion_log_error", uuid => { }, evt => {
+                    let obj = JSON.parse(evt)
+                    let err = new VideoConversionError
+                    err.setError(obj.error)
+                    err.setPath(obj.path)
+                    videoConversionErrorsManager.setError(err)
+                }, false)
+            })
+
         })
     }
 

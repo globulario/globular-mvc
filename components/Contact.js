@@ -368,7 +368,7 @@ export class SentContactInvitations extends HTMLElement {
         this.account = account;
         this.onRevokeContact = onRevokeContact;
 
-        Model.eventHub.subscribe("sent_" + account.id + "@" + account.domain + "_evt",
+        Model.getGlobule(Application.account.id).eventHub.subscribe("sent_" + account.id + "@" + account.domain + "_evt",
             (uuid) => { },
             (evt) => {
                 // So here I will append the account into the list.
@@ -683,9 +683,7 @@ export class ContactList extends HTMLElement {
 
         this.account = account;
         this.onDeleteContact = onDeleteContact;
-        let domain = account.domain
-        let globule = Model.getGlobule(domain)
-
+        let globule = Model.getGlobule(account.domain)
 
         globule.eventHub.subscribe("accepted_" + account.id + "@" + account.domain + "_evt",
             (uuid) => { },
@@ -1102,6 +1100,7 @@ export class ContactList extends HTMLElement {
                                     notification.setRecipient(contact.id + "@" + contact.domain)
                                     notification.setSender(Application.account.id + "@" + Application.account.domain)
                                     notification.setNotificationType(NotificationType.USER_NOTIFICATION)
+                                    notification.setMac(Model.getGlobule(contact.domain).config.Mac)
 
                                     let date = new Date()
                                     let msg = `
@@ -1143,7 +1142,7 @@ export class ContactList extends HTMLElement {
                                     })
 
 
-                                    Model.getGlobule(Application.domain).eventHub.publish("calling_" + contact.id + "@" + contact.domain + "_evt", call, true)
+                                    Model.eventHub.publish("calling_" + contact.id + "@" + contact.domain + "_evt", call, true)
                                 })
 
                             }, false)

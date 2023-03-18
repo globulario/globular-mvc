@@ -1944,7 +1944,7 @@ export class ResourcesPermissionsManager extends HTMLElement {
         `
 
         // Event received when permissions was deleted
-        Model.globular.eventHub.subscribe("delete_resources_permissions_event",
+        Model.eventHub.subscribe("delete_resources_permissions_event",
             uuid => { },
             evt => {
                 let permissions = Permissions.deserializeBinary(evt)
@@ -1954,7 +1954,7 @@ export class ResourcesPermissionsManager extends HTMLElement {
             }, false)
 
         // Event received when permissions was deleted
-        Model.globular.eventHub.subscribe("set_resources_permissions_event",
+        Model.eventHub.subscribe("set_resources_permissions_event",
             uuid => { },
             evt => {
                 let permissions = Permissions.deserializeBinary(evt)

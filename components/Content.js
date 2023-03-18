@@ -443,7 +443,7 @@ export class ContentManager extends HTMLElement {
                 window.dispatchEvent(new Event('resize'));
                 // set need save...
                 getActiveWebPage().needSave = true;
-            })
+            }, true)
     }
 
     setVertical() {
@@ -1295,12 +1295,12 @@ export class Navigation extends HTMLElement {
     init() {
         // set|reset edit mode
         if (!this.set_content_edit_mode_listener)
-            Model.eventHub.subscribe("_set_content_edit_mode_", uuid => this.set_content_edit_mode_listener = uuid, evt => this.setEditMode(evt))
+            Model.eventHub.subscribe("_set_content_edit_mode_", uuid => this.set_content_edit_mode_listener = uuid, evt => this.setEditMode(evt), true)
 
 
         // create a new page
         if (!this.create_page_listener)
-            Model.eventHub.subscribe("_create_page_event_", uuid => this.create_page_listener = uuid, evt => this.createPage())
+            Model.eventHub.subscribe("_create_page_event_", uuid => this.create_page_listener = uuid, evt => this.createPage(), true)
 
         // delete page event.
         if (!this.delete_page_listener)
@@ -1324,7 +1324,7 @@ export class Navigation extends HTMLElement {
                     }
                 }
 
-            })
+            }, true)
 
         // The set page event...
         if (!this.set_page_listener)

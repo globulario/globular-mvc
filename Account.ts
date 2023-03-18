@@ -479,7 +479,7 @@ export class Account extends Model {
                 // Here I will keep the Account up-to date.
                 if (Account.getListener(this.id) == undefined) {
                     // Here I will connect the objet to keep track of accout data change.
-                    Model.eventHub.subscribe(`update_account_${this.id + "@" + this.domain}_data_evt`,
+                    Model.getGlobule(this.domain).eventHub.subscribe(`update_account_${this.id + "@" + this.domain}_data_evt`,
                         (uuid: string) => {
                             Account.setListener(this.id, this.domain, uuid);
                         },

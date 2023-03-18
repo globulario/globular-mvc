@@ -232,11 +232,11 @@ export class PeersManager extends HTMLElement {
         // call once
         displayPeers()
 
-        Model.globular.eventHub.subscribe("update_peers_evt", uuid => { }, evt => {
+        Model.eventHub.subscribe("update_peers_evt", uuid => { }, evt => {
             displayPeers()
         }, false)
 
-        Model.globular.eventHub.subscribe("delete_peer_evt", uuid => { }, evt => {
+        Model.eventHub.subscribe("delete_peer_evt", uuid => { }, evt => {
             displayPeers()
         }, false)
 

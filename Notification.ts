@@ -20,6 +20,14 @@ export class Notification  extends Model{
         this._id = value;
     }
 
+    private _mac: string;
+    public get mac(): string {
+        return this._mac;
+    }
+    public set mac(value: string) {
+        this._mac = value;
+    }
+
     private _type: NotificationType;
     public get type(): NotificationType {
         return this._type;
@@ -85,7 +93,7 @@ export class Notification  extends Model{
     }
 
     toString(): string {
-        return JSON.stringify({_id:this._id, _text:this._text, _type:this._type, _recipient:this._recipient, _sender:this.sender, _date: Math.floor(this._date.getTime())/1000})
+        return JSON.stringify({_id:this._id, _mac:this._mac, _text:this._text, _type:this._type, _recipient:this._recipient, _sender:this.sender, _date: Math.floor(this._date.getTime())/1000})
     }
 
     /**
@@ -106,6 +114,7 @@ export class Notification  extends Model{
         notification._text = obj._text
         notification._recipient = obj._recipient
         notification._sender = obj._sender
+        notification._mac = obj._mac
         
         if(obj._type == 0){
             notification._type = NotificationType.User

@@ -359,9 +359,11 @@ export class ConversationManager {
         /** Nothing to do here... */
         successCallback()
         const encoded = encode(invitation.serializeBinary());
+
         // publish network event.
         Model.publish(`send_conversation_invitation_${from}_evt`, encoded, false)
         Model.publish(`receive_conversation_invitation_${to}_evt`, encoded, false)
+
       }).catch(errorCallback)
     }, errorCallback)
   }

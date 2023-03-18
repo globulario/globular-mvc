@@ -595,7 +595,7 @@ export class Application extends Model {
             Model.eventHub.publish("login_event", account, true);
 
             // When new contact is accepted.
-            Model.eventHub.subscribe("accepted_" + account.id + "@" + account.domain + "_evt",
+            Model.getGlobule(Application.account.domain).eventHub.subscribe("accepted_" + account.id + "@" + account.domain + "_evt",
               (uuid) => { },
               (evt) => {
                 let invitation = JSON.parse(evt);
@@ -606,11 +606,11 @@ export class Application extends Model {
             account.session.state = SessionState.Online
             Model.publish(`__session_state_${account.id + "@" + account.domain}_change_event__`, account.session, true)
 
-            Model.eventHub.subscribe("deleted_" + account.id + "@" + account.domain + "_evt",
+            Model.getGlobule(account.domain).eventHub.subscribe("deleted_" + account.id + "@" + account.domain + "_evt",
               (uuid) => { },
               (evt) => {
                 let invitation = JSON.parse(evt);
-                Model.eventHub.unSubscribe(`session_state_${invitation._id}_change_event`, this.contactsListener[invitation._id])
+                Model.getGlobule(account.domain).eventHub.unSubscribe(`session_state_${invitation._id}_change_event`, this.contactsListener[invitation._id])
               },
               false, this)
 
@@ -1117,7 +1117,7 @@ export class Application extends Model {
             onLogin(account);
 
             // When new contact is accepted.
-            Model.eventHub.subscribe("accepted_" + account.id + "@" + account.domain + "_evt",
+            Model.getGlobule(Application.account.domain).eventHub.subscribe("accepted_" + account.id + "@" + account.domain + "_evt",
               (uuid) => { },
               (evt) => {
                 let invitation = JSON.parse(evt);
@@ -1125,16 +1125,17 @@ export class Application extends Model {
               },
               false, this)
 
-            Model.eventHub.subscribe("deleted_" + account.id + "@" + account.domain + "_evt",
+            Model.getGlobule(account.domain).eventHub.subscribe("deleted_" + account.id + "@" + account.domain + "_evt",
               (uuid) => { },
               (evt) => {
                 let invitation = JSON.parse(evt);
-                Model.eventHub.unSubscribe(`session_state_${invitation._id}_change_event`, this.contactsListener[invitation._id])
+                let domain = invitation._id.split("@")[1]
+                Model.getGlobule(domain).eventHub.unSubscribe(`session_state_${invitation._id}_change_event`, this.contactsListener[invitation._id])
               },
               false, this)
 
 
-            Model.getGlobule(Application.account.domain).eventHub.publish(`__session_state_${Application.account.id + "@" + Application.account.domain}_change_event__`, Application.account.session, true)
+            Model.eventHub.publish(`__session_state_${Application.account.id + "@" + Application.account.domain}_change_event__`, Application.account.session, true)
 
             // retreive the contacts
             Account.getContacts(Application.account, `{"status":"accepted"}`, (contacts: Array<Account>) => {
@@ -1199,8 +1200,8 @@ export class Application extends Model {
       Application.account.session.state = SessionState.Offline;
 
       Model.eventHub.publish("logout_event", Application.account, true);
-      Model.getGlobule(Application.account.domain).eventHub.publish(`__session_state_${Application.account.id + "@" + Application.account.domain}_change_event__`, Application.account.session, true)
-      Model.publish(`session_state_${Application.account.id + "@" + Application.account.domain}_change_event`, Application.account.session.toString(), false)
+      Model.eventHub.publish(`__session_state_${Application.account.id + "@" + Application.account.domain}_change_event__`, Application.account.session, true)
+      Model.getGlobule(Application.account.domain).eventHub.publish(`session_state_${Application.account.id + "@" + Application.account.domain}_change_event`, Application.account.session.toString(), false)
 
       // Set room to undefined.
       Application.account = null;
@@ -1358,6 +1359,7 @@ export class Application extends Model {
     } else {
       notification_.setNotificationType(resource.NotificationType.USER_NOTIFICATION)
       notification_.setSender(Application.account.id + "@" + Application.account.domain)
+      notification_.setMac(Model.getGlobule(Application.account.domain).config.Mac)
     }
 
     rqst.setNotification(notification_)

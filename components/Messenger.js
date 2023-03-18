@@ -77,7 +77,7 @@ export class MessengerMenu extends Menu {
         this.account = account;
 
         // Event listener when a new conversation is created...
-        Model.eventHub.subscribe(`send_conversation_invitation_${this.account.id + "@" + this.account.domain}_evt`,
+        Model.getGlobule(Application.account.domain).eventHub.subscribe(`send_conversation_invitation_${this.account.id + "@" + this.account.domain}_evt`,
             (uuid) => { },
             (data) => {
                 console.log(`receive event send_conversation_invitation_${this.account.id + "@" + this.account.domain}_evt`)
@@ -87,7 +87,7 @@ export class MessengerMenu extends Menu {
             },
             false)
 
-        Model.eventHub.subscribe(`receive_conversation_invitation_${this.account.id + "@" + this.account.domain}_evt`,
+        Model.getGlobule(Application.account.domain).eventHub.subscribe(`receive_conversation_invitation_${this.account.id + "@" + this.account.domain}_evt`,
             (uuid) => { },
             (data) => {
                 console.log(`receive event receive_conversation_invitation_${this.account.id + "@" + this.account.domain}_evt`)
@@ -442,7 +442,8 @@ export class MessengerMenu extends Menu {
         this.conversationsTab.innerHTML = `<span id="conversation_label">Conversations</span> <paper-badge for="conversation_label" label="${this.conversationsLst.children.length}"></paper-badge>`
         window.dispatchEvent(new Event('resize'));
 
-        Model.eventHub.subscribe(`delete_conversation_${conversationUuid}_evt`,
+
+        Model.getGlobule(conversation.getMac()).eventHub.subscribe(`delete_conversation_${conversationUuid}_evt`,
             (uuid) => {
                 //this.delete_conversation_listener = uuid;
             },
@@ -470,7 +471,7 @@ export class MessengerMenu extends Menu {
                 }
             }, true)
 
-        Model.eventHub.subscribe(`kickout_conversation_${conversationUuid}_evt`,
+        Model.getGlobule(conversation.getDomain()).subscribe(`kickout_conversation_${conversationUuid}_evt`,
             (uuid) => {
                 //
             },
@@ -492,7 +493,7 @@ export class MessengerMenu extends Menu {
 
     appendReceivedInvitation(invitation) {
 
-        Model.eventHub.subscribe(`accept_conversation_invitation_${invitation.getConversation()}_${invitation.getFrom()}_evt`,
+        Model.getGlobule(invitation.getMac()).eventHub.subscribe(`accept_conversation_invitation_${invitation.getConversation()}_${invitation.getFrom()}_evt`,
             (uuid) => { },
             (evt) => {
 
@@ -559,8 +560,9 @@ export class MessengerMenu extends Menu {
 
             ConversationManager.revokeConversationInvitation(invitation,
                 () => {
+                    let domain = invitation.getTo().split("@")[1]
                     // Publish network events
-                    Model.eventHub.publish(`revoke_conversation_invitation_${invitation.getConversation()}_${invitation.getTo()}_evt`, `{}`, false)
+                    Model.getGlobule(domain).eventHub.publish(`revoke_conversation_invitation_${invitation.getConversation()}_${invitation.getTo()}_evt`, `{}`, false)
                 },
                 (err) => {
                     ApplicationView.displayMessage(err, 3000)
@@ -1391,7 +1393,7 @@ export class Messenger extends HTMLElement {
             }, true)
 
         // Delete a conversation.
-        Model.eventHub.subscribe(`delete_conversation_${conversationUuid}_evt`,
+        Model.getGlobule(conversation.getMac()).eventHub.subscribe(`delete_conversation_${conversationUuid}_evt`,
             (uuid) => {
                 this.listeners[conversationUuid].push({ evt: `delete_conversation_${conversationUuid}_evt`, listener: uuid })
             },
@@ -1401,7 +1403,7 @@ export class Messenger extends HTMLElement {
             },
             false);
 
-        Model.eventHub.subscribe(`join_conversation_${conversationUuid}_evt`,
+        Model.getGlobule(conversation.getMac()).eventHub.subscribe(`join_conversation_${conversationUuid}_evt`,
             (uuid) => {
                 this.listeners[conversationUuid].push({ evt: `join_conversation_${conversationUuid}_evt`, listener: uuid })
             },
@@ -1427,7 +1429,7 @@ export class Messenger extends HTMLElement {
                 this.closeConversation(conversationUuid_)
             }, true)
 
-        Model.eventHub.subscribe(`kickout_conversation_${conversationUuid}_evt`,
+        Model.getGlobule(conversation.getMac()).eventHub.subscribe(`kickout_conversation_${conversationUuid}_evt`,
             (uuid) => {
                 this.listeners[conversationUuid].push({ evt: `kickout_conversation_${conversationUuid}_evt`, listener: uuid })
             },
@@ -1442,7 +1444,7 @@ export class Messenger extends HTMLElement {
             }, false)
 
         // Network event                    
-        Model.eventHub.subscribe(`leave_conversation_${conversationUuid}_evt`,
+        Model.getGlobule(conversation.getMac()).eventHub.subscribe(`leave_conversation_${conversationUuid}_evt`,
             (uuid) => {
                 this.listeners[conversationUuid].push({ evt: `leave_conversation_${conversationUuid}_evt`, listener: uuid })
             },
@@ -2414,7 +2416,7 @@ export class InvitationCard extends HTMLElement {
 
 
         /** Listener event... */
-        Model.eventHub.subscribe(`accept_conversation_invitation_${this.conversation}_${this.contact}_evt`,
+        Model.getGlobule(this.conversation.getMac()).eventHub.subscribe(`accept_conversation_invitation_${this.conversation}_${this.contact}_evt`,
             (uuid) => {
                 //console.log(uuid)
                 this.listeners["accept_conversation_invitation_"] = { evt: `accept_conversation_invitation_${this.conversation}_${this.contact}_evt`, uuid: uuid }
@@ -2425,7 +2427,7 @@ export class InvitationCard extends HTMLElement {
 
             }, false)
 
-        Model.eventHub.subscribe(`decline_conversation_invitation_${this.conversation}_${this.contact}_evt`,
+        Model.getGlobule(this.conversation.getMac()).eventHub.subscribe(`decline_conversation_invitation_${this.conversation}_${this.contact}_evt`,
             (uuid) => {
                 //console.log(uuid)
                 this.listeners["decline_conversation_invitation_"] = { evt: `decline_conversation_invitation_${this.conversation}_${this.contact}_evt`, uuid: uuid }
@@ -2435,7 +2437,7 @@ export class InvitationCard extends HTMLElement {
                 this.deleteMe()
             }, false)
 
-        Model.eventHub.subscribe(`revoke_conversation_invitation_${this.conversation}_${this.contact}_evt`,
+        Model.getGlobule(this.conversation.getMac()).eventHub.subscribe(`revoke_conversation_invitation_${this.conversation}_${this.contact}_evt`,
             (uuid) => {
                 //console.log(uuid)
                 this.listeners["revoke_conversation_invitation_"] = { evt: `revoke_conversation_invitation_${this.conversation}_${this.contact}_evt`, uuid: uuid }
@@ -2447,7 +2449,7 @@ export class InvitationCard extends HTMLElement {
             }, false)
 
         /** Listener event... */
-        Model.eventHub.subscribe(`accept_conversation_invitation_${this.conversation}_${this.account}_evt`,
+        Model.getGlobule(this.conversation.getMac()).eventHub.subscribe(`accept_conversation_invitation_${this.conversation}_${this.account}_evt`,
             (uuid) => {
                 //console.log(uuid)
                 this.listeners["accept_conversation_invitation_"] = { evt: `accept_conversation_invitation_${this.conversation}_${this.account}_evt`, uuid: uuid }
@@ -2458,7 +2460,7 @@ export class InvitationCard extends HTMLElement {
 
             }, false)
 
-        Model.eventHub.subscribe(`decline_conversation_invitation_${this.conversation}_${this.account}_evt`,
+        Model.getGlobule(this.conversation.getMac()).eventHub.subscribe(`decline_conversation_invitation_${this.conversation}_${this.account}_evt`,
             (uuid) => {
                 //console.log(uuid)
                 this.listeners["decline_conversation_invitation_"] = { evt: `decline_conversation_invitation_${this.conversation}_${this.account}_evt`, uuid: uuid }
@@ -2468,7 +2470,7 @@ export class InvitationCard extends HTMLElement {
                 this.deleteMe()
             }, false)
 
-        Model.eventHub.subscribe(`revoke_conversation_invitation_${this.conversation}_${this.account}_evt`,
+        Model.getGlobule(this.conversation.getMac()).eventHub.subscribe(`revoke_conversation_invitation_${this.conversation}_${this.account}_evt`,
             (uuid) => {
                 //console.log(uuid)
                 this.listeners["revoke_conversation_invitation_"] = { evt: `revoke_conversation_invitation_${this.conversation}_${this.account}_evt`, uuid: uuid }
@@ -2479,7 +2481,7 @@ export class InvitationCard extends HTMLElement {
 
             }, false)
 
-        Model.eventHub.subscribe(`delete_conversation_${this.conversation}_evt`,
+        Model.getGlobule(this.conversation.getMac()).eventHub.subscribe(`delete_conversation_${this.conversation}_evt`,
             (uuid) => {
                 this.listeners["delete_conversation_"] = { evt: `delete_conversation_${this.conversation}_evt`, uuid: uuid }
             },
@@ -2496,10 +2498,7 @@ export class InvitationCard extends HTMLElement {
         Account.getAccount(contact, () => { }, err => {
             console.log(err)
         })
-
-
     }
-
 
     connectedCallback() {
 
@@ -2811,7 +2810,8 @@ export class GlobularMessagePanel extends HTMLElement {
             // needed by globular-messages-list.
             __globularMessagePanels__[msg.getUuid().split("/").join("_")] = this;
 
-            Model.eventHub.subscribe(`delete_message_${msg.getUuid()}_evt`,
+           let conversation =  ConversationManager.conversations.get(msg.getConversation())
+            Model.getGlobule(conversation.getMac()).eventHub.subscribe(`delete_message_${msg.getUuid()}_evt`,
                 uuid => { },
                 () => {
                     // simply remove it from the list.

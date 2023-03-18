@@ -712,7 +712,7 @@ export class ApplicationPanel extends HTMLElement {
                     " was deleted!</div>",
                     3000
                 );
-                Model.globular.eventHub.publish("refresh_application_evt", {}, true)
+                Model.eventHub.publish("refresh_application_evt", {}, true)
                 toast.dismiss();
             }).catch(e => {
                 ApplicationView.displayMessage(e, 3000)
@@ -778,7 +778,7 @@ export class ApplicationPanel extends HTMLElement {
                     " was uninstall!</div>",
                     3000
                 );
-                Model.globular.eventHub.publish("refresh_application_evt", {}, true)
+                Model.eventHub.publish("refresh_application_evt", {}, true)
                 toast.dismiss();
             }).catch(e => {
                 ApplicationView.displayMessage(e, 3000)

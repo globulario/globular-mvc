@@ -143,7 +143,7 @@ export class Session extends Model {
 
             let globule = Model.getGlobule(this.account.domain)
 
-            /*let rqst = new GetSubjectAvailableSpaceRqst
+            let rqst = new GetSubjectAvailableSpaceRqst
             rqst.setSubject(accountId)
             rqst.setType(SubjectType.ACCOUNT)
 
@@ -161,7 +161,7 @@ export class Session extends Model {
                 })
                 .catch((err) => {
                     console.log(err)
-                });*/
+                });
 
             // So here I will lisen on session change event and keep this object with it.
             globule.eventHub.subscribe(`session_state_${this.account.id + "@" + this.account.domain}_change_event`,
@@ -265,7 +265,7 @@ export class Session extends Model {
             })
             .then((rsp: resource.UpdateSessionResponse) => {
                 // Here I will return the value with it
-                Model.publish(`session_state_${this._id}_change_event`, this.toString(), false)
+                Model.getGlobule(this.account.domain).eventHub.publish(`session_state_${this._id}_change_event`, this.toString(), false)
                 onSave();
             })
             .catch((err: any) => {

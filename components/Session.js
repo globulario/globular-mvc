@@ -20,14 +20,14 @@ document.addEventListener('visibilitychange', function () {
         if (document.visibilityState == 'hidden') {
             timeout = setTimeout(() => {
                 Account.getAccount(accountId, a => {
-                    Model.getGlobule(a.domain).eventHub.publish(`__session_state_${a.id + "@" + a.domain}_change_event__`, { _id: a.id + "@" + a.domain, state: 2, lastStateTime: new Date() }, true)
+                    Model.eventHub.publish(`__session_state_${a.id + "@" + a.domain}_change_event__`, { _id: a.id + "@" + a.domain, state: 2, lastStateTime: new Date() }, true)
                 }, err => console.log(err))
 
             }, 30 * 1000)
         } else {
 
             Account.getAccount(accountId, a => {
-                Model.getGlobule(a.domain).eventHub.publish(`__session_state_${a.id + "@" + a.domain}_change_event__`, { _id: a.id + "@" + a.domain, state: 0, lastStateTime: sessionTime }, true)
+                Model.eventHub.publish(`__session_state_${a.id + "@" + a.domain}_change_event__`, { _id: a.id + "@" + a.domain, state: 0, lastStateTime: sessionTime }, true)
                 if (timeout != undefined) {
                     clearTimeout(timeout)
                 }
@@ -41,7 +41,7 @@ document.addEventListener('visibilitychange', function () {
 window.addEventListener('beforeunload', function (e) {
     // the absence of a returnValue property on the event will guarantee the browser unload happens
     Account.getAccount(accountId, a => {
-        Model.getGlobule(a.domain).eventHub.publish(`__session_state_${a.id + "@" + a.domain}_change_event__`, { _id: a.id + "@" + a.domain, state: 1, lastStateTime: new Date() }, true)
+        Model.eventHub.publish(`__session_state_${a.id + "@" + a.domain}_change_event__`, { _id: a.id + "@" + a.domain, state: 1, lastStateTime: new Date() }, true)
     }, err => console.log(err))
     delete e['returnValue'];
 });
@@ -134,9 +134,9 @@ export class SessionState extends HTMLElement {
                     away = false;
                     this.stateName.innerHTML = "Online"
                 }
+                
                 // local event.
-                if( Model.getGlobule(this.account.domain))
-                    Model.getGlobule(this.account.domain).eventHub.publish(`__session_state_${this.account.id + "@" + this.account.domain}_change_event__`, session, true)
+                Model.eventHub.publish(`__session_state_${this.account.id + "@" + this.account.domain}_change_event__`, session, true)
             }
         } else {
             this.away.parentNode.removeChild(this.away);
@@ -195,7 +195,7 @@ export class SessionState extends HTMLElement {
         // unsubscribe first.
 
         let globule = Model.getGlobule(this.account.domain)
-        
+
 
         if (this.hasAttribute("editable")) {
             sessionTime = this.account.session.lastStateTime;

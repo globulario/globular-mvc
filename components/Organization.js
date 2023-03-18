@@ -141,7 +141,7 @@ export class OrganizationManager extends HTMLElement {
         // call once
         displayOrganizations()
 
-        Model.globular.eventHub.subscribe("refresh_organization_evt", uuid => { }, evt => {
+        Model.eventHub.subscribe("refresh_organization_evt", uuid => { }, evt => {
             displayOrganizations()
         }, true)
 
@@ -651,7 +651,7 @@ export class OrganizationPanel extends HTMLElement {
                     " was deleted!</div>",
                     3000
                 );
-                Model.globular.eventHub.publish("refresh_organization_evt", {}, true)
+                Model.eventHub.publish("refresh_organization_evt", {}, true)
                 toast.dismiss();
             }).catch(e => {
                 ApplicationView.displayMessage(e, 3000)

@@ -859,7 +859,8 @@ export class ShareResourceWizard extends HTMLElement {
                                 notification.setRecipient(contact.id + "@" + contact.domain)
                                 notification.setSender(Application.account.id + "@" + Application.account.domain)
                                 notification.setNotificationType(NotificationType.USER_NOTIFICATION)
-
+                                notification.setMac(Model.getGlobule(contact.domain).config.Mac)
+                                
                                 let alias = ""
                                 if(file.videos){
                                     alias = file.videos[0].getDescription()

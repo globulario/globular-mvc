@@ -115,7 +115,7 @@ export class RoleManager extends HTMLElement {
         // call once
         displayRoles()
 
-        Model.globular.eventHub.subscribe("refresh_role_evt", uuid => { }, evt => {
+        Model.eventHub.subscribe("refresh_role_evt", uuid => { }, evt => {
             displayRoles()
         }, true)
 
@@ -551,7 +551,7 @@ export class RolePanel extends HTMLElement {
                     " was deleted!</div>",
                     3000
                 );
-                Model.globular.eventHub.publish("refresh_role_evt", {}, true)
+                Model.eventHub.publish("refresh_role_evt", {}, true)
                 toast.dismiss();
             }).catch(e => {
                 ApplicationView.displayMessage(e, 3000)

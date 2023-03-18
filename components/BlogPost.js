@@ -463,7 +463,7 @@ export class BlogPostElement extends HTMLElement {
             generatePeerToken(globule, token => {
                 globule.blogService.deleteBlogPost(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: token })
                     .then(rsp => {
-                        Model.publish(this.blog.getUuid() + "_blog_delete_event", {}, false)
+                        Model.getGlobule(this.blog.getDomain()).eventHub.publish(this.blog.getUuid() + "_blog_delete_event", {}, false)
 
                     })
                     .catch(e => ApplicationView.displayMessage(e, 3000))
@@ -509,7 +509,8 @@ export class BlogPostElement extends HTMLElement {
         }
 
         if (this.updateListener == undefined) {
-            Model.eventHub.subscribe(this.blog.getUuid() + "_blog_updated_event", uuid => this.updateListener = uuid, evt => {
+
+            Model.getGlobule(this.blog.getDomain()).eventHub.subscribe(this.blog.getUuid() + "_blog_updated_event", uuid => this.updateListener = uuid, evt => {
 
                 this.blog = BlogPost.deserializeBinary(Uint8Array.from(evt.split(",")))
                 let isEditable = this.getAttribute("editable")
@@ -543,7 +544,7 @@ export class BlogPostElement extends HTMLElement {
         }
 
         if (this.deleteListener == undefined) {
-            Model.eventHub.subscribe(this.blog.getUuid() + "_blog_delete_event", uuid => this.deleteListener = uuid,
+            Model.getGlobule(this.blog.getDomain()).eventHub.subscribe(this.blog.getUuid() + "_blog_delete_event", uuid => this.deleteListener = uuid,
                 evt => {
                     // simplity remove it from it parent...
                     this.parentNode.removeChild(this)
@@ -811,7 +812,7 @@ export class BlogPostElement extends HTMLElement {
                                 ApplicationView.displayMessage("Your post is published!", 3000)
 
                                 // Publish the event
-                                Model.eventHub.publish(Application.account.getId() + "@" + Application.account.getDomain() + "_publish_blog_event", this.blog.serializeBinary(), false)
+                                globule.eventHub.publish(Application.account.getId() + "@" + Application.account.getDomain() + "_publish_blog_event", this.blog.serializeBinary(), false)
 
                             }).catch(e => {
                                 ApplicationView.displayMessage(e, 3000)
@@ -858,7 +859,7 @@ export class BlogPostElement extends HTMLElement {
                                 ApplicationView.displayMessage("Your post was updated!", 3000)
 
                                 // That function will update the blog...
-                                Model.publish(this.blog.getUuid() + "_blog_updated_event", this.blog.serializeBinary(), false)
+                                globule.eventHub.publish(this.blog.getUuid() + "_blog_updated_event", this.blog.serializeBinary(), false)
 
                             }).catch(e => {
                                 ApplicationView.displayMessage(e, 3000)
@@ -1036,7 +1037,7 @@ export class BlogPosts extends HTMLElement {
         Account.getAccount(userName,
             account => {
                 // Subcribe to my own blog create event...
-                Model.eventHub.subscribe(account.id + "@" + account.domain + "_publish_blog_event", uuid => this[account.getId() + "@" + account.getDomain() + "_publish_blog_listener"] = uuid,
+                Model.getGlobule(this.blog.getDomain()).eventHub.subscribe(account.id + "@" + account.domain + "_publish_blog_event", uuid => this[account.getId() + "@" + account.getDomain() + "_publish_blog_listener"] = uuid,
                     evt => {
                         // Get the date from the event and create the newly
                         this.setBlog(BlogPost.deserializeBinary(Uint8Array.from(evt.split(","))), true)
@@ -1139,7 +1140,7 @@ export class BlogPosts extends HTMLElement {
         // listen for change...
         if (this.listeners[b.getUuid() + "_blog_updated_event_listener"] == undefined) {
 
-            Model.eventHub.subscribe(b.getUuid() + "_blog_updated_event", uuid => {
+            Model.getGlobule(b.getDomain()).eventHub.subscribe(b.getUuid() + "_blog_updated_event", uuid => {
                 this.listeners[b.getUuid() + "_blog_updated_event_listener"] = uuid
             }, evt => {
                 b = BlogPost.deserializeBinary(Uint8Array.from(evt.split(",")))
@@ -1223,7 +1224,7 @@ export class BlogComments extends HTMLElement {
 
         if (this.comment == undefined) {
             // Here I will connect the event channel for comment.
-            Model.eventHub.subscribe("new_" + this.blog.getUuid() + "_comment_evt",
+            Model.getGlobule(blog.getDomain()).eventHub.subscribe("new_" + this.blog.getUuid() + "_comment_evt",
                 uuid => this["new_blog_" + this.blog.getUuid() + "_comment_listener"] = uuid,
                 evt => {
                     let comment = Comment.deserializeBinary(Uint8Array.from(evt.split(",")))
@@ -1247,7 +1248,7 @@ export class BlogComments extends HTMLElement {
         this.emotions.setComment(comment)
 
         // Here I will connect the event channel for comment.
-        Model.eventHub.subscribe("new_" + this.comment.getUuid() + "_comment_evt",
+        Model.getGlobule(blog.getDomain()).eventHub.subscribe("new_" + this.comment.getUuid() + "_comment_evt",
             uuid => this["new_" + this.comment.getUuid() + "_comment_listener"] = uuid,
             evt => {
                 let comment = Comment.deserializeBinary(Uint8Array.from(evt.split(",")))
@@ -1498,7 +1499,7 @@ export class BlogCommentEditor extends HTMLElement {
 
                 this.globule.blogService.addEmoji(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: token })
                     .then(rsp => {
-                        Model.eventHub.publish(emoji.getParent() + "_new_emotion_event", rsp.getEmoji().serializeBinary(), false)
+                        this.globule.eventHub.publish(emoji.getParent() + "_new_emotion_event", rsp.getEmoji().serializeBinary(), false)
                     })
                     .catch(e => {
                         ApplicationView.displayMessage(e, 3000)
@@ -1602,7 +1603,7 @@ export class BlogCommentEditor extends HTMLElement {
 
                     this.globule.blogService.addComment(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: token })
                         .then(rsp => {
-                            Model.publish("new_" + comment.getParent() + "_comment_evt", rsp.getComment().serializeBinary(), false)
+                            this.globule.eventHub.publish("new_" + comment.getParent() + "_comment_evt", rsp.getComment().serializeBinary(), false)
                             addCommentBtn.style.display = "flex"
                             this.editDiv.style.display = "none"
                             this.removeChild(this.editorDiv)
@@ -1749,7 +1750,7 @@ export class BlogEmotions extends HTMLElement {
             })
 
             // Now I will connect emotion event...
-            Model.eventHub.subscribe(blog.getUuid() + "_new_emotion_event", uuid => { }, evt => {
+            Model.getGlobule(blog.getDomain()).eventHub.subscribe(blog.getUuid() + "_new_emotion_event", uuid => { }, evt => {
                 let emotion = Emoji.deserializeBinary(Uint8Array.from(evt.split(",")))
 
                 Account.getAccount(emotion.getAccountId(), a => {
@@ -1776,7 +1777,7 @@ export class BlogEmotions extends HTMLElement {
             this.addEmotion(emotion)
         })
         // Now I will connect emotion event...
-        Model.eventHub.subscribe(comment.getUuid() + "_new_emotion_event", uuid => { }, evt => {
+        Model.getGlobule(this.blog.getDomain()).eventHub.subscribe(comment.getUuid() + "_new_emotion_event", uuid => { }, evt => {
             let emotion = Emoji.deserializeBinary(Uint8Array.from(evt.split(",")))
 
             Account.getAccount(emotion.getAccountId(), a => {
