@@ -962,6 +962,8 @@ export class ApplicationView extends View {
 
     t.el.id = uuid
 
+    document.getElementById(uuid).style.maxWidth = "400px"
+
     return t
   }
 

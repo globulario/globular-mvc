@@ -709,4 +709,8 @@ emoji-picker {
       left: 5px;
    }
 
+   .toast-container{
+      max-width: 350px;
+   }
+
 }

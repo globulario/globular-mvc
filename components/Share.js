@@ -917,6 +917,7 @@ export class ShareResourceWizard extends HTMLElement {
                                         notification_.recipient = notification.getRecipient()
                                         notification_.text = notification.getMessage()
                                         notification_.type = 0
+                                        notification_.mac = Model.getGlobule(contact.domain).config.Mac
 
                                         // Send notification...
                                         Model.getGlobule(contact.domain).eventHub.publish(contact.id + "@" + contact.domain + "_notification_event", notification_.toString(), false)
