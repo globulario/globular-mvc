@@ -1,4 +1,4 @@
-import { Model } from "./Model";
+import { generatePeerToken, Model } from "./Model";
 import { ApplicationView } from "./ApplicationView";
 import { Account } from "./Account"
 import * as resource from "globular-web-client/resource/resource_pb";
@@ -127,8 +127,6 @@ export class Session extends Model {
         }
 
         _getSession_(globules.pop())
-
-
     }
 
     initData(initCallback: () => void, errorCallback: (err: any) => void) {
@@ -176,7 +174,7 @@ export class Session extends Model {
 
                 }, false, this)
 
-            globule.eventHub.subscribe(`__session_state_${this.account.id + "@" + this.account.domain}_change_event__`,
+            Model.eventHub.subscribe(`__session_state_${this.account.id + "@" + this.account.domain}_change_event__`,
                 (uuid: string) => {
                     /** nothing special here... */
                 },
@@ -191,6 +189,7 @@ export class Session extends Model {
                         ApplicationView.displayMessage(err, 3000)
                     })
                 }, true, this)
+
             Account.getAccount(this._id,
                 (account: Account) => {
                     // Here I will connect local event to react with interface element...
@@ -255,21 +254,26 @@ export class Session extends Model {
         session.setExpireAt(parseInt(localStorage.getItem("token_expired")))
         rqst.setSession(session)
 
-        // call persist data
-        Model.globular.resourceService
-            .updateSession(rqst, {
-                token: localStorage.getItem("user_token"),
-                application: Model.application,
-                domain: Model.domain,
-                address: Model.address
-            })
-            .then((rsp: resource.UpdateSessionResponse) => {
-                // Here I will return the value with it
-                Model.getGlobule(this.account.domain).eventHub.publish(`session_state_${this._id}_change_event`, this.toString(), false)
-                onSave();
-            })
-            .catch((err: any) => {
-                onError(err);
-            });
+        // TEST if session must be on the user globule or the actual session store.
+        let globule = Model.getGlobule(this.account.domain)
+        generatePeerToken(globule, token => {
+            // call persist data
+            globule.resourceService
+                .updateSession(rqst, {
+                    token: token,
+                    application: Model.application,
+                    domain: this.account.domain,
+                    address: Model.address
+                })
+                .then((rsp: resource.UpdateSessionResponse) => {
+                    // Here I will return the value with it
+                    Model.getGlobule(this.account.domain).eventHub.publish(`session_state_${this._id}_change_event`, this.toString(), false)
+                    onSave();
+                })
+                .catch((err: any) => {
+                    onError(err);
+                });
+        }, err => console.log(err))
+
     }
 }
