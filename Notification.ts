@@ -74,9 +74,10 @@ export class Notification  extends Model{
      * @param recipient 
      * @param text 
      */
-    constructor(sender?: string, type?:NotificationType, recipient?: string, text?: string, date?:Date){
+    constructor(mac?:string, sender?: string, type?:NotificationType, recipient?: string, text?: string, date?:Date){
         super();
 
+        this._mac = mac
         this._recipient = recipient;
         this._type = type;
         this._text = text;
@@ -110,12 +111,12 @@ export class Notification  extends Model{
      */
     static fromObject(obj: any): any{
         let notification = new Notification()
+        notification._mac = obj._mac
         notification._id = obj._id
         notification._text = obj._text
         notification._recipient = obj._recipient
         notification._sender = obj._sender
-        notification._mac = obj._mac
-        
+
         if(obj._type == 0){
             notification._type = NotificationType.User
         }else{

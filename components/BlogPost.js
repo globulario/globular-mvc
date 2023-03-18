@@ -812,7 +812,7 @@ export class BlogPostElement extends HTMLElement {
                                 ApplicationView.displayMessage("Your post is published!", 3000)
 
                                 // Publish the event
-                                globule.eventHub.publish(Application.account.getId() + "@" + Application.account.getDomain() + "_publish_blog_event", this.blog.serializeBinary(), false)
+                                Model.publish(Application.account.getId() + "@" + Application.account.getDomain() + "_publish_blog_event", this.blog.serializeBinary(), false)
 
                             }).catch(e => {
                                 ApplicationView.displayMessage(e, 3000)
@@ -1037,7 +1037,7 @@ export class BlogPosts extends HTMLElement {
         Account.getAccount(userName,
             account => {
                 // Subcribe to my own blog create event...
-                Model.getGlobule(this.blog.getDomain()).eventHub.subscribe(account.id + "@" + account.domain + "_publish_blog_event", uuid => this[account.getId() + "@" + account.getDomain() + "_publish_blog_listener"] = uuid,
+                Model.getGlobule(account.domain).eventHub.subscribe(account.id + "@" + account.domain + "_publish_blog_event", uuid => this[account.getId() + "@" + account.getDomain() + "_publish_blog_listener"] = uuid,
                     evt => {
                         // Get the date from the event and create the newly
                         this.setBlog(BlogPost.deserializeBinary(Uint8Array.from(evt.split(","))), true)

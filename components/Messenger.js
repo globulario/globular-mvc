@@ -471,7 +471,7 @@ export class MessengerMenu extends Menu {
                 }
             }, true)
 
-        Model.getGlobule(conversation.getDomain()).subscribe(`kickout_conversation_${conversationUuid}_evt`,
+        Model.getGlobule(conversation.getMac()).eventHub.subscribe(`kickout_conversation_${conversationUuid}_evt`,
             (uuid) => {
                 //
             },

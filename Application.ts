@@ -1435,7 +1435,7 @@ export class Application extends Model {
           for (var i = 0; i < notifications.length; i++) {
             // Here I will convert the notification from resource object to 
             // my own Notification type.
-            let n = new Notification(notifications[i].getSender(), notifications[i].getNotificationType().valueOf(), notifications[i].getRecipient(), notifications[i].getMessage(), new Date(notifications[i].getDate() * 1000))
+            let n = new Notification(notifications[i].getMac(), notifications[i].getSender(), notifications[i].getNotificationType().valueOf(), notifications[i].getRecipient(), notifications[i].getMessage(), new Date(notifications[i].getDate() * 1000))
             n.id = notifications[i].getId();
 
             notifications_.push(n);
@@ -1496,8 +1496,13 @@ export class Application extends Model {
   // Invite to a conversation.
   ///////////////////////////////////////////////////////////////////
   onInviteParticipant(evt: any) {
+
+    let participant = evt["participant"]
+    let domain = participant.split("@")[1]
+
     // Create a user notification.
     let notification = new Notification(
+      Model.getGlobule(domain).config.Mac,
       Application.account.id + "@" + Application.account.domain,
       NotificationType.User,
       evt["participant"],
@@ -1528,8 +1533,11 @@ export class Application extends Model {
 
   // Invite a new contact.
   onInviteContact(contact: Account) {
+
+
     // Create a user notification.
     let notification = new Notification(
+      Model.getGlobule(contact.domain).config.Mac,
       Application.account.id + "@" + Application.account.domain,
       NotificationType.User,
       contact.id + "@" + contact.domain,
@@ -1562,6 +1570,7 @@ export class Application extends Model {
   onAcceptContactInvitation(contact: Account) {
     // Create a user notification.
     let notification = new Notification(
+      Model.getGlobule(contact.domain).config.Mac,
       Application.account.id + "@" + Application.account.domain,
       NotificationType.User,
       contact.id + "@" + contact.domain,
@@ -1594,6 +1603,7 @@ export class Application extends Model {
   // Decline contact invitation.
   onDeclineContactInvitation(contact: Account) {
     let notification = new Notification(
+      Model.getGlobule(contact.domain).config.Mac,
       Application.account.id + "@" + Application.account.domain,
       NotificationType.User,
       contact.id + "@" + contact.domain,
@@ -1626,6 +1636,7 @@ export class Application extends Model {
   // Revoke contact invitation.
   onRevokeContactInvitation(contact: Account) {
     let notification = new Notification(
+      Model.getGlobule(contact.domain).config.Mac,
       Application.account.id + "@" + Application.account.domain,
       NotificationType.User,
       contact.id + "@" + contact.domain,
@@ -1658,6 +1669,7 @@ export class Application extends Model {
   // Delete contact invitation.
   onDeleteContact(contact: Account) {
     let notification = new Notification(
+      Model.getGlobule(contact.domain).config.Mac,
       Application.account.id + "@" + Application.account.domain,
       NotificationType.User,
       contact.id + "@" + contact.domain,

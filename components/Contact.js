@@ -368,7 +368,7 @@ export class SentContactInvitations extends HTMLElement {
         this.account = account;
         this.onRevokeContact = onRevokeContact;
 
-        Model.getGlobule(Application.account.id).eventHub.subscribe("sent_" + account.id + "@" + account.domain + "_evt",
+        Model.getGlobule(Application.account.domain).eventHub.subscribe("sent_" + account.id + "@" + account.domain + "_evt",
             (uuid) => { },
             (evt) => {
                 // So here I will append the account into the list.
