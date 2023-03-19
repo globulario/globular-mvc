@@ -281,7 +281,6 @@ export class AudioPlayer extends HTMLElement {
             .vz-wrapper {
                 width: 100%;
                 max-height: calc(100vh - 100px);
-                min-width: 600px;
                 max-width: 100vw;
                 padding: 0px 5px 0px 5px;
                 display: flex;
@@ -593,7 +592,13 @@ export class AudioPlayer extends HTMLElement {
         }, this, offsetTop)
 
 
-        setMinimizeable(header, this, "audio_player", "Audio", "image:music-note")
+        setMinimizeable(header, this, "audio_player", "Audio", "image:music-note", 
+        ()=>{
+            this.shadowRoot.querySelector(".vz-wrapper").style.minWidth = "0px"
+        }, 
+        ()=>{
+            this.shadowRoot.querySelector(".vz-wrapper").style.minWidth = "600px"
+        })
 
 
         this.querySelector(".vz-wrapper").onclick = () => {

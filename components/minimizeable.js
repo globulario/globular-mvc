@@ -8,7 +8,7 @@ var mininizeableBar = null
  * 
  * @param {*} onMinimize The function must contain the title and the thumbnail of the window.
  */
-export function setMinimizeable(header, element, id, name, icon) {
+export function setMinimizeable(header, element, id, name, icon, onMinimize, onMaximize) {
     if (mininizeableBar == null) {
         mininizeableBar = new MininizeableBar()
     }
@@ -65,6 +65,10 @@ export function setMinimizeable(header, element, id, name, icon) {
                                 group.parentNode.style.display = "none"
                             }
                         }
+
+                        if(onMaximize){
+                            onMaximize()
+                        }
                     }
                 })
 
@@ -81,6 +85,10 @@ export function setMinimizeable(header, element, id, name, icon) {
                     closeBtn.style.top = "0px"
                     closeBtn.style.left = "0px"
                     element.appendChild(closeBtn)
+
+                    if(onMinimize){
+                        onMinimize()
+                    }
                 }
 
 
