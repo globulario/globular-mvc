@@ -239,6 +239,8 @@ export class VideoPlayer extends HTMLElement {
                 align-items: center;
                 color: var(--palette-text-accent);
                 background-color: var(--palette-primary-accent);
+                border-top: 1px solid var(--palette-action-disabled);
+                border-left: 1px solid var(--palette-action-disabled);
             }
 
             .header span{

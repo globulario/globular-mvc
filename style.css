@@ -210,6 +210,8 @@ paper-radio-button[checked] {
 }
 
 paper-card {
+   border-top: 1px solid var(--palette-action-disabled);
+   border-left: 1px solid var(--palette-action-disabled);
    background-color: transparent;
 }
 
@@ -709,8 +711,5 @@ emoji-picker {
       left: 5px;
    }
 
-   .toast-container{
-      max-width: 350px;
-   }
 
 }

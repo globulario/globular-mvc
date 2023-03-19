@@ -139,8 +139,7 @@ export class Link extends HTMLElement {
             }
 
             img {
-                height: 48px; 
-                max-width: 100px;
+                max-height: 64px;
                 object-fit: cover;
             }
 
