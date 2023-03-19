@@ -712,4 +712,7 @@ emoji-picker {
    }
 
 
+   .popup{
+      max-width: 400px;
+   }
 }

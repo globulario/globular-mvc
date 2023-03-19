@@ -2371,104 +2371,32 @@ export class FilesListView extends FilesView {
 
 customElements.define('globular-files-list-view', FilesListView)
 
+
 /**
- * In this view files will be show as icon
+ * Sample empty component
  */
-export class FilesIconView extends FilesView {
+export class FileIconView extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
     constructor() {
         super()
-        this.imageHeight = 80
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
 
-    }
-
-    /**
-     * Display the content of a directory
-     * @param {*} dir 
-     */
-    /**
-     * Display the content of a directory
-     * @param {*} dir 
-     */
-    setDir(dir) {
-        dir.path = dir.path.split("\\").join("/")
-        if (dir.name.startsWith(".") || !(dir.path.startsWith("/public") || public_[dir.path] != undefined || dir.path.startsWith("/shared") || shared[dir.path] != undefined || dir.path.startsWith("/applications/" + Application.application) || dir.path.startsWith("/users/" + Application.account.id))) {
-            return;
+        let h = 80
+        if (this.hasAttribute("height")) {
+            h = parseInt(this.getAttribute("height"))
         }
 
-        this.div.innerHTML = "";
-        let h = this.imageHeight; // the height of the image/icon div
-        let w = this.imageHeight;
-        let hiddens = {};
+        let w = 80
+        if (this.hasAttribute("width")) {
+            w = parseInt(this.getAttribute("width"))
+        }
 
-        let html = `
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
         <style>
-            #container {
-                background-color: var(--palette-background-default);
-                display: flex;
-                flex-direction: column;
-                padding: 8px;
-                height: 100%;
-            }
-
-            /** The file section */
-            .file-type-section {
-                display: flex;
-                flex-direction: column;
-            }
-
-            .file-type-section .title{
-                display: flex;
-                align-items: center;
-                font-size: 1.2rem;
-                font-weight: 400;
-                text-transform: uppercase;
-                color: var(--palette-text-secondary);
-                border-bottom: 2px solid;
-                border-color: var(--palette-divider);
-                width: 66.66%;
-                user-select: none;
-            }
-            
-            .file-type-section .title iron-icon{
-                height: 32px;
-                width: 32px;
-                user-select: none;
-            }
-             
-            .file-type-section .title iron-icon:hover{
-                cursor: pointer;
-            }
-
-            .file-type-section .content {
-                display: flex;
-                margin-bottom: 16px;
-                margin-top: 16px;
-                flex-wrap: wrap;
-            }
-
-            .file-type-section .title span {
-                font-weight: 400;
-                font-size: 1rem;
-            }
-
-            #audio_playlist_div, #video_playlist_div {
-                display: flex;
-            }
-
-            #video_playlist_div iron-icon {
-                height: 24px;
-                width: 24px;
-                margin-left: 16px;
-            }
-
-            #audio_playlist_div iron-icon {
-                height: 24px;
-                width: 24px;
-                margin-left: 16px;
-            }
-
-
-           
             /** Display icon div */
             .file-icon-div{
                 display: flex;
@@ -2544,14 +2472,14 @@ export class FilesIconView extends FilesView {
             }
 
             .file-div span {
-               word-wrap: break-word;
-               text-align: center;
-               max-height: 200px;
-               overflow-y: hidden;
-               word-break: break-all;
-               font-size: 0.85rem;
-               padding: 5px;
-               user-select: none;
+                word-wrap: break-word;
+                text-align: center;
+                max-height: 200px;
+                overflow-y: hidden;
+                word-break: break-all;
+                font-size: 0.85rem;
+                padding: 5px;
+                user-select: none;
             }
 
             .file-path {
@@ -2582,10 +2510,921 @@ export class FilesIconView extends FilesView {
             }
 
         </style>
-        <div id="container" class="no-select">
-        
+
+        <div class="file-div" >
+            <div class="file-icon-div">
+                <paper-checkbox></paper-checkbox>
+                <div class="menu-div"></div>
+                <paper-ripple recenters></paper-ripple>
+                <svg title="keep file local" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><path d="M32 32C32 14.3 46.3 0 64 0H320c17.7 0 32 14.3 32 32s-14.3 32-32 32H290.5l11.4 148.2c36.7 19.9 65.7 53.2 79.5 94.7l1 3c3.3 9.8 1.6 20.5-4.4 28.8s-15.7 13.3-26 13.3H32c-10.3 0-19.9-4.9-26-13.3s-7.7-19.1-4.4-28.8l1-3c13.8-41.5 42.8-74.8 79.5-94.7L93.5 64H64C46.3 64 32 49.7 32 32zM160 384h64v96c0 17.7-14.3 32-32 32s-32-14.3-32-32V384z"/></svg>
+            </div>
         </div>
         `
+    }
+
+
+
+    // Call search event.
+    setFile(file, view) {
+
+        let h = 80
+        if (this.hasAttribute("height")) {
+            h = parseInt(this.getAttribute("height"))
+        }
+
+        let w = 80
+        if (this.hasAttribute("width")) {
+            w = parseInt(this.getAttribute("width"))
+        }
+
+        // set reference from view...
+        this._file_explorer_ = view._file_explorer_
+        this.menu = view.menu
+        this.shareResource = view.shareResource
+        this.div = view.div
+
+        let fileIconDiv = this.shadowRoot.querySelector(`.file-icon-div`)
+        this.fileIconDiv = fileIconDiv
+
+        let fileType = file.mime.split("/")[0]
+        let range = document.createRange()
+
+        if (file.lnk != undefined) {
+            // here the file is a lnk...
+            let lnkIcon = `
+                <div class="shortcut-icon">
+                    <iron-icon icon="icons:reply"></iron-icon>
+                </div> 
+                `
+            fileIconDiv.appendChild(range.createContextualFragment(lnkIcon))
+        }
+
+        // Now I will append the file name span...
+        let fileNameSpan = document.createElement("span")
+        fileNameSpan.style.maxWidth = "100px"
+
+        let checkbox = fileIconDiv.querySelector("paper-checkbox")
+
+        checkbox.onclick = (evt) => {
+            evt.stopPropagation();
+            Model.eventHub.publish("__file_select_unselect_" + file.path, checkbox.checked, true)
+        }
+
+        Model.eventHub.subscribe("__file_select_unselect_" + file.path, () => { }, checked => {
+            checkbox.checked = checked;
+            if (checked) {
+                checkbox.style.display = "block"
+                this.selected[file.path] = file
+            } else {
+                checkbox.style.display = "none"
+                delete this.selected[file.path]
+            }
+        }, true, this)
+
+        let thumbtack = fileIconDiv.querySelector("svg")
+        thumbtack.onclick = (evt) => {
+            evt.stopPropagation()
+            // Do stuff here...
+            File__.hasLocal(file.path, exists => {
+                if (exists) {
+                    file.removeLocalCopy(() => {
+                        thumbtack.style.fill = ""
+                        thumbtack.style.display = "none";
+                        thumbtack.style.left = ""
+                    })
+                } else {
+                    file.keepLocalyCopy(() => {
+                        thumbtack.style.display = "block";
+                        thumbtack.style.left = "8px"
+                        thumbtack.style.fill = "var(--palette-primary-main)"
+                    })
+                }
+            })
+        }
+
+        // Here I will append the interation.
+        fileIconDiv.onmouseover = (evt) => {
+            evt.stopPropagation();
+            checkbox.style.display = "block"
+            thumbtack.style.display = "block"
+            if (File.hasLocal)
+                File__.hasLocal(file.path, exist => {
+                    if (exist) {
+                        thumbtack.style.display = "block";
+                        thumbtack.style.left = ""
+                        thumbtack.style.fill = "var(--palette-primary-main)"
+                    }
+                })
+
+            fileIconDiv.appendChild(this.shareResource)
+
+            let files = [];
+            for (var key in this.selected) {
+                files.push(this.selected[key])
+            }
+
+            if (files.filter(f => f.path === file.path).length == 0) {
+                files.push(file)
+            }
+
+            this.shareResource.setFiles(files)
+
+            this.shareResource.style.position = "absolute"
+            this.shareResource.style.top = "0px";
+            this.shareResource.style.right = "20px";
+        }
+
+        fileIconDiv.onmouseleave = (evt) => {
+            evt.stopPropagation();
+            let checkbox = fileIconDiv.querySelector("paper-checkbox")
+            if (!checkbox.checked) {
+                checkbox.style.display = "none"
+            }
+
+            if (this.shareResource.parentNode) {
+                this.shareResource.parentNode.removeChild(this.shareResource)
+            }
+
+            thumbtack.style.display = "none"
+
+            if (File.hasLocal)
+                File__.hasLocal(file.path, exist => {
+                    if (exist) {
+                        thumbtack.style.display = "block";
+                        thumbtack.style.left = "8px"
+                        thumbtack.style.fill = "var(--palette-primary-main)"
+                    }
+                })
+        }
+
+        // video or audio file can be keep localy
+        if ((file.mime.startsWith("video") || file.mime.startsWith("audio")) && file.mime != "video/hls-stream") {
+            if (File.hasLocal) {
+                thumbtack.style.visibility = "visible"
+                File__.hasLocal(file.path, exist => {
+                    if (exist) {
+                        thumbtack.style.display = "block";
+                        thumbtack.style.left = "8px"
+                        thumbtack.style.fill = "var(--palette-primary-main)"
+                    }
+                })
+            }
+        }
+
+        if (fileType == "video") {
+
+            /** In that case I will display the vieo preview. */
+            let h = 72;
+
+            let preview = new VideoPreview(file, h, () => {
+                fileNameSpan.style.wordBreak = "break-all"
+                fileNameSpan.style.fontSize = ".85rem"
+                fileNameSpan.style.maxWidth = preview.width + "px"
+                if (file.videos) {
+                    if (file.videos.length > 0)
+                        fileNameSpan.innerHTML = file.videos[0].getDescription()
+                }
+
+            }, this._file_explorer_.globule)
+
+            // keep the explorer link...
+            preview._file_explorer_ = this._file_explorer_
+            preview.name = file.name;
+            preview.onpreview = () => {
+                let previews = this.div.querySelectorAll("globular-video-preview")
+                previews.forEach(p => {
+                    // stop all other preview...
+                    if (preview.name != p.name) {
+                        p.stopPreview()
+                    }
+                })
+            }
+
+            fileIconDiv.insertBefore(preview, fileIconDiv.firstChild)
+
+            preview.draggable = false
+
+            fileIconDiv.ondrop = (evt) => {
+                evt.stopPropagation();
+                evt.preventDefault()
+                let url = evt.dataTransfer.getData("Url");
+                if (url.startsWith("https://www.imdb.com/title")) {
+                    this.setImdbTitleInfo(url, file)
+                }
+            }
+
+
+            // Retreive the video title to display more readable file name...
+            if (file.videos) {
+                fileNameSpan.innerHTML = file.videos[0].getDescription()
+            } else {
+                getVideoInfo(this._file_explorer_.globule, file, videos => {
+                    if (videos.length > 0) {
+                        file.videos = videos // keep in the file itself...
+                        fileNameSpan.innerHTML = file.videos[0].getDescription()
+                    } else {
+
+                        if (file.titles) {
+                            let title = file.titles[0]
+                            let name = title.getName()
+
+                            if (title.getEpisode() > 0) {
+                                name += " S" + title.getSeason() + "-E" + title.getEpisode()
+                            }
+
+                            fileNameSpan.innerHTML = name
+                            fileNameSpan.title = file.path
+                        } else {
+                            // get the title infos...
+                            getTitleInfo(this._file_explorer_.globule, file, (titles) => {
+                                if (titles.length > 0) {
+                                    file.titles = titles // keep in the file itself...
+                                    let title = file.titles[0]
+                                    let name = title.getName()
+                                    if (title.getEpisode() > 0) {
+                                        name += " S" + title.getSeason() + "-E" + title.getEpisode()
+                                    }
+                                    fileNameSpan.innerHTML = name
+                                    fileNameSpan.title = file.path
+                                }
+                            })
+                        }
+                    }
+                })
+            }
+
+        } else if (file.isDir) {
+
+            // Here I will create a folder mosaic from the folder content...
+            let folderIcon = document.createRange().createContextualFragment(`<iron-icon icon="icons:folder"></iron-icon>`)
+            fileIconDiv.insertBefore(folderIcon, fileIconDiv.firstChild)
+
+
+            fileIconDiv.onclick = (evt) => {
+                evt.stopPropagation();
+                _publishSetDirEvent(file._path, this._file_explorer_)
+            }
+
+            folderIcon.draggable = false
+
+        } else if (file.thumbnail != undefined) {
+
+            /** Display the thumbnail. */
+            let img = document.createElement("img")
+            img.src = file.thumbnail
+            img.draggable = false
+
+            // The size of the span will be calculated in respect of the image size.
+            let getMeta = (url) => {
+                var img = new Image();
+                img.onload = function () {
+                    if (img.width > 0 && img.height > 0) {
+                        w = (img.width / img.height) * h
+                        fileNameSpan.style.maxWidth = w + "px"
+                        fileNameSpan.style.wordBreak = "break-all"
+                        fileNameSpan.style.fontSize = ".85rem"
+                        if (file.audios) {
+                            if (file.audios.length > 0)
+                                fileNameSpan.innerHTML = file.audios[0].getTitle()
+                        }
+
+                    }
+                };
+                img.src = url;
+            }
+
+            getMeta(file.thumbnail)
+
+            fileIconDiv.insertBefore(img, fileIconDiv.firstChild)
+
+            if (fileType == "image") {
+                img.onclick = (evt) => {
+                    evt.stopPropagation();
+                    Model.eventHub.publish("__show_image__", { file: file, file_explorer_id: this._file_explorer_.id }, true)
+                    this.menu.close()
+                    if (this.menu.parentNode)
+                        this.menu.parentNode.removeChild(this.menu)
+                }
+            } else if (fileType == "audio") {
+                img.onclick = (evt) => {
+                    evt.stopPropagation();
+                    Model.eventHub.publish("__play_audio__", { file: file, file_explorer_id: this._file_explorer_.id }, true)
+                    this.menu.close()
+                    if (this.menu.parentNode)
+                        this.menu.parentNode.removeChild(this.menu)
+                }
+
+
+
+            } else {
+                // here I will try the file viewer.
+                img.onclick = (evt) => {
+                    evt.stopPropagation();
+                    Model.eventHub.publish("__read_file__", { file: file, file_explorer_id: this._file_explorer_.id }, true)
+                    this.menu.close()
+                    if (this.menu.parentNode)
+                        this.menu.parentNode.removeChild(this.menu)
+
+                }
+            }
+
+            // display more readable name.
+            if (file.audios) {
+                fileNameSpan.innerHTML = file.audios[0].getTitle()
+                if (file.audios[0].getPoster())
+                    if (file.audios[0].getPoster().getContenturl().length > 0) {
+                        img.src = file.audios[0].getPoster().getContenturl()
+                    }
+            } else {
+                getAudioInfo(this._file_explorer_.globule, file, audios => {
+                    if (audios.length > 0) {
+                        file.audios = audios // keep in the file itself...
+                        fileNameSpan.innerHTML = file.audios[0].getTitle()
+                        if (file.audios[0].getPoster())
+                            if (file.audios[0].getPoster().getContenturl().length > 0) {
+                                img.src = file.audios[0].getPoster().getContenturl()
+                            }
+                    }
+                })
+            }
+        }
+
+        if (file.isDir) {
+            fileIconDiv.ondragover = (evt) => {
+                evt.preventDefault()
+                fileIconDiv.children[0].icon = "icons:folder-open"
+                this._file_explorer_.setAtTop()
+            }
+
+            fileIconDiv.ondragleave = () => {
+                fileIconDiv.children[0].icon = "icons:folder"
+            }
+
+            fileIconDiv.ondrop = (evt) => {
+                evt.stopPropagation()
+
+                evt.preventDefault()
+                let url = evt.dataTransfer.getData("Url");
+                if (url.startsWith("https://www.imdb.com/title")) {
+                    this.setImdbTitleInfo(url, file)
+                } else if (evt.dataTransfer.files.length > 0) {
+                    // So here I will simply upload the files...
+                    Model.eventHub.publish("__upload_files_event__", { dir: file, files: evt.dataTransfer.files, globule: this._file_explorer_.globule }, true)
+                } else {
+
+                    let files = JSON.parse(evt.dataTransfer.getData('files'))
+                    let id = evt.dataTransfer.getData('id')
+                    fileIconDiv.children[0].icon = "icons:folder"
+
+                    // Create drop_file_event...
+                    if (file != undefined && id.length > 0) {
+                        Model.eventHub.publish(`drop_file_${this._file_explorer_.id}_event`, { files: files, dir: file.path, id: id }, true)
+                    }
+                }
+            }
+        }
+
+
+        fileNameSpan.innerHTML = file.name;
+        fileIconDiv.parentNode.appendChild(fileNameSpan);
+
+        fileIconDiv.onmouseenter = (evt) => {
+            evt.stopPropagation();
+
+            let thumbtacks = this.div.querySelectorAll("svg")
+            for (var i = 0; i < thumbtacks.length; i++) {
+                if (thumbtacks[i].style.fill == "var(--palette-primary-main)") {
+                    thumbtacks[i].style.left = "8px"
+                } else {
+                    thumbtacks[i].style.display = "none"
+                    thumbtacks[i].style.left = ""
+                }
+            }
+
+            if (File.hasLocal) {
+                thumbtack.style.display = "block";
+                File__.hasLocal(file.path, exist => {
+                    if (exist) {
+                        thumbtack.style.display = "block";
+                        thumbtack.style.left = ""
+                        thumbtack.style.fill = "var(--palette-primary-main)"
+                    }
+                })
+            }
+
+            let checkboxs = this.div.querySelectorAll("paper-checkbox")
+            for (var i = 0; i < checkboxs.length; i++) {
+                if (!checkboxs[i].checked) {
+                    checkboxs[i].style.display = "none"
+                }
+            }
+
+            let fileIconDivs = this.div.querySelectorAll(".file-icon-div")
+            for (var i = 0; i < fileIconDivs.length; i++) {
+                fileIconDivs[i].classList.remove("active")
+            }
+
+            fileIconDiv.classList.add("active")
+
+            // display the actual checkbox...
+            checkbox.style.display = "block"
+
+
+            fileIconDiv.appendChild(this.shareResource)
+
+            let files = [];
+            for (var key in this.selected) {
+                files.push(this.selected[key])
+            }
+
+            if (files.filter(f => f.path === file.path).length == 0) {
+                files.push(file)
+            }
+
+            this.shareResource.setFiles(files)
+
+            this.shareResource.style.position = "absolute"
+            this.shareResource.style.top = "0px";
+            this.shareResource.style.right = "20px";
+
+            document.body.appendChild(this.menu)
+
+
+            if (!this.menu.isOpen()) {
+                this.menu.showBtn()
+                //fileIconDiv.parentNode.appendChild(this.menu)
+
+                let coords = getCoords(fileIconDiv.parentNode)
+                this.menu.style.position = "absolute"
+                this.menu.__top__ = coords.top + 8
+                this.menu.style.top = coords.top + 8 + "px"
+                this.menu.__left__ = coords.left + fileIconDiv.offsetWidth - 20
+                this.menu.style.left = coords.left + fileIconDiv.offsetWidth - 20 + "px"
+
+                this.menu.onmouseover = (evt) => {
+                    evt.stopPropagation();
+                    fileIconDiv.classList.add("active")
+                }
+
+                this.menu.onmouseout = (evt) => {
+                    evt.stopPropagation();
+                    fileIconDiv.classList.remove("active")
+                }
+
+                this.menu.setFile(file)
+
+                // set the rename function.
+                this.menu.rename = () => {
+                    this.rename(fileIconDiv, file, fileIconDiv.offsetHeight + 6)
+                }
+            }
+        }
+    }
+
+    setActive() {
+        this.fileIconDiv.classList.add("active")
+    }
+
+    resetActive() {
+        this.fileIconDiv.classList.remove("active")
+    }
+}
+
+
+customElements.define('globular-file-icon-view', FileIconView)
+
+/**
+ * Sample empty component
+ */
+export class FileIconViewSection extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor() {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+
+        let fileType = this.getAttribute("filetype")
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+           
+            /** The file section */
+            .file-type-section {
+                display: flex;
+                flex-direction: column;
+            }
+
+            .file-type-section .title{
+                display: flex;
+                align-items: center;
+                font-size: 1.2rem;
+                font-weight: 400;
+                text-transform: uppercase;
+                color: var(--palette-text-secondary);
+                border-bottom: 2px solid;
+                border-color: var(--palette-divider);
+                width: 66.66%;
+                user-select: none;
+            }
+            
+            .file-type-section .title iron-icon{
+                height: 32px;
+                width: 32px;
+                user-select: none;
+            }
+            
+            .file-type-section .title iron-icon:hover{
+                cursor: pointer;
+            }
+
+            .file-type-section .content {
+                display: flex;
+                margin-bottom: 16px;
+                margin-top: 16px;
+                flex-wrap: wrap;
+            }
+
+            .file-type-section .title span {
+                font-weight: 400;
+                font-size: 1rem;
+            }
+
+            #audio_playlist_div, #video_playlist_div {
+                display: flex;
+            }
+
+            #video_playlist_div iron-icon {
+                height: 24px;
+                width: 24px;
+                margin-left: 16px;
+            }
+
+            #audio_playlist_div iron-icon {
+                height: 24px;
+                width: 24px;
+                margin-left: 16px;
+            }
+
+        </style>
+        <div class="file-type-section">
+            <div class="title">${fileType} <span id="section_count" style="flex-grow: 1; padding-left: 5px;"></span> <div id="${fileType}_playlist_div"></div></div>
+            <div class="content" id="${fileType}_section">
+                <slot></slot>
+            </div>
+        </div>
+        `
+
+        this.countDiv = this.shadowRoot.querySelector(`#${fileType}_section_count`)
+    }
+
+    // Set files...
+    init(dir, fileType, view) {
+
+        // set reference
+        this.div = view.div
+        this._file_explorer_ = view._file_explorer_
+
+        let copyUrl = (path) => {
+            let globule = this._file_explorer_.globule
+
+            generatePeerToken(globule, token => {
+                let url = getUrl(globule)
+
+                path.split("/").forEach(item => {
+                    let component = encodeURIComponent(item.trim())
+                    if (component.length > 0) {
+                        url += "/" + component
+                    }
+
+                })
+
+                if (this.menu.file.mime == "video/hls-stream") {
+                    url += "/playlist.m3u8"
+                }
+
+                url += "?application=" + Model.application;
+                url += "&token=" + token;
+
+                copyToClipboard(url)
+
+                ApplicationView.displayMessage("url was copy to clipboard...", 3000)
+            })
+        }
+
+        if (fileType == "audio" || fileType == "video") {
+            let playlistDiv = this.shadowRoot.querySelector(`#${fileType}_playlist_div`)
+
+            if (fileType == "audio") {
+                playlistDiv.innerHTML = `
+                    <iron-icon id="refresh-audios-btn" icon="icons:refresh" title="refresh audios infos and playlist"></iron-icon>
+                    <iron-icon id="download-audios-btn" icon="av:playlist-add-check" title="download new audio from the channel" style="display:none;"></iron-icon>
+                    <iron-icon id="play-audios-btn" icon="av:queue-music" title="play audio files"></iron-icon>
+                    <iron-icon id="copy-audios-playlist-lnk" icon="icons:link" title="copy playlist url"></iron-icon>
+                `
+                // Get reference to button...
+                let refreshAudiosBtn = playlistDiv.querySelector("#refresh-audios-btn")
+                let playAudiosBtn = playlistDiv.querySelector("#play-audios-btn")
+                let copyAudiosBtn = playlistDiv.querySelector("#copy-audios-playlist-lnk")
+                let downloadAudiosBtn = playlistDiv.querySelector("#download-audios-btn")
+                let globule = this._file_explorer_.globule
+                let playlist = null
+
+                generatePeerToken(globule, token => {
+                    let rqst = new ReadFileRequest
+                    rqst.setPath(dir.path + "/.hidden/playlist.json")
+                    let stream = globule.fileService.readFile(rqst, {
+                        token: token,
+                        application: Model.application,
+                        domain: globule.domain,
+                        address: globule.config.address
+                    })
+
+                    let data = [];
+                    stream.on("data", (rsp) => {
+                        data = mergeTypedArrays(data, rsp.getData());
+                    });
+
+                    stream.on("status", (status) => {
+                        if (status.code == 0) {
+                            uint8arrayToStringMethod(data, (str) => {
+                                playlist = JSON.parse(str)
+                                downloadVideosBtn.style.display = "block"
+                            });
+                        }
+                    });
+                })
+
+                // Update videos from a channel.
+                downloadAudiosBtn.onclick = () => {
+
+                    if (!playlist) {
+                        downloadAudiosBtn.style.display = "none"
+                        return
+                    }
+
+                    generatePeerToken(globule, token => {
+                        let rqst = new UploadVideoRequest
+                        rqst.setDest(playlist.path)
+                        rqst.setFormat(playlist.format)
+                        rqst.setUrl(playlist.url)
+
+                        let stream = this._file_explorer_.globule.fileService.uploadVideo(rqst, { application: Application.application, domain: this._file_explorer_.globule.domain, token: token })
+                        let pid = -1;
+
+                        // Here I will create a local event to be catch by the file uploader...
+                        stream.on("data", (rsp) => {
+                            if (rsp.getPid() != null) {
+                                pid = rsp.getPid()
+                            }
+
+                            // Publish local event.
+                            Model.eventHub.publish("__upload_link_event__", { pid: pid, path: playlist.path, infos: rsp.getResult(), done: false, lnk: playlist.url, globule: this._file_explorer_.globule }, true);
+                        })
+
+                        stream.on("status", (status) => {
+                            if (status.code === 0) {
+                                Model.eventHub.publish("__upload_link_event__", { pid: pid, path: playlist.path, infos: "", done: true, lnk: playlist.url, globule: this._file_explorer_.globule }, true);
+                            } else {
+                                ApplicationView.displayMessage(status.details, 3000)
+                            }
+                        });
+                    })
+                }
+
+
+                refreshAudiosBtn.onclick = () => {
+                    let rqst = new StartProcessVideoRequest
+                    rqst.setPath(dir.path)
+                    let globule = this._file_explorer_.globule
+
+                    generatePeerToken(globule, token => {
+                        globule.fileService.startProcessVideo(rqst, {
+                            token: token,
+                            application: Model.application,
+                            domain: globule.domain,
+                            address: globule.config.address
+                        }).then(() => {
+                            ApplicationView.displayMessage("playlist and audios informations are now updated", 3000)
+                        })
+                            .catch(err => ApplicationView.displayMessage(err, 3000))
+                    })
+
+                }
+
+                copyAudiosBtn.onclick = () => {
+                    copyUrl(dir.__audioPlaylist__.path)
+                }
+
+                playAudiosBtn.onclick = () => {
+                    let audios = []
+                    dir.files.forEach(f => {
+                        if (f.lnk) {
+                            f = f.lnk
+                        }
+                        if (f.mime.startsWith("audio")) {
+                            if (f.audios) {
+                                audios = audios.concat(f.audios)
+                            }
+                        }
+                    })
+                    if (audios.length > 0) {
+                        playAudios(audios, dir.name)
+                    } else {
+                        ApplicationView.displayMessage("no audio informations found to generate a playlist")
+                    }
+
+                }
+
+            } else if (fileType == "video") {
+                playlistDiv.innerHTML = `
+                    <iron-icon id="refresh-videos-btn" icon="icons:refresh" title="refresh video infos and playlist"></iron-icon>
+                    <iron-icon id="download-videos-btn" icon="av:playlist-add-check" title="download new video from the channel" style="display:none;"></iron-icon>
+                    <iron-icon id="play-videos-btn" icon="av:playlist-play" title="play video files"></iron-icon>
+                    <iron-icon id="copy-videos-playlist-lnk" icon="icons:link" title="copy playlist url"></iron-icon>
+                `
+
+                // Get reference to button...
+                let downloadVideosBtn = playlistDiv.querySelector("#download-videos-btn")
+                let refreshVideosBtn = playlistDiv.querySelector("#refresh-videos-btn")
+                let playVideosBtn = playlistDiv.querySelector("#play-videos-btn")
+                let copyVideosBtn = playlistDiv.querySelector("#copy-videos-playlist-lnk")
+                let globule = this._file_explorer_.globule
+                let playlist = null
+
+                generatePeerToken(globule, token => {
+                    let rqst = new ReadFileRequest
+                    rqst.setPath(dir.path + "/.hidden/playlist.json")
+                    let stream = globule.fileService.readFile(rqst, {
+                        token: token,
+                        application: Model.application,
+                        domain: globule.domain,
+                        address: globule.config.address
+                    })
+
+                    let data = [];
+                    stream.on("data", (rsp) => {
+                        data = mergeTypedArrays(data, rsp.getData());
+                    });
+
+                    stream.on("status", (status) => {
+                        if (status.code == 0) {
+                            uint8arrayToStringMethod(data, (str) => {
+                                playlist = JSON.parse(str)
+                                downloadVideosBtn.style.display = "block"
+                            });
+                        }
+                    });
+                })
+
+                // Update videos from a channel.
+                downloadVideosBtn.onclick = () => {
+
+                    if (!playlist) {
+                        downloadVideosBtn.style.display = "none"
+                        return
+                    }
+                    generatePeerToken(globule, token => {
+                        let rqst = new UploadVideoRequest
+                        rqst.setDest(playlist.path)
+                        rqst.setFormat(playlist.format)
+                        rqst.setUrl(playlist.url)
+
+                        let stream = this._file_explorer_.globule.fileService.uploadVideo(rqst, { application: Application.application, domain: this._file_explorer_.globule.domain, token: token })
+                        let pid = -1;
+
+                        // Here I will create a local event to be catch by the file uploader...
+                        stream.on("data", (rsp) => {
+                            if (rsp.getPid() != null) {
+                                pid = rsp.getPid()
+                            }
+
+                            // Publish local event.
+                            Model.eventHub.publish("__upload_link_event__", { pid: pid, path: playlist.path, infos: rsp.getResult(), done: false, lnk: playlist.url, globule: this._file_explorer_.globule }, true);
+                        })
+
+                        stream.on("status", (status) => {
+                            if (status.code === 0) {
+                                Model.eventHub.publish("__upload_link_event__", { pid: pid, path: playlist.path, infos: "", done: true, lnk: playlist.url, globule: this._file_explorer_.globule }, true);
+                            } else {
+                                ApplicationView.displayMessage(status.details, 3000)
+                            }
+                        });
+                    })
+                }
+
+                refreshVideosBtn.onclick = () => {
+                    let rqst = new StartProcessVideoRequest
+                    rqst.setPath(dir.path)
+                    let globule = this._file_explorer_.globule
+
+                    generatePeerToken(globule, token => {
+                        globule.fileService.startProcessVideo(rqst, {
+                            token: token,
+                            application: Model.application,
+                            domain: globule.domain,
+                            address: globule.config.address
+                        }).then(() => {
+                            ApplicationView.displayMessage("Playlist is updated. Informations will be update...", 3000)
+
+
+                        })
+                        .catch(err => ApplicationView.displayMessage(err, 3000))
+                    })
+
+
+                }
+
+                copyVideosBtn.onclick = () => {
+                    if (dir.__videoPlaylist__)
+                        copyUrl(dir.__videoPlaylist__.path)
+                    else
+                        ApplicationView.displayMessage("no playlist found at path ", dir.path)
+                }
+
+                playVideosBtn.onclick = () => {
+                    let videos = []
+                    dir.files.forEach(f => {
+                        if (f.lnk) {
+                            f = f.lnk
+                        }
+                        if (f.mime.startsWith("video")) {
+                            if (f.videos) {
+                                videos = videos.concat(f.videos)
+                            }
+                        }
+                    })
+                    if (videos.length > 0) {
+                        playVideos(videos, dir.name)
+                    } else {
+                        ApplicationView.displayMessage("no video informations found to generate a playlist")
+                    }
+                }
+
+            }
+        }
+    }
+
+    updateCount(){
+        this.shadowRoot.querySelector(`#section_count`).innerHTML = ` (${this.children.length})`
+    }
+
+}
+
+customElements.define('globular-file-icon-view-section', FileIconViewSection)
+
+/**
+ * In this view files will be show as icon
+ */
+export class FilesIconView extends FilesView {
+    constructor() {
+        super()
+        this.imageHeight = 80
+
+    }
+
+    /**
+     * Display the content of a directory
+     * @param {*} dir 
+     */
+    /**
+     * Display the content of a directory
+     * @param {*} dir 
+     */
+    setDir(dir) {
+
+        dir.path = dir.path.split("\\").join("/")
+        if (dir.name.startsWith(".") || !(dir.path.startsWith("/public") || public_[dir.path] != undefined || dir.path.startsWith("/shared") || shared[dir.path] != undefined || dir.path.startsWith("/applications/" + Application.application) || dir.path.startsWith("/users/" + Application.account.id))) {
+            return;
+        }
+
+        this.div.innerHTML = "";
+        let h = this.imageHeight; // the height of the image/icon div
+        let w = this.imageHeight;
+        let hiddens = {};
+
+        let html = `
+        <style>
+            #container {
+                background-color: var(--palette-background-default);
+                display: flex;
+                flex-direction: column;
+                padding: 8px;
+                height: 100%;
+            }
+
+
+
+        </style>
+        <div id="container" class="no-select">
+            <slot></slot>
+        </div>
+        `
+
+        // Clear the actual content..
+        this.innerHTML = ""
 
         // Create the header.
         this.div.innerHTML = html
@@ -2628,7 +3467,6 @@ export class FilesIconView extends FilesView {
                         // So here I will make little transformation...
                         f.lnk.lnk = f
                         f = f.lnk
-
                     }
 
                     if (f.size > 1024) {
@@ -2680,636 +3518,33 @@ export class FilesIconView extends FilesView {
             let range = document.createRange()
             // Now I will display files by their categories.
             for (var fileType in filesByType) {
-                let section = this.div.querySelector(`#${fileType}_section`)
+                let section = this.querySelector(`#${fileType}_section`)
+
+                // create the section if it not already exist...
                 if (section == undefined && filesByType[fileType].length > 0) {
-                    let html = `
-                    <div class="file-type-section">
-                        <div class="title">${fileType} <span id="${fileType}_section_count" style="flex-grow: 1; padding-left: 5px;"> (${filesByType[fileType].length})</span> <div id="${fileType}_playlist_div"></div></div>
-                        <div class="content" id="${fileType}_section"></div>
-                    </div>
-                    `
 
-                    this.div.querySelector(`#container`).appendChild(range.createContextualFragment(html))
-                    section = this.div.querySelector(`#${fileType}_section`)
+                    let html = `<globular-file-icon-view-section id="${fileType}_section" filetype="${fileType}"></globular-file-icon-view-section>`
+                    this.appendChild(range.createContextualFragment(html))
 
-                    let copyUrl = (path) => {
-                        let globule = this._file_explorer_.globule
-
-                        generatePeerToken(globule, token => {
-                            let url = getUrl(globule)
-
-                            path.split("/").forEach(item => {
-                                let component = encodeURIComponent(item.trim())
-                                if (component.length > 0) {
-                                    url += "/" + component
-                                }
-
-                            })
-
-                            if (this.menu.file.mime == "video/hls-stream") {
-                                url += "/playlist.m3u8"
-                            }
-
-                            url += "?application=" + Model.application;
-                            url += "&token=" + token;
-
-                            copyToClipboard(url)
-
-                            ApplicationView.displayMessage("url was copy to clipboard...", 3000)
-                        })
-                    }
-
-                    if (fileType == "audio" || fileType == "video") {
-                        let playlistDiv = this.div.querySelector(`#${fileType}_playlist_div`)
-
-                        if (fileType == "audio") {
-                            playlistDiv.innerHTML = `
-                                <iron-icon id="refresh-audios-btn" icon="icons:refresh" title="refresh audios infos and playlist"></iron-icon>
-                                <iron-icon id="download-audios-btn" icon="av:playlist-add-check" title="download new audio from the channel" style="display:none;"></iron-icon>
-                                <iron-icon id="play-audios-btn" icon="av:queue-music" title="play audio files"></iron-icon>
-                                <iron-icon id="copy-audios-playlist-lnk" icon="icons:link" title="copy playlist url"></iron-icon>
-                            `
-                            // Get reference to button...
-                            let refreshAudiosBtn = playlistDiv.querySelector("#refresh-audios-btn")
-                            let playAudiosBtn = playlistDiv.querySelector("#play-audios-btn")
-                            let copyAudiosBtn = playlistDiv.querySelector("#copy-audios-playlist-lnk")
-                            let downloadAudiosBtn = playlistDiv.querySelector("#download-audios-btn")
-                            let globule = this._file_explorer_.globule
-                            let playlist = null
-
-                            generatePeerToken(globule, token => {
-                                let rqst = new ReadFileRequest
-                                rqst.setPath(dir.path + "/.hidden/playlist.json")
-                                let stream = globule.fileService.readFile(rqst, {
-                                    token: token,
-                                    application: Model.application,
-                                    domain: globule.domain,
-                                    address: globule.config.address
-                                })
-
-                                let data = [];
-                                stream.on("data", (rsp) => {
-                                    data = mergeTypedArrays(data, rsp.getData());
-                                });
-
-                                stream.on("status", (status) => {
-                                    if (status.code == 0) {
-                                        uint8arrayToStringMethod(data, (str) => {
-                                            playlist = JSON.parse(str)
-                                            downloadVideosBtn.style.display = "block"
-                                        });
-                                    }
-                                });
-                            })
-
-                            // Update videos from a channel.
-                            downloadAudiosBtn.onclick = () => {
-
-                                if (!playlist) {
-                                    downloadAudiosBtn.style.display = "none"
-                                    return
-                                }
-
-                                generatePeerToken(globule, token => {
-                                    let rqst = new UploadVideoRequest
-                                    rqst.setDest(playlist.path)
-                                    rqst.setFormat(playlist.format)
-                                    rqst.setUrl(playlist.url)
-
-                                    let stream = this._file_explorer_.globule.fileService.uploadVideo(rqst, { application: Application.application, domain: this._file_explorer_.globule.domain, token: token })
-                                    let pid = -1;
-
-                                    // Here I will create a local event to be catch by the file uploader...
-                                    stream.on("data", (rsp) => {
-                                        if (rsp.getPid() != null) {
-                                            pid = rsp.getPid()
-                                        }
-
-                                        // Publish local event.
-                                        Model.eventHub.publish("__upload_link_event__", { pid: pid, path: playlist.path, infos: rsp.getResult(), done: false, lnk: playlist.url, globule: this._file_explorer_.globule }, true);
-                                    })
-
-                                    stream.on("status", (status) => {
-                                        if (status.code === 0) {
-                                            Model.eventHub.publish("__upload_link_event__", { pid: pid, path: playlist.path, infos: "", done: true, lnk: playlist.url, globule: this._file_explorer_.globule }, true);
-                                        } else {
-                                            ApplicationView.displayMessage(status.details, 3000)
-                                        }
-                                    });
-                                })
-                            }
-
-
-                            refreshAudiosBtn.onclick = () => {
-                                let rqst = new StartProcessVideoRequest
-                                rqst.setPath(dir.path)
-                                let globule = this._file_explorer_.globule
-
-                                generatePeerToken(globule, token => {
-                                    globule.fileService.startProcessVideo(rqst, {
-                                        token: token,
-                                        application: Model.application,
-                                        domain: globule.domain,
-                                        address: globule.config.address
-                                    }).then(() => {
-                                        ApplicationView.displayMessage("playlist and audios informations are now updated", 3000)
-                                    })
-                                        .catch(err => ApplicationView.displayMessage(err, 3000))
-                                })
-
-                            }
-
-                            copyAudiosBtn.onclick = () => {
-                                copyUrl(dir.__audioPlaylist__.path)
-                            }
-
-                            playAudiosBtn.onclick = () => {
-                                let audios = []
-                                dir.files.forEach(f => {
-                                    if (f.lnk) {
-                                        f = f.lnk
-                                    }
-                                    if (f.mime.startsWith("audio")) {
-                                        if (f.audios) {
-                                            audios = audios.concat(f.audios)
-                                        }
-                                    }
-                                })
-                                if (audios.length > 0) {
-                                    playAudios(audios, dir.name)
-                                } else {
-                                    ApplicationView.displayMessage("no audio informations found to generate a playlist")
-                                }
-
-                            }
-
-                        } else if (fileType == "video") {
-                            playlistDiv.innerHTML = `
-                                <iron-icon id="refresh-videos-btn" icon="icons:refresh" title="refresh video infos and playlist"></iron-icon>
-                                <iron-icon id="download-videos-btn" icon="av:playlist-add-check" title="download new video from the channel" style="display:none;"></iron-icon>
-                                <iron-icon id="play-videos-btn" icon="av:playlist-play" title="play video files"></iron-icon>
-                                <iron-icon id="copy-videos-playlist-lnk" icon="icons:link" title="copy playlist url"></iron-icon>
-                            `
-
-                            // Get reference to button...
-                            let downloadVideosBtn = playlistDiv.querySelector("#download-videos-btn")
-                            let refreshVideosBtn = playlistDiv.querySelector("#refresh-videos-btn")
-                            let playVideosBtn = playlistDiv.querySelector("#play-videos-btn")
-                            let copyVideosBtn = playlistDiv.querySelector("#copy-videos-playlist-lnk")
-                            let globule = this._file_explorer_.globule
-                            let playlist = null
-
-                            generatePeerToken(globule, token => {
-                                let rqst = new ReadFileRequest
-                                rqst.setPath(dir.path + "/.hidden/playlist.json")
-                                let stream = globule.fileService.readFile(rqst, {
-                                    token: token,
-                                    application: Model.application,
-                                    domain: globule.domain,
-                                    address: globule.config.address
-                                })
-
-                                let data = [];
-                                stream.on("data", (rsp) => {
-                                    data = mergeTypedArrays(data, rsp.getData());
-                                });
-
-                                stream.on("status", (status) => {
-                                    if (status.code == 0) {
-                                        uint8arrayToStringMethod(data, (str) => {
-                                            playlist = JSON.parse(str)
-                                            downloadVideosBtn.style.display = "block"
-                                        });
-                                    }
-                                });
-                            })
-
-                            // Update videos from a channel.
-                            downloadVideosBtn.onclick = () => {
-
-                                if (!playlist) {
-                                    downloadVideosBtn.style.display = "none"
-                                    return
-                                }
-                                generatePeerToken(globule, token => {
-                                    let rqst = new UploadVideoRequest
-                                    rqst.setDest(playlist.path)
-                                    rqst.setFormat(playlist.format)
-                                    rqst.setUrl(playlist.url)
-
-                                    let stream = this._file_explorer_.globule.fileService.uploadVideo(rqst, { application: Application.application, domain: this._file_explorer_.globule.domain, token: token })
-                                    let pid = -1;
-
-                                    // Here I will create a local event to be catch by the file uploader...
-                                    stream.on("data", (rsp) => {
-                                        if (rsp.getPid() != null) {
-                                            pid = rsp.getPid()
-                                        }
-
-                                        // Publish local event.
-                                        Model.eventHub.publish("__upload_link_event__", { pid: pid, path: playlist.path, infos: rsp.getResult(), done: false, lnk: playlist.url, globule: this._file_explorer_.globule }, true);
-                                    })
-
-                                    stream.on("status", (status) => {
-                                        if (status.code === 0) {
-                                            Model.eventHub.publish("__upload_link_event__", { pid: pid, path: playlist.path, infos: "", done: true, lnk: playlist.url, globule: this._file_explorer_.globule }, true);
-                                        } else {
-                                            ApplicationView.displayMessage(status.details, 3000)
-                                        }
-                                    });
-                                })
-                            }
-
-                            refreshVideosBtn.onclick = () => {
-                                let rqst = new StartProcessVideoRequest
-                                rqst.setPath(dir.path)
-                                let globule = this._file_explorer_.globule
-
-                                generatePeerToken(globule, token => {
-                                    globule.fileService.startProcessVideo(rqst, {
-                                        token: token,
-                                        application: Model.application,
-                                        domain: globule.domain,
-                                        address: globule.config.address
-                                    }).then(() => {
-                                        ApplicationView.displayMessage("Playlist is updated. Informations will be update...", 3000)
-
-
-                                    })
-                                        .catch(err => ApplicationView.displayMessage(err, 3000))
-                                })
-
-
-                            }
-
-                            copyVideosBtn.onclick = () => {
-                                if (dir.__videoPlaylist__)
-                                    copyUrl(dir.__videoPlaylist__.path)
-                                else
-                                    ApplicationView.displayMessage("no playlist found at path ", dir.path)
-                            }
-
-                            playVideosBtn.onclick = () => {
-                                let videos = []
-                                dir.files.forEach(f => {
-                                    if (f.lnk) {
-                                        f = f.lnk
-                                    }
-                                    if (f.mime.startsWith("video")) {
-                                        if (f.videos) {
-                                            videos = videos.concat(f.videos)
-                                        }
-                                    }
-                                })
-                                if (videos.length > 0) {
-                                    playVideos(videos, dir.name)
-                                } else {
-                                    ApplicationView.displayMessage("no video informations found to generate a playlist")
-                                }
-                            }
-
-                        }
-                    }
-                } else if (section) {
-                    this.div.querySelector(`#container`).querySelector(`#${fileType}_section_count`).innerHTML = ` (${section.children.length})`
+                    section = this.querySelector(`#${fileType}_section`)
+                    section.init(dir, fileType, this)
                 }
 
                 // Now I will create the icon file view.
                 filesByType[fileType].forEach(file => {
+
                     let id = "_" + getUuidByString(file.path + "/" + file.name);
                     if (!section.querySelector("#" + id)) {
-
-                        let html = `
-                            <div class="file-div" >
-                                <div class="file-icon-div" id="${id}">
-                                    <paper-checkbox></paper-checkbox>
-                                    <div class="menu-div"></div>
-                                    <paper-ripple recenters></paper-ripple>
-                                    <svg title="keep file local" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><path d="M32 32C32 14.3 46.3 0 64 0H320c17.7 0 32 14.3 32 32s-14.3 32-32 32H290.5l11.4 148.2c36.7 19.9 65.7 53.2 79.5 94.7l1 3c3.3 9.8 1.6 20.5-4.4 28.8s-15.7 13.3-26 13.3H32c-10.3 0-19.9-4.9-26-13.3s-7.7-19.1-4.4-28.8l1-3c13.8-41.5 42.8-74.8 79.5-94.7L93.5 64H64C46.3 64 32 49.7 32 32zM160 384h64v96c0 17.7-14.3 32-32 32s-32-14.3-32-32V384z"/></svg>
-                                </div>
-                                
-                            </div>
-                            `
-
-
-
+                        let html = `<globular-file-icon-view id=${id} height="${h}" width="${w}"></globular-file-icon-view>`
                         section.appendChild(range.createContextualFragment(html))
-                        let fileIconDiv = section.querySelector(`#${id}`)
+                        section.updateCount()
+                        let fileIconView = section.querySelector(`#${id}`)
+                        fileIconView.setFile(file, this)
 
-                        if (file.lnk != undefined) {
-                            // here the file is a lnk...
-                            console.log("file is a link: ", file)
-                            let lnkIcon = `
-                                <div class="shortcut-icon">
-                                    <iron-icon icon="icons:reply"></iron-icon>
-                                </div> 
-                                `
-                            fileIconDiv.appendChild(range.createContextualFragment(lnkIcon))
-                        }
-
-                        // Now I will append the file name span...
-                        let fileNameSpan = document.createElement("span")
-                        fileNameSpan.style.maxWidth = "100px"
-
-                        let checkbox = fileIconDiv.querySelector("paper-checkbox")
-
-                        checkbox.onclick = (evt) => {
-                            evt.stopPropagation();
-                            Model.eventHub.publish("__file_select_unselect_" + file.path, checkbox.checked, true)
-                        }
-
-                        Model.eventHub.subscribe("__file_select_unselect_" + file.path, () => { }, checked => {
-                            checkbox.checked = checked;
-                            if (checked) {
-                                checkbox.style.display = "block"
-                                this.selected[file.path] = file
-                            } else {
-                                checkbox.style.display = "none"
-                                delete this.selected[file.path]
-                            }
-                        }, true, this)
-
-                        let thumbtack = fileIconDiv.querySelector("svg")
-                        thumbtack.onclick = (evt) => {
-                            evt.stopPropagation()
-                            // Do stuff here...
-                            File__.hasLocal(file.path, exists => {
-                                if (exists) {
-                                    file.removeLocalCopy(() => {
-                                        thumbtack.style.fill = ""
-                                        thumbtack.style.display = "none";
-                                        thumbtack.style.left = ""
-                                    })
-                                } else {
-                                    file.keepLocalyCopy(() => {
-                                        thumbtack.style.display = "block";
-                                        thumbtack.style.left = "8px"
-                                        thumbtack.style.fill = "var(--palette-primary-main)"
-                                    })
-                                }
-                            })
-
-
-                        }
-
-                        // Here I will append the interation.
-                        fileIconDiv.onmouseover = (evt) => {
-                            evt.stopPropagation();
-                            checkbox.style.display = "block"
-                            thumbtack.style.display = "block"
-                            if (File.hasLocal)
-                                File__.hasLocal(file.path, exist => {
-                                    if (exist) {
-                                        thumbtack.style.display = "block";
-                                        thumbtack.style.left = ""
-                                        thumbtack.style.fill = "var(--palette-primary-main)"
-                                    }
-                                })
-                            fileIconDiv.classList.add("active")
-
-                            fileIconDiv.appendChild(this.shareResource)
-
-                            let files = [];
-                            for (var key in this.selected) {
-                                files.push(this.selected[key])
-                            }
-                            if (files.filter(f => f.path === file.path).length == 0) {
-                                files.push(file)
-                            }
-
-                            this.shareResource.setFiles(files)
-
-                            this.shareResource.style.position = "absolute"
-                            this.shareResource.style.top = "0px";
-                            this.shareResource.style.right = "20px";
-                        }
-
-                        fileIconDiv.onmouseleave = (evt) => {
-                            evt.stopPropagation();
-                            let checkbox = fileIconDiv.querySelector("paper-checkbox")
-                            if (!checkbox.checked) {
-                                checkbox.style.display = "none"
-                            }
-
-                            if (this.shareResource.parentNode) {
-                                this.shareResource.parentNode.removeChild(this.shareResource)
-                            }
-
-                            let fileIconDivs = this.div.querySelectorAll(".file-icon-div")
-                            for (var i = 0; i < fileIconDivs.length; i++) {
-                                fileIconDivs[i].classList.remove("active")
-                            }
-
-                            thumbtack.style.display = "none"
-
-                            if (File.hasLocal)
-                                File__.hasLocal(file.path, exist => {
-                                    if (exist) {
-                                        thumbtack.style.display = "block";
-                                        thumbtack.style.left = "8px"
-                                        thumbtack.style.fill = "var(--palette-primary-main)"
-                                    }
-                                })
-                        }
-
-                        // video or audio file can be keep localy
-                        if ((file.mime.startsWith("video") || file.mime.startsWith("audio")) && file.mime != "video/hls-stream") {
-
-
-                            if (File.hasLocal) {
-                                thumbtack.style.visibility = "visible"
-                                File__.hasLocal(file.path, exist => {
-                                    if (exist) {
-                                        thumbtack.style.display = "block";
-                                        thumbtack.style.left = "8px"
-                                        thumbtack.style.fill = "var(--palette-primary-main)"
-                                    }
-                                })
-                            }
-                        }
-
-                        if (fileType == "video") {
-
-                            /** In that case I will display the vieo preview. */
-
-                            let h = 72;
-
-                            let preview = new VideoPreview(file, h, () => {
-                                fileNameSpan.style.wordBreak = "break-all"
-                                fileNameSpan.style.fontSize = ".85rem"
-                                fileNameSpan.style.maxWidth = preview.width + "px"
-                                if (file.videos) {
-                                    if (file.videos.length > 0)
-                                        fileNameSpan.innerHTML = file.videos[0].getDescription()
-                                }
-
-                            }, this._file_explorer_.globule)
-
-                            // keep the explorer link...
-                            preview._file_explorer_ = this._file_explorer_
-                            preview.name = file.name;
-                            preview.onpreview = () => {
-                                let previews = this.div.querySelectorAll("globular-video-preview")
-                                previews.forEach(p => {
-                                    // stop all other preview...
-                                    if (preview.name != p.name) {
-                                        p.stopPreview()
-                                    }
-                                })
-                            }
-
-                            fileIconDiv.insertBefore(preview, fileIconDiv.firstChild)
-
-                            preview.draggable = false
-
-                            fileIconDiv.ondrop = (evt) => {
-                                evt.stopPropagation();
-                                evt.preventDefault()
-                                let url = evt.dataTransfer.getData("Url");
-                                if (url.startsWith("https://www.imdb.com/title")) {
-                                    this.setImdbTitleInfo(url, file)
-                                }
-                            }
-
-
-                            // Retreive the video title to display more readable file name...
-                            if (file.videos) {
-                                fileNameSpan.innerHTML = file.videos[0].getDescription()
-                            } else {
-                                getVideoInfo(this._file_explorer_.globule, file, videos => {
-                                    if (videos.length > 0) {
-                                        file.videos = videos // keep in the file itself...
-                                        fileNameSpan.innerHTML = file.videos[0].getDescription()
-                                    } else {
-
-                                        if (file.titles) {
-                                            let title = file.titles[0]
-                                            let name = title.getName()
-
-                                            if (title.getEpisode() > 0) {
-                                                name += " S" + title.getSeason() + "-E" + title.getEpisode()
-                                            }
-
-                                            fileNameSpan.innerHTML = name
-                                            fileNameSpan.title = file.path
-                                        } else {
-                                            // get the title infos...
-                                            getTitleInfo(this._file_explorer_.globule, file, (titles) => {
-                                                if (titles.length > 0) {
-                                                    file.titles = titles // keep in the file itself...
-                                                    let title = file.titles[0]
-                                                    let name = title.getName()
-                                                    if (title.getEpisode() > 0) {
-                                                        name += " S" + title.getSeason() + "-E" + title.getEpisode()
-                                                    }
-                                                    fileNameSpan.innerHTML = name
-                                                    fileNameSpan.title = file.path
-                                                }
-                                            })
-                                        }
-                                    }
-                                })
-                            }
-
-
-                        } else if (file.isDir) {
-
-                            // Here I will create a folder mosaic from the folder content...
-                            let folderIcon = document.createRange().createContextualFragment(`<iron-icon icon="icons:folder"></iron-icon>`)
-                            fileIconDiv.insertBefore(folderIcon, fileIconDiv.firstChild)
-
-
-                            fileIconDiv.onclick = (evt) => {
-                                evt.stopPropagation();
-                                _publishSetDirEvent(file._path, this._file_explorer_)
-                            }
-
-                            folderIcon.draggable = false
-
-                        } else if (file.thumbnail != undefined) {
-
-                            /** Display the thumbnail. */
-                            let img = document.createElement("img")
-                            img.src = file.thumbnail
-                            img.draggable = false
-
-                            // The size of the span will be calculated in respect of the image size.
-                            let getMeta = (url) => {
-                                var img = new Image();
-                                img.onload = function () {
-                                    if (img.width > 0 && img.height > 0) {
-                                        w = (img.width / img.height) * h
-                                        fileNameSpan.style.maxWidth = w + "px"
-                                        fileNameSpan.style.wordBreak = "break-all"
-                                        fileNameSpan.style.fontSize = ".85rem"
-                                        if (file.audios) {
-                                            if (file.audios.length > 0)
-                                                fileNameSpan.innerHTML = file.audios[0].getTitle()
-                                        }
-
-                                    }
-                                };
-                                img.src = url;
-                            }
-
-                            getMeta(file.thumbnail)
-
-                            fileIconDiv.insertBefore(img, fileIconDiv.firstChild)
-
-                            if (fileType == "image") {
-                                img.onclick = (evt) => {
-                                    evt.stopPropagation();
-                                    Model.eventHub.publish("__show_image__", { file: file, file_explorer_id: this._file_explorer_.id }, true)
-                                    this.menu.close()
-                                    if (this.menu.parentNode)
-                                        this.menu.parentNode.removeChild(this.menu)
-                                }
-                            } else if (fileType == "audio") {
-                                img.onclick = (evt) => {
-                                    evt.stopPropagation();
-                                    Model.eventHub.publish("__play_audio__", { file: file, file_explorer_id: this._file_explorer_.id }, true)
-                                    this.menu.close()
-                                    if (this.menu.parentNode)
-                                        this.menu.parentNode.removeChild(this.menu)
-                                }
-
-
-
-                            } else {
-                                // here I will try the file viewer.
-                                img.onclick = (evt) => {
-                                    evt.stopPropagation();
-                                    Model.eventHub.publish("__read_file__", { file: file, file_explorer_id: this._file_explorer_.id }, true)
-                                    this.menu.close()
-                                    if (this.menu.parentNode)
-                                        this.menu.parentNode.removeChild(this.menu)
-
-                                }
-                            }
-
-                            // display more readable name.
-                            if (file.audios) {
-                                fileNameSpan.innerHTML = file.audios[0].getTitle()
-                                if (file.audios[0].getPoster())
-                                    if (file.audios[0].getPoster().getContenturl().length > 0) {
-                                        img.src = file.audios[0].getPoster().getContenturl()
-                                    }
-                            } else {
-                                getAudioInfo(this._file_explorer_.globule, file, audios => {
-                                    if (audios.length > 0) {
-                                        file.audios = audios // keep in the file itself...
-                                        fileNameSpan.innerHTML = file.audios[0].getTitle()
-                                        if (file.audios[0].getPoster())
-                                            if (file.audios[0].getPoster().getContenturl().length > 0) {
-                                                img.src = file.audios[0].getPoster().getContenturl()
-                                            }
-                                    }
-                                })
-                            }
-                        }
-
-                        fileIconDiv.draggable = true;
-                        fileIconDiv.ondragstart = (evt) => {
+                        fileIconView.draggable = true;
+                        fileIconView.ondragstart = (evt) => {
+                            console.log(fileIconView.tagName)
+                            console.log(evt)
 
                             // set the file path...
                             let files = [];
@@ -3322,153 +3557,33 @@ export class FilesIconView extends FilesView {
                             }
 
                             evt.dataTransfer.setData('files', JSON.stringify(files));
-                            evt.dataTransfer.setData('id', fileIconDiv.id);
+                            evt.dataTransfer.setData('id', fileIconView.id);
                             evt.dataTransfer.setData('domain', this._file_explorer_.globule.domain);
 
-                            evt.stopPropagation();
-                            fileIconDiv.style.opacity = '0.4';
+                            console.log(evt)
                         }
 
-                        fileIconDiv.ondragend = (evt) => {
+                        fileIconView.ondragend = (evt) => {
                             evt.stopPropagation();
-                            fileIconDiv.style.opacity = '1';
                         }
 
-                        if (file.isDir) {
-                            fileIconDiv.ondragover = (evt) => {
-                                evt.preventDefault()
-                                fileIconDiv.children[0].icon = "icons:folder-open"
-                                this._file_explorer_.setAtTop()
-                            }
-
-                            fileIconDiv.ondragleave = () => {
-                                fileIconDiv.children[0].icon = "icons:folder"
-                            }
-
-                            fileIconDiv.ondrop = (evt) => {
-                                evt.stopPropagation()
-
-                                evt.preventDefault()
-                                let url = evt.dataTransfer.getData("Url");
-                                if (url.startsWith("https://www.imdb.com/title")) {
-                                    this.setImdbTitleInfo(url, file)
-                                } else if (evt.dataTransfer.files.length > 0) {
-                                    // So here I will simply upload the files...
-                                    Model.eventHub.publish("__upload_files_event__", { dir: file, files: evt.dataTransfer.files, globule: this._file_explorer_.globule }, true)
-                                } else {
-
-                                    let files = JSON.parse(evt.dataTransfer.getData('files'))
-                                    let id = evt.dataTransfer.getData('id')
-                                    fileIconDiv.children[0].icon = "icons:folder"
-
-                                    // Create drop_file_event...
-                                    if (f != undefined && id.length > 0) {
-                                        Model.eventHub.publish(`drop_file_${this._file_explorer_.id}_event`, { files: files, dir: file.path, id: id }, true)
-                                    }
-                                }
-                            }
+                        // Here I will append the interation.
+                        fileIconView.onmouseover = (evt) => {
+                            evt.stopPropagation();
+                            fileIconView.setActive()
                         }
 
-
-                        fileNameSpan.innerHTML = file.name;
-                        fileIconDiv.parentNode.appendChild(fileNameSpan);
-
-                        fileIconDiv.onmouseenter = (evt) => {
+                        fileIconView.onmouseleave = (evt) => {
                             evt.stopPropagation();
-
-                            let thumbtacks = this.div.querySelectorAll("svg")
-                            for (var i = 0; i < thumbtacks.length; i++) {
-                                if (thumbtacks[i].style.fill == "var(--palette-primary-main)") {
-                                    thumbtacks[i].style.left = "8px"
-                                } else {
-                                    thumbtacks[i].style.display = "none"
-                                    thumbtacks[i].style.left = ""
-                                }
-                            }
-
-                            if (File.hasLocal) {
-                                thumbtack.style.display = "block";
-                                File__.hasLocal(file.path, exist => {
-                                    if (exist) {
-                                        thumbtack.style.display = "block";
-                                        thumbtack.style.left = ""
-                                        thumbtack.style.fill = "var(--palette-primary-main)"
-                                    }
-                                })
-                            }
-
-                            let checkboxs = this.div.querySelectorAll("paper-checkbox")
-                            for (var i = 0; i < checkboxs.length; i++) {
-                                if (!checkboxs[i].checked) {
-                                    checkboxs[i].style.display = "none"
-                                }
-                            }
-
-                            let fileIconDivs = this.div.querySelectorAll(".file-icon-div")
-                            for (var i = 0; i < fileIconDivs.length; i++) {
-                                fileIconDivs[i].classList.remove("active")
-                            }
-
-                            fileIconDiv.classList.add("active")
-
-                            // display the actual checkbox...
-                            checkbox.style.display = "block"
-
-
-                            fileIconDiv.appendChild(this.shareResource)
-
-                            let files = [];
-                            for (var key in this.selected) {
-                                files.push(this.selected[key])
-                            }
-
-                            if (files.filter(f => f.path === file.path).length == 0) {
-                                files.push(file)
-                            }
-
-                            this.shareResource.setFiles(files)
-
-                            this.shareResource.style.position = "absolute"
-                            this.shareResource.style.top = "0px";
-                            this.shareResource.style.right = "20px";
-
-                            document.body.appendChild(this.menu)
-
-
-                            if (!this.menu.isOpen()) {
-                                this.menu.showBtn()
-                                //fileIconDiv.parentNode.appendChild(this.menu)
-
-                                let coords = getCoords(fileIconDiv.parentNode)
-                                this.menu.style.position = "absolute"
-                                this.menu.__top__ = coords.top + 8
-                                this.menu.style.top = coords.top + 8 + "px"
-                                this.menu.__left__ = coords.left + fileIconDiv.offsetWidth - 20
-                                this.menu.style.left = coords.left + fileIconDiv.offsetWidth - 20 + "px"
-
-                                this.menu.onmouseover = (evt) => {
-                                    evt.stopPropagation();
-                                    fileIconDiv.classList.add("active")
-                                }
-
-                                this.menu.onmouseout = (evt) => {
-                                    evt.stopPropagation();
-                                    fileIconDiv.classList.remove("active")
-                                }
-
-                                this.menu.setFile(file)
-
-                                // set the rename function.
-                                this.menu.rename = () => {
-                                    this.rename(fileIconDiv, file, fileIconDiv.offsetHeight + 6)
-                                }
+                            let fileIconViews = this.querySelectorAll("globular-file-icon-view")
+                            for (var i = 0; i < fileIconViews.length; i++) {
+                                fileIconViews[i].resetActive()
                             }
                         }
                     }
                 })
             }
         }
-
     }
 
     /**

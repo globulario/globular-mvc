@@ -6,11 +6,14 @@ import Embed from '@editorjs/embed';
 import Table from '@editorjs/table'
 import Quote from '@editorjs/quote'
 import SimpleImage from '@editorjs/simple-image'
+/*import ImageTool from '@editorjs/image';*/
 import NestedList from '@editorjs/nested-list';
 import Checklist from '@editorjs/checklist';
 import Paragraph from 'editorjs-paragraph-with-alignment'
 import CodeTool from '@editorjs/code'
 import Underline from '@editorjs/underline';
+import DragDrop from 'editorjs-drag-drop';
+import Undo from 'editorjs-undo';
 
 import { ApplicationView } from '../ApplicationView';
 import { CreateBlogPostRequest, GetBlogPostsByAuthorsRequest, SaveBlogPostRequest, BlogPost, DeleteBlogPostRequest, AddEmojiRequest, Emoji, AddCommentRequest, Comment } from 'globular-web-client/blog/blog_pb';
@@ -492,7 +495,7 @@ export class BlogPostElement extends HTMLElement {
         if (this.getAttribute("editable") != undefined) {
             if (this.getAttribute("editable") == "true") {
                 this.edit(() => {
-                   
+
                 })
             }
         }
@@ -651,9 +654,8 @@ export class BlogPostElement extends HTMLElement {
             this.keywordsEditList.setValues(this.blog.getKeywordsList())
         }
 
-        // Here I will create the editor...
-        // Here I will create a new editor...
-        this.editor = new EditorJS({
+
+        const editor = this.editor = new EditorJS({
             holder: this.editorDiv.id,
             autofocus: true,
             /** 
@@ -707,8 +709,13 @@ export class BlogPostElement extends HTMLElement {
                 },
                 image: SimpleImage,
             },
-            data: data
+            data: data,
+            onReady: ()=>{
+                new Undo({editor});
+                new DragDrop(editor);
+            }
         });
+
 
         // Move the editor inside the 
         this.editor.isReady
@@ -716,12 +723,13 @@ export class BlogPostElement extends HTMLElement {
                 /** Do anything you need after editor initialization */
                 this.editorDiv.querySelector(".codex-editor__redactor").style.paddingBottom = "0px";
                 /** done with the editor initialisation */
+                
                 callback()
-
             })
             .catch((reason) => {
                 ApplicationView.displayMessage(`Editor.js initialization failed because of ${reason}`, 3000)
             });
+
 
     }
 
