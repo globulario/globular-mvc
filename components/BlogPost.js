@@ -6,7 +6,6 @@ import Embed from '@editorjs/embed';
 import Table from '@editorjs/table'
 import Quote from '@editorjs/quote'
 import SimpleImage from '@editorjs/simple-image'
-/*import ImageTool from '@editorjs/image';*/
 import NestedList from '@editorjs/nested-list';
 import Checklist from '@editorjs/checklist';
 import Paragraph from 'editorjs-paragraph-with-alignment'
@@ -14,7 +13,7 @@ import CodeTool from '@editorjs/code'
 import Underline from '@editorjs/underline';
 import DragDrop from 'editorjs-drag-drop';
 import Undo from 'editorjs-undo';
-
+import { File as File__ } from "../File"; // File object already exist in js and I need to use it...
 import { ApplicationView } from '../ApplicationView';
 import { CreateBlogPostRequest, GetBlogPostsByAuthorsRequest, SaveBlogPostRequest, BlogPost, DeleteBlogPostRequest, AddEmojiRequest, Emoji, AddCommentRequest, Comment } from 'globular-web-client/blog/blog_pb';
 import { Application } from '../Application';
@@ -27,6 +26,7 @@ import * as getUuidByString from 'uuid-by-string';
 import { BlogPostInfo } from './Informations';
 import { AppScrollEffectsBehavior } from '@polymer/app-layout/app-scroll-effects/app-scroll-effects-behavior';
 import { Menu } from './Menu';
+import { FilesIconView } from './File';
 
 const intervals = [
     { label: 'year', seconds: 31536000 },
@@ -55,8 +55,15 @@ function getMeta(url, callback) {
 
 // generate html from json data
 function jsonToHtml(data) {
+
     // So here I will get the plain html from the output json data.
-    const edjsParser = edjsHTML();
+    function filesParser(block) {
+        let jsonStr = JSON.stringify(block.data.files)
+        return `<globular-file-drop-zone files='${btoa(jsonStr)}'>  </globular-file-drop-zone>`;
+    }
+
+    const edjsParser = edjsHTML({ files: filesParser });
+
     let elements = edjsParser.parse(data);
     let html = ""
     elements.forEach(e => {
@@ -654,6 +661,12 @@ export class BlogPostElement extends HTMLElement {
             this.keywordsEditList.setValues(this.blog.getKeywordsList())
         }
 
+        // I will use my own event handler...
+        /*this.editorDiv.ondrop = (evt)=>{
+            evt.stopPropagation();
+            evt.preventDefault();
+            console.log("-----------> on drop event!")
+        }*/
 
         const editor = this.editor = new EditorJS({
             holder: this.editorDiv.id,
@@ -708,10 +721,11 @@ export class BlogPostElement extends HTMLElement {
                     },
                 },
                 image: SimpleImage,
+                files: FileDropZoneTool
             },
             data: data,
-            onReady: ()=>{
-                new Undo({editor});
+            onReady: () => {
+                new Undo({ editor });
                 new DragDrop(editor);
             }
         });
@@ -723,7 +737,7 @@ export class BlogPostElement extends HTMLElement {
                 /** Do anything you need after editor initialization */
                 this.editorDiv.querySelector(".codex-editor__redactor").style.paddingBottom = "0px";
                 /** done with the editor initialisation */
-                
+
                 callback()
             })
             .catch((reason) => {
@@ -798,19 +812,22 @@ export class BlogPostElement extends HTMLElement {
                 rqst.setKeywordsList(this.keywordsEditList.getValues())
 
                 // if the title is empty I will set it from the firt h1 found in the text...
-                if (this.titleInput.value.length == 0) {
-                    let h1 = this.editorDiv.querySelectorAll("h1")
-                    if (h1.length > 0) {
-                        rqst.setTitle(h1[0].innerHTML)
+                if (this.titleInput.value)
+                    if (this.titleInput.value.length == 0) {
+                        let h1 = this.editorDiv.querySelectorAll("h1")
+                        if (h1.length > 0) {
+                            rqst.setTitle(h1[0].innerHTML)
+                        }
                     }
-                }
+
                 // do the same with subtitle...
-                if (this.subtitleInput.value.length == 0) {
-                    let h2 = this.editorDiv.querySelectorAll("h2")
-                    if (h2.length > 0) {
-                        rqst.setSubtitle(h2[0].innerHTML)
+                if (this.subtitleInput.value)
+                    if (this.subtitleInput.value.length == 0) {
+                        let h2 = this.editorDiv.querySelectorAll("h2")
+                        if (h2.length > 0) {
+                            rqst.setSubtitle(h2[0].innerHTML)
+                        }
                     }
-                }
 
                 let createBlog = () => {
                     generatePeerToken(globule, token => {
@@ -891,6 +908,214 @@ export class BlogPostElement extends HTMLElement {
 
 customElements.define('globular-blog-post', BlogPostElement)
 
+
+/**
+ * That component will be use to display file(s) into a post.
+ */
+export class FileDropZone extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor() {
+
+        super()
+
+        // The list of paths
+        this.files = []
+
+        if (this.hasAttribute("files")) {
+            let jsonStr = atob(this.getAttribute("files"))
+            this.files = JSON.parse(jsonStr)
+            this.render()
+        }
+
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+            #zone{
+                position: relative;
+                margin-top: 10px;
+                margin-bottom: 10px;
+                padding-10px;
+                width: 100%;
+                height: 200px;
+                background-color: var(--palette-background-paper);
+                border: 2px dashed var(--palette-divider);
+                border-radius: 5px;
+                transition: background 0.2s ease,padding 0.8s linear;
+            }
+        </style>
+
+        <div  id="zone">
+            
+        </div>
+        `
+
+        // So here I will make the zone drop-able....
+        let dropZone = this.shadowRoot.querySelector("#zone")
+
+        dropZone.ondragenter = (evt) => {
+            evt.stopPropagation();
+            evt.preventDefault();
+            dropZone.style.filter = "invert(10%)"
+
+        }
+
+        dropZone.ondragover = (evt) => {
+            evt.stopPropagation();
+            evt.preventDefault();
+        }
+
+        dropZone.ondragleave = (evt) => {
+            evt.preventDefault()
+            dropZone.style.filter = ""
+        }
+
+        dropZone.ondrop = (evt) => {
+
+            evt.stopPropagation();
+            evt.preventDefault();
+
+            dropZone.style.filter = ""
+
+            // So now I will create component to be display in the blog
+            // based on the file type. Those component created to fit well
+            // on a simple layout (no pop-pup).
+            let paths = JSON.parse(evt.dataTransfer.getData('files'))
+            let domain = evt.dataTransfer.getData('domain')
+
+            // keep track
+            paths.forEach(path => {
+                this.files.push({ domain: domain, path: path })
+            })
+
+            this.render()
+        }
+    }
+
+    // Call search event.
+    setFiles(files) {
+        this.files = files
+        this.render()
+    }
+
+    getFiles() {
+        return this.files // the list of files path
+    }
+
+    getFilesInfo(callback) {
+        let files = []
+        let getFileInfo = (index) => {
+            let path = this.files[index].path
+            let g = Model.getGlobule(this.files[index].domain)
+            index++
+            File__.getFile(g, path, 80, 80,
+                file => {
+                    files.push(file)
+                    if (index == this.files.length) {
+                        callback(files)
+                    } else {
+                        getFileInfo(index)
+                    }
+                },
+                err => {
+                    if (index == this.files.length) {
+                        callback(files)
+                    } else {
+                        getFileInfo(index)
+                    }
+                })
+        }
+
+        if (this.files.length > 0) {
+            let index = 0
+            getFileInfo(index)
+        }
+    }
+
+    // This function will display the files.
+    render() {
+        this.getFilesInfo(files=>{
+            console.log(files)
+            let filesByType = {}
+            files.forEach(f=>{
+                let fileType = f.mime.split("/")[0]
+                if(!filesByType[fileType]){
+                    filesByType[fileType] = []
+                }
+                filesByType[fileType].push(f)
+            })
+
+            if(filesByType["image"]){
+                this.renderImages(filesByType["image"])
+            }
+
+            if(filesByType["audio"]){
+                this.renderAudio(filesByType["audio"])
+            }
+
+            if(filesByType["video"]){
+                this.renderVideos(filesByType["video"])
+            }
+
+        })
+    }
+
+    renderVideos(videos){
+
+    }
+
+    renderAudio(audios){
+        
+    }
+
+    renderImages(images){
+        
+        console.log("----------------> render image: ", images)
+    }
+}
+
+customElements.define('globular-file-drop-zone', FileDropZone)
+
+// So here I will 
+export default class FileDropZoneTool {
+
+    constructor({ data, api }) {
+        this.data = data
+        this.api = api
+        this.api.caret.focus(false);
+        this.api.caret.setToBlock('start', 0);
+        this.dropZone = new FileDropZone()
+        if (data["files"]) {
+            this.dropZone.setFiles(data["files"])
+        }
+    }
+
+    render() {
+        let range = document.createRange()
+        let html = `<globular-file-drop-zone></globular-file-drop-zone>`
+        this.dropZone = range.createContextualFragment(html)
+        return this.dropZone;
+    }
+
+    static get toolbox() {
+        return {
+            title: 'File Selector',
+            icon:
+                '<svg width="17" height="15" viewBox="0 0 336 276" xmlns="http://www.w3.org/2000/svg"><path d="M291 150V79c0-19-15-34-34-34H79c-19 0-34 15-34 34v42l67-44 81 72 56-29 42 30zm0 52l-43-30-56 30-81-67-66 39v23c0 19 15 34 34 34h178c17 0 31-13 34-29zM79 0h178c44 0 79 35 79 79v118c0 44-35 79-79 79H79c-44 0-79-35-79-79V79C0 35 35 0 79 0z"/></svg>',
+        };
+    }
+
+    save(blockContent) {
+        console.log("-----------> save: ", blockContent)
+        return {
+            files: blockContent.getFiles()
+        };
+    }
+}
 
 /**
  * Display globular blog list.

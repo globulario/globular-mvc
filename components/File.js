@@ -3559,8 +3559,6 @@ export class FilesIconView extends FilesView {
                             evt.dataTransfer.setData('files', JSON.stringify(files));
                             evt.dataTransfer.setData('id', fileIconView.id);
                             evt.dataTransfer.setData('domain', this._file_explorer_.globule.domain);
-
-                            console.log(evt)
                         }
 
                         fileIconView.ondragend = (evt) => {

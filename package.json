@@ -79,6 +79,7 @@
     "iptv-playlist-parser": "^0.12.1",
     "js-beautify": "^1.14.4",
     "materialize-css": "^1.0.0",
+    "mp-slider": "^2.0.0",
     "namesgenerator": "0.0.1",
     "plyr": "^3.6.12",
     "random-sentence": "^1.0.4",
