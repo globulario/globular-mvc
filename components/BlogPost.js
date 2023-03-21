@@ -26,7 +26,7 @@ import * as getUuidByString from 'uuid-by-string';
 import { BlogPostInfo } from './Informations';
 import { AppScrollEffectsBehavior } from '@polymer/app-layout/app-scroll-effects/app-scroll-effects-behavior';
 import { Menu } from './Menu';
-import { FilesIconView } from './File';
+import { Carousel } from './Carousel'
 
 const intervals = [
     { label: 'year', seconds: 31536000 },
@@ -941,7 +941,7 @@ export class FileDropZone extends HTMLElement {
                 margin-bottom: 10px;
                 padding-10px;
                 width: 100%;
-                height: 200px;
+                min-height: 200px;
                 background-color: var(--palette-background-paper);
                 border: 2px dashed var(--palette-divider);
                 border-radius: 5px;
@@ -950,7 +950,7 @@ export class FileDropZone extends HTMLElement {
         </style>
 
         <div  id="zone">
-            
+            <slot></slot>
         </div>
         `
 
@@ -1038,42 +1038,54 @@ export class FileDropZone extends HTMLElement {
 
     // This function will display the files.
     render() {
-        this.getFilesInfo(files=>{
+        this.getFilesInfo(files => {
             console.log(files)
             let filesByType = {}
-            files.forEach(f=>{
+            files.forEach(f => {
                 let fileType = f.mime.split("/")[0]
-                if(!filesByType[fileType]){
+                if (!filesByType[fileType]) {
                     filesByType[fileType] = []
                 }
                 filesByType[fileType].push(f)
             })
 
-            if(filesByType["image"]){
+            if (filesByType["image"]) {
                 this.renderImages(filesByType["image"])
             }
 
-            if(filesByType["audio"]){
+            if (filesByType["audio"]) {
                 this.renderAudio(filesByType["audio"])
             }
 
-            if(filesByType["video"]){
+            if (filesByType["video"]) {
                 this.renderVideos(filesByType["video"])
             }
 
         })
     }
 
-    renderVideos(videos){
+    renderVideos(videos) {
 
     }
 
-    renderAudio(audios){
-        
+    renderAudio(audios) {
+
     }
 
-    renderImages(images){
-        
+    renderImages(images) {
+
+        let carousel = this.querySelector("#images-carousel")
+
+        if (carousel == undefined) {
+            carousel = new Carousel({
+                displayControls: true,
+                textControls: ["<i class='fas fa-chevron-left'></i>", "<i class='fas fa-chevron-right'></i>"],
+                autoplay: true,
+                autoplayTime: 3500
+            })
+            this.appendChild(carousel)
+        }
+
         console.log("----------------> render image: ", images)
     }
 }
