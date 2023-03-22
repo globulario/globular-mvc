@@ -808,6 +808,8 @@ export class FilesView extends HTMLElement {
                                         },
                                         err => { ApplicationView.displayMessage(err, 3000); this._file_explorer_.resume() }, token)
                                 }, token)
+
+                                
                         }, err => { ApplicationView.displayMessage(err, 3000); this._file_explorer_.resume() }, token)
                 })
 

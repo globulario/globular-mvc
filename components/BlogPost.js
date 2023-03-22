@@ -17,7 +17,7 @@ import { File as File__ } from "../File"; // File object already exist in js and
 import { ApplicationView } from '../ApplicationView';
 import { CreateBlogPostRequest, GetBlogPostsByAuthorsRequest, SaveBlogPostRequest, BlogPost, DeleteBlogPostRequest, AddEmojiRequest, Emoji, AddCommentRequest, Comment } from 'globular-web-client/blog/blog_pb';
 import { Application } from '../Application';
-import { generatePeerToken, Model } from '../Model';
+import { generatePeerToken, Model, getUrl } from '../Model';
 import * as edjsHTML from 'editorjs-html'
 import { Account } from '../Account';
 import { v4 as uuidv4 } from "uuid";
@@ -27,6 +27,7 @@ import { BlogPostInfo } from './Informations';
 import { AppScrollEffectsBehavior } from '@polymer/app-layout/app-scroll-effects/app-scroll-effects-behavior';
 import { Menu } from './Menu';
 import { Carousel } from './Carousel'
+import { ImageGallery } from './Gallery'
 
 const intervals = [
     { label: 'year', seconds: 31536000 },
@@ -920,6 +921,7 @@ export class FileDropZone extends HTMLElement {
 
         super()
 
+        console.log("----------------> 924:")
         // The list of paths
         this.files = []
 
@@ -1074,7 +1076,7 @@ export class FileDropZone extends HTMLElement {
 
     renderImages(images) {
 
-        let carousel = this.querySelector("#images-carousel")
+        /*let carousel = this.querySelector("#images-carousel")
 
         if (carousel == undefined) {
             carousel = new Carousel({
@@ -1084,9 +1086,51 @@ export class FileDropZone extends HTMLElement {
                 autoplayTime: 3500
             })
             this.appendChild(carousel)
+        }*/
+
+        // Set the image Gallery...
+        let imageGallery = this.querySelector("globular-image-gallery")
+        if(!imageGallery){
+            imageGallery = new ImageGallery
+        }
+       
+        this.appendChild(imageGallery)
+
+        let urls = []
+        let index = 0
+        let getImageUrl = (index) => {
+            let img = images[index]
+            index++
+            generatePeerToken(img.globule, token=>{
+                let url = getUrl(img.globule)
+                img.path.split("/").forEach(item => {
+                    item = item.trim()
+                    if (item.length > 0) {
+                        url += "/" + encodeURIComponent(item)
+                    }
+                })
+                url += `?token=${token}`
+                urls.push(url)
+                if(index < images.length){
+                    getImageUrl(index)
+                }else{
+
+                    imageGallery.setImages(urls)
+
+                }
+            }, err=>{
+                if(index < images.length){
+                    getImageUrl(index)
+                }else{
+                    imageGallery.setImages(urls)
+                }
+            })
+
         }
 
-        console.log("----------------> render image: ", images)
+        getImageUrl(index)
+
+        //console.log("----------------> render image: ", images)
     }
 }
 
@@ -1108,8 +1152,10 @@ export default class FileDropZoneTool {
 
     render() {
         let range = document.createRange()
-        let html = `<globular-file-drop-zone></globular-file-drop-zone>`
+        let jsonStr = JSON.stringify(this.data["files"])
+        let html = `<globular-file-drop-zone files='${btoa(jsonStr)}'>  </globular-file-drop-zone>`;
         this.dropZone = range.createContextualFragment(html)
+
         return this.dropZone;
     }
 

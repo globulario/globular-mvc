@@ -205,16 +205,17 @@ export class Carousel extends HTMLElement{
         }
         </style>
         <div id="container" class="carousel">
+            <div class="carousel-container">
+            </div>
+            <div class="carousel-controls">
+            </div>
         </div>
         `
 
         this.el = this.shadowRoot.querySelector("#container");
-    }
-
-    // The connection callback.
-    connectedCallback() {
 
         this.carouselOptions = ['previous', 'add', 'play', 'next'];
+
         this.carouselData = [
             {
                 'id': '1',
@@ -245,19 +246,18 @@ export class Carousel extends HTMLElement{
         this.setupCarousel();
     }
 
+    connectedCallback() {
+
+    }
+
     // Build carousel html
     setupCarousel() {
 
         // Create the container 
-        const container = document.createElement('div');
+        const container = this.shadowRoot.querySelector(".carousel-container");
 
         // Create the control div.
-        const controls = document.createElement('div');
-
-        // Add container for carousel items and controls
-        this.el.append(container, controls);
-        container.className = 'carousel-container';
-        controls.className = 'carousel-controls';
+        const controls = this.shadowRoot.querySelector(".carousel-controls");;
 
         // Take dataset array and append items to container
         this.carouselData.forEach((item, index) => {
