@@ -1,3 +1,5 @@
+import { ImageViewer } from './Image'
+
 
 /**
  * Image galery component
@@ -102,7 +104,6 @@ export class ImageGallery extends HTMLElement {
             
             <div class="gallery-wrapper">
                 <div class="gallery">
-     
                 </div>
             </div>
             
@@ -136,46 +137,67 @@ export class ImageGallery extends HTMLElement {
         this.rightBtn.onmouseleave = e => this.stopMovement(e);
     }
 
-    setImages(images){
+    setImages(images) {
 
-       //Set Initial Featured Image
-       this.featured().style.backgroundImage = 'url(' + images[0] + ')';
+        //Set Initial Featured Image
+        // The image viewer to display image to it full size
+        this.imageViewer = new ImageViewer
+        this.imageViewer.onclose = () => {
+            // remove it from the layout.
+            this.imageViewer.parentNode.removeChild(this.imageViewer)
+        }
 
-       // remove existing images.
-       this.gallery.innerHTML = ""
+        this.featured().onclick = () => {
+            this.imageViewer.activeImage(this.featured().index)
+            this.imageViewer.style.display = "block"
+            document.body.appendChild(this.imageViewer)
+        }
 
+        // remove existing images.
+        this.gallery.innerHTML = ""
+        let range = document.createRange()
 
-       let range = document.createRange()
-
-       //Set Images for Gallery and Add Event Listeners
-       for (var i = 0; i < images.length; i++) {
-           let html = `
+        //Set Images for Gallery and Add Event Listeners
+        for (var i = 0; i < images.length; i++) {
+            let html = `
            <div class="item-wrapper">
                 <figure class="gallery-item image-holder r-3-2 transition"></figure>
             </div>
            `
 
-           this.gallery.appendChild(range.createContextualFragment(html))
-           let galleryItem = this.gallery.children[this.gallery.children.length - 1]
+            this.gallery.appendChild(range.createContextualFragment(html))
+            let galleryItem = this.gallery.children[this.gallery.children.length - 1]
 
-           galleryItem.children[0].style.backgroundImage = 'url(' + images[i] + ')';
-           galleryItem.children[0].onclick= e => {
-               if (e.target.classList.contains('active')) return;
+            // create the image to display by the image viewer.
+            let img = document.createElement("img")
+            img.src = images[i]
+            this.imageViewer.addImage(img)
 
-               this.featured().style.backgroundImage = e.target.style.backgroundImage;
+            galleryItem.children[0].style.backgroundImage = 'url(' + images[i] + ')';
+            let index = i;
 
-               for (var i = 0; i < this.galleryItems().length; i++) {
-                   if (this.galleryItems()[i].classList.contains('active'))
-                       this.galleryItems()[i].classList.remove('active');
-               }
+            galleryItem.children[0].onclick = e => {
+                if (e.target.classList.contains('active')) return;
 
-               e.target.classList.add('active');
-           };
+                this.featured().style.backgroundImage = e.target.style.backgroundImage;
+                this.featured().index = index;
+                this.featured().image = img
 
-           if(i==0){
-            galleryItem.children[0].classList.add('active')
-           }
-       }
+                for (var i = 0; i < this.galleryItems().length; i++) {
+                    if (this.galleryItems()[i].classList.contains('active'))
+                        this.galleryItems()[i].classList.remove('active');
+                }
+
+                e.target.classList.add('active');
+            };
+
+            if (i == 0) {
+                galleryItem.children[0].classList.add('active')
+                this.featured().index = index;
+                this.featured().style.backgroundImage = 'url(' + images[0] + ')';
+                this.featured().image = img
+            }
+        }
     }
 
     featured() {

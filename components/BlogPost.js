@@ -437,9 +437,14 @@ export class BlogPostElement extends HTMLElement {
                 optionPanel.style.top = optionPanel.parentNode.offsetHeigt / 2 + "px"
             }
 
-            if (this.titleInput.value.length > 0) {
-                this.titleSpan.innerHTML = this.titleInput.value;
-                this.titleSpan.style.color = "var(--palette-text-primary)"
+            if (this.titleInput.value) {
+                if (this.titleInput.value.length > 0) {
+                    this.titleSpan.innerHTML = this.titleInput.value;
+                    this.titleSpan.style.color = "var(--palette-text-primary)"
+                } else {
+                    this.titleSpan.innerHTML = ` ${Application.account.name}, express yourself`
+                    this.titleSpan.style.color = "var(--palette-action-disabled)"
+                }
             } else {
                 this.titleSpan.innerHTML = ` ${Application.account.name}, express yourself`
                 this.titleSpan.style.color = "var(--palette-action-disabled)"
@@ -475,7 +480,7 @@ export class BlogPostElement extends HTMLElement {
                 globule.blogService.deleteBlogPost(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: token })
                     .then(rsp => {
                         Model.getGlobule(this.blog.getDomain()).eventHub.publish(this.blog.getUuid() + "_blog_delete_event", {}, false)
-
+                        Model.eventHub.publish("_blog_delete_event_", this.blog.getUuid(), true)
                     })
                     .catch(e => ApplicationView.displayMessage(e, 3000))
             }, err => ApplicationView.displayMessage(err, 3000))
@@ -558,7 +563,9 @@ export class BlogPostElement extends HTMLElement {
             Model.getGlobule(this.blog.getDomain()).eventHub.subscribe(this.blog.getUuid() + "_blog_delete_event", uuid => this.deleteListener = uuid,
                 evt => {
                     // simplity remove it from it parent...
-                    this.parentNode.removeChild(this)
+                    if (this.parentNode)
+                        this.parentNode.removeChild(this)
+
                     if (this.onclose) {
                         this.onclose()
                     }
@@ -607,7 +614,6 @@ export class BlogPostElement extends HTMLElement {
      */
     edit(callback) {
 
-
         // Show the paper-card where the blog will be display
         this.shadowRoot.querySelector(".blog-post-editor-div").style.display = ""
         this.shadowRoot.querySelector(".blog-post-reader-div").style.display = "none"
@@ -653,7 +659,6 @@ export class BlogPostElement extends HTMLElement {
                 this.shadowRoot.querySelector("#blog-editor-title").innerHTML = ` ${Application.account.name}, express yourself`
             }
 
-
             if (this.blog.getAuthor() != Application.account.getId() + "@" + Application.account.getDomain()) {
                 ApplicationView.displayMessage("your not allowed to edit ", this.blog.getAuthor(), " post!", 3000)
                 return
@@ -661,13 +666,6 @@ export class BlogPostElement extends HTMLElement {
 
             this.keywordsEditList.setValues(this.blog.getKeywordsList())
         }
-
-        // I will use my own event handler...
-        /*this.editorDiv.ondrop = (evt)=>{
-            evt.stopPropagation();
-            evt.preventDefault();
-            console.log("-----------> on drop event!")
-        }*/
 
         const editor = this.editor = new EditorJS({
             holder: this.editorDiv.id,
@@ -793,7 +791,6 @@ export class BlogPostElement extends HTMLElement {
         this.edit(() => {
 
         })
-
     }
 
     /**
@@ -802,6 +799,7 @@ export class BlogPostElement extends HTMLElement {
     publish() {
         this.editor.save().then((outputData) => {
             if (this.blog == null) {
+
                 let globule = this.globule // see if the blog need domain...
                 let rqst = new CreateBlogPostRequest
                 rqst.setIndexpath(globule.config.DataPath + "/search/blogPosts")
@@ -865,13 +863,10 @@ export class BlogPostElement extends HTMLElement {
                 // Set the blogpost status...
                 if (this.shadowRoot.querySelector("paper-radio-group").selected == "draft") {
                     this.blog.setStatus(0)
-
                 } else if (this.shadowRoot.querySelector("paper-radio-group").selected == "published") {
                     this.blog.setStatus(1)
-
                 } else if (this.shadowRoot.querySelector("paper-radio-group").selected == "archived") {
                     this.blog.setStatus(2)
-
                 }
 
                 // set request parameters
@@ -909,6 +904,19 @@ export class BlogPostElement extends HTMLElement {
 
 customElements.define('globular-blog-post', BlogPostElement)
 
+/**
+ * Test if string is a valid json.
+ * @param {*} str 
+ * @returns 
+ */
+function isJson(str) {
+    try {
+        JSON.parse(str);
+    } catch (e) {
+        return false;
+    }
+    return true;
+}
 
 /**
  * That component will be use to display file(s) into a post.
@@ -921,13 +929,14 @@ export class FileDropZone extends HTMLElement {
 
         super()
 
-        console.log("----------------> 924:")
         // The list of paths
         this.files = []
 
         if (this.hasAttribute("files")) {
             let jsonStr = atob(this.getAttribute("files"))
-            this.files = JSON.parse(jsonStr)
+            if (isJson(jsonStr)) {
+                this.files = JSON.parse(jsonStr)
+            }
             this.render()
         }
 
@@ -1090,10 +1099,10 @@ export class FileDropZone extends HTMLElement {
 
         // Set the image Gallery...
         let imageGallery = this.querySelector("globular-image-gallery")
-        if(!imageGallery){
+        if (!imageGallery) {
             imageGallery = new ImageGallery
         }
-       
+
         this.appendChild(imageGallery)
 
         let urls = []
@@ -1101,7 +1110,7 @@ export class FileDropZone extends HTMLElement {
         let getImageUrl = (index) => {
             let img = images[index]
             index++
-            generatePeerToken(img.globule, token=>{
+            generatePeerToken(img.globule, token => {
                 let url = getUrl(img.globule)
                 img.path.split("/").forEach(item => {
                     item = item.trim()
@@ -1111,26 +1120,21 @@ export class FileDropZone extends HTMLElement {
                 })
                 url += `?token=${token}`
                 urls.push(url)
-                if(index < images.length){
+                if (index < images.length) {
                     getImageUrl(index)
-                }else{
-
+                } else {
                     imageGallery.setImages(urls)
-
                 }
-            }, err=>{
-                if(index < images.length){
+            }, err => {
+                if (index < images.length) {
                     getImageUrl(index)
-                }else{
+                } else {
                     imageGallery.setImages(urls)
                 }
             })
-
         }
 
         getImageUrl(index)
-
-        //console.log("----------------> render image: ", images)
     }
 }
 
@@ -1190,8 +1194,6 @@ export class BlogPosts extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-           
-
             #blog-lst-div{
                 display: flex;
                 justify-content: center;
@@ -1259,7 +1261,6 @@ export class BlogPosts extends HTMLElement {
 
             
         </style>
-        
             <paper-card id="blog-lst-div">
                 <div class="card-content">
                     <div style="display: flex; border: none;">
@@ -1306,6 +1307,7 @@ export class BlogPosts extends HTMLElement {
         }
 
         this.listeners = {}
+
 
         // Display the blog post editor...
         this.shadowRoot.querySelector("#new-blog-post-btn").onclick = () => {
@@ -1438,6 +1440,13 @@ export class BlogPosts extends HTMLElement {
                 this.setBlog(b)
             }, false, this)
         }
+
+        Model.eventHub.subscribe("_blog_delete_event_", uuid => { },
+            evt => {
+                // The number of blog has change...
+                console.log("remove ", evt, this.blogs_)
+            }, true)
+
 
     }
 

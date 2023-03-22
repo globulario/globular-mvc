@@ -2544,6 +2544,7 @@ export class FileIconView extends HTMLElement {
         this.menu = view.menu
         this.shareResource = view.shareResource
         this.div = view.div
+        this.selected = view.selected
 
         let fileIconDiv = this.shadowRoot.querySelector(`.file-icon-div`)
         this.fileIconDiv = fileIconDiv

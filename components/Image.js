@@ -490,7 +490,7 @@ export class ImageViewer extends HTMLElement {
 
         ch[i].style.margin = 'auto';
         ch[i].style.maxWidth = '100%';
-        ch[i].style.maxHeight = '75vh';
+        ch[i].style.maxHeight = 'calc(100vh - 20px)';
       }
       //counter
       this.shadowRoot.querySelector('#counter').innerHTML = '1/' + cant;
@@ -501,17 +501,18 @@ export class ImageViewer extends HTMLElement {
     }
   }
 
-  activeImage(e) {
+  activeImage(index) {
     var ch = this.children;
     var cant = ch.length;
     for (var i = 0; i < cant; i++) {
       ch[i].style.display = 'none';
     }
-    ch[e].style.display = 'block';
-    this.shadowRoot.querySelector('#counter').innerHTML = (e + 1) + '/' + (cant);
+    ch[index].style.display = 'block';
+    this.shadowRoot.querySelector('#counter').innerHTML = (index + 1) + '/' + (cant);
   }
 
   addImage(e) {
+    e.slot = "images"
     this.appendChild(e);
     this.populateChildren();
     //show the arrows
