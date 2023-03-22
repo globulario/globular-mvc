@@ -94,7 +94,18 @@ export class ImageGallery extends HTMLElement {
         .move-btn:first-child {border-right: none;}
         .move-btn.left  { cursor: w-resize; }
         .move-btn.right { cursor: e-resize; }
-        
+        #leftA {
+            font-size:16px;
+            background-color: #3e3c3c99;
+            color:white;
+            text-align: left;
+          }
+          #rightA {
+            font-size:16px;
+            background-color: #3e3c3c99;
+            color:white;
+            text-align: right;
+          }
         </style>
         <div class="container">
 
@@ -108,8 +119,8 @@ export class ImageGallery extends HTMLElement {
             </div>
             
             <div class="controls">
-                <button class="move-btn left">&larr;</button>
-                <button class="move-btn right">&rarr;</button>
+                <div id='leftA' class="move-btn left" >❮</div>
+                <div id='rightA' class="move-btn right" >❯</div>
             </div>
             
         </div>

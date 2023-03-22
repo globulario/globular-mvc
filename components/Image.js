@@ -474,6 +474,18 @@ export class ImageViewer extends HTMLElement {
 
   }
 
+  connectedCallback(){
+    if (this.children.length != 0) {
+      var ch = this.children;
+      var cant = ch.length;
+      for (var i = 0; i < cant; i++) {
+        ch[i].style.maxHeight = '75vh'
+        if(this.parentNode.tagName == "BODY")
+          ch[i].style.maxHeight = 'calc(100vh - 20px)';
+      }
+    }
+  }
+
   get noinfo() {
     return this.hasAttribute('noinfo');
   }
@@ -490,7 +502,7 @@ export class ImageViewer extends HTMLElement {
 
         ch[i].style.margin = 'auto';
         ch[i].style.maxWidth = '100%';
-        ch[i].style.maxHeight = 'calc(100vh - 20px)';
+        ch[i].style.maxHeight = '75vh'
       }
       //counter
       this.shadowRoot.querySelector('#counter').innerHTML = '1/' + cant;
@@ -586,8 +598,5 @@ export class ImageViewer extends HTMLElement {
     this.shadowRoot.querySelector('#counter').innerHTML = (index + 1) + '/' + (cant);
   }
 
-  connectedCallback() {
-
-  }
 }
 window.customElements.define('globular-image-viewer', ImageViewer);
