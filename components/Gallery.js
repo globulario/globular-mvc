@@ -252,7 +252,7 @@ export class ImageGallery extends HTMLElement {
         // keep reference to images.
         this.images = images
 
-        let controls = this.shadowRoot.querySelector("controls")
+        let controls = this.shadowRoot.querySelector(".controls")
         if(this.images.length > 1){
             controls.style.display = "block"
         }else{

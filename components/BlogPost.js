@@ -515,7 +515,7 @@ export class BlogPostElement extends HTMLElement {
                 rqst.setUuid(this.blog.getUuid())
                 let globule = this.globule
                 rqst.setIndexpath(globule.config.DataPath + "/search/blogPosts")
-    
+
                 // Delete the blog...
                 generatePeerToken(globule, token => {
                     globule.blogService.deleteBlogPost(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: token })
@@ -533,12 +533,12 @@ export class BlogPostElement extends HTMLElement {
                         })
                         .catch(e => ApplicationView.displayMessage(e, 3000))
                 }, err => ApplicationView.displayMessage(err, 3000))
-    
-   
-                toast.dismiss();
-      
 
-                
+
+                toast.dismiss();
+
+
+
             }
 
             noBtn.onclick = () => {
@@ -666,10 +666,10 @@ export class BlogPostElement extends HTMLElement {
             createThumbmail(images[0].src, width, dataUrl => callback(dataUrl))
         } else {
             let galleries = this.editorDiv.querySelectorAll("globular-image-gallery")
-            if(galleries.length > 0){ 
+            if (galleries.length > 0) {
                 // take the first images...
                 createThumbmail(galleries[0].getImage(0), width, dataUrl => callback(dataUrl))
-            }else{
+            } else {
                 callback("")
             }
         }
@@ -1163,7 +1163,8 @@ export class FileDropZone extends HTMLElement {
                 file => {
                     files.push(file)
                     if (index == this.files.length) {
-                        loading.parentNode.removeChild(loading)
+                        if (loading.parentNode)
+                            loading.parentNode.removeChild(loading)
                         callback(files)
                     } else {
                         getFileInfo(index)
@@ -1171,7 +1172,8 @@ export class FileDropZone extends HTMLElement {
                 },
                 err => {
                     if (index == this.files.length) {
-                        loading.parentNode.removeChild(loading)
+                        if (loading.parentNode)
+                            loading.parentNode.removeChild(loading)
                         callback(files)
                     } else {
                         getFileInfo(index)
@@ -1182,8 +1184,9 @@ export class FileDropZone extends HTMLElement {
         if (this.files.length > 0) {
             let index = 0
             getFileInfo(index)
-        }else{
-            loading.parentNode.removeChild(loading)
+        } else {
+            if (loading.parentNode)
+                loading.parentNode.removeChild(loading)
         }
     }
 
@@ -1240,8 +1243,8 @@ export class FileDropZone extends HTMLElement {
         let imageGallery = this.querySelector("globular-image-gallery")
         if (!imageGallery) {
             imageGallery = new ImageGallery
-            imageGallery.onremoveimage = (url)=>{
-                this.files = this.files.filter(e => e.path !== url); 
+            imageGallery.onremoveimage = (url) => {
+                this.files = this.files.filter(e => e.path !== url);
             }
         }
 

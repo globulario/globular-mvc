@@ -2522,12 +2522,29 @@ export class FileIconView extends HTMLElement {
             </div>
         </div>
         `
+
+        this.file = null;
     }
 
 
+    select(){
+        let checkbox = this.shadowRoot.querySelector("paper-checkbox")
+        checkbox.checked = true
+        checkbox.style.display = "block"
+        Model.eventHub.publish("__file_select_unselect_" + this.file.path, checkbox.checked, true)
+    }
+
+    unselect(){
+        let checkbox = this.shadowRoot.querySelector("paper-checkbox")
+        checkbox.checked = false
+        checkbox.style.display = "none"
+        Model.eventHub.publish("__file_select_unselect_" + this.file.path, checkbox.checked, true)
+    }
 
     // Call search event.
     setFile(file, view) {
+
+        this.file = file;
 
         let h = 80
         if (this.hasAttribute("height")) {
@@ -3073,7 +3090,7 @@ export class FileIconViewSection extends HTMLElement {
 
         </style>
         <div class="file-type-section">
-            <div class="title">${fileType} <span id="section_count" style="flex-grow: 1; padding-left: 5px;"></span> <div id="${fileType}_playlist_div"></div></div>
+            <div class="title"><paper-checkbox id="select-all-checkbox"> </paper-checkbox> ${fileType} <span id="section_count" style="flex-grow: 1; padding-left: 5px;"></span> <div id="${fileType}_playlist_div"></div></div>
             <div class="content" id="${fileType}_section">
                 <slot></slot>
             </div>
@@ -3081,6 +3098,20 @@ export class FileIconViewSection extends HTMLElement {
         `
 
         this.countDiv = this.shadowRoot.querySelector(`#${fileType}_section_count`)
+
+        let selectAllCheckbox = this.shadowRoot.querySelector("#select-all-checkbox")
+        selectAllCheckbox.onchange = ()=>{
+            let iconViews = this.querySelectorAll("globular-file-icon-view")
+            if(selectAllCheckbox.checked){
+                iconViews.forEach(v=>{
+                    v.select()
+                })
+            }else{
+                iconViews.forEach(v=>{
+                    v.unselect()
+                })
+            }
+        }
     }
 
     // Set files...
