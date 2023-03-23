@@ -1,5 +1,5 @@
 import { ImageViewer } from './Image'
-
+import { ApplicationView } from '../ApplicationView'
 
 /**
  * Image galery component
@@ -106,11 +106,26 @@ export class ImageGallery extends HTMLElement {
             color:white;
             text-align: right;
           }
+
+          .feature{
+            position: relative;
+          }
+
+          paper-icon-button {
+            position: absolute;
+            top: 0px;
+            right: 0px;
+            background-color: black;
+            height: 25px;
+            width: 25px;
+          }
+
         </style>
         <div class="container">
 
             <div class="feature">
                 <figure class="featured-item image-holder r-3-2 transition"></figure>
+                <paper-icon-button id="delete-btn" style="position: absolute; display: none;" icon="icons:close"></paper-icon-button>
             </div>
             
             <div class="gallery-wrapper">
@@ -140,15 +155,109 @@ export class ImageGallery extends HTMLElement {
         // scroll speed...
         this.scrollRate = 0.2;
         this.left;
+        this.images = []
 
         // connect event listener's
         this.leftBtn.onmouseenter = e => this.moveLeft(e);
         this.leftBtn.onmouseleave = e => this.stopMovement(e);
         this.rightBtn.onmouseenter = e => this.moveRight(e);
         this.rightBtn.onmouseleave = e => this.stopMovement(e);
+
+        this.deleteBtn = this.shadowRoot.querySelector("#delete-btn")
+
+        this.deleteBtn.onclick = () => {
+
+            const url = new URL(this.featured().image.src);
+
+            // Here I will ask the user for confirmation before actually delete the contact informations.
+            let toast = ApplicationView.displayMessage(
+                `
+            <style>
+             
+              #yes-no-picture-delete-box{
+                display: flex;
+                flex-direction: column;
+              }
+
+              #yes-no-picture-delete-box globular-picture-card{
+                padding-bottom: 10px;
+              }
+
+              #yes-no-picture-delete-box div{
+                display: flex;
+                padding-bottom: 10px;
+              }
+
+            </style>
+            <div id="yes-no-picture-delete-box">
+              <div>Your about to remove image from the gallery</div>
+              <img style="height: 256px; object-fit: contain; width: 100%;" src="${this.featured().image.src}"></img>
+              <span style="font-size: .75rem;">${decodeURIComponent(url.pathname)}</span>
+              <div>Is it what you want to do? </div>
+              <div style="justify-content: flex-end;">
+                <paper-button raised id="yes-delete-picture">Yes</paper-button>
+                <paper-button raised id="no-delete-picture">No</paper-button>
+              </div>
+            </div>
+            `,
+                60 * 1000 // 60 sec...
+            );
+
+            let yesBtn = document.querySelector("#yes-delete-picture")
+            let noBtn = document.querySelector("#no-delete-picture")
+
+            // On yes
+            yesBtn.onclick = () => {
+
+                // so here I will remove the image...
+                this.images = this.images.filter(e => e !== this.featured().image.src);
+
+                toast.dismiss();
+                ApplicationView.displayMessage(
+                    `<div style="display: flex; flex-direction: column;">
+                        <span style="font-size: .85rem;">${url.pathname}</span>
+                        <span>was remove from the gallery</span>
+                     </div>`,
+                    3000
+                );
+
+                this.setImages(this.images)
+                if(this.onremoveimage){
+                    
+                    this.onremoveimage(decodeURIComponent(url.pathname))
+                }
+            }
+
+            noBtn.onclick = () => {
+                toast.dismiss();
+            }
+
+        }
+    }
+
+    setEditable() {
+        // so here I will display the delete image button.
+        this.deleteBtn.style.display = "block"
+    }
+
+    resetEditable() {
+        this.deleteBtn.style.display = "none"
+    }
+
+    getImage(index){
+        return this.images[index]
     }
 
     setImages(images) {
+        // keep reference to images.
+        this.images = images
+
+        let controls = this.shadowRoot.querySelector("controls")
+        if(this.images.length > 1){
+            controls.style.display = "block"
+        }else{
+            controls.style.display = "none"
+        }
 
         //Set Initial Featured Image
         // The image viewer to display image to it full size

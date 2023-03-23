@@ -2712,7 +2712,7 @@ export class FileIconView extends HTMLElement {
                 evt.preventDefault()
                 let url = evt.dataTransfer.getData("Url");
                 if (url.startsWith("https://www.imdb.com/title")) {
-                    this.setImdbTitleInfo(url, file)
+                    view.setImdbTitleInfo(url, file)
                 }
             }
 
@@ -2869,7 +2869,7 @@ export class FileIconView extends HTMLElement {
                 evt.preventDefault()
                 let url = evt.dataTransfer.getData("Url");
                 if (url.startsWith("https://www.imdb.com/title")) {
-                    this.setImdbTitleInfo(url, file)
+                    view.setImdbTitleInfo(url, file)
                 } else if (evt.dataTransfer.files.length > 0) {
                     // So here I will simply upload the files...
                     Model.eventHub.publish("__upload_files_event__", { dir: file, files: evt.dataTransfer.files, globule: this._file_explorer_.globule }, true)
@@ -3648,7 +3648,7 @@ export class FilesIconView extends FilesView {
         rqst.setTitle(title)
 
         // Now I will create the title info...
-        generatePeerToken(this._file_explorer_, token => {
+        generatePeerToken(this._file_explorer_.globule, token => {
             this._file_explorer_.globule.titleService.createTitle(rqst, { application: Application.application, domain: this._file_explorer_.globule.domain, token: token })
                 .then(rsp => {
                     // Now I will asscociated the file and the title.

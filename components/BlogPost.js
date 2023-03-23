@@ -28,6 +28,7 @@ import { AppScrollEffectsBehavior } from '@polymer/app-layout/app-scroll-effects
 import { Menu } from './Menu';
 import { Carousel } from './Carousel'
 import { ImageGallery } from './Gallery'
+import "@polymer/paper-spinner/paper-spinner.js";
 
 const intervals = [
     { label: 'year', seconds: 31536000 },
@@ -360,7 +361,7 @@ export class BlogPostElement extends HTMLElement {
                 <div id="title" class="blog-post-title-div">
                     <div style="display: flex; flex-direction: column; padding-left: 5px;">
                         <div>
-                            <img id="blog-reader-author-picture" style="width: 32px; height: 32px; border-radius: 16px; display:none;"></img>
+                            <img id="blog-reader-author-blog-post" style="width: 32px; height: 32px; border-radius: 16px; display:none;"></img>
                             <iron-icon id="blog-reader-author-icon"  icon="account-circle" style="width: 34px; height: 34px; --iron-icon-fill-color:var(--palette-action-disabled); display: block;"></iron-icon>
                         </div>
                         <span  id="blog-reader-author-id"></span>
@@ -470,20 +471,80 @@ export class BlogPostElement extends HTMLElement {
         this.keywordsEditList = this.shadowRoot.querySelector("#keywords-list")
 
         this.shadowRoot.querySelector("#blog-editor-delete-btn").onclick = () => {
-            let rqst = new DeleteBlogPostRequest
-            rqst.setUuid(this.blog.getUuid())
-            let globule = this.globule
-            rqst.setIndexpath(globule.config.DataPath + "/search/blogPosts")
 
-            // Delete the blog...
-            generatePeerToken(globule, token => {
-                globule.blogService.deleteBlogPost(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: token })
-                    .then(rsp => {
-                        Model.getGlobule(this.blog.getDomain()).eventHub.publish(this.blog.getUuid() + "_blog_delete_event", {}, false)
-                        Model.eventHub.publish("_blog_delete_event_", this.blog.getUuid(), true)
-                    })
-                    .catch(e => ApplicationView.displayMessage(e, 3000))
-            }, err => ApplicationView.displayMessage(err, 3000))
+            let toast = ApplicationView.displayMessage(
+                `
+            <style>
+             
+              #yes-no-blog-post-delete-box{
+                display: flex;
+                flex-direction: column;
+              }
+
+              #yes-no-blog-post-delete-box globular-blog-post-card{
+                padding-bottom: 10px;
+              }
+
+              #yes-no-blog-post-delete-box div{
+                display: flex;
+                padding-bottom: 10px;
+              }
+
+            </style>
+            <div id="yes-no-blog-post-delete-box">
+              <div>Your about to delete blog post</div>
+              <img style="height: 256px; object-fit: contain; width: 100%;" src="${this.blog.getThumbnail()}"></img>
+              <span style="font-size: 1.1rem;">${this.blog.getTitle()}</span>
+              <div>Is it what you want to do? </div>
+              <div style="justify-content: flex-end;">
+                <paper-button raised id="yes-delete-blog-post">Yes</paper-button>
+                <paper-button raised id="no-delete-blog-post">No</paper-button>
+              </div>
+            </div>
+            `,
+                60 * 1000 // 60 sec...
+            );
+
+            let yesBtn = document.querySelector("#yes-delete-blog-post")
+            let noBtn = document.querySelector("#no-delete-blog-post")
+
+            // On yes
+            yesBtn.onclick = () => {
+
+                let rqst = new DeleteBlogPostRequest
+                rqst.setUuid(this.blog.getUuid())
+                let globule = this.globule
+                rqst.setIndexpath(globule.config.DataPath + "/search/blogPosts")
+    
+                // Delete the blog...
+                generatePeerToken(globule, token => {
+                    globule.blogService.deleteBlogPost(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: token })
+                        .then(rsp => {
+                            Model.getGlobule(this.blog.getDomain()).eventHub.publish(this.blog.getUuid() + "_blog_delete_event", {}, false)
+                            Model.eventHub.publish("_blog_delete_event_", this.blog.getUuid(), true)
+
+                            ApplicationView.displayMessage(
+                                `<div style="display: flex; flex-direction: column;">
+                                    <span style="font-size: 1.1rem;">${this.blog.getTitle()}</span>
+                                    <span>was deleted...</span>
+                                 </div>`,
+                                3000
+                            );
+                        })
+                        .catch(e => ApplicationView.displayMessage(e, 3000))
+                }, err => ApplicationView.displayMessage(err, 3000))
+    
+   
+                toast.dismiss();
+      
+
+                
+            }
+
+            noBtn.onclick = () => {
+                toast.dismiss();
+            }
+
 
 
         }
@@ -577,7 +638,7 @@ export class BlogPostElement extends HTMLElement {
         authorIdSpan.innerHTML = blog.getAuthor()
 
         Account.getAccount(blog.getAuthor(), a => {
-            let img = this.shadowRoot.querySelector("#blog-reader-author-picture")
+            let img = this.shadowRoot.querySelector("#blog-reader-author-blog-post")
             let ico = this.shadowRoot.querySelector("#blog-reader-author-icon")
             if (a.profilePicture_ != undefined) {
                 img.src = a.profilePicture_
@@ -604,7 +665,13 @@ export class BlogPostElement extends HTMLElement {
         if (images.length > 0) {
             createThumbmail(images[0].src, width, dataUrl => callback(dataUrl))
         } else {
-            callback("")
+            let galleries = this.editorDiv.querySelectorAll("globular-image-gallery")
+            if(galleries.length > 0){ 
+                // take the first images...
+                createThumbmail(galleries[0].getImage(0), width, dataUrl => callback(dataUrl))
+            }else{
+                callback("")
+            }
         }
     }
 
@@ -932,13 +999,6 @@ export class FileDropZone extends HTMLElement {
         // The list of paths
         this.files = []
 
-        if (this.hasAttribute("files")) {
-            let jsonStr = atob(this.getAttribute("files"))
-            if (isJson(jsonStr)) {
-                this.files = JSON.parse(jsonStr)
-            }
-            this.render()
-        }
 
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
@@ -950,14 +1010,35 @@ export class FileDropZone extends HTMLElement {
                 position: relative;
                 margin-top: 10px;
                 margin-bottom: 10px;
-                padding-10px;
+                padding: 5px;
                 width: 100%;
                 min-height: 200px;
-                background-color: var(--palette-background-paper);
-                border: 2px dashed var(--palette-divider);
                 border-radius: 5px;
                 transition: background 0.2s ease,padding 0.8s linear;
             }
+
+            .editable {
+                background-color: var(--palette-background-paper);
+                border: 2px dashed var(--palette-divider);
+            }
+
+            #loading{
+                position: absolute; 
+                display: flex;
+                top: 0px;
+                left: 0px;
+                right: 0px;
+                bottom: 0px;
+                border: 1px solid var(--palette-divider);
+                justify-content: center;
+                align-items: center;
+                border-radius: 10px;
+            }
+
+            #loading paper-spinner{
+
+            }
+
         </style>
 
         <div  id="zone">
@@ -966,31 +1047,45 @@ export class FileDropZone extends HTMLElement {
         `
 
         // So here I will make the zone drop-able....
-        let dropZone = this.shadowRoot.querySelector("#zone")
+        this.dropZone = this.shadowRoot.querySelector("#zone")
 
-        dropZone.ondragenter = (evt) => {
+        this.dropZone.ondragenter = (evt) => {
+            if (!this.hasAttribute("editable")) {
+                return
+            }
+
             evt.stopPropagation();
             evt.preventDefault();
-            dropZone.style.filter = "invert(10%)"
+            this.dropZone.style.filter = "invert(10%)"
 
         }
 
-        dropZone.ondragover = (evt) => {
+        this.dropZone.ondragover = (evt) => {
+            if (!this.hasAttribute("editable")) {
+                return
+            }
             evt.stopPropagation();
             evt.preventDefault();
         }
 
-        dropZone.ondragleave = (evt) => {
+        this.dropZone.ondragleave = (evt) => {
+            if (!this.hasAttribute("editable")) {
+                return
+            }
+
             evt.preventDefault()
-            dropZone.style.filter = ""
+            this.dropZone.style.filter = ""
         }
 
-        dropZone.ondrop = (evt) => {
+        this.dropZone.ondrop = (evt) => {
+            if (!this.hasAttribute("editable")) {
+                return
+            }
 
             evt.stopPropagation();
             evt.preventDefault();
 
-            dropZone.style.filter = ""
+            this.dropZone.style.filter = ""
 
             // So now I will create component to be display in the blog
             // based on the file type. Those component created to fit well
@@ -1005,6 +1100,38 @@ export class FileDropZone extends HTMLElement {
 
             this.render()
         }
+
+        if (this.hasAttribute("files")) {
+            let jsonStr = atob(this.getAttribute("files"))
+            if (isJson(jsonStr)) {
+                this.files = JSON.parse(jsonStr)
+            }
+            this.render()
+        }
+
+    }
+
+    setEditable() {
+
+        this.dropZone.classList.add("editable")
+        this.setAttribute("editable", "true")
+
+        let galleries = this.querySelectorAll("globular-image-gallery")
+        for (var i = 0; i < galleries.length; i++) {
+            galleries[i].setEditable(true)
+        }
+
+    }
+
+    resetEditable() {
+
+        this.dropZone.classList.remove("editable")
+        this.removeAttribute("editable")
+
+        let galleries = this.querySelectorAll("globular-image-gallery")
+        for (var i = 0; i < galleries.length; i++) {
+            galleries[i].resetEditable(true)
+        }
     }
 
     // Call search event.
@@ -1018,6 +1145,15 @@ export class FileDropZone extends HTMLElement {
     }
 
     getFilesInfo(callback) {
+
+        // the loading display
+        let loading = document.createElement("div")
+        loading.id = "loading"
+        let spinner = document.createElement("paper-spinner")
+        spinner.setAttribute("active", "")
+        loading.appendChild(spinner)
+        this.dropZone.appendChild(loading)
+
         let files = []
         let getFileInfo = (index) => {
             let path = this.files[index].path
@@ -1027,6 +1163,7 @@ export class FileDropZone extends HTMLElement {
                 file => {
                     files.push(file)
                     if (index == this.files.length) {
+                        loading.parentNode.removeChild(loading)
                         callback(files)
                     } else {
                         getFileInfo(index)
@@ -1034,6 +1171,7 @@ export class FileDropZone extends HTMLElement {
                 },
                 err => {
                     if (index == this.files.length) {
+                        loading.parentNode.removeChild(loading)
                         callback(files)
                     } else {
                         getFileInfo(index)
@@ -1044,13 +1182,14 @@ export class FileDropZone extends HTMLElement {
         if (this.files.length > 0) {
             let index = 0
             getFileInfo(index)
+        }else{
+            loading.parentNode.removeChild(loading)
         }
     }
 
     // This function will display the files.
     render() {
         this.getFilesInfo(files => {
-            console.log(files)
             let filesByType = {}
             files.forEach(f => {
                 let fileType = f.mime.split("/")[0]
@@ -1101,6 +1240,9 @@ export class FileDropZone extends HTMLElement {
         let imageGallery = this.querySelector("globular-image-gallery")
         if (!imageGallery) {
             imageGallery = new ImageGallery
+            imageGallery.onremoveimage = (url)=>{
+                this.files = this.files.filter(e => e.path !== url); 
+            }
         }
 
         this.appendChild(imageGallery)
@@ -1135,6 +1277,22 @@ export class FileDropZone extends HTMLElement {
         }
 
         getImageUrl(index)
+
+        if (this.parentNode) {
+            if (this.parentNode.classList.contains("ce-block__content")) {
+                this.setEditable()
+            } else {
+                this.resetEditable()
+            }
+        }
+    }
+
+    connectedCallback() {
+        if (this.parentNode.classList.contains("ce-block__content")) {
+            this.setEditable()
+        } else {
+            this.resetEditable()
+        }
     }
 }
 
@@ -1172,7 +1330,6 @@ export default class FileDropZoneTool {
     }
 
     save(blockContent) {
-        console.log("-----------> save: ", blockContent)
         return {
             files: blockContent.getFiles()
         };
@@ -1644,7 +1801,7 @@ export class BlogComment extends HTMLElement {
             <div style="display: flex;">
                 <div style="display: flex; flex-direction: column; padding-right: 10px;">
                     <div>
-                        <img id="blog-comment-author-picture" style="width: 32px; height: 32px; border-radius: 16px; display:none;"></img>
+                        <img id="blog-comment-author-blog-post" style="width: 32px; height: 32px; border-radius: 16px; display:none;"></img>
                         <iron-icon id="blog-comment-author-icon"  icon="account-circle" style="width: 34px; height: 34px; --iron-icon-fill-color:var(--palette-action-disabled); display: block;"></iron-icon>
                         
                     </div>
@@ -1669,7 +1826,7 @@ export class BlogComment extends HTMLElement {
         authorIdSpan.innerHTML = comment.getAccountId()
 
         Account.getAccount(comment.getAccountId(), a => {
-            let img = this.shadowRoot.querySelector("#blog-comment-author-picture")
+            let img = this.shadowRoot.querySelector("#blog-comment-author-blog-post")
             let ico = this.shadowRoot.querySelector("#blog-comment-author-icon")
             if (a.profilePicture_ != undefined) {
                 img.src = a.profilePicture_
