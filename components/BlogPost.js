@@ -29,6 +29,8 @@ import { Menu } from './Menu';
 import { Carousel } from './Carousel'
 import { ImageGallery } from './Gallery'
 import "@polymer/paper-spinner/paper-spinner.js";
+import { getVideoInfo } from './File';
+import { SearchVideoCard } from './Search';
 
 const intervals = [
     { label: 'year', seconds: 31536000 },
@@ -147,6 +149,26 @@ function createThumbmail(src, w, callback) {
     })
 }
 
+function createThumbmailFromImage(img, w, callback) {
+    if (img.width > w) {
+        var oc = document.createElement('canvas'), octx = oc.getContext('2d');
+        oc.width = img.width;
+        oc.height = img.height;
+        octx.drawImage(img, 0, 0);
+        if (img.width > img.height) {
+            oc.height = (img.height / img.width) * w;
+            oc.width = w;
+        } else {
+            oc.width = (img.width / img.height) * w;
+            oc.height = w;
+        }
+        octx.drawImage(oc, 0, 0, oc.width, oc.height);
+        octx.drawImage(img, 0, 0, oc.width, oc.height);
+        callback(oc.toDataURL());
+    } else {
+        callback(img.src);
+    }
+}
 /**
  * Search Box
  */
@@ -534,11 +556,7 @@ export class BlogPostElement extends HTMLElement {
                         .catch(e => ApplicationView.displayMessage(e, 3000))
                 }, err => ApplicationView.displayMessage(err, 3000))
 
-
                 toast.dismiss();
-
-
-
             }
 
             noBtn.onclick = () => {
@@ -668,9 +686,26 @@ export class BlogPostElement extends HTMLElement {
             let galleries = this.editorDiv.querySelectorAll("globular-image-gallery")
             if (galleries.length > 0) {
                 // take the first images...
-                createThumbmail(galleries[0].getImage(0), width, dataUrl => callback(dataUrl))
+                let url = galleries[0].getImage(0)
+                if(url.startsWith("http")){
+                    createThumbmail(url, width, dataUrl => callback(dataUrl))
+                }else{
+                    let img = document.createElement("img")
+                    img.src = url
+                    createThumbmailFromImage(img, width, dataUrl => callback(dataUrl))
+                }
+                
             } else {
-                callback("")
+                let embeddedVideos = this.editorDiv.querySelectorAll("globular-embedded-videos")
+                if (embeddedVideos.length > 0) {
+                    // take the first images...
+                    let img = document.createElement("img")
+                    img.src = embeddedVideos[0].getVideo(0).getPoster().getContenturl()
+                    createThumbmailFromImage(img, width, dataUrl => callback(dataUrl))
+                } else {
+                    callback("")
+                }
+
             }
         }
     }
@@ -985,6 +1020,99 @@ function isJson(str) {
     return true;
 }
 
+
+
+/**
+ * Simple class to display a group of video
+ */
+export class EmbeddedVideos extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor() {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+    }
+
+    // The connection callback.
+    connectedCallback() {
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+            #container{
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
+                display: flex;
+                flex-direction: column;
+
+            }
+
+            #header{
+
+            }
+
+            #videos{
+                display: flex;
+                flex-wrap: wrap;
+            }
+
+            globular-carousel{
+                width: 100%;
+            }
+
+        </style>
+        <div id="container">
+            <div id="header"></div>
+            <div id="videos">
+                <slot></slot>
+            </div>
+        </div>
+        `
+
+        // Keep a reference to the videos.
+        this.videos = []
+    }
+
+    getVideo(index) {
+        return this.videos[index]
+    }
+
+    setVideos(videos) {
+        this.videos = videos
+        this.innerHTML = ""
+
+        console.log(videos)
+        let carousel = new Carousel
+        carousel.style.width = "100%"
+
+        if (videos.length > 4) {
+            // put video info in the carousel.
+            carousel.setItems(videos)
+
+            // set the carousel...
+            this.appendChild(carousel)
+
+        } else {
+
+            // Create video card's
+            this.videos.forEach(video => {
+                let card = new SearchVideoCard
+                card.setVideo(video)
+                this.appendChild(card)
+            })
+        }
+    }
+
+    // Call search event.
+    play() {
+
+    }
+}
+
+customElements.define('globular-embedded-videos', EmbeddedVideos)
+
 /**
  * That component will be use to display file(s) into a post.
  */
@@ -1171,6 +1299,7 @@ export class FileDropZone extends HTMLElement {
                     }
                 },
                 err => {
+                    console.log("------------> ", err, path, g.domain)
                     if (index == this.files.length) {
                         if (loading.parentNode)
                             loading.parentNode.removeChild(loading)
@@ -1217,7 +1346,43 @@ export class FileDropZone extends HTMLElement {
         })
     }
 
-    renderVideos(videos) {
+    /**
+     * Render video.
+     * @param {*} videos 
+     */
+    renderVideos(files) {
+
+        // so here I will initalyse files and their video informations.
+        let index = 0;
+        let videos_ = []
+
+        // Get the video informations...
+        let initVideoInfo = (index, callback) => {
+            let file = files[index]
+            index++
+            getVideoInfo(file.globule, file, videos => {
+                file.videos = videos
+                videos_ = videos_.concat(videos)
+                if (index < files.length) {
+                    initVideoInfo(index, callback)
+                } else {
+                    callback(videos_)
+                }
+            })
+        }
+
+
+        if (files.length > 0) {
+            initVideoInfo(index, videos => {
+                let embeddedVideos = this.querySelector("globular-embedded-videos")
+                if (!embeddedVideos) {
+                    embeddedVideos = new EmbeddedVideos()
+                }
+
+                this.appendChild(embeddedVideos)
+                embeddedVideos.setVideos(videos)
+            })
+        }
 
     }
 
@@ -1226,18 +1391,6 @@ export class FileDropZone extends HTMLElement {
     }
 
     renderImages(images) {
-
-        /*let carousel = this.querySelector("#images-carousel")
-
-        if (carousel == undefined) {
-            carousel = new Carousel({
-                displayControls: true,
-                textControls: ["<i class='fas fa-chevron-left'></i>", "<i class='fas fa-chevron-right'></i>"],
-                autoplay: true,
-                autoplayTime: 3500
-            })
-            this.appendChild(carousel)
-        }*/
 
         // Set the image Gallery...
         let imageGallery = this.querySelector("globular-image-gallery")
@@ -1604,7 +1757,19 @@ export class BlogPosts extends HTMLElement {
         Model.eventHub.subscribe("_blog_delete_event_", uuid => { },
             evt => {
                 // The number of blog has change...
-                console.log("remove ", evt, this.blogs_)
+                let blogInfo = this.querySelector("#_" + evt + "_info")
+                if (blogInfo) {
+                    if (blogInfo.parentNode != undefined) {
+                        blogInfo.parentNode.removeChild(blogInfo)
+                    }
+                }
+
+                this.shadowRoot.querySelector("#blog-title").innerHTML = `Blog(${this.querySelectorAll(`globular-blog-post-info`).length})`
+
+                this.shadowRoot.querySelector("#draft-title").innerHTML = `Draft(${this.querySelectorAll(`[slot="draft"]`).length})`
+                this.shadowRoot.querySelector("#published-title").innerHTML = `Published(${this.querySelectorAll(`[slot="published"]`).length})`
+                this.shadowRoot.querySelector("#archived-title").innerHTML = `Archived(${this.querySelectorAll(`[slot="archived"]`).length})`
+
             }, true)
 
 

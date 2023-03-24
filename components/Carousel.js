@@ -1,13 +1,14 @@
+import { SearchVideoCard } from './Search';
 
-export class Carousel extends HTMLElement{
+export class Carousel extends HTMLElement {
 
-    constructor() {
-        super()
-        // Set the shadow dom.
-        this.attachShadow({ mode: 'open' });
+  constructor() {
+    super()
+    // Set the shadow dom.
+    this.attachShadow({ mode: 'open' });
 
-        // Innitialisation of the layout.
-        this.shadowRoot.innerHTML = `
+    // Innitialisation of the layout.
+    this.shadowRoot.innerHTML = `
         <style>
         /* page styles */
         .ax-hidden {
@@ -42,6 +43,8 @@ export class Carousel extends HTMLElement{
           transition: all 0.3s ease-in-out;
           width: var(--carousel-item-width);
           z-index: 0;
+          background-color: var(--palette-background-paper);
+          color: var(--palette-text-primary);
         }
         
         .carousel-item-1 {
@@ -62,7 +65,9 @@ export class Carousel extends HTMLElement{
         }
         
         .carousel-item-3 {
-          box-shadow: 0 0 30px rgba(255, 255, 255, 0.6), 0 0 60px rgba(255, 255, 255, 0.45), 0 0 110px rgba(255, 255, 255, 0.25), 0 0 100px rgba(255, 255, 255, 0.1);
+          box-shadow: 0px 6px 14px -1px rgba(0,0,0,0.75);
+          -webkit-box-shadow: 0px 6px 14px -1px rgba(0,0,0,0.75);
+          -moz-box-shadow: 0px 6px 14px -1px rgba(0,0,0,0.75);
           height: calc(var(--carousel-item-height) * 2);
           opacity: 1;
           left: 50%;
@@ -203,198 +208,230 @@ export class Carousel extends HTMLElement{
           top: 4px;
           width: 2px;
         }
+        .carousel-position {
+          font-size: 1.4rem;
+          font-weight: 600;
+          color: #aaa;
+        }
         </style>
         <div id="container" class="carousel">
             <div class="carousel-container">
             </div>
-            <div class="carousel-controls">
+            <div style="display:flex; align-items: center;">
+              <div class="carousel-controls" style="flex-grow: 1;">
+              </div>
+              <div class="carousel-position">
+                <span class="carousel-index"></span>/<span class="carousel-total"></span>
+              </div>
             </div>
         </div>
         `
 
-        this.el = this.shadowRoot.querySelector("#container");
+    this.el = this.shadowRoot.querySelector("#container");
 
-        this.carouselOptions = ['previous', 'add', 'play', 'next'];
+    this.carouselIndex = this.shadowRoot.querySelector(".carousel-index")
+    this.carouselTotal = this.shadowRoot.querySelector(".carousel-total")
 
-        this.carouselData = [
-            {
-                'id': '1',
-                'src': 'http://fakeimg.pl/300/?text=1',
-            },
-            {
-                'id': '2',
-                'src': 'http://fakeimg.pl/300/?text=2',
-            },
-            {
-                'id': '3',
-                'src': 'http://fakeimg.pl/300/?text=3',
-            },
-            {
-                'id': '4',
-                'src': 'http://fakeimg.pl/300/?text=4',
-            },
-            {
-                'id': '5',
-                'src': 'http://fakeimg.pl/300/?text=5',
-            }
-        ];
+    // Here I will not display the add option...
+    this.carouselOptions = ['previous', /*'add',*/ 'play', 'next'];
 
-        this.carouselInView = [1, 2, 3, 4, 5];
-        this.carouselContainer;
-        this.carouselPlayState;
+    this.carouselData = [];
 
-        this.setupCarousel();
-    }
+    // The number of card visible.
+    this.carouselInView = [1, 2, 3, 4, 5];
+    this.carouselContainer;
+    this.carouselPlayState;
 
-    connectedCallback() {
+  }
 
-    }
+  connectedCallback() {
+    this.setupCarousel();
+  }
 
-    // Build carousel html
-    setupCarousel() {
+  // Build carousel html
+  setupCarousel() {
 
-        // Create the container 
-        const container = this.shadowRoot.querySelector(".carousel-container");
+    // Create the container 
+    const container = this.shadowRoot.querySelector(".carousel-container");
 
-        // Create the control div.
-        const controls = this.shadowRoot.querySelector(".carousel-controls");;
+    // Create the control div.
+    const controls = this.shadowRoot.querySelector(".carousel-controls");;
 
-        // Take dataset array and append items to container
-        this.carouselData.forEach((item, index) => {
-            const carouselItem = item.src ? document.createElement('img') : document.createElement('div');
+    // Take dataset array and append items to container
+    this.carouselData.forEach((data, index) => {
 
-            container.append(carouselItem);
+      if (index < 5) {
+        const carouselItem = document.createElement('div');
 
-            // Add item attributes
-            carouselItem.className = `carousel-item carousel-item-${index + 1}`;
-            carouselItem.src = item.src;
-            carouselItem.setAttribute('loading', 'lazy');
-            // Used to keep track of carousel items, infinite items possible in carousel however min 5 items required
-            carouselItem.setAttribute('data-index', `${index + 1}`);
-        });
+        container.append(carouselItem);
 
-        this.carouselOptions.forEach((option) => {
-            const btn = document.createElement('button');
-            const axSpan = document.createElement('span');
+        // Add item attributes
+        carouselItem.className = `carousel-item carousel-item-${index + 1}`;
 
-            // Add accessibilty spans to button
-            axSpan.innerText = option;
-            axSpan.className = 'ax-hidden';
-            btn.append(axSpan);
+        let card = new SearchVideoCard
+        card.style.minWidth = "0px"
+        card.setVideo(data)
+        carouselItem.appendChild(card)
 
-            // Add button attributes
-            btn.className = `carousel-control carousel-control-${option}`;
-            btn.setAttribute('data-name', option);
+        carouselItem.setAttribute('loading', 'lazy');
 
-            // Add carousel control options
-            controls.append(btn);
-        });
+        // Used to keep track of carousel items, infinite items possible in carousel however min 5 items required
+        carouselItem.setAttribute('data-index', `${index + 1}`);
+      }
+    });
 
-        // After rendering carousel to our DOM, setup carousel controls' event listeners
-        this.setControls([...controls.children]);
+    this.carouselOptions.forEach((option) => {
+      const btn = document.createElement('button');
+      const axSpan = document.createElement('span');
 
-        // Set container property
-        this.carouselContainer = container;
-    }
+      // Add accessibilty spans to button
+      axSpan.innerText = option;
+      axSpan.className = 'ax-hidden';
+      btn.append(axSpan);
 
-    setControls(controls) {
-        controls.forEach(control => {
-            control.onclick = (event) => {
-                event.preventDefault();
+      // Add button attributes
+      btn.className = `carousel-control carousel-control-${option}`;
+      btn.setAttribute('data-name', option);
 
-                // Manage control actions, update our carousel data first then with a callback update our DOM
-                this.controlManager(control.dataset.name);
-            };
-        });
-    }
+      // Add carousel control options
+      controls.append(btn);
+    });
 
-    controlManager(control) {
-        if (control === 'previous') return this.previous();
-        if (control === 'next') return this.next();
-        if (control === 'add') return this.add();
-        if (control === 'play') return this.play();
-        return;
-    }
 
-    previous() {
-        // Update order of items in data array to be shown in carousel
-        this.carouselData.unshift(this.carouselData.pop());
 
-        // Push the first item to the end of the array so that the previous item is front and center
-        this.carouselInView.push(this.carouselInView.shift());
+    // After rendering carousel to our DOM, setup carousel controls' event listeners
+    this.setControls([...controls.children]);
 
-        // Update the css class for each carousel item in view
-        this.carouselInView.forEach((item, index) => {
-            this.carouselContainer.children[index].className = `carousel-item carousel-item-${item}`;
-        });
+    // Set container property
+    this.carouselContainer = container;
+  }
 
-        // Using the first 5 items in data array update content of carousel items in view
-        this.carouselData.slice(0, 5).forEach((data, index) => {
-            this.el.querySelector(`.carousel-item-${index + 1}`).src = data.src;
-        });
-    }
+  setControls(controls) {
+    controls.forEach(control => {
+      control.onclick = (event) => {
+        event.preventDefault();
 
-    next() {
-        // Update order of items in data array to be shown in carousel
-        this.carouselData.push(this.carouselData.shift());
+        // Manage control actions, update our carousel data first then with a callback update our DOM
+        this.controlManager(control.dataset.name);
+      };
+    });
+  }
 
-        // Take the last item and add it to the beginning of the array so that the next item is front and center
-        this.carouselInView.unshift(this.carouselInView.pop());
+  controlManager(control) {
+    if (control === 'previous') return this.previous();
+    if (control === 'next') return this.next();
+    if (control === 'add') return this.add();
+    if (control === 'play') return this.play();
+    return;
+  }
 
-        // Update the css class for each carousel item in view
-        this.carouselInView.forEach((item, index) => {
-            this.carouselContainer.children[index].className = `carousel-item carousel-item-${item}`;
-        });
+  previous() {
+    // Update order of items in data array to be shown in carousel
+    this.carouselData.unshift(this.carouselData.pop());
 
-        // Using the first 5 items in data array update content of carousel items in view
-        this.carouselData.slice(0, 5).forEach((data, index) => {
-            this.el.querySelector(`.carousel-item-${index + 1}`).src = data.src;
-        });
-    }
+    // Push the first item to the end of the array so that the previous item is front and center
+    this.carouselInView.push(this.carouselInView.shift());
 
-    add() {
-        const newItem = {
-            'id': '',
-            'src': '',
-        };
-        const lastItem = this.carouselData.length;
-        const lastIndex = this.carouselData.findIndex(item => item.id == lastItem);
+    this.carouselIndex.innerHTML = this.carouselData[0].index + 1
 
-        // Assign properties for new carousel item
-        Object.assign(newItem, {
-            id: `${lastItem + 1}`,
-            src: `http://fakeimg.pl/300/?text=${lastItem + 1}`
-        });
+    // Update the css class for each carousel item in view
+    this.carouselInView.forEach((item, index) => {
+      this.carouselContainer.children[index].className = `carousel-item carousel-item-${item}`;
+    });
 
-        // Then add it to the "last" item in our carouselData
-        this.carouselData.splice(lastIndex + 1, 0, newItem);
+    // Using the first 5 items in data array update content of carousel items in view
+    this.carouselData.slice(0, 5).forEach((data, index) => {
+      this.el.querySelector(`.carousel-item-${index + 1}`).innerHTML = ""
+      let card = new SearchVideoCard
+      card.style.minWidth = "0px"
+      card.setVideo(data)
+      this.el.querySelector(`.carousel-item-${index + 1}`).appendChild(card)
+    });
+  }
 
-        // Shift carousel to display new item
-        this.next();
-    }
+  next() {
+    // Update order of items in data array to be shown in carousel
+    this.carouselData.push(this.carouselData.shift());
 
-    play() {
-        const playBtn =  this.el.querySelector('.carousel-control-play');
-        const startPlaying = () => this.next();
+    // Take the last item and add it to the beginning of the array so that the next item is front and center
+    this.carouselInView.unshift(this.carouselInView.pop());
 
-        if (playBtn.classList.contains('playing')) {
-            // Remove class to return to play button state/appearance
-            playBtn.classList.remove('playing');
+    // Update the css class for each carousel item in view
+    this.carouselInView.forEach((item, index) => {
+      this.carouselContainer.children[index].className = `carousel-item carousel-item-${item}`;
+    });
 
-            // Remove setInterval
-            clearInterval(this.carouselPlayState);
-            this.carouselPlayState = null;
-        } else {
-            // Add class to change to pause button state/appearance
-            playBtn.classList.add('playing');
+    this.carouselIndex.innerHTML = this.carouselData[0].index + 1
 
-            // First run initial next method
-            this.next();
+    // Using the first 5 items in data array update content of carousel items in view
+    this.carouselData.slice(0, 5).forEach((data, index) => {
+      this.el.querySelector(`.carousel-item-${index + 1}`).innerHTML = ""
+      let card = new SearchVideoCard
+      card.style.minWidth = "0px"
+      card.setVideo(data)
 
-            // Use play state prop to store interval ID and run next method on a 1.5 second interval
-            this.carouselPlayState = setInterval(startPlaying, 1500);
-        };
-    }
+      this.el.querySelector(`.carousel-item-${index + 1}`).appendChild(card)
+    });
+  }
+
+  // Set the carousel items.
+  setItems(items) {
+    items.forEach((item, index) => {
+      item.index = index;
+    })
+
+    this.carouselData = items
+    this.carouselTotal.innerHTML = items.length
+    this.carouselIndex.innerHTML = this.carouselData[0].index + 1
+
+  }
+
+  // Add a new item
+  add(newItem) {
+
+    const lastItem = this.carouselData.length;
+    newItem.index = lastIndex;
+
+    const lastIndex = this.carouselData.findIndex(item => item.id == lastItem);
+
+    // Assign properties for new carousel item
+    Object.assign(newItem, {
+      id: `${lastItem + 1}`,
+      src: `http://fakeimg.pl/300/?text=${lastItem + 1}`
+    });
+
+    // Then add it to the "last" item in our carouselData
+    this.carouselData.splice(lastIndex + 1, 0, newItem);
+
+    // set the total of items.
+    this.carouselTotal.innerHTML = this.carouselData.length
+
+    // Shift carousel to display new item
+    this.next();
+  }
+
+  play() {
+    const playBtn = this.el.querySelector('.carousel-control-play');
+    const startPlaying = () => this.next();
+
+    if (playBtn.classList.contains('playing')) {
+      // Remove class to return to play button state/appearance
+      playBtn.classList.remove('playing');
+
+      // Remove setInterval
+      clearInterval(this.carouselPlayState);
+      this.carouselPlayState = null;
+    } else {
+      // Add class to change to pause button state/appearance
+      playBtn.classList.add('playing');
+
+      // First run initial next method
+      this.next();
+
+      // Use play state prop to store interval ID and run next method on a 1.5 second interval
+      this.carouselPlayState = setInterval(startPlaying, 1500);
+    };
+  }
 
 }
 

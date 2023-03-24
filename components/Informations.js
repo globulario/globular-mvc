@@ -2244,7 +2244,8 @@ export class BlogPostInfo extends HTMLElement {
             Model.eventHub.subscribe(blogPost.getUuid() + "_blog_delete_event", uuid => this.deleteListener = uuid,
                 evt => {
                     // simplity remove it from it parent...
-                    this.parentNode.removeChild(this)
+                    if(this.parentNode)
+                        this.parentNode.removeChild(this)
                 }, false, this)
         }
     }

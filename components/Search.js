@@ -1912,12 +1912,7 @@ export class SearchAudioCard extends HTMLElement {
                 flex-direction: column;
                 border-radius: 3.5px;
                 border: 1px solid var(--palette-divider);
-                height: 100%;
-                max-width: 320px;
-                margin: 10px;
-                max-width: 320px;
-                height: 285px;
-                margin: 10px;
+                height: calc( 100% - 2px);
                 overflow: hidden;
             }
 
@@ -1926,8 +1921,6 @@ export class SearchAudioCard extends HTMLElement {
             }
 
             .audio-card img{
-                max-width: 320px;
-                min-width: 320px;
                 min-height: 100px;
                 max-height: 180px;
                 border-top-left-radius: 3.5px;
@@ -2070,17 +2063,10 @@ export class SearchVideoCard extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-           
-
             .video-card{
+                height: calc( 100% - 2px);
                 border-radius: 3.5px;
                 border: 1px solid var(--palette-divider);
-                height: 100%;
-                max-width: 320px;
-                margin: 10px;
-                min-width: 320px;
-                height: 285px;
-                margin: 10px;
                 overflow: hidden;
                 display: flex;
                 justify-content: center;
@@ -2093,8 +2079,6 @@ export class SearchVideoCard extends HTMLElement {
             }
 
             .video-card video{
-                max-width: 320px;
-                min-width: 320px;
                 max-height: 180px;
                 border-top-left-radius: 3.5px;
                 border-top-right-radius: 3.5px;

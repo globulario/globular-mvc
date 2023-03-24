@@ -114,10 +114,18 @@ export class ImageGallery extends HTMLElement {
           paper-icon-button {
             position: absolute;
             top: 0px;
-            right: 0px;
+            left: 0px;
             background-color: black;
             height: 25px;
             width: 25px;
+          }
+
+          globular-image-viewer {
+            position: fixed;
+            top: 0px;
+            bottom: 0px;
+            left: 0px;
+            right: 0px;
           }
 
         </style>
@@ -158,10 +166,10 @@ export class ImageGallery extends HTMLElement {
         this.images = []
 
         // connect event listener's
-        this.leftBtn.onmouseenter = e => this.moveLeft(e);
-        this.leftBtn.onmouseleave = e => this.stopMovement(e);
-        this.rightBtn.onmouseenter = e => this.moveRight(e);
-        this.rightBtn.onmouseleave = e => this.stopMovement(e);
+        this.leftBtn.ontouchstart = this.leftBtn.onmouseenter = e => this.moveLeft(e);
+        this.leftBtn.ontouchend = this.leftBtn.onmouseleave = e => this.stopMovement(e);
+        this.rightBtn.ontouchstart = this.rightBtn.onmouseenter = e => this.moveRight(e);
+        this.rightBtn.ontouchend =  this.rightBtn.onmouseleave = e => this.stopMovement(e);
 
         this.deleteBtn = this.shadowRoot.querySelector("#delete-btn")
 
@@ -262,6 +270,12 @@ export class ImageGallery extends HTMLElement {
         //Set Initial Featured Image
         // The image viewer to display image to it full size
         this.imageViewer = new ImageViewer
+        this.imageViewer.style.position = "fixed"
+        this.imageViewer.style.top = "0px"
+        this.imageViewer.style.left = "0px"
+        this.imageViewer.style.right = "0px"
+        this.imageViewer.style.bottom = "0px"
+
         this.imageViewer.onclose = () => {
             // remove it from the layout.
             this.imageViewer.parentNode.removeChild(this.imageViewer)
