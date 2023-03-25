@@ -1,4 +1,4 @@
-import { SearchVideoCard } from './Search';
+import { SearchVideoCard, SearchAudioCard } from './Search';
 
 export class Carousel extends HTMLElement {
 
@@ -33,6 +33,7 @@ export class Carousel extends HTMLElement {
           margin: 0 auto;
           max-width: var(--carousel-width);
           position: relative;
+          background: radial-gradient(circle, rgb(170 170 170 / 0%) 0%, rgb(66 66 66 / 0%) 44%, var(--palette-background-default) 100%);
         }
         
         .carousel-item {
@@ -239,13 +240,27 @@ export class Carousel extends HTMLElement {
 
     // The number of card visible.
     this.carouselInView = [1, 2, 3, 4, 5];
-    this.carouselContainer;
+    this.carouselContainer = this.shadowRoot.querySelector(".carousel-container");
     this.carouselPlayState;
-
   }
 
   connectedCallback() {
     this.setupCarousel();
+  }
+
+
+  setEditable(editable) {
+    this.editable = editable;
+
+    let videoCards = this.shadowRoot.querySelectorAll("globular-search-video-card")
+    for (var i = 0; i < videoCards.length; i++) {
+      videoCards[i].setEditable(editable)
+    }
+
+    let audioCards = this.shadowRoot.querySelectorAll("globular-search-audio-card")
+    for (var i = 0; i < audioCards.length; i++) {
+      audioCards[i].setEditable(editable)
+    }
   }
 
   // Build carousel html
@@ -253,9 +268,11 @@ export class Carousel extends HTMLElement {
 
     // Create the container 
     const container = this.shadowRoot.querySelector(".carousel-container");
+    this.carouselContainer.innerHTML = ""
 
     // Create the control div.
-    const controls = this.shadowRoot.querySelector(".carousel-controls");;
+    const controls = this.shadowRoot.querySelector(".carousel-controls");
+    controls.innerHTML = ""
 
     // Take dataset array and append items to container
     this.carouselData.forEach((data, index) => {
@@ -268,9 +285,21 @@ export class Carousel extends HTMLElement {
         // Add item attributes
         carouselItem.className = `carousel-item carousel-item-${index + 1}`;
 
-        let card = new SearchVideoCard
+        let card = null
+        if (data.getDescription) {
+          card = new SearchVideoCard
+          card.setVideo(data)
+        } else if (data.getTitle) {
+          card = new SearchAudioCard
+          card.setAudio(data)
+        }
+
         card.style.minWidth = "0px"
-        card.setVideo(data)
+        card.onclose = () => {
+          this.removeItem(index, data)
+        }
+
+        card.setEditable(this.editable)
         carouselItem.appendChild(card)
 
         carouselItem.setAttribute('loading', 'lazy');
@@ -342,9 +371,22 @@ export class Carousel extends HTMLElement {
     // Using the first 5 items in data array update content of carousel items in view
     this.carouselData.slice(0, 5).forEach((data, index) => {
       this.el.querySelector(`.carousel-item-${index + 1}`).innerHTML = ""
-      let card = new SearchVideoCard
+
+      let card = null
+      if (data.getDescription) {
+        card = new SearchVideoCard
+        card.setVideo(data)
+      } else if (data.getTitle) {
+        card = new SearchAudioCard
+        card.setAudio(data)
+      }
+
       card.style.minWidth = "0px"
-      card.setVideo(data)
+      card.onclose = () => {
+        this.removeItem(index, data)
+      }
+
+      card.setEditable(this.editable)
       this.el.querySelector(`.carousel-item-${index + 1}`).appendChild(card)
     });
   }
@@ -366,10 +408,19 @@ export class Carousel extends HTMLElement {
     // Using the first 5 items in data array update content of carousel items in view
     this.carouselData.slice(0, 5).forEach((data, index) => {
       this.el.querySelector(`.carousel-item-${index + 1}`).innerHTML = ""
-      let card = new SearchVideoCard
+      let card = null
+      if (data.getDescription) {
+        card = new SearchVideoCard
+        card.setVideo(data)
+      } else if (data.getTitle) {
+        card = new SearchAudioCard
+        card.setAudio(data)
+      }
       card.style.minWidth = "0px"
-      card.setVideo(data)
-
+      card.onclose = () => {
+        this.removeItem(index, data)
+      }
+      card.setEditable(this.editable)
       this.el.querySelector(`.carousel-item-${index + 1}`).appendChild(card)
     });
   }
@@ -386,6 +437,7 @@ export class Carousel extends HTMLElement {
 
   }
 
+
   // Add a new item
   add(newItem) {
 
@@ -393,12 +445,6 @@ export class Carousel extends HTMLElement {
     newItem.index = lastIndex;
 
     const lastIndex = this.carouselData.findIndex(item => item.id == lastItem);
-
-    // Assign properties for new carousel item
-    Object.assign(newItem, {
-      id: `${lastItem + 1}`,
-      src: `http://fakeimg.pl/300/?text=${lastItem + 1}`
-    });
 
     // Then add it to the "last" item in our carouselData
     this.carouselData.splice(lastIndex + 1, 0, newItem);
@@ -408,6 +454,34 @@ export class Carousel extends HTMLElement {
 
     // Shift carousel to display new item
     this.next();
+  }
+
+  // remove index from the carousel...
+  removeItem(index, data) {
+
+    this.carouselData = this.carouselData.filter(e => e.getId() !== data.getId())
+    this.carouselTotal.innerHTML = this.carouselData.length
+    this.next();
+
+    if (this.parentNode) {
+      if (this.parentNode.removeVideo) {
+        this.parentNode.removeVideo(data.file.path)
+      } else if (this.parentNode.removeAudio) {
+        this.parentNode.removeAudio(data.file.path)
+      }
+    }
+
+    // Not enought element to display carrousel
+    if (this.carouselData.length < this.carouselInView.length) {
+      // This will remove the carousel from the view...
+      if (this.parentNode) {
+        if (this.parentNode.setVideos) {
+          this.parentNode.setVideos(this.carouselData)
+        } else if (this.parentNode.setAudios) {
+          this.parentNode.setAudios(this.carouselData)
+        }
+      }
+    }
   }
 
   play() {

@@ -49,6 +49,7 @@ export class ImageGallery extends HTMLElement {
             width: 100%;
             padding-bottom: 66.667%;
             background-color: #ddd;
+            /*background-color: radial-gradient(circle, rgb(170 170 170 / 0%) 0%, rgb(66 66 66 / 0%) 44%, var(--palette-background-default) 100%);*/
         }
         
         .image-holder {
@@ -128,12 +129,23 @@ export class ImageGallery extends HTMLElement {
             right: 0px;
           }
 
+          #close-btn{
+            position: absolute;
+            top: 0px;
+            left: 0px;
+            background-color: black;
+            --paper-icon-button-ink-color: white;
+            --iron-icon-fill-color: white;
+            border-bottom: 1px solid var(--palette-divider);
+            border-right: 1px solid var(--palette-divider);
+         }
+
         </style>
         <div class="container">
 
             <div class="feature">
                 <figure class="featured-item image-holder r-3-2 transition"></figure>
-                <paper-icon-button id="delete-btn" style="position: absolute; display: none;" icon="icons:close"></paper-icon-button>
+                <paper-icon-button id="close-btn" style="display: none;" icon="icons:close"></paper-icon-button>
             </div>
             
             <div class="gallery-wrapper">
@@ -169,11 +181,10 @@ export class ImageGallery extends HTMLElement {
         this.leftBtn.ontouchstart = this.leftBtn.onmouseenter = e => this.moveLeft(e);
         this.leftBtn.ontouchend = this.leftBtn.onmouseleave = e => this.stopMovement(e);
         this.rightBtn.ontouchstart = this.rightBtn.onmouseenter = e => this.moveRight(e);
-        this.rightBtn.ontouchend =  this.rightBtn.onmouseleave = e => this.stopMovement(e);
+        this.rightBtn.ontouchend = this.rightBtn.onmouseleave = e => this.stopMovement(e);
 
-        this.deleteBtn = this.shadowRoot.querySelector("#delete-btn")
-
-        this.deleteBtn.onclick = () => {
+        this.closeBtn = this.shadowRoot.querySelector("#close-btn")
+        this.closeBtn.onclick = () => {
 
             const url = new URL(this.featured().image.src);
 
@@ -199,7 +210,7 @@ export class ImageGallery extends HTMLElement {
             </style>
             <div id="yes-no-picture-delete-box">
               <div>Your about to remove image from the gallery</div>
-              <img style="height: 256px; object-fit: contain; width: 100%;" src="${this.featured().image.src}"></img>
+              <img style="max-height: 256px; object-fit: contain; width: 100%;" src="${this.featured().image.src}"></img>
               <span style="font-size: .75rem;">${decodeURIComponent(url.pathname)}</span>
               <div>Is it what you want to do? </div>
               <div style="justify-content: flex-end;">
@@ -230,8 +241,8 @@ export class ImageGallery extends HTMLElement {
                 );
 
                 this.setImages(this.images)
-                if(this.onremoveimage){
-                    
+                if (this.onremoveimage) {
+
                     this.onremoveimage(decodeURIComponent(url.pathname))
                 }
             }
@@ -243,16 +254,15 @@ export class ImageGallery extends HTMLElement {
         }
     }
 
-    setEditable() {
+    setEditable(editable) {
         // so here I will display the delete image button.
-        this.deleteBtn.style.display = "block"
+        if (editable)
+            this.closeBtn.style.display = "block"
+        else
+            this.closeBtn.style.display = "none"
     }
 
-    resetEditable() {
-        this.deleteBtn.style.display = "none"
-    }
-
-    getImage(index){
+    getImage(index) {
         return this.images[index]
     }
 
@@ -261,9 +271,9 @@ export class ImageGallery extends HTMLElement {
         this.images = images
 
         let controls = this.shadowRoot.querySelector(".controls")
-        if(this.images.length > 1){
+        if (this.images.length > 1) {
             controls.style.display = "block"
-        }else{
+        } else {
             controls.style.display = "none"
         }
 

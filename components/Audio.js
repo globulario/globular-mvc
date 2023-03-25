@@ -591,13 +591,14 @@ export class AudioPlayer extends HTMLElement {
 
         }, this, offsetTop)
 
+        
 
         setMinimizeable(header, this, "audio_player", "Audio", "image:music-note", 
         ()=>{
-            this.shadowRoot.querySelector(".vz-wrapper").style.minWidth = "0px"
+            this.querySelector(".vz-wrapper").style.minWidth = "0px"
         }, 
         ()=>{
-            this.shadowRoot.querySelector(".vz-wrapper").style.minWidth = "600px"
+            this.querySelector(".vz-wrapper").style.minWidth = "600px"
         })
 
 
@@ -1037,9 +1038,6 @@ export class AudioPlayer extends HTMLElement {
 
             xhr.send();
         })
-
-
-
     }
 
     // load the playlist...
@@ -1054,9 +1052,11 @@ export class AudioPlayer extends HTMLElement {
             if (w < 500) {
                 content.style.height = "calc(100vh - 100px)"
                 content.style.overflowY = "auto"
+                this.querySelector(".vz-wrapper").style.minWidth = "0px"
             } else {
                 content.style.height = ""
                 content.style.overflowY = ""
+                this.querySelector(".vz-wrapper").style.minWidth = "600px"
             }
         })
 

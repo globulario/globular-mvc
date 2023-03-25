@@ -1894,20 +1894,26 @@ export class SearchAudioCard extends HTMLElement {
     // Create the applicaiton view.
     constructor() {
         super()
+
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
         this.audio = null;
+        this.editable = false;
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
            
             #container{
-                padding: 2px;
                 position: relative;
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
             }
 
             .audio-card{
+                container-type: inline-size;
+                container-name: audiocard;
+
                 display: flex;
                 flex-direction: column;
                 border-radius: 3.5px;
@@ -1945,35 +1951,146 @@ export class SearchAudioCard extends HTMLElement {
                 color: white;
             }
 
+            #close-btn{
+                z-index: 100;
+                position: absolute;
+                top: 0px;
+                left: 0px;
+                background-color: black;
+                --paper-icon-button-ink-color: white;
+                --iron-icon-fill-color: white;
+                border-bottom: 1px solid var(--palette-divider);
+                border-right: 1px solid var(--palette-divider);
+            }
+ 
+
+
+            @container audiocard (max-width: 300px) {
+                #artist, #album {
+                    font-weight: 500;
+                    font-size: 1.2rem;
+                }
+    
+                #title{
+                    font-size: 1.25rem;
+                    font-weight: 350;
+                }
+            }
+
+            @container audiocard (max-width: 225px) {
+                #artist, #album {
+                    font-weight: 300;
+                    font-size: .95rem;
+                }
+    
+                #title{
+                    font-size: 1rem;
+                    font-weight: 250;
+                }
+            }
+
+            @container audiocard (max-width: 150px) {
+                #artist, #album {
+                    font-weight: 300;
+                    font-size: .75rem;
+                }
+    
+                #title{
+                    font-size: .85rem;
+                    font-weight: 250;
+                }
+            }
+
+
 
         </style>
 
         <div id="container" class="audio-card">
+            <paper-icon-button icon="icons:close" style="display: none;" id="close-btn"></paper-icon-button>
             <img></img>
-            <span id="artist"></span>
-            <div style="display: flex; position: absolute; background-color: black; top: 0px; left: 0px; right: 0px; padding: 5px;">
-                <span id="album" style="flex-grow: 1;"></span> 
-                <paper-icon-button id="play-album-btn" style=" --iron-icon-fill-color: white;" title="play album" icon="av:play-arrow"></paper-icon-button> 
-            </div>
-            <div style="display: flex; justify-items: center;">
-                <span id="title" style="flex-grow: 1;"></span>
-                <paper-icon-button id="play-title-btn" title="play title" icon="av:play-arrow"></paper-icon-button> 
+            <div style="padding: 5px; display: flex; flex-direction: column;">
+                <span id="artist"></span>
+                <div style="display: flex; position: absolute; background-color: black; top: 0px; left: 0px; right: 0px; padding: 5px;">
+                    <span id="album" style="flex-grow: 1;"></span> 
+                    <paper-icon-button id="play-album-btn" style=" --iron-icon-fill-color: white;" title="play album" icon="av:play-arrow"></paper-icon-button> 
+                </div>
+                <div style="display: flex; justify-items: center;">
+                    <span id="title" style="flex-grow: 1;"></span>
+                    <paper-icon-button id="play-title-btn" title="play title" icon="av:play-arrow"></paper-icon-button> 
+                </div>
             </div>
         </div>
         `
-    }
+        this.closeBtn = this.shadowRoot.querySelector("#close-btn")
 
+        this.closeBtn.onclick = (evt) => {
+            evt.stopPropagation()
+
+            // Here I will ask the user for confirmation before actually delete the contact informations.
+            let toast = ApplicationView.displayMessage(
+                `<style>
+                    
+                    #yes-no-video-delete-box{
+                        display: flex;
+                        flex-direction: column;
+                    }
+    
+                    #yes-no-video-delete-box globular-picture-card{
+                        padding-bottom: 10px;
+                    }
+    
+                    #yes-no-video-delete-box div{
+                        display: flex;
+                        padding-bottom: 10px;
+                    }
+    
+                </style>
+                <div id="yes-no-video-delete-box">
+                    <div>Your about to remove video</div>
+                        <img style="max-height: 256px; object-fit: contain; width: 100%;" src="${this.audio.getPoster().getContenturl()}"></img>
+                        <p style="font-size: .85rem;">${this.audio.getTitle()}</p>
+                        <div>Is it what you want to do? </div>
+                        <div style="justify-content: flex-end;">
+                        <paper-button raised id="yes-delete-picture">Yes</paper-button>
+                        <paper-button raised id="no-delete-picture">No</paper-button>
+                    </div>
+                </div>
+                `,
+                60 * 1000 // 60 sec...
+            );
+
+            let yesBtn = document.querySelector("#yes-delete-picture")
+            let noBtn = document.querySelector("#no-delete-picture")
+
+            // On yes
+            yesBtn.onclick = () => {
+                if (this.onclose) {
+                    this.onclose()
+                }
+                toast.dismiss();
+                ApplicationView.displayMessage(
+                    `<div style="display: flex; flex-direction: column;">
+                        <span style="font-size: .85rem;">${this.audio.getTitle()}</span>
+                        <span>was remove</span>
+                    </div>`,
+                    3000
+                );
+            }
+
+            noBtn.onclick = () => {
+                toast.dismiss();
+            }
+        }
+    }
 
     connectedCallback() {
 
     }
 
-
     // return the audio element...
     getAudio() {
         return this.audio;
     }
-
 
     // Call search event.
     setAudio(audio) {
@@ -2041,6 +2158,19 @@ export class SearchAudioCard extends HTMLElement {
             }, ["album"])
         }
     }
+
+    setEditable(editable) {
+        this.editable = editable;
+
+        // console.log("show hide edit value control...", editable)
+        if (this.editable) {
+            if (this.onclose) {
+                this.closeBtn.style.display = "block"
+            }
+        } else {
+            this.closeBtn.style.display = "none"
+        }
+    }
 }
 
 customElements.define('globular-search-audio-card', SearchAudioCard)
@@ -2056,6 +2186,7 @@ export class SearchVideoCard extends HTMLElement {
         super()
 
         this.video = null;
+        this.editable = false;
 
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
@@ -2064,6 +2195,12 @@ export class SearchVideoCard extends HTMLElement {
         this.shadowRoot.innerHTML = `
         <style>
             .video-card{
+                container-type: inline-size;
+                container-name: videocard;
+
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
+                position: relative;
                 height: calc( 100% - 2px);
                 border-radius: 3.5px;
                 border: 1px solid var(--palette-divider);
@@ -2121,8 +2258,53 @@ export class SearchVideoCard extends HTMLElement {
                 max-height: 180px;
             }
             
+            #close-btn{
+                z-index: 100;
+                position: absolute;
+                top: 0px;
+                left: 0px;
+                background-color: black;
+                --paper-icon-button-ink-color: white;
+                --iron-icon-fill-color: white;
+                border-bottom: 1px solid var(--palette-divider);
+                border-right: 1px solid var(--palette-divider);
+            }
+
+            
+            @container videocard (max-width: 300px) {
+                .title-rating-div{
+                    font-size: 1rem;
+                }
+
+                .video-card p{
+                    font-size: 1.1rem;
+                }
+            }
+
+            @container videocard (max-width: 225px) {
+                .title-rating-div{
+                    font-size: .85rem;
+                }
+
+                
+                .video-card p{
+                    font-size: .95rem;
+                }
+            }
+
+            @container videocard (max-width: 150px) {
+                .title-rating-div{
+                    font-size: .75rem;
+                }
+
+                .video-card p{
+                    font-size: .85rem;
+                }
+            }
+
         </style>
         <div class="video-card">
+            <paper-icon-button icon="icons:close" style="display: none;" id="close-btn"></paper-icon-button>
             <img id="thumbnail-image"></img>
             <video autoplay muted loop id="preview-image" style="display: none;"></video>
             <p id="description"></p>
@@ -2139,6 +2321,68 @@ export class SearchVideoCard extends HTMLElement {
         `
 
         this.videoPreview = this.shadowRoot.querySelector("#preview-image")
+        this.closeBtn = this.shadowRoot.querySelector("#close-btn")
+
+        this.closeBtn.onclick = (evt) => {
+            evt.stopPropagation()
+
+            // Here I will ask the user for confirmation before actually delete the contact informations.
+            let toast = ApplicationView.displayMessage(
+                `<style>
+                    
+                    #yes-no-video-delete-box{
+                    display: flex;
+                    flex-direction: column;
+                    }
+    
+                    #yes-no-video-delete-box globular-picture-card{
+                    padding-bottom: 10px;
+                    }
+    
+                    #yes-no-video-delete-box div{
+                    display: flex;
+                    padding-bottom: 10px;
+                    }
+    
+                </style>
+                <div id="yes-no-video-delete-box">
+                    <div>Your about to remove video</div>
+                        <img style="max-height: 256px; object-fit: contain; width: 100%;" src="${this.video.getPoster().getContenturl()}"></img>
+                        <p style="font-size: .85rem;">${this.video.getDescription()}</p>
+                        <div>Is it what you want to do? </div>
+                        <div style="justify-content: flex-end;">
+                        <paper-button raised id="yes-delete-picture">Yes</paper-button>
+                        <paper-button raised id="no-delete-picture">No</paper-button>
+                    </div>
+                </div>
+                `,
+                60 * 1000 // 60 sec...
+            );
+
+            let yesBtn = document.querySelector("#yes-delete-picture")
+            let noBtn = document.querySelector("#no-delete-picture")
+
+            // On yes
+            yesBtn.onclick = () => {
+                if (this.onclose) {
+                    this.onclose()
+                }
+                toast.dismiss();
+                ApplicationView.displayMessage(
+                    `<div style="display: flex; flex-direction: column;">
+                        <span style="font-size: .85rem;">${this.video.getDescription()}</span>
+                        <span>was remove</span>
+                    </div>`,
+                    3000
+                );
+            }
+
+            noBtn.onclick = () => {
+                toast.dismiss();
+            }
+
+
+        }
     }
 
 
@@ -2226,8 +2470,21 @@ export class SearchVideoCard extends HTMLElement {
         }
     }
 
-    setVideo(video) {
+    /** Display the close btn if onclose  */
+    setEditable(editable) {
+        this.editable = editable;
 
+        // console.log("show hide edit value control...", editable)
+        if (this.editable) {
+            if (this.onclose) {
+                this.closeBtn.style.display = "block"
+            }
+        } else {
+            this.closeBtn.style.display = "none"
+        }
+    }
+
+    setVideo(video) {
 
         this.video = video
 

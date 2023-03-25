@@ -29,8 +29,8 @@ import { Menu } from './Menu';
 import { Carousel } from './Carousel'
 import { ImageGallery } from './Gallery'
 import "@polymer/paper-spinner/paper-spinner.js";
-import { getVideoInfo } from './File';
-import { SearchVideoCard } from './Search';
+import { getAudioInfo, getVideoInfo } from './File';
+import { SearchAudioCard, SearchVideoCard } from './Search';
 
 const intervals = [
     { label: 'year', seconds: 31536000 },
@@ -515,7 +515,7 @@ export class BlogPostElement extends HTMLElement {
             </style>
             <div id="yes-no-blog-post-delete-box">
               <div>Your about to delete blog post</div>
-              <img style="height: 256px; object-fit: contain; width: 100%;" src="${this.blog.getThumbnail()}"></img>
+              <img style="max-height: 256px; object-fit: contain; width: 100%;" src="${this.blog.getThumbnail()}"></img>
               <span style="font-size: 1.1rem;">${this.blog.getTitle()}</span>
               <div>Is it what you want to do? </div>
               <div style="justify-content: flex-end;">
@@ -562,9 +562,6 @@ export class BlogPostElement extends HTMLElement {
             noBtn.onclick = () => {
                 toast.dismiss();
             }
-
-
-
         }
 
         // switch to edit mode...
@@ -687,14 +684,14 @@ export class BlogPostElement extends HTMLElement {
             if (galleries.length > 0) {
                 // take the first images...
                 let url = galleries[0].getImage(0)
-                if(url.startsWith("http")){
+                if (url.startsWith("http")) {
                     createThumbmail(url, width, dataUrl => callback(dataUrl))
-                }else{
+                } else {
                     let img = document.createElement("img")
                     img.src = url
                     createThumbmailFromImage(img, width, dataUrl => callback(dataUrl))
                 }
-                
+
             } else {
                 let embeddedVideos = this.editorDiv.querySelectorAll("globular-embedded-videos")
                 if (embeddedVideos.length > 0) {
@@ -703,7 +700,15 @@ export class BlogPostElement extends HTMLElement {
                     img.src = embeddedVideos[0].getVideo(0).getPoster().getContenturl()
                     createThumbmailFromImage(img, width, dataUrl => callback(dataUrl))
                 } else {
-                    callback("")
+                    let embeddedAudios = this.editorDiv.querySelectorAll("globular-embedded-audios")
+                    if (embeddedAudios.length > 0) {
+                        // take the first images...
+                        let img = document.createElement("img")
+                        img.src = embeddedAudios[0].getAudio(0).getPoster().getContenturl()
+                        createThumbmailFromImage(img, width, dataUrl => callback(dataUrl))
+                    } else {
+                        callback("")
+                    }
                 }
 
             }
@@ -1023,7 +1028,7 @@ function isJson(str) {
 
 
 /**
- * Simple class to display a group of video
+ * Simple class to display a group of video files. (video must have video infos...)
  */
 export class EmbeddedVideos extends HTMLElement {
     // attributes.
@@ -1058,10 +1063,6 @@ export class EmbeddedVideos extends HTMLElement {
                 flex-wrap: wrap;
             }
 
-            globular-carousel{
-                width: 100%;
-            }
-
         </style>
         <div id="container">
             <div id="header"></div>
@@ -1079,15 +1080,20 @@ export class EmbeddedVideos extends HTMLElement {
         return this.videos[index]
     }
 
+    removeVideo(video) {
+        if (this.onremovevideo) {
+            this.onremovevideo(video)
+        }
+    }
+
     setVideos(videos) {
         this.videos = videos
         this.innerHTML = ""
 
-        console.log(videos)
-        let carousel = new Carousel
-        carousel.style.width = "100%"
-
         if (videos.length > 4) {
+            let carousel = new Carousel
+            carousel.style.width = "100%"
+
             // put video info in the carousel.
             carousel.setItems(videos)
 
@@ -1095,23 +1101,130 @@ export class EmbeddedVideos extends HTMLElement {
             this.appendChild(carousel)
 
         } else {
-
             // Create video card's
             this.videos.forEach(video => {
                 let card = new SearchVideoCard
                 card.setVideo(video)
+                card.onclose = () => {
+                    this.removeChild(card)
+                    this.removeVideo(video.file.path)
+                }
+                card.setEditable(this.editable)
                 this.appendChild(card)
             })
         }
     }
 
-    // Call search event.
-    play() {
-
+    // hide or show the edit button...
+    setEditable(editable) {
+        this.editable = editable;
+        for (var i = 0; i < this.children.length; i++) {
+            this.children[i].setEditable(editable)
+        }
     }
 }
 
 customElements.define('globular-embedded-videos', EmbeddedVideos)
+
+
+/**
+ * Simple class to display a group of audios files.
+ */
+export class EmbeddedAudios extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor() {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+    }
+
+    // The connection callback.
+    connectedCallback() {
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+            #container{
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
+                display: flex;
+                flex-direction: column;
+
+            }
+
+            #header{
+
+            }
+
+            #audios{
+                display: flex;
+                flex-wrap: wrap;
+            }
+
+        </style>
+        <div id="container">
+            <div id="header"></div>
+            <div id="audios">
+                <slot></slot>
+            </div>
+        </div>
+        `
+
+        // Keep a reference to the audios.
+        this.audios = []
+    }
+
+    getAudio(index) {
+        return this.audios[index]
+    }
+
+    removeAudio(audio) {
+        if (this.onremoveaudio) {
+            this.onremoveaudio(audio)
+        }
+    }
+
+    setAudios(audios) {
+        this.audios = audios
+        this.innerHTML = ""
+
+        if (audios.length > 4) {
+            let carousel = new Carousel
+            carousel.style.width = "100%"
+
+            // put video info in the carousel.
+            carousel.setItems(audios)
+
+            // set the carousel...
+            this.appendChild(carousel)
+
+        } else {
+            // Create video card's
+            this.audios.forEach(audio => {
+                let card = new SearchAudioCard
+                card.setAudio(audio)
+                card.onclose = () => {
+                    this.removeChild(card)
+                    this.removeAudio(audio.file.path)
+                }
+                card.setEditable(this.editable)
+                this.appendChild(card)
+            })
+        }
+    }
+
+    // hide or show the edit button...
+    setEditable(editable) {
+        this.editable = editable;
+        for (var i = 0; i < this.children.length; i++) {
+            this.children[i].setEditable(editable)
+        }
+    }
+}
+
+customElements.define('globular-embedded-audios', EmbeddedAudios)
 
 /**
  * That component will be use to display file(s) into a post.
@@ -1239,26 +1352,15 @@ export class FileDropZone extends HTMLElement {
 
     }
 
-    setEditable() {
+    setEditable(editable) {
+        this.editable = editable
 
-        this.dropZone.classList.add("editable")
-        this.setAttribute("editable", "true")
-
-        let galleries = this.querySelectorAll("globular-image-gallery")
-        for (var i = 0; i < galleries.length; i++) {
-            galleries[i].setEditable(true)
-        }
-
-    }
-
-    resetEditable() {
-
-        this.dropZone.classList.remove("editable")
-        this.removeAttribute("editable")
-
-        let galleries = this.querySelectorAll("globular-image-gallery")
-        for (var i = 0; i < galleries.length; i++) {
-            galleries[i].resetEditable(true)
+        if (editable) {
+            this.dropZone.classList.add("editable")
+            this.setAttribute("editable", "true")
+        } else {
+            this.dropZone.classList.remove("editable")
+            this.removeAttribute("editable")
         }
     }
 
@@ -1299,7 +1401,6 @@ export class FileDropZone extends HTMLElement {
                     }
                 },
                 err => {
-                    console.log("------------> ", err, path, g.domain)
                     if (index == this.files.length) {
                         if (loading.parentNode)
                             loading.parentNode.removeChild(loading)
@@ -1361,33 +1462,107 @@ export class FileDropZone extends HTMLElement {
             let file = files[index]
             index++
             getVideoInfo(file.globule, file, videos => {
-                file.videos = videos
-                videos_ = videos_.concat(videos)
-                if (index < files.length) {
-                    initVideoInfo(index, callback)
+                if (videos.length > 0) {
+                    let video = videos[0]
+                    video.file = file
+                    videos_.push(video)
+                    if (index < files.length) {
+                        initVideoInfo(index, callback)
+                    } else {
+                        callback(videos_)
+                    }
                 } else {
-                    callback(videos_)
+                    if (index < files.length) {
+                        initVideoInfo(index, callback)
+                    } else {
+                        callback(videos_)
+                    }
                 }
             })
         }
-
 
         if (files.length > 0) {
             initVideoInfo(index, videos => {
                 let embeddedVideos = this.querySelector("globular-embedded-videos")
                 if (!embeddedVideos) {
                     embeddedVideos = new EmbeddedVideos()
+                    embeddedVideos.onremovevideo = (path) => {
+                        this.files = this.files.filter(e => e.path !== path);
+                    }
                 }
 
                 this.appendChild(embeddedVideos)
                 embeddedVideos.setVideos(videos)
+
+                if (this.parentNode) {
+                    if (this.parentNode.classList.contains("ce-block__content")) {
+                        this.setEditable(true)
+                        embeddedVideos.setEditable(true)
+                    } else {
+                        this.setEditable(false)
+                        embeddedVideos.setEditable(false)
+                    }
+                }
+
+            })
+        }
+    }
+
+    renderAudio(files) {
+
+        // so here I will initalyse files and their video informations.
+        let index = 0;
+        let audios_ = []
+
+        // Get the video informations...
+        let initAudioInfo = (index, callback) => {
+            let file = files[index]
+            index++
+            getAudioInfo(file.globule, file, audios => {
+                if (audios.length > 0) {
+                    let audio = audios[0]
+                    audio.file = file
+                    audios_.push(audio)
+                    if (index < files.length) {
+                        initAudioInfo(index, callback)
+                    } else {
+                        callback(audios_)
+                    }
+                } else {
+                    if (index < files.length) {
+                        initAudioInfo(index, callback)
+                    } else {
+                        callback(audios_)
+                    }
+                }
             })
         }
 
-    }
+        if (files.length > 0) {
+            initAudioInfo(index, audios => {
+                let embeddedAudios = this.querySelector("globular-embedded-audios")
+                if (!embeddedAudios) {
+                    embeddedAudios = new EmbeddedAudios()
+                    embeddedAudios.onremoveaudio = (path) => {
+                        this.files = this.files.filter(e => e.path !== path);
+                    }
+                }
 
-    renderAudio(audios) {
+                this.appendChild(embeddedAudios)
+                embeddedAudios.setAudios(audios)
 
+                if (this.parentNode) {
+                    if (this.parentNode.classList.contains("ce-block__content")) {
+                        this.setEditable(true)
+                        embeddedAudios.setEditable(true)
+                    } else {
+                        this.setEditable(false)
+                        embeddedAudios.setEditable(false)
+                    }
+                }
+
+            })
+        }
     }
 
     renderImages(images) {
@@ -1436,18 +1611,20 @@ export class FileDropZone extends HTMLElement {
 
         if (this.parentNode) {
             if (this.parentNode.classList.contains("ce-block__content")) {
-                this.setEditable()
+                this.setEditable(true)
+                imageGallery.setEditable(true)
             } else {
-                this.resetEditable()
+                this.setEditable(false)
+                imageGallery.setEditable(false)
             }
         }
     }
 
     connectedCallback() {
         if (this.parentNode.classList.contains("ce-block__content")) {
-            this.setEditable()
+            this.setEditable(true)
         } else {
-            this.resetEditable()
+            this.setEditable(false)
         }
     }
 }
