@@ -22,6 +22,7 @@ import * as edjsHTML from 'editorjs-html'
 import { Account } from '../Account';
 import { v4 as uuidv4 } from "uuid";
 import '@polymer/iron-icons/communication-icons'
+import '@polymer/iron-icons/editor-icons'
 import * as getUuidByString from 'uuid-by-string';
 import { BlogPostInfo } from './Informations';
 import { AppScrollEffectsBehavior } from '@polymer/app-layout/app-scroll-effects/app-scroll-effects-behavior';
@@ -199,14 +200,12 @@ export class BlogPostElement extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-           
 
             #container {
                 display: flex;
                 justify-content: center;
                 margin-bottom: 10px;
                 margin-top: 10px;
-               
             }
 
             .blog-post-editor-div{
@@ -239,7 +238,8 @@ export class BlogPostElement extends HTMLElement {
             
             .blog-options-panel{
                 position: absolute;
-                right: 0px;
+                right: 50px;
+                top: 40px;
                 z-index: 100;
                 background-color: var(--palette-background-paper);
             }
@@ -280,6 +280,9 @@ export class BlogPostElement extends HTMLElement {
                 background-color: var(--palette-background-paper);
                 color: var(--palette-text-primary);
                 font-size: 1rem;
+                border-left: 1px solid var(--palette-divider); 
+                border-right: 1px solid var(--palette-divider);
+                border-top: 1px solid var(--palette-divider);
             }
 
             paper-radio-button {
@@ -339,6 +342,7 @@ export class BlogPostElement extends HTMLElement {
         </style>
 
         <div id="container">
+
             <paper-card class="blog-post-editor-div">
                 <div class="blog-post-title-div">
                     <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
@@ -348,37 +352,39 @@ export class BlogPostElement extends HTMLElement {
                     <span id="blog-editor-title" class="blog-editor-title">
                         ${Application.account.name}, express yourself
                     </span>
+
                     <div class="actions-div" style="display: flex;">
-                        <paper-icon-button icon="icons:more-horiz" id="blog-editor-menu-btn"></paper-icon-button>
+                        <paper-icon-button name="publish-blog" icon="icons:save"></paper-icon-button>
+                        <paper-icon-button name="blog-editor-delete-btn" icon="icons:delete" ></paper-icon-button>
+                        <paper-icon-button icon="icons:more-vert" id="blog-editor-menu-btn"></paper-icon-button>
                         <paper-icon-button id="close-editor-btn" icon="icons:close"></paper-icon-button>
                     </div>
                 </div>
                 <iron-collapse opened = "[[opened]]" id="collapse-panel" style="display: flex; flex-direction: column;">
-                    
                     <paper-card id="blog-editor-options-panel" class="blog-options-panel" style="display: none;">
                         <div class="card-content" style="background-color: transparent;">
                             <paper-input id="blog-title-input" label="title"></paper-input>
                             <paper-input id="blog-subtitle-input" label="subtitle"></paper-input>
                             <globular-string-list-setting id="keywords-list" name="keywords" description="keywords will be use by the search engine to retreive your blog."></globular-string-list-setting>
                         </div>
+                        <div style="display: flex;">
+                            <div class="blog-actions" style="background-color: transparent; flex-grow: 1;">
+                                <paper-radio-group selected="draft" style="flex-grow: 1;  text-align: left; font-size: 1rem;">
+                                    <paper-radio-button name="draft">draft</paper-radio-button>
+                                    <paper-radio-button name="published">published</paper-radio-button>
+                                    <paper-radio-button name="archived">archived</paper-radio-button>
+                                </paper-radio-group>
+                            </div>
+                            <paper-icon-button id="exit-editor-btn" icon="icons:exit-to-app"></paper-icon-button>
+                            
+                        </div>
                     </paper-card>
 
                     <slot  id="edit-blog-content" name="edit-blog-content"></slot>
-                    
-                    <div class="blog-actions" style="background-color: transparent;">
-                        <paper-radio-group selected="draft" style="flex-grow: 1;  text-align: left; font-size: 1rem;">
-                            <paper-radio-button name="draft">draft</paper-radio-button>
-                            <paper-radio-button name="published">published</paper-radio-button>
-                            <paper-radio-button name="archived">archived</paper-radio-button>
-                        </paper-radio-group>
-                        <div style="display: flex;">
-                            <paper-button style="align-self: end;" id="blog-editor-delete-btn">Delete</paper-button>
-                            <paper-button id="publish-blog">Save</paper-button>
-                        </div>
-                    </div>
                 </iron-collapse>
 
             </paper-card>
+
             <paper-card class="blog-post-reader-div">
                 <div id="title" class="blog-post-title-div">
                     <div style="display: flex; flex-direction: column; padding-left: 5px;">
@@ -390,16 +396,12 @@ export class BlogPostElement extends HTMLElement {
                     </div>
                     <h2 class="blog-reader-title"></h2>
                     <div class="actions-div" style="display: flex;">
-                        <paper-icon-button icon="icons:more-horiz" id="blog-reader-menu-btn"></paper-icon-button>
+                        <paper-icon-button id="blog-reader-edit-btn" icon="editor:mode-edit"></paper-icon-button>
                         <paper-icon-button id="close-reader-btn" icon="icons:close"></paper-icon-button>
                     </div>
                 </div>
-                <paper-card id="blog-reader-options-panel"  class="blog-options-panel"  style="display: none;">
-                    <div class="card-content" style="background-color: transparent;"></div>
-                    <div class="blog-actions" style="justify-content: end; border-color: var(--palette-action-disabled);">
-                        <paper-button style="align-self: end;" id="blog-reader-edit-btn">Edit</paper-button>
-                    </div>
-                </paper-card>
+
+          
                 <slot id="read-only-blog-content" name="read-only-blog-content"></slot>
                 <slot name="blog-comments"></slot>
                 
@@ -434,6 +436,12 @@ export class BlogPostElement extends HTMLElement {
             }
         }
 
+        this.shadowRoot.querySelector("#exit-editor-btn").onclick = ()=>{
+            this.read(()=>{
+                ApplicationView.displayMessage("exit edit mode!")
+            })
+        }
+
         this.collapse_btn = this.shadowRoot.querySelector("#collapse-btn")
         this.collapse_panel = this.shadowRoot.querySelector("#collapse-panel")
         this.collapse_btn.onclick = () => {
@@ -446,9 +454,89 @@ export class BlogPostElement extends HTMLElement {
         }
 
         // publish the blog...
-        this.shadowRoot.querySelector("#publish-blog").onclick = () => {
-            this.publish()
+        let publishBtns = this.shadowRoot.querySelectorAll(`[name="publish-blog"]`)
+        for (var i = 0; i < publishBtns.length; i++) {
+            publishBtns[i].onclick = () => {
+                this.publish()
+            }
         }
+
+        // Delete the blog...
+        let deleteBtns = this.shadowRoot.querySelectorAll(`[name="blog-editor-delete-btn"]`)
+        for (var i = 0; i < deleteBtns.length; i++) {
+            deleteBtns[i].onclick = () => {
+
+                let toast = ApplicationView.displayMessage(
+                    `
+                <style>
+                
+                #yes-no-blog-post-delete-box{
+                    display: flex;
+                    flex-direction: column;
+                }
+
+                #yes-no-blog-post-delete-box globular-blog-post-card{
+                    padding-bottom: 10px;
+                }
+
+                #yes-no-blog-post-delete-box div{
+                    display: flex;
+                    padding-bottom: 10px;
+                }
+
+                </style>
+                <div id="yes-no-blog-post-delete-box">
+                <div>Your about to delete blog post</div>
+                <img style="max-height: 256px; object-fit: contain; width: 100%;" src="${this.blog.getThumbnail()}"></img>
+                <span style="font-size: 1.1rem;">${this.blog.getTitle()}</span>
+                <div>Is it what you want to do? </div>
+                <div style="justify-content: flex-end;">
+                    <paper-button raised id="yes-delete-blog-post">Yes</paper-button>
+                    <paper-button raised id="no-delete-blog-post">No</paper-button>
+                </div>
+                </div>
+                `,
+                    60 * 1000 // 60 sec...
+                );
+
+                let yesBtn = document.querySelector("#yes-delete-blog-post")
+                let noBtn = document.querySelector("#no-delete-blog-post")
+
+                // On yes
+                yesBtn.onclick = () => {
+
+                    let rqst = new DeleteBlogPostRequest
+                    rqst.setUuid(this.blog.getUuid())
+                    let globule = this.globule
+                    rqst.setIndexpath(globule.config.DataPath + "/search/blogPosts")
+
+                    // Delete the blog...
+                    generatePeerToken(globule, token => {
+                        globule.blogService.deleteBlogPost(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: token })
+                            .then(rsp => {
+                                Model.getGlobule(this.blog.getDomain()).eventHub.publish(this.blog.getUuid() + "_blog_delete_event", {}, false)
+                                Model.eventHub.publish("_blog_delete_event_", this.blog.getUuid(), true)
+
+                                ApplicationView.displayMessage(
+                                    `<div style="display: flex; flex-direction: column;">
+                                    <span style="font-size: 1.1rem;">${this.blog.getTitle()}</span>
+                                    <span>was deleted...</span>
+                                 </div>`,
+                                    3000
+                                );
+                            })
+                            .catch(e => ApplicationView.displayMessage(e, 3000))
+                    }, err => ApplicationView.displayMessage(err, 3000))
+
+                    toast.dismiss();
+                }
+
+                noBtn.onclick = () => {
+                    toast.dismiss();
+                }
+            }
+        }
+
 
         // Display the option panel.
         this.shadowRoot.querySelector("#blog-editor-menu-btn").onclick = () => {
@@ -474,95 +562,12 @@ export class BlogPostElement extends HTMLElement {
             }
         }
 
-        this.shadowRoot.querySelector("#blog-reader-menu-btn").onclick = () => {
-            let optionPanel = this.shadowRoot.querySelector("#blog-reader-options-panel")
-
-            if (optionPanel.style.display == "") {
-                optionPanel.style.display = "none";
-            } else {
-                optionPanel.style.display = "";
-                optionPanel.style.top = optionPanel.parentNode.offsetHeigt / 2 + "px"
-            }
-
-        }
 
         // The editor values.
         this.titleSpan = this.shadowRoot.querySelector(".blog-reader-title")
         this.titleInput = this.shadowRoot.querySelector("#blog-title-input")
         this.subtitleInput = this.shadowRoot.querySelector("#blog-subtitle-input")
         this.keywordsEditList = this.shadowRoot.querySelector("#keywords-list")
-
-        this.shadowRoot.querySelector("#blog-editor-delete-btn").onclick = () => {
-
-            let toast = ApplicationView.displayMessage(
-                `
-            <style>
-             
-              #yes-no-blog-post-delete-box{
-                display: flex;
-                flex-direction: column;
-              }
-
-              #yes-no-blog-post-delete-box globular-blog-post-card{
-                padding-bottom: 10px;
-              }
-
-              #yes-no-blog-post-delete-box div{
-                display: flex;
-                padding-bottom: 10px;
-              }
-
-            </style>
-            <div id="yes-no-blog-post-delete-box">
-              <div>Your about to delete blog post</div>
-              <img style="max-height: 256px; object-fit: contain; width: 100%;" src="${this.blog.getThumbnail()}"></img>
-              <span style="font-size: 1.1rem;">${this.blog.getTitle()}</span>
-              <div>Is it what you want to do? </div>
-              <div style="justify-content: flex-end;">
-                <paper-button raised id="yes-delete-blog-post">Yes</paper-button>
-                <paper-button raised id="no-delete-blog-post">No</paper-button>
-              </div>
-            </div>
-            `,
-                60 * 1000 // 60 sec...
-            );
-
-            let yesBtn = document.querySelector("#yes-delete-blog-post")
-            let noBtn = document.querySelector("#no-delete-blog-post")
-
-            // On yes
-            yesBtn.onclick = () => {
-
-                let rqst = new DeleteBlogPostRequest
-                rqst.setUuid(this.blog.getUuid())
-                let globule = this.globule
-                rqst.setIndexpath(globule.config.DataPath + "/search/blogPosts")
-
-                // Delete the blog...
-                generatePeerToken(globule, token => {
-                    globule.blogService.deleteBlogPost(rqst, { domain: Model.domain, application: Model.application, address: Model.address, token: token })
-                        .then(rsp => {
-                            Model.getGlobule(this.blog.getDomain()).eventHub.publish(this.blog.getUuid() + "_blog_delete_event", {}, false)
-                            Model.eventHub.publish("_blog_delete_event_", this.blog.getUuid(), true)
-
-                            ApplicationView.displayMessage(
-                                `<div style="display: flex; flex-direction: column;">
-                                    <span style="font-size: 1.1rem;">${this.blog.getTitle()}</span>
-                                    <span>was deleted...</span>
-                                 </div>`,
-                                3000
-                            );
-                        })
-                        .catch(e => ApplicationView.displayMessage(e, 3000))
-                }, err => ApplicationView.displayMessage(err, 3000))
-
-                toast.dismiss();
-            }
-
-            noBtn.onclick = () => {
-                toast.dismiss();
-            }
-        }
 
         // switch to edit mode...
         this.shadowRoot.querySelector("#blog-reader-edit-btn").onclick = () => {
@@ -1252,7 +1257,6 @@ export class FileDropZone extends HTMLElement {
                 margin-top: 10px;
                 margin-bottom: 10px;
                 padding: 5px;
-                width: 100%;
                 min-height: 200px;
                 border-radius: 5px;
                 transition: background 0.2s ease,padding 0.8s linear;
@@ -1735,7 +1739,6 @@ export class BlogPosts extends HTMLElement {
               }
       
               @media (max-width: 500px) {
-
                 .card-content, #blog-lst-div{
                   min-width: calc(100vw - 20px);
                 }
@@ -1744,11 +1747,7 @@ export class BlogPosts extends HTMLElement {
                     align-items: center;
                     justify-content: center;
                 }
-
               }
-
-
-
             
         </style>
             <paper-card id="blog-lst-div">

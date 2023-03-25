@@ -332,7 +332,11 @@ globular-search-audio-card, globular-search-video-card {
    min-width: 320px;
    max-width: 320px;
    height: 285px;
+}
 
+globular-file-drop-zone globular-search-audio-card, globular-search-video-card{
+   min-width: 300px;
+   max-width: 300px;
 }
 
 globular-application-manager {
@@ -529,7 +533,7 @@ emoji-picker {
 }
 
 .ce-block__content{
-   max-width: 684px;
+   max-width: 655px;
 }
 
 .ce-block--selected .ce-block__content {
