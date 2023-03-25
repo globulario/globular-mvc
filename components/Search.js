@@ -1945,6 +1945,7 @@ export class SearchAudioCard extends HTMLElement {
             #title{
                 font-size: 1.25rem;
                 font-weight: 350;
+                
             }
 
              #album{
@@ -1952,6 +1953,7 @@ export class SearchAudioCard extends HTMLElement {
             }
 
             #close-btn{
+                display: none;
                 z-index: 100;
                 position: absolute;
                 top: 0px;
@@ -1961,10 +1963,24 @@ export class SearchAudioCard extends HTMLElement {
                 --iron-icon-fill-color: white;
                 border-bottom: 1px solid var(--palette-divider);
                 border-right: 1px solid var(--palette-divider);
+                padding: 4px;
+                width: 30px;
+                height: 30px;
+                --iron-icon-width: 24px;
+                --iron-icon-height: 24px;
+            }
+
+            .album-header-bar{
+                display: flex; 
+                align-items: center;
+                position: absolute; 
+                background-color: black; 
+                top: 0px; 
+                left: 0px; 
+                right: 0px; 
+                padding: 5px;
             }
  
-
-
             @container audiocard (max-width: 300px) {
                 #artist, #album {
                     font-weight: 500;
@@ -1975,9 +1991,16 @@ export class SearchAudioCard extends HTMLElement {
                     font-size: 1.25rem;
                     font-weight: 350;
                 }
+
+    
             }
 
             @container audiocard (max-width: 225px) {
+                #close-btn{
+                    --iron-icon-height: 32px;
+                    --iron-icon-width: 32px;
+                }
+
                 #artist, #album {
                     font-weight: 300;
                     font-size: .95rem;
@@ -1991,9 +2014,28 @@ export class SearchAudioCard extends HTMLElement {
                 .audio-card img {
                     max-height: 100px;
                 }
+
+                .album-header-bar{
+                    max-height: 30px;
+                }
+
+                .album-header-bar paper-icon-button{
+                    height: 30px;
+                    width: 30px;
+                }
+
+                #close-btn{
+                    padding: 4px;
+                    width: 25px;
+                    height: 25px;
+                    --iron-icon-width: 20px;
+                    --iron-icon-height: 20px;
+                    padding: 3px
+                }
             }
 
             @container audiocard (max-width: 150px) {
+
                 #artist, #album {
                     font-weight: 300;
                     font-size: .75rem;
@@ -2007,6 +2049,23 @@ export class SearchAudioCard extends HTMLElement {
                 .audio-card img {
                     max-height: 60px;
                 }
+
+                .album-header-bar{
+                    max-height: 25px;
+                }
+
+                .album-header-bar paper-icon-button{
+                    display: none;
+                }
+
+                #close-btn{
+                    padding: 4px;
+                    width: 20px;
+                    height: 20px;
+                    --iron-icon-width: 16px;
+                    --iron-icon-height: 16px;
+                    padding: 2px
+                }
             }
 
 
@@ -2014,16 +2073,16 @@ export class SearchAudioCard extends HTMLElement {
         </style>
 
         <div id="container" class="audio-card">
-            <paper-icon-button icon="icons:close" style="display: none;" id="close-btn"></paper-icon-button>
+            <paper-icon-button icon="icons:close" id="close-btn"></paper-icon-button>
             <img></img>
-            <div style="padding: 5px; display: flex; flex-direction: column;">
+            <div style="padding: 5px; display: flex; flex-direction: column; align-items: flex-start;">
                 <span id="artist"></span>
-                <div style="display: flex; position: absolute; background-color: black; top: 0px; left: 0px; right: 0px; padding: 5px;">
-                    <span id="album" style="flex-grow: 1;"></span> 
+                <div class="album-header-bar">
+                    <span id="album" style="flex-grow: 1; text-align: center;"></span> 
                     <paper-icon-button id="play-album-btn" style=" --iron-icon-fill-color: white;" title="play album" icon="av:play-arrow"></paper-icon-button> 
                 </div>
-                <div style="display: flex; justify-items: center;">
-                    <span id="title" style="flex-grow: 1;"></span>
+                <div style="display: flex; justify-items: center; width: 100%">
+                    <span id="title" style="flex-grow: 1; text-align: left;"></span>
                     <paper-icon-button id="play-title-btn" title="play title" icon="av:play-arrow"></paper-icon-button> 
                 </div>
             </div>
@@ -2117,10 +2176,14 @@ export class SearchAudioCard extends HTMLElement {
         // I will display the album and year info...
         this.shadowRoot.querySelector("#artist").innerHTML = audio.getArtist()
         this.shadowRoot.querySelector("#title").innerHTML = audio.getTitle()
-        this.shadowRoot.querySelector("#album").innerHTML = audio.getAlbum()
+        this.shadowRoot.querySelector("#album").innerHTML = audio.getAlbum().trim()
 
-        if (audio.getAlbum().length == 0) {
-            this.shadowRoot.querySelector("#album").parentNode.style.display = "none";
+        if(audio.getAlbum().length == 0){
+            this.shadowRoot.querySelector(".album-header-bar").style.display = "none"
+        }else{
+            if(audio.getAlbum()=="<Inconnu>"){
+                this.shadowRoot.querySelector(".album-header-bar").style.display = "none"
+            }
         }
 
 
@@ -2276,6 +2339,11 @@ export class SearchVideoCard extends HTMLElement {
                 --iron-icon-fill-color: white;
                 border-bottom: 1px solid var(--palette-divider);
                 border-right: 1px solid var(--palette-divider);
+                padding: 4px;
+                width: 30px;
+                height: 30px;
+                --iron-icon-width: 24px;
+                --iron-icon-height: 24px;
             }
 
             
@@ -2306,6 +2374,15 @@ export class SearchVideoCard extends HTMLElement {
                 #preview-image {
                     max-height: 110px;
                 }
+
+                #close-btn{
+                    padding: 2px;
+                    width: 25px;
+                    height: 25px;
+                    --iron-icon-width: 20px;
+                    --iron-icon-height: 20px;
+                    padding: 3px
+                }
             }
 
             @container videocard (max-width: 150px) {
@@ -2323,6 +2400,15 @@ export class SearchVideoCard extends HTMLElement {
                 
                 #preview-image {
                     max-height: 60px;
+                }
+
+                #close-btn{
+                    padding: 4px;
+                    width: 20px;
+                    height: 20px;
+                    --iron-icon-width: 16px;
+                    --iron-icon-height: 16px;
+                    padding: 2px
                 }
             }
 
