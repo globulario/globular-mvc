@@ -438,7 +438,7 @@ export class BlogPostElement extends HTMLElement {
 
         this.shadowRoot.querySelector("#exit-editor-btn").onclick = ()=>{
             this.read(()=>{
-                ApplicationView.displayMessage("exit edit mode!")
+                ApplicationView.displayMessage("exit edit mode", 3000)
             })
         }
 

@@ -1987,6 +1987,10 @@ export class SearchAudioCard extends HTMLElement {
                     font-size: 1rem;
                     font-weight: 250;
                 }
+
+                .audio-card img {
+                    max-height: 100px;
+                }
             }
 
             @container audiocard (max-width: 150px) {
@@ -1998,6 +2002,10 @@ export class SearchAudioCard extends HTMLElement {
                 #title{
                     font-size: .85rem;
                     font-weight: 250;
+                }
+
+                .audio-card img {
+                    max-height: 60px;
                 }
             }
 
@@ -2226,7 +2234,7 @@ export class SearchVideoCard extends HTMLElement {
             }
 
             .video-card img{
-                max-height: 200px;
+                max-height: 180px;
             }
 
             .video-card p{
@@ -2290,6 +2298,14 @@ export class SearchVideoCard extends HTMLElement {
                 .video-card p{
                     font-size: .95rem;
                 }
+
+                .video-card img, video {
+                    max-height: 110px;
+                }
+
+                #preview-image {
+                    max-height: 110px;
+                }
             }
 
             @container videocard (max-width: 150px) {
@@ -2299,6 +2315,14 @@ export class SearchVideoCard extends HTMLElement {
 
                 .video-card p{
                     font-size: .85rem;
+                }
+
+                .video-card img, video {
+                    max-height: 60px;
+                }
+                
+                #preview-image {
+                    max-height: 60px;
                 }
             }
 
