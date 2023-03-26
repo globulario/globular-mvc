@@ -11,6 +11,7 @@ import { playAudio, secondsToTime } from "./Audio";
 import '@polymer/iron-autogrow-textarea/iron-autogrow-textarea.js';
 import { EditableStringList } from "./List";
 import { BlogPost } from 'globular-web-client/blog/blog_pb';
+import { readBlogPost } from './BlogPost';
 
 // extract the duration info from the raw data.
 function parseDuration(duration) {
@@ -364,7 +365,7 @@ export function searchEpisodes(serie, indexPath, callback) {
         })
     }
 
-    if(globules.length > 0){
+    if (globules.length > 0) {
         __searchEpisodes__(globules)
     }
 }
@@ -1632,7 +1633,7 @@ export class TitleInfo extends HTMLElement {
                 }
 
                 let playBtn = page.querySelector(`#_${uuid}`)
-                
+
                 playBtn.onclick = () => {
                     let indexPath = e.globule.config.DataPath + "/search/titles"
                     let rqst = new GetTitleFilesRequest
@@ -2213,17 +2214,18 @@ export class BlogPostInfo extends HTMLElement {
             `
         }
 
-        if (this.updateListener == undefined) {
-            Model.eventHub.subscribe(blogPost.getUuid() + "_blog_updated_event", uuid => {
-                this.updateListener = uuid
-            }, evt => {
-                this.blogPost = BlogPost.deserializeBinary(Uint8Array.from(evt.split(",")))
+
+        Model.getGlobule(blogPost.getDomain()).eventHub.subscribe(blogPost.getUuid() + "_blog_updated_event", uuid => {}, evt => {
+
+            readBlogPost(blogPost.getDomain(), blogPost.getUuid(), b =>{
+                this.blog = b
                 let creationTime = new Date(this.blogPost.getCreationtime() * 1000)
-                let thumbnail = blogPost.getThumbnail()
+                let thumbnail =  this.blog.getThumbnail()
                 if (!thumbnail) {
                     thumbnail = ""
                 }
-
+    
+     
                 // update fields
                 this.shadowRoot.querySelector("#creation_time_div").innerHTML = creationTime.toLocaleDateString()
                 this.shadowRoot.querySelector("#sub_title_div").innerHTML = this.blogPost.getSubtitle()
@@ -2232,22 +2234,28 @@ export class BlogPostInfo extends HTMLElement {
                 if (thumbnail.length > 0) {
                     this.shadowRoot.querySelector("#thumbnail_img").src = thumbnail
                 }
-            }, false, this)
-        }
+
+            }, err=>ApplicationView.displayMessage(err, 3000))
+
+      
+        }, false, this)
+
 
         // so here I will retreive more information about the author if it's available...
         this.shadowRoot.querySelector("#container").onclick = () => {
             Model.eventHub.publish("_display_blog_event_", { blogPost: this.blogPost, globule: globule }, true)
         }
 
-        if (this.deleteListener == undefined) {
-            Model.eventHub.subscribe(blogPost.getUuid() + "_blog_delete_event", uuid => this.deleteListener = uuid,
-                evt => {
-                    // simplity remove it from it parent...
-                    if(this.parentNode)
-                        this.parentNode.removeChild(this)
-                }, false, this)
-        }
+
+        Model.eventHub.subscribe(blogPost.getUuid() + "_blog_delete_event", uuid => {},
+            evt => {
+                // simplity remove it from it parent...
+                if (this.parentNode)
+                    this.parentNode.removeChild(this)
+            }, false, this)
+
+
+
     }
 
     connectedCallback() {

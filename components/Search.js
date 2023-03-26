@@ -1974,7 +1974,7 @@ export class SearchAudioCard extends HTMLElement {
                 display: flex; 
                 align-items: center;
                 position: absolute; 
-                background-color: black; 
+                background-color: rgba(0,0,0,.65);
                 top: 0px; 
                 left: 0px; 
                 right: 0px; 
@@ -2012,7 +2012,8 @@ export class SearchAudioCard extends HTMLElement {
                 }
 
                 .audio-card img {
-                    max-height: 100px;
+                    min-height: 120px;
+                    max-height: 120px;
                 }
 
                 .album-header-bar{
@@ -2047,8 +2048,10 @@ export class SearchAudioCard extends HTMLElement {
                 }
 
                 .audio-card img {
-                    max-height: 60px;
+                    min-height: 80px;
+                    max-height: 80px;
                 }
+
 
                 .album-header-bar{
                     max-height: 25px;
