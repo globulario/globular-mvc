@@ -103,22 +103,20 @@ function jsonToHtml(data) {
  * @param {*} callback 
  */
 function getImageFile(url, callback) {
-    fetch(url)
-        .then((e) => {
-            return e.blob()
-        })
-        .then((blob) => {
-            // please change the file.extension with something more meaningful
-            // or create a utility function to parse from URL
-            //let img = document.createElement("img")
-            const url = URL.createObjectURL(blob)
-            let img = new Image()
-            img.onload = () => {
-                URL.revokeObjectURL(url)
-                callback(img)
-            }
-            img.src = url
-        })
+    var image = new Image();
+    image.crossOrigin = 'Anonymous';
+    image.onload = function () {
+        var canvas = document.createElement('canvas');
+        var context = canvas.getContext('2d');
+        canvas.height = this.naturalHeight;
+        canvas.width = this.naturalWidth;
+        context.drawImage(this, 0, 0);
+        var dataURL = canvas.toDataURL('image/jpeg');
+        let img = new Image()
+        img.src = dataURL
+        callback(img)
+    };
+    image.src = url;
 }
 
 /**
@@ -128,6 +126,7 @@ function getImageFile(url, callback) {
  * @param {*} callback The callback to be call
  */
 function createThumbmail(src, w, callback) {
+    
     getImageFile(src, (img) => {
         if (img.width > w) {
             var oc = document.createElement('canvas'), octx = oc.getContext('2d');
@@ -152,24 +151,7 @@ function createThumbmail(src, w, callback) {
 }
 
 function createThumbmailFromImage(img, w, callback) {
-    if (img.width > w) {
-        var oc = document.createElement('canvas'), octx = oc.getContext('2d');
-        oc.width = img.width;
-        oc.height = img.height;
-        octx.drawImage(img, 0, 0);
-        if (img.width > img.height) {
-            oc.height = (img.height / img.width) * w;
-            oc.width = w;
-        } else {
-            oc.width = (img.width / img.height) * w;
-            oc.height = w;
-        }
-        octx.drawImage(oc, 0, 0, oc.width, oc.height);
-        octx.drawImage(img, 0, 0, oc.width, oc.height);
-        callback(oc.toDataURL());
-    } else {
-        callback(img.src);
-    }
+    createThumbmail(img.src, w, callback)
 }
 
 export function readBlogPost(domain, uuid, callback, errorCallback) {
@@ -696,7 +678,7 @@ export class BlogPostElement extends HTMLElement {
 
             if (evt.dataTransfer.files.length > 0) {
                 var file = evt.dataTransfer.files[0], reader = new FileReader();
-                reader.onload = (event) =>{
+                reader.onload = (event) => {
                     let dataUrl = event.target.result
                     this.shadowRoot.querySelector("#delete-cover-image-btn").style.display = "block"
                     this.shadowRoot.querySelector(".image-selector").src = dataUrl
@@ -893,20 +875,20 @@ export class BlogPostElement extends HTMLElement {
 
     getThumbnail(width, callback) {
         // Take the image from the editor...
-        if(this.shadowRoot.querySelector(".image-selector").src.length > 0){
+        if (this.shadowRoot.querySelector(".image-selector").src.length > 0) {
             let dataUrl = this.shadowRoot.querySelector(".image-selector").src
             this.shadowRoot.querySelector("#delete-cover-image-btn").style.display = "block"
             callback(dataUrl)
             console.log(dataUrl)
-            return  
+            return
         }
-       
+
         let images = this.editorDiv.querySelectorAll("img")
         if (images.length > 0) {
             createThumbmailFromImage(images[0], width, dataUrl => {
-                this.shadowRoot.querySelector(".image-selector").src = dataUrl;  
+                this.shadowRoot.querySelector(".image-selector").src = dataUrl;
                 this.shadowRoot.querySelector("#delete-cover-image-btn").style.display = "block"
-                callback(dataUrl); 
+                callback(dataUrl);
             })
         } else {
             let galleries = this.editorDiv.querySelectorAll("globular-image-gallery")
@@ -915,9 +897,9 @@ export class BlogPostElement extends HTMLElement {
                 let url = galleries[0].getImage(0)
                 if (url.startsWith("http")) {
                     createThumbmail(url, width, dataUrl => {
-                        this.shadowRoot.querySelector(".image-selector").src = dataUrl; 
+                        this.shadowRoot.querySelector(".image-selector").src = dataUrl;
                         this.shadowRoot.querySelector("#delete-cover-image-btn").style.display = "block";
-                        callback(dataUrl); 
+                        callback(dataUrl);
                         console.log(dataUrl)
                     })
                 } else {
@@ -925,10 +907,11 @@ export class BlogPostElement extends HTMLElement {
                     img.src = url
                     console.log(url)
                     createThumbmailFromImage(img, width, dataUrl => {
-                        this.shadowRoot.querySelector(".image-selector").src = dataUrl;  
-                        this.shadowRoot.querySelector("#delete-cover-image-btn").style.display = "block"; 
-                        callback(dataUrl); 
-                        console.log(dataUrl )})
+                        this.shadowRoot.querySelector(".image-selector").src = dataUrl;
+                        this.shadowRoot.querySelector("#delete-cover-image-btn").style.display = "block";
+                        callback(dataUrl);
+                        console.log(dataUrl)
+                    })
                 }
 
             } else {
@@ -939,9 +922,9 @@ export class BlogPostElement extends HTMLElement {
                     img.src = embeddedVideos[0].getVideo(0).getPoster().getContenturl()
 
                     createThumbmailFromImage(img, width, dataUrl => {
-                        this.shadowRoot.querySelector(".image-selector").src = dataUrl;  
+                        this.shadowRoot.querySelector(".image-selector").src = dataUrl;
                         this.shadowRoot.querySelector("#delete-cover-image-btn").style.display = "block";
-                        callback(dataUrl); 
+                        callback(dataUrl);
                     })
                 } else {
                     let embeddedAudios = this.editorDiv.querySelectorAll("globular-embedded-audios")
@@ -950,9 +933,9 @@ export class BlogPostElement extends HTMLElement {
                         let img = document.createElement("img")
                         img.src = embeddedAudios[0].getAudio(0).getPoster().getContenturl()
                         createThumbmailFromImage(img, width, dataUrl => {
-                            this.shadowRoot.querySelector(".image-selector").src = dataUrl;  
+                            this.shadowRoot.querySelector(".image-selector").src = dataUrl;
                             this.shadowRoot.querySelector("#delete-cover-image-btn").style.display = "block";
-                            callback(dataUrl); 
+                            callback(dataUrl);
                         })
                     } else {
                         callback("")
@@ -1191,7 +1174,7 @@ export class BlogPostElement extends HTMLElement {
 
                                 // Publish the event
                                 Model.publish(Application.account.getId() + "@" + Application.account.getDomain() + "_publish_blog_event", this.blog.serializeBinary(), false)
-                                if(this.blog.getThumbnail().length > 0){
+                                if (this.blog.getThumbnail().length > 0) {
                                     this.shadowRoot.querySelector("#delete-cover-image-btn").style.display = "block";
                                     this.shadowRoot.querySelector(".image-selector").src = this.blog.getThumbnail();
                                 }
@@ -1203,14 +1186,14 @@ export class BlogPostElement extends HTMLElement {
 
                 }
 
-                if (this.blog){
-                    if(this.blog.getThumbnail().length == 0){
+                if (this.blog) {
+                    if (this.blog.getThumbnail().length == 0) {
                         this.getThumbnail(500, dataUrl => { rqst.setThumbnail(dataUrl); createBlog(); })
-                    }else{
+                    } else {
                         createBlog();
                     }
-                   
-                }else{
+
+                } else {
                     this.getThumbnail(500, dataUrl => { rqst.setThumbnail(dataUrl); createBlog(); })
                 }
 
@@ -1246,7 +1229,7 @@ export class BlogPostElement extends HTMLElement {
 
                                 // That function will update the blog...
                                 globule.eventHub.publish(this.blog.getUuid() + "_blog_updated_event", this.blog.getUuid(), false)
-                                if(this.blog.getThumbnail().length > 0){
+                                if (this.blog.getThumbnail().length > 0) {
                                     this.shadowRoot.querySelector("#delete-cover-image-btn").style.display = "block";
                                     this.shadowRoot.querySelector(".image-selector").src = this.blog.getThumbnail();
                                 }
@@ -1258,9 +1241,9 @@ export class BlogPostElement extends HTMLElement {
                 }
 
                 // set the thumbnail and save the blog...
-                if (this.blog.getThumbnail().length == 0){
+                if (this.blog.getThumbnail().length == 0) {
                     this.getThumbnail(500, dataUrl => { this.blog.setThumbnail(dataUrl); saveBlog() })
-                }else{
+                } else {
                     saveBlog()
                 }
 
