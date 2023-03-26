@@ -247,7 +247,6 @@ function getVideoPreview(parent, path, name, callback, globule) {
 
         }
 
-        preview.showPlayBtn()
 
         preview.onplay = (f) => {
             path = f.path

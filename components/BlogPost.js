@@ -33,6 +33,8 @@ import "@polymer/paper-spinner/paper-spinner.js";
 import { getAudioInfo, getVideoInfo } from './File';
 import { SearchAudioCard, SearchVideoCard } from './Search';
 import { randomUUID } from './utility';
+import { playVideos } from './Video';
+import { playAudio, playAudios } from './Audio';
 
 const intervals = [
     { label: 'year', seconds: 31536000 },
@@ -1298,10 +1300,7 @@ export class EmbeddedVideos extends HTMLElement {
                 color: var(--palette-text-primary);
                 display: flex;
                 flex-direction: column;
-
-            }
-
-            #header{
+                position: relative;
 
             }
 
@@ -1310,9 +1309,16 @@ export class EmbeddedVideos extends HTMLElement {
                 flex-wrap: wrap;
             }
 
+            #play-all-btn {
+                position:absolute;
+                top: 0px; 
+                right: 0px;
+                z-index: 100;
+            }
+
         </style>
         <div id="container">
-            <div id="header"></div>
+            <paper-icon-button id="play-all-btn" title="play all video" icon="av:playlist-play"></paper-icon-button>
             <div id="videos">
                 <slot></slot>
             </div>
@@ -1321,6 +1327,11 @@ export class EmbeddedVideos extends HTMLElement {
 
         // Keep a reference to the videos.
         this.videos = []
+        this.playAllBtn = this.shadowRoot.querySelector("#play-all-btn")
+
+        this.playAllBtn.onclick = (evt)=>{
+            playVideos(this.videos, "videos list")
+        }
     }
 
     getVideo(index) {
@@ -1383,25 +1394,19 @@ export class EmbeddedAudios extends HTMLElement {
     // Create the applicaiton view.
     constructor() {
         super()
+
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
-    }
-
-    // The connection callback.
-    connectedCallback() {
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
             #container{
+                position: relative;
                 background-color: var(--palette-background-paper);
                 color: var(--palette-text-primary);
                 display: flex;
                 flex-direction: column;
-
-            }
-
-            #header{
 
             }
 
@@ -1410,9 +1415,16 @@ export class EmbeddedAudios extends HTMLElement {
                 flex-wrap: wrap;
             }
 
+            #play-all-btn {
+                position:absolute;
+                top: 0px; 
+                right: 0px;
+                z-index: 100;
+            }
+
         </style>
         <div id="container">
-            <div id="header"></div>
+            <paper-icon-button id="play-all-btn" title="play all audio" icon="av:playlist-play"></paper-icon-button>
             <div id="audios">
                 <slot></slot>
             </div>
@@ -1421,6 +1433,12 @@ export class EmbeddedAudios extends HTMLElement {
 
         // Keep a reference to the audios.
         this.audios = []
+
+        this.playAllBtn = this.shadowRoot.querySelector("#play-all-btn")
+
+        this.playAllBtn.onclick = (evt)=>{
+            playAudios(this.audios, "audio list")
+        }
     }
 
     getAudio(index) {

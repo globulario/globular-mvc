@@ -44,6 +44,8 @@ function getTitleFiles(id, indexPath, globule, callback) {
 }
 
 export function playAudios(audios, name) {
+
+    let audios_ = [...audios]
     ApplicationView.wait("loading audios playlist...")
     // here I will get the audi
     let audio_playList = "#EXTM3U\n"
@@ -51,7 +53,7 @@ export function playAudios(audios, name) {
 
     // Generate the playlist with found audio items.
     let generateAudioPlaylist = () => {
-        let audio = audios.pop();
+        let audio = audios_.pop();
         let globule = audio.globule;
 
         // set the audio info
@@ -74,7 +76,7 @@ export function playAudios(audios, name) {
 
                 audio_playList += url + "\n\n"
             }
-            if (audios.length > 0) {
+            if (audios_.length > 0) {
                 generateAudioPlaylist()
             } else {
                 ApplicationView.resume()

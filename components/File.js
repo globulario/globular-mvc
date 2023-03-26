@@ -2524,8 +2524,8 @@ export class FileIconView extends HTMLElement {
         `
 
         this.file = null;
+        this.preview = null;
     }
-
 
     select(){
         let checkbox = this.shadowRoot.querySelector("paper-checkbox")
@@ -2539,6 +2539,11 @@ export class FileIconView extends HTMLElement {
         checkbox.checked = false
         checkbox.style.display = "none"
         Model.eventHub.publish("__file_select_unselect_" + this.file.path, checkbox.checked, true)
+    }
+
+    stopPreview(){
+        if(this.preview)
+            this.preview.stopPreview()
     }
 
     // Call search event.
@@ -2696,10 +2701,10 @@ export class FileIconView extends HTMLElement {
             /** In that case I will display the vieo preview. */
             let h = 72;
 
-            let preview = new VideoPreview(file, h, () => {
+            this.preview = new VideoPreview(file, h, () => {
                 fileNameSpan.style.wordBreak = "break-all"
                 fileNameSpan.style.fontSize = ".85rem"
-                fileNameSpan.style.maxWidth = preview.width + "px"
+                fileNameSpan.style.maxWidth = this.preview.width + "px"
                 if (file.videos) {
                     if (file.videos.length > 0)
                         fileNameSpan.innerHTML = file.videos[0].getDescription()
@@ -2708,21 +2713,12 @@ export class FileIconView extends HTMLElement {
             }, this._file_explorer_.globule)
 
             // keep the explorer link...
-            preview._file_explorer_ = this._file_explorer_
-            preview.name = file.name;
-            preview.onpreview = () => {
-                let previews = this.div.querySelectorAll("globular-video-preview")
-                previews.forEach(p => {
-                    // stop all other preview...
-                    if (preview.name != p.name) {
-                        p.stopPreview()
-                    }
-                })
-            }
+            this.preview._file_explorer_ = this._file_explorer_
+            this.preview.name = file.name;
 
-            fileIconDiv.insertBefore(preview, fileIconDiv.firstChild)
+            fileIconDiv.insertBefore(this.preview, fileIconDiv.firstChild)
 
-            preview.draggable = false
+            this.preview.draggable = false
 
             fileIconDiv.ondrop = (evt) => {
                 evt.stopPropagation();
@@ -2732,7 +2728,6 @@ export class FileIconView extends HTMLElement {
                     view.setImdbTitleInfo(url, file)
                 }
             }
-
 
             // Retreive the video title to display more readable file name...
             if (file.videos) {
@@ -6187,7 +6182,6 @@ export class VideoPreview extends HTMLElement {
         this.onresize = onresize;
         this.onpreview = null;
         this.onplay = null;
-        this.__show_play_btn__ = false;
         this.title = file.path
 
         // Set the shadow dom.
@@ -6206,23 +6200,6 @@ export class VideoPreview extends HTMLElement {
                 cursor: pointer;
             }
 
-            #play-btn{
-                position: absolute;
-                transform: translate(-50%,-50%);
-                background-color:  rgb(0, 179, 255);
-                width: 28px;
-                height: 28px;
-                padding: 2px;
-                border-radius: 16px;
-                border: 1px px solid darkgrey;
-                --iron-icon-fill-color: white;
-                display: none;
-            }
-
-            #play-btn:hover {
-                cursor: pointer;
-            }
-
             img {
                 display: block;
                 width:auto;
@@ -6235,7 +6212,6 @@ export class VideoPreview extends HTMLElement {
         </style>
        <div id = "container" draggable="false" >
             <slot style="position: relative;"></slot>
-            <iron-icon id="play-btn" icon="av:play-arrow"></iron-icon>
             <paper-ripple></paper-ripple>
         </div>
         `
@@ -6244,8 +6220,7 @@ export class VideoPreview extends HTMLElement {
 
         // give the focus to the input.
         this.container = this.shadowRoot.querySelector("#container")
-        this.playBtn = this.shadowRoot.querySelector("#play-btn")
-
+ 
         let index = 0;
         if (this.file.thumbnail.length > 0) {
             this.firstImage = document.createElement("img")
@@ -6253,8 +6228,6 @@ export class VideoPreview extends HTMLElement {
             this.firstImage.onload = () => {
                 let ratio = this.height / this.firstImage.offsetHeight
                 this.width = this.firstImage.offsetWidth * ratio;
-                this.playBtn.style.top = "50%"
-                this.playBtn.style.left = "50%"
                 if (this.onresize != undefined) {
                     this.onresize()
                 }
@@ -6266,25 +6239,13 @@ export class VideoPreview extends HTMLElement {
         }
 
         // Play the video
-        this.playBtn.onclick = this.container.onclick = (evt) => {
+        this.container.onclick = (evt) => {
             evt.stopPropagation()
             this.play(globule)
         }
 
         // the next image timeout...
         this.timeout = null;
-        let is_over_play_btn = false;
-
-        this.playBtn.onmouseenter = (evt) => {
-            evt.stopPropagation();
-            is_over_play_btn = true
-            this.playBtn.style.display = "block";
-        }
-
-        this.playBtn.onmouseout = (evt) => {
-            evt.stopPropagation();
-            is_over_play_btn = false
-        }
 
         // Connect events
         this.container.onmouseenter = (evt) => {
@@ -6304,8 +6265,7 @@ export class VideoPreview extends HTMLElement {
                         if (this.images.length > 0) {
                             this.container.appendChild(this.images[0])
 
-                            this.playBtn.style.display = "block";
-                            if (this.interval == null && !is_over_play_btn) {
+                            if (this.interval == null) {
                                 this.startPreview();
                             }
 
@@ -6317,8 +6277,7 @@ export class VideoPreview extends HTMLElement {
 
                 }, globule)
             } else if (this.images.length > 1) {
-                this.playBtn.style.display = "block";
-                if (this.interval == null && !is_over_play_btn) {
+                if (this.interval == null) {
                     this.startPreview();
                 }
             }
@@ -6327,25 +6286,24 @@ export class VideoPreview extends HTMLElement {
 
         this.container.onmouseout = (evt) => {
             evt.stopPropagation();
-            if (!this.__show_play_btn__) {
-                this.playBtn.style.display = "none";
-            }
-            if (this.interval != null && !is_over_play_btn) {
+            if (this.interval != null) {
                 this.stopPreview();
             }
         }
 
     }
 
-    showPlayBtn() {
-        this.__show_play_btn__ = true
-        this.playBtn.style.display = "block";
-    }
 
     /**
      * Start display the image 
      */
     startPreview() {
+
+        let iconViews = document.querySelectorAll("globular-file-icon-view")
+        for(var i=0; i < iconViews.length; i++){
+            iconViews[i].stopPreview()
+        }
+
         let index = 0;
         if (this.onpreview != null) {
             this.onpreview()
@@ -6368,7 +6326,7 @@ export class VideoPreview extends HTMLElement {
             } else {
                 index = 0
             }
-        }, 500)
+        }, 450)
     }
 
     connectedCallback() {
@@ -6387,7 +6345,7 @@ export class VideoPreview extends HTMLElement {
 
         clearInterval(this.interval)
         this.interval = null
-        this.playBtn.style.display = "none";
+        
         while (this.container.children.length > 2) {
             this.container.removeChild(this.container.children[this.container.children.length - 1])
         }
@@ -6399,6 +6357,9 @@ export class VideoPreview extends HTMLElement {
      * Play video
      */
     play(globule) {
+
+        this.stopPreview()
+
         if (this._file_explorer_ != undefined) {
             Model.eventHub.publish("__play_video__", { file: this.file, file_explorer_id: this._file_explorer_.id, globule: globule }, true)
         }

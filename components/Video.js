@@ -48,6 +48,8 @@ function getTitleFiles(id, indexPath, globule, callback) {
 
 export function playVideos(videos, name) {
 
+    let videos_ = [...videos];
+
     ApplicationView.wait("loading videos playlist...")
     // here I will get the audi
     let video_playList = "#EXTM3U\n"
@@ -55,7 +57,7 @@ export function playVideos(videos, name) {
 
     // Generate the playlist with found audio items.
     let generateVideoPlaylist = () => {
-        let video = videos.pop();
+        let video = videos_.pop();
         let globule = video.globule;
 
         // set the audio info
@@ -81,7 +83,7 @@ export function playVideos(videos, name) {
 
                 video_playList += url + "\n\n"
             }
-            if (videos.length > 0) {
+            if (videos_.length > 0) {
                 generateVideoPlaylist()
             } else {
 
