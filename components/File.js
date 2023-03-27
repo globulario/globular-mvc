@@ -140,7 +140,7 @@ export function getTitleInfo(globule, file, callback) {
             if (index < globules.length) {
                 ___getTitleInfo___(index)
             } else {
-                callback(_titles_)
+                callback(file.titles )
             }
 
         })
@@ -163,7 +163,6 @@ function __getTitleInfo__(globule, file, callback) {
             })
             .catch(err => {
                 // so here no title was found...
-
                 callback([])
             })
     })
