@@ -139,7 +139,6 @@ export class File extends Model {
         this._files = value;
     }
 
-
     /** The file  */
     constructor(name: string, path: string, local: boolean = false, globule = Model.globular) {
         super();

@@ -36,7 +36,7 @@ import { GetSharedResourceRqst, SubjectType } from 'globular-web-client/rbac/rba
 import { fireResize, getCoords, randomUUID } from './utility';
 import * as getUuidByString from 'uuid-by-string';
 import { ImageViewer } from './Image';
-import { AssociateFileWithTitleRequest, CreateTitleRequest, GetFileAudiosRequest, GetFileTitlesRequest, GetFileVideosRequest, Person, Poster, Title } from 'globular-web-client/title/title_pb';
+import { AssociateFileWithTitleRequest, CreateTitleRequest, CreateVideoRequest, GetFileAudiosRequest, GetFileTitlesRequest, GetFileVideosRequest, Person, Poster, Title, Video, Publisher } from 'globular-web-client/title/title_pb';
 import { DownloadTorrentRequest, DropTorrentRequest, GetTorrentInfosRequest, GetTorrentLnksRequest } from 'globular-web-client/torrent/torrent_pb';
 import { getImdbInfo } from './Search';
 import { setMoveable } from './moveable'
@@ -128,31 +128,27 @@ function copyToClipboard(text) {
 // Now I will test if imdb info are allready asscociated.
 export function getTitleInfo(globule, file, callback) {
     let globules = Model.getGlobules()
-    let index = globules.findIndex(g => { globule.domain == g.domain })
-    if (index > 0) {
-        globules.splice(index, 1)
-        globules.unshift(globule)
-    }
+    file.titles = []
 
     // Now I will get titles info.
-    let ___getTitleInfo___ = () => {
-        let g = globules.shift()
-        if (g == null) {
-            callback([])
-        } else {
-            __getTitleInfo__(g, file, (_titles_) => {
-                if (_titles_.length == 0) {
-                    ___getTitleInfo___()
-                } else {
-                    _titles_.forEach(t => t.globule = g)
-                    file.titles = _titles_
-                    callback(_titles_)
-                }
-            })
-        }
+    let ___getTitleInfo___ = (index) => {
+        let g = globules[index]
+        index++
+        __getTitleInfo__(g, file, (_titles_) => {
+            _titles_.forEach(t => t.globule = g)
+            file.titles = file.titles.concat(_titles_)
+            if (index < globules.length) {
+                ___getTitleInfo___(index)
+            } else {
+                callback(_titles_)
+            }
+
+        })
+
     }
 
-    ___getTitleInfo___()
+    let index = 0
+    ___getTitleInfo___(index)
 }
 
 function __getTitleInfo__(globule, file, callback) {
@@ -176,31 +172,27 @@ function __getTitleInfo__(globule, file, callback) {
 export function getVideoInfo(globule, file, callback) {
 
     let globules = Model.getGlobules()
-    let index = globules.findIndex(g => { globule.domain == g.domain })
-    if (index > 0) {
-        globules.splice(index, 1)
-        globules.unshift(globule)
-    }
+    file.videos = []
 
     // Now I will get titles info.
-    let ___getVideoInfo___ = () => {
-        let g = globules.shift()
-        if (g == null) {
-            callback([])
-        } else {
-            __getVideoInfo__(g, file, (_videos_) => {
-                if (_videos_.length == 0) {
-                    ___getVideoInfo___()
-                } else {
-                    _videos_.forEach(v => v.globule = g)
-                    file.videos = _videos_
-                    callback(_videos_)
-                }
-            })
-        }
+    let ___getVideoInfo___ = (index) => {
+        let g = globules[index]
+        index++
+
+        __getVideoInfo__(g, file, (_videos_) => {
+            _videos_.forEach(v => v.globule = g)
+            file.videos = file.videos.concat(_videos_)
+            if (index < globules.length) {
+                ___getVideoInfo___(index)
+            } else {
+                callback(file.videos)
+            }
+        })
+
     }
 
-    ___getVideoInfo___()
+    let index = 0
+    ___getVideoInfo___(index)
 }
 
 function __getVideoInfo__(globule, file, callback) {
@@ -223,31 +215,26 @@ function __getVideoInfo__(globule, file, callback) {
 export function getAudioInfo(globule, file, callback) {
 
     let globules = Model.getGlobules()
-    let index = globules.findIndex(g => { globule.domain == g.domain })
-    if (index > 0) {
-        globules.splice(index, 1)
-        globules.unshift(globule)
-    }
+    file.audios = []
 
     // Now I will get titles info.
-    let ___getAudioInfo___ = () => {
-        let g = globules.shift()
-        if (g == null) {
-            callback([])
-        } else {
-            __getAudioInfo__(g, file, (_audios_) => {
-                if (_audios_.length == 0) {
-                    ___getAudioInfo___()
-                } else {
-                    _audios_.forEach(a => a.globule = g)
-                    file.audios = _audios_
-                    callback(_audios_)
-                }
-            })
-        }
+    let ___getAudioInfo___ = (index) => {
+        let g = globules[index]
+        index++
+        __getAudioInfo__(g, file, (_audios_) => {
+            _audios_.forEach(a => a.globule = g)
+            file.audios = file.audios.concat(_audios_)
+            if (index < globules.length) {
+                ___getAudioInfo___(index)
+            } else {
+                callback(file.audios)
+            }
+        })
+
     }
 
-    ___getAudioInfo___()
+    let index = 0
+    ___getAudioInfo___(index)
 }
 
 
@@ -809,7 +796,7 @@ export class FilesView extends HTMLElement {
                                         err => { ApplicationView.displayMessage(err, 3000); this._file_explorer_.resume() }, token)
                                 }, token)
 
-                                
+
                         }, err => { ApplicationView.displayMessage(err, 3000); this._file_explorer_.resume() }, token)
                 })
 
@@ -1063,10 +1050,12 @@ export class FilesView extends HTMLElement {
                         file.videos = videos // keep in the file itself...
                         Model.eventHub.publish(`display_media_infos_${this._file_explorer_.id}_event`, file, true)
                         // Remove it from it parent... 
-                        this.menu.close()
-                        this.menu.parentNode.removeChild(this.menu)
+                        if (this.menu.parentNode) {
+                            // Remove it from it parent... 
+                            this.menu.close()
+                            this.menu.parentNode.removeChild(this.menu)
+                        }
                     } else {
-
                         // get the title infos...
                         getTitleInfo(globule, file, (titles) => {
                             if (titles.length > 0) {
@@ -1076,6 +1065,121 @@ export class FilesView extends HTMLElement {
                                     // Remove it from it parent... 
                                     this.menu.close()
                                     this.menu.parentNode.removeChild(this.menu)
+                                }
+                            } else {
+                                // So here no video or title info exist for that file I will propose to the user 
+                                // to create a new video infos...
+                                // Here I will ask the user for confirmation before actually delete the contact informations.
+                                let toast = ApplicationView.displayMessage(
+                                    `
+                                    <style>
+                                        
+                                        #yes-no-create-video-info-box{
+                                        display: flex;
+                                        flex-direction: column;
+                                        }
+
+                                        #yes-no-create-video-info-box globular-picture-card{
+                                        padding-bottom: 10px;
+                                        }
+
+                                        #yes-no-create-video-info-box div{
+                                        display: flex;
+                                        padding-bottom: 10px;
+                                        }
+
+                                    </style>
+                                    <div id="yes-no-create-video-info-box">
+                                        <div style="margin-bottom: 10px;">No informations was associated with that video file</div>
+                                        <img style="max-height: 100px; object-fit: contain; width: 100%;" src="${file.thumbnail}"></img>
+                                        <span style="font-size: .95rem; text-align: center;">${file.path.substring(file.path.lastIndexOf("/") + 1)}</span>
+                                        <div style="margin-top: 10px;">Do you want to create video information? </div>
+                                        <div style="justify-content: flex-end;">
+                                            <paper-button raised id="yes-create-video-info">Yes</paper-button>
+                                            <paper-button raised id="no-create-video-info">No</paper-button>
+                                        </div>
+                                    </div>
+                                    `,
+                                    60 * 1000 // 60 sec...
+                                );
+
+                                let yesBtn = document.querySelector("#yes-create-video-info")
+                                let noBtn = document.querySelector("#no-create-video-info")
+
+                                // On yes
+                                yesBtn.onclick = () => {
+
+                                    // I will create video description.
+                                    let rqst = new CreateVideoRequest
+                                    let videoInfo = new Video
+                                    videoInfo.setId(file.checksum)
+                                    let date = new Date()
+                                    videoInfo.setDate(date.toISOString())
+                                    let publisher = new Publisher
+                                    publisher.setId(Application.account.id + "@" + Application.account.domain)
+
+                                    if (Application.account.firstName.length > 0)
+                                        publisher.setName(Application.account.firstName + " " + Application.account.lastName)
+
+                                    let poster = new Poster
+                                    poster.setContenturl(file.thumbnail)
+                                    poster.setUrl()
+                                    videoInfo.setPoster(poster)
+
+                                    videoInfo.setPublisherid(publisher)
+                                    let globule = file.globule
+
+                                    let url = getUrl(globule)
+                                    file.path.split("/").forEach(item => {
+                                        item = item.trim()
+                                        if (item.length > 0) {
+                                            url += "/" + encodeURIComponent(item)
+                                        }
+                                    })
+                                    videoInfo.setUrl(url)
+
+
+
+                                    /** Other info will be set by the user... */
+      
+                                    generatePeerToken(globule, token => {
+
+
+                                        let vid = document.createElement("video")
+                                        vid.src = url + "?token=" + token
+                                        // wait for duration to change from NaN to the actual duration
+                                        vid.ondurationchange =  () =>{
+                                            videoInfo.setDuration(parseInt(vid.duration))
+                                            rqst.setVideo(videoInfo)
+                                            rqst.setIndexpath(globule.config.DataPath + "/search/videos")
+        
+                                        globule.titleService.createVideo(rqst, { application: Application.application, domain: globule.domain, token: token })
+                                        .then(rsp => {
+
+                                            // So here I Will set the file association.
+                                            let rqst = new AssociateFileWithTitleRequest
+                                            rqst.setFilepath(file.path)
+                                            rqst.setTitleid(videoInfo.getId())
+                                            rqst.setIndexpath(globule.config.DataPath + "/search/videos")
+
+
+                                            globule.titleService.associateFileWithTitle(rqst, { application: Application.application, domain: globule.domain, token: token })
+                                                .then(rsp => {
+
+                                                    console.log("New Video info was created! ", videoInfo)
+                                                    rsp.get
+                                                }).catch(err => ApplicationView.displayMessage(err, 3000))
+
+                                        }).catch(err => ApplicationView.displayMessage(err, 3000))
+                                        };
+
+                                    })
+
+                                    toast.dismiss();
+                                }
+
+                                noBtn.onclick = () => {
+                                    toast.dismiss();
                                 }
                             }
                         })
@@ -2527,22 +2631,22 @@ export class FileIconView extends HTMLElement {
         this.preview = null;
     }
 
-    select(){
+    select() {
         let checkbox = this.shadowRoot.querySelector("paper-checkbox")
         checkbox.checked = true
         checkbox.style.display = "block"
         Model.eventHub.publish("__file_select_unselect_" + this.file.path, checkbox.checked, true)
     }
 
-    unselect(){
+    unselect() {
         let checkbox = this.shadowRoot.querySelector("paper-checkbox")
         checkbox.checked = false
         checkbox.style.display = "none"
         Model.eventHub.publish("__file_select_unselect_" + this.file.path, checkbox.checked, true)
     }
 
-    stopPreview(){
-        if(this.preview)
+    stopPreview() {
+        if (this.preview)
             this.preview.stopPreview()
     }
 
@@ -2731,12 +2835,14 @@ export class FileIconView extends HTMLElement {
 
             // Retreive the video title to display more readable file name...
             if (file.videos) {
-                fileNameSpan.innerHTML = file.videos[0].getDescription()
+                if (file.videos.length > 0)
+                    fileNameSpan.innerHTML = file.videos[0].getDescription()
             } else {
                 getVideoInfo(this._file_explorer_.globule, file, videos => {
                     if (videos.length > 0) {
                         file.videos = videos // keep in the file itself...
-                        fileNameSpan.innerHTML = file.videos[0].getDescription()
+                        if (file.videos[0])
+                            fileNameSpan.innerHTML = file.videos[0].getDescription()
                     } else {
 
                         if (file.titles) {
@@ -3095,14 +3201,14 @@ export class FileIconViewSection extends HTMLElement {
         this.countDiv = this.shadowRoot.querySelector(`#${fileType}_section_count`)
 
         let selectAllCheckbox = this.shadowRoot.querySelector("#select-all-checkbox")
-        selectAllCheckbox.onchange = ()=>{
+        selectAllCheckbox.onchange = () => {
             let iconViews = this.querySelectorAll("globular-file-icon-view")
-            if(selectAllCheckbox.checked){
-                iconViews.forEach(v=>{
+            if (selectAllCheckbox.checked) {
+                iconViews.forEach(v => {
                     v.select()
                 })
-            }else{
-                iconViews.forEach(v=>{
+            } else {
+                iconViews.forEach(v => {
                     v.unselect()
                 })
             }
@@ -3360,7 +3466,7 @@ export class FileIconViewSection extends HTMLElement {
 
 
                         })
-                        .catch(err => ApplicationView.displayMessage(err, 3000))
+                            .catch(err => ApplicationView.displayMessage(err, 3000))
                     })
 
 
@@ -3388,7 +3494,7 @@ export class FileIconViewSection extends HTMLElement {
                     if (videos.length > 0) {
                         playVideos(videos, dir.name)
                     } else {
-                        ApplicationView.displayMessage("no video informations found to generate a playlist")
+                        ApplicationView.displayMessage("no video informations found to generate a playlist", 3000)
                     }
                 }
 
@@ -3396,7 +3502,7 @@ export class FileIconViewSection extends HTMLElement {
         }
     }
 
-    updateCount(){
+    updateCount() {
         this.shadowRoot.querySelector(`#section_count`).innerHTML = ` (${this.children.length})`
     }
 
@@ -5559,11 +5665,18 @@ export class FileExplorer extends HTMLElement {
                 }, (file) => {
 
                     if (file.titles != undefined) {
-                        this.informationManager.setTitlesInformation(file.titles)
-                    } else if (file.videos != undefined) {
-                        this.informationManager.setVideosInformation(file.videos)
-                    } else if (file.audios != undefined) {
-                        this.informationManager.setAudiosInformation(file.audios)
+                        if (file.titles.length > 0)
+                            this.informationManager.setTitlesInformation(file.titles)
+                    }
+
+                    if (file.videos != undefined) {
+                        if (file.videos.length > 0)
+                            this.informationManager.setVideosInformation(file.videos)
+                    }
+
+                    if (file.audios != undefined) {
+                        if (file.audios.length > 0)
+                            this.informationManager.setAudiosInformation(file.audios)
                     }
 
                     // I will display the permission manager.
@@ -6220,7 +6333,7 @@ export class VideoPreview extends HTMLElement {
 
         // give the focus to the input.
         this.container = this.shadowRoot.querySelector("#container")
- 
+
         let index = 0;
         if (this.file.thumbnail.length > 0) {
             this.firstImage = document.createElement("img")
@@ -6300,7 +6413,7 @@ export class VideoPreview extends HTMLElement {
     startPreview() {
 
         let iconViews = document.querySelectorAll("globular-file-icon-view")
-        for(var i=0; i < iconViews.length; i++){
+        for (var i = 0; i < iconViews.length; i++) {
             iconViews[i].stopPreview()
         }
 
@@ -6345,7 +6458,7 @@ export class VideoPreview extends HTMLElement {
 
         clearInterval(this.interval)
         this.interval = null
-        
+
         while (this.container.children.length > 2) {
             this.container.removeChild(this.container.children[this.container.children.length - 1])
         }

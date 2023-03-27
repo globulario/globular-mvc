@@ -127,8 +127,7 @@ function getImageFile(url, callback) {
  * @param {*} w The width of the thumnail
  * @param {*} callback The callback to be call
  */
-function createThumbmail(src, w, callback) {
-    
+export function createThumbmail(src, w, callback) {
     getImageFile(src, (img) => {
         if (img.width > w) {
             var oc = document.createElement('canvas'), octx = oc.getContext('2d');
@@ -152,7 +151,7 @@ function createThumbmail(src, w, callback) {
     })
 }
 
-function createThumbmailFromImage(img, w, callback) {
+export function createThumbmailFromImage(img, w, callback) {
     createThumbmail(img.src, w, callback)
 }
 

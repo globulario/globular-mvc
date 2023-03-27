@@ -1,7 +1,7 @@
 
 import { generatePeerToken, Model } from '../Model';
 import { Application } from "../Application";
-import { CreateVideoRequest, DeleteTitleRequest, DeleteVideoRequest, DissociateFileWithTitleRequest, GetTitleFilesRequest, SearchTitlesRequest } from "globular-web-client/title/title_pb";
+import { CreateVideoRequest, DeleteTitleRequest, DeleteVideoRequest, DissociateFileWithTitleRequest, GetTitleFilesRequest, Poster, SearchTitlesRequest } from "globular-web-client/title/title_pb";
 import { File } from "../File";
 import { VideoPreview, getFileSizeString } from "./File";
 import { ApplicationView } from "../ApplicationView";
@@ -10,8 +10,8 @@ import { playVideo } from "./Video";
 import { playAudio, secondsToTime } from "./Audio";
 import '@polymer/iron-autogrow-textarea/iron-autogrow-textarea.js';
 import { EditableStringList } from "./List";
-import { BlogPost } from 'globular-web-client/blog/blog_pb';
-import { readBlogPost } from './BlogPost';
+import { createThumbmail, readBlogPost } from './BlogPost';
+import { File as File__ } from "../File"; // File object already exist in js and I need to use it...
 
 // extract the duration info from the raw data.
 function parseDuration(duration) {
@@ -988,7 +988,9 @@ export class VideoInfoEditor extends HTMLElement {
         this.attachShadow({ mode: 'open' });
         this.videoInfosDisplay = videoInfosDisplay
 
-        // Innitialisation of the layout.
+        let imageUrl = "" // in case the video dosent contain any poster info...
+        if (video.getPoster())
+            imageUrl = video.getPoster().getContenturl()
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -1022,10 +1024,55 @@ export class VideoInfoEditor extends HTMLElement {
                 font-size: 1rem;
             }
 
+            .image-selector{
+                max-width: 200px;
+                position: relative;
+            }
+
+            #delete-cover-image-btn {
+                ${imageUrl.length == 0 ? "display:none;" : "display: block;"}
+                z-index: 100;
+                position: absolute;
+                top: 0px;
+                left: 0px;
+                background-color: black;
+                --paper-icon-button-ink-color: white;
+                --iron-icon-fill-color: white;
+                border-bottom: 1px solid var(--palette-divider);
+                border-right: 1px solid var(--palette-divider);
+                padding: 4px;
+                width: 30px;
+                height: 30px;
+                --iron-icon-width: 24px;
+                --iron-icon-height: 24px;
+            }
+
+            #drop-zone{
+                min-width: 180px;
+                transition: background 0.2s ease,padding 0.8s linear;
+                background-color: var(--palette-background-default);
+                position: relative;
+                border: 2px dashed var(--palette-divider);
+                border-radius: 5px;
+                min-height: 120px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 5px;
+            }
+
         </style>
         <div id="container">
             <div style="display: flex; flex-direction: column; justify-content: flex-start;  margin-left: 15px;">
-                <img id="video-thumbnail" src="${video.getPoster().getContenturl()}" style="max-height: 180px; max-width: 300px;"></iron-icon>
+            <div style="display: flex; flex-direction: column; margin: 5px;">
+                <span>Cover</span>
+                    <div id="drop-zone">
+                        <div style="position: relative; display: flex;">
+                            <paper-icon-button id="delete-cover-image-btn" icon="icons:close"></paper-icon-button>
+                            <img class="image-selector" src="${imageUrl}"> </img>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div style="display: flex; flex-direction: column; width: 100%;">
                 <div style="display: table; flex-grow: 1; margin-left: 20px;">
@@ -1077,6 +1124,132 @@ export class VideoInfoEditor extends HTMLElement {
             parent.appendChild(videoInfosDisplay)
         }
 
+        // Delete the postser/cover image.
+        this.shadowRoot.querySelector("#delete-cover-image-btn").onclick = () => {
+
+
+            // Here I will ask the user for confirmation before actually delete the contact informations.
+            let toast = ApplicationView.displayMessage(
+                `
+            <style>
+                
+                #yes-no-picture-delete-box{
+                display: flex;
+                flex-direction: column;
+                }
+
+                #yes-no-picture-delete-box globular-picture-card{
+                padding-bottom: 10px;
+                }
+
+                #yes-no-picture-delete-box div{
+                display: flex;
+                padding-bottom: 10px;
+                }
+
+            </style>
+            <div id="yes-no-picture-delete-box">
+                <div>Your about to remove the poster image</div>
+                    <img style="max-height: 256px; object-fit: contain; width: 100%;" src="${imageUrl}"></img>
+                    <div>Is it what you want to do? </div>
+                    <div style="justify-content: flex-end;">
+                    <paper-button raised id="yes-delete-picture">Yes</paper-button>
+                    <paper-button raised id="no-delete-picture">No</paper-button>
+                </div>
+            </div>
+            `,
+                60 * 1000 // 60 sec...
+            );
+
+            let yesBtn = document.querySelector("#yes-delete-picture")
+            let noBtn = document.querySelector("#no-delete-picture")
+
+            // On yes
+            yesBtn.onclick = () => {
+
+                // so here I will remove the image...
+                video.getPoster().setContenturl("")
+                this.shadowRoot.querySelector(".image-selector").removeAttribute("src")
+                this.shadowRoot.querySelector("#delete-cover-image-btn").style.display = "none"
+                toast.dismiss();
+            }
+
+            noBtn.onclick = () => {
+                toast.dismiss();
+            }
+        }
+
+        // The drag and drop event...
+        let imageCoverDropZone = this.shadowRoot.querySelector("#drop-zone")
+
+        imageCoverDropZone.ondragenter = (evt) => {
+            evt.stopPropagation();
+            evt.preventDefault();
+            imageCoverDropZone.style.filter = "invert(10%)"
+        }
+
+        imageCoverDropZone.ondragleave = (evt) => {
+            evt.preventDefault()
+            imageCoverDropZone.style.filter = ""
+        }
+
+        imageCoverDropZone.ondragover = (evt) => {
+            evt.stopPropagation();
+            evt.preventDefault();
+        }
+
+        imageCoverDropZone.ondrop = (evt) => {
+            evt.stopPropagation();
+            evt.preventDefault();
+
+            imageCoverDropZone.style.filter = ""
+            if (video.getPoster() == null) {
+                let poster = new Poster()
+                video.setPoster(poster)
+            }
+
+            if (evt.dataTransfer.files.length > 0) {
+                var file = evt.dataTransfer.files[0], reader = new FileReader();
+                reader.onload = (event) => {
+                    let dataUrl = event.target.result
+                    this.shadowRoot.querySelector("#delete-cover-image-btn").style.display = "block"
+                    this.shadowRoot.querySelector(".image-selector").src = dataUrl
+                    video.getPoster().setContenturl(dataUrl)
+                };
+                reader.readAsDataURL(file);
+            } else if (evt.dataTransfer.getData('files')) {
+
+                // So here I will try to get the image from drop files from the file-explorer.
+                let paths = JSON.parse(evt.dataTransfer.getData('files'))
+                let domain = evt.dataTransfer.getData('domain')
+
+                // keep track
+                paths.forEach(path => {
+                    // so here I will read the file
+                    let globule = Model.getGlobule(domain)
+                    File__.getFile(globule, path, -1, -1,
+                        f => {
+                            generatePeerToken(globule, token => {
+                                let url = getUrl(globule)
+                                f.path.split("/").forEach(item => {
+                                    let component = encodeURIComponent(item.trim())
+                                    if (component.length > 0) {
+                                        url += "/" + component
+                                    }
+                                })
+
+                                url += "?application=" + Model.application;
+                                url += "&token=" + token
+                                createThumbmail(url, 500, dataUrl => {
+                                    this.shadowRoot.querySelector("#delete-cover-image-btn").style.display = "block"
+                                    this.shadowRoot.querySelector(".image-selector").src = dataUrl
+                                    video.getPoster().setContenturl(dataUrl)
+                                })
+                            })
+                        }, err => ApplicationView.displayMessage(err, 3000))
+                })
+            }
+        }
 
         // The video id
         let editVideoIdBtn = this.shadowRoot.querySelector("#edit-video-id-btn")
@@ -1117,6 +1290,7 @@ export class VideoInfoEditor extends HTMLElement {
             videoUrlInput.style.display = "none"
             videoUrlDiv.style.display = "table-cell"
             videoUrlDiv.innerHTML = videoUrlInput.value
+
         }
 
         // The video description
@@ -1148,7 +1322,6 @@ export class VideoInfoEditor extends HTMLElement {
         let videoTagsList = new EditableStringList(video.getTagsList())
         videoTagsDiv.appendChild(videoTagsList)
 
-
         this.shadowRoot.querySelector("#save-indexation-btn").onclick = () => {
 
             // So here I will set video values back and update it in the parent...
@@ -1174,7 +1347,6 @@ export class VideoInfoEditor extends HTMLElement {
             parent.removeChild(this)
             parent.appendChild(videoInfosDisplay)
         }
-
     }
 
 }
@@ -2214,17 +2386,17 @@ export class BlogPostInfo extends HTMLElement {
         }
 
 
-        Model.getGlobule(blogPost.getDomain()).eventHub.subscribe(blogPost.getUuid() + "_blog_updated_event", uuid => {}, evt => {
+        Model.getGlobule(blogPost.getDomain()).eventHub.subscribe(blogPost.getUuid() + "_blog_updated_event", uuid => { }, evt => {
 
-            readBlogPost(blogPost.getDomain(), blogPost.getUuid(), b =>{
+            readBlogPost(blogPost.getDomain(), blogPost.getUuid(), b => {
                 this.blog = b
                 let creationTime = new Date(this.blogPost.getCreationtime() * 1000)
-                let thumbnail =  this.blog.getThumbnail()
+                let thumbnail = this.blog.getThumbnail()
                 if (!thumbnail) {
                     thumbnail = ""
                 }
-    
-     
+
+
                 // update fields
                 this.shadowRoot.querySelector("#creation_time_div").innerHTML = creationTime.toLocaleDateString()
                 this.shadowRoot.querySelector("#sub_title_div").innerHTML = this.blogPost.getSubtitle()
@@ -2234,9 +2406,9 @@ export class BlogPostInfo extends HTMLElement {
                     this.shadowRoot.querySelector("#thumbnail_img").src = thumbnail
                 }
 
-            }, err=>ApplicationView.displayMessage(err, 3000))
+            }, err => ApplicationView.displayMessage(err, 3000))
 
-      
+
         }, false, this)
 
 
@@ -2246,7 +2418,7 @@ export class BlogPostInfo extends HTMLElement {
         }
 
 
-        Model.eventHub.subscribe(blogPost.getUuid() + "_blog_delete_event", uuid => {},
+        Model.eventHub.subscribe(blogPost.getUuid() + "_blog_delete_event", uuid => { },
             evt => {
                 // simplity remove it from it parent...
                 if (this.parentNode)
