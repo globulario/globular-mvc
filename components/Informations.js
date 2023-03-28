@@ -12,6 +12,7 @@ import '@polymer/iron-autogrow-textarea/iron-autogrow-textarea.js';
 import { EditableStringList } from "./List";
 import { createThumbmail, readBlogPost } from './BlogPost';
 import { File as File__ } from "../File"; // File object already exist in js and I need to use it...
+import { PermissionsManager } from './Permissions';
 
 // extract the duration info from the raw data.
 function parseDuration(duration) {
@@ -471,6 +472,7 @@ export class InformationsManager extends HTMLElement {
                 font-size: 1rem;
                 user-select: none;
                 max-height: calc(100vh - 100px);
+                overflow-y: auto;
             }
 
             #header {
@@ -998,11 +1000,15 @@ export class VideoInfoEditor extends HTMLElement {
            
             #container {
                 display: flex;
+                margin-top: 15px;
+                margin-bottom: 15px;
             }
 
             .action-div{
                 display: flex;
                 justify-content: end;
+                border-top: 2px solid;
+                border-color: var(--palette-divider);
             }
 
             .button-div{
@@ -1064,58 +1070,83 @@ export class VideoInfoEditor extends HTMLElement {
         </style>
         <div id="container">
             <div style="display: flex; flex-direction: column; justify-content: flex-start;  margin-left: 15px;">
-            <div style="display: flex; flex-direction: column; margin: 5px;">
-                <span>Cover</span>
-                    <div id="drop-zone">
-                        <div style="position: relative; display: flex;">
-                            <paper-icon-button id="delete-cover-image-btn" icon="icons:close"></paper-icon-button>
-                            <img class="image-selector" src="${imageUrl}"> </img>
+                <div style="display: flex; flex-direction: column; margin: 5px;">
+                    <span>Cover</span>
+                        <div id="drop-zone">
+                            <div style="position: relative; display: flex;">
+                                <paper-icon-button id="delete-cover-image-btn" icon="icons:close"></paper-icon-button>
+                                <img class="image-selector" src="${imageUrl}"> </img>
+                            </div>
                         </div>
-                    </div>save-indexation-btn
+                    </div>
+                </div>
+                <div style="display: flex; flex-direction: column; width: 100%;">
+                    <div style="display: table; flex-grow: 1; margin-left: 20px;">
+                        <div style="display: table-row;">
+                            <div class="label" style="display: table-cell; font-weight: 450; ">Id:</div>
+                            <div style="display: table-cell; width: 100%;"  id="video-id-div">${video.getId()}</div>
+                            <paper-input style="display: none; width: 100%;" value="${video.getId()}" id="video-id-input" no-label-float></paper-input>
+                            <div class="button-div">
+                                <paper-icon-button id="edit-video-id-btn" icon="image:edit"></paper-icon-button>
+                            </div>
+                        </div>
+                        <div style="display: table-row;">
+                            <div class="label" style="display: table-cell; font-weight: 450;">URL:</div>
+                            <div id="video-url-div" style="display: table-cell; width: 100%;">${video.getUrl()}</div>
+                            <paper-input id="video-url-input" no-label-float style="display: none; width: 100%;" value="${video.getUrl()}"></paper-input>
+                            <div class="button-div">
+                                <paper-icon-button id="edit-video-url-btn" icon="image:edit"></paper-icon-button>
+                            </div>
+                        </div>
+                        <div style="display: table-row;">
+                            <div class="label" style="display: table-cell; font-weight: 450; vertical-align: top;">Description:</div>
+                            <div id="video-description-div" style="display: table-cell;width: 100%;" >${video.getDescription()}</div>
+                            <iron-autogrow-textarea id="video-description-input"  style="display: none; border: none; width: 100%;" value="${video.getDescription()}"></iron-autogrow-textarea>
+                            <div class="button-div">
+                                <paper-icon-button id="edit-video-description-btn" style="vertical-align: top;" icon="image:edit"></paper-icon-button>
+                            </div>
+                        </div>
+                        <div style="display: table-row;">
+                            <div class="label" style="display: table-cell; font-weight: 450;">Genres:</div>
+                            <div id="video-genres-div" style="display: table-cell; width: 100%;"></div>
+                        </div>
+                        <div style="display: table-row;">
+                            <div class="label" style="display: table-cell; font-weight: 450;">Tags:</div>
+                            <div id="video-tags-div" style="display: table-cell; width: 100%; max-width: 450px;"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div style="display: flex; flex-direction: column; width: 100%;">
-                <div style="display: table; flex-grow: 1; margin-left: 20px;">
-                    <div style="display: table-row;">
-                        <div class="label" style="display: table-cell; font-weight: 450; ">Id:</div>
-                        <div style="display: table-cell; width: 100%;"  id="video-id-div">${video.getId()}</div>
-                        <paper-input style="display: none; width: 100%;" value="${video.getId()}" id="video-id-input" no-label-float></paper-input>
-                        <div class="button-div">
-                            <paper-icon-button id="edit-video-id-btn" icon="image:edit"></paper-icon-button>
-                        </div>
-                    </div>
-                    <div style="display: table-row;">
-                        <div class="label" style="display: table-cell; font-weight: 450;">URL:</div>
-                        <div id="video-url-div" style="display: table-cell; width: 100%;">${video.getUrl()}</div>
-                        <paper-input id="video-url-input" no-label-float style="display: none; width: 100%;" value="${video.getUrl()}"></paper-input>
-                        <div class="button-div">
-                            <paper-icon-button id="edit-video-url-btn" icon="image:edit"></paper-icon-button>
-                        </div>
-                    </div>
-                    <div style="display: table-row;">
-                        <div class="label" style="display: table-cell; font-weight: 450; vertical-align: top;">Description:</div>
-                        <div id="video-description-div" style="display: table-cell;width: 100%;" >${video.getDescription()}</div>
-                        <iron-autogrow-textarea id="video-description-input"  style="display: none; border: none; width: 100%;" value="${video.getDescription()}"></iron-autogrow-textarea>
-                        <div class="button-div">
-                            <paper-icon-button id="edit-video-description-btn" style="vertical-align: top;" icon="image:edit"></paper-icon-button>
-                        </div>
-                    </div>
-                    <div style="display: table-row;">
-                        <div class="label" style="display: table-cell; font-weight: 450;">Genres:</div>
-                        <div id="video-genres-div" style="display: table-cell; width: 100%;"></div>
-                    </div>
-                    <div style="display: table-row;">
-                        <div class="label" style="display: table-cell; font-weight: 450;">Tags:</div>
-                        <div id="video-tags-div" style="display: table-cell; width: 100%; max-width: 450px;"></div>
-                    </div>
-                </div>
-                <div class="action-div" style="${this.isShort ? "display: none;" : ""}">
-                    <paper-button id="save-indexation-btn">Save</paper-button>
-                    <paper-button id="cancel-indexation-btn">Cancel</paper-button>
-                </div>
+            <iron-collapse class="permissions" id="collapse-panel" style="display: flex; flex-direction: column; margin: 5px;">
+            </iron-collapse>
+            <div class="action-div" style="${this.isShort ? "display: none;" : ""}">
+                <paper-button id="edit-permissions-btn" title="set who can edit this video informations">Permissions</paper-button>
+                <span style="flex-grow: 1;"></span>
+                <paper-button id="save-indexation-btn">Save</paper-button>
+                <paper-button id="cancel-indexation-btn">Cancel</paper-button>
             </div>
         </div>
         `
+
+        let editPemissionsBtn = this.shadowRoot.querySelector("#edit-permissions-btn")
+        let collapse_panel = this.shadowRoot.querySelector("#collapse-panel")
+
+        this.permissionManager = new PermissionsManager()
+        this.permissionManager.permissions = null
+        this.permissionManager.globule = video.globule
+        this.permissionManager.setPath(video.getId())
+        this.permissionManager.setResourceType = "video_info"
+
+        // toggle the collapse panel when the permission manager panel is close.
+        this.permissionManager.onclose = ()=>{
+            collapse_panel.toggle();
+        }
+    
+        // I will display the permission manager.
+        editPemissionsBtn.onclick = () => {
+            collapse_panel.appendChild(this.permissionManager)
+            collapse_panel.toggle();
+        }
 
         // Here I will set the interaction...
         this.shadowRoot.querySelector("#cancel-indexation-btn").onclick = () => {
@@ -1130,7 +1161,7 @@ export class VideoInfoEditor extends HTMLElement {
 
             // Here I will ask the user for confirmation before actually delete the contact informations.
             let toast = ApplicationView.displayMessage(
-                `
+            `
             <style>
                 
                 #yes-no-picture-delete-box{

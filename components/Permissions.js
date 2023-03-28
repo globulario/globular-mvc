@@ -54,6 +54,8 @@ export class PermissionsManager extends HTMLElement {
         // Keep the list of possible permissions.
         this.permissionsNames = ["read", "write", "delete"]
 
+        this.onclose = null
+
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
@@ -198,6 +200,9 @@ export class PermissionsManager extends HTMLElement {
         // The close button...
         let closeButton = this.shadowRoot.querySelector("paper-icon-button")
         closeButton.onclick = () => {
+            if(this.onclose){
+                this.onclose()
+            }
             // remove it from it parent.
             this.parentNode.removeChild(this)
         }

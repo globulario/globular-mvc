@@ -1598,8 +1598,10 @@ export class FilesView extends HTMLElement {
             },
             (evt) => {
                 if (this._file_explorer_.id == evt.file_explorer_id) {
-                    this.__dir__ = evt.dir
-                    this.setDir(evt.dir)
+                    if (evt.dir) {
+                        this.__dir__ = evt.dir
+                        this.setDir(evt.dir)
+                    }
                 }
             }, true, this
         )
@@ -2181,6 +2183,7 @@ export class FilesListView extends FilesView {
      * @param {*} dir 
      */
     setDir(dir) {
+
         // if the dire is hidden or the dir is the user dir... 
         dir.path = dir.path.split("\\").join("/")
         if (dir.name.startsWith(".") || !(dir.path.startsWith("/public") || public_[dir.path] != undefined || dir.path.startsWith("/shared") || shared[dir.path] != undefined || dir.path.startsWith("/applications/" + Application.application) || dir.path.startsWith("/users/" + Application.account.id))) {
@@ -3932,6 +3935,10 @@ export class PathNavigator extends HTMLElement {
 
     // Set the directory.
     setDir(dir) {
+        if (!dir) {
+            return
+        }
+
         dir.path = dir.path.split("\\").join("/")
         if (this.path == dir._path || !(dir.path.startsWith("/public") || public_[dir.path] != undefined || dir.path.startsWith("/shared") || shared[dir.path] != undefined || dir.path.startsWith("/applications/" + Application.application) || dir.path.startsWith("/users/" + Application.account.id))) {
             return;
@@ -5855,6 +5862,7 @@ export class FileExplorer extends HTMLElement {
                 if (this.pathNavigator != null) {
                     this.pathNavigator.setDir(dir)
                 } else {
+                    __set_dir_event__
                     console.log("no path navigator!")
                 }
 
@@ -5873,6 +5881,9 @@ export class FileExplorer extends HTMLElement {
                 // set the user dir...
                 this.setDir(dir)
                 
+                // display the root dir...
+                Model.eventHub.publish("__set_dir_event__", { dir: dir, file_explorer_id: this.id }, true)
+
             }, () => { this.onerror; this.resume() }, this.globule)
 
 
@@ -5882,8 +5893,6 @@ export class FileExplorer extends HTMLElement {
 
     // The connection callback.
     connectedCallback() {
-        // display the root dir...
-        Model.eventHub.publish("__set_dir_event__", { dir: this.root, file_explorer_id: this.id }, true)
 
         // set the root...
         let messageDiv = this.progressDiv.querySelector("#progress-message")
