@@ -1071,7 +1071,7 @@ export class VideoInfoEditor extends HTMLElement {
                             <paper-icon-button id="delete-cover-image-btn" icon="icons:close"></paper-icon-button>
                             <img class="image-selector" src="${imageUrl}"> </img>
                         </div>
-                    </div>
+                    </div>save-indexation-btn
                 </div>
             </div>
             <div style="display: flex; flex-direction: column; width: 100%;">
@@ -1333,19 +1333,23 @@ export class VideoInfoEditor extends HTMLElement {
             video.setGenresList(videoGenresList.getItems())
 
             let globule = video.globule
-            let indexPath = globule.config.DataPath + "/search/videos"
-            let rqst = new CreateVideoRequest
-            rqst.setVideo(video)
-            rqst.setIndexpath(indexPath)
-            globule.titleService.createVideo(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
-                .then(rsp => {
-                    ApplicationView.displayMessage("Video Information are updated", 3000)
-                    this.videoInfosDisplay.setVideo(video)
-                })
-                .catch(err => ApplicationView.displayMessage(err, 3000))
-            let parent = this.parentNode
-            parent.removeChild(this)
-            parent.appendChild(videoInfosDisplay)
+
+            generatePeerToken(globule, token=>{
+                let indexPath = globule.config.DataPath + "/search/videos"
+                let rqst = new CreateVideoRequest
+                rqst.setVideo(video)
+                rqst.setIndexpath(indexPath)
+                globule.titleService.createVideo(rqst, { application: Application.application, domain: Application.domain, token: token })
+                    .then(rsp => {
+                        ApplicationView.displayMessage("Video Information are updated", 3000)
+                        this.videoInfosDisplay.setVideo(video)
+                    })
+                    .catch(err => ApplicationView.displayMessage(err, 3000))
+                let parent = this.parentNode
+                parent.removeChild(this)
+                parent.appendChild(videoInfosDisplay)
+            })
+
         }
     }
 

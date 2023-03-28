@@ -126,8 +126,15 @@ function copyToClipboard(text) {
 }
 
 // Now I will test if imdb info are allready asscociated.
-export function getTitleInfo(globule, file, callback) {
+export function getTitleInfo(file, callback) {
     let globules = Model.getGlobules()
+    if (file.titles) {
+        if (file.titles.length > 0) {
+            callback(file.titles)
+            return
+        }
+    }
+
     file.titles = []
 
     // Now I will get titles info.
@@ -140,7 +147,7 @@ export function getTitleInfo(globule, file, callback) {
             if (index < globules.length) {
                 ___getTitleInfo___(index)
             } else {
-                callback(file.titles )
+                callback(file.titles)
             }
 
         })
@@ -168,9 +175,16 @@ function __getTitleInfo__(globule, file, callback) {
     })
 }
 
-export function getVideoInfo(globule, file, callback) {
+export function getVideoInfo(file, callback) {
 
     let globules = Model.getGlobules()
+    if (file.videos) {
+        if (file.videos.length > 0) {
+            callback(file.videos)
+            return
+        }
+    }
+
     file.videos = []
 
     // Now I will get titles info.
@@ -211,9 +225,16 @@ function __getVideoInfo__(globule, file, callback) {
     })
 }
 
-export function getAudioInfo(globule, file, callback) {
+export function getAudioInfo(file, callback) {
 
     let globules = Model.getGlobules()
+
+    if (file.audios) {
+        if (file.audios.length > 0) {
+            callback(file.audios)
+            return
+        }
+    }
     file.audios = []
 
     // Now I will get titles info.
@@ -1041,12 +1062,10 @@ export class FilesView extends HTMLElement {
         this.titleInfosMenuItem.action = () => {
             // So here I will create a new permission manager object and display it for the given file.
             let globule = this._file_explorer_.globule
-
             let file = this.menu.file
             if (file.mime.startsWith("video")) {
-                getVideoInfo(globule, file, (videos) => {
+                getVideoInfo(file, (videos) => {
                     if (videos.length > 0) {
-                        file.videos = videos // keep in the file itself...
                         Model.eventHub.publish(`display_media_infos_${this._file_explorer_.id}_event`, file, true)
                         // Remove it from it parent... 
                         if (this.menu.parentNode) {
@@ -1056,9 +1075,8 @@ export class FilesView extends HTMLElement {
                         }
                     } else {
                         // get the title infos...
-                        getTitleInfo(globule, file, (titles) => {
+                        getTitleInfo(file, (titles) => {
                             if (titles.length > 0) {
-                                file.titles = titles // keep in the file itself...
                                 Model.eventHub.publish(`display_media_infos_${this._file_explorer_.id}_event`, file, true)
                                 if (this.menu.parentNode) {
                                     // Remove it from it parent... 
@@ -1140,36 +1158,36 @@ export class FilesView extends HTMLElement {
 
 
                                     /** Other info will be set by the user... */
-      
+
                                     generatePeerToken(globule, token => {
 
 
                                         let vid = document.createElement("video")
                                         vid.src = url + "?token=" + token
                                         // wait for duration to change from NaN to the actual duration
-                                        vid.ondurationchange =  () =>{
+                                        vid.ondurationchange = () => {
                                             videoInfo.setDuration(parseInt(vid.duration))
                                             rqst.setVideo(videoInfo)
                                             rqst.setIndexpath(globule.config.DataPath + "/search/videos")
-        
-                                        globule.titleService.createVideo(rqst, { application: Application.application, domain: globule.domain, token: token })
-                                        .then(rsp => {
 
-                                            // So here I Will set the file association.
-                                            let rqst = new AssociateFileWithTitleRequest
-                                            rqst.setFilepath(file.path)
-                                            rqst.setTitleid(videoInfo.getId())
-                                            rqst.setIndexpath(globule.config.DataPath + "/search/videos")
-
-
-                                            globule.titleService.associateFileWithTitle(rqst, { application: Application.application, domain: globule.domain, token: token })
+                                            globule.titleService.createVideo(rqst, { application: Application.application, domain: globule.domain, token: token })
                                                 .then(rsp => {
 
-                                                    console.log("New Video info was created! ", videoInfo)
-                                                    rsp.get
-                                                }).catch(err => ApplicationView.displayMessage(err, 3000))
+                                                    // So here I Will set the file association.
+                                                    let rqst = new AssociateFileWithTitleRequest
+                                                    rqst.setFilepath(file.path)
+                                                    rqst.setTitleid(videoInfo.getId())
+                                                    rqst.setIndexpath(globule.config.DataPath + "/search/videos")
 
-                                        }).catch(err => ApplicationView.displayMessage(err, 3000))
+
+                                                    globule.titleService.associateFileWithTitle(rqst, { application: Application.application, domain: globule.domain, token: token })
+                                                        .then(rsp => {
+
+                                                            console.log("New Video info was created! ", videoInfo)
+                                                            rsp.get
+                                                        }).catch(err => ApplicationView.displayMessage(err, 3000))
+
+                                                }).catch(err => ApplicationView.displayMessage(err, 3000))
                                         };
 
                                     })
@@ -1185,7 +1203,7 @@ export class FilesView extends HTMLElement {
                     }
                 })
             } else if (file.mime.startsWith("audio")) {
-                getAudioInfo(globule, file, (audios) => {
+                getAudioInfo(file, (audios) => {
                     if (audios.length > 0) {
                         file.audios = audios // keep in the file itself...
                         Model.eventHub.publish(`display_media_infos_${this._file_explorer_.id}_event`, file, true)
@@ -2833,45 +2851,41 @@ export class FileIconView extends HTMLElement {
             }
 
             // Retreive the video title to display more readable file name...
-            if (file.videos) {
-                if (file.videos.length > 0)
-                    fileNameSpan.innerHTML = file.videos[0].getDescription()
-            } else {
-                getVideoInfo(this._file_explorer_.globule, file, videos => {
-                    if (videos.length > 0) {
-                        file.videos = videos // keep in the file itself...
-                        if (file.videos[0])
-                            fileNameSpan.innerHTML = file.videos[0].getDescription()
-                    } else {
 
-                        if (file.titles) {
-                            let title = file.titles[0]
-                            let name = title.getName()
+            getVideoInfo(file, videos => {
+                if (videos.length > 0) {
+                    if (videos[0])
+                        fileNameSpan.innerHTML = videos[0].getDescription()
+                } else {
 
-                            if (title.getEpisode() > 0) {
-                                name += " S" + title.getSeason() + "-E" + title.getEpisode()
-                            }
+                    if (file.titles) {
+                        let title = file.titles[0]
+                        let name = title.getName()
 
-                            fileNameSpan.innerHTML = name
-                            fileNameSpan.title = file.path
-                        } else {
-                            // get the title infos...
-                            getTitleInfo(this._file_explorer_.globule, file, (titles) => {
-                                if (titles.length > 0) {
-                                    file.titles = titles // keep in the file itself...
-                                    let title = file.titles[0]
-                                    let name = title.getName()
-                                    if (title.getEpisode() > 0) {
-                                        name += " S" + title.getSeason() + "-E" + title.getEpisode()
-                                    }
-                                    fileNameSpan.innerHTML = name
-                                    fileNameSpan.title = file.path
-                                }
-                            })
+                        if (title.getEpisode() > 0) {
+                            name += " S" + title.getSeason() + "-E" + title.getEpisode()
                         }
+
+                        fileNameSpan.innerHTML = name
+                        fileNameSpan.title = file.path
+                    } else {
+                        // get the title infos...
+                        getTitleInfo(file, (titles) => {
+                            if (titles.length > 0) {
+                                file.titles = titles // keep in the file itself...
+                                let title = file.titles[0]
+                                let name = title.getName()
+                                if (title.getEpisode() > 0) {
+                                    name += " S" + title.getSeason() + "-E" + title.getEpisode()
+                                }
+                                fileNameSpan.innerHTML = name
+                                fileNameSpan.title = file.path
+                            }
+                        })
                     }
-                })
-            }
+                }
+            })
+
 
         } else if (file.isDir) {
 
@@ -2934,8 +2948,6 @@ export class FileIconView extends HTMLElement {
                         this.menu.parentNode.removeChild(this.menu)
                 }
 
-
-
             } else {
                 // here I will try the file viewer.
                 img.onclick = (evt) => {
@@ -2949,24 +2961,17 @@ export class FileIconView extends HTMLElement {
             }
 
             // display more readable name.
-            if (file.audios) {
-                fileNameSpan.innerHTML = file.audios[0].getTitle()
-                if (file.audios[0].getPoster())
-                    if (file.audios[0].getPoster().getContenturl().length > 0) {
-                        img.src = file.audios[0].getPoster().getContenturl()
-                    }
-            } else {
-                getAudioInfo(this._file_explorer_.globule, file, audios => {
-                    if (audios.length > 0) {
-                        file.audios = audios // keep in the file itself...
-                        fileNameSpan.innerHTML = file.audios[0].getTitle()
-                        if (file.audios[0].getPoster())
-                            if (file.audios[0].getPoster().getContenturl().length > 0) {
-                                img.src = file.audios[0].getPoster().getContenturl()
-                            }
-                    }
-                })
-            }
+            getAudioInfo(file, audios => {
+                if (audios.length > 0) {
+                    file.audios = audios // keep in the file itself...
+                    fileNameSpan.innerHTML = file.audios[0].getTitle()
+                    if (file.audios[0].getPoster())
+                        if (file.audios[0].getPoster().getContenturl().length > 0) {
+                            img.src = file.audios[0].getPoster().getContenturl()
+                        }
+                }
+            })
+
         }
 
         if (file.isDir) {
@@ -5068,6 +5073,7 @@ export class FileExplorer extends HTMLElement {
             this.shadowRoot.querySelector("#file-explorer-box").style.width = dimension.width + "px"
             this.shadowRoot.querySelector("#file-explorer-box").style.height = dimension.height + "px"
             localStorage.setItem("__file_explorer_dimension__", JSON.stringify({ width: dimension.width, height: dimension.height }))
+
         } else {
             this.shadowRoot.querySelector("#file-explorer-box").style.width = "600px"
             this.shadowRoot.querySelector("#file-explorer-box").style.height = "400px"
@@ -5792,12 +5798,22 @@ export class FileExplorer extends HTMLElement {
             }, true)
         }
 
-        // Load the application dir.
+
+        let userId = localStorage.getItem("user_id")
+        let userDomain = localStorage.getItem("user_domain")
+        let root = "/users/" + userId + "@" + userDomain
+
+        // Load the root dir...
+        delete dirs[getUuidByString(this.globule.domain + "@" + root)]
+
         this.displayWaitMessage("load " + Model.application + "dir")
+
         _readDir("/applications/" + Model.application, (dir) => {
+
             // set interface with the given directory.
             this.resume()
 
+            // Load the application dir.
             if (this.fileNavigator != null) {
                 this.fileNavigator.setDir(dir)
             } else {
@@ -5822,20 +5838,14 @@ export class FileExplorer extends HTMLElement {
                 console.log("no file icon view!")
             }
 
-            let userId = localStorage.getItem("user_id")
-            let userDomain = localStorage.getItem("user_domain")
-
-            this.root = ""
-            let root = "/users/" + userId + "@" + userDomain
-
-            // Load the root dir...
-            delete dirs[getUuidByString(this.globule.domain + "@" + root)]
-
             this.displayWaitMessage("load " + root)
+
             _readDir(root, (dir) => {
+
                 // set interface with the given directory.
                 this.resume()
-                this.root = root
+                this.root = dir
+
                 if (this.fileNavigator != null) {
                     this.fileNavigator.setDir(dir, (shared_, public_) => { if (callback) callback(shared_, public_) })
                 } else {
@@ -5860,21 +5870,22 @@ export class FileExplorer extends HTMLElement {
                     console.log("no file icon view!")
                 }
 
+                // set the user dir...
                 this.setDir(dir)
-
-
+                
             }, () => { this.onerror; this.resume() }, this.globule)
 
 
         }, () => { this.onerror; this.resume() }, this.globule)
+
     }
 
     // The connection callback.
     connectedCallback() {
+        // display the root dir...
+        Model.eventHub.publish("__set_dir_event__", { dir: this.root, file_explorer_id: this.id }, true)
 
         // set the root...
-        this.setRoot(this.root)
-
         let messageDiv = this.progressDiv.querySelector("#progress-message")
         let progressBar = this.progressDiv.querySelector("paper-progress")
         if (messageDiv.offsetWidth > 0) {
@@ -5882,13 +5893,12 @@ export class FileExplorer extends HTMLElement {
         }
     }
 
-    setRoot(root) {
-        this.root = root
-    }
-
-
     getRoot() {
-        let values = this.root.split("/")
+        if (!this.root) {
+            return ""
+        }
+        let root = this.root.path
+        let values = root.split("/")
         return "/" + values[1] + "/" + values[2]
     }
 
@@ -5914,7 +5924,7 @@ export class FileExplorer extends HTMLElement {
         // hide the content.
         this.style.zIndex = 1;
 
-        getAudioInfo(this.globule, file, audios => {
+        getAudioInfo(file, audios => {
             if (audios) {
                 playAudio(file.path, () => { }, () => { }, audios[0], this.globule)
             }

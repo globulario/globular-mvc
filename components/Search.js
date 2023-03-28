@@ -2328,7 +2328,7 @@ export class SearchVideoCard extends HTMLElement {
                 font-size: 1rem;
             }
 
-            #preview-image{
+            #preview-video{
                 max-height: 180px;
             }
             
@@ -2374,7 +2374,7 @@ export class SearchVideoCard extends HTMLElement {
                     max-height: 110px;
                 }
 
-                #preview-image {
+                #preview-video {
                     max-height: 110px;
                 }
 
@@ -2401,7 +2401,7 @@ export class SearchVideoCard extends HTMLElement {
                     max-height: 60px;
                 }
                 
-                #preview-image {
+                #preview-video {
                     max-height: 60px;
                 }
 
@@ -2419,7 +2419,7 @@ export class SearchVideoCard extends HTMLElement {
         <div class="video-card">
             <paper-icon-button icon="icons:close" style="display: none;" id="close-btn"></paper-icon-button>
             <img id="thumbnail-image"></img>
-            <video autoplay muted loop id="preview-image" style="display: none;"></video>
+            <video autoplay muted loop id="preview-video" style="display: none;"></video>
             <p id="description"></p>
             <div style="display: flex;">
                 <div class="title-rating-div">
@@ -2433,7 +2433,7 @@ export class SearchVideoCard extends HTMLElement {
         </div>
         `
 
-        this.videoPreview = this.shadowRoot.querySelector("#preview-image")
+        this.videoPreview = this.shadowRoot.querySelector("#preview-video")
         this.closeBtn = this.shadowRoot.querySelector("#close-btn")
 
         this.closeBtn.onclick = (evt) => {
@@ -2532,9 +2532,10 @@ export class SearchVideoCard extends HTMLElement {
     connectedCallback() {
 
         // test if the gif image is initialysed...
-        let preview = this.shadowRoot.querySelector("#preview-image")
+        let preview = this.shadowRoot.querySelector("#preview-video")
         // paly only the first file...
         if (preview.src.length == 0) {
+
             let video = this.video
             let globule = this.video.globule
             let rqst = new GetTitleFilesRequest
@@ -2616,7 +2617,6 @@ export class SearchVideoCard extends HTMLElement {
 
         // Set the default thumbnail.
         let thumbnail = this.shadowRoot.querySelector("#thumbnail-image")
-        let preview = this.shadowRoot.querySelector("#preview-image")
         let card = this.shadowRoot.querySelector(".video-card")
 
         if (video.getPoster()) {
@@ -2629,13 +2629,13 @@ export class SearchVideoCard extends HTMLElement {
         }
 
         card.onmouseover = () => {
-            preview.style.display = "block"
+            this.videoPreview.style.display = "block"
             thumbnail.style.display = "none"
             this.videoPreview.play()
         }
 
         card.onmouseleave = () => {
-            preview.style.display = "none"
+            this.videoPreview.style.display = "none"
             thumbnail.style.display = "block"
             this.videoPreview.pause()
         }

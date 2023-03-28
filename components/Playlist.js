@@ -51,6 +51,7 @@ function getAudioInfo(globule, id, callback) {
         callback(__audios__[id])
         return
     }
+    
     generatePeerToken(globule, token => {
         let rqst = new GetAudioByIdRequest
         rqst.setIndexpath(globule.config.DataPath + "/search/audios")

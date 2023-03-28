@@ -1724,7 +1724,7 @@ export class FileDropZone extends HTMLElement {
         let initVideoInfo = (index, callback) => {
             let file = files[index]
             index++
-            getVideoInfo(file.globule, file, videos => {
+            getVideoInfo(file, videos => {
                 if (videos.length > 0) {
                     let video = videos[0]
                     video.file = file
@@ -1781,7 +1781,7 @@ export class FileDropZone extends HTMLElement {
         let initAudioInfo = (index, callback) => {
             let file = files[index]
             index++
-            getAudioInfo(file.globule, file, audios => {
+            getAudioInfo(file, audios => {
                 if (audios.length > 0) {
                     let audio = audios[0]
                     audio.file = file

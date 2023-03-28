@@ -429,12 +429,6 @@ export class Application extends Model {
             // The file explorer object.
             let fileExplorer = new FileExplorer(globule);
 
-            let userId = localStorage.getItem("user_id")
-            let userDomain = localStorage.getItem("user_domain")
-
-            // Set the file explorer...
-            fileExplorer.setRoot("/users/" + userId + "@" + userDomain)
-
             // Set the file explorer...
             fileExplorer.init((shared: any, public_: any) => {
               let dir = shared[file.path.split("/")[2]]
@@ -469,24 +463,24 @@ export class Application extends Model {
           let globule = Model.getGlobule(lnk.domain)
           File.getFile(globule, lnk.path, -1, -1, (file: any) => {
             if (file.mime.startsWith("video")) {
-              getTitleInfo(globule, file, (titles: Title[]) => {
+              getTitleInfo(file, (titles: Title[]) => {
                 if (titles) {
                   playVideo(file.path, () => { }, () => { }, titles[0], globule)
                 } else {
-                  getVideoInfo(globule, file, (videos: Video[]) => {
+                  getVideoInfo(file, (videos: Video[]) => {
                     playVideo(file.path, () => { }, () => { }, videos[0], globule)
                   })
                 }
               })
 
             } else if (file.mime.startsWith("audio")) {
-              getAudioInfo(globule, file, (audios: Audio[]) => {
+              getAudioInfo(file, (audios: Audio[]) => {
                 playAudio(file.path, () => { }, () => { }, audios[0], globule)
               })
 
             } else if (file.mime == "inode/directory") {
               File.getFile(file.globule, file.path + "/playlist.m3u8", -1, -1, f => {
-                getVideoInfo(globule, file, (videos: Video[]) => {
+                getVideoInfo(file, (videos: Video[]) => {
                   playVideo(file.path, () => { }, () => { }, videos[0], globule)
                 })
               }, err => {
