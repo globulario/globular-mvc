@@ -128,6 +128,9 @@ function copyToClipboard(text) {
 // Now I will test if imdb info are allready asscociated.
 export function getTitleInfo(file, callback) {
     let globules = Model.getGlobules()
+    globules = globules.filter(function(e) { return e.domain !== file.globule.domain })
+    globules.unshift(file.globule)
+
     if (file.titles) {
         if (file.titles.length > 0) {
             callback(file.titles)
@@ -144,7 +147,7 @@ export function getTitleInfo(file, callback) {
         __getTitleInfo__(g, file, (_titles_) => {
             _titles_.forEach(t => t.globule = g)
             file.titles = file.titles.concat(_titles_)
-            if (index < globules.length) {
+            if (index < globules.length && file.titles.length == 0) {
                 ___getTitleInfo___(index)
             } else {
                 callback(file.titles)
@@ -176,14 +179,16 @@ function __getTitleInfo__(globule, file, callback) {
 }
 
 export function getVideoInfo(file, callback) {
-
-    let globules = Model.getGlobules()
     if (file.videos) {
         if (file.videos.length > 0) {
             callback(file.videos)
             return
         }
     }
+
+    let globules = Model.getGlobules()
+    globules = globules.filter(function(e) { return e.domain !== file.globule.domain })
+    globules.unshift(file.globule)
 
     file.videos = []
 
@@ -195,7 +200,7 @@ export function getVideoInfo(file, callback) {
         __getVideoInfo__(g, file, (_videos_) => {
             _videos_.forEach(v => v.globule = g)
             file.videos = file.videos.concat(_videos_)
-            if (index < globules.length) {
+            if (index < globules.length && file.videos.length == 0) {
                 ___getVideoInfo___(index)
             } else {
                 callback(file.videos)
@@ -228,6 +233,8 @@ function __getVideoInfo__(globule, file, callback) {
 export function getAudioInfo(file, callback) {
 
     let globules = Model.getGlobules()
+    globules = globules.filter(function(e) { return e.domain !== file.globule.domain })
+    globules.unshift(file.globule)
 
     if (file.audios) {
         if (file.audios.length > 0) {
@@ -244,7 +251,7 @@ export function getAudioInfo(file, callback) {
         __getAudioInfo__(g, file, (_audios_) => {
             _audios_.forEach(a => a.globule = g)
             file.audios = file.audios.concat(_audios_)
-            if (index < globules.length) {
+            if (index < globules.length && file.audios.length == 0) {
                 ___getAudioInfo___(index)
             } else {
                 callback(file.audios)
