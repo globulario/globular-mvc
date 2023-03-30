@@ -638,6 +638,8 @@ export class ImageSelector extends HTMLElement {
       url = ""
     }
 
+    this.imageUrl = url
+
     // Innitialisation of the layout.
     this.shadowRoot.innerHTML = `
       <style>
@@ -690,7 +692,7 @@ export class ImageSelector extends HTMLElement {
           <div id="drop-zone">
               <div style="position: relative; display: flex;">
                   <paper-icon-button id="delete-cover-image-btn" icon="icons:close"></paper-icon-button>
-                  <img class="image-selector" src="${url}"> </img>
+                  <img class="image-selector" src="${this.imageUrl}"> </img>
                   
               </div>
           </div>
@@ -725,7 +727,7 @@ export class ImageSelector extends HTMLElement {
           </style>
           <div id="yes-no-picture-delete-box">
               <div>Your about to remove ${label} image</div>
-                  <img style="max-height: 256px; object-fit: contain; width: 100%;" src="${url}"></img>
+                  <img style="max-height: 256px; object-fit: contain; width: 100%;" src="${this.imageUrl}"></img>
                   <div>Is it what you want to do? </div>
                   <div style="justify-content: flex-end;">
                   <paper-button raised id="yes-delete-picture">Yes</paper-button>
@@ -787,6 +789,7 @@ export class ImageSelector extends HTMLElement {
         reader.onload = (event) => {
           let dataUrl = event.target.result
           this.deleteBtn.style.display = "block"
+          this.imageUrl = dataUrl
           this.image.src = dataUrl
           if (this.onselectimage) {
             this.onselectimage(dataUrl)
@@ -819,6 +822,7 @@ export class ImageSelector extends HTMLElement {
                 createThumbmail(url, 500, dataUrl => {
                   this.deleteBtn.style.display = "block"
                   this.image.src = dataUrl
+                  this.imageUrl = dataUrl
                   if (this.onselectimage) {
                     this.onselectimage(dataUrl)
                   }

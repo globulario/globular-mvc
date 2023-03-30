@@ -721,7 +721,10 @@ emoji-picker {
    background: var(--palette-divider);
 }
 
-
+::selection {
+   color: var(--palette-text-primary);
+   background: #797878;
+ }
 
 @media (max-width: 500px) {
    .ce-toolbar {

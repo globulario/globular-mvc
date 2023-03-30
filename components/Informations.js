@@ -898,7 +898,12 @@ export class VideoInfo extends HTMLElement {
         // Display list of persons...
         let displayPersons = (div, persons) => {
             persons.forEach(p => {
-                let lnk = document.createElement("a")
+                let uuid = "_" + getUuidByString(p.getId())
+                let lnk = div.querySelector(`#${uuid}`)
+                if(lnk == null){
+                    lnk = document.createElement("a")
+                }
+                lnk.id = uuid;
                 lnk.href = p.getUrl()
                 lnk.innerHTML = p.getFullname()
                 lnk.target = "_blank"
@@ -1077,11 +1082,17 @@ export class VideoInfoEditor extends HTMLElement {
                 </div>
 
 
-                <div id="casting-table" style="display: table; flex-grow: 1; margin-left: 20px; border-collapse: collapse;">
+                <div id="casting-table" style="flex-grow: 1; margin-left: 20px; border-collapse: collapse;">
                     <div style="display: table-row;  border-bottom: 1px solid var(--palette-divider);  margin-bottom: 10px;">
                         <div class="label" style="display: table-cell; font-weight: 450;">Casting</div>
-                    </div>
+                        <div style="display: table-cell; width: 100%;" ></div>
+                       
+                        <div class="button-div" style="position: relative;">
+                            <paper-icon-button id="add-casting-btn" icon="social:person-add"></paper-icon-button>
+                        </div>
 
+                    </div>
+                    <slot name="casting"></slot>
                 </div>
 
                 <div style="display: table; flex-grow: 1; margin-left: 20px; border-collapse: collapse; margin-top: 20px; margin-bottom: 10px;">
@@ -1142,6 +1153,37 @@ export class VideoInfoEditor extends HTMLElement {
         this.permissionManager.setPath(video.getId())
         this.permissionManager.setResourceType = "video_info"
 
+        let indexPath = video.globule.config.DataPath + "/search/videos"
+
+        let addCastingBtn = this.shadowRoot.querySelector("#add-casting-btn")
+        addCastingBtn.onclick = ()=>{
+            let html = `
+            <paper-card id="add-casting-panel" style="z-index: 100; background-color: var(--palette-background-paper);  color: var(--palette-text-primary); position: absolute; top: 35px; right: 5px;">
+                <div style="display:flex; flex-direction: column;">
+                    <globular-search-person-input indexpath="${indexPath}" title="search existing cast"></globular-search-person-input>
+                    <div style="display:flex; justify-content: flex-end;">
+                        <paper-button title="Create a new cast">New</paper-button>
+                        <paper-button id="cancel-btn" >Cancel</paper-button>
+                    </div>
+                </div>
+            </paper-card>
+            `
+            let parent =  addCastingBtn.parentNode
+            let addCastingPanel = parent.querySelector("#add-casting-panel")
+            if(addCastingPanel != null){
+                return
+            }
+
+            let range = document.createRange()
+            parent.appendChild(range.createContextualFragment(html))
+
+            parent.querySelector("#cancel-btn").onclick = ()=>{
+                let addCastingPanel = parent.querySelector("#add-casting-panel")
+                addCastingPanel.parentNode.removeChild(addCastingPanel)
+            }
+
+        }
+
         // toggle the collapse panel when the permission manager panel is close.
         this.permissionManager.onclose = () => {
             collapse_panel.toggle();
@@ -1175,16 +1217,16 @@ export class VideoInfoEditor extends HTMLElement {
             video.getPoster().setContenturl(dataUrl)
         }
 
-        let castingTable = this.shadowRoot.querySelector("#casting-table");
- 
+
         // so here I will set the casting...
-        video.getCastingList().forEach(p=>{
+        video.getCastingList().forEach(p => {
 
             // Create the person editor.
             let personEditor = new PersonEditor(p)
+            personEditor.slot = "casting"
 
             // Append to the list of casting
-            castingTable.appendChild(personEditor)
+            this.appendChild(personEditor)
 
         })
 
@@ -1324,7 +1366,7 @@ export class VideoInfoEditor extends HTMLElement {
 
             // set the publisher information.
             let publisher = video.getPublisherid()
-            if(publisher == null){
+            if (publisher == null) {
                 publisher = new Publisher()
             }
 
@@ -1342,6 +1384,13 @@ export class VideoInfoEditor extends HTMLElement {
 
             video.setTagsList(videoTagsList.getItems())
             video.setGenresList(videoGenresList.getItems())
+
+            // set the casting values...
+            // casting are interfaced by PersonEditor and PersonEditor are contain 
+            // in the casting slot, so I will use children iterator here...
+            for(var i=0; i < this.children.length; i++){
+                this.children[i].save()
+            }
 
             let globule = video.globule
 
@@ -1371,6 +1420,67 @@ customElements.define('globular-video-editor', VideoInfoEditor)
 
 
 /**
+ * Search existing person infos...
+ */
+export class SearchPersonInput extends HTMLElement {
+    // attributes.
+    
+
+    // Create the applicaiton view.
+    constructor() {
+
+        super()
+
+
+        this.index = this.getAttribute("indexpath")
+
+
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+           
+            #container{
+                display: flex;
+                align-items: center;
+                width: 240px;
+                margin-left: 10px;
+                margin-right: 10px;
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
+                z-index: 100;
+            }
+
+            paper-input {
+                margin-left: 5px;
+            }
+
+        </style>
+
+        <div id="container">
+            <iron-icon icon="icons:search"></iron-icon>
+ 
+            <paper-input no-label-float></paper-input>
+        
+        </div>
+
+        `
+        // give the focus to the input.
+        let container = this.shadowRoot.querySelector("#container")
+
+    }
+
+    // Call search event.
+    hello(){
+
+    }
+}
+
+customElements.define('globular-search-person-input', SearchPersonInput)
+
+/**
  * Use to edit title or video casting
  */
 export class PersonEditor extends HTMLElement {
@@ -1379,11 +1489,19 @@ export class PersonEditor extends HTMLElement {
     // Create the applicaiton view.
     constructor(person) {
         super()
+
+        // keep a refrence on the person object.
+        this.person = person
+
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
 
         // Generate a uuid from the person id.
-        let uuid = getUuidByString(person.getId())
+        let uuid = "_" + getUuidByString(person.getId())
+        let imageUrl = person.getPicture()
+        if (!imageUrl) {
+            imageUrl = ""
+        }
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -1411,54 +1529,222 @@ export class PersonEditor extends HTMLElement {
             }
         </style>
 
-        <div id="container" style="display: table; flex-grow: 1; margin-left: 20px; border-collapse: collapse;">
-            <div style="display: table-row;  border-bottom: 1px solid var(--palette-divider);  margin-bottom: 10px;">
-                <div style="display: table-cell;"> 
-                    <iron-icon icon="social:person"></iron-icon>
-                </div>
-                <div class="label table-cell">${person.getFullname()}</div>
-                <div class="button-div">
+        <div id="container" style="display: flex; flex-grow: 1; margin-left: 20px; flex-direction: column;">
+            <div style="display: flex;  border-bottom: 1px solid var(--palette-divider);  margin-bottom: 10px; align-items: center;">
+                <paper-icon-button id="collapse-btn"  icon="unfold-less" --iron-icon-fill-color:var(--palette-text-primary);"></paper-icon-button>
+                <div class="label" style="flex-grow: 1;">${person.getFullname()}</div>
+                <div>
                     <paper-icon-button id="edit-${uuid}-person-delete-btn" icon="icons:delete"></paper-icon-button>
                     <paper-icon-button id="edit-${uuid}-person-remove-btn" icon="icons:close"></paper-icon-button>
                 </div>
             </div>
+            <iron-collapse class="" id="collapse-panel">
+                <div style="display: flex;">
 
-            <div style="display: table-row;">
-                <div class="label" style="display: table-cell; font-weight: 450; ">Id:</div>
-                <div class="table-cell"  id="${uuid}-person-id-div">${person.getId()}</div>
-                <paper-input style="display: none; width: 100%;" value="${person.getId()}" id="${uuid}-person-id-input" no-label-float></paper-input>
-                <div class="button-div">
-                    <paper-icon-button id="edit-${uuid}-person-id-btn" icon="image:edit"></paper-icon-button>
-                </div>
-            </div>
+                    <div style="display: flex; flex-direction: column; justify-content: flex-start;  margin-right: 20px;">
+                        <div style="display: flex; flex-direction: column; margin: 5px;">
+                            <globular-image-selector label="Profile Picture" url="${imageUrl}"></globular-image-selector>
+                        </div>
+                    </div>
 
-            <div style="display: table-row;">
-                <div class="label" style="display: table-cell; font-weight: 450;">Url:</div>
-                <div class="table-cell" id="${uuid}-person-url-div">${person.getUrl()}</div>
-                <paper-input style="display: none; width: 100%;" value="${person.getUrl()}" id="${uuid}-person-url-input" no-label-float></paper-input>
-                <div class="button-div">
-                    <paper-icon-button id="edit-${uuid}-person-url-btn" icon="image:edit"></paper-icon-button>
-                </div>
-            </div>
+                    <div style="display: table; border-collapse: collapse; flex-grow: 1;">
+                        <div style="display: table-row;">
+                            <div class="label" style="display: table-cell; font-weight: 450; ">Id:</div>
+                            <div class="table-cell"  id="${uuid}-person-id-div">${person.getId()}</div>
+                            <paper-input style="display: none; width: 100%;" value="${person.getId()}" id="${uuid}-person-id-input" no-label-float></paper-input>
+                            <div class="button-div">
+                                <paper-icon-button id="edit-${uuid}-person-id-btn" icon="image:edit"></paper-icon-button>
+                            </div>
+                        </div>
 
-            <div style="display: table-row;">
-                <div class="label" style="display: table-cell; font-weight: 450; ">Name:</div>
-                <div class="table-cell"  id="${uuid}-person-name-div">${person.getFullname()}</div>
-                <paper-input style="display: none; width: 100%;" value="${person.getFullname()}" id="${uuid}-person-name-input" no-label-float></paper-input>
-                <div class="button-div">
-                    <paper-icon-button id="edit-${uuid}-person-name-btn" icon="image:edit"></paper-icon-button>
+                        <div style="display: table-row;">
+                            <div class="label" style="display: table-cell; font-weight: 450;">Url:</div>
+                            <div class="table-cell" id="${uuid}-person-url-div">${person.getUrl()}</div>
+                            <paper-input style="display: none; width: 100%;" value="${person.getUrl()}" id="${uuid}-person-url-input" no-label-float></paper-input>
+                            <div class="button-div">
+                                <paper-icon-button id="edit-${uuid}-person-url-btn" icon="image:edit"></paper-icon-button>
+                            </div>
+                        </div>
+
+                        <div style="display: table-row;">
+                            <div class="label" style="display: table-cell; font-weight: 450; ">Name:</div>
+                            <div class="table-cell"  id="${uuid}-person-name-div">${person.getFullname()}</div>
+                            <paper-input style="display: none; width: 100%;" value="${person.getFullname()}" id="${uuid}-person-name-input" no-label-float></paper-input>
+                            <div class="button-div">
+                                <paper-icon-button id="edit-${uuid}-person-name-btn" icon="image:edit"></paper-icon-button>
+                            </div>
+                        </div>
+
+                        <div style="display: table-row;">
+                            <div class="label" style="display: table-cell; font-weight: 450; vertical-align: top;">About:</div>
+                            <div id="${uuid}-person-about-div" style="display: table-cell;width: 100%;" >${person.getAbout()}</div>
+                            <div style="display: none; width: 100%;">
+                                <iron-autogrow-textarea id="${uuid}-person-about-input"  style="border: none; width: 100%;" value="${person.getAbout()}"></iron-autogrow-textarea>
+                            </div>
+                            <div class="button-div">
+                                <paper-icon-button id="edit-${uuid}-person-about-btn" style="vertical-align: top;" icon="image:edit"></paper-icon-button>
+                            </div>
+                        </div>
+
+                        <div style="display: table-row;">
+                            <div class="label" style="display: table-cell; font-weight: 450; vertical-align: top;">Biography:</div>
+                            <div id="${uuid}-person-biography-div" style="display: table-cell;width: 100%;" >${person.getBiography()}</div>
+                            <div style="display: none; width: 100%;">
+                                <iron-autogrow-textarea id="${uuid}-person-biography-input"  style="border: none; width: 100%;" value="${person.getBiography()}"></iron-autogrow-textarea>
+                            </div>
+                            <div class="button-div">
+                                <paper-icon-button id="edit-${uuid}-person-biography-btn" style="vertical-align: top;" icon="image:edit"></paper-icon-button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
+            </iron-collapse>
         </div>
         `
         // give the focus to the input.
         let container = this.shadowRoot.querySelector("#container")
 
+        let collapse_btn = container.querySelector("#collapse-btn")
+        let collapse_panel = container.querySelector("#collapse-panel")
+        collapse_btn.onclick = () => {
+            if (!collapse_panel.opened) {
+                collapse_btn.icon = "unfold-more"
+            } else {
+                collapse_btn.icon = "unfold-less"
+            }
+            collapse_panel.toggle();
+        }
+
+        // Now the actions...
+
+        // The person id
+        let editpersonIdBtn = container.querySelector(`#edit-${uuid}-person-id-btn`)
+        let personIdInput = container.querySelector(`#${uuid}-person-id-input`)
+        let personIdDiv = container.querySelector(`#${uuid}-person-id-div`)
+
+        editpersonIdBtn.onclick = () => {
+            personIdInput.style.display = "table-cell"
+            personIdDiv.style.display = "none"
+            setTimeout(() => {
+                personIdInput.focus()
+                personIdInput.inputElement.inputElement.select()
+            }, 100)
+        }
+
+        personIdInput.onblur = () => {
+            personIdInput.style.display = "none"
+            personIdDiv.style.display = "table-cell"
+            personIdDiv.innerHTML = personIdInput.value
+        }
+
+        // The person name
+        let editpersonNameBtn = container.querySelector(`#edit-${uuid}-person-name-btn`)
+        let personNameInput = container.querySelector(`#${uuid}-person-name-input`)
+        let personNameDiv = container.querySelector(`#${uuid}-person-name-div`)
+
+        editpersonNameBtn.onclick = () => {
+            personNameInput.style.display = "table-cell"
+            personNameDiv.style.display = "none"
+            setTimeout(() => {
+                personNameInput.focus()
+                personNameInput.inputElement.inputElement.select()
+            }, 100)
+        }
+
+        personNameInput.onblur = () => {
+            personNameInput.style.display = "none"
+            personNameDiv.style.display = "table-cell"
+            personNameDiv.innerHTML = personNameInput.value
+        }
+
+        // The person url
+        let editpersonUrlBtn = container.querySelector(`#edit-${uuid}-person-url-btn`)
+        let personUrlInput = container.querySelector(`#${uuid}-person-url-input`)
+        let personUrlDiv = container.querySelector(`#${uuid}-person-url-div`)
+
+        editpersonUrlBtn.onclick = () => {
+            personUrlInput.style.display = "table-cell"
+            personUrlDiv.style.display = "none"
+            setTimeout(() => {
+                personUrlInput.focus()
+                personUrlInput.inputElement.inputElement.select()
+            }, 100)
+        }
+
+        personUrlInput.onblur = () => {
+            personUrlInput.style.display = "none"
+            personUrlDiv.style.display = "table-cell"
+            personUrlDiv.innerHTML = personUrlInput.value
+        }
+
+        // The person about text
+        let editPersonAboutBtn = this.shadowRoot.querySelector(`#edit-${uuid}-person-about-btn`)
+        let personAboutInput = this.shadowRoot.querySelector(`#${uuid}-person-about-input`)
+        let personAboutDiv = this.shadowRoot.querySelector(`#${uuid}-person-about-div`)
+
+        editPersonAboutBtn.onclick = () => {
+            personAboutInput.parentNode.style.display = "table-cell"
+            personAboutDiv.style.display = "none"
+            setTimeout(() => {
+                personAboutInput.focus()
+                personAboutInput.textarea.select()
+            }, 100)
+        }
+
+        personAboutInput.onblur = () => {
+            personAboutInput.parentNode.style.display = "none"
+            personAboutDiv.style.display = "table-cell"
+            personAboutDiv.innerHTML = personAboutInput.value
+        }
+
+        // The person biography text.
+        let editPersonBiographyBtn = this.shadowRoot.querySelector(`#edit-${uuid}-person-biography-btn`)
+        let personBiographyInput = this.shadowRoot.querySelector(`#${uuid}-person-biography-input`)
+        let personBiographyDiv = this.shadowRoot.querySelector(`#${uuid}-person-biography-div`)
+
+        editPersonBiographyBtn.onclick = () => {
+            personBiographyInput.parentNode.style.display = "table-cell"
+            personBiographyDiv.style.display = "none"
+            setTimeout(() => {
+                personBiographyInput.focus()
+                personBiographyInput.textarea.select()
+            }, 100)
+        }
+
+        personBiographyInput.onblur = () => {
+            personBiographyInput.parentNode.style.display = "none"
+            personBiographyDiv.style.display = "table-cell"
+            personBiographyDiv.innerHTML = personBiographyInput.value
+        }
+
     }
 
-    // Call search event.
-    hello(){
+    // Save will simply set value in the person attribute...
+    save() {
+        // The uuid
+        let uuid = "_" + getUuidByString(this.person.getId())
+        let container = this.shadowRoot.querySelector("#container")
 
+        // get interface elements.
+        let personBiographyInput = container.querySelector(`#${uuid}-person-biography-input`)
+        let personAboutInput = container.querySelector(`#${uuid}-person-about-input`)
+        let personUrlInput = container.querySelector(`#${uuid}-person-url-input`)
+        let personIdInput = container.querySelector(`#${uuid}-person-id-input`)
+        let personNameInput = container.querySelector(`#${uuid}-person-name-input`)
+        let imageSelector = container.querySelector("globular-image-selector")
+
+        // set values.
+        this.person.setId(personIdInput.value)
+        this.person.setFullname(personNameInput.value)
+        this.person.setUrl(personUrlInput.value)
+        this.person.setBiography(personBiographyInput.value)
+        this.person.setAbout(personAboutInput.value)
+        this.person.setPicture(imageSelector.getImageUrl())
+
+    }
+
+    getPerson(){
+        return this.person
     }
 }
 
@@ -1657,10 +1943,17 @@ export class TitleInfo extends HTMLElement {
         // Display list of persons...
         let displayPersons = (div, persons) => {
             persons.forEach(p => {
-                let lnk = document.createElement("a")
+                let uuid = "_" + getUuidByString(p.getId())
+                let lnk = div.querySelector(`#${uuid}`)
+                if(!lnk){
+                    lnk = document.createElement("a")
+                }
+               
                 lnk.href = p.getUrl()
                 lnk.innerHTML = p.getFullname()
                 lnk.target = "_blank"
+                lnk.id = uuid
+               
                 div.appendChild(lnk)
             })
         }
