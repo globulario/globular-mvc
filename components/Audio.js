@@ -45,7 +45,8 @@ function getTitleFiles(id, indexPath, globule, callback) {
 
 export function playAudios(audios, name) {
 
-    let audios_ = [...audios]
+    let audios_ = [...new Map(audios.map(v => [v.getId(), v])).values()]
+
     ApplicationView.wait("loading audios playlist...")
     // here I will get the audi
     let audio_playList = "#EXTM3U\n"

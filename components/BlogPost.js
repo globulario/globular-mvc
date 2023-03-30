@@ -308,7 +308,6 @@ export class BlogPostElement extends HTMLElement {
                 #container {
                     width: calc(100vw - 20px);
                 }
-
                 .blog-post-editor-div, .blog-post-reader-div {
                     width: calc(100vw - 20px);
                     position: relative;
@@ -345,47 +344,9 @@ export class BlogPostElement extends HTMLElement {
                     width: calc(100vw - 20px);
                 }
              }
-
-             .image-selector{
-                max-width: 200px;
-                position: relative;
-             }
-
-             #delete-cover-image-btn {
-                display: none;
-                z-index: 100;
-                position: absolute;
-                top: 0px;
-                left: 0px;
-                background-color: black;
-                --paper-icon-button-ink-color: white;
-                --iron-icon-fill-color: white;
-                border-bottom: 1px solid var(--palette-divider);
-                border-right: 1px solid var(--palette-divider);
-                padding: 4px;
-                width: 30px;
-                height: 30px;
-                --iron-icon-width: 24px;
-                --iron-icon-height: 24px;
-            }
-
-            #drop-zone{
-                transition: background 0.2s ease,padding 0.8s linear;
-                background-color: var(--palette-background-paper);
-                position: relative;
-                border: 2px dashed var(--palette-divider);
-                border-radius: 5px;
-                min-height: 120px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                padding: 5px;
-            }
-
         </style>
 
         <div id="container">
-
             <paper-card class="blog-post-editor-div">
                 <div class="blog-post-title-div">
                     <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
@@ -407,13 +368,7 @@ export class BlogPostElement extends HTMLElement {
                 <iron-collapse opened = "[[opened]]" id="collapse-panel" style="display: flex; flex-direction: column;">
                     <paper-card id="blog-editor-options-panel" class="blog-options-panel" style="display: none;">
                         <div style="display: flex; flex-direction: column; margin: 5px;">
-                            <span>Cover</span>
-                            <div id="drop-zone">
-                                <div style="position: relative; display: flex;">
-                                    <paper-icon-button id="delete-cover-image-btn" icon="icons:close"></paper-icon-button>
-                                    <img class="image-selector"> </img>
-                                </div>
-                            </div>
+                            <globular-image-selector label="cover" url=""> </globular-image-selector>
                         </div>
                         <div class="card-content" style="background-color: transparent;">
                             <paper-input id="blog-title-input" label="title"></paper-input>
@@ -428,8 +383,6 @@ export class BlogPostElement extends HTMLElement {
                                     <paper-radio-button name="archived">archived</paper-radio-button>
                                 </paper-radio-group>
                             </div>
-                           
-                            
                         </div>
                     </paper-card>
 
@@ -454,7 +407,6 @@ export class BlogPostElement extends HTMLElement {
                     </div>
                 </div>
 
-          
                 <slot id="read-only-blog-content" name="read-only-blog-content"></slot>
                 <slot name="blog-comments"></slot>
                 
@@ -477,60 +429,17 @@ export class BlogPostElement extends HTMLElement {
             }
 
             if (blog.getThumbnail().length > 0) {
-                this.shadowRoot.querySelector("#delete-cover-image-btn").style.display = "block"
-                this.shadowRoot.querySelector(".image-selector").src = blog.getThumbnail()
+                this.shadowRoot.querySelector("globular-image-selector").setImageUrl(blog.getThumbnail())
+            } else {
+                console.log("-------------> no image was set for thumbnail...")
             }
 
+            this.shadowRoot.querySelector("globular-image-selector").ondelete = () => {
+                blog.setThumbnail("")
+            }
 
-            this.shadowRoot.querySelector("#delete-cover-image-btn").onclick = () => {
-                // Here I will ask the user for confirmation before actually delete the contact informations.
-                let toast = ApplicationView.displayMessage(
-                    `
-                <style>
-                    
-                    #yes-no-picture-delete-box{
-                    display: flex;
-                    flex-direction: column;
-                    }
-    
-                    #yes-no-picture-delete-box globular-picture-card{
-                    padding-bottom: 10px;
-                    }
-    
-                    #yes-no-picture-delete-box div{
-                    display: flex;
-                    padding-bottom: 10px;
-                    }
-    
-                </style>
-                <div id="yes-no-picture-delete-box">
-                    <div>Your about to remove the cover image</div>
-                        <img style="max-height: 256px; object-fit: contain; width: 100%;" src="${blog.getThumbnail()}"></img>
-                        <div>Is it what you want to do? </div>
-                        <div style="justify-content: flex-end;">
-                        <paper-button raised id="yes-delete-picture">Yes</paper-button>
-                        <paper-button raised id="no-delete-picture">No</paper-button>
-                    </div>
-                </div>
-                `,
-                    60 * 1000 // 60 sec...
-                );
-
-                let yesBtn = document.querySelector("#yes-delete-picture")
-                let noBtn = document.querySelector("#no-delete-picture")
-
-                // On yes
-                yesBtn.onclick = () => {
-                    // so here I will remove the image...
-                    blog.setThumbnail("")
-                    this.shadowRoot.querySelector(".image-selector").removeAttribute("src")
-                    this.shadowRoot.querySelector("#delete-cover-image-btn").style.display = "none"
-                    toast.dismiss();
-                }
-
-                noBtn.onclick = () => {
-                    toast.dismiss();
-                }
+            this.shadowRoot.querySelector("globular-image-selector").onselectimage = (dataUrl) => {
+                this.blog.setThumbnail(dataUrl)
             }
         }
 
@@ -652,76 +561,6 @@ export class BlogPostElement extends HTMLElement {
             evt.stopPropagation()
         }
 
-        // The drag and drop event...
-        let imageCoverDropZone = this.shadowRoot.querySelector("#drop-zone")
-
-        imageCoverDropZone.ondragenter = (evt) => {
-            evt.stopPropagation();
-            evt.preventDefault();
-            imageCoverDropZone.style.filter = "invert(10%)"
-        }
-
-        imageCoverDropZone.ondragleave = (evt) => {
-            evt.preventDefault()
-            imageCoverDropZone.style.filter = ""
-        }
-
-        imageCoverDropZone.ondragover = (evt) => {
-            evt.stopPropagation();
-            evt.preventDefault();
-        }
-
-        imageCoverDropZone.ondrop = (evt) => {
-            evt.stopPropagation();
-            evt.preventDefault();
-
-            imageCoverDropZone.style.filter = ""
-
-            if (evt.dataTransfer.files.length > 0) {
-                var file = evt.dataTransfer.files[0], reader = new FileReader();
-                reader.onload = (event) => {
-                    let dataUrl = event.target.result
-                    this.shadowRoot.querySelector("#delete-cover-image-btn").style.display = "block"
-                    this.shadowRoot.querySelector(".image-selector").src = dataUrl
-                    this.blog.setThumbnail(dataUrl)
-                };
-                reader.readAsDataURL(file);
-            } else if (evt.dataTransfer.getData('files')) {
-
-                // So here I will try to get the image from drop files from the file-explorer.
-                let paths = JSON.parse(evt.dataTransfer.getData('files'))
-                let domain = evt.dataTransfer.getData('domain')
-
-                // keep track
-                paths.forEach(path => {
-                    // so here I will read the file
-                    let globule = Model.getGlobule(domain)
-                    File__.getFile(globule, path, -1, -1,
-                        f => {
-                            generatePeerToken(globule, token => {
-                                let url = getUrl(globule)
-                                f.path.split("/").forEach(item => {
-                                    let component = encodeURIComponent(item.trim())
-                                    if (component.length > 0) {
-                                        url += "/" + component
-                                    }
-                                })
-
-                                url += "?application=" + Model.application;
-                                url += "&token=" + token
-                                createThumbmail(url, 500, dataUrl => {
-                                    this.shadowRoot.querySelector("#delete-cover-image-btn").style.display = "block"
-                                    this.shadowRoot.querySelector(".image-selector").src = dataUrl
-                                    this.blog.setThumbnail(dataUrl)
-                                })
-                            })
-
-
-                        }, err => ApplicationView.displayMessage(err, 3000))
-                })
-            }
-
-        }
 
         // Display the option panel.
         this.shadowRoot.querySelector("#blog-editor-menu-btn").onclick = (evt) => {
@@ -791,6 +630,23 @@ export class BlogPostElement extends HTMLElement {
     // Set the blog...
     setBlog(blog) {
         this.blog = blog;
+
+        if (this.blog.getThumbnail().length > 0) {
+            this.shadowRoot.querySelector("globular-image-selector").setImageUrl(blog.getThumbnail())
+        } else {
+            console.log("no image was set to blog.")
+        }
+
+
+        this.shadowRoot.querySelector("globular-image-selector").ondelete = () => {
+            blog.setThumbnail("")
+        }
+
+        this.shadowRoot.querySelector("globular-image-selector").onselectimage = (dataUrl) => {
+            this.blog.setThumbnail(dataUrl)
+        }
+
+
         this.blogComments.setBlog(blog)
 
         if (this.blog.getAuthor() != Application.account.getId() + "@" + Application.account.getDomain()) {
@@ -876,68 +732,87 @@ export class BlogPostElement extends HTMLElement {
 
     getThumbnail(width, callback) {
         // Take the image from the editor...
-        if (this.shadowRoot.querySelector(".image-selector").src.length > 0) {
-            let dataUrl = this.shadowRoot.querySelector(".image-selector").src
-            this.shadowRoot.querySelector("#delete-cover-image-btn").style.display = "block"
+        let dataUrl = this.shadowRoot.querySelector("globular-image-selector").getImageUrl()
+        if(dataUrl.endsWith("/")){
+            dataUrl = "" // invalidate the given url...
+        }
+
+        if (dataUrl.length > 0) {
             callback(dataUrl)
-            console.log(dataUrl)
             return
         }
 
+        // Here I will create image
         let images = this.editorDiv.querySelectorAll("img")
+
         if (images.length > 0) {
-            createThumbmailFromImage(images[0], width, dataUrl => {
-                this.shadowRoot.querySelector(".image-selector").src = dataUrl;
-                this.shadowRoot.querySelector("#delete-cover-image-btn").style.display = "block"
-                callback(dataUrl);
-            })
+            if (images.length == 1) {
+                createThumbmailFromImage(images[0], width, dataUrl => {
+                    if(dataUrl.endsWith("/")){
+                        dataUrl = "" // invalidate the given url...
+                    }
+                    this.shadowRoot.querySelector("globular-image-selector").setImageUrl(dataUrl)
+                    callback(dataUrl);
+                })
+            } else {
+                this.shadowRoot.querySelector("globular-image-selector").createMosaic(images, callback)
+            }
         } else {
             let galleries = this.editorDiv.querySelectorAll("globular-image-gallery")
             if (galleries.length > 0) {
                 // take the first images...
-                let url = galleries[0].getImage(0)
-                if (url.startsWith("http")) {
-                    createThumbmail(url, width, dataUrl => {
-                        this.shadowRoot.querySelector(".image-selector").src = dataUrl;
-                        this.shadowRoot.querySelector("#delete-cover-image-btn").style.display = "block";
+                let images = galleries[0].getImages()
+              
+                if (images.length == 1) {
+                    createThumbmailFromImage(images[0], width, dataUrl => {
+                        if(dataUrl.endsWith("/")){
+                            dataUrl = "" // invalidate the given url...
+                        }
+                        this.shadowRoot.querySelector("globular-image-selector").setImageUrl(dataUrl)
                         callback(dataUrl);
                         console.log(dataUrl)
                     })
-                } else {
-                    let img = document.createElement("img")
-                    img.src = url
-                    console.log(url)
-                    createThumbmailFromImage(img, width, dataUrl => {
-                        this.shadowRoot.querySelector(".image-selector").src = dataUrl;
-                        this.shadowRoot.querySelector("#delete-cover-image-btn").style.display = "block";
-                        callback(dataUrl);
-                        console.log(dataUrl)
-                    })
+                }else{
+                    this.shadowRoot.querySelector("globular-image-selector").createMosaic(images, callback)
                 }
+                
 
             } else {
                 let embeddedVideos = this.editorDiv.querySelectorAll("globular-embedded-videos")
                 if (embeddedVideos.length > 0) {
-                    // take the first images...
-                    let img = document.createElement("img")
-                    img.src = embeddedVideos[0].getVideo(0).getPoster().getContenturl()
 
-                    createThumbmailFromImage(img, width, dataUrl => {
-                        this.shadowRoot.querySelector(".image-selector").src = dataUrl;
-                        this.shadowRoot.querySelector("#delete-cover-image-btn").style.display = "block";
-                        callback(dataUrl);
-                    })
+                    // get all images from the first embeded video...
+                    let images = embeddedVideos[0].getImages()
+              
+                    if (images.length == 1) {
+                        createThumbmailFromImage(images[0], width, dataUrl => {
+                            if(dataUrl.endsWith("/")){
+                                dataUrl = "" // invalidate the given url...
+                            }
+                            this.shadowRoot.querySelector("globular-image-selector").setImageUrl(dataUrl)
+                            callback(dataUrl);
+                        })
+                    } else {
+                        this.shadowRoot.querySelector("globular-image-selector").createMosaic(images, callback)
+                    }
+
                 } else {
                     let embeddedAudios = this.editorDiv.querySelectorAll("globular-embedded-audios")
                     if (embeddedAudios.length > 0) {
+                        let images = embeddedAudios[0].getImages()
+
                         // take the first images...
-                        let img = document.createElement("img")
-                        img.src = embeddedAudios[0].getAudio(0).getPoster().getContenturl()
-                        createThumbmailFromImage(img, width, dataUrl => {
-                            this.shadowRoot.querySelector(".image-selector").src = dataUrl;
-                            this.shadowRoot.querySelector("#delete-cover-image-btn").style.display = "block";
-                            callback(dataUrl);
-                        })
+                        if (images.length == 1) {
+                            createThumbmailFromImage(images[0], width, dataUrl => {
+                                if(dataUrl.endsWith("/")){
+                                    dataUrl = "" // invalidate the given url...
+                                }
+                                this.shadowRoot.querySelector("globular-image-selector").setImageUrl(dataUrl)
+                                callback(dataUrl);
+                            })
+                        } else {
+                            this.shadowRoot.querySelector("globular-image-selector").createMosaic(images, callback)
+                        }
                     } else {
                         callback("")
                     }
@@ -1176,8 +1051,7 @@ export class BlogPostElement extends HTMLElement {
                                 // Publish the event
                                 Model.publish(Application.account.getId() + "@" + Application.account.getDomain() + "_publish_blog_event", this.blog.serializeBinary(), false)
                                 if (this.blog.getThumbnail().length > 0) {
-                                    this.shadowRoot.querySelector("#delete-cover-image-btn").style.display = "block";
-                                    this.shadowRoot.querySelector(".image-selector").src = this.blog.getThumbnail();
+                                    this.shadowRoot.querySelector("globular-image-selector").setImageUrl(this.blog.getThumbnail())
                                 }
                             }).catch(e => {
                                 ApplicationView.displayMessage(e, 3000)
@@ -1231,8 +1105,7 @@ export class BlogPostElement extends HTMLElement {
                                 // That function will update the blog...
                                 globule.eventHub.publish(this.blog.getUuid() + "_blog_updated_event", this.blog.getUuid(), false)
                                 if (this.blog.getThumbnail().length > 0) {
-                                    this.shadowRoot.querySelector("#delete-cover-image-btn").style.display = "block";
-                                    this.shadowRoot.querySelector(".image-selector").src = this.blog.getThumbnail();
+                                    this.shadowRoot.querySelector("globular-image-selector").setImageUrl(this.blog.getThumbnail())
                                 }
                             }).catch(e => {
                                 ApplicationView.displayMessage(e, 3000)
@@ -1328,7 +1201,7 @@ export class EmbeddedVideos extends HTMLElement {
         this.videos = []
         this.playAllBtn = this.shadowRoot.querySelector("#play-all-btn")
 
-        this.playAllBtn.onclick = (evt)=>{
+        this.playAllBtn.onclick = (evt) => {
             playVideos(this.videos, "videos list")
         }
     }
@@ -1370,6 +1243,16 @@ export class EmbeddedVideos extends HTMLElement {
                 this.appendChild(card)
             })
         }
+    }
+
+    getImages(){
+        let images = []
+        for (var i = 0; i < this.videos.length; i++) {
+            let img = document.createElement("img")
+            img.src = this.videos[i].getPoster().getContenturl()
+            images.push(img)
+        }
+        return images;
     }
 
     // hide or show the edit button...
@@ -1435,7 +1318,7 @@ export class EmbeddedAudios extends HTMLElement {
 
         this.playAllBtn = this.shadowRoot.querySelector("#play-all-btn")
 
-        this.playAllBtn.onclick = (evt)=>{
+        this.playAllBtn.onclick = (evt) => {
             playAudios(this.audios, "audio list")
         }
     }
@@ -1485,6 +1368,16 @@ export class EmbeddedAudios extends HTMLElement {
         for (var i = 0; i < this.children.length; i++) {
             this.children[i].setEditable(editable)
         }
+    }
+
+    getImages(){
+        let images = []
+        for (var i = 0; i < this.audios.length; i++) {
+            let img = document.createElement("img")
+            img.src = this.audios[i].getPoster().getContenturl()
+            images.push(img)
+        }
+        return images;
     }
 }
 

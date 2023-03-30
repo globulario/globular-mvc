@@ -30,7 +30,6 @@ String.prototype.endsWith = function (suffix) {
     return this.indexOf(suffix, this.length - suffix.length) !== -1;
 };
 
-
 // get files associated with the titles, audios or videos...
 function getTitleFiles(id, indexPath, globule, callback) {
     let rqst = new GetTitleFilesRequest
@@ -48,7 +47,7 @@ function getTitleFiles(id, indexPath, globule, callback) {
 
 export function playVideos(videos, name) {
 
-    let videos_ = [...videos];
+    let videos_  = [...new Map(videos.map(v => [v.getId(), v])).values()]
 
     ApplicationView.wait("loading videos playlist...")
     // here I will get the audi

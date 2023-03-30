@@ -1,7 +1,14 @@
 
 import '@polymer/paper-button/paper-button.js';
 import '@polymer/paper-slider/paper-slider.js';
-import { Model } from "../Model";
+import { ApplicationView } from '../ApplicationView';
+import { generatePeerToken, getUrl, Model } from "../Model";
+import { File as File__ } from "../File"; // File object already exist in js and I need to use it...
+import { createThumbmail } from './BlogPost';
+import * as Masonry from 'masonry-layout'
+import domtoimage from 'dom-to-image';
+import { fireResize } from './utility';
+import { GetItemDefinitionRequest } from 'globular-web-client/catalog/catalog_pb';
 
 export class ImageCropper extends HTMLElement {
   constructor() {
@@ -474,13 +481,13 @@ export class ImageViewer extends HTMLElement {
 
   }
 
-  connectedCallback(){
+  connectedCallback() {
     if (this.children.length != 0) {
       var ch = this.children;
       var cant = ch.length;
       for (var i = 0; i < cant; i++) {
         ch[i].style.maxHeight = '75vh'
-        if(this.parentNode.tagName == "BODY")
+        if (this.parentNode.tagName == "BODY")
           ch[i].style.maxHeight = 'calc(100vh - 20px)';
       }
     }
@@ -545,7 +552,7 @@ export class ImageViewer extends HTMLElement {
       var newPic = document.createElement('img');
       newPic.setAttribute('slot', 'images');
       newPic.setAttribute('src', src);
-      
+
       //if have data-info
       if (el[i].getAttribute('data-info'))
         newPic.setAttribute('data-info', el[i].getAttribute('data-info'));
@@ -600,3 +607,291 @@ export class ImageViewer extends HTMLElement {
 
 }
 window.customElements.define('globular-image-viewer', ImageViewer);
+
+
+
+/**
+ * That component will be use to select image with drag and drop 
+ */
+export class ImageSelector extends HTMLElement {
+  // attributes.
+
+  // Create the applicaiton view.
+  constructor(label, url) {
+    super()
+    // Set the shadow dom.
+    this.attachShadow({ mode: 'open' });
+
+    /** The title of the image selector */
+    if (this.hasAttribute("label")) {
+      label = this.getAttribute("label")
+    }
+    if (!label) {
+      label = ""
+    }
+
+    /** The url of the selected image (can be undefied or empty string) */
+    if (this.hasAttribute("url")) {
+      url = this.getAttribute("url")
+    }
+    if (!url) {
+      url = ""
+    }
+
+    // Innitialisation of the layout.
+    this.shadowRoot.innerHTML = `
+      <style>
+         
+          #container{
+              color: var(--palette-text-primary);
+          }
+
+          .image-selector{
+            max-width: 200px;
+            position: relative;
+          }
+
+          #delete-cover-image-btn {
+            ${url.length == 0 ? "display:none;" : "display: block;"}
+            z-index: 100;
+            position: absolute;
+            top: 0px;
+            left: 0px;
+            background-color: black;
+            --paper-icon-button-ink-color: white;
+            --iron-icon-fill-color: white;
+            border-bottom: 1px solid var(--palette-divider);
+            border-right: 1px solid var(--palette-divider);
+            padding: 4px;
+            width: 30px;
+            height: 30px;
+            --iron-icon-width: 24px;
+            --iron-icon-height: 24px;
+        }
+
+        #drop-zone{
+            min-width: 180px;
+            transition: background 0.2s ease,padding 0.8s linear;
+            background-color: var(--palette-background-default);
+            position: relative;
+            border: 2px dashed var(--palette-divider);
+            border-radius: 5px;
+            min-height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 5px;
+        }
+
+      </style>
+
+      <div id="container">
+          <span id="label">${label}</span>
+          <div id="drop-zone">
+              <div style="position: relative; display: flex;">
+                  <paper-icon-button id="delete-cover-image-btn" icon="icons:close"></paper-icon-button>
+                  <img class="image-selector" src="${url}"> </img>
+                  
+              </div>
+          </div>
+      </div>
+      `
+
+    // Set image selector
+    this.image = this.shadowRoot.querySelector(".image-selector")
+    this.deleteBtn = this.shadowRoot.querySelector("#delete-cover-image-btn")
+
+    // Delete the postser/cover image.
+    this.shadowRoot.querySelector("#delete-cover-image-btn").onclick = () => {
+
+      // Here I will ask the user for confirmation before actually delete the contact informations.
+      let toast = ApplicationView.displayMessage(
+        `
+        <style>
+            #yes-no-picture-delete-box{
+              display: flex;
+              flex-direction: column;
+            }
+
+            #yes-no-picture-delete-box globular-picture-card{
+              padding-bottom: 10px;
+            }
+
+            #yes-no-picture-delete-box div{
+              display: flex;
+              padding-bottom: 10px;
+            }
+
+          </style>
+          <div id="yes-no-picture-delete-box">
+              <div>Your about to remove ${label} image</div>
+                  <img style="max-height: 256px; object-fit: contain; width: 100%;" src="${url}"></img>
+                  <div>Is it what you want to do? </div>
+                  <div style="justify-content: flex-end;">
+                  <paper-button raised id="yes-delete-picture">Yes</paper-button>
+                  <paper-button raised id="no-delete-picture">No</paper-button>
+              </div>
+          </div>
+          `,
+        60 * 1000 // 60 sec...
+      );
+
+      let yesBtn = document.querySelector("#yes-delete-picture")
+      let noBtn = document.querySelector("#no-delete-picture")
+
+      // On yes
+      yesBtn.onclick = () => {
+
+        // Call the function if defined...
+        if (this.ondelete) {
+          this.ondelete()
+        }
+
+        this.image.removeAttribute("src")
+        this.deleteBtn.style.display = "none"
+        toast.dismiss();
+      }
+
+      noBtn.onclick = () => {
+        toast.dismiss();
+      }
+    }
+
+    // The drag and drop event...
+    let imageCoverDropZone = this.shadowRoot.querySelector("#drop-zone")
+
+    imageCoverDropZone.ondragenter = (evt) => {
+      evt.stopPropagation();
+      evt.preventDefault();
+      imageCoverDropZone.style.filter = "invert(10%)"
+    }
+
+    imageCoverDropZone.ondragleave = (evt) => {
+      evt.preventDefault()
+      imageCoverDropZone.style.filter = ""
+    }
+
+    imageCoverDropZone.ondragover = (evt) => {
+      evt.stopPropagation();
+      evt.preventDefault();
+    }
+
+    imageCoverDropZone.ondrop = (evt) => {
+      evt.stopPropagation();
+      evt.preventDefault();
+
+      imageCoverDropZone.style.filter = ""
+
+      if (evt.dataTransfer.files.length > 0) {
+        var file = evt.dataTransfer.files[0], reader = new FileReader();
+        reader.onload = (event) => {
+          let dataUrl = event.target.result
+          this.deleteBtn.style.display = "block"
+          this.image.src = dataUrl
+          if (this.onselectimage) {
+            this.onselectimage(dataUrl)
+          }
+        };
+        reader.readAsDataURL(file);
+      } else if (evt.dataTransfer.getData('files')) {
+
+        // So here I will try to get the image from drop files from the file-explorer.
+        let paths = JSON.parse(evt.dataTransfer.getData('files'))
+        let domain = evt.dataTransfer.getData('domain')
+
+        // keep track
+        paths.forEach(path => {
+          // so here I will read the file
+          let globule = Model.getGlobule(domain)
+          File__.getFile(globule, path, -1, -1,
+            f => {
+              generatePeerToken(globule, token => {
+                let url = getUrl(globule)
+                f.path.split("/").forEach(item => {
+                  let component = encodeURIComponent(item.trim())
+                  if (component.length > 0) {
+                    url += "/" + component
+                  }
+                })
+
+                url += "?application=" + Model.application;
+                url += "&token=" + token
+                createThumbmail(url, 500, dataUrl => {
+                  this.deleteBtn.style.display = "block"
+                  this.image.src = dataUrl
+                  if (this.onselectimage) {
+                    this.onselectimage(dataUrl)
+                  }
+                })
+              })
+            }, err => ApplicationView.displayMessage(err, 3000))
+        })
+      }
+    }
+  }
+
+  setImageUrl(url) {
+    this.image.src = url
+    if (url.length > 0) {
+      this.deleteBtn.style.display = "block"
+    }
+    else {
+      this.deleteBtn.style.display = "none"
+    }
+  }
+
+  getImageUrl() {
+    return this.image.src
+  }
+
+  // That functions will create images from multiple images and set the result as 
+  // results.
+  createMosaic(images, callback) {
+
+    let grid = document.createElement("div")
+    grid.classList.add("grid")
+    grid.setAttribute("data-masonry", '{ "itemSelector": ".grid-item", "columnWidth": 50 }')
+
+    if (images.length > 3) {
+      grid.style.width = "300px";
+    }
+
+    // must be in the layout...
+    grid.style.backgroundColor = "black"
+    var masonery = new Masonry(grid, {})
+    // Maximum of 9 image...
+    images.forEach((img, index) => {
+      if (index < 9) {
+        img.classList.add("grid-item")
+        img.style.maxWidth = "100px"
+        img.style.maxHeight = "100px"
+        grid.appendChild(img)
+      }
+    })
+
+    // Display message to the user and take screenshot of the grid...
+    let toast = ApplicationView.displayMessage(
+      `
+      <div style="display: flex; flex-direction: column;">
+        <div>Generate cover from content...</div>
+        <div id="grid-div" style="background-color: black; min-height: 300px; margin-top: 20px;"></div>
+      </div>
+      `, 3000)
+
+    // apprend the grid to the 
+    toast.el.querySelector("#grid-div").appendChild(grid)
+    fireResize()
+
+    // wait for the grid to be organized...
+    setTimeout(() => {
+      domtoimage.toJpeg(grid, { quality: 0.95 })
+        .then((dataUrl) => {
+          ///grid.parentNode.style.height = grid.offsetHeight + "px"
+          this.image.src = dataUrl;
+          callback(dataUrl)
+        });
+    }, 1000)
+  }
+}
+
+customElements.define('globular-image-selector', ImageSelector)

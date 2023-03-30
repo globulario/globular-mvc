@@ -344,6 +344,17 @@ export class ImageGallery extends HTMLElement {
         }
     }
 
+    getImages(){
+        let images = []
+        this.images.forEach(src=>{
+            let img = document.createElement("img")
+            img.src = src
+            images.push(img)
+        })
+
+        return images;
+    }
+
     featured() {
         return this.shadowRoot.querySelector('.featured-item');
     }

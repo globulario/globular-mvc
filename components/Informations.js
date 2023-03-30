@@ -1,7 +1,7 @@
 
 import { generatePeerToken, Model } from '../Model';
 import { Application } from "../Application";
-import { CreateVideoRequest, DeleteTitleRequest, DeleteVideoRequest, DissociateFileWithTitleRequest, GetTitleFilesRequest, Poster, SearchTitlesRequest } from "globular-web-client/title/title_pb";
+import { CreateVideoRequest, DeleteTitleRequest, DeleteVideoRequest, DissociateFileWithTitleRequest, GetTitleFilesRequest, Poster, Person, Publisher, SearchTitlesRequest } from "globular-web-client/title/title_pb";
 import { File } from "../File";
 import { VideoPreview, getFileSizeString } from "./File";
 import { ApplicationView } from "../ApplicationView";
@@ -11,8 +11,9 @@ import { playAudio, secondsToTime } from "./Audio";
 import '@polymer/iron-autogrow-textarea/iron-autogrow-textarea.js';
 import { EditableStringList } from "./List";
 import { createThumbmail, readBlogPost } from './BlogPost';
-import { File as File__ } from "../File"; // File object already exist in js and I need to use it...
+
 import { PermissionsManager } from './Permissions';
+import * as getUuidByString from 'uuid-by-string';
 
 // extract the duration info from the raw data.
 function parseDuration(duration) {
@@ -994,6 +995,11 @@ export class VideoInfoEditor extends HTMLElement {
         if (video.getPoster())
             imageUrl = video.getPoster().getContenturl()
 
+        let publisher = video.getPublisherid()
+        if (!publisher) {
+            publisher = new Publisher
+        }
+
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
@@ -1030,101 +1036,100 @@ export class VideoInfoEditor extends HTMLElement {
                 font-size: 1rem;
             }
 
-            .image-selector{
-                max-width: 200px;
-                position: relative;
-            }
-
-            #delete-cover-image-btn {
-                ${imageUrl.length == 0 ? "display:none;" : "display: block;"}
-                z-index: 100;
-                position: absolute;
-                top: 0px;
-                left: 0px;
-                background-color: black;
-                --paper-icon-button-ink-color: white;
-                --iron-icon-fill-color: white;
-                border-bottom: 1px solid var(--palette-divider);
-                border-right: 1px solid var(--palette-divider);
-                padding: 4px;
-                width: 30px;
-                height: 30px;
-                --iron-icon-width: 24px;
-                --iron-icon-height: 24px;
-            }
-
-            #drop-zone{
-                min-width: 180px;
-                transition: background 0.2s ease,padding 0.8s linear;
-                background-color: var(--palette-background-default);
-                position: relative;
-                border: 2px dashed var(--palette-divider);
-                border-radius: 5px;
-                min-height: 120px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                padding: 5px;
-            }
-
         </style>
         <div id="container">
             <div style="display: flex; flex-direction: column; justify-content: flex-start;  margin-left: 15px;">
                 <div style="display: flex; flex-direction: column; margin: 5px;">
-                    <span>Cover</span>
-                        <div id="drop-zone">
-                            <div style="position: relative; display: flex;">
-                                <paper-icon-button id="delete-cover-image-btn" icon="icons:close"></paper-icon-button>
-                                <img class="image-selector" src="${imageUrl}"> </img>
-                            </div>
-                        </div>
-                    </div>
+                    <globular-image-selector label="cover" url="${imageUrl}"></globular-image-selector>
                 </div>
-                <div style="display: flex; flex-direction: column; width: 100%;">
-                    <div style="display: table; flex-grow: 1; margin-left: 20px;">
+            </div>
+
+            <div style="display: flex; flex-direction: column; width: 100%;">
+               
+                <div style="display: table; flex-grow: 1; margin-left: 20px; border-collapse: collapse;">
+                        <div style="display: table-row;  border-bottom: 1px solid var(--palette-divider);  margin-bottom: 10px;">
+                            <div class="label" style="display: table-cell; font-weight: 450;">Publisher</div>
+                        </div>
                         <div style="display: table-row;">
                             <div class="label" style="display: table-cell; font-weight: 450; ">Id:</div>
-                            <div style="display: table-cell; width: 100%;"  id="video-id-div">${video.getId()}</div>
-                            <paper-input style="display: none; width: 100%;" value="${video.getId()}" id="video-id-input" no-label-float></paper-input>
+                            <div style="display: table-cell; width: 100%;"  id="publisher-id-div">${publisher.getId()}</div>
+                            <paper-input style="display: none; width: 100%;" value="${publisher.getId()}" id="publisher-id-input" no-label-float></paper-input>
                             <div class="button-div">
-                                <paper-icon-button id="edit-video-id-btn" icon="image:edit"></paper-icon-button>
+                                <paper-icon-button id="edit-publisher-id-btn" icon="image:edit"></paper-icon-button>
                             </div>
                         </div>
                         <div style="display: table-row;">
-                            <div class="label" style="display: table-cell; font-weight: 450;">URL:</div>
-                            <div id="video-url-div" style="display: table-cell; width: 100%;">${video.getUrl()}</div>
-                            <paper-input id="video-url-input" no-label-float style="display: none; width: 100%;" value="${video.getUrl()}"></paper-input>
+                            <div class="label" style="display: table-cell; font-weight: 450;">Url:</div>
+                            <div style="display: table-cell; width: 100%;"  id="publisher-url-div">${publisher.getUrl()}</div>
+                            <paper-input style="display: none; width: 100%;" value="${publisher.getUrl()}" id="publisher-url-input" no-label-float></paper-input>
                             <div class="button-div">
-                                <paper-icon-button id="edit-video-url-btn" icon="image:edit"></paper-icon-button>
+                                <paper-icon-button id="edit-publisher-url-btn" icon="image:edit"></paper-icon-button>
                             </div>
                         </div>
                         <div style="display: table-row;">
-                            <div class="label" style="display: table-cell; font-weight: 450; vertical-align: top;">Description:</div>
-                            <div id="video-description-div" style="display: table-cell;width: 100%;" >${video.getDescription()}</div>
-                            <iron-autogrow-textarea id="video-description-input"  style="display: none; border: none; width: 100%;" value="${video.getDescription()}"></iron-autogrow-textarea>
+                            <div class="label" style="display: table-cell; font-weight: 450; ">Name:</div>
+                            <div style="display: table-cell; width: 100%;"  id="publisher-name-div">${publisher.getName()}</div>
+                            <paper-input style="display: none; width: 100%;" value="${publisher.getName()}" id="publisher-name-input" no-label-float></paper-input>
                             <div class="button-div">
-                                <paper-icon-button id="edit-video-description-btn" style="vertical-align: top;" icon="image:edit"></paper-icon-button>
+                                <paper-icon-button id="edit-publisher-name-btn" icon="image:edit"></paper-icon-button>
                             </div>
                         </div>
-                        <div style="display: table-row;">
-                            <div class="label" style="display: table-cell; font-weight: 450;">Genres:</div>
-                            <div id="video-genres-div" style="display: table-cell; width: 100%;"></div>
+                </div>
+
+
+                <div id="casting-table" style="display: table; flex-grow: 1; margin-left: 20px; border-collapse: collapse;">
+                    <div style="display: table-row;  border-bottom: 1px solid var(--palette-divider);  margin-bottom: 10px;">
+                        <div class="label" style="display: table-cell; font-weight: 450;">Casting</div>
+                    </div>
+
+                </div>
+
+                <div style="display: table; flex-grow: 1; margin-left: 20px; border-collapse: collapse; margin-top: 20px; margin-bottom: 10px;">
+                    <div style="display: table-row; border-bottom: 1px solid var(--palette-divider)" >
+                        <div class="label" style="display: table-cell; font-weight: 450; border-bottom: 1px solid var(--palette-divider)">Video</div>
+                    </div>
+                    <div style="display: table-row;">
+                        <div class="label" style="display: table-cell; font-weight: 450; ">Id:</div>
+                        <div style="display: table-cell; width: 100%;"  id="video-id-div">${video.getId()}</div>
+                        <paper-input style="display: none; width: 100%;" value="${video.getId()}" id="video-id-input" no-label-float></paper-input>
+                        <div class="button-div">
+                            <paper-icon-button id="edit-video-id-btn" icon="image:edit"></paper-icon-button>
                         </div>
-                        <div style="display: table-row;">
-                            <div class="label" style="display: table-cell; font-weight: 450;">Tags:</div>
-                            <div id="video-tags-div" style="display: table-cell; width: 100%; max-width: 450px;"></div>
+                    </div>
+                    <div style="display: table-row;">
+                        <div class="label" style="display: table-cell; font-weight: 450;">URL:</div>
+                        <div id="video-url-div" style="display: table-cell; width: 100%;">${video.getUrl()}</div>
+                        <paper-input id="video-url-input" no-label-float style="display: none; width: 100%;" value="${video.getUrl()}"></paper-input>
+                        <div class="button-div">
+                            <paper-icon-button id="edit-video-url-btn" icon="image:edit"></paper-icon-button>
                         </div>
+                    </div>
+                    <div style="display: table-row;">
+                        <div class="label" style="display: table-cell; font-weight: 450; vertical-align: top;">Description:</div>
+                        <div id="video-description-div" style="display: table-cell;width: 100%;" >${video.getDescription()}</div>
+                        <iron-autogrow-textarea id="video-description-input"  style="display: none; border: none; width: 100%;" value="${video.getDescription()}"></iron-autogrow-textarea>
+                        <div class="button-div">
+                            <paper-icon-button id="edit-video-description-btn" style="vertical-align: top;" icon="image:edit"></paper-icon-button>
+                        </div>
+                    </div>
+                    <div style="display: table-row;">
+                        <div class="label" style="display: table-cell; font-weight: 450;">Genres:</div>
+                        <div id="video-genres-div" style="display: table-cell; width: 100%;"></div>
+                    </div>
+                    <div style="display: table-row;">
+                        <div class="label" style="display: table-cell; font-weight: 450;">Tags:</div>
+                        <div id="video-tags-div" style="display: table-cell; width: 100%; max-width: 450px;"></div>
                     </div>
                 </div>
             </div>
-            <iron-collapse class="permissions" id="collapse-panel" style="display: flex; flex-direction: column; margin: 5px;">
-            </iron-collapse>
-            <div class="action-div" style="${this.isShort ? "display: none;" : ""}">
-                <paper-button id="edit-permissions-btn" title="set who can edit this video informations">Permissions</paper-button>
-                <span style="flex-grow: 1;"></span>
-                <paper-button id="save-indexation-btn">Save</paper-button>
-                <paper-button id="cancel-indexation-btn">Cancel</paper-button>
-            </div>
+        </div>
+        <iron-collapse class="permissions" id="collapse-panel" style="display: flex; flex-direction: column; margin: 5px;">
+        </iron-collapse>
+        <div class="action-div" style="${this.isShort ? "display: none;" : ""}">
+            <paper-button id="edit-permissions-btn" title="set who can edit this video informations">Permissions</paper-button>
+            <span style="flex-grow: 1;"></span>
+            <paper-button id="save-indexation-btn">Save</paper-button>
+            <paper-button id="cancel-indexation-btn">Cancel</paper-button>
         </div>
         `
 
@@ -1138,10 +1143,10 @@ export class VideoInfoEditor extends HTMLElement {
         this.permissionManager.setResourceType = "video_info"
 
         // toggle the collapse panel when the permission manager panel is close.
-        this.permissionManager.onclose = ()=>{
+        this.permissionManager.onclose = () => {
             collapse_panel.toggle();
         }
-    
+
         // I will display the permission manager.
         editPemissionsBtn.onclick = () => {
             collapse_panel.appendChild(this.permissionManager)
@@ -1156,131 +1161,93 @@ export class VideoInfoEditor extends HTMLElement {
         }
 
         // Delete the postser/cover image.
-        this.shadowRoot.querySelector("#delete-cover-image-btn").onclick = () => {
-
-
-            // Here I will ask the user for confirmation before actually delete the contact informations.
-            let toast = ApplicationView.displayMessage(
-            `
-            <style>
-                
-                #yes-no-picture-delete-box{
-                display: flex;
-                flex-direction: column;
-                }
-
-                #yes-no-picture-delete-box globular-picture-card{
-                padding-bottom: 10px;
-                }
-
-                #yes-no-picture-delete-box div{
-                display: flex;
-                padding-bottom: 10px;
-                }
-
-            </style>
-            <div id="yes-no-picture-delete-box">
-                <div>Your about to remove the poster image</div>
-                    <img style="max-height: 256px; object-fit: contain; width: 100%;" src="${imageUrl}"></img>
-                    <div>Is it what you want to do? </div>
-                    <div style="justify-content: flex-end;">
-                    <paper-button raised id="yes-delete-picture">Yes</paper-button>
-                    <paper-button raised id="no-delete-picture">No</paper-button>
-                </div>
-            </div>
-            `,
-                60 * 1000 // 60 sec...
-            );
-
-            let yesBtn = document.querySelector("#yes-delete-picture")
-            let noBtn = document.querySelector("#no-delete-picture")
-
-            // On yes
-            yesBtn.onclick = () => {
-
-                // so here I will remove the image...
-                video.getPoster().setContenturl("")
-                this.shadowRoot.querySelector(".image-selector").removeAttribute("src")
-                this.shadowRoot.querySelector("#delete-cover-image-btn").style.display = "none"
-                toast.dismiss();
-            }
-
-            noBtn.onclick = () => {
-                toast.dismiss();
-            }
+        this.shadowRoot.querySelector("globular-image-selector").ondelete = () => {
+            video.getPoster().setContenturl("")
         }
 
-        // The drag and drop event...
-        let imageCoverDropZone = this.shadowRoot.querySelector("#drop-zone")
-
-        imageCoverDropZone.ondragenter = (evt) => {
-            evt.stopPropagation();
-            evt.preventDefault();
-            imageCoverDropZone.style.filter = "invert(10%)"
-        }
-
-        imageCoverDropZone.ondragleave = (evt) => {
-            evt.preventDefault()
-            imageCoverDropZone.style.filter = ""
-        }
-
-        imageCoverDropZone.ondragover = (evt) => {
-            evt.stopPropagation();
-            evt.preventDefault();
-        }
-
-        imageCoverDropZone.ondrop = (evt) => {
-            evt.stopPropagation();
-            evt.preventDefault();
-
-            imageCoverDropZone.style.filter = ""
+        // Select new image.
+        this.shadowRoot.querySelector("globular-image-selector").onselectimage = () => {
             if (video.getPoster() == null) {
                 let poster = new Poster()
                 video.setPoster(poster)
             }
 
-            if (evt.dataTransfer.files.length > 0) {
-                var file = evt.dataTransfer.files[0], reader = new FileReader();
-                reader.onload = (event) => {
-                    let dataUrl = event.target.result
-                    this.shadowRoot.querySelector("#delete-cover-image-btn").style.display = "block"
-                    this.shadowRoot.querySelector(".image-selector").src = dataUrl
-                    video.getPoster().setContenturl(dataUrl)
-                };
-                reader.readAsDataURL(file);
-            } else if (evt.dataTransfer.getData('files')) {
-
-                // So here I will try to get the image from drop files from the file-explorer.
-                let paths = JSON.parse(evt.dataTransfer.getData('files'))
-                let domain = evt.dataTransfer.getData('domain')
-
-                // keep track
-                paths.forEach(path => {
-                    // so here I will read the file
-                    let globule = Model.getGlobule(domain)
-                    File__.getFile(globule, path, -1, -1,
-                        f => {
-                            generatePeerToken(globule, token => {
-                                let url = getUrl(globule)
-                                f.path.split("/").forEach(item => {
-                                    let component = encodeURIComponent(item.trim())
-                                    if (component.length > 0) {
-                                        url += "/" + component
-                                    }
-                                })
-
-                                url += "?application=" + Model.application;
-                                url += "&token=" + token
-                                createThumbmail(url, 500, dataUrl => {
-                                    this.shadowRoot.querySelector("#delete-cover-image-btn").style.display = "block"
-                                    this.shadowRoot.querySelector(".image-selector").src = dataUrl
-                                    video.getPoster().setContenturl(dataUrl)
-                                })
-                            })
-                        }, err => ApplicationView.displayMessage(err, 3000))
-                })
-            }
+            video.getPoster().setContenturl(dataUrl)
         }
+
+        let castingTable = this.shadowRoot.querySelector("#casting-table");
+ 
+        // so here I will set the casting...
+        video.getCastingList().forEach(p=>{
+
+            // Create the person editor.
+            let personEditor = new PersonEditor(p)
+
+            // Append to the list of casting
+            castingTable.appendChild(personEditor)
+
+        })
+
+        // The publisher id
+        let editPublisherIdBtn = this.shadowRoot.querySelector("#edit-publisher-id-btn")
+        let publisherIdInput = this.shadowRoot.querySelector("#publisher-id-input")
+        let publisherIdDiv = this.shadowRoot.querySelector("#publisher-id-div")
+
+        editPublisherIdBtn.onclick = () => {
+            publisherIdInput.style.display = "table-cell"
+            publisherIdDiv.style.display = "none"
+            setTimeout(() => {
+                publisherIdInput.focus()
+                publisherIdInput.inputElement.inputElement.select()
+            }, 100)
+        }
+
+        publisherIdInput.onblur = () => {
+            publisherIdInput.style.display = "none"
+            publisherIdDiv.style.display = "table-cell"
+            publisherIdDiv.innerHTML = publisherIdInput.value
+        }
+
+        // The publisher url
+        let editPublisherUrlBtn = this.shadowRoot.querySelector("#edit-publisher-url-btn")
+        let publisherUrlInput = this.shadowRoot.querySelector("#publisher-url-input")
+        let publisherUrlDiv = this.shadowRoot.querySelector("#publisher-url-div")
+
+        editPublisherUrlBtn.onclick = () => {
+            publisherUrlInput.style.display = "table-cell"
+            publisherUrlDiv.style.display = "none"
+            setTimeout(() => {
+                publisherUrlInput.focus()
+                publisherUrlInput.inputElement.inputElement.select()
+            }, 100)
+        }
+
+        publisherIdInput.onblur = () => {
+            publisherUrlInput.style.display = "none"
+            publisherUrlDiv.style.display = "table-cell"
+            publisherUrlDiv.innerHTML = publisherUrlInput.value
+        }
+
+        // The publisher name
+        let editPublisherNameBtn = this.shadowRoot.querySelector("#edit-publisher-name-btn")
+        let publisherNameInput = this.shadowRoot.querySelector("#publisher-name-input")
+        let publisherNameDiv = this.shadowRoot.querySelector("#publisher-name-div")
+
+        editPublisherNameBtn.onclick = () => {
+            publisherNameInput.style.display = "table-cell"
+            publisherNameDiv.style.display = "none"
+            setTimeout(() => {
+                publisherNameInput.focus()
+                publisherNameInput.inputElement.inputElement.select()
+            }, 100)
+        }
+
+        publisherIdInput.onblur = () => {
+            publisherNameInput.style.display = "none"
+            publisherNameDiv.style.display = "table-cell"
+            publisherNameDiv.innerHTML = publisherNameInput.value
+        }
+
 
         // The video id
         let editVideoIdBtn = this.shadowRoot.querySelector("#edit-video-id-btn")
@@ -1355,6 +1322,19 @@ export class VideoInfoEditor extends HTMLElement {
 
         this.shadowRoot.querySelector("#save-indexation-btn").onclick = () => {
 
+            // set the publisher information.
+            let publisher = video.getPublisherid()
+            if(publisher == null){
+                publisher = new Publisher()
+            }
+
+            publisher.setId(publisherIdInput.value)
+            publisher.setUrl(publisherUrlInput.value)
+            publisher.setName(publisherNameInput.value)
+
+            // set back the modified values.
+            video.setPublisherid(publisher)
+
             // So here I will set video values back and update it in the parent...
             video.setId(videoIdInput.value)
             video.setUrl(videoUrlInput.value)
@@ -1365,7 +1345,7 @@ export class VideoInfoEditor extends HTMLElement {
 
             let globule = video.globule
 
-            generatePeerToken(globule, token=>{
+            generatePeerToken(globule, token => {
                 let indexPath = globule.config.DataPath + "/search/videos"
                 let rqst = new CreateVideoRequest
                 rqst.setVideo(video)
@@ -1388,6 +1368,101 @@ export class VideoInfoEditor extends HTMLElement {
 
 customElements.define('globular-video-editor', VideoInfoEditor)
 
+
+
+/**
+ * Use to edit title or video casting
+ */
+export class PersonEditor extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor(person) {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+
+        // Generate a uuid from the person id.
+        let uuid = getUuidByString(person.getId())
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+           
+            #container{
+                color: var(--palette-text-primary);
+            }
+
+            .table-cell {
+                display: table-cell; 
+                width: 100%;
+                padding-left: 5px;
+            }
+
+            .label{
+                font-size: 1rem;
+                padding-right: 10px;
+                width: 175px;
+            }
+
+            .button-div{
+                display: flex;
+                justify-content: end;
+            }
+        </style>
+
+        <div id="container" style="display: table; flex-grow: 1; margin-left: 20px; border-collapse: collapse;">
+            <div style="display: table-row;  border-bottom: 1px solid var(--palette-divider);  margin-bottom: 10px;">
+                <div style="display: table-cell;"> 
+                    <iron-icon icon="social:person"></iron-icon>
+                </div>
+                <div class="label table-cell">${person.getFullname()}</div>
+                <div class="button-div">
+                    <paper-icon-button id="edit-${uuid}-person-delete-btn" icon="icons:delete"></paper-icon-button>
+                    <paper-icon-button id="edit-${uuid}-person-remove-btn" icon="icons:close"></paper-icon-button>
+                </div>
+            </div>
+
+            <div style="display: table-row;">
+                <div class="label" style="display: table-cell; font-weight: 450; ">Id:</div>
+                <div class="table-cell"  id="${uuid}-person-id-div">${person.getId()}</div>
+                <paper-input style="display: none; width: 100%;" value="${person.getId()}" id="${uuid}-person-id-input" no-label-float></paper-input>
+                <div class="button-div">
+                    <paper-icon-button id="edit-${uuid}-person-id-btn" icon="image:edit"></paper-icon-button>
+                </div>
+            </div>
+
+            <div style="display: table-row;">
+                <div class="label" style="display: table-cell; font-weight: 450;">Url:</div>
+                <div class="table-cell" id="${uuid}-person-url-div">${person.getUrl()}</div>
+                <paper-input style="display: none; width: 100%;" value="${person.getUrl()}" id="${uuid}-person-url-input" no-label-float></paper-input>
+                <div class="button-div">
+                    <paper-icon-button id="edit-${uuid}-person-url-btn" icon="image:edit"></paper-icon-button>
+                </div>
+            </div>
+
+            <div style="display: table-row;">
+                <div class="label" style="display: table-cell; font-weight: 450; ">Name:</div>
+                <div class="table-cell"  id="${uuid}-person-name-div">${person.getFullname()}</div>
+                <paper-input style="display: none; width: 100%;" value="${person.getFullname()}" id="${uuid}-person-name-input" no-label-float></paper-input>
+                <div class="button-div">
+                    <paper-icon-button id="edit-${uuid}-person-name-btn" icon="image:edit"></paper-icon-button>
+                </div>
+            </div>
+        </div>
+        `
+        // give the focus to the input.
+        let container = this.shadowRoot.querySelector("#container")
+
+    }
+
+    // Call search event.
+    hello(){
+
+    }
+}
+
+customElements.define('globular-person-editor', PersonEditor)
 
 /**
  * Globular title information panel.
@@ -2337,10 +2412,15 @@ export class BlogPostInfo extends HTMLElement {
                     height: auto;
                     transform: scale(1.05);
                 }
-                /**
-                .image-box:hover img {
-                    transform: scale(1);
-                }*/
+
+                #thumbnail_img {
+                    height: 100% !important;
+                    min-width: 100%;
+                    object-fit: cover;
+                    width: 128px; 
+                    padding-left: 10px; 
+                    padding-top: 10px
+                }
     
             </style>
             <div id="container" class="blog-post-card">
@@ -2376,10 +2456,18 @@ export class BlogPostInfo extends HTMLElement {
                     user-select: none;
                 }
     
+                #thumbnail_img {
+                    height: 100% !important;
+                    min-width: 100%;
+                    object-fit: cover;
+                    width: 128px; 
+                    padding-left: 10px; 
+                    padding-top: 10px
+                }
             </style>
             <div id="container">
                 <div>
-                   <img id="thumbnail_img" style="width: 128px; padding-left: 10px; padding-top: 10px; display:${thumbnail.length == 0 ? "none" : "block"};" src="${thumbnail}"></img>
+                   <img id="thumbnail_img" style="display:${thumbnail.length == 0 ? "none" : "block"};" src="${thumbnail}"></img>
                 </div>
                 <div style="display: table; flex-grow: 1; padding-left: 20px;">
                     <div style="display: table-row;">
