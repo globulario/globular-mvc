@@ -128,7 +128,7 @@ function copyToClipboard(text) {
 // Now I will test if imdb info are allready asscociated.
 export function getTitleInfo(file, callback) {
     let globules = Model.getGlobules()
-    globules = globules.filter(function(e) { return e.domain !== file.globule.domain })
+    globules = globules.filter(function (e) { return e.domain !== file.globule.domain })
     globules.unshift(file.globule)
 
     if (file.titles) {
@@ -187,7 +187,7 @@ export function getVideoInfo(file, callback) {
     }
 
     let globules = Model.getGlobules()
-    globules = globules.filter(function(e) { return e.domain !== file.globule.domain })
+    globules = globules.filter(function (e) { return e.domain !== file.globule.domain })
     globules.unshift(file.globule)
 
     file.videos = []
@@ -233,7 +233,7 @@ function __getVideoInfo__(globule, file, callback) {
 export function getAudioInfo(file, callback) {
 
     let globules = Model.getGlobules()
-    globules = globules.filter(function(e) { return e.domain !== file.globule.domain })
+    globules = globules.filter(function (e) { return e.domain !== file.globule.domain })
     globules.unshift(file.globule)
 
     if (file.audios) {
@@ -2867,17 +2867,18 @@ export class FileIconView extends HTMLElement {
                     if (videos[0])
                         fileNameSpan.innerHTML = videos[0].getDescription()
                 } else {
-
                     if (file.titles) {
-                        let title = file.titles[0]
-                        let name = title.getName()
+                        if (file.titles.length > 0) {
+                            let title = file.titles[0]
+                            let name = title.getName()
 
-                        if (title.getEpisode() > 0) {
-                            name += " S" + title.getSeason() + "-E" + title.getEpisode()
+                            if (title.getEpisode() > 0) {
+                                name += " S" + title.getSeason() + "-E" + title.getEpisode()
+                            }
+
+                            fileNameSpan.innerHTML = name
+                            fileNameSpan.title = file.path
                         }
-
-                        fileNameSpan.innerHTML = name
-                        fileNameSpan.title = file.path
                     } else {
                         // get the title infos...
                         getTitleInfo(file, (titles) => {
@@ -5887,7 +5888,7 @@ export class FileExplorer extends HTMLElement {
 
                 // set the user dir...
                 this.setDir(dir)
-                
+
                 // display the root dir...
                 Model.eventHub.publish("__set_dir_event__", { dir: dir, file_explorer_id: this.id }, true)
 

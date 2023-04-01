@@ -1,7 +1,7 @@
 
 import { generatePeerToken, Model } from '../Model';
 import { Application } from "../Application";
-import { CreateVideoRequest, DeleteTitleRequest, DeleteVideoRequest, DissociateFileWithTitleRequest, GetTitleFilesRequest, Poster, Person, Publisher, SearchTitlesRequest } from "globular-web-client/title/title_pb";
+import { CreateVideoRequest, DeleteTitleRequest, DeleteVideoRequest, DissociateFileWithTitleRequest, GetTitleFilesRequest, Poster, Person, Publisher, SearchTitlesRequest, SearchPersonsRequest, DeletePersonRequest, GetPersonByIdRequest, CreatePersonRequest } from "globular-web-client/title/title_pb";
 import { File } from "../File";
 import { VideoPreview, getFileSizeString } from "./File";
 import { ApplicationView } from "../ApplicationView";
@@ -900,7 +900,7 @@ export class VideoInfo extends HTMLElement {
             persons.forEach(p => {
                 let uuid = "_" + getUuidByString(p.getId())
                 let lnk = div.querySelector(`#${uuid}`)
-                if(lnk == null){
+                if (lnk == null) {
                     lnk = document.createElement("a")
                 }
                 lnk.id = uuid;
@@ -1156,7 +1156,7 @@ export class VideoInfoEditor extends HTMLElement {
         let indexPath = video.globule.config.DataPath + "/search/videos"
 
         let addCastingBtn = this.shadowRoot.querySelector("#add-casting-btn")
-        addCastingBtn.onclick = ()=>{
+        addCastingBtn.onclick = () => {
             let html = `
             <paper-card id="add-casting-panel" style="z-index: 100; background-color: var(--palette-background-paper);  color: var(--palette-text-primary); position: absolute; top: 35px; right: 5px;">
                 <div style="display:flex; flex-direction: column;">
@@ -1168,19 +1168,68 @@ export class VideoInfoEditor extends HTMLElement {
                 </div>
             </paper-card>
             `
-            let parent =  addCastingBtn.parentNode
+            let parent = addCastingBtn.parentNode
             let addCastingPanel = parent.querySelector("#add-casting-panel")
-            if(addCastingPanel != null){
+            if (addCastingPanel != null) {
                 return
             }
 
             let range = document.createRange()
             parent.appendChild(range.createContextualFragment(html))
 
-            parent.querySelector("#cancel-btn").onclick = ()=>{
+            // close the search box...
+            let searchPersonInput = parent.querySelector("globular-search-person-input")
+
+            searchPersonInput.onaddcasting = (person) => {
+
+                let globule = person.globule
+                let indexPath = globule.config.DataPath + "/search/videos" // TODO set it correctly for video...
+
+                generatePeerToken(globule, token => {
+
+                    // remove the video id from casting field.
+                    let casting = person.getCastingList()
+                    if (casting.indexOf(video.getId()) == 0) {
+                        casting.push(video.getId())
+                    }
+
+                    person.setCastingList(casting)
+
+                    let rqst = new CreatePersonRequest
+                    rqst.setPerson(person)
+                    rqst.setIndexpath(indexPath)
+
+                    // save the person witout the video id...
+                    globule.titleService.createPerson(rqst, { application: Application.application, domain: Application.domain, token: token })
+                        .then(rsp => {
+                            // Now I will remove the person from the video casting...
+                            let casting = video.getCastingList()
+
+                            // remove it if it was existing.
+                            casting = casting.filter(p => p.getId() !== person.getId());
+
+                            // set it back.
+                            casting.push(person)
+                            video.setCastingList(casting)
+
+                            let rqst = new CreateVideoRequest
+                            rqst.setVideo(video)
+                            rqst.setIndexpath(indexPath)
+                            globule.titleService.createVideo(rqst, { application: Application.application, domain: Application.domain, token: token })
+                                .then(rsp => {
+                                    this.appendPersonEditor(person, video)
+
+                                }).catch(err => ApplicationView.displayMessage(err, 3000))
+                        }).catch(err => ApplicationView.displayMessage(err, 3000))
+
+                })
+            }
+
+            searchPersonInput.onclose = parent.querySelector("#cancel-btn").onclick = () => {
                 let addCastingPanel = parent.querySelector("#add-casting-panel")
                 addCastingPanel.parentNode.removeChild(addCastingPanel)
             }
+
 
         }
 
@@ -1220,14 +1269,7 @@ export class VideoInfoEditor extends HTMLElement {
 
         // so here I will set the casting...
         video.getCastingList().forEach(p => {
-
-            // Create the person editor.
-            let personEditor = new PersonEditor(p)
-            personEditor.slot = "casting"
-
-            // Append to the list of casting
-            this.appendChild(personEditor)
-
+            this.appendPersonEditor(p, video)
         })
 
         // The publisher id
@@ -1388,7 +1430,7 @@ export class VideoInfoEditor extends HTMLElement {
             // set the casting values...
             // casting are interfaced by PersonEditor and PersonEditor are contain 
             // in the casting slot, so I will use children iterator here...
-            for(var i=0; i < this.children.length; i++){
+            for (var i = 0; i < this.children.length; i++) {
                 this.children[i].save()
             }
 
@@ -1413,6 +1455,28 @@ export class VideoInfoEditor extends HTMLElement {
         }
     }
 
+    appendPersonEditor(person, video){
+        person.globule = video.globule
+        let uuid = "_" + getUuidByString(person.getId())
+
+        // Create the person editor.
+        let personEditor = this.querySelector(`#${uuid}`)
+
+        if (personEditor == null) {
+            personEditor = new PersonEditor(person, video)
+            personEditor.id = uuid;
+
+            personEditor.slot = "casting"
+
+            personEditor.onremovefromcast = (p) => {
+                personEditor.parentNode.removeChild(personEditor)
+            }
+
+            // Append to the list of casting
+            this.appendChild(personEditor)
+        }
+    }
+
 }
 
 customElements.define('globular-video-editor', VideoInfoEditor)
@@ -1424,16 +1488,15 @@ customElements.define('globular-video-editor', VideoInfoEditor)
  */
 export class SearchPersonInput extends HTMLElement {
     // attributes.
-    
+
 
     // Create the applicaiton view.
     constructor() {
 
         super()
 
-
-        this.index = this.getAttribute("indexpath")
-
+        this.indexPath = this.getAttribute("indexpath")
+        this.titleInfo = null
 
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
@@ -1444,41 +1507,237 @@ export class SearchPersonInput extends HTMLElement {
            
             #container{
                 display: flex;
-                align-items: center;
-                width: 240px;
-                margin-left: 10px;
-                margin-right: 10px;
+                flex-direction: column;
                 background-color: var(--palette-background-paper);
                 color: var(--palette-text-primary);
-                z-index: 100;
             }
 
             paper-input {
                 margin-left: 5px;
             }
 
+            ::-webkit-scrollbar {
+                width: 5px;
+                height: 5px;
+
+             }
+                
+             ::-webkit-scrollbar-track {
+                background: var(--palette-background-default);
+             }
+             
+             ::-webkit-scrollbar-thumb {
+                background: var(--palette-divider); 
+             }
+
+            .search-results{
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
+                max-height: 300px;
+                padding: 10px;
+                overflow-y: auto;
+                align-items: center;
+                justify-content: center;
+            }
+
+            iron-icon{
+                height: 18px;
+                margin-right: 5px;
+            }
+
+            iron-icon:hover{
+                cursor: pointer;
+            }
+
         </style>
 
         <div id="container">
-            <iron-icon icon="icons:search"></iron-icon>
- 
-            <paper-input no-label-float></paper-input>
-        
+            <div style="display: flex; align-items: center; min-width: 240px; padding: 5px;">
+                <iron-icon icon="icons:search"></iron-icon>
+                <paper-input no-label-float></paper-input>
+            </div>
+
+            <div class="search-results"> </div>
+
         </div>
 
         `
         // give the focus to the input.
-        let container = this.shadowRoot.querySelector("#container")
+        let input = this.shadowRoot.querySelector("paper-input")
+        setTimeout(() => {
+            input.focus()
+            input.inputElement.inputElement.select()
+        }, 100)
+
+        input.onkeyup = (evt) => {
+            if (evt.key == "Enter") {
+                this.shadowRoot.querySelector(".search-results").innerHTML = ""
+
+                if (evt.target.value.length >= 3) {
+                    console.log("search for: ", evt.target.value)
+                    searchPersons(evt.target.value, this.indexPath, persons => {
+                        if (persons.length > 0) {
+
+
+                            let range = document.createRange()
+
+                            persons.forEach(p => {
+
+                                let uuid = "_" + getUuidByString(p.getId())
+
+                                let html = `
+                                <div id="${uuid}-div" style="display: flex; min-width: 240px; align-items: center; border-bottom: 1px solid var(--palette-divider); padding-bottom: 10px; margin-bottom: 10px;">
+                                    <img style="height: 55px; width: 55px; border-radius: 27.5px;" src="${p.getPicture()}"></img>
+                                    <div style="display: flex; flex-direction: column; width: 100%;">
+                                        <span style="flex-grow: 1; font-size: 1.2rem; margin-left: 10px; justify-self: flex-start;">${p.getFullname()}</span>
+                                        <div style="display: flex; justify-content: flex-end;">
+                                           
+                                            <iron-icon id="${uuid}-edit-btn" icon="image:edit" title="edit person informations"></iron-icon>
+                                            <iron-icon id="${uuid}-add-btn" icon="icons:add" title="add to the casting"></iron-icon>
+                                        </div>
+                                    </div>
+                                </div>
+                                `
+
+                                let div = this.querySelector(`#${uuid}-div`)
+                                if (!div) {
+                                    this.shadowRoot.querySelector(".search-results").appendChild(range.createContextualFragment(html));
+                                    div = this.querySelector(`#${uuid}-div`)
+
+                                    // Now the action...
+                                    let editBtn = this.shadowRoot.querySelector(`#${uuid}-edit-btn`)
+                                    editBtn.onclick = () => {
+                                        this.editPerson(p)
+                                    }
+
+                                    let addBtn = this.shadowRoot.querySelector(`#${uuid}-add-btn`)
+                                    addBtn.onclick = () => {
+                                        this.addPerson(p)
+                                    }
+                                }
+                            })
+                        }
+                    })
+
+
+                } else {
+                    ApplicationView.displayMessage("search value must be longer thant 3 character", 3500)
+                }
+
+            } else if (evt.key == "Escape") {
+                if (this.onclose) {
+                    this.shadowRoot.querySelector(".search-results").innerHTML = ""
+
+                    this.onclose()
+
+                }
+            }
+        }
 
     }
 
-    // Call search event.
-    hello(){
+    editPerson(p) {
+        if (this.oneditperson != null) {
+            this.oneditperson(p)
+        }
 
+        console.log("-----------> edit person: ", p)
+    }
+
+    addPerson(person) {
+        if (this.onaddcasting) {
+            this.onaddcasting(person)
+        }
     }
 }
 
 customElements.define('globular-search-person-input', SearchPersonInput)
+
+function getPersonById(globule, indexPath, id, callback, errorCallback) {
+
+    generatePeerToken(globule, token => {
+        let rqst = new GetPersonByIdRequest
+        rqst.setIndexpath(indexPath)
+        rqst.setPersonid(id)
+
+        globule.titleService.getPersonById(rqst, { application: Application.application, domain: Application.domain, token: token })
+            .then(rsp => {
+                callback(rsp.getPerson())
+            }).catch(err => {
+                errorCallback(err)
+            })
+    })
+}
+
+/**
+ * Retreive a list of person, Actor's, Writer's, Director's, Casting
+ * @param {*} query 
+ * @param {*} indexpath 
+ * @param {*} callback 
+ */
+export function searchPersons(query, indexpath, callback) {
+
+    let index = 0
+    let globules = Model.getGlobules()
+    let persons = []
+
+    let __searchPerson__ = (index) => {
+        let globule = globules[index]
+        index++
+
+        generatePeerToken(globule, token => {
+
+            // so here I will search for given person...
+            let rqst = new SearchPersonsRequest
+            rqst.setIndexpath(indexpath)
+            rqst.setQuery(query)
+            rqst.setOffset(0)
+            rqst.setSize(1000)
+
+            let stream = globule.titleService.searchPersons(rqst, { application: Application.application, domain: Application.domain, token: token })
+            stream.on("data", (rsp) => {
+                if (rsp.hasHit()) {
+                    let hit = rsp.getHit()
+                    persons.push(hit.getPerson())
+                }
+            });
+
+            stream.on("status", (status) => {
+                if (status.code == 0) {
+                    // Here I will sort the episodes by seasons and episodes.
+                    persons = persons.sort((a, b) => {
+                        if (a.getFullname() === b.getFullname()) {
+                            // Price is only important when cities are the same
+                            return a.getFullname() - b.getFullname();
+                        }
+                        return a.getFullname() - b.getFullname();
+                    })
+
+                    persons = [...new Map(persons.map(v => [v.getId(), v])).values()]
+
+                    persons.forEach(p => {
+                        p.globule = globule
+                    })
+
+                    callback(persons)
+
+                } else {
+                    ApplicationView.displayMessage(status.details, 3000)
+                }
+            });
+        })
+
+    }
+
+
+    if (globules.length > 0) {
+        __searchPerson__(index)
+    } else {
+        callback([])
+    }
+
+}
+
 
 /**
  * Use to edit title or video casting
@@ -1487,11 +1746,16 @@ export class PersonEditor extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor(person) {
+    constructor(person, title) {
         super()
 
         // keep a refrence on the person object.
         this.person = person
+        this.titleInfo = title
+
+        Model.eventHub.subscribe(`delete_${person.getId()}_evt`, l => { }, evt => {
+            this.parentNode.removeChild(this)
+        }, true)
 
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
@@ -1527,6 +1791,10 @@ export class PersonEditor extends HTMLElement {
                 display: flex;
                 justify-content: end;
             }
+
+            .table-cell a {
+                color: var(--palette-text-primary);
+            }
         </style>
 
         <div id="container" style="display: flex; flex-grow: 1; margin-left: 20px; flex-direction: column;">
@@ -1534,7 +1802,6 @@ export class PersonEditor extends HTMLElement {
                 <paper-icon-button id="collapse-btn"  icon="unfold-less" --iron-icon-fill-color:var(--palette-text-primary);"></paper-icon-button>
                 <div class="label" style="flex-grow: 1;">${person.getFullname()}</div>
                 <div>
-                    <paper-icon-button id="edit-${uuid}-person-delete-btn" icon="icons:delete"></paper-icon-button>
                     <paper-icon-button id="edit-${uuid}-person-remove-btn" icon="icons:close"></paper-icon-button>
                 </div>
             </div>
@@ -1547,54 +1814,66 @@ export class PersonEditor extends HTMLElement {
                         </div>
                     </div>
 
-                    <div style="display: table; border-collapse: collapse; flex-grow: 1;">
-                        <div style="display: table-row;">
-                            <div class="label" style="display: table-cell; font-weight: 450; ">Id:</div>
-                            <div class="table-cell"  id="${uuid}-person-id-div">${person.getId()}</div>
-                            <paper-input style="display: none; width: 100%;" value="${person.getId()}" id="${uuid}-person-id-input" no-label-float></paper-input>
-                            <div class="button-div">
-                                <paper-icon-button id="edit-${uuid}-person-id-btn" icon="image:edit"></paper-icon-button>
+                    <div style="display: flex; flex-direction: column;">
+                        <div style="display: table; border-collapse: collapse; flex-grow: 1;">
+                            <div style="display: table-row;">
+                                <div class="label" style="display: table-cell; font-weight: 450; ">Id:</div>
+                                <div class="table-cell"  id="${uuid}-person-id-div">${person.getId()}</div>
+                                <paper-input style="display: none; width: 100%;" value="${person.getId()}" id="${uuid}-person-id-input" no-label-float></paper-input>
+                                <div class="button-div">
+                                    <paper-icon-button id="edit-${uuid}-person-id-btn" icon="image:edit"></paper-icon-button>
+                                </div>
+                            </div>
+
+                            <div style="display: table-row;">
+                                <div class="label" style="display: table-cell; font-weight: 450;">Url:</div>
+                                <div class="table-cell" id="${uuid}-person-url-div">${person.getUrl()}</div>
+                                <paper-input style="display: none; width: 100%;" value="${person.getUrl()}" id="${uuid}-person-url-input" no-label-float></paper-input>
+                                <div class="button-div">
+                                    <paper-icon-button id="edit-${uuid}-person-url-btn" icon="image:edit"></paper-icon-button>
+                                </div>
+                            </div>
+
+                            <div style="display: table-row;">
+                                <div class="label" style="display: table-cell; font-weight: 450; ">Name:</div>
+                                <div class="table-cell"  id="${uuid}-person-name-div">${person.getFullname()}</div>
+                                <paper-input style="display: none; width: 100%;" value="${person.getFullname()}" id="${uuid}-person-name-input" no-label-float></paper-input>
+                                <div class="button-div">
+                                    <paper-icon-button id="edit-${uuid}-person-name-btn" icon="image:edit"></paper-icon-button>
+                                </div>
+                            </div>
+
+                            <div style="display: table-row;">
+                                <div class="label" style="display: table-cell; font-weight: 450; ">Date of birth:</div>
+                                <div class="table-cell"  id="${uuid}-person-birthdate-div">${person.getBirthdate()}</div>
+                                <paper-input style="display: none; width: 100%;" value="${person.getBirthdate()}" id="${uuid}-person-birthdate-input" no-label-float></paper-input>
+                                <div class="button-div">
+                                    <paper-icon-button id="edit-${uuid}-person-birthdate-btn" icon="image:edit"></paper-icon-button>
+                                </div>
+                            </div>
+
+                            <div style="display: table-row;">
+                                <div class="label" style="display: table-cell; font-weight: 450; ">Place of birth:</div>
+                                <div class="table-cell"  id="${uuid}-person-birthplace-div">${person.getBirthplace()}</div>
+                                <paper-input style="display: none; width: 100%;" value="${person.getBirthplace()}" id="${uuid}-person-birthplace-input" no-label-float></paper-input>
+                                <div class="button-div">
+                                    <paper-icon-button id="edit-${uuid}-person-birthplace-btn" icon="image:edit"></paper-icon-button>
+                                </div>
+                            </div>
+
+                            <div style="display: table-row;">
+                                <div class="label" style="display: table-cell; font-weight: 450; vertical-align: top;">Biography:</div>
+                                <div id="${uuid}-person-biography-div" style="display: table-cell;width: 100%;" >${person.getBiography()}</div>
+                                <div style="display: none; width: 100%;">
+                                    <iron-autogrow-textarea id="${uuid}-person-biography-input"  style="border: none; width: 100%;" value="${person.getBiography()}"></iron-autogrow-textarea>
+                                </div>
+                                <div class="button-div">
+                                    <paper-icon-button id="edit-${uuid}-person-biography-btn" style="vertical-align: top;" icon="image:edit"></paper-icon-button>
+                                </div>
                             </div>
                         </div>
-
-                        <div style="display: table-row;">
-                            <div class="label" style="display: table-cell; font-weight: 450;">Url:</div>
-                            <div class="table-cell" id="${uuid}-person-url-div">${person.getUrl()}</div>
-                            <paper-input style="display: none; width: 100%;" value="${person.getUrl()}" id="${uuid}-person-url-input" no-label-float></paper-input>
-                            <div class="button-div">
-                                <paper-icon-button id="edit-${uuid}-person-url-btn" icon="image:edit"></paper-icon-button>
-                            </div>
-                        </div>
-
-                        <div style="display: table-row;">
-                            <div class="label" style="display: table-cell; font-weight: 450; ">Name:</div>
-                            <div class="table-cell"  id="${uuid}-person-name-div">${person.getFullname()}</div>
-                            <paper-input style="display: none; width: 100%;" value="${person.getFullname()}" id="${uuid}-person-name-input" no-label-float></paper-input>
-                            <div class="button-div">
-                                <paper-icon-button id="edit-${uuid}-person-name-btn" icon="image:edit"></paper-icon-button>
-                            </div>
-                        </div>
-
-                        <div style="display: table-row;">
-                            <div class="label" style="display: table-cell; font-weight: 450; vertical-align: top;">About:</div>
-                            <div id="${uuid}-person-about-div" style="display: table-cell;width: 100%;" >${person.getAbout()}</div>
-                            <div style="display: none; width: 100%;">
-                                <iron-autogrow-textarea id="${uuid}-person-about-input"  style="border: none; width: 100%;" value="${person.getAbout()}"></iron-autogrow-textarea>
-                            </div>
-                            <div class="button-div">
-                                <paper-icon-button id="edit-${uuid}-person-about-btn" style="vertical-align: top;" icon="image:edit"></paper-icon-button>
-                            </div>
-                        </div>
-
-                        <div style="display: table-row;">
-                            <div class="label" style="display: table-cell; font-weight: 450; vertical-align: top;">Biography:</div>
-                            <div id="${uuid}-person-biography-div" style="display: table-cell;width: 100%;" >${person.getBiography()}</div>
-                            <div style="display: none; width: 100%;">
-                                <iron-autogrow-textarea id="${uuid}-person-biography-input"  style="border: none; width: 100%;" value="${person.getBiography()}"></iron-autogrow-textarea>
-                            </div>
-                            <div class="button-div">
-                                <paper-icon-button id="edit-${uuid}-person-biography-btn" style="vertical-align: top;" icon="image:edit"></paper-icon-button>
-                            </div>
+                        <div style="display:flex; justify-content: flex-end;">
+                            <paper-button id="${uuid}-delete-btn" title="delete person information">Delete</iron-icon>
                         </div>
                     </div>
                 </div>
@@ -1615,7 +1894,87 @@ export class PersonEditor extends HTMLElement {
             collapse_panel.toggle();
         }
 
+        // Remove a person from the cast...
+        let removeFromCastBtn = container.querySelector(`#edit-${uuid}-person-remove-btn`)
+        removeFromCastBtn.onclick = () => {
+
+            let toast = ApplicationView.displayMessage(`
+            <style>
+               
+            </style>
+            <div id="select-media-dialog">
+                <div>Your about to remove <span style="font-size: 1.2rem;">${this.person.getFullname()}</span></div>
+
+                <div style="display: flex; flex-direction: column; justify-content: center;">
+                    <img src="${this.person.getPicture()}" style="width: 185.31px; align-self: center; padding-top: 10px; padding-bottom: 15px;" id="title-poster"> </img>
+                </div>
+
+                <div>from title ${this.titleInfo.getDescription()}</div>
+                <div style="display: flex; flex-direction: column; justify-content: center;">
+                    <img src="${this.titleInfo.getPoster().getContenturl()}" style="width: 185.31px; align-self: center; padding-top: 10px; padding-bottom: 15px;" id="title-poster"> </img>
+                </div>
+
+                <div>Is that what you want to do? </div>
+                <div style="display: flex; justify-content: flex-end;">
+                    <paper-button id="imdb-lnk-ok-button">Ok</paper-button>
+                    <paper-button id="imdb-lnk-cancel-button">Cancel</paper-button>
+                </div>
+            </div>
+            `, 60 * 1000)
+
+            let cancelBtn = toast.el.querySelector("#imdb-lnk-cancel-button")
+            cancelBtn.onclick = () => {
+                toast.dismiss();
+            }
+
+            let okBtn = toast.el.querySelector("#imdb-lnk-ok-button")
+            okBtn.onclick = () => {
+
+                let globule = person.globule
+                let indexPath = globule.config.DataPath + "/search/videos" // TODO set it correctly for video...
+
+                generatePeerToken(globule, token => {
+
+                    // remove the video id from casting field.
+                    let casting = person.getCastingList()
+                    casting = casting.filter(e => e !== this.titleInfo.getId());
+                    person.setCastingList(casting)
+
+                    let rqst = new CreatePersonRequest
+                    rqst.setPerson(person)
+                    rqst.setIndexpath(indexPath)
+
+                    // save the person witout the video id...
+                    globule.titleService.createPerson(rqst, { application: Application.application, domain: Application.domain, token: token })
+                        .then(rsp => {
+                            // Now I will remove the person from the video casting...
+                            let casting = this.titleInfo.getCastingList()
+                            casting = casting.filter(p => p.getId() !== person.getId());
+                            this.titleInfo.setCastingList(casting)
+
+                            let rqst = new CreateVideoRequest
+                            rqst.setVideo(this.titleInfo)
+                            rqst.setIndexpath(indexPath)
+                            globule.titleService.createVideo(rqst, { application: Application.application, domain: Application.domain, token: token })
+                                .then(rsp => {
+                                    ApplicationView.displayMessage(`${person.getFullname()} was removed from the cast of ${this.titleInfo.getDescription()}`, 3000)
+                                    if (this.onremovefromcast) {
+                                        this.onremovefromcast(person)
+                                    }
+                                }).catch(err => ApplicationView.displayMessage(err, 3000))
+                        }).catch(err => ApplicationView.displayMessage(err, 3000))
+
+                })
+                toast.dismiss();
+            }
+
+        }
+
         // Now the actions...
+        let deleteBtn = container.querySelector(`#${uuid}-delete-btn`)
+        deleteBtn.onclick = () => {
+            this.deletePerson()
+        }
 
         // The person id
         let editpersonIdBtn = container.querySelector(`#edit-${uuid}-person-id-btn`)
@@ -1677,26 +2036,6 @@ export class PersonEditor extends HTMLElement {
             personUrlDiv.innerHTML = personUrlInput.value
         }
 
-        // The person about text
-        let editPersonAboutBtn = this.shadowRoot.querySelector(`#edit-${uuid}-person-about-btn`)
-        let personAboutInput = this.shadowRoot.querySelector(`#${uuid}-person-about-input`)
-        let personAboutDiv = this.shadowRoot.querySelector(`#${uuid}-person-about-div`)
-
-        editPersonAboutBtn.onclick = () => {
-            personAboutInput.parentNode.style.display = "table-cell"
-            personAboutDiv.style.display = "none"
-            setTimeout(() => {
-                personAboutInput.focus()
-                personAboutInput.textarea.select()
-            }, 100)
-        }
-
-        personAboutInput.onblur = () => {
-            personAboutInput.parentNode.style.display = "none"
-            personAboutDiv.style.display = "table-cell"
-            personAboutDiv.innerHTML = personAboutInput.value
-        }
-
         // The person biography text.
         let editPersonBiographyBtn = this.shadowRoot.querySelector(`#edit-${uuid}-person-biography-btn`)
         let personBiographyInput = this.shadowRoot.querySelector(`#${uuid}-person-biography-input`)
@@ -1719,6 +2058,48 @@ export class PersonEditor extends HTMLElement {
 
     }
 
+    deletePerson() {
+        let toast = ApplicationView.displayMessage(`
+        <style>
+           
+        </style>
+        <div id="select-media-dialog">
+            <div>Your about to delete <span style="font-size: 1.2rem;">${this.person.getFullname()}</span></div>
+            <div style="display: flex; flex-direction: column; justify-content: center;">
+                <img src="${this.person.getPicture()}" style="width: 185.31px; align-self: center; padding-top: 10px; padding-bottom: 15px;" id="title-poster"> </img>
+            </div>
+            <div>Is that what you want to do? </div>
+            <div style="display: flex; justify-content: flex-end;">
+                <paper-button id="imdb-lnk-ok-button">Ok</paper-button>
+                <paper-button id="imdb-lnk-cancel-button">Cancel</paper-button>
+            </div>
+        </div>
+        `, 60 * 1000)
+
+        let cancelBtn = toast.el.querySelector("#imdb-lnk-cancel-button")
+        cancelBtn.onclick = () => {
+            toast.dismiss();
+        }
+
+        let okBtn = toast.el.querySelector("#imdb-lnk-ok-button")
+        okBtn.onclick = () => {
+            let rqst = new DeletePersonRequest()
+            let globule = this.person.globule
+            generatePeerToken(globule, token => {
+                rqst.setPersonid(this.person.getId())
+                rqst.setIndexpath(globule.config.DataPath + "/search/videos")
+                globule.titleService.deletePerson(rqst, { application: Application.application, domain: Application.domain, token: token })
+                    .then(() => {
+                        ApplicationView.displayMessage(`${this.person.getFullname()} information was deleted`, 3000)
+                        Model.publish(`delete_${this.person.getId()}_evt`, {}, true)
+                    })
+                    .catch(err => ApplicationView.displayMessage(err, 3000))
+            })
+
+            toast.dismiss();
+        }
+    }
+
     // Save will simply set value in the person attribute...
     save() {
         // The uuid
@@ -1727,7 +2108,6 @@ export class PersonEditor extends HTMLElement {
 
         // get interface elements.
         let personBiographyInput = container.querySelector(`#${uuid}-person-biography-input`)
-        let personAboutInput = container.querySelector(`#${uuid}-person-about-input`)
         let personUrlInput = container.querySelector(`#${uuid}-person-url-input`)
         let personIdInput = container.querySelector(`#${uuid}-person-id-input`)
         let personNameInput = container.querySelector(`#${uuid}-person-name-input`)
@@ -1738,12 +2118,11 @@ export class PersonEditor extends HTMLElement {
         this.person.setFullname(personNameInput.value)
         this.person.setUrl(personUrlInput.value)
         this.person.setBiography(personBiographyInput.value)
-        this.person.setAbout(personAboutInput.value)
         this.person.setPicture(imageSelector.getImageUrl())
 
     }
 
-    getPerson(){
+    getPerson() {
         return this.person
     }
 }
@@ -1945,15 +2324,15 @@ export class TitleInfo extends HTMLElement {
             persons.forEach(p => {
                 let uuid = "_" + getUuidByString(p.getId())
                 let lnk = div.querySelector(`#${uuid}`)
-                if(!lnk){
+                if (!lnk) {
                     lnk = document.createElement("a")
                 }
-               
+
                 lnk.href = p.getUrl()
                 lnk.innerHTML = p.getFullname()
                 lnk.target = "_blank"
                 lnk.id = uuid
-               
+
                 div.appendChild(lnk)
             })
         }
