@@ -14,6 +14,7 @@ import { createThumbmail, readBlogPost } from './BlogPost';
 
 import { PermissionsManager } from './Permissions';
 import * as getUuidByString from 'uuid-by-string';
+import { SavePackageResponse } from 'globular-web-client/catalog/catalog_pb';
 
 // extract the duration info from the raw data.
 function parseDuration(duration) {
@@ -1162,7 +1163,7 @@ export class VideoInfoEditor extends HTMLElement {
                 <div style="display:flex; flex-direction: column;">
                     <globular-search-person-input indexpath="${indexPath}" title="search existing cast"></globular-search-person-input>
                     <div style="display:flex; justify-content: flex-end;">
-                        <paper-button title="Create a new cast">New</paper-button>
+                        <paper-button id="new-person-btn" title="Create a new cast">New</paper-button>
                         <paper-button id="cancel-btn" >Cancel</paper-button>
                     </div>
                 </div>
@@ -1176,6 +1177,20 @@ export class VideoInfoEditor extends HTMLElement {
 
             let range = document.createRange()
             parent.appendChild(range.createContextualFragment(html))
+
+            let createNewPersonBtn = parent.querySelector("#new-person-btn")
+            createNewPersonBtn.onclick = () => {
+
+                let person = new Person()
+                person.setId("New Casting")
+
+                let editor = this.appendPersonEditor(person, video)
+                editor.focus()
+
+                // remove the panel...
+                let addCastingPanel = parent.querySelector("#add-casting-panel")
+                addCastingPanel.parentNode.removeChild(addCastingPanel)
+            }
 
             // close the search box...
             let searchPersonInput = parent.querySelector("globular-search-person-input")
@@ -1215,9 +1230,14 @@ export class VideoInfoEditor extends HTMLElement {
                             let rqst = new CreateVideoRequest
                             rqst.setVideo(video)
                             rqst.setIndexpath(indexPath)
+
                             globule.titleService.createVideo(rqst, { application: Application.application, domain: Application.domain, token: token })
                                 .then(rsp => {
                                     this.appendPersonEditor(person, video)
+
+                                    // remove the panel...
+                                    let addCastingPanel = parent.querySelector("#add-casting-panel")
+                                    addCastingPanel.parentNode.removeChild(addCastingPanel)
 
                                 }).catch(err => ApplicationView.displayMessage(err, 3000))
                         }).catch(err => ApplicationView.displayMessage(err, 3000))
@@ -1434,28 +1454,89 @@ export class VideoInfoEditor extends HTMLElement {
                 this.children[i].save()
             }
 
-            let globule = video.globule
+            this.saveCasting(video, casting => {
+                let globule = video.globule
+                generatePeerToken(globule, token => {
+                    let indexPath = globule.config.DataPath + "/search/videos"
+                    let rqst = new CreateVideoRequest
+                    rqst.setVideo(video)
+                    rqst.setIndexpath(indexPath)
 
-            generatePeerToken(globule, token => {
-                let indexPath = globule.config.DataPath + "/search/videos"
-                let rqst = new CreateVideoRequest
-                rqst.setVideo(video)
-                rqst.setIndexpath(indexPath)
-                globule.titleService.createVideo(rqst, { application: Application.application, domain: Application.domain, token: token })
-                    .then(rsp => {
-                        ApplicationView.displayMessage("Video Information are updated", 3000)
-                        this.videoInfosDisplay.setVideo(video)
-                    })
-                    .catch(err => ApplicationView.displayMessage(err, 3000))
-                let parent = this.parentNode
-                parent.removeChild(this)
-                parent.appendChild(videoInfosDisplay)
+                    video.setCastingList(casting)
+
+                    globule.titleService.createVideo(rqst, { application: Application.application, domain: Application.domain, token: token })
+                        .then(rsp => {
+                            ApplicationView.displayMessage("Video Information are updated", 3000)
+                            this.videoInfosDisplay.setVideo(video)
+                        })
+                        .catch(err => ApplicationView.displayMessage(err, 3000))
+                    let parent = this.parentNode
+                    parent.removeChild(this)
+                    parent.appendChild(videoInfosDisplay)
+                })
             })
-
         }
     }
 
-    appendPersonEditor(person, video){
+    // Save casting this will create new person and set value in existing one.
+    saveCasting(video, callback) {
+
+        let castingEditors = this.querySelectorAll("globular-person-editor")
+        let casting = []
+        for (var i = 0; i < castingEditors.length; i++) {
+            let person = castingEditors[i].getPerson()
+            casting.push(person)
+
+            let casting_ = person.getCastingList()
+            if (!casting_) {
+                casting_ = []
+            }
+
+            if (casting_.indexOf(video.getId()) == -1) {
+                casting_.push(video.getId())
+            }
+            person.setCastingList(casting_)
+        }
+
+        let globule = video.globule
+
+        let savePerson = (index) => {
+            let indexPath = globule.config.DataPath + "/search/videos"
+            let p = casting[index]
+            index++
+            let rqst = new CreatePersonRequest
+            rqst.setIndexpath(indexPath)
+            rqst.setPerson(p)
+
+            // save the person one by one...
+            generatePeerToken(globule, token => {
+                globule.titleService.createPerson(rqst, { application: Application.application, domain: Application.domain, token: token })
+                    .then(rsp => {
+                        if (index < casting.length) {
+                            savePerson(index)
+                        } else {
+                            callback(casting)
+                        }
+                    })
+                    .catch(err => {
+                        if (index < casting.length) {
+                            savePerson(index)
+                        } else {
+                            callback(casting)
+                        }
+                    })
+            })
+        }
+
+        let index = 0
+        if (casting.length > 0)
+            savePerson(index)
+        else
+            callback([])
+
+    }
+
+    appendPersonEditor(person, video) {
         person.globule = video.globule
         let uuid = "_" + getUuidByString(person.getId())
 
@@ -1475,6 +1556,8 @@ export class VideoInfoEditor extends HTMLElement {
             // Append to the list of casting
             this.appendChild(personEditor)
         }
+
+        return personEditor
     }
 
 }
@@ -1640,8 +1723,6 @@ export class SearchPersonInput extends HTMLElement {
         if (this.oneditperson != null) {
             this.oneditperson(p)
         }
-
-        console.log("-----------> edit person: ", p)
     }
 
     addPerson(person) {
@@ -1800,13 +1881,13 @@ export class PersonEditor extends HTMLElement {
         <div id="container" style="display: flex; flex-grow: 1; margin-left: 20px; flex-direction: column;">
             <div style="display: flex;  border-bottom: 1px solid var(--palette-divider);  margin-bottom: 10px; align-items: center;">
                 <paper-icon-button id="collapse-btn"  icon="unfold-less" --iron-icon-fill-color:var(--palette-text-primary);"></paper-icon-button>
-                <div class="label" style="flex-grow: 1;">${person.getFullname()}</div>
+                <div id="header-text" class="label" style="flex-grow: 1;">${person.getFullname()}</div>
                 <div>
                     <paper-icon-button id="edit-${uuid}-person-remove-btn" icon="icons:close"></paper-icon-button>
                 </div>
             </div>
             <iron-collapse class="" id="collapse-panel">
-                <div style="display: flex;">
+                <div style="display: flex; width: 100%;">
 
                     <div style="display: flex; flex-direction: column; justify-content: flex-start;  margin-right: 20px;">
                         <div style="display: flex; flex-direction: column; margin: 5px;">
@@ -1814,7 +1895,7 @@ export class PersonEditor extends HTMLElement {
                         </div>
                     </div>
 
-                    <div style="display: flex; flex-direction: column;">
+                    <div style="display: flex; flex-direction: column; width: 100%;">
                         <div style="display: table; border-collapse: collapse; flex-grow: 1;">
                             <div style="display: table-row;">
                                 <div class="label" style="display: table-cell; font-weight: 450; ">Id:</div>
@@ -1844,6 +1925,15 @@ export class PersonEditor extends HTMLElement {
                             </div>
 
                             <div style="display: table-row;">
+                                <div class="label" style="display: table-cell; font-weight: 450; ">Aliases:</div>
+                                <div class="table-cell"  id="${uuid}-person-aliases-div">${person.getAliasesList().join(", ")}</div>
+                                <paper-input style="display: none; width: 100%;" value="${person.getAliasesList().join(", ")}" id="${uuid}-person-aliases-input" no-label-float></paper-input>
+                                <div class="button-div">
+                                    <paper-icon-button id="edit-${uuid}-person-aliases-btn" icon="image:edit"></paper-icon-button>
+                                </div>
+                            </div>
+
+                            <div style="display: table-row;">
                                 <div class="label" style="display: table-cell; font-weight: 450; ">Date of birth:</div>
                                 <div class="table-cell"  id="${uuid}-person-birthdate-div">${person.getBirthdate()}</div>
                                 <paper-input style="display: none; width: 100%;" value="${person.getBirthdate()}" id="${uuid}-person-birthdate-input" no-label-float></paper-input>
@@ -1855,7 +1945,7 @@ export class PersonEditor extends HTMLElement {
                             <div style="display: table-row;">
                                 <div class="label" style="display: table-cell; font-weight: 450; ">Place of birth:</div>
                                 <div class="table-cell"  id="${uuid}-person-birthplace-div">${person.getBirthplace()}</div>
-                                <paper-input style="display: none; width: 100%;" value="${person.getBirthplace()}" id="${uuid}-person-birthplace-input" no-label-float></paper-input>
+                                <paper-input style="display: none; width: 100%;" id="${uuid}-person-birthplace-input" no-label-float></paper-input>
                                 <div class="button-div">
                                     <paper-icon-button id="edit-${uuid}-person-birthplace-btn" icon="image:edit"></paper-icon-button>
                                 </div>
@@ -1897,6 +1987,12 @@ export class PersonEditor extends HTMLElement {
         // Remove a person from the cast...
         let removeFromCastBtn = container.querySelector(`#edit-${uuid}-person-remove-btn`)
         removeFromCastBtn.onclick = () => {
+
+            // Here I will remove the panel from it parent.
+            if (this.person.getFullname().length == 0) {
+                this.parentNode.removeChild(this)
+                return
+            }
 
             let toast = ApplicationView.displayMessage(`
             <style>
@@ -1967,13 +2063,17 @@ export class PersonEditor extends HTMLElement {
                 })
                 toast.dismiss();
             }
-
         }
 
         // Now the actions...
         let deleteBtn = container.querySelector(`#${uuid}-delete-btn`)
         deleteBtn.onclick = () => {
-            this.deletePerson()
+            if (this.person.getFullname().length == 0) {
+                // In that case i will simply remove the editor from it parent.
+                this.parentNode.removeChild(this)
+            } else {
+                this.deletePerson()
+            }
         }
 
         // The person id
@@ -2010,10 +2110,66 @@ export class PersonEditor extends HTMLElement {
             }, 100)
         }
 
-        personNameInput.onblur = () => {
-            personNameInput.style.display = "none"
-            personNameDiv.style.display = "table-cell"
-            personNameDiv.innerHTML = personNameInput.value
+
+        // The person aliases
+        let editpersonAliasesBtn = container.querySelector(`#edit-${uuid}-person-aliases-btn`)
+        let personAliasesInput = container.querySelector(`#${uuid}-person-aliases-input`)
+        let personAliasesDiv = container.querySelector(`#${uuid}-person-aliases-div`)
+
+        editpersonAliasesBtn.onclick = () => {
+            personAliasesInput.style.display = "table-cell"
+            personAliasesDiv.style.display = "none"
+            setTimeout(() => {
+                personAliasesInput.focus()
+                personAliasesInput.inputElement.inputElement.select()
+            }, 100)
+        }
+
+        personAliasesInput.onblur = () => {
+            personAliasesInput.style.display = "none"
+            personAliasesDiv.style.display = "table-cell"
+            personAliasesDiv.innerHTML = personAliasesInput.value
+        }
+
+        // The person birthdate
+        let editpersonBirthdateBtn = container.querySelector(`#edit-${uuid}-person-birthdate-btn`)
+        let personBirthdateInput = container.querySelector(`#${uuid}-person-birthdate-input`)
+        let personBirthdateDiv = container.querySelector(`#${uuid}-person-birthdate-div`)
+
+        editpersonBirthdateBtn.onclick = () => {
+            personBirthdateInput.style.display = "table-cell"
+            personBirthdateDiv.style.display = "none"
+            setTimeout(() => {
+                personBirthdateInput.focus()
+                personBirthdateInput.inputElement.inputElement.select()
+            }, 100)
+        }
+
+        personBirthdateInput.onblur = () => {
+            personBirthdateInput.style.display = "none"
+            personBirthdateDiv.style.display = "table-cell"
+            personBirthdateDiv.innerHTML = personBirthdateInput.value
+        }
+
+        // The person birthplace
+        let editpersonBirthplaceBtn = container.querySelector(`#edit-${uuid}-person-birthplace-btn`)
+        let personBirthplaceInput = container.querySelector(`#${uuid}-person-birthplace-input`)
+        let personBirthplaceDiv = container.querySelector(`#${uuid}-person-birthplace-div`)
+
+        editpersonBirthplaceBtn.onclick = () => {
+            personBirthplaceInput.style.display = "table-cell"
+            personBirthplaceDiv.style.display = "none"
+            setTimeout(() => {
+                personBirthplaceInput.focus()
+                personBirthplaceInput.value = personBirthplaceDiv.innerText.replace(/\s\s+/g, ' ').trim()
+                personBirthplaceInput.inputElement.inputElement.select()
+            }, 100)
+        }
+
+        personBirthplaceInput.onblur = () => {
+            personBirthplaceInput.style.display = "none"
+            personBirthplaceDiv.style.display = "table-cell"
+            personBirthplaceDiv.innerHTML = personBirthplaceInput.value
         }
 
         // The person url
@@ -2056,6 +2212,18 @@ export class PersonEditor extends HTMLElement {
             personBiographyDiv.innerHTML = personBiographyInput.value
         }
 
+    }
+
+    focus() {
+        // onpen the panel...
+        let container = this.shadowRoot.querySelector("#container")
+        let uuid = "_" + getUuidByString(this.person.getId())
+
+        let collapse_btn = container.querySelector("#collapse-btn")
+        collapse_btn.click()
+
+        let editpersonIdBtn = container.querySelector(`#edit-${uuid}-person-id-btn`)
+        editpersonIdBtn.click()
     }
 
     deletePerson() {
@@ -2112,6 +2280,9 @@ export class PersonEditor extends HTMLElement {
         let personIdInput = container.querySelector(`#${uuid}-person-id-input`)
         let personNameInput = container.querySelector(`#${uuid}-person-name-input`)
         let imageSelector = container.querySelector("globular-image-selector")
+        let personAliasesInput = container.querySelector(`#${uuid}-person-aliases-input`)
+        let personBirthdateInput = container.querySelector(`#${uuid}-person-birthdate-input`)
+        let personBirthplaceInput = container.querySelector(`#${uuid}-person-birthplace-input`)
 
         // set values.
         this.person.setId(personIdInput.value)
@@ -2120,6 +2291,13 @@ export class PersonEditor extends HTMLElement {
         this.person.setBiography(personBiographyInput.value)
         this.person.setPicture(imageSelector.getImageUrl())
 
+        // little formatting...
+        let aliases = personAliasesInput.value.split(",")
+        aliases.forEach(a=> {a=a.trim()})
+        this.person.setAliasesList(aliases)
+
+        this.person.setBirthdate(personBirthdateInput.value)
+        this.person.setBirthplace(personBirthplaceInput.value)
     }
 
     getPerson() {
