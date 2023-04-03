@@ -175,6 +175,7 @@ export class File extends Model {
         file.size = obj.size
         file.thumbnail = obj.thumbnail
         file.checksum = obj.checksum
+        file._metadata = obj.metadata
 
         // Now the sub-file.
         if (file.isDir && obj.filesList != null) {
@@ -214,6 +215,8 @@ export class File extends Model {
             domain: this.domain,
             checksum: this.checksum,
             thumbnail: this.thumbnail,
+            metadata: this.metadata,
+            
             files: new Array<any>()
         }
 

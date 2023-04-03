@@ -657,8 +657,8 @@ export class ImageSelector extends HTMLElement {
             ${url.length == 0 ? "display:none;" : "display: block;"}
             z-index: 100;
             position: absolute;
-            top: 0px;
-            left: 0px;
+            top: -10px;
+            left: -16px;
             background-color: black;
             --paper-icon-button-ink-color: white;
             --iron-icon-fill-color: white;

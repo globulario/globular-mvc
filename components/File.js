@@ -3750,6 +3750,10 @@ export class FilesIconView extends FilesView {
                     p.setId(v.ID)
                     p.setUrl(v.URL)
                     p.setFullname(v.FullName)
+                    p.setBiography(v.Biography)
+                    p.setPicture(v.Picture)
+                    p.setBirthdate(v.BirthDate)
+                    p.setBirthplace(v.BirthPlace)
                     persons.push(p)
                 })
             }

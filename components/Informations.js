@@ -984,8 +984,9 @@ export class VideoInfo extends HTMLElement {
 
 customElements.define('globular-video-info', VideoInfo)
 
+
 /**
- * Search Box
+ * The video infos editor.
  */
 export class VideoInfoEditor extends HTMLElement {
     // attributes.
@@ -1194,14 +1195,14 @@ export class VideoInfoEditor extends HTMLElement {
 
             // close the search box...
             let searchPersonInput = parent.querySelector("globular-search-person-input")
-        
-            searchPersonInput.oneditperson = (person)=>{
+
+            searchPersonInput.oneditperson = (person) => {
                 person.globule = video.globule
                 let personEditor = new PersonEditor(person)
                 let uuid = "_" + getUuidByString(person.getId()) + "_edit_panel"
 
                 let div = document.body.querySelector(`#${uuid}`)
-                if(div){
+                if (div) {
                     return // already a panel...
                 }
 
@@ -1213,8 +1214,12 @@ export class VideoInfoEditor extends HTMLElement {
                         top: 50%;
                         left: 50%;
                         transform: translate(-50%, -50%);
-                        background-color: var(--palette-background-paper);
+                        background-color: var(--palette-background-default);
+                        border-left: 1px solid var(--palette-divider); 
+                        border-right: 1px solid var(--palette-divider) rgba(255, 255, 255, 0.12);
+                        border-top: 1px solid var(--palette-divider) rgba(255, 255, 255, 0.12);
                         color: var(--palette-text-primary);
+                        font-size: 1rem;
                     }
 
                 </style>
@@ -1229,7 +1234,7 @@ export class VideoInfoEditor extends HTMLElement {
                 document.body.appendChild(range.createContextualFragment(html))
                 div = document.body.querySelector(`#${uuid}`)
 
-                personEditor.onclose = ()=>{
+                personEditor.onclose = () => {
                     div.parentNode.removeChild(div)
                 }
 
@@ -2004,7 +2009,8 @@ export class PersonEditor extends HTMLElement {
                             </div>
                         </div>
                         <div style="display:flex; justify-content: flex-end;">
-                            <paper-button id="${uuid}-delete-btn" title="delete person information">Delete</iron-icon>
+                            <paper-button id="${uuid}-save-btn" title="save person information">Save</paper-button>
+                            <paper-button id="${uuid}-delete-btn" title="delete person information">Delete</paper-button>
                         </div>
                     </div>
                 </div>
@@ -2025,14 +2031,43 @@ export class PersonEditor extends HTMLElement {
             collapse_panel.toggle();
         }
 
+        let saveCastBtn = container.querySelector(`#${uuid}-save-btn`)
+        saveCastBtn.onclick = () => {
+
+            let globule = this.person.globule
+
+            let indexPath = globule.config.DataPath + "/search/videos"
+            let rqst = new CreatePersonRequest
+            rqst.setIndexpath(indexPath)
+            rqst.setPerson(this.person)
+
+            if (this.titleInfo) {
+                let casting = this.person.getCastingList()
+                casting = casting.filter(e => e !== this.titleInfo.getId());
+                casting.push(this.titleInfo.getId())
+                person.setCastingList(casting)
+            }
+
+            // save the person one by one...
+            generatePeerToken(globule, token => {
+                globule.titleService.createPerson(rqst, { application: Application.application, domain: Application.domain, token: token })
+                    .then(rsp => {
+                        ApplicationView.displayMessage(this.person.getFullname() + " infos was saved!", 3000)
+                    })
+                    .catch(err => {
+                        ApplicationView.displayMessage(err, 3000)
+                    })
+            })
+        }
+
         // Remove a person from the cast...
         let removeFromCastBtn = container.querySelector(`#edit-${uuid}-person-remove-btn`)
         removeFromCastBtn.onclick = () => {
 
-            if(title == undefined){
+            if (title == undefined) {
                 // simply remove it from it parent.
                 this.parentNode.removeChild(this)
-                if(this.onclose){
+                if (this.onclose) {
                     this.onclose()
                 }
 
@@ -2344,7 +2379,7 @@ export class PersonEditor extends HTMLElement {
 
         // little formatting...
         let aliases = personAliasesInput.value.split(",")
-        aliases.forEach(a=> {a=a.trim()})
+        aliases.forEach(a => { a = a.trim() })
         this.person.setAliasesList(aliases)
 
         this.person.setBirthdate(personBirthdateInput.value)
@@ -2357,6 +2392,309 @@ export class PersonEditor extends HTMLElement {
 }
 
 customElements.define('globular-person-editor', PersonEditor)
+
+/**
+ * The title infos editor.
+ */
+export class TitleInfoEditor extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor(title, titleInfosDisplay) {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+
+        this.titleInfosDisplay = titleInfosDisplay
+
+        let imageUrl = "" // in case the video dosent contain any poster info...
+        if (title.getPoster())
+            imageUrl = title.getPoster().getContenturl()
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+           
+            #container {
+                display: flex;
+                margin-top: 15px;
+                margin-bottom: 15px;
+            }
+
+            .action-div{
+                display: flex;
+                justify-content: end;
+                border-top: 2px solid;
+                border-color: var(--palette-divider);
+            }
+
+            .button-div{
+                display: table-cell;
+                vertical-align: top;
+            }
+
+            .label{
+                font-size: 1rem;
+                padding-right: 10px;
+                width: 175px;
+            }
+
+            div, paper-input, iron-autogrow-textarea {
+                font-size: 1rem;
+            }
+
+            paper-button {
+                font-size: 1rem;
+            }
+
+            a {
+                color: var(--palette-divider);
+            }
+
+        </style>
+        <div id="container">
+            <div style="display: flex; flex-direction: column; justify-content: flex-start;  margin-left: 15px;">
+                <div style="display: flex; flex-direction: column; margin: 5px;">
+                    <globular-image-selector label="cover" url="${imageUrl}"></globular-image-selector>
+                </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; width: 100%;">
+
+                <div style="display: table; flex-grow: 1; margin-left: 20px; border-collapse: collapse; margin-top: 20px; margin-bottom: 10px;">
+                    <div style="display: table-row; border-bottom: 1px solid var(--palette-divider)" >
+                        <div class="label" style="display: table-cell; font-weight: 450; border-bottom: 1px solid var(--palette-divider)">Title</div>
+                    </div>
+                    <div style="display: table-row;">
+                        <div class="label" style="display: table-cell; font-weight: 450; ">Id:</div>
+                        <div style="display: table-cell; width: 100%;"  id="title-id-div">${title.getId()}</div>
+                        <paper-input style="display: none; width: 100%;" value="${title.getId()}" id="title-id-input" no-label-float></paper-input>
+                        <div class="button-div">
+                            <paper-icon-button id="edit-title-id-btn" icon="image:edit"></paper-icon-button>
+                        </div>
+                    </div>
+
+                    <div style="display: table-row;">
+                        <div class="label" style="display: table-cell; font-weight: 450; ">Name:</div>
+                        <div style="display: table-cell; width: 100%;"  id="title-name-div">${title.getName()}</div>
+                        <paper-input style="display: none; width: 100%;" value="${title.getName()}" id="title-name-input" no-label-float></paper-input>
+                        <div class="button-div">
+                            <paper-icon-button id="edit-title-name-btn" icon="image:edit"></paper-icon-button>
+                        </div>
+                    </div>
+
+                    <div style="display: table-row;">
+                        <div class="label" style="display: table-cell; font-weight: 450; vertical-align: top;">Description:</div>
+                        <div id="title-description-div" style="display: table-cell;width: 100%; padding-bottom: 10px;" >${title.getDescription()}</div>
+                        <iron-autogrow-textarea id="title-description-input"  style="display: none; border: none; width: 100%;" value="${title.getDescription()}"></iron-autogrow-textarea>
+                        <div class="button-div">
+                            <paper-icon-button id="edit-title-description-btn" style="vertical-align: top;" icon="image:edit"></paper-icon-button>
+                        </div>
+                    </div>
+
+                    <div style="display: table-row;">
+                        <div class="label" style="display: table-cell; font-weight: 450;">Genres:</div>
+                        <div id="title-genres-div" style="display: table-cell; width: 100%;"></div>
+                    </div>
+                    
+                </div>
+
+                <div id="directors-table" style="flex-grow: 1; margin-left: 20px; border-collapse: collapse;">
+                <div style="display: table-row;  border-bottom: 1px solid var(--palette-divider);  margin-bottom: 10px;">
+                        <div class="label" style="display: table-cell; font-weight: 450;">Directors</div>
+                        <div style="display: table-cell; width: 100%;" ></div>
+                        <div class="button-div" style="position: relative;">
+                            <paper-icon-button id="add-director-btn" icon="social:person-add"></paper-icon-button>
+                        </div>
+                    </div>
+                    <slot name="directors"></slot>
+                </div>
+
+                <div id="writers-table" style="flex-grow: 1; margin-left: 20px; border-collapse: collapse;">
+                <div style="display: table-row;  border-bottom: 1px solid var(--palette-divider);  margin-bottom: 10px;">
+                        <div class="label" style="display: table-cell; font-weight: 450;">Writers</div>
+                        <div style="display: table-cell; width: 100%;" ></div>
+                        <div class="button-div" style="position: relative;">
+                            <paper-icon-button id="add-writer-btn" icon="social:person-add"></paper-icon-button>
+                        </div>
+                    </div>
+                    <slot name="writers"></slot>
+                </div>
+
+                <div id="actors-table" style="flex-grow: 1; margin-left: 20px; border-collapse: collapse;">
+                    <div style="display: table-row;  border-bottom: 1px solid var(--palette-divider);  margin-bottom: 10px;">
+                        <div class="label" style="display: table-cell; font-weight: 450;">Actors</div>
+                        <div style="display: table-cell; width: 100%;" ></div>
+                        <div class="button-div" style="position: relative;">
+                            <paper-icon-button id="add-actors-btn" icon="social:person-add"></paper-icon-button>
+                        </div>
+                    </div>
+                    <slot name="actors"></slot>
+                </div>
+
+            </div>
+        </div>
+        <iron-collapse class="permissions" id="collapse-panel" style="display: flex; flex-direction: column; margin: 5px;">
+        </iron-collapse>
+        <div class="action-div" style="${this.isShort ? "display: none;" : ""}">
+            <paper-button id="edit-permissions-btn" title="set who can edit this title informations">Permissions</paper-button>
+            <span style="flex-grow: 1;"></span>
+            <paper-button id="save-indexation-btn">Save</paper-button>
+            <paper-button id="cancel-indexation-btn">Cancel</paper-button>
+        </div>
+        `
+
+        // Here I will initialyse Casting...
+        title.getDirectorsList().forEach(p => {
+            this.appendPersonEditor(p, title, "directors")
+        })
+
+        title.getWritersList().forEach(p => {
+            this.appendPersonEditor(p, title, "writers")
+        })
+
+        title.getActorsList().forEach(p => {
+            this.appendPersonEditor(p, title, "actors")
+        })
+
+        let editPemissionsBtn = this.shadowRoot.querySelector("#edit-permissions-btn")
+        let collapse_panel = this.shadowRoot.querySelector("#collapse-panel")
+
+        this.permissionManager = new PermissionsManager()
+        this.permissionManager.permissions = null
+        this.permissionManager.globule = title.globule
+        this.permissionManager.setPath(title.getId())
+        this.permissionManager.setResourceType = "title_info"
+
+        let indexPath = title.globule.config.DataPath + "/search/titles"
+
+        // toggle the collapse panel when the permission manager panel is close.
+        this.permissionManager.onclose = () => {
+            collapse_panel.toggle();
+        }
+
+        // I will display the permission manager.
+        editPemissionsBtn.onclick = () => {
+            collapse_panel.appendChild(this.permissionManager)
+            collapse_panel.toggle();
+        }
+
+        // Here I will set the interaction...
+        this.shadowRoot.querySelector("#cancel-indexation-btn").onclick = () => {
+            let parent = this.parentNode
+            parent.removeChild(this)
+            parent.appendChild(titleInfosDisplay)
+        }
+
+        // Delete the postser/cover image.
+        this.shadowRoot.querySelector("globular-image-selector").ondelete = () => {
+            title.getPoster().setContenturl("")
+        }
+
+        // Select new image.
+        this.shadowRoot.querySelector("globular-image-selector").onselectimage = () => {
+            if (title.getPoster() == null) {
+                let poster = new Poster()
+                title.setPoster(poster)
+            }
+            title.getPoster().setContenturl(dataUrl)
+        }
+
+        // Set the list selector.
+        let tileGenresDiv = this.shadowRoot.querySelector("#title-genres-div")
+        let videoGenresList = new EditableStringList(title.getGenresList())
+        tileGenresDiv.appendChild(videoGenresList)
+
+
+        // The title name
+        let editVideoNameBtn = this.shadowRoot.querySelector("#edit-title-name-btn")
+        let videoNameInput = this.shadowRoot.querySelector("#title-name-input")
+        let videoNameDiv = this.shadowRoot.querySelector("#title-name-div")
+
+        editVideoNameBtn.onclick = () => {
+            videoNameInput.style.display = "table-cell"
+            videoNameDiv.style.display = "none"
+            setTimeout(() => {
+                videoNameInput.focus()
+                videoNameInput.inputElement.inputElement.select()
+            }, 100)
+        }
+
+        videoNameInput.onblur = () => {
+            videoNameInput.style.display = "none"
+            videoNameDiv.style.display = "table-cell"
+            videoNameDiv.innerHTML = videoNameInput.value
+        }
+
+        // The title id
+        let editVideoIdBtn = this.shadowRoot.querySelector("#edit-title-id-btn")
+        let videoIdInput = this.shadowRoot.querySelector("#title-id-input")
+        let videoIdDiv = this.shadowRoot.querySelector("#title-id-div")
+
+        editVideoIdBtn.onclick = () => {
+            videoIdInput.style.display = "table-cell"
+            videoIdDiv.style.display = "none"
+            setTimeout(() => {
+                videoIdInput.focus()
+                videoIdInput.inputElement.inputElement.select()
+            }, 100)
+        }
+
+        videoIdInput.onblur = () => {
+            videoIdInput.style.display = "none"
+            videoIdDiv.style.display = "table-cell"
+            videoIdDiv.innerHTML = videoIdInput.value
+        }
+
+        // The video description
+        let editVideoDescriptionBtn = this.shadowRoot.querySelector("#edit-title-description-btn")
+        let videoVideoDescriptionInput = this.shadowRoot.querySelector("#title-description-input")
+        let videoVideoDescriptionDiv = this.shadowRoot.querySelector("#title-description-div")
+
+        editVideoDescriptionBtn.onclick = () => {
+            videoVideoDescriptionInput.style.display = "table-cell"
+            videoVideoDescriptionDiv.style.display = "none"
+            setTimeout(() => {
+                videoVideoDescriptionInput.focus()
+                videoVideoDescriptionInput.textarea.select()
+            }, 100)
+        }
+
+        // set back to non edit mode.
+        videoVideoDescriptionInput.onblur = () => {
+            videoVideoDescriptionInput.style.display = "none"
+            videoVideoDescriptionDiv.style.display = "table-cell"
+            videoVideoDescriptionDiv.innerHTML = videoVideoDescriptionInput.value
+        }
+
+    }
+
+    appendPersonEditor(person, title, slot) {
+        person.globule = title.globule
+        let uuid = "_" + getUuidByString(person.getId() + slot)
+
+        // Create the person editor.
+        let personEditor = this.querySelector(`#${uuid}`)
+
+        if (personEditor == null) {
+            personEditor = new PersonEditor(person, title)
+            personEditor.id = uuid;
+
+            personEditor.slot = slot
+
+            personEditor.onremovefromcast = (p) => {
+                personEditor.parentNode.removeChild(personEditor)
+            }
+
+            // Append to the list of casting
+            this.appendChild(personEditor)
+        }
+
+        return personEditor
+    }
+}
+
+customElements.define('globular-title-info-editor', TitleInfoEditor)
 
 /**
  * Globular title information panel.
@@ -2475,10 +2813,10 @@ export class TitleInfo extends HTMLElement {
             </div>
         </div>
         <div class="action-div" style="${this.isShort ? "display: none;" : ""}">
+            <paper-button id="edit-indexation-btn">Edit</paper-button>
             <paper-button id="delete-indexation-btn">Delete</paper-button>
         </div>
         `
-
     }
 
     showTitleInfo(title) {
@@ -2600,6 +2938,17 @@ export class TitleInfo extends HTMLElement {
                 this.displayEpisodes(episodes, filesDiv)
                 filesDiv.querySelector("paper-progress").style.display = "none"
             })
+        }
+
+
+        let editor = new TitleInfoEditor(title, this)
+
+        let editIndexationBtn = this.shadowRoot.querySelector("#edit-indexation-btn")
+        editIndexationBtn.onclick = () => {
+            // So here I will display the editor...
+            let parent = this.parentNode
+            parent.removeChild(this)
+            parent.appendChild(editor)
         }
 
         let deleteIndexationBtn = this.shadowRoot.querySelector("#delete-indexation-btn")
@@ -2858,6 +3207,115 @@ export class TitleInfo extends HTMLElement {
 
 customElements.define('globular-title-info', TitleInfo)
 
+
+
+/**
+ * That panel will display the file Metadata information.
+ */
+export class FileMetaDataInfo extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor() {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+            #container{
+                display: table;
+                flex-grow: 1; 
+                border-collapse: collapse;
+                width: 100%;
+            }
+
+            .label{
+                display: table-cell;
+            }
+
+            .value{
+                display: table-cell;
+            }
+
+        </style>
+        <div id="container">
+            <div style="display: flex;  border-bottom: 1px solid var(--palette-divider);  margin-bottom: 10px; align-items: center;">
+                <paper-icon-button id="collapse-btn"  icon="unfold-less" --iron-icon-fill-color:var(--palette-text-primary);"></paper-icon-button>
+                <div id="header-text" class="label" style="flex-grow: 1;"></div>
+            </div>
+            <iron-collapse class="" id="collapse-panel">
+                <slot></slot>
+            </iron-collapse>
+        </div>
+        `
+        // give the focus to the input.
+        let container = this.shadowRoot.querySelector("#container")
+        let collapse_btn = container.querySelector("#collapse-btn")
+
+        let collapse_panel = container.querySelector("#collapse-panel")
+        collapse_btn.onclick = () => {
+            if (!collapse_panel.opened) {
+                collapse_btn.icon = "unfold-more"
+            } else {
+                collapse_btn.icon = "unfold-less"
+            }
+            collapse_panel.toggle();
+        }
+
+    }
+
+    // Call search event.
+    setMetadata(metadata) {
+        console.log(metadata)
+        this.shadowRoot.querySelector("#header-text").innerHTML = `(${metadata.fieldsMap.length})`
+        let range = document.createRange()
+        metadata.fieldsMap.forEach(val => {
+            let id = val[0]
+            let value = val[1]
+            let label = id.replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+            let html = `
+                <div  style="display: table-row; padding-top: 5px; padding-bottom: 5px; border-bottom: 1px solid var(--palette-divider); width:100%;">
+                    <div class="label" style="display: table-cell; min-width: 200px;">${label}</div>
+                    <div id="${id}" class="value" style="display: table-cell; width: 100%;"></div>
+                </div>
+            `
+
+            if (id == "Comment") {
+                // the comment is use to store video metadata...
+                try {
+                    value.structValue = JSON.parse(atob(value.stringValue))
+                } catch (e) {
+                    console.log(e)
+                }
+            }
+
+            this.appendChild(range.createContextualFragment(html))
+            let div = this.querySelector(`#${id}`)
+            this.setValue(div, value)
+        })
+    }
+
+    // display the value.
+    setValue(div, value) {
+        if (value.structValue) {
+            div.innerHTML = value.structValue
+            console.log(value.structValue)
+        } else if (value.stringValue) {
+            div.innerHTML = value.stringValue
+        } else if (value.numberValue) {
+            div.innerHTML = value.numberValue
+        } else if (value.nullValue) {
+            div.innerHTML = value.nullValue
+        } else if (value.boolValue) {
+            div.innerHTML = value.boolValue
+        }
+    }
+}
+
+customElements.define('globular-file-metadata-info', FileMetaDataInfo)
+
 /**
  * Display basic file informations.
  */
@@ -2911,10 +3369,20 @@ export class FileInfo extends HTMLElement {
                     <div style="display: table-cell; font-weight: 450;">Checksum:</div>
                     <div style="display: table-cell;">${file.checksum}</div>
                 </div>
+                <div style="display: table-row;">
+                    <div style="display: table-cell; font-weight: 450;">Metadata:</div>
+                    <div style="display: table-cell;">
+                        <globular-file-metadata-info></globular-file-metadata-info>
+                    </div>
+                </div>
             </div>
         </div>
         `
+
+        let metadata_editor = this.shadowRoot.querySelector("globular-file-metadata-info")
+        metadata_editor.setMetadata(file.metadata)
     }
+
 
 }
 
