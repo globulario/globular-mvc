@@ -1194,6 +1194,48 @@ export class VideoInfoEditor extends HTMLElement {
 
             // close the search box...
             let searchPersonInput = parent.querySelector("globular-search-person-input")
+        
+            searchPersonInput.oneditperson = (person)=>{
+                person.globule = video.globule
+                let personEditor = new PersonEditor(person)
+                let uuid = "_" + getUuidByString(person.getId()) + "_edit_panel"
+
+                let div = document.body.querySelector(`#${uuid}`)
+                if(div){
+                    return // already a panel...
+                }
+
+                let html = `
+                <style>
+                    #${uuid}{
+                        z-index: 1000;
+                        position: fixed;
+                        top: 50%;
+                        left: 50%;
+                        transform: translate(-50%, -50%);
+                        background-color: var(--palette-background-paper);
+                        color: var(--palette-text-primary);
+                    }
+
+                </style>
+                <paper-card id="${uuid}">
+
+                </paper-card>
+                `
+
+                let range = document.createRange()
+
+                // so here I will append the editor into the body...
+                document.body.appendChild(range.createContextualFragment(html))
+                div = document.body.querySelector(`#${uuid}`)
+
+                personEditor.onclose = ()=>{
+                    div.parentNode.removeChild(div)
+                }
+
+                div.appendChild(personEditor)
+                personEditor.focus()
+            }
 
             searchPersonInput.onaddcasting = (person) => {
 
@@ -1674,7 +1716,6 @@ export class SearchPersonInput extends HTMLElement {
                                     <div style="display: flex; flex-direction: column; width: 100%;">
                                         <span style="flex-grow: 1; font-size: 1.2rem; margin-left: 10px; justify-self: flex-start;">${p.getFullname()}</span>
                                         <div style="display: flex; justify-content: flex-end;">
-                                           
                                             <iron-icon id="${uuid}-edit-btn" icon="image:edit" title="edit person informations"></iron-icon>
                                             <iron-icon id="${uuid}-add-btn" icon="icons:add" title="add to the casting"></iron-icon>
                                         </div>
@@ -1987,6 +2028,16 @@ export class PersonEditor extends HTMLElement {
         // Remove a person from the cast...
         let removeFromCastBtn = container.querySelector(`#edit-${uuid}-person-remove-btn`)
         removeFromCastBtn.onclick = () => {
+
+            if(title == undefined){
+                // simply remove it from it parent.
+                this.parentNode.removeChild(this)
+                if(this.onclose){
+                    this.onclose()
+                }
+
+                return
+            }
 
             // Here I will remove the panel from it parent.
             if (this.person.getFullname().length == 0) {
