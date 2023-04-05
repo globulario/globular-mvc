@@ -1,7 +1,7 @@
 
 import { generatePeerToken, Model } from '../Model';
 import { Application } from "../Application";
-import { CreateVideoRequest, DeleteTitleRequest, DeleteVideoRequest, DissociateFileWithTitleRequest, GetTitleFilesRequest, Poster, Person, Publisher, SearchTitlesRequest, SearchPersonsRequest, DeletePersonRequest, GetPersonByIdRequest, CreatePersonRequest } from "globular-web-client/title/title_pb";
+import { CreateVideoRequest, DeleteTitleRequest, DeleteVideoRequest, DissociateFileWithTitleRequest, GetTitleFilesRequest, Poster, Person, Publisher, SearchTitlesRequest, SearchPersonsRequest, DeletePersonRequest, GetPersonByIdRequest, CreatePersonRequest, CreateTitleRequest } from "globular-web-client/title/title_pb";
 import { File } from "../File";
 import { VideoPreview, getFileSizeString } from "./File";
 import { ApplicationView } from "../ApplicationView";
@@ -182,6 +182,14 @@ const __style__ = `
 
 // Create the video preview...
 function getVideoPreview(parent, path, name, callback, globule) {
+
+    // set only one preview div...
+    let id = "_" + getUuidByString(path) + "_preview_div"
+    if (parent.querySelector("#" + id) != null) {
+        callback(parent.querySelector("#" + id))
+        return
+    }
+
     let h = 64;
     let w = 100;
 
@@ -202,6 +210,26 @@ function getVideoPreview(parent, path, name, callback, globule) {
         let uuid = randomUUID()
         preview.appendChild(range.createContextualFragment(`<paper-icon-button icon="icons:remove-circle" id="_${uuid}" style="position: absolute;"> </paper-icon-button>`))
         let unlinkBtn = preview.querySelector(`#_${uuid}`)
+
+        // keep the explorer link...
+        preview.name = name
+        preview.onpreview = () => {
+            let previews = parent.querySelectorAll("globular-video-preview")
+            previews.forEach(p => {
+                // stop all other preview...
+                if (preview.name != p.name) {
+                    p.stopPreview()
+                }
+            })
+        }
+
+        // Here I will set the filename 
+        let previewDiv = document.createElement("div")
+        previewDiv.id = id
+        previewDiv.style.display = "flex"
+        previewDiv.style.flexDirection = "column"
+        previewDiv.appendChild(preview)
+        previewDiv.appendChild(fileNameSpan)
 
         // When the file will be unlink...
         unlinkBtn.onclick = (evt) => {
@@ -242,7 +270,8 @@ function getVideoPreview(parent, path, name, callback, globule) {
 
                 globule.titleService.dissociateFileWithTitle(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
                     .then(rsp => {
-                        preview.parentNode.removeChild(preview)
+                        // remove the association.
+                        previewDiv.parentNode.removeChild(previewDiv)
                         ApplicationView.displayMessage("association was delete", 3000)
                         toast.dismiss();
                     }).catch(err => ApplicationView.displayMessage(err, 3000))
@@ -278,24 +307,7 @@ function getVideoPreview(parent, path, name, callback, globule) {
 
         }
 
-        // keep the explorer link...
-        preview.name = name
-        preview.onpreview = () => {
-            let previews = parent.querySelectorAll("globular-video-preview")
-            previews.forEach(p => {
-                // stop all other preview...
-                if (preview.name != p.name) {
-                    p.stopPreview()
-                }
-            })
-        }
 
-        // Here I will set the filename 
-        let previewDiv = document.createElement("div")
-        previewDiv.style.display = "flex"
-        previewDiv.style.flexDirection = "column"
-        previewDiv.appendChild(preview)
-        previewDiv.appendChild(fileNameSpan)
         callback(previewDiv)
 
     }, err => ApplicationView.displayMessage(err, 3000))
@@ -556,6 +568,47 @@ export class InformationsManager extends HTMLElement {
             }
 
         }
+
+        // Connect event here...
+        let globules = Model.getGlobules()
+
+        let subscribe = (index) => {
+            let globule = globules[index]
+            index++
+            globule.eventHub.subscribe("delete_audio_event", uuid => { }, evt => {
+                let id = "_" + getUuidByString(evt)
+                if (this.querySelector("#" + id)) {
+                    if (this.parentNode)
+                        this.parentNode.removeChild(this)
+                }
+            }, false)
+
+            globule.eventHub.subscribe("delete_video_event", uuid => { }, evt => {
+                let id = "_" + getUuidByString(evt)
+                if (this.querySelector("#" + id)) {
+                    if (this.parentNode)
+                        this.parentNode.removeChild(this)
+                }
+            }, false)
+
+            globule.eventHub.subscribe("delete_title_event", uuid => { }, evt => {
+                let id = "_" + getUuidByString(evt)
+                if (this.querySelector("#" + id)) {
+                    if (this.parentNode)
+                        this.parentNode.removeChild(this)
+                }
+            }, false)
+
+            if (index < globules.length) {
+                subscribe(index)
+            }
+        }
+
+        if (globules > 0) {
+            let index = 0
+            subscribe(index)
+        }
+
     }
 
     hideHeader() {
@@ -574,6 +627,11 @@ export class InformationsManager extends HTMLElement {
         this.shadowRoot.querySelector(".title-div").innerHTML = ""
         let audio = audios[0]
         let audioInfo = new AudioInfo(this.shadowRoot.querySelector(".title-div"), this.hasAttribute("short"))
+        audioInfo.ondelete = () => {
+            if (this.parentNode)
+                this.parentNode.removeChild(this)
+        }
+        audioInfo.id = "_" + getUuidByString(audio.getId())
         audioInfo.setAudio(audio)
         this.appendChild(audioInfo)
     }
@@ -587,8 +645,15 @@ export class InformationsManager extends HTMLElement {
         this.shadowRoot.querySelector(".title-div").innerHTML = ""
         let video = videos[0]
         let videoInfo = new VideoInfo(this.shadowRoot.querySelector(".title-div"), this.hasAttribute("short"))
+        videoInfo.ondelete = () => {
+            if (this.parentNode)
+                this.parentNode.removeChild(this)
+        }
+        videoInfo.id = "_" + getUuidByString(video.getId())
         videoInfo.setVideo(video)
         this.appendChild(videoInfo)
+
+
     }
 
     /**
@@ -599,6 +664,11 @@ export class InformationsManager extends HTMLElement {
         this.innerHTML = "" // remove previous content.
         this.shadowRoot.querySelector(".title-div").innerHTML = ""
         let blogPostInfo = new BlogPostInfo(blogPost)
+        blogPostInfo.ondelete = () => {
+            if (this.parentNode)
+                this.parentNode.removeChild(this)
+        }
+        blogPostInfo.id = "_" + getUuidByString(blogPost.getId())
         this.appendChild(blogPostInfo)
     }
 
@@ -630,6 +700,12 @@ export class InformationsManager extends HTMLElement {
         }
 
         let titleInfo = new TitleInfo(this.shadowRoot.querySelector(".title-div"), this.hasAttribute("short"), globule)
+        titleInfo.ondelete = () => {
+            if (this.parentNode)
+                this.parentNode.removeChild(this)
+        }
+
+        titleInfo.id = "_" + getUuidByString(title.getId())
         titleInfo.setTitle(title)
         this.appendChild(titleInfo)
     }
@@ -971,8 +1047,11 @@ export class VideoInfo extends HTMLElement {
                 rqst.setIndexpath(Model.globular.config.DataPath + "/search/videos")
                 Model.globular.titleService.deleteVideo(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
                     .then(() => {
-                        ApplicationView.displayMessage(`file indexation was deleted`, 3000)
+                        ApplicationView.displayMessage(`${video.getId()}:${video.getDescription()} was deleted`, 3000)
                         this.parentNode.removeChild(this)
+                        if (this.ondelete) {
+                            this.ondelete()
+                        }
                     })
                     .catch(err => ApplicationView.displayMessage(err, 3000))
 
@@ -1595,7 +1674,6 @@ export class VideoInfoEditor extends HTMLElement {
             personEditor.id = uuid;
 
             personEditor.slot = "casting"
-
             personEditor.onremovefromcast = (p) => {
                 personEditor.parentNode.removeChild(personEditor)
             }
@@ -1889,9 +1967,18 @@ export class PersonEditor extends HTMLElement {
 
         // Generate a uuid from the person id.
         let uuid = "_" + getUuidByString(person.getId())
+        this.uuid = uuid
+
         let imageUrl = person.getPicture()
         if (!imageUrl) {
             imageUrl = ""
+        }
+
+        let bio = person.getBiography()
+        try {
+            bio = atob(bio)
+        } catch (err) {
+            bio = person.getBiography()
         }
 
         // Innitialisation of the layout.
@@ -1999,9 +2086,9 @@ export class PersonEditor extends HTMLElement {
 
                             <div style="display: table-row;">
                                 <div class="label" style="display: table-cell; font-weight: 450; vertical-align: top;">Biography:</div>
-                                <div id="${uuid}-person-biography-div" style="display: table-cell;width: 100%;" >${person.getBiography()}</div>
+                                <div id="${uuid}-person-biography-div" style="display: table-cell;width: 100%;" >${bio}</div>
                                 <div style="display: none; width: 100%;">
-                                    <iron-autogrow-textarea id="${uuid}-person-biography-input"  style="border: none; width: 100%;" value="${person.getBiography()}"></iron-autogrow-textarea>
+                                    <iron-autogrow-textarea id="${uuid}-person-biography-input"  style="border: none; width: 100%;" value="${bio}"></iron-autogrow-textarea>
                                 </div>
                                 <div class="button-div">
                                     <paper-icon-button id="edit-${uuid}-person-biography-btn" style="vertical-align: top;" icon="image:edit"></paper-icon-button>
@@ -2034,18 +2121,75 @@ export class PersonEditor extends HTMLElement {
         let saveCastBtn = container.querySelector(`#${uuid}-save-btn`)
         saveCastBtn.onclick = () => {
 
+            this.save()
+
             let globule = this.person.globule
 
             let indexPath = globule.config.DataPath + "/search/videos"
+            if (this.slot != "casting") {
+                indexPath = globule.config.DataPath + "/search/titles"
+            }
+
             let rqst = new CreatePersonRequest
             rqst.setIndexpath(indexPath)
             rqst.setPerson(this.person)
 
             if (this.titleInfo) {
-                let casting = this.person.getCastingList()
-                casting = casting.filter(e => e !== this.titleInfo.getId());
-                casting.push(this.titleInfo.getId())
-                person.setCastingList(casting)
+                if (this.slot == "casting") {
+                    let casting = this.person.getCastingList()
+                    casting = casting.filter(e => e !== this.titleInfo.getId());
+                    casting.push(this.titleInfo.getId())
+                    person.setCastingList(casting)
+
+                    // Set as casting
+                    let casting_ = this.titleInfo.getCastingList()
+                    if (casting_) {
+                        casting_ = casting_.filter(e => e.getId() !== this.person.getId());
+                    }
+                    casting_.push(this.person)
+                    this.titleInfo.setCastingList(casting_)
+
+                } else if (this.slot == "actors") {
+                    let casting = this.person.getActingList()
+                    casting = casting.filter(e => e !== this.titleInfo.getId());
+                    casting.push(this.titleInfo.getId())
+                    person.setActingList(casting)
+
+                    // Set as casting
+                    let casting_ = this.titleInfo.getActorsList()
+                    if (casting_) {
+                        casting_ = casting_.filter(e => e.getId() !== this.person.getId());
+                    }
+                    casting_.push(this.person)
+                    this.titleInfo.setActorsList(casting_)
+                } else if (this.slot == "writers") {
+                    let casting = this.person.getWritingList()
+                    casting = casting.filter(e => e !== this.titleInfo.getId());
+                    casting.push(this.titleInfo.getId())
+                    person.setWritingList(casting)
+
+                    // Set as casting
+                    let casting_ = this.titleInfo.getWritersList()
+                    if (casting_) {
+                        casting_ = casting_.filter(e => e.getId() !== this.person.getId());
+                    }
+                    casting_.push(this.person)
+                    this.titleInfo.setWritersList(casting_)
+                } else if (this.slot == "directors") {
+                    let casting = this.person.getDirectingList()
+                    casting = casting.filter(e => e !== this.titleInfo.getId());
+                    casting.push(this.titleInfo.getId())
+                    person.setDirectingList(casting)
+
+                    // Set as casting
+                    let casting_ = this.titleInfo.getDirectorsList()
+                    if (casting_) {
+                        casting_ = casting_.filter(e => e.getId() !== this.person.getId());
+                    }
+                    casting_.push(this.person)
+                    this.titleInfo.setDirectorsList(casting_)
+                }
+
             }
 
             // save the person one by one...
@@ -2114,13 +2258,30 @@ export class PersonEditor extends HTMLElement {
 
                 let globule = person.globule
                 let indexPath = globule.config.DataPath + "/search/videos" // TODO set it correctly for video...
+                if (this.slot != "casting") {
+                    indexPath = globule.config.DataPath + "/search/titles"
+                }
 
                 generatePeerToken(globule, token => {
 
                     // remove the video id from casting field.
-                    let casting = person.getCastingList()
-                    casting = casting.filter(e => e !== this.titleInfo.getId());
-                    person.setCastingList(casting)
+                    if (this.slot == "casting") {
+                        let casting = person.getCastingList()
+                        casting = casting.filter(e => e !== this.titleInfo.getId());
+                        person.setCastingList(casting)
+                    } else if (this.slot == "actors") {
+                        let casting = person.getActingList()
+                        casting = casting.filter(e => e !== this.titleInfo.getId());
+                        person.setActingList(casting)
+                    } else if (this.slot == "writers") {
+                        let casting = person.getWritingList()
+                        casting = casting.filter(e => e !== this.titleInfo.getId());
+                        person.setWritingList(casting)
+                    } else if (this.slot == "directors") {
+                        let casting = person.getDirectingList()
+                        casting = casting.filter(e => e !== this.titleInfo.getId());
+                        person.setDirectingList(casting)
+                    }
 
                     let rqst = new CreatePersonRequest
                     rqst.setPerson(person)
@@ -2129,21 +2290,75 @@ export class PersonEditor extends HTMLElement {
                     // save the person witout the video id...
                     globule.titleService.createPerson(rqst, { application: Application.application, domain: Application.domain, token: token })
                         .then(rsp => {
-                            // Now I will remove the person from the video casting...
-                            let casting = this.titleInfo.getCastingList()
-                            casting = casting.filter(p => p.getId() !== person.getId());
-                            this.titleInfo.setCastingList(casting)
+                            
+                            // set values...
+                            this.save()
 
-                            let rqst = new CreateVideoRequest
-                            rqst.setVideo(this.titleInfo)
-                            rqst.setIndexpath(indexPath)
-                            globule.titleService.createVideo(rqst, { application: Application.application, domain: Application.domain, token: token })
-                                .then(rsp => {
-                                    ApplicationView.displayMessage(`${person.getFullname()} was removed from the cast of ${this.titleInfo.getDescription()}`, 3000)
-                                    if (this.onremovefromcast) {
-                                        this.onremovefromcast(person)
-                                    }
-                                }).catch(err => ApplicationView.displayMessage(err, 3000))
+                            let personBiographyInput = container.querySelector(`#${uuid}-person-biography-input`)
+                            let personUrlInput = container.querySelector(`#${uuid}-person-url-input`)
+                            let personIdInput = container.querySelector(`#${uuid}-person-id-input`)
+                            let personNameInput = container.querySelector(`#${uuid}-person-name-input`)
+                            let imageSelector = container.querySelector("globular-image-selector")
+                            let personAliasesInput = container.querySelector(`#${uuid}-person-aliases-input`)
+                            let personBirthdateInput = container.querySelector(`#${uuid}-person-birthdate-input`)
+                            let personBirthplaceInput = container.querySelector(`#${uuid}-person-birthplace-input`)
+
+                            let uuid = "_" + getUuidByString(person.getId())
+                            this.uuid = uuid
+
+                            personBiographyInput.id = `#${uuid}-person-biography-input`
+                            personUrlInput.id = `#${uuid}-person-url-input`
+                            personIdInput.id = `#${uuid}-person-id-input`
+                            personNameInput.id = `#${uuid}-person-name-input`
+                            personAliasesInput.id = `#${uuid}-person-aliases-input`
+                            personBirthdateInput.id = `#${uuid}-person-birthdate-input`
+                            personBirthplaceInput.id = `#${uuid}-person-birthplace-input`
+
+                            // Now I will remove the person from the video casting...
+                            if (this.slot == "casting") {
+                                let casting = this.titleInfo.getCastingList()
+                                casting = casting.filter(p => p.getId() !== person.getId());
+                                this.titleInfo.setCastingList(casting)
+                            } else if (this.slot == "actors") {
+                                let casting = this.titleInfo.getActorsList()
+                                casting = casting.filter(p => p.getId() !== person.getId());
+                                this.titleInfo.setActorsList(casting)
+                            } else if (this.slot == "writers") {
+                                let casting = this.titleInfo.getWritersList()
+                                casting = casting.filter(p => p.getId() !== person.getId());
+                                this.titleInfo.setWritersList(casting)
+                            } else if (this.slot == "directors") {
+                                let casting = this.titleInfo.getDirectorsList()
+                                casting = casting.filter(p => p.getId() !== person.getId());
+                                this.titleInfo.setDirectorsList(casting)
+                            }
+
+                            if (this.slot == "casting") {
+
+                                let rqst = new CreateVideoRequest
+                                rqst.setVideo(this.titleInfo)
+                                rqst.setIndexpath(indexPath)
+                                globule.titleService.createVideo(rqst, { application: Application.application, domain: Application.domain, token: token })
+                                    .then(rsp => {
+                                        ApplicationView.displayMessage(`${person.getFullname()} was removed from the cast of ${this.titleInfo.getDescription()}`, 3000)
+                                        if (this.onremovefromcast) {
+                                            this.onremovefromcast(person)
+                                        }
+                                    }).catch(err => ApplicationView.displayMessage(err, 3000))
+                            } else {
+
+                                let rqst = new CreateTitleRequest
+                                rqst.setTitle(this.titleInfo)
+                                rqst.setIndexpath(indexPath)
+                                globule.titleService.createTitle(rqst, { application: Application.application, domain: Application.domain, token: token })
+                                    .then(rsp => {
+                                        ApplicationView.displayMessage(`${person.getFullname()} was removed from the cast of ${this.titleInfo.getName()}`, 3000)
+                                        if (this.onremovefromcast) {
+                                            this.onremovefromcast(person)
+                                        }
+                                    }).catch(err => ApplicationView.displayMessage(err, 3000))
+                            }
+
                         }).catch(err => ApplicationView.displayMessage(err, 3000))
 
                 })
@@ -2196,6 +2411,15 @@ export class PersonEditor extends HTMLElement {
             }, 100)
         }
 
+        personNameInput.onkeyup = () => {
+            container.querySelector("#header-text").innerHTML = personNameInput.value
+        }
+
+        personNameInput.onblur = () => {
+            personNameInput.style.display = "none"
+            personNameDiv.style.display = "table-cell"
+            personNameDiv.innerHTML = personNameInput.value
+        }
 
         // The person aliases
         let editpersonAliasesBtn = container.querySelector(`#edit-${uuid}-person-aliases-btn`)
@@ -2303,7 +2527,7 @@ export class PersonEditor extends HTMLElement {
     focus() {
         // onpen the panel...
         let container = this.shadowRoot.querySelector("#container")
-        let uuid = "_" + getUuidByString(this.person.getId())
+        let uuid =  this.uuid 
 
         let collapse_btn = container.querySelector("#collapse-btn")
         collapse_btn.click()
@@ -2340,8 +2564,14 @@ export class PersonEditor extends HTMLElement {
             let rqst = new DeletePersonRequest()
             let globule = this.person.globule
             generatePeerToken(globule, token => {
+
                 rqst.setPersonid(this.person.getId())
-                rqst.setIndexpath(globule.config.DataPath + "/search/videos")
+                let indexPath = globule.config.DataPath + "/search/videos" // TODO set it correctly for video...
+                if (this.slot != "casting") {
+                    indexPath = globule.config.DataPath + "/search/titles"
+                }
+                rqst.setIndexpath(indexPath)
+
                 globule.titleService.deletePerson(rqst, { application: Application.application, domain: Application.domain, token: token })
                     .then(() => {
                         ApplicationView.displayMessage(`${this.person.getFullname()} information was deleted`, 3000)
@@ -2357,7 +2587,7 @@ export class PersonEditor extends HTMLElement {
     // Save will simply set value in the person attribute...
     save() {
         // The uuid
-        let uuid = "_" + getUuidByString(this.person.getId())
+        let uuid = this.uuid
         let container = this.shadowRoot.querySelector("#container")
 
         // get interface elements.
@@ -2374,7 +2604,7 @@ export class PersonEditor extends HTMLElement {
         this.person.setId(personIdInput.value)
         this.person.setFullname(personNameInput.value)
         this.person.setUrl(personUrlInput.value)
-        this.person.setBiography(personBiographyInput.value)
+        this.person.setBiography(btoa(personBiographyInput.value))
         this.person.setPicture(imageSelector.getImageUrl())
 
         // little formatting...
@@ -2504,7 +2734,7 @@ export class TitleInfoEditor extends HTMLElement {
                         <div class="label" style="display: table-cell; font-weight: 450;">Directors</div>
                         <div style="display: table-cell; width: 100%;" ></div>
                         <div class="button-div" style="position: relative;">
-                            <paper-icon-button id="add-director-btn" icon="social:person-add"></paper-icon-button>
+                            <paper-icon-button id="add-directors-btn" icon="social:person-add"></paper-icon-button>
                         </div>
                     </div>
                     <slot name="directors"></slot>
@@ -2515,7 +2745,7 @@ export class TitleInfoEditor extends HTMLElement {
                         <div class="label" style="display: table-cell; font-weight: 450;">Writers</div>
                         <div style="display: table-cell; width: 100%;" ></div>
                         <div class="button-div" style="position: relative;">
-                            <paper-icon-button id="add-writer-btn" icon="social:person-add"></paper-icon-button>
+                            <paper-icon-button id="add-writers-btn" icon="social:person-add"></paper-icon-button>
                         </div>
                     </div>
                     <slot name="writers"></slot>
@@ -2557,6 +2787,27 @@ export class TitleInfoEditor extends HTMLElement {
             this.appendPersonEditor(p, title, "actors")
         })
 
+        let addActorsBtn = this.shadowRoot.querySelector("#add-actors-btn")
+        addActorsBtn.onclick = () => {
+            let globule = title.globule
+            let indexPath = globule.config.DataPath + "/search/titles"
+            this.addCasting(addActorsBtn.parentNode, title, "Acting", indexPath)
+        }
+
+        let addWritersBtn = this.shadowRoot.querySelector("#add-writers-btn")
+        addWritersBtn.onclick = () => {
+            let globule = title.globule
+            let indexPath = globule.config.DataPath + "/search/titles"
+            this.addCasting(addWritersBtn.parentNode, title, "Writing", indexPath)
+        }
+
+        let addDirectorsBtn = this.shadowRoot.querySelector("#add-directors-btn")
+        addDirectorsBtn.onclick = () => {
+            let globule = title.globule
+            let indexPath = globule.config.DataPath + "/search/titles"
+            this.addCasting(addDirectorsBtn.parentNode, title, "Directing", indexPath)
+        }
+
         let editPemissionsBtn = this.shadowRoot.querySelector("#edit-permissions-btn")
         let collapse_panel = this.shadowRoot.querySelector("#collapse-panel")
 
@@ -2565,8 +2816,6 @@ export class TitleInfoEditor extends HTMLElement {
         this.permissionManager.globule = title.globule
         this.permissionManager.setPath(title.getId())
         this.permissionManager.setResourceType = "title_info"
-
-        let indexPath = title.globule.config.DataPath + "/search/titles"
 
         // toggle the collapse panel when the permission manager panel is close.
         this.permissionManager.onclose = () => {
@@ -2666,6 +2915,325 @@ export class TitleInfoEditor extends HTMLElement {
             videoVideoDescriptionDiv.style.display = "table-cell"
             videoVideoDescriptionDiv.innerHTML = videoVideoDescriptionInput.value
         }
+
+        this.shadowRoot.querySelector("#save-indexation-btn").onclick = () => {
+
+            // So here I will set video values back and update it in the parent...
+            title.setId(videoIdInput.value)
+            title.setName(videoNameInput.value)
+            title.setDescription(videoVideoDescriptionInput.value)
+            title.setGenresList(videoGenresList.getItems())
+
+            // set the casting values...
+            // casting are interfaced by PersonEditor and PersonEditor are contain 
+            // in the casting slot, so I will use children iterator here...
+            for (var i = 0; i < this.children.length; i++) {
+                this.children[i].save()
+            }
+
+            this.saveCasting(title, "Acting", actors => {
+                title.setActorsList(actors)
+                this.saveCasting(title, "Writing", writers => {
+                    title.setWritersList(writers)
+                    this.saveCasting(title, "Directing", directors => {
+                        title.setDirectorsList(directors)
+                        let globule = title.globule
+                        generatePeerToken(globule, token => {
+                            let indexPath = globule.config.DataPath + "/search/titles"
+                            let rqst = new CreateTitleRequest
+                            rqst.setTitle(title)
+                            rqst.setIndexpath(indexPath)
+                            globule.titleService.createTitle(rqst, { application: Application.application, domain: Application.domain, token: token })
+                                .then(rsp => {
+                                    ApplicationView.displayMessage("Title Information are updated", 3000)
+                                    this.titleInfosDisplay.setTitle(title)
+                                })
+                                .catch(err => ApplicationView.displayMessage(err, 3000))
+
+                            let parent = this.parentNode
+                            parent.removeChild(this)
+                            parent.appendChild(titleInfosDisplay)
+                        })
+                    })
+                })
+            })
+        }
+    }
+
+    // create casting...
+    addCasting(parent, title, role, indexPath) {
+
+        let html = `
+        <paper-card id="add-casting-panel" style="z-index: 100; background-color: var(--palette-background-paper);  color: var(--palette-text-primary); position: absolute; top: 35px; right: 5px;">
+            <div style="display:flex; flex-direction: column;">
+                <globular-search-person-input indexpath="${indexPath}" title="search existing cast"></globular-search-person-input>
+                <div style="display:flex; justify-content: flex-end;">
+                    <paper-button id="new-person-btn" title="Create a new cast">New</paper-button>
+                    <paper-button id="cancel-btn" >Cancel</paper-button>
+                </div>
+            </div>
+        </paper-card>
+        `
+
+        let addCastingPanel = parent.querySelector("#add-casting-panel")
+        if (addCastingPanel != null) {
+            return
+        }
+
+        let range = document.createRange()
+        parent.appendChild(range.createContextualFragment(html))
+
+        let createNewPersonBtn = parent.querySelector("#new-person-btn")
+        createNewPersonBtn.onclick = () => {
+
+            let person = new Person()
+            person.setId("New Casting")
+
+            let editor = null
+            if (role == "Acting") {
+                editor = this.appendPersonEditor(person, title, "actors")
+            } else if (role == "Writing") {
+                editor = this.appendPersonEditor(person, title, "writers")
+            } else if (role == "Directing") {
+                editor = this.appendPersonEditor(person, title, "directors")
+            }
+
+            editor.focus()
+
+            // remove the panel...
+            let addCastingPanel = parent.querySelector("#add-casting-panel")
+            addCastingPanel.parentNode.removeChild(addCastingPanel)
+        }
+
+        // close the search box...
+        let searchPersonInput = parent.querySelector("globular-search-person-input")
+        searchPersonInput.oneditperson = (person) => {
+            person.globule = title.globule
+            let personEditor = new PersonEditor(person)
+            let uuid = "_" + getUuidByString(person.getId()) + "_edit_panel"
+
+            let div = document.body.querySelector(`#${uuid}`)
+            if (div) {
+                return // already a panel...
+            }
+
+            let html = `
+            <style>
+                #${uuid}{
+                    z-index: 1000;
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background-color: var(--palette-background-default);
+                    border-left: 1px solid var(--palette-divider); 
+                    border-right: 1px solid var(--palette-divider) rgba(255, 255, 255, 0.12);
+                    border-top: 1px solid var(--palette-divider) rgba(255, 255, 255, 0.12);
+                    color: var(--palette-text-primary);
+                    font-size: 1rem;
+                }
+
+            </style>
+            <paper-card id="${uuid}">
+
+            </paper-card>
+            `
+
+            let range = document.createRange()
+
+            // so here I will append the editor into the body...
+            document.body.appendChild(range.createContextualFragment(html))
+            div = document.body.querySelector(`#${uuid}`)
+
+            personEditor.onclose = () => {
+                div.parentNode.removeChild(div)
+            }
+
+            div.appendChild(personEditor)
+            personEditor.focus()
+        }
+
+        searchPersonInput.onaddcasting = (person) => {
+
+            let globule = person.globule
+            let indexPath = globule.config.DataPath + "/search/titles" // TODO set it correctly for video...
+
+            generatePeerToken(globule, token => {
+
+                // remove the video id from casting field.
+                if (role == "Acting") {
+                    let casting = person.getActingList()
+                    if (casting.indexOf(title.getId()) == 0) {
+                        casting.push(title.getId())
+                    }
+                    person.setActingList(casting)
+                } else if (role == "Directing") {
+                    let casting = person.getDirectingList()
+                    if (casting.indexOf(title.getId()) == 0) {
+                        casting.push(title.getId())
+                    }
+                    person.setDirectingList(casting)
+                } else if (role == "Writing") {
+                    let casting = person.getWritingList()
+                    if (casting.indexOf(title.getId()) == 0) {
+                        casting.push(title.getId())
+                    }
+                    person.setDirectingList(casting)
+                }
+
+                // Now I will create persons
+                let rqst = new CreatePersonRequest
+                rqst.setPerson(person)
+                rqst.setIndexpath(indexPath)
+
+                // save the person witout the title id...
+                globule.titleService.createPerson(rqst, { application: Application.application, domain: Application.domain, token: token })
+                    .then(rsp => {
+                        if (role == "Acting") {
+                            // Now I will remove the person from the title casting...
+                            let casting = title.getActorsList()
+
+                            // remove it if it was existing.
+                            casting = casting.filter(p => p.getId() !== person.getId());
+
+                            casting.push(person)
+                            title.setActorsList(casting)
+
+                        } else if (role == "Writing") {
+                            // Now I will remove the person from the title casting...
+                            let casting = title.getWritersList()
+
+                            // remove it if it was existing.
+                            casting = casting.filter(p => p.getId() !== person.getId());
+                            casting.push(person)
+
+                            title.setWritersList(casting)
+                        } else if (role == "Directing") {
+                            // Now I will remove the person from the title casting...
+                            let casting = title.getDirectorsList()
+                            casting = casting.filter(p => p.getId() !== person.getId());
+                            casting.push(person)
+                            title.setDirectorsList(casting)
+                        }
+
+                        let rqst = new CreateTitleRequest
+                        rqst.setTitle(title)
+                        rqst.setIndexpath(indexPath)
+
+                        // update the title.
+                        globule.titleService.createTitle(rqst, { application: Application.application, domain: Application.domain, token: token })
+                            .then(rsp => {
+                                if (role == "Acting") {
+                                    this.appendPersonEditor(person, title, "actors")
+                                } else if (role == "Writing") {
+                                    this.appendPersonEditor(person, title, "writers")
+                                } else if (role == "Directing") {
+                                    this.appendPersonEditor(person, title, "directors")
+                                }
+                                // remove the panel...
+                                let addCastingPanel = parent.querySelector("#add-casting-panel")
+                                addCastingPanel.parentNode.removeChild(addCastingPanel)
+
+                            }).catch(err => ApplicationView.displayMessage(err, 3000))
+                    }).catch(err => ApplicationView.displayMessage(err, 3000))
+
+            })
+        }
+
+        searchPersonInput.onclose = parent.querySelector("#cancel-btn").onclick = () => {
+            let addCastingPanel = parent.querySelector("#add-casting-panel")
+            addCastingPanel.parentNode.removeChild(addCastingPanel)
+        }
+    }
+
+    // Save casting this will create new person and set value in existing one.
+    saveCasting(title, role, callback) {
+
+        let castingEditors = this.querySelectorAll("globular-person-editor")
+        let casting = []
+
+        for (var i = 0; i < castingEditors.length; i++) {
+            let person = castingEditors[i].getPerson()
+
+            if (role == "Acting") {
+                if (castingEditors[i].slot == "actors") {
+                    casting.push(person)
+                    let casting_ = person.getActingList()
+                    if (!casting_) {
+                        casting_ = []
+                    }
+
+                    if (casting_.indexOf(title.getId()) == -1) {
+                        casting_.push(title.getId())
+                    }
+                    person.setActingList(casting_)
+                }
+            } else if (role == "Writing") {
+                if (castingEditors[i].slot == "writers") {
+                    casting.push(person)
+
+                    let casting_ = person.getWritingList()
+                    if (!casting_) {
+                        casting_ = []
+                    }
+
+                    if (casting_.indexOf(title.getId()) == -1) {
+                        casting_.push(title.getId())
+                    }
+                    person.setWritingList(casting_)
+                }
+            } else if (role == "Directing") {
+                if (castingEditors[i].slot == "directors") {
+                    casting.push(person)
+
+                    let casting_ = person.getDirectingList()
+                    if (!casting_) {
+                        casting_ = []
+                    }
+
+                    if (casting_.indexOf(title.getId()) == -1) {
+                        casting_.push(title.getId())
+                    }
+                    person.setDirectingList(casting_)
+                }
+            }
+        }
+
+        let globule = title.globule
+
+        let savePerson = (index) => {
+            let indexPath = globule.config.DataPath + "/search/titles"
+            let p = casting[index]
+            index++
+            let rqst = new CreatePersonRequest
+            rqst.setIndexpath(indexPath)
+            rqst.setPerson(p)
+
+            // save the person one by one...
+            generatePeerToken(globule, token => {
+                globule.titleService.createPerson(rqst, { application: Application.application, domain: Application.domain, token: token })
+                    .then(rsp => {
+                        if (index < casting.length) {
+                            savePerson(index)
+                        } else {
+                            callback(casting)
+                        }
+                    })
+                    .catch(err => {
+                        if (index < casting.length) {
+                            savePerson(index)
+                        } else {
+                            callback(casting)
+                        }
+                    })
+            })
+        }
+
+        let index = 0
+        if (casting.length > 0)
+            savePerson(index)
+        else
+            callback([])
 
     }
 
@@ -2991,8 +3559,11 @@ export class TitleInfo extends HTMLElement {
                     rqst.setIndexpath(globule.config.DataPath + "/search/titles")
                     globule.titleService.deleteTitle(rqst, { application: Application.application, domain: Application.domain, token: token })
                         .then(() => {
-                            ApplicationView.displayMessage(`file indexation was deleted`, 3000)
+                            ApplicationView.displayMessage(`${title.getId()}:${title.getDescription()} was deleted`, 3000)
                             this.parentNode.removeChild(this)
+                            if (this.ondelete) {
+                                this.ondelete()
+                            }
                         })
                         .catch(err => ApplicationView.displayMessage(err, 3000))
 

@@ -20,7 +20,7 @@ import { generatePeerToken, getUrl, Model } from '../Model';
 import { File as File__ } from "../File"; // File object already exist in js and I need to use it...
 import { Menu } from './Menu';
 import { PermissionsManager } from './Permissions';
-import { InformationsManager } from './Informations'
+import { FileMetaDataInfo, InformationsManager } from './Informations'
 import { playVideo, playVideos } from './Video'
 import { playAudio, playAudios } from './Audio'
 import { GlobularFileReader } from './Reader'
@@ -36,7 +36,7 @@ import { GetSharedResourceRqst, SubjectType } from 'globular-web-client/rbac/rba
 import { fireResize, getCoords, randomUUID } from './utility';
 import * as getUuidByString from 'uuid-by-string';
 import { ImageViewer } from './Image';
-import { AssociateFileWithTitleRequest, CreateTitleRequest, CreateVideoRequest, GetFileAudiosRequest, GetFileTitlesRequest, GetFileVideosRequest, Person, Poster, Title, Video, Publisher } from 'globular-web-client/title/title_pb';
+import { AssociateFileWithTitleRequest, CreateTitleRequest, CreateVideoRequest, GetFileAudiosRequest, GetFileTitlesRequest, GetFileVideosRequest, Person, Poster, Title, Video, Publisher, CreatePersonRequest } from 'globular-web-client/title/title_pb';
 import { DownloadTorrentRequest, DropTorrentRequest, GetTorrentInfosRequest, GetTorrentLnksRequest } from 'globular-web-client/torrent/torrent_pb';
 import { getImdbInfo } from './Search';
 import { setMoveable } from './moveable'
@@ -3738,14 +3738,16 @@ export class FilesIconView extends FilesView {
      * Set file info, this will made use of the search engine...
      */
     setFileInfo(info, file) {
-        let rqst = new CreateTitleRequest
+
         let title = new Title
+        let persons_ = {}
 
         // init person infos...
         let createPersons = (values) => {
             let persons = []
             if (values != undefined) {
                 values.forEach(v => {
+                    // The value to be store outside the title.
                     let p = new Person
                     p.setId(v.ID)
                     p.setUrl(v.URL)
@@ -3755,6 +3757,9 @@ export class FilesIconView extends FilesView {
                     p.setBirthdate(v.BirthDate)
                     p.setBirthplace(v.BirthPlace)
                     persons.push(p)
+                    
+                    // Needed to save person...
+                    persons_[v.ID] = p
                 })
             }
 
@@ -3791,29 +3796,75 @@ export class FilesIconView extends FilesView {
         poster.setId(info.Poster.ID)
         poster.setUrl(info.Poster.URL)
         poster.setContenturl(info.Poster.ContentURL)
-
         title.setPoster(poster)
 
         let indexPath = this._file_explorer_.globule.config.DataPath + "/search/titles"
-        rqst.setIndexpath(indexPath)
-        rqst.setTitle(title)
 
-        // Now I will create the title info...
-        generatePeerToken(this._file_explorer_.globule, token => {
-            this._file_explorer_.globule.titleService.createTitle(rqst, { application: Application.application, domain: this._file_explorer_.globule.domain, token: token })
-                .then(rsp => {
-                    // Now I will asscociated the file and the title.
-                    let rqst_ = new AssociateFileWithTitleRequest
-                    rqst_.setFilepath(file.path)
-                    rqst_.setTitleid(title.getId())
-                    rqst_.setIndexpath(indexPath)
+        // save the title infos
+        let createTitle = () => {
 
-                    this._file_explorer_.globule.titleService.associateFileWithTitle(rqst_, { application: Application.application, domain: this._file_explorer_.globule.domain, token: token })
-                        .then(rsp => {
-                        }).catch(err => ApplicationView.displayMessage(err, 3000))
+            let rqst = new CreateTitleRequest
+            rqst.setIndexpath(indexPath)
+            rqst.setTitle(title)
 
-                }).catch(err => ApplicationView.displayMessage(err, 3000))
-        })
+            // Now I will create the title info...
+            generatePeerToken(this._file_explorer_.globule, token => {
+                this._file_explorer_.globule.titleService.createTitle(rqst, { application: Application.application, domain: this._file_explorer_.globule.domain, token: token })
+                    .then(rsp => {
+                        // Now I will asscociated the file and the title.
+                        let rqst_ = new AssociateFileWithTitleRequest
+                        rqst_.setFilepath(file.path)
+                        rqst_.setTitleid(title.getId())
+                        rqst_.setIndexpath(indexPath)
+
+                        this._file_explorer_.globule.titleService.associateFileWithTitle(rqst_, { application: Application.application, domain: this._file_explorer_.globule.domain, token: token })
+                            .then(rsp => {
+                                console.log("title was created!")
+                            }).catch(err => ApplicationView.displayMessage(err, 3000))
+
+                    }).catch(err => ApplicationView.displayMessage(err, 3000))
+            })
+        }
+
+        // get the list of person to be save...
+        let persons = []
+        for(var k in persons_){
+            persons.push(persons_[k])
+        }
+
+        // save person infos...
+        let createPerson = (index) => {
+            let p = persons[index]
+            index++
+            let rqst = new CreatePersonRequest
+            rqst.setIndexpath(indexPath)
+            rqst.setPerson(p)
+            generatePeerToken(this._file_explorer_.globule, token => {
+                this._file_explorer_.globule.titleService.createPerson(rqst, { application: Application.application, domain: this._file_explorer_.globule.domain, token: token })
+                    .then(() => {
+                        if(index < persons.length){
+                            createPerson(index)
+                        }else{
+                            createTitle()
+                        }
+                    }).catch(()=>{
+                        if(index < persons.length){
+                            createPerson(index)
+                        }else{
+                            createTitle()
+                        }
+                    })
+            })
+        }
+
+        // save person and titles after...
+        if(persons.length > 0){
+            let index = 0;
+            createPerson(index)
+        }else{
+            createTitle()
+        }
+
     }
 
 
