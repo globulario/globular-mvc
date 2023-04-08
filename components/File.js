@@ -36,7 +36,7 @@ import { GetSharedResourceRqst, SubjectType } from 'globular-web-client/rbac/rba
 import { fireResize, getCoords, randomUUID } from './utility';
 import * as getUuidByString from 'uuid-by-string';
 import { ImageViewer } from './Image';
-import { AssociateFileWithTitleRequest, CreateTitleRequest, CreateVideoRequest, GetFileAudiosRequest, GetFileTitlesRequest, GetFileVideosRequest, Person, Poster, Title, Video, Publisher, CreatePersonRequest } from 'globular-web-client/title/title_pb';
+import { AssociateFileWithTitleRequest, CreateTitleRequest, CreateVideoRequest, GetFileAudiosRequest, GetFileTitlesRequest, GetFileVideosRequest, Person, Poster, Title, Video, Publisher, CreatePersonRequest, GetTitleByIdRequest } from 'globular-web-client/title/title_pb';
 import { DownloadTorrentRequest, DropTorrentRequest, GetTorrentInfosRequest, GetTorrentLnksRequest } from 'globular-web-client/torrent/torrent_pb';
 import { getImdbInfo } from './Search';
 import { setMoveable } from './moveable'
@@ -138,19 +138,28 @@ export function getTitleInfo(file, callback) {
         }
     }
 
-    file.titles = []
-
     // Now I will get titles info.
     let ___getTitleInfo___ = (index) => {
         let g = globules[index]
         index++
         __getTitleInfo__(g, file, (_titles_) => {
-            _titles_.forEach(t => t.globule = g)
-            file.titles = file.titles.concat(_titles_)
-            if (index < globules.length && file.titles.length == 0) {
+            if (_titles_.length > 0) {
+                _titles_.forEach(t => t.globule = g)
+                if (!file.titles) {
+                    file.titles = []
+                }
+                file.titles = file.titles.concat(_titles_)
+                callback(file.titles)
+                return
+            }
+            if (index < globules.length) {
                 ___getTitleInfo___(index)
             } else {
-                callback(file.titles)
+                if (file.titles) {
+                    callback(file.titles)
+                } else {
+                    callback([])
+                }
             }
 
         })
@@ -190,7 +199,6 @@ export function getVideoInfo(file, callback) {
     globules = globules.filter(function (e) { return e.domain !== file.globule.domain })
     globules.unshift(file.globule)
 
-    file.videos = []
 
     // Now I will get titles info.
     let ___getVideoInfo___ = (index) => {
@@ -198,12 +206,24 @@ export function getVideoInfo(file, callback) {
         index++
 
         __getVideoInfo__(g, file, (_videos_) => {
-            _videos_.forEach(v => v.globule = g)
-            file.videos = file.videos.concat(_videos_)
-            if (index < globules.length && file.videos.length == 0) {
+            if (_videos_.length > 0) {
+                _videos_.forEach(v => v.globule = g)
+                if (!file.videos) {
+                    file.videos = []
+                }
+                file.videos = file.videos.concat(_videos_)
+                callback(file.videos)
+                return
+            }
+            if (index < globules.length) {
                 ___getVideoInfo___(index)
             } else {
-                callback(file.videos)
+                if (file.videos) {
+                    callback(file.videos)
+                } else {
+                    callback([])
+                }
+
             }
         })
 
@@ -242,19 +262,30 @@ export function getAudioInfo(file, callback) {
             return
         }
     }
-    file.audios = []
 
     // Now I will get titles info.
     let ___getAudioInfo___ = (index) => {
         let g = globules[index]
         index++
         __getAudioInfo__(g, file, (_audios_) => {
-            _audios_.forEach(a => a.globule = g)
-            file.audios = file.audios.concat(_audios_)
-            if (index < globules.length && file.audios.length == 0) {
+            if (_audios_.length > 0) {
+                _audios_.forEach(a => a.globule = g)
+                if (!file.audios) {
+                    file.audios = []
+                }
+                file.audios = file.audios.concat(_audios_)
+                callback(file.audios)
+                return
+            }
+            if (index < globules.length) {
                 ___getAudioInfo___(index)
             } else {
-                callback(file.audios)
+                if(file.audios){
+                    callback(file.audios)
+                }else{
+                    callback([])
+                }
+                
             }
         })
 
@@ -605,22 +636,25 @@ export class FilesView extends HTMLElement {
         this.menu.setFile = (f) => {
 
             this.menu.file = f;
-            if (this.menu.file.mime.startsWith("video")) {
+            if (this.menu.file.mime.startsWith("video") || this.menu.file.videos != undefined || this.menu.file.titles != undefined) {
                 this.titleInfosMenuItem.style.display = "block"
-                this.videMenuItem.style.display = "block"
-                this.openInNewTabItem.style.display = "block"
-                this.generateTimeLineItem.style.display = "block"
-                this.generatePreviewItem.style.display = "block"
+                if (this.menu.file.mime.startsWith("video")) {
+                    this.videMenuItem.style.display = "block"
+                    this.openInNewTabItem.style.display = "block"
+                    this.generateTimeLineItem.style.display = "block"
+                    this.generatePreviewItem.style.display = "block"
 
-                if (this.menu.file.name.endsWith(".mp4") || this.menu.file.name.endsWith(".MP4")) {
-                    this.toHlsMenuItem.style.display = "block"
-                    this.toMp4MenuItem.style.display = "none"
-                } else if (this.menu.file.mime == "video/hls-stream") {
-                    this.toHlsMenuItem.style.display = "none"
-                    this.toMp4MenuItem.style.display = "none"
-                } else {
-                    this.toHlsMenuItem.style.display = "none"
-                    this.toMp4MenuItem.style.display = "block"
+
+                    if (this.menu.file.name.endsWith(".mp4") || this.menu.file.name.endsWith(".MP4")) {
+                        this.toHlsMenuItem.style.display = "block"
+                        this.toMp4MenuItem.style.display = "none"
+                    } else if (this.menu.file.mime == "video/hls-stream") {
+                        this.toHlsMenuItem.style.display = "none"
+                        this.toMp4MenuItem.style.display = "none"
+                    } else {
+                        this.toHlsMenuItem.style.display = "none"
+                        this.toMp4MenuItem.style.display = "block"
+                    }
                 }
             } else {
                 this.videMenuItem.style.display = "none"
@@ -1068,34 +1102,37 @@ export class FilesView extends HTMLElement {
 
         this.titleInfosMenuItem.action = () => {
             // So here I will create a new permission manager object and display it for the given file.
-            let globule = this._file_explorer_.globule
             let file = this.menu.file
-            if (file.mime.startsWith("video")) {
-                getVideoInfo(file, (videos) => {
-                    if (videos.length > 0) {
-                        Model.eventHub.publish(`display_media_infos_${this._file_explorer_.id}_event`, file, true)
-                        // Remove it from it parent... 
-                        if (this.menu.parentNode) {
+            if (file.videos || file.titles || file.audios) {
+                Model.eventHub.publish(`display_media_infos_${this._file_explorer_.id}_event`, file, true)
+            } else {
+                if (file.mime.startsWith("video")) {
+                    getVideoInfo(file, (videos) => {
+
+                        if (videos.length > 0) {
+                            Model.eventHub.publish(`display_media_infos_${this._file_explorer_.id}_event`, file, true)
                             // Remove it from it parent... 
-                            this.menu.close()
-                            this.menu.parentNode.removeChild(this.menu)
-                        }
-                    } else {
-                        // get the title infos...
-                        getTitleInfo(file, (titles) => {
-                            if (titles.length > 0) {
-                                Model.eventHub.publish(`display_media_infos_${this._file_explorer_.id}_event`, file, true)
-                                if (this.menu.parentNode) {
-                                    // Remove it from it parent... 
-                                    this.menu.close()
-                                    this.menu.parentNode.removeChild(this.menu)
-                                }
-                            } else {
-                                // So here no video or title info exist for that file I will propose to the user 
-                                // to create a new video infos...
-                                // Here I will ask the user for confirmation before actually delete the contact informations.
-                                let toast = ApplicationView.displayMessage(
-                                    `
+                            if (this.menu.parentNode) {
+                                // Remove it from it parent... 
+                                this.menu.close()
+                                this.menu.parentNode.removeChild(this.menu)
+                            }
+                        } else {
+                            // get the title infos...
+                            getTitleInfo(file, (titles) => {
+                                if (titles.length > 0) {
+                                    Model.eventHub.publish(`display_media_infos_${this._file_explorer_.id}_event`, file, true)
+                                    if (this.menu.parentNode) {
+                                        // Remove it from it parent... 
+                                        this.menu.close()
+                                        this.menu.parentNode.removeChild(this.menu)
+                                    }
+                                } else {
+                                    // So here no video or title info exist for that file I will propose to the user 
+                                    // to create a new video infos...
+                                    // Here I will ask the user for confirmation before actually delete the contact informations.
+                                    let toast = ApplicationView.displayMessage(
+                                        `
                                     <style>
                                         
                                         #yes-no-create-video-info-box{
@@ -1124,101 +1161,103 @@ export class FilesView extends HTMLElement {
                                         </div>
                                     </div>
                                     `,
-                                    60 * 1000 // 60 sec...
-                                );
+                                        60 * 1000 // 60 sec...
+                                    );
 
-                                let yesBtn = document.querySelector("#yes-create-video-info")
-                                let noBtn = document.querySelector("#no-create-video-info")
+                                    let yesBtn = document.querySelector("#yes-create-video-info")
+                                    let noBtn = document.querySelector("#no-create-video-info")
 
-                                // On yes
-                                yesBtn.onclick = () => {
+                                    // On yes
+                                    yesBtn.onclick = () => {
 
-                                    // I will create video description.
-                                    let rqst = new CreateVideoRequest
-                                    let videoInfo = new Video
-                                    videoInfo.setId(file.checksum)
-                                    let date = new Date()
-                                    videoInfo.setDate(date.toISOString())
-                                    let publisher = new Publisher
-                                    publisher.setId(Application.account.id + "@" + Application.account.domain)
+                                        // So here I will ask witch type of information the user want's to generate, title, video or audio...
+                                        toast.dismiss();
 
-                                    if (Application.account.firstName.length > 0)
-                                        publisher.setName(Application.account.firstName + " " + Application.account.lastName)
+                                        if (file.mime.startsWith("video")) {
+                                            let toast_ = ApplicationView.displayMessage(
+                                                `
+                                            <style>
 
-                                    let poster = new Poster
-                                    poster.setContenturl(file.thumbnail)
-                                    poster.setUrl()
-                                    videoInfo.setPoster(poster)
+                                            </style>
 
-                                    videoInfo.setPublisherid(publisher)
-                                    let globule = file.globule
+                                            <div style="display: flex; flex-direction: column;">
+                                                <div>
+                                                    Please select the kind of information to create...
+                                                </div>
+                                                <img style="max-height: 100px; object-fit: contain; width: 100%; margin-top: 15px;" src="${file.thumbnail}"></img>
+                                                <paper-radio-group selected="video-option" style="margin-top: 15px;">
+                                                    <paper-radio-button id="video-option" name="video-option"><span title="simple video ex. youtube">Video</span></paper-radio-button>
+                                                    <paper-radio-button id="title-option" name="title-option"><span title="Movie">Movie or TV Episode/Serie</span></paper-radio-button>
+                                                </paper-radio-group>
+                                                <div style="justify-content: flex-end; margin-top: 20px;">
+                                                    <paper-button raised id="yes-create-info">Ok</paper-button>
+                                                    <paper-button raised id="no-create-info">Cancel</paper-button>
+                                                </div>
+                                            </div>
+                                            `
+                                            )
 
-                                    let url = getUrl(globule)
-                                    file.path.split("/").forEach(item => {
-                                        item = item.trim()
-                                        if (item.length > 0) {
-                                            url += "/" + encodeURIComponent(item)
+                                            let videoOption = toast_.el.querySelector("#video-option")
+                                            let titleOption = toast_.el.querySelector("#title-option")
+
+                                            let okBtn = toast_.el.querySelector("#yes-create-info")
+                                            let cancelBtn = toast_.el.querySelector("#no-create-info")
+
+                                            okBtn.onclick = () => {
+                                                toast_.dismiss();
+                                                if (videoOption.checked) {
+                                                    console.log("create video")
+                                                    this.createVideoInformations(file, (videoInfo) => {
+                                                        file.videos = [videoInfo]
+                                                        Model.eventHub.publish(`display_media_infos_${this._file_explorer_.id}_event`, file, true)
+                                                        if (this.menu.parentNode) {
+                                                            // Remove it from it parent... 
+                                                            this.menu.close()
+                                                            this.menu.parentNode.removeChild(this.menu)
+                                                        }
+
+                                                    })
+                                                } else if (titleOption.checked) {
+                                                    console.log("create title")
+                                                    this.createTitleInformations(file, (titleInfo) => {
+                                                        file.titles = [titleInfo]
+                                                        Model.eventHub.publish(`display_media_infos_${this._file_explorer_.id}_event`, file, true)
+                                                        if (this.menu.parentNode) {
+                                                            // Remove it from it parent... 
+                                                            this.menu.close()
+                                                            this.menu.parentNode.removeChild(this.menu)
+                                                        }
+                                                    })
+                                                }
+                                            }
+
+                                            cancelBtn.onclick = () => {
+                                                toast_.dismiss();
+                                            }
+
                                         }
-                                    })
-                                    videoInfo.setUrl(url)
 
 
+                                    }
 
-                                    /** Other info will be set by the user... */
-
-                                    generatePeerToken(globule, token => {
-
-
-                                        let vid = document.createElement("video")
-                                        vid.src = url + "?token=" + token
-                                        // wait for duration to change from NaN to the actual duration
-                                        vid.ondurationchange = () => {
-                                            videoInfo.setDuration(parseInt(vid.duration))
-                                            rqst.setVideo(videoInfo)
-                                            rqst.setIndexpath(globule.config.DataPath + "/search/videos")
-
-                                            globule.titleService.createVideo(rqst, { application: Application.application, domain: globule.domain, token: token })
-                                                .then(rsp => {
-
-                                                    // So here I Will set the file association.
-                                                    let rqst = new AssociateFileWithTitleRequest
-                                                    rqst.setFilepath(file.path)
-                                                    rqst.setTitleid(videoInfo.getId())
-                                                    rqst.setIndexpath(globule.config.DataPath + "/search/videos")
-
-
-                                                    globule.titleService.associateFileWithTitle(rqst, { application: Application.application, domain: globule.domain, token: token })
-                                                        .then(rsp => {
-
-                                                            console.log("New Video info was created! ", videoInfo)
-                                                            rsp.get
-                                                        }).catch(err => ApplicationView.displayMessage(err, 3000))
-
-                                                }).catch(err => ApplicationView.displayMessage(err, 3000))
-                                        };
-
-                                    })
-
-                                    toast.dismiss();
+                                    noBtn.onclick = () => {
+                                        toast.dismiss();
+                                    }
                                 }
-
-                                noBtn.onclick = () => {
-                                    toast.dismiss();
-                                }
-                            }
-                        })
-                    }
-                })
-            } else if (file.mime.startsWith("audio")) {
-                getAudioInfo(file, (audios) => {
-                    if (audios.length > 0) {
-                        file.audios = audios // keep in the file itself...
-                        Model.eventHub.publish(`display_media_infos_${this._file_explorer_.id}_event`, file, true)
-                        // Remove it from it parent... 
-                        this.menu.close()
-                        this.menu.parentNode.removeChild(this.menu)
-                    }
-                })
+                            })
+                        }
+                    })
+                } else if (file.mime.startsWith("audio")) {
+                    getAudioInfo(file, (audios) => {
+                        if (audios.length > 0) {
+                            file.audios = audios // keep in the file itself...
+                            Model.eventHub.publish(`display_media_infos_${this._file_explorer_.id}_event`, file, true)
+                            // Remove it from it parent... 
+                            this.menu.close()
+                            this.menu.parentNode.removeChild(this.menu)
+                        }
+                    })
+                }
             }
         }
 
@@ -1542,6 +1581,135 @@ export class FilesView extends HTMLElement {
         })
     }
 
+    createAudioInformations(file, callback) {
+
+    }
+
+    createTitleInformations(file, callback) {
+        // I will create video description.
+        let rqst = new CreateTitleRequest
+
+        let titleInfo = new Title
+        titleInfo.setId(file.checksum)
+
+        let poster = new Poster
+        poster.setContenturl(file.thumbnail)
+        poster.setUrl()
+        titleInfo.setPoster(poster)
+
+        let url = getUrl(globule)
+        file.path.split("/").forEach(item => {
+            item = item.trim()
+            if (item.length > 0) {
+                url += "/" + encodeURIComponent(item)
+            }
+        })
+
+        titleInfo.setUrl(url)
+
+        /** Other info will be set by the user... */
+        generatePeerToken(globule, token => {
+
+            let vid = document.createElement("video")
+            vid.src = url + "?token=" + token
+            // wait for duration to change from NaN to the actual duration
+            vid.ondurationchange = () => {
+                titleInfo.setDuration(parseInt(vid.duration))
+                rqst.setTitle(titleInfo)
+                rqst.setIndexpath(globule.config.DataPath + "/search/titles")
+
+                globule.titleService.createTitle(rqst, { application: Application.application, domain: globule.domain, token: token })
+                    .then(rsp => {
+
+                        // So here I Will set the file association.
+                        let rqst = new AssociateFileWithTitleRequest
+                        rqst.setFilepath(file.path)
+                        rqst.setTitleid(titleInfo.getId())
+                        rqst.setIndexpath(globule.config.DataPath + "/search/titles")
+
+                        globule.titleService.associateFileWithTitle(rqst, { application: Application.application, domain: globule.domain, token: token })
+                            .then(rsp => {
+
+                                console.log("New title info was created! ", titleInfo)
+
+                            }).catch(err => ApplicationView.displayMessage(err, 3000))
+
+                    }).catch(err => ApplicationView.displayMessage(err, 3000))
+            };
+
+        })
+
+    }
+
+    createVideoInformations(file, callback) {
+        // I will create video description.
+        let rqst = new CreateVideoRequest
+        let videoInfo = new Video
+        videoInfo.setId(file.checksum)
+
+        let date = new Date()
+        videoInfo.setDate(date.toISOString())
+        let publisher = new Publisher
+        publisher.setId(Application.account.id + "@" + Application.account.domain)
+
+        if (Application.account.firstName.length > 0)
+            publisher.setName(Application.account.firstName + " " + Application.account.lastName)
+
+        let poster = new Poster
+        poster.setContenturl(file.thumbnail)
+        poster.setUrl()
+        videoInfo.setPoster(poster)
+
+        videoInfo.setPublisherid(publisher)
+        let globule = file.globule
+
+        let url = getUrl(globule)
+        file.path.split("/").forEach(item => {
+            item = item.trim()
+            if (item.length > 0) {
+                url += "/" + encodeURIComponent(item)
+            }
+        })
+        videoInfo.setUrl(url)
+
+
+        /** Other info will be set by the user... */
+        generatePeerToken(globule, token => {
+
+            let vid = document.createElement("video")
+            vid.src = url + "?token=" + token
+
+            // wait for duration to change from NaN to the actual duration
+            vid.ondurationchange = () => {
+                videoInfo.setDuration(parseInt(vid.duration))
+                rqst.setVideo(videoInfo)
+                rqst.setIndexpath(globule.config.DataPath + "/search/videos")
+
+                globule.titleService.createVideo(rqst, { application: Application.application, domain: globule.domain, token: token })
+                    .then(rsp => {
+
+                        // So here I Will set the file association.
+                        let rqst = new AssociateFileWithTitleRequest
+                        rqst.setFilepath(file.path)
+                        rqst.setTitleid(videoInfo.getId())
+                        rqst.setIndexpath(globule.config.DataPath + "/search/videos")
+
+
+                        globule.titleService.associateFileWithTitle(rqst, { application: Application.application, domain: globule.domain, token: token })
+                            .then(rsp => {
+
+                                console.log("New Video info was created! ", videoInfo)
+                                callback(videoInfo)
+
+                            }).catch(err => ApplicationView.displayMessage(err, 3000))
+
+                    }).catch(err => ApplicationView.displayMessage(err, 3000))
+            };
+
+        })
+
+    }
+
     /**
      * Move file to a given path...
      * @param {*} path 
@@ -1762,7 +1930,7 @@ export class FilesView extends HTMLElement {
 
     rename(parent, f, offset) {
 
-        parent.style.position = "relative"
+        // parent.style.position = "relative"
 
         // Here I will use a simple paper-card with a paper input...
         let html = `
@@ -1810,12 +1978,12 @@ export class FilesView extends HTMLElement {
                     </paper-card>
                 `
         // only one dialog open at time.
-        let renameDialog = parent.querySelector("#rename-file-dialog")
+        let renameDialog = document.body.querySelector("#rename-file-dialog")
 
         if (renameDialog == undefined) {
             let range = document.createRange()
-            parent.appendChild(range.createContextualFragment(html))
-            renameDialog = parent.querySelector("#rename-file-dialog")
+            document.body.appendChild(range.createContextualFragment(html))
+            renameDialog = document.body.querySelector("#rename-file-dialog")
             renameDialog.onmouseover = renameDialog.onmouseenter = (evt) => {
                 evt.stopPropagation();
             }
@@ -1824,7 +1992,7 @@ export class FilesView extends HTMLElement {
         renameDialog.style.top = offset + "px";
 
 
-        let input = parent.querySelector("#rename-file-input")
+        let input = renameDialog.querySelector("#rename-file-input")
         setTimeout(() => {
             input.focus()
             let index = f.name.lastIndexOf(".")
@@ -1835,15 +2003,13 @@ export class FilesView extends HTMLElement {
             }
         }, 50)
 
-        let cancel_btn = parent.querySelector("#rename-file-cancel-btn")
-        let rename_btn = parent.querySelector("#rename-file-ok-btn")
+        let cancel_btn = renameDialog.querySelector("#rename-file-cancel-btn")
+        let rename_btn = renameDialog.querySelector("#rename-file-ok-btn")
 
         // simply remove the dialog
         cancel_btn.onclick = (evt) => {
             evt.stopPropagation();
-
-            let dialog = parent.querySelector("#rename-file-dialog")
-            dialog.parentNode.removeChild(dialog)
+            renameDialog.parentNode.removeChild(renameDialog)
         }
 
         input.onkeydown = (evt) => {
@@ -1857,8 +2023,7 @@ export class FilesView extends HTMLElement {
         rename_btn.onclick = (evt) => {
             evt.stopPropagation();
 
-            let dialog = parent.querySelector("#rename-file-dialog")
-            dialog.parentNode.removeChild(dialog)
+            renameDialog.parentNode.removeChild(renameDialog)
             let path = f.path.substring(0, f.path.lastIndexOf("/"))
 
             // Now I will rename the file or directory...
@@ -2698,6 +2863,7 @@ export class FileIconView extends HTMLElement {
         this.shareResource = view.shareResource
         this.div = view.div
         this.selected = view.selected
+        this.rename = view.rename
 
         let fileIconDiv = this.shadowRoot.querySelector(`.file-icon-div`)
         this.fileIconDiv = fileIconDiv
@@ -2883,6 +3049,7 @@ export class FileIconView extends HTMLElement {
                         // get the title infos...
                         getTitleInfo(file, (titles) => {
                             if (titles.length > 0) {
+
                                 file.titles = titles // keep in the file itself...
                                 let title = file.titles[0]
                                 let name = title.getName()
@@ -2911,6 +3078,57 @@ export class FileIconView extends HTMLElement {
             }
 
             folderIcon.draggable = false
+
+            // So here I will try to get infos.json file...
+            File__.getFile(file.globule, file.path + "/infos.json", -1, -1, infos => {
+
+                // read the text information...
+                File__.readText(infos, text => {
+
+                    // remove the default icon...
+
+                    // Read the json file and get the title infos...
+                    let title_infos_ = JSON.parse(text)
+                    let globule = file.globule
+
+                    let rqst = new GetTitleByIdRequest
+                    rqst.setTitleid(title_infos_["ID"])
+                    rqst.setIndexpath(globule.config.DataPath + "/search/titles")
+
+                    generatePeerToken(globule, token => {
+
+                        globule.titleService.getTitleById(rqst, { token: token, application: Model.application }).then(rsp => {
+
+                            let folderIcon = fileIconDiv.querySelector("iron-icon")
+                            folderIcon.parentNode.removeChild(folderIcon)
+
+
+                            let title = rsp.getTitle()
+                            title.globule = globule
+                            file.titles = [title] // krr[]
+
+                            // so here I will initialyse the title infos.
+                            folderIcon = document.createRange().createContextualFragment(`<img src="${title.getPoster().getContenturl()}"></img>`)
+                            fileIconDiv.insertBefore(folderIcon, fileIconDiv.firstChild)
+
+                            fileIconDiv.onclick = (evt) => {
+                                evt.stopPropagation();
+                                _publishSetDirEvent(file._path, this._file_explorer_)
+                            }
+
+                            folderIcon.draggable = false
+
+                            fileNameSpan.innerHTML = title.getName()
+                        })
+
+                    })
+
+
+                })
+
+            }, err => {
+
+            })
 
         } else if (file.thumbnail != undefined) {
 
@@ -3757,7 +3975,7 @@ export class FilesIconView extends FilesView {
                     p.setBirthdate(v.BirthDate)
                     p.setBirthplace(v.BirthPlace)
                     persons.push(p)
-                    
+
                     // Needed to save person...
                     persons_[v.ID] = p
                 })
@@ -3828,7 +4046,7 @@ export class FilesIconView extends FilesView {
 
         // get the list of person to be save...
         let persons = []
-        for(var k in persons_){
+        for (var k in persons_) {
             persons.push(persons_[k])
         }
 
@@ -3842,15 +4060,15 @@ export class FilesIconView extends FilesView {
             generatePeerToken(this._file_explorer_.globule, token => {
                 this._file_explorer_.globule.titleService.createPerson(rqst, { application: Application.application, domain: this._file_explorer_.globule.domain, token: token })
                     .then(() => {
-                        if(index < persons.length){
+                        if (index < persons.length) {
                             createPerson(index)
-                        }else{
+                        } else {
                             createTitle()
                         }
-                    }).catch(()=>{
-                        if(index < persons.length){
+                    }).catch(() => {
+                        if (index < persons.length) {
                             createPerson(index)
-                        }else{
+                        } else {
                             createTitle()
                         }
                     })
@@ -3858,10 +4076,10 @@ export class FilesIconView extends FilesView {
         }
 
         // save person and titles after...
-        if(persons.length > 0){
+        if (persons.length > 0) {
             let index = 0;
             createPerson(index)
-        }else{
+        } else {
             createTitle()
         }
 

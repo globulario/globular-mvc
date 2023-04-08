@@ -487,6 +487,7 @@ export class InformationsManager extends HTMLElement {
                 user-select: none;
                 max-height: calc(100vh - 100px);
                 overflow-y: auto;
+                overflow-x: hidden;
             }
 
             #header {
@@ -2290,29 +2291,32 @@ export class PersonEditor extends HTMLElement {
                     // save the person witout the video id...
                     globule.titleService.createPerson(rqst, { application: Application.application, domain: Application.domain, token: token })
                         .then(rsp => {
-                            
+
                             // set values...
                             this.save()
 
+                            // get the elements with the actual uuid
+                            let uuid = this.uuid
                             let personBiographyInput = container.querySelector(`#${uuid}-person-biography-input`)
                             let personUrlInput = container.querySelector(`#${uuid}-person-url-input`)
                             let personIdInput = container.querySelector(`#${uuid}-person-id-input`)
                             let personNameInput = container.querySelector(`#${uuid}-person-name-input`)
-                            let imageSelector = container.querySelector("globular-image-selector")
                             let personAliasesInput = container.querySelector(`#${uuid}-person-aliases-input`)
                             let personBirthdateInput = container.querySelector(`#${uuid}-person-birthdate-input`)
                             let personBirthplaceInput = container.querySelector(`#${uuid}-person-birthplace-input`)
 
-                            let uuid = "_" + getUuidByString(person.getId())
-                            this.uuid = uuid
-
-                            personBiographyInput.id = `#${uuid}-person-biography-input`
-                            personUrlInput.id = `#${uuid}-person-url-input`
-                            personIdInput.id = `#${uuid}-person-id-input`
-                            personNameInput.id = `#${uuid}-person-name-input`
-                            personAliasesInput.id = `#${uuid}-person-aliases-input`
-                            personBirthdateInput.id = `#${uuid}-person-birthdate-input`
-                            personBirthplaceInput.id = `#${uuid}-person-birthplace-input`
+                            // update element id's
+                            uuid = "_" + getUuidByString(person.getId())
+                            if (uuid != this.uuid) {
+                                this.uuid = uuid
+                                personBiographyInput.id = `#${uuid}-person-biography-input`
+                                personUrlInput.id = `#${uuid}-person-url-input`
+                                personIdInput.id = `#${uuid}-person-id-input`
+                                personNameInput.id = `#${uuid}-person-name-input`
+                                personAliasesInput.id = `#${uuid}-person-aliases-input`
+                                personBirthdateInput.id = `#${uuid}-person-birthdate-input`
+                                personBirthplaceInput.id = `#${uuid}-person-birthplace-input`
+                            }
 
                             // Now I will remove the person from the video casting...
                             if (this.slot == "casting") {
@@ -2527,7 +2531,7 @@ export class PersonEditor extends HTMLElement {
     focus() {
         // onpen the panel...
         let container = this.shadowRoot.querySelector("#container")
-        let uuid =  this.uuid 
+        let uuid = this.uuid
 
         let collapse_btn = container.querySelector("#collapse-btn")
         collapse_btn.click()
@@ -3342,9 +3346,8 @@ export class TitleInfo extends HTMLElement {
                     height: auto;
                 }
             }
-
-
         </style>
+
         <div class="title-div" >
             <div style="display: flex; flex-direction: column;"> 
                 <div class="title-poster-div" style="${this.isShort ? "display: none;" : ""}">
@@ -3379,6 +3382,9 @@ export class TitleInfo extends HTMLElement {
                     </div>
                 </div>
             </div>
+        </div>
+        <div id="episodes-div" style="${this.isShort ? "display: none;" : ""}">
+            <slot name="episodes"></slot>
         </div>
         <div class="action-div" style="${this.isShort ? "display: none;" : ""}">
             <paper-button id="edit-indexation-btn">Edit</paper-button>
@@ -3503,7 +3509,7 @@ export class TitleInfo extends HTMLElement {
                 if (title.onLoadEpisodes != null) {
                     title.onLoadEpisodes(episodes)
                 }
-                this.displayEpisodes(episodes, filesDiv)
+                this.displayEpisodes(episodes, this)
                 filesDiv.querySelector("paper-progress").style.display = "none"
             })
         }
@@ -3576,8 +3582,12 @@ export class TitleInfo extends HTMLElement {
     }
 
     // Here I will display the list of each episodes from the list...
-    displayEpisodes(episodes, filesDiv) {
+    displayEpisodes(episodes, parent) {
         let seasons = {}
+
+        if(parent.querySelector(".episodes-div")){
+            return
+        }
 
         episodes.forEach(e => {
             if (e.getType() == "TVEpisode") {
@@ -3668,7 +3678,7 @@ export class TitleInfo extends HTMLElement {
             }
 
         </style>
-        <div class="episodes-div">
+        <div class="episodes-div" slot="episodes">
             <div class="header">
                 <paper-tabs selected="0" scrollable style="width: 100%;"></paper-tabs>
             </div>
@@ -3677,11 +3687,12 @@ export class TitleInfo extends HTMLElement {
             </div>
         </div>
         `
-        let range = document.createRange()
-        filesDiv.appendChild(range.createContextualFragment(html))
 
-        let tabs = filesDiv.querySelector("paper-tabs")
-        let content = filesDiv.querySelector("#episodes-content")
+        let range = document.createRange()
+        parent.appendChild(range.createContextualFragment(html))
+
+        let tabs = parent.querySelector("paper-tabs")
+        let content = parent.querySelector("#episodes-content")
         let index = 0
         for (var s in seasons) {
 
