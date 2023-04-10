@@ -1629,8 +1629,8 @@ export class FilesView extends HTMLElement {
 
                         globule.titleService.associateFileWithTitle(rqst, { application: Application.application, domain: globule.domain, token: token })
                             .then(rsp => {
-
-                                console.log("New title info was created! ", titleInfo)
+                                titleInfo.globule = globule
+                                callback(titleInfo)
 
                             }).catch(err => ApplicationView.displayMessage(err, 3000))
 
@@ -1699,6 +1699,7 @@ export class FilesView extends HTMLElement {
                             .then(rsp => {
 
                                 console.log("New Video info was created! ", videoInfo)
+                                videoInfo.globule = globule
                                 callback(videoInfo)
 
                             }).catch(err => ApplicationView.displayMessage(err, 3000))
@@ -2302,8 +2303,6 @@ export class FilesView extends HTMLElement {
                     files.forEach(f => {
                         Model.eventHub.publish(`drop_file_${this._file_explorer_.id}_event`, { file: f, dir: this.__dir__.path, id: id, domain: domain }, true)
                     })
-
-                    //Model.eventHub.publish("reload_dir_event", f.substring(0, f.lastIndexOf("/")), false);
                 }
             }
 
@@ -4038,6 +4037,7 @@ export class FilesIconView extends FilesView {
                         this._file_explorer_.globule.titleService.associateFileWithTitle(rqst_, { application: Application.application, domain: this._file_explorer_.globule.domain, token: token })
                             .then(rsp => {
                                 console.log("title was created!")
+
                             }).catch(err => ApplicationView.displayMessage(err, 3000))
 
                     }).catch(err => ApplicationView.displayMessage(err, 3000))
@@ -4734,10 +4734,16 @@ export class FileNavigator extends HTMLElement {
                 }
             }
         }
+        
         if (dirLnk) {
             dirLnk.onclick = (evt) => {
                 evt.stopPropagation();
                 _publishSetDirEvent(dir._path, this._file_explorer_)
+
+                if ( this._file_explorer_.informationManager) {
+                    if ( this._file_explorer_.informationManager.parentNode)
+                    this._file_explorer_.informationManager.parentNode.removeChild( this._file_explorer_.informationManager)
+                }
             }
 
             dirLnk.onmouseover = () => {
@@ -5889,11 +5895,6 @@ export class FileExplorer extends HTMLElement {
                     // keep the active path.
                     if (this.id == evt.file_explorer_id) {
                         // remove actual context and set back the default files view.
-                        if (this.informationManager) {
-                            if (this.informationManager.parentNode)
-                                this.informationManager.parentNode.removeChild(this.informationManager)
-                        }
-
                         this.fileReader.style.display = "none"
                         this.imageViewer.style.display = "none";
                         this.permissionManager.style.display = "none"
@@ -5957,23 +5958,43 @@ export class FileExplorer extends HTMLElement {
                     this.listeners[`display_media_infos_${this.id}_event`] = uuid;
                 }, (file) => {
 
+                
+            
+                    let infos = null
+
                     if (file.titles != undefined) {
-                        if (file.titles.length > 0)
+                        if (file.titles.length > 0){
                             this.informationManager.setTitlesInformation(file.titles)
+                            infos = file.titles[0]
+                        }
                     }
 
                     if (file.videos != undefined) {
-                        if (file.videos.length > 0)
+                        if (file.videos.length > 0){
                             this.informationManager.setVideosInformation(file.videos)
+                            infos = file.videos[0]
+                        }
                     }
 
                     if (file.audios != undefined) {
-                        if (file.audios.length > 0)
+                        if (file.audios.length > 0){
                             this.informationManager.setAudiosInformation(file.audios)
+                            infos = file.audios[0]
+                        }
                     }
 
                     // I will display the permission manager.
                     this.fileSelectionPanel.appendChild(this.informationManager)
+
+                    // listen if the diplayed info is deleted.
+                    if(infos){
+                        Model.eventHub.subscribe("_delete_infos_" + infos.getId() + "_evt", uuid=>{}, evt=>{
+                            if(this.informationManager.parentNode){
+                                this.informationManager.parentNode.removeChild(this.informationManager)
+                            }
+                        }, true)
+
+                    }
 
                 }, false)
         }
@@ -6002,10 +6023,8 @@ export class FileExplorer extends HTMLElement {
                     this.listeners[`reload_dir_${this.globule.domain}_event`] = uuid
                 }, (path) => {
 
-
                     if (path.endsWith(this.path)) {
                         this.displayWaitMessage("load " + path)
-
                         _readDir(path, (dir) => {
                             this.fileNavigator.reload(dir, () => {
                                 // reload dir to be sure if it's public that change will be applied.

@@ -1,7 +1,7 @@
 
 import { generatePeerToken, Model } from '../Model';
 import { Application } from "../Application";
-import { CreateVideoRequest, DeleteTitleRequest, DeleteVideoRequest, DissociateFileWithTitleRequest, GetTitleFilesRequest, Poster, Person, Publisher, SearchTitlesRequest, SearchPersonsRequest, DeletePersonRequest, GetPersonByIdRequest, CreatePersonRequest, CreateTitleRequest } from "globular-web-client/title/title_pb";
+import { CreateVideoRequest, DeleteTitleRequest, DeleteVideoRequest, DissociateFileWithTitleRequest, GetTitleFilesRequest, Poster, Person, Publisher, SearchTitlesRequest, SearchPersonsRequest, DeletePersonRequest, GetPersonByIdRequest, CreatePersonRequest, CreateTitleRequest, CreateAudioRequest } from "globular-web-client/title/title_pb";
 import { File } from "../File";
 import { VideoPreview, getFileSizeString } from "./File";
 import { ApplicationView } from "../ApplicationView";
@@ -634,6 +634,8 @@ export class InformationsManager extends HTMLElement {
         }
         audioInfo.id = "_" + getUuidByString(audio.getId())
         audioInfo.setAudio(audio)
+
+
         this.appendChild(audioInfo)
     }
 
@@ -726,6 +728,650 @@ export class InformationsManager extends HTMLElement {
 
 customElements.define('globular-informations-manager', InformationsManager)
 
+
+/**
+ * Modify Audio Informations
+ */
+export class AudioInfoEditor extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor(audio, audioInfosDisplay) {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+
+        let imageUrl = "" // in case the video dosent contain any poster info...
+        if (audio.getPoster())
+            imageUrl = audio.getPoster().getContenturl()
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+           
+            #container {
+                display: flex;
+                margin-top: 15px;
+                margin-bottom: 15px;
+            }
+
+            .action-div{
+                display: flex;
+                justify-content: end;
+                border-top: 2px solid;AudioInfoEditor
+                border-color: var(--palette-divider);
+            }
+
+            .button-div{
+                display: table-cell;
+                vertical-align: top;
+            }
+
+            .label{
+                font-size: 1rem;
+                padding-right: 10px;
+                min-width: 150px;
+            }
+
+            div, paper-input, iron-autogrow-textarea {
+                font-size: 1rem;
+            }
+
+            paper-button {AudioInfoEditor
+                font-size: 1rem;
+            }
+
+            a {
+                color: var(--palette-divider);
+            }
+
+            select {
+                background: var(--palette-background-default); 
+                color: var(--palette-text-accent);
+                border:0px;
+                outline:0px;
+            }
+
+        </style>
+        <div id="container">
+            <div style="display: flex; flex-direction: column; justify-content: flex-start;  margin-left: 15px;">
+                <div style="display: flex; flex-direction: column; margin: 5px;">
+                    <globular-image-selector label="cover" url="${imageUrl}"></globular-image-selector>
+                </div>
+                
+            </div>
+
+            <div style="display: flex; flex-direction: column; width: 100%;">
+
+                <div style="display: table; flex-grow: 1; margin-left: 20px; border-collapse: collapse; margin-top: 20px; margin-bottom: 10px;">
+                    <div style="display: table-row; border-bottom: 1px solid var(--palette-divider)" >
+                        <div class="label" style="display: table-cell; font-weight: 450; border-bottom: 1px solid var(--palette-divider)">Audio Informations</div>
+                    </div>
+
+                    <div style="display: table-row;">
+                        <div class="label" style="display: table-cell; font-weight: 450; ">Id:</div>
+                        <div style="display: table-cell; width: 100%;"  id="audio-id-div">${audio.getId()}</div>
+                        <paper-input style="display: none; width: 100%;" value="${audio.getId()}" id="audio-id-input" no-label-float></paper-input>
+                        <div class="button-div">
+                            <paper-icon-button id="edit-audio-id-btn" icon="image:edit"></paper-icon-button>
+                        </div>
+                    </div>
+
+
+                    <div style="display: table-row;">
+                        <div class="label" style="display: table-cell; font-weight: 450; ">Url:</div>
+                        <div style="display: table-cell; width: 100%;"  id="audio-url-div">${audio.getUrl()}</div>
+                        <paper-input style="display: none; width: 100%;" value="${audio.getUrl()}" id="audio-url-input" no-label-float></paper-input>
+                        <div class="button-div">
+                            <paper-icon-button id="edit-audio-url-btn" icon="image:edit"></paper-icon-button>
+                        </div>
+                    </div>
+
+                    <div style="display: table-row;">
+                        <div class="label" style="display: table-cell; font-weight: 450; ">Title:</div>
+                        <div style="display: table-cell; width: 100%;"  id="audio-title-div">${audio.getTitle()}</div>
+                        <paper-input style="display: none; width: 100%;" value="${audio.getTitle()}" id="audio-title-input" no-label-float></paper-input>
+                        <div class="button-div">
+                            <paper-icon-button id="edit-audio-title-btn" icon="image:edit"></paper-icon-button>
+                        </div>
+                    </div>
+
+                    <div style="display: table-row;">
+                        <div class="label" style="display: table-cell; font-weight: 450; ">Artist:</div>
+                        <div style="display: table-cell; width: 100%;"  id="audio-artist-div">${audio.getArtist()}</div>
+                        <paper-input style="display: none; width: 100%;" value="${audio.getArtist()}" id="audio-artist-input" no-label-float></paper-input>
+                        <div class="button-div">
+                            <paper-icon-button id="edit-audio-artist-btn" icon="image:edit"></paper-icon-button>
+                        </div>
+                    </div>
+
+                    <div style="display: table-row;">
+                        <div class="label" style="display: table-cell; font-weight: 450; ">Album Artist:</div>
+                        <div style="display: table-cell; width: 100%;"  id="audio-album-artist-div">${audio.getAlbumartist()}</div>
+                        <paper-input style="display: none; width: 100%;" value="${audio.getAlbumartist()}" id="audio-album-artist-input" no-label-float></paper-input>
+                        <div class="button-div">
+                            <paper-icon-button id="edit-audio-album-artist-btn" icon="image:edit"></paper-icon-button>
+                        </div>
+                    </div>
+
+                    <div style="display: table-row;">
+                        <div class="label" style="display: table-cell; font-weight: 450; ">Composer:</div>
+                        <div style="display: table-cell; width: 100%;"  id="audio-composer-div">${audio.getComposer()}</div>
+                        <paper-input style="display: none; width: 100%;" value="${audio.getComposer()}" id="audio-composer-input" no-label-float></paper-input>
+                        <div class="button-div">
+                            <paper-icon-button id="edit-audio-composer-btn" icon="image:edit"></paper-icon-button>
+                        </div>
+                    </div>
+
+                    <div style="display: table-row;">
+                        <div class="label" style="display: table-cell; font-weight: 450; ">Album:</div>
+                        <div style="display: table-cell; width: 100%;"  id="audio-album-div">${audio.getAlbum()}</div>
+                        <paper-input style="display: none; width: 100%;" value="${audio.getAlbum()}" id="audio-album-input" no-label-float></paper-input>
+                        <div class="button-div">
+                            <paper-icon-button id="edit-audio-album-btn" icon="image:edit"></paper-icon-button>
+                        </div>
+                    </div>
+
+                    <div style="display: table-row;">
+                        <div class="label" style="display: table-cell; font-weight: 450; vertical-align: top;">Comment:</div>
+                        <div id="audio-comment-div" style="display: table-cell;width: 100%; padding-bottom: 10px;" >${audio.getComment()}</div>
+                        <iron-autogrow-textarea id="audio-comment-input"  style="display: none; border: none; width: 100%;" value="${audio.getComment()}"></iron-autogrow-textarea>
+                        <div class="button-div">
+                            <paper-icon-button id="edit-audio-comment-btn" style="vertical-align: top;" icon="image:edit"></paper-icon-button>
+                        </div>
+                    </div>
+
+                    <div style="display: table-row;">
+                        <div class="label" style="display: table-cell; font-weight: 450; vertical-align: top;">Lyrics:</div>
+                        <div id="audio-lyrics-div" style="display: table-cell;width: 100%; padding-bottom: 10px;" >${audio.getLyrics()}</div>
+                        <iron-autogrow-textarea id="audio-lyrics-input"  style="display: none; border: none; width: 100%;" value="${audio.getLyrics()}"></iron-autogrow-textarea>
+                        <div class="button-div">
+                            <paper-icon-button id="edit-audio-lyrics-btn" style="vertical-align: top;" icon="image:edit"></paper-icon-button>
+                        </div>
+                    </div>
+
+                    <div style="display: table-row;" id="audio-year-row">
+                        <div class="label" style="display: table-cell; font-weight: 450; ">Year:</div>
+                        <div style="display: table-cell; width: 100%;"  id="audio-year-div">${audio.getYear()}</div>
+                        <paper-input style="display: none; width: 100%;" type="number" value="${audio.getYear()}" id="audio-year-input" no-label-float></paper-input>
+                        <div class="button-div">
+                            <paper-icon-button id="edit-audio-year-btn" icon="image:edit"></paper-icon-button>
+                        </div>
+                    </div>
+
+                    <div style="display: table-row;" id="audio-disc-number-row">
+                        <div class="label" style="display: table-cell; font-weight: 450;">Disc Number:</div>
+                        <div style="display: table-cell; width: 100%;"  id="audio-disc-number-div">${audio.getDiscnumber()}</div>
+                        <paper-input style="display: none; width: 100%;" type="number" value="${audio.getDiscnumber()}" id="audio-disc-number-input" no-label-float></paper-input>
+                        <div class="button-div">
+                            <paper-icon-button id="edit-audio-disc-number-btn" icon="image:edit"></paper-icon-button>
+                        </div>
+                    </div>
+
+                    <div style="display: table-row;" id="audio-disc-total-row">
+                        <div class="label" style="display: table-cell; font-weight: 450;">Disc Total:</div>
+                        <div style="display: table-cell; width: 100%;"  id="audio-disc-total-div">${audio.getDisctotal()}</div>
+                        <paper-input style="display: none; width: 100%;" type="number" value="${audio.getDisctotal()}" id="audio-disc-total-input" no-label-float></paper-input>
+                        <div class="button-div">
+                            <paper-icon-button id="edit-audio-disc-total-btn" icon="image:edit"></paper-icon-button>
+                        </div>
+                    </div>
+
+                    <div style="display: table-row;" id="audio-track-number-row">
+                        <div class="label" style="display: table-cell; font-weight: 450;">Track Number:</div>
+                        <div style="display: table-cell; width: 100%;"  id="audio-track-number-div">${audio.getTracknumber()}</div>
+                        <paper-input style="display: none; width: 100%;" type="number" value="${audio.getTracknumber()}" id="audio-track-number-input" no-label-float></paper-input>
+                        <div class="button-div">
+                            <paper-icon-button id="edit-audio-track-number-btn" icon="image:edit"></paper-icon-button>
+                        </div>
+                    </div>
+
+                    <div style="display: table-row;" id="audio-track-total-row">
+                        <div class="label" style="display: table-cell; font-weight: 450;">Track Total:</div>
+                        <div style="display: table-cell; width: 100%;"  id="audio-track-total-div">${audio.getTracktotal()}</div>
+                        <paper-input style="display: none; width: 100%;" type="number" value="${audio.getTracktotal()}" id="audio-track-total-input" no-label-float></paper-input>
+                        <div class="button-div">
+                            <paper-icon-button id="edit-audio-track-total-btn" icon="image:edit"></paper-icon-button>
+                        </div>
+                    </div>
+
+                    <div style="display: table-row;">
+                        <div class="label" style="display: table-cell; font-weight: 450;">Genres:</div>
+                        <div id="audio-genres-div" style="display: table-cell; width: 100%;"></div>
+                    </div>
+                    
+                </div>
+
+            </div>
+        </div>
+        <iron-collapse class="permissions" id="collapse-panel" style="display: flex; flex-direction: column; margin: 5px;">
+        </iron-collapse>
+        <div class="action-div" style="${this.isShort ? "display: none;" : ""}">
+            <paper-button id="edit-permissions-btn" audio="set who can edit this audio informations">Permissions</paper-button>
+            <span style="flex-grow: 1;"></span>
+            <paper-button id="save-indexation-btn">Save</paper-button>
+            <paper-button id="cancel-indexation-btn">Cancel</paper-button>
+        </div>
+        `
+
+        this.shadowRoot.querySelector("#cancel-indexation-btn").onclick = () => {
+            let parent = this.parentNode
+            parent.removeChild(this)
+            parent.appendChild(audioInfosDisplay)
+        }
+
+        // Delete the postser/cover image.
+        this.shadowRoot.querySelector("globular-image-selector").ondelete = () => {
+            audio.getPoster().setContenturl("")
+        }
+
+        // Select new image.
+        this.shadowRoot.querySelector("globular-image-selector").onselectimage = () => {
+            if (audio.getPoster() == null) {
+                let poster = new Poster()
+                audio.setPoster(poster)
+            }
+
+            audio.getPoster().setContenturl(dataUrl)
+        }
+
+
+        let audioGenresDiv = this.shadowRoot.querySelector("#audio-genres-div")
+        let audioGenresList = new EditableStringList(audio.getGenresList())
+        audioGenresDiv.appendChild(audioGenresList)
+
+        let editPemissionsBtn = this.shadowRoot.querySelector("#edit-permissions-btn")
+        let collapse_panel = this.shadowRoot.querySelector("#collapse-panel")
+
+        this.permissionManager = new PermissionsManager()
+        this.permissionManager.permissions = null
+        this.permissionManager.globule = audio.globule
+        this.permissionManager.setPath(audio.getId())
+        this.permissionManager.setResourceType = "audio_info"
+
+        // toggle the collapse panel when the permission manager panel is close.
+        this.permissionManager.onclose = () => {
+            collapse_panel.toggle();
+        }
+
+        // I will display the permission manager.
+        editPemissionsBtn.onclick = () => {
+            collapse_panel.appendChild(this.permissionManager)
+            collapse_panel.toggle();
+        }
+
+        // Here I will set the interaction...
+        this.shadowRoot.querySelector("#cancel-indexation-btn").onclick = () => {
+            let parent = this.parentNode
+            parent.removeChild(this)
+            parent.appendChild(audioInfosDisplay)
+        }
+
+        // Delete the postser/cover image.
+        this.shadowRoot.querySelector("globular-image-selector").ondelete = () => {
+            audio.getPoster().setContenturl("")
+        }
+
+        // Select new image.
+        this.shadowRoot.querySelector("globular-image-selector").onselectimage = () => {
+            if (audio.getPoster() == null) {
+                let poster = new Poster()
+                audio.setPoster(poster)
+            }
+            audio.getPoster().setContenturl(dataUrl)
+        }
+
+        // The audio title
+        let editAudioTitleBtn = this.shadowRoot.querySelector("#edit-audio-title-btn")
+        let audioTitleInput = this.shadowRoot.querySelector("#audio-title-input")
+        let audioTitleDiv = this.shadowRoot.querySelector("#audio-title-div")
+
+        editAudioTitleBtn.onclick = () => {
+            audioTitleInput.style.display = "table-cell"
+            audioTitleDiv.style.display = "none"
+            setTimeout(() => {
+                audioTitleInput.focus()
+                audioTitleInput.inputElement.inputElement.select()
+            }, 100)
+        }
+
+        audioTitleInput.onblur = () => {
+            audioTitleInput.style.display = "none"
+            audioTitleDiv.style.display = "table-cell"
+            audioTitleDiv.innerHTML = audioTitleInput.value
+        }
+
+        // The audio id
+        let audioIdBtn = this.shadowRoot.querySelector("#edit-audio-id-btn")
+        let audioIdInput = this.shadowRoot.querySelector("#audio-id-input")
+        let audioIdDiv = this.shadowRoot.querySelector("#audio-id-div")
+
+        audioIdBtn.onclick = () => {
+            audioIdInput.style.display = "table-cell"
+            audioIdDiv.style.display = "none"
+            setTimeout(() => {
+                audioIdInput.focus()
+                audioIdInput.inputElement.inputElement.select()
+            }, 100)
+        }
+
+        // set back to non edit mode.
+        audioIdInput.onblur = () => {
+            audioIdInput.style.display = "none"
+            audioIdDiv.style.display = "table-cell"
+            audioIdDiv.innerHTML = audioIdInput.value
+        }
+
+        // The audio url
+        let audioUrlBtn = this.shadowRoot.querySelector("#edit-audio-url-btn")
+        let audioUrlInput = this.shadowRoot.querySelector("#audio-url-input")
+        let audioUrlDiv = this.shadowRoot.querySelector("#audio-url-div")
+
+        audioUrlBtn.onclick = () => {
+            audioUrlInput.style.display = "table-cell"
+            audioUrlDiv.style.display = "none"
+            setTimeout(() => {
+                audioUrlInput.focus()
+                audioUrlInput.inputElement.inputElement.select()
+            }, 100)
+        }
+
+        // set back to non edit mode.
+        audioUrlInput.onblur = () => {
+            audioUrlInput.style.display = "none"
+            audioUrlDiv.style.display = "table-cell"
+            audioUrlDiv.innerHTML = audioUrlInput.value
+        }
+
+        // The artist
+        let audioArtistBtn = this.shadowRoot.querySelector("#edit-audio-artist-btn")
+        let audioArtistInput = this.shadowRoot.querySelector("#audio-artist-input")
+        let audioArtistDiv = this.shadowRoot.querySelector("#audio-artist-div")
+
+        audioArtistBtn.onclick = () => {
+            audioArtistInput.style.display = "table-cell"
+            audioArtistDiv.style.display = "none"
+            setTimeout(() => {
+                audioArtistInput.focus()
+                audioArtistInput.inputElement.inputElement.select()
+            }, 100)
+        }
+
+        // set back to non edit mode.
+        audioArtistInput.onblur = () => {
+            audioArtistInput.style.display = "none"
+            audioArtistDiv.style.display = "table-cell"
+            audioArtistDiv.innerHTML = audioArtistInput.value
+        }
+
+        // The composer
+        let audioComposerBtn = this.shadowRoot.querySelector("#edit-audio-composer-btn")
+        let audioComposerInput = this.shadowRoot.querySelector("#audio-composer-input")
+        let audioComposerDiv = this.shadowRoot.querySelector("#audio-composer-div")
+
+        audioComposerBtn.onclick = () => {
+            audioComposerInput.style.display = "table-cell"
+            audioComposerDiv.style.display = "none"
+            setTimeout(() => {
+                audioComposerInput.focus()
+                audioComposerInput.inputElement.inputElement.select()
+            }, 100)
+        }
+
+        // set back to non edit mode.
+        audioComposerInput.onblur = () => {
+            audioComposerInput.style.display = "none"
+            audioComposerDiv.style.display = "table-cell"
+            audioComposerDiv.innerHTML = audioComposerInput.value
+        }
+
+        // The album
+        let audioAlbumBtn = this.shadowRoot.querySelector("#edit-audio-album-btn")
+        let audioAlbumInput = this.shadowRoot.querySelector("#audio-album-input")
+        let audioAlbumDiv = this.shadowRoot.querySelector("#audio-album-div")
+
+        audioAlbumBtn.onclick = () => {
+            audioAlbumInput.style.display = "table-cell"
+            audioAlbumDiv.style.display = "none"
+            setTimeout(() => {
+                audioAlbumInput.focus()
+                audioAlbumInput.inputElement.inputElement.select()
+            }, 100)
+        }
+
+        // set back to non edit mode.
+        audioAlbumInput.onblur = () => {
+            audioAlbumInput.style.display = "none"
+            audioAlbumDiv.style.display = "table-cell"
+            audioAlbumDiv.innerHTML = audioAlbumInput.value
+        }
+
+        // The album artist
+        let audioAlbumArtistBtn = this.shadowRoot.querySelector("#edit-audio-album-artist-btn")
+        let audioAlbumArtistInput = this.shadowRoot.querySelector("#audio-album-artist-input")
+        let audioAlbumArtistDiv = this.shadowRoot.querySelector("#audio-album-artist-div")
+
+        audioAlbumArtistBtn.onclick = () => {
+            audioAlbumArtistInput.style.display = "table-cell"
+            audioAlbumArtistDiv.style.display = "none"
+            setTimeout(() => {
+                audioAlbumArtistInput.focus()
+                audioAlbumArtistInput.inputElement.inputElement.select()
+            }, 100)
+        }
+
+        audioAlbumArtistInput.onblur = () => {
+            audioAlbumArtistInput.style.display = "none"
+            audioAlbumArtistDiv.style.display = "table-cell"
+            audioAlbumArtistDiv.innerHTML = audioAlbumArtistInput.value
+        }
+
+        // The audio comment
+        let editAudioCommentBtn = this.shadowRoot.querySelector("#edit-audio-comment-btn")
+        let audioCommentInput = this.shadowRoot.querySelector("#audio-comment-input")
+        let audioCommentDiv = this.shadowRoot.querySelector("#audio-comment-div")
+
+        editAudioCommentBtn.onclick = () => {
+            audioCommentInput.style.display = "table-cell"
+            audioCommentDiv.style.display = "none"
+            setTimeout(() => {
+                audioCommentInput.focus()
+                audioCommentInput.textarea.select()
+            }, 100)
+        }
+
+        // set back to non edit mode.
+        audioCommentInput.onblur = () => {
+            audioCommentInput.style.display = "none"
+            audioCommentDiv.style.display = "table-cell"
+            audioCommentDiv.innerHTML = audioCommentInput.value
+        }
+
+        // The audio lyrics
+        let editAudioLyricsBtn = this.shadowRoot.querySelector("#edit-audio-lyrics-btn")
+        let audioLyricsInput = this.shadowRoot.querySelector("#audio-lyrics-input")
+        let audioLyricsDiv = this.shadowRoot.querySelector("#audio-lyrics-div")
+
+        editAudioLyricsBtn.onclick = () => {
+            audioLyricsInput.style.display = "table-cell"
+            audioLyricsDiv.style.display = "none"
+            setTimeout(() => {
+                audioLyricsInput.focus()
+                audioLyricsInput.textarea.select()
+            }, 100)
+        }
+
+        // set back to non edit mode.
+        audioLyricsInput.onblur = () => {
+            audioLyricsInput.style.display = "none"
+            audioLyricsDiv.style.display = "table-cell"
+            audioLyricsDiv.innerHTML = audioLyricsInput.value
+        }
+
+
+        // The disc number
+        let audioDiscNumberBtn = this.shadowRoot.querySelector("#edit-audio-disc-number-btn")
+        let audioDiscNumberInput = this.shadowRoot.querySelector("#audio-disc-number-input")
+        let audioDiscNumberDiv = this.shadowRoot.querySelector("#audio-disc-number-div")
+
+        audioDiscNumberBtn.onclick = () => {
+            audioDiscNumberInput.style.display = "table-cell"
+            audioDiscNumberDiv.style.display = "none"
+            setTimeout(() => {
+                audioDiscNumberInput.focus()
+                audioDiscNumberInput.inputElement.inputElement.select()
+            }, 100)
+        }
+
+        audioDiscNumberInput.onblur = () => {
+            audioDiscNumberInput.style.display = "none"
+            audioDiscNumberDiv.style.display = "table-cell"
+            audioDiscNumberDiv.innerHTML = audioDiscNumberInput.value
+        }
+
+        // The disc total
+        let audioDiscTotalBtn = this.shadowRoot.querySelector("#edit-audio-disc-total-btn")
+        let audioDiscTotalInput = this.shadowRoot.querySelector("#audio-disc-total-input")
+        let audioDiscTotalDiv = this.shadowRoot.querySelector("#audio-disc-total-div")
+
+        audioDiscTotalBtn.onclick = () => {
+            audioDiscTotalInput.style.display = "table-cell"
+            audioDiscTotalDiv.style.display = "none"
+            setTimeout(() => {
+                audioDiscTotalInput.focus()
+                audioDiscTotalInput.inputElement.inputElement.select()
+            }, 100)
+        }
+
+        // set back to non edit mode.
+        audioDiscTotalInput.onblur = () => {
+            audioDiscTotalInput.style.display = "none"
+            audioDiscTotalDiv.style.display = "table-cell"
+            audioDiscTotalDiv.innerHTML = audioDiscTotalInput.value
+        }
+
+        // The track number
+        let audioTrackNumberBtn = this.shadowRoot.querySelector("#edit-audio-track-number-btn")
+        let audioTrackNumberInput = this.shadowRoot.querySelector("#audio-track-number-input")
+        let audioTrackNumberDiv = this.shadowRoot.querySelector("#audio-track-number-div")
+
+        audioTrackNumberBtn.onclick = () => {
+            audioTrackNumberInput.style.display = "table-cell"
+            audioTrackNumberDiv.style.display = "none"
+            setTimeout(() => {
+                audioTrackNumberInput.focus()
+                audioTrackNumberInput.inputElement.inputElement.select()
+            }, 100)
+        }
+
+
+        audioTrackNumberInput.onblur = () => {
+            audioTrackNumberInput.style.display = "none"
+            audioTrackNumberDiv.style.display = "table-cell"
+            audioTrackNumberDiv.innerHTML = audioTrackNumberInput.value
+        }
+
+        // The track total
+        let audioTrackTotalBtn = this.shadowRoot.querySelector("#edit-audio-track-total-btn")
+        let audioTrackTotalInput = this.shadowRoot.querySelector("#audio-track-total-input")
+        let audioTrackTotalDiv = this.shadowRoot.querySelector("#audio-track-total-div")
+
+        audioTrackTotalBtn.onclick = () => {
+            audioTrackTotalInput.style.display = "table-cell"
+            audioTrackTotalDiv.style.display = "none"
+            setTimeout(() => {
+                audioTrackTotalInput.focus()
+                audioTrackTotalInput.inputElement.inputElement.select()
+            }, 100)
+        }
+
+        // set back to non edit mode.
+        audioTrackTotalInput.onblur = () => {
+            audioTrackTotalInput.style.display = "none"
+            audioTrackTotalDiv.style.display = "table-cell"
+            audioTrackTotalDiv.innerHTML = audioTrackTotalInput.value
+        }
+
+        // The audio year
+        let audioYearBtn = this.shadowRoot.querySelector("#edit-audio-year-btn")
+        let audioYearInput = this.shadowRoot.querySelector("#audio-year-input")
+        let audioYearDiv = this.shadowRoot.querySelector("#audio-year-div")
+
+        audioYearBtn.onclick = () => {
+            audioYearInput.style.display = "table-cell"
+            audioYearDiv.style.display = "none"
+            setTimeout(() => {
+                audioYearInput.focus()
+                audioYearInput.inputElement.inputElement.select()
+            }, 100)
+        }
+
+        // set back to non edit mode.
+        audioYearInput.onblur = () => {
+            audioYearInput.style.display = "none"
+            audioYearDiv.style.display = "table-cell"
+            audioYearDiv.innerHTML = audioYearInput.value
+        }
+
+        // set back the audio.
+        this.shadowRoot.querySelector("#save-indexation-btn").onclick = () => {
+
+            // So here I will set back all values...
+            audio.setId(audioIdInput.value)
+            audio.setUrl(audioUrlInput.value)
+            audio.setArtist(audioArtistInput.value)
+            audio.setAlbumartist(audioAlbumArtistInput.value)
+            audio.setAlbum(audioAlbumInput.value)
+            audio.setComment(audioCommentInput.value)
+            audio.setComposer(audioComposerInput.value)
+            audio.setLyrics(audioLyricsInput.value)
+            audio.setGenresList(audioGenresList.getItems())
+            audio.setYear(audioYearInput.value)
+            audio.setDiscnumber(audioDiscNumberInput.value)
+            audio.setDisctotal(audioDiscTotalInput.value)
+            audio.setTracknumber(audioTrackNumberInput.value)
+            audio.setTracktotal(audioTrackTotalInput.value)
+
+            let globule = audio.globule
+            generatePeerToken(globule, token=>{
+                let rqst = new CreateAudioRequest
+                rqst.setAudio(audio)
+                rqst.setIndexpath(globule.config.DataPath + "/search/audios")
+                globule.titleService.createAudio(rqst, {token:token, application: Model.application, domain: globule.domain})
+                    .then(rsp=>{
+                        console.log("---------> save audio ", audio)
+                        ApplicationView.displayMessage("audio information for " + audio.getTitle()+" was saved", 3000)
+                    }).catch(err=>ApplicationView.displayMessage(err, 3000))
+            })
+
+            audioInfosDisplay.setAudio(audio)
+        }
+
+
+
+    }
+
+    // The connection callback.
+    connectedCallback() {
+
+
+    }
+}
+
+customElements.define('globular-audio-info-editor', AudioInfoEditor)
+
+
+function toHoursAndMinutes(totalSeconds) {
+    const totalMinutes = Math.floor(totalSeconds / 60);
+
+    const seconds = totalSeconds % 60;
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    return { h: hours, m: minutes, s: seconds };
+}
+
+
 /**
  * Display basic file informations.
  */
@@ -744,6 +1390,7 @@ export class AudioInfo extends HTMLElement {
 
             #container {
                 display: flex;
+                flex-direction: column;
                 background-color: var(--palette-background-paper);
                 color: var(--palette-text-primary);
             }
@@ -786,6 +1433,14 @@ export class AudioInfo extends HTMLElement {
                     <div style="display: table-cell; font-weight: 450;">Track:</div>
                     <div id="track-div" style="display: table-cell;"></div>
                 </div>
+                <div style="display: table-row;">
+                    <div style="display: table-cell; font-weight: 450;">Duration:</div>
+                    <div id="duration-div" style="display: table-cell;"></div>
+                </div>
+            </div>
+            <div class="action-div" style="${this.isShort ? "display: none;" : ""}">
+                <paper-button id="edit-indexation-btn">Edit</paper-button>
+                <paper-button id="delete-indexation-btn">Delete</paper-button>
             </div>
         </div>
         `
@@ -800,8 +1455,69 @@ export class AudioInfo extends HTMLElement {
         this.shadowRoot.querySelector("#genre-div").innerHTML = audio.getGenresList().join(" / ")
         this.shadowRoot.querySelector("#year-div").innerHTML = audio.getYear() + ""
         this.shadowRoot.querySelector("#track-div").innerHTML = audio.getTracknumber() + ""
-    }
+        let duration = toHoursAndMinutes(audio.getDuration())
+        this.shadowRoot.querySelector("#duration-div").innerHTML = duration.m + ":" + duration.s + ""
 
+        let editor = new AudioInfoEditor(audio, this)
+
+        let editIndexationBtn = this.shadowRoot.querySelector("#edit-indexation-btn")
+        editIndexationBtn.onclick = () => {
+            // So here I will display the editor...
+            let parent = this.parentNode
+            parent.removeChild(this)
+            parent.appendChild(editor)
+        }
+
+        let deleteIndexationBtn = this.shadowRoot.querySelector("#delete-indexation-btn")
+        // Delete the indexation from the database.
+        deleteIndexationBtn.onclick = () => {
+            let toast = ApplicationView.displayMessage(`
+            <style>
+               
+            </style>
+            <div id="select-media-dialog">
+                <div>Your about to delete indexation</div>
+                <p style="font-style: italic;  max-width: 300px;" id="title-type"></p>
+                <div style="display: flex; flex-direction: column; justify-content: center;">
+                    <img style="width: 185.31px; align-self: center; padding-top: 10px; padding-bottom: 15px;" id="title-poster"> </img>
+                </div>
+                <div>Is that what you want to do? </div>
+                <div style="display: flex; justify-content: flex-end;">
+                    <paper-button id="imdb-lnk-ok-button">Ok</paper-button>
+                    <paper-button id="imdb-lnk-cancel-button">Cancel</paper-button>
+                </div>
+            </div>
+            `, 60 * 1000)
+
+            let cancelBtn = toast.el.querySelector("#imdb-lnk-cancel-button")
+            cancelBtn.onclick = () => {
+                toast.dismiss();
+            }
+
+            toast.el.querySelector("#title-type").innerHTML = audio.getTitle()
+            toast.el.querySelector("#title-poster").src = audio.getPoster().getContenturl()
+
+            let okBtn = toast.el.querySelector("#imdb-lnk-ok-button")
+            okBtn.onclick = () => {
+                let rqst = new DeleteVideoRequest()
+                rqst.setAudioid(audio.getId())
+                rqst.setIndexpath(Model.globular.config.DataPath + "/search/audio")
+                Model.globular.titleService.deleteAudio(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
+                    .then(() => {
+                        ApplicationView.displayMessage(`${audio.getId()}:${audio.getTitle()} was deleted`, 3000)
+                        Model.eventHub.publish("_delete_infos_" + audio.getId() + "_evt", {}, true)
+                        this.parentNode.removeChild(this)
+
+                        if (this.ondelete) {
+                            this.ondelete()
+                        }
+                    })
+                    .catch(err => ApplicationView.displayMessage(err, 3000))
+
+                toast.dismiss();
+            }
+        }
+    }
 }
 
 customElements.define('globular-audio-info', AudioInfo)
@@ -1049,7 +1765,9 @@ export class VideoInfo extends HTMLElement {
                 Model.globular.titleService.deleteVideo(rqst, { application: Application.application, domain: Application.domain, token: localStorage.getItem("user_token") })
                     .then(() => {
                         ApplicationView.displayMessage(`${video.getId()}:${video.getDescription()} was deleted`, 3000)
+                        Model.eventHub.publish("_delete_infos_" + video.getId() + "_evt", {}, true)
                         this.parentNode.removeChild(this)
+
                         if (this.ondelete) {
                             this.ondelete()
                         }
@@ -1112,7 +1830,7 @@ export class VideoInfoEditor extends HTMLElement {
             .label{
                 font-size: 1rem;
                 padding-right: 10px;
-                width: 175px;
+                min-width: 150px;
             }
 
             div, paper-input, iron-autogrow-textarea {
@@ -1999,7 +2717,7 @@ export class PersonEditor extends HTMLElement {
             .label{
                 font-size: 1rem;
                 padding-right: 10px;
-                width: 175px;
+                min-width: 150px;
             }
 
             .button-div{
@@ -2670,7 +3388,7 @@ export class TitleInfoEditor extends HTMLElement {
             .label{
                 font-size: 1rem;
                 padding-right: 10px;
-                width: 175px;
+                min-width: 150px;
             }
 
             div, paper-input, iron-autogrow-textarea {
@@ -2685,12 +3403,20 @@ export class TitleInfoEditor extends HTMLElement {
                 color: var(--palette-divider);
             }
 
+            select {
+                background: var(--palette-background-default); 
+                color: var(--palette-text-accent);
+                border:0px;
+                outline:0px;
+            }
+
         </style>
         <div id="container">
             <div style="display: flex; flex-direction: column; justify-content: flex-start;  margin-left: 15px;">
                 <div style="display: flex; flex-direction: column; margin: 5px;">
                     <globular-image-selector label="cover" url="${imageUrl}"></globular-image-selector>
                 </div>
+                
             </div>
 
             <div style="display: flex; flex-direction: column; width: 100%;">
@@ -2699,6 +3425,7 @@ export class TitleInfoEditor extends HTMLElement {
                     <div style="display: table-row; border-bottom: 1px solid var(--palette-divider)" >
                         <div class="label" style="display: table-cell; font-weight: 450; border-bottom: 1px solid var(--palette-divider)">Title</div>
                     </div>
+
                     <div style="display: table-row;">
                         <div class="label" style="display: table-cell; font-weight: 450; ">Id:</div>
                         <div style="display: table-cell; width: 100%;"  id="title-id-div">${title.getId()}</div>
@@ -2723,6 +3450,55 @@ export class TitleInfoEditor extends HTMLElement {
                         <iron-autogrow-textarea id="title-description-input"  style="display: none; border: none; width: 100%;" value="${title.getDescription()}"></iron-autogrow-textarea>
                         <div class="button-div">
                             <paper-icon-button id="edit-title-description-btn" style="vertical-align: top;" icon="image:edit"></paper-icon-button>
+                        </div>
+                    </div>
+
+                    <div style="display: table-row;" id="title-year-row">
+                        <div class="label" style="display: table-cell; font-weight: 450; ">Year:</div>
+                        <div style="display: table-cell; width: 100%;"  id="title-year-div">${title.getYear()}</div>
+                        <paper-input style="display: none; width: 100%;" type="number" value="${title.getYear()}" id="title-year-input" no-label-float></paper-input>
+                        <div class="button-div">
+                            <paper-icon-button id="edit-title-year-btn" icon="image:edit"></paper-icon-button>
+                        </div>
+                    </div>
+
+                    <div style="display: table-row;">
+                        <div class="label" style="display: table-cell; font-weight: 450; ">Type:</div>
+                        <div style="display: table-cell; width: 100%;"  id="title-type-div">${title.getType()}</div>
+                        <select style="display: none; width: 100%;" id="title-type-select" no-label-float>
+                            <option id="movie-type-option">Movie</option>
+                            <option id="serie-type-option">TVSeries</option>
+                            <option id="episode-type-option">TVEpisode</option>
+                        </select>
+                        <div class="button-div">
+                            <paper-icon-button id="edit-title-type-btn" icon="image:edit"></paper-icon-button>
+                        </div>
+                    </div>
+
+                    <div style="display: table-row; ${title.getType() != "TVEpisode" ? "display:none" : ""}" id="title-serie-row" >
+                        <div class="label" style="display: table-cell; font-weight: 450; ">Serie:</div>
+                        <div style="display: table-cell; width: 100%;"  id="title-serie-div">${title.getSerie()}</div>
+                        <paper-input style="display: none; width: 100%;" value="${title.getSerie()}" id="title-serie-input" no-label-float></paper-input>
+                        <div class="button-div">
+                            <paper-icon-button id="edit-title-serie-btn" icon="image:edit"></paper-icon-button>
+                        </div>
+                    </div>
+
+                    <div style="display: table-row; ${title.getType() != "TVEpisode" ? "display:none" : ""}" id="title-season-row">
+                        <div class="label" style="display: table-cell; font-weight: 450; ">Season:</div>
+                        <div style="display: table-cell; width: 100%;"  id="title-season-div">${title.getSeason()}</div>
+                        <paper-input  type="number" style="display: none; width: 100%;" value="${title.getSeason()}" id="title-season-input" no-label-float></paper-input>
+                        <div class="button-div">
+                            <paper-icon-button id="edit-title-season-btn" icon="image:edit"></paper-icon-button>
+                        </div>
+                    </div>
+
+                    <div style="display: table-row; ${title.getType() != "TVEpisode" ? "display:none" : ""}" id="title-episode-row">
+                        <div class="label" style="display: table-cell; font-weight: 450; ">Episode:</div>
+                        <div style="display: table-cell; width: 100%;"  id="title-episode-div">${title.getEpisode()}</div>
+                        <paper-input  type="number" style="display: none; width: 100%;" value="${title.getEpisode()}" id="title-episode-input" no-label-float></paper-input>
+                        <div class="button-div">
+                            <paper-icon-button id="edit-title-episode-btn" icon="image:edit"></paper-icon-button>
                         </div>
                     </div>
 
@@ -2899,6 +3675,140 @@ export class TitleInfoEditor extends HTMLElement {
             videoIdDiv.innerHTML = videoIdInput.value
         }
 
+        // The title year
+        let editVideoYearBtn = this.shadowRoot.querySelector("#edit-title-year-btn")
+        let videoYearInput = this.shadowRoot.querySelector("#title-year-input")
+        let videoYearDiv = this.shadowRoot.querySelector("#title-year-div")
+
+        editVideoYearBtn.onclick = () => {
+            videoYearInput.style.display = "table-cell"
+            videoYearDiv.style.display = "none"
+            setTimeout(() => {
+                videoYearInput.focus()
+                videoYearInput.inputElement.inputElement.select()
+            }, 100)
+        }
+
+        videoYearInput.onblur = () => {
+            videoYearInput.style.display = "none"
+            videoYearDiv.style.display = "table-cell"
+            videoYearDiv.innerHTML = videoYearInput.value
+        }
+
+        // The title episode
+        let editEpisodeBtn = this.shadowRoot.querySelector("#edit-title-episode-btn")
+        let videoEpisodeInput = this.shadowRoot.querySelector("#title-episode-input")
+        let videoEpisodeDiv = this.shadowRoot.querySelector("#title-episode-div")
+
+        editEpisodeBtn.onclick = () => {
+            videoEpisodeInput.style.display = "table-cell"
+            videoEpisodeDiv.style.display = "none"
+            setTimeout(() => {
+                videoEpisodeInput.focus()
+                videoEpisodeInput.inputElement.inputElement.select()
+            }, 100)
+        }
+
+        videoEpisodeInput.onblur = () => {
+            videoEpisodeInput.style.display = "none"
+            videoEpisodeDiv.style.display = "table-cell"
+            videoEpisodeDiv.innerHTML = videoEpisodeInput.value
+        }
+
+        // The title season
+        let editSeasonBtn = this.shadowRoot.querySelector("#edit-title-season-btn")
+        let videoSeasonInput = this.shadowRoot.querySelector("#title-season-input")
+        let videoSeasonDiv = this.shadowRoot.querySelector("#title-season-div")
+
+        editSeasonBtn.onclick = () => {
+            videoSeasonInput.style.display = "table-cell"
+            videoSeasonDiv.style.display = "none"
+            setTimeout(() => {
+                videoSeasonInput.focus()
+                videoSeasonInput.inputElement.inputElement.select()
+            }, 100)
+        }
+
+        videoSeasonInput.onblur = () => {
+            videoSeasonInput.style.display = "none"
+            videoSeasonDiv.style.display = "table-cell"
+            videoSeasonDiv.innerHTML = videoSeasonInput.value
+        }
+
+
+        // The title serie
+        let editSerieBtn = this.shadowRoot.querySelector("#edit-title-serie-btn")
+        let videoSerieInput = this.shadowRoot.querySelector("#title-serie-input")
+        let videoSerieDiv = this.shadowRoot.querySelector("#title-serie-div")
+
+        editSerieBtn.onclick = () => {
+            videoSerieInput.style.display = "table-cell"
+            videoSerieDiv.style.display = "none"
+            setTimeout(() => {
+                videoSerieInput.focus()
+                videoSerieInput.inputElement.inputElement.select()
+            }, 100)
+        }
+
+        videoSerieInput.onblur = () => {
+            videoSerieInput.style.display = "none"
+            videoSerieDiv.style.display = "table-cell"
+            videoSerieDiv.innerHTML = videoSerieInput.value
+        }
+
+        // The title type
+        let editTypeBtn = this.shadowRoot.querySelector("#edit-title-type-btn")
+        let videoTypeSelect = this.shadowRoot.querySelector("#title-type-select")
+        let videoTypeDiv = this.shadowRoot.querySelector("#title-type-div")
+
+        if (title.getType() == "Movie") {
+            this.shadowRoot.querySelector("#movie-type-option").selected = true
+            this.shadowRoot.querySelector("#serie-type-option").selected = false
+            this.shadowRoot.querySelector("#episode-type-option").selected = false
+        } else if (title.getType() == "TVEpisode") {
+            this.shadowRoot.querySelector("#movie-type-option").selected = false
+            this.shadowRoot.querySelector("#serie-type-option").selected = false
+            this.shadowRoot.querySelector("#episode-type-option").selected = true
+        } else if (title.getType() == "TVSeries") {
+            this.shadowRoot.querySelector("#movie-type-option").selected = false
+            this.shadowRoot.querySelector("#serie-type-option").selected = true
+            this.shadowRoot.querySelector("#episode-type-option").selected = false
+        }
+
+        editTypeBtn.onclick = () => {
+            videoTypeSelect.style.display = "table-cell"
+            videoTypeDiv.style.display = "none"
+        }
+
+        videoTypeSelect.onchange = () => {
+            videoTypeSelect.style.display = "none"
+            videoTypeDiv.style.display = "table-cell"
+            videoTypeDiv.innerHTML = videoTypeSelect.options[videoTypeSelect.selectedIndex].text
+
+            if (videoTypeDiv.innerHTML == "Movie") {
+                this.shadowRoot.querySelector("#movie-type-option").selected = true
+                this.shadowRoot.querySelector("#serie-type-option").selected = false
+                this.shadowRoot.querySelector("#episode-type-option").selected = false
+                this.shadowRoot.querySelector("#title-episode-row").style.display = "none"
+                this.shadowRoot.querySelector("#title-serie-row").style.display = "none"
+                this.shadowRoot.querySelector("#title-season-row").style.display = "none"
+            } else if (videoTypeDiv.innerHTML == "TVEpisode") {
+                this.shadowRoot.querySelector("#movie-type-option").selected = false
+                this.shadowRoot.querySelector("#serie-type-option").selected = false
+                this.shadowRoot.querySelector("#episode-type-option").selected = true
+                this.shadowRoot.querySelector("#title-episode-row").style.display = "table-row"
+                this.shadowRoot.querySelector("#title-serie-row").style.display = "table-row"
+                this.shadowRoot.querySelector("#title-season-row").style.display = "table-row"
+            } else if (videoTypeDiv.innerHTML == "TVSeries") {
+                this.shadowRoot.querySelector("#movie-type-option").selected = false
+                this.shadowRoot.querySelector("#serie-type-option").selected = true
+                this.shadowRoot.querySelector("#episode-type-option").selected = false
+                this.shadowRoot.querySelector("#title-episode-row").style.display = "none"
+                this.shadowRoot.querySelector("#title-serie-row").style.display = "none"
+                this.shadowRoot.querySelector("#title-season-row").style.display = "none"
+            }
+        }
+
         // The video description
         let editVideoDescriptionBtn = this.shadowRoot.querySelector("#edit-title-description-btn")
         let videoVideoDescriptionInput = this.shadowRoot.querySelector("#title-description-input")
@@ -2927,6 +3837,9 @@ export class TitleInfoEditor extends HTMLElement {
             title.setName(videoNameInput.value)
             title.setDescription(videoVideoDescriptionInput.value)
             title.setGenresList(videoGenresList.getItems())
+            title.setEpisode(videoSerieInput.value)
+            title.setSeason(videoSeasonInput.value)
+            title.setSerie(videoSerieInput.value)
 
             // set the casting values...
             // casting are interfaced by PersonEditor and PersonEditor are contain 
@@ -3566,6 +4479,7 @@ export class TitleInfo extends HTMLElement {
                     globule.titleService.deleteTitle(rqst, { application: Application.application, domain: Application.domain, token: token })
                         .then(() => {
                             ApplicationView.displayMessage(`${title.getId()}:${title.getDescription()} was deleted`, 3000)
+                            Model.eventHub.publish("_delete_infos_" + title.getId() + "_evt", {}, true)
                             this.parentNode.removeChild(this)
                             if (this.ondelete) {
                                 this.ondelete()
@@ -3585,7 +4499,7 @@ export class TitleInfo extends HTMLElement {
     displayEpisodes(episodes, parent) {
         let seasons = {}
 
-        if(parent.querySelector(".episodes-div")){
+        if (parent.querySelector(".episodes-div")) {
             return
         }
 
