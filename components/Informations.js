@@ -1,7 +1,7 @@
 
 import { generatePeerToken, Model } from '../Model';
 import { Application } from "../Application";
-import { CreateVideoRequest, DeleteTitleRequest, DeleteVideoRequest, DissociateFileWithTitleRequest, GetTitleFilesRequest, Poster, Person, Publisher, SearchTitlesRequest, SearchPersonsRequest, DeletePersonRequest, GetPersonByIdRequest, CreatePersonRequest, CreateTitleRequest, CreateAudioRequest } from "globular-web-client/title/title_pb";
+import { CreateVideoRequest, DeleteTitleRequest, DeleteVideoRequest, DissociateFileWithTitleRequest, GetTitleFilesRequest, Poster, Person, Publisher, SearchTitlesRequest, SearchPersonsRequest, DeletePersonRequest, GetPersonByIdRequest, CreatePersonRequest, CreateTitleRequest, CreateAudioRequest, UpdateTitleMetadataRequest, UpdateVideoMetadataRequest } from "globular-web-client/title/title_pb";
 import { File } from "../File";
 import { VideoPreview, getFileSizeString } from "./File";
 import { ApplicationView } from "../ApplicationView";
@@ -15,6 +15,7 @@ import { createThumbmail, readBlogPost } from './BlogPost';
 import { PermissionsManager } from './Permissions';
 import * as getUuidByString from 'uuid-by-string';
 import { SavePackageResponse } from 'globular-web-client/catalog/catalog_pb';
+import { GetFileMetadataRequest } from 'globular-web-client/file/file_pb';
 
 // extract the duration info from the raw data.
 function parseDuration(duration) {
@@ -966,13 +967,13 @@ export class AudioInfoEditor extends HTMLElement {
         }
 
         // Select new image.
-        this.shadowRoot.querySelector("globular-image-selector").onselectimage = () => {
+        this.shadowRoot.querySelector("globular-image-selector").onselectimage = (imageUrl) => {
             if (audio.getPoster() == null) {
                 let poster = new Poster()
                 audio.setPoster(poster)
             }
 
-            audio.getPoster().setContenturl(dataUrl)
+            audio.getPoster().setContenturl(imageUrl)
         }
 
 
@@ -1013,12 +1014,12 @@ export class AudioInfoEditor extends HTMLElement {
         }
 
         // Select new image.
-        this.shadowRoot.querySelector("globular-image-selector").onselectimage = () => {
+        this.shadowRoot.querySelector("globular-image-selector").onselectimage = (imageUrl) => {
             if (audio.getPoster() == null) {
                 let poster = new Poster()
                 audio.setPoster(poster)
             }
-            audio.getPoster().setContenturl(dataUrl)
+            audio.getPoster().setContenturl(imageUrl)
         }
 
         // The audio title
@@ -1333,15 +1334,14 @@ export class AudioInfoEditor extends HTMLElement {
             audio.setTracktotal(audioTrackTotalInput.value)
 
             let globule = audio.globule
-            generatePeerToken(globule, token=>{
+            generatePeerToken(globule, token => {
                 let rqst = new CreateAudioRequest
                 rqst.setAudio(audio)
                 rqst.setIndexpath(globule.config.DataPath + "/search/audios")
-                globule.titleService.createAudio(rqst, {token:token, application: Model.application, domain: globule.domain})
-                    .then(rsp=>{
-                        console.log("---------> save audio ", audio)
-                        ApplicationView.displayMessage("audio information for " + audio.getTitle()+" was saved", 3000)
-                    }).catch(err=>ApplicationView.displayMessage(err, 3000))
+                globule.titleService.createAudio(rqst, { token: token, application: Model.application, domain: globule.domain })
+                    .then(rsp => {
+                        ApplicationView.displayMessage("audio information for " + audio.getTitle() + " was saved", 3000)
+                    }).catch(err => ApplicationView.displayMessage(err, 3000))
             })
 
             audioInfosDisplay.setAudio(audio)
@@ -1386,12 +1386,10 @@ export class AudioInfo extends HTMLElement {
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
         <style>
-           
 
             #container {
                 display: flex;
                 flex-direction: column;
-                background-color: var(--palette-background-paper);
                 color: var(--palette-text-primary);
             }
 
@@ -1818,13 +1816,7 @@ export class VideoInfoEditor extends HTMLElement {
             .action-div{
                 display: flex;
                 justify-content: end;
-                border-top: 2px solid;
-                border-color: var(--palette-divider);
-            }
-
-            .button-div{
-                display: table-cell;
-                vertical-align: top;
+                border-top: 2px solid;dataUrl
             }
 
             .label{
@@ -2079,11 +2071,9 @@ export class VideoInfoEditor extends HTMLElement {
                             globule.titleService.createVideo(rqst, { application: Application.application, domain: Application.domain, token: token })
                                 .then(rsp => {
                                     this.appendPersonEditor(person, video)
-
                                     // remove the panel...
                                     let addCastingPanel = parent.querySelector("#add-casting-panel")
                                     addCastingPanel.parentNode.removeChild(addCastingPanel)
-
                                 }).catch(err => ApplicationView.displayMessage(err, 3000))
                         }).catch(err => ApplicationView.displayMessage(err, 3000))
 
@@ -2122,13 +2112,13 @@ export class VideoInfoEditor extends HTMLElement {
         }
 
         // Select new image.
-        this.shadowRoot.querySelector("globular-image-selector").onselectimage = () => {
+        this.shadowRoot.querySelector("globular-image-selector").onselectimage = (imageUrl) => {
             if (video.getPoster() == null) {
                 let poster = new Poster()
                 video.setPoster(poster)
             }
 
-            video.getPoster().setContenturl(dataUrl)
+            video.getPoster().setContenturl(imageUrl)
         }
 
 
@@ -2306,13 +2296,23 @@ export class VideoInfoEditor extends HTMLElement {
                     let rqst = new CreateVideoRequest
                     rqst.setVideo(video)
                     rqst.setIndexpath(indexPath)
-
                     video.setCastingList(casting)
 
                     globule.titleService.createVideo(rqst, { application: Application.application, domain: Application.domain, token: token })
                         .then(rsp => {
                             ApplicationView.displayMessage("Video Information are updated", 3000)
                             this.videoInfosDisplay.setVideo(video)
+
+                            // Now I will save the title metadata...
+                            let rqst = new UpdateVideoMetadataRequest
+                            rqst.setVideo(video)
+                            rqst.setIndexpath(indexPath)
+                            globule.titleService.updateVideoMetadata(rqst, { application: Application.application, domain: Application.domain, token: token })
+                                .then(rsp => {
+                                    console.log("metadata was update!")
+                                })
+                                .catch(err => ApplicationView.displayMessage(err, 3000))
+
                         })
                         .catch(err => ApplicationView.displayMessage(err, 3000))
                     let parent = this.parentNode
@@ -3621,12 +3621,12 @@ export class TitleInfoEditor extends HTMLElement {
         }
 
         // Select new image.
-        this.shadowRoot.querySelector("globular-image-selector").onselectimage = () => {
+        this.shadowRoot.querySelector("globular-image-selector").onselectimage = (imageUrl) => {
             if (title.getPoster() == null) {
                 let poster = new Poster()
                 title.setPoster(poster)
             }
-            title.getPoster().setContenturl(dataUrl)
+            title.getPoster().setContenturl(imageUrl)
         }
 
         // Set the list selector.
@@ -3864,6 +3864,17 @@ export class TitleInfoEditor extends HTMLElement {
                                 .then(rsp => {
                                     ApplicationView.displayMessage("Title Information are updated", 3000)
                                     this.titleInfosDisplay.setTitle(title)
+
+                                    // Now I will save the title metadata...
+                                    let rqst = new UpdateTitleMetadataRequest
+                                    rqst.setTitle(title)
+                                    rqst.setIndexpath(indexPath)
+                                    globule.titleService.updateTitleMetadata(rqst, { application: Application.application, domain: Application.domain, token: token })
+                                        .then(rsp => {
+                                            console.log("metadata was update!")
+                                        })
+                                        .catch(err => ApplicationView.displayMessage(err, 3000))
+
                                 })
                                 .catch(err => ApplicationView.displayMessage(err, 3000))
 
@@ -4765,11 +4776,10 @@ export class FileMetaDataInfo extends HTMLElement {
     // Call search event.
     setMetadata(metadata) {
         console.log(metadata)
-        this.shadowRoot.querySelector("#header-text").innerHTML = `(${metadata.fieldsMap.length})`
+        this.shadowRoot.querySelector("#header-text").innerHTML = `(${Object.keys(metadata).length})`
         let range = document.createRange()
-        metadata.fieldsMap.forEach(val => {
-            let id = val[0]
-            let value = val[1]
+        for(var id in metadata){
+            let value = metadata[id]
             let label = id.replace(/([a-z0-9])([A-Z])/g, '$1 $2')
             let html = `
                 <div  style="display: table-row; padding-top: 5px; padding-bottom: 5px; border-bottom: 1px solid var(--palette-divider); width:100%;">
@@ -4790,23 +4800,12 @@ export class FileMetaDataInfo extends HTMLElement {
             this.appendChild(range.createContextualFragment(html))
             let div = this.querySelector(`#${id}`)
             this.setValue(div, value)
-        })
+        }
     }
 
     // display the value.
     setValue(div, value) {
-        if (value.structValue) {
-            div.innerHTML = value.structValue
-            console.log(value.structValue)
-        } else if (value.stringValue) {
-            div.innerHTML = value.stringValue
-        } else if (value.numberValue) {
-            div.innerHTML = value.numberValue
-        } else if (value.nullValue) {
-            div.innerHTML = value.nullValue
-        } else if (value.boolValue) {
-            div.innerHTML = value.boolValue
-        }
+        div.innerHTML = value
     }
 }
 
@@ -4876,7 +4875,19 @@ export class FileInfo extends HTMLElement {
         `
 
         let metadata_editor = this.shadowRoot.querySelector("globular-file-metadata-info")
-        metadata_editor.setMetadata(file.metadata)
+
+        let globule = file.globule
+        let rqst = new GetFileMetadataRequest
+        rqst.setPath(file.path)
+        generatePeerToken(globule, token=>{
+            globule.fileService.getFileMetadata(rqst, {token:token, domain:globule.domain, application:Model.application})
+                .then(rsp=>{
+                    
+                    metadata_editor.setMetadata(rsp.getResult().toJavaScript())
+                })
+                .catch(err=>ApplicationView.displayMessage(err))
+        })
+        
     }
 
 

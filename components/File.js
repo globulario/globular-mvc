@@ -280,12 +280,12 @@ export function getAudioInfo(file, callback) {
             if (index < globules.length) {
                 ___getAudioInfo___(index)
             } else {
-                if(file.audios){
+                if (file.audios) {
                     callback(file.audios)
-                }else{
+                } else {
                     callback([])
                 }
-                
+
             }
         })
 
@@ -1206,7 +1206,6 @@ export class FilesView extends HTMLElement {
                                             okBtn.onclick = () => {
                                                 toast_.dismiss();
                                                 if (videoOption.checked) {
-                                                    console.log("create video")
                                                     this.createVideoInformations(file, (videoInfo) => {
                                                         file.videos = [videoInfo]
                                                         Model.eventHub.publish(`display_media_infos_${this._file_explorer_.id}_event`, file, true)
@@ -1590,7 +1589,8 @@ export class FilesView extends HTMLElement {
         let rqst = new CreateTitleRequest
 
         let titleInfo = new Title
-        titleInfo.setId(file.checksum)
+        let uuid = getUuidByString(file.name)
+        titleInfo.setId(uuid)
 
         let poster = new Poster
         poster.setContenturl(file.thumbnail)
@@ -1645,7 +1645,8 @@ export class FilesView extends HTMLElement {
         // I will create video description.
         let rqst = new CreateVideoRequest
         let videoInfo = new Video
-        videoInfo.setId(file.checksum)
+        let uuid = getUuidByString(file.name) // I will generate a video from the file path...
+        videoInfo.setId(uuid)
 
         let date = new Date()
         videoInfo.setDate(date.toISOString())
@@ -1687,21 +1688,16 @@ export class FilesView extends HTMLElement {
 
                 globule.titleService.createVideo(rqst, { application: Application.application, domain: globule.domain, token: token })
                     .then(rsp => {
-
                         // So here I Will set the file association.
                         let rqst = new AssociateFileWithTitleRequest
                         rqst.setFilepath(file.path)
                         rqst.setTitleid(videoInfo.getId())
                         rqst.setIndexpath(globule.config.DataPath + "/search/videos")
-
-
                         globule.titleService.associateFileWithTitle(rqst, { application: Application.application, domain: globule.domain, token: token })
                             .then(rsp => {
-
-                                console.log("New Video info was created! ", videoInfo)
                                 videoInfo.globule = globule
+                                file.videos = [videoInfo]
                                 callback(videoInfo)
-
                             }).catch(err => ApplicationView.displayMessage(err, 3000))
 
                     }).catch(err => ApplicationView.displayMessage(err, 3000))
@@ -3518,7 +3514,8 @@ export class FileIconViewSection extends HTMLElement {
                         if (status.code == 0) {
                             uint8arrayToStringMethod(data, (str) => {
                                 playlist = JSON.parse(str)
-                                downloadVideosBtn.style.display = "block"
+                                if (downloadAudiosBtn)
+                                    downloadAudiosBtn.style.display = "block"
                             });
                         }
                     });
@@ -4734,15 +4731,15 @@ export class FileNavigator extends HTMLElement {
                 }
             }
         }
-        
+
         if (dirLnk) {
             dirLnk.onclick = (evt) => {
                 evt.stopPropagation();
                 _publishSetDirEvent(dir._path, this._file_explorer_)
 
-                if ( this._file_explorer_.informationManager) {
-                    if ( this._file_explorer_.informationManager.parentNode)
-                    this._file_explorer_.informationManager.parentNode.removeChild( this._file_explorer_.informationManager)
+                if (this._file_explorer_.informationManager) {
+                    if (this._file_explorer_.informationManager.parentNode)
+                        this._file_explorer_.informationManager.parentNode.removeChild(this._file_explorer_.informationManager)
                 }
             }
 
@@ -5958,26 +5955,26 @@ export class FileExplorer extends HTMLElement {
                     this.listeners[`display_media_infos_${this.id}_event`] = uuid;
                 }, (file) => {
 
-                
-            
+
+
                     let infos = null
 
                     if (file.titles != undefined) {
-                        if (file.titles.length > 0){
+                        if (file.titles.length > 0) {
                             this.informationManager.setTitlesInformation(file.titles)
                             infos = file.titles[0]
                         }
                     }
 
                     if (file.videos != undefined) {
-                        if (file.videos.length > 0){
+                        if (file.videos.length > 0) {
                             this.informationManager.setVideosInformation(file.videos)
                             infos = file.videos[0]
                         }
                     }
 
                     if (file.audios != undefined) {
-                        if (file.audios.length > 0){
+                        if (file.audios.length > 0) {
                             this.informationManager.setAudiosInformation(file.audios)
                             infos = file.audios[0]
                         }
@@ -5986,10 +5983,19 @@ export class FileExplorer extends HTMLElement {
                     // I will display the permission manager.
                     this.fileSelectionPanel.appendChild(this.informationManager)
 
+                    // remove all display menu.
+                    let menus = document.querySelectorAll("globular-dropdown-menu")
+                    for (var i = 0; i < menus.length; i++) {
+                        let menu = menus[i]
+                        if (menu.parentNode) {
+                            menu.parentNode.removeChild(menu)
+                        }
+                    }
+
                     // listen if the diplayed info is deleted.
-                    if(infos){
-                        Model.eventHub.subscribe("_delete_infos_" + infos.getId() + "_evt", uuid=>{}, evt=>{
-                            if(this.informationManager.parentNode){
+                    if (infos) {
+                        Model.eventHub.subscribe("_delete_infos_" + infos.getId() + "_evt", uuid => { }, evt => {
+                            if (this.informationManager.parentNode) {
                                 this.informationManager.parentNode.removeChild(this.informationManager)
                             }
                         }, true)
@@ -6022,24 +6028,28 @@ export class FileExplorer extends HTMLElement {
                 (uuid) => {
                     this.listeners[`reload_dir_${this.globule.domain}_event`] = uuid
                 }, (path) => {
+                    
+                    if (this.path && path) {
+                        if (path.endsWith(this.path)) {
+                            this.displayWaitMessage("load " + path)
+                            _readDir(path, (dir) => {
+                                this.fileNavigator.reload(dir, () => {
+                                    // reload dir to be sure if it's public that change will be applied.
+                                    _readDir(path, (dir) => {
 
-                    if (path.endsWith(this.path)) {
-                        this.displayWaitMessage("load " + path)
-                        _readDir(path, (dir) => {
-                            this.fileNavigator.reload(dir, () => {
-                                // reload dir to be sure if it's public that change will be applied.
-                                _readDir(path, (dir) => {
+                                        if (dir.path == this.path) {
+                                            this.__dir__ = dir
+                                            Model.eventHub.publish("__set_dir_event__", { dir: dir, file_explorer_id: this.id }, true)
 
-                                    if (dir.path == this.path) {
-                                        this.__dir__ = dir
-                                        Model.eventHub.publish("__set_dir_event__", { dir: dir, file_explorer_id: this.id }, true)
-
-                                    }
-                                    this.shadowRoot.querySelector("globular-disk-space-manager").refresh()
-                                    this.resume()
-                                }, err => { ApplicationView.displayMessage(err, 3000); this.resume() }, this.globule)
-                            })
-                        }, err => ApplicationView.displayMessage(err, 3000), this.globule, true)
+                                        }
+                                        this.shadowRoot.querySelector("globular-disk-space-manager").refresh()
+                                        this.resume()
+                                    }, err => { ApplicationView.displayMessage(err, 3000); this.resume() }, this.globule)
+                                })
+                            }, err => ApplicationView.displayMessage(err, 3000), this.globule, true)
+                        }
+                    }else{
+                        this.resume()
                     }
                 }, false)
         }

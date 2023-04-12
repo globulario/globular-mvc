@@ -695,9 +695,9 @@ export class ProcessesManager extends HTMLElement {
 
         stream.on("status", (status) => {
             if (status.code === 0) {
-
+                /** */
             } else {
-                console.log(status.details)
+                ApplicationView.displayMessage(err, 3000)
             }
         })
 
