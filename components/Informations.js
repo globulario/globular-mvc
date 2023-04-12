@@ -680,7 +680,7 @@ export class InformationsManager extends HTMLElement {
      * Display title informations.
      * @param {*} titles 
      */
-    setTitlesInformation(titles, globule) {
+    setTitlesInformation(titles) {
         this.innerHTML = "" // remove previous content.
         this.shadowRoot.querySelector(".title-div").innerHTML = ""
         if (titles.length == 0) {
@@ -703,7 +703,7 @@ export class InformationsManager extends HTMLElement {
             title = titles[titles.length - 1]
         }
 
-        let titleInfo = new TitleInfo(this.shadowRoot.querySelector(".title-div"), this.hasAttribute("short"), globule)
+        let titleInfo = new TitleInfo(this.shadowRoot.querySelector(".title-div"), this.hasAttribute("short"), title.globule)
         titleInfo.ondelete = () => {
             if (this.parentNode)
                 this.parentNode.removeChild(this)
@@ -3436,7 +3436,7 @@ export class TitleInfoEditor extends HTMLElement {
                     </div>
 
                     <div style="display: table-row;">
-                        <div class="label" style="display: table-cell; font-weight: 450; ">Name:</div>
+                        <div class="label" style="display: table-cell; font-weight: 450; ">Title:</div>
                         <div style="display: table-cell; width: 100%;"  id="title-name-div">${title.getName()}</div>
                         <paper-input style="display: none; width: 100%;" value="${title.getName()}" id="title-name-input" no-label-float></paper-input>
                         <div class="button-div">
@@ -3445,7 +3445,7 @@ export class TitleInfoEditor extends HTMLElement {
                     </div>
 
                     <div style="display: table-row;">
-                        <div class="label" style="display: table-cell; font-weight: 450; vertical-align: top;">Description:</div>
+                        <div class="label" style="display: table-cell; font-weight: 450; vertical-align: top;">Synopsis:</div>
                         <div id="title-description-div" style="display: table-cell;width: 100%; padding-bottom: 10px;" >${title.getDescription()}</div>
                         <iron-autogrow-textarea id="title-description-input"  style="display: none; border: none; width: 100%;" value="${title.getDescription()}"></iron-autogrow-textarea>
                         <div class="button-div">
@@ -3837,9 +3837,11 @@ export class TitleInfoEditor extends HTMLElement {
             title.setName(videoNameInput.value)
             title.setDescription(videoVideoDescriptionInput.value)
             title.setGenresList(videoGenresList.getItems())
-            title.setEpisode(videoSerieInput.value)
+            title.setEpisode(videoEpisodeInput.value)
             title.setSeason(videoSeasonInput.value)
             title.setSerie(videoSerieInput.value)
+            title.setYear(videoYearInput.value)
+            title.setType(videoTypeSelect.options[videoTypeSelect.selectedIndex].text)
 
             // set the casting values...
             // casting are interfaced by PersonEditor and PersonEditor are contain 
