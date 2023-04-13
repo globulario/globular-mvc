@@ -28,7 +28,7 @@ import { v4 as uuidv4 } from "uuid";
 
 // Menu to set action on files.
 import { DropdownMenu } from './dropdownMenu.js';
-import { AddPublicDirRequest, ConvertVideoToHlsRequest, ConvertVideoToMpeg4H264Request, CopyRequest, CreateDirRequest, CreateLnkRequest, CreateVideoPreviewRequest, CreateVideoTimeLineRequest, DeleteDirRequest, DeleteFileRequest, GeneratePlaylistRequest, GetFileInfoRequest, GetPublicDirsRequest, MoveRequest, ReadFileRequest, RemovePublicDirRequest, SaveFileRequest, StartProcessVideoRequest, UploadFileRequest, UploadVideoRequest } from 'globular-web-client/file/file_pb';
+import { AddPublicDirRequest, ConvertVideoToHlsRequest, ConvertVideoToMpeg4H264Request, CopyRequest, CreateDirRequest, CreateLnkRequest, CreateVideoPreviewRequest, CreateVideoTimeLineRequest, DeleteDirRequest, DeleteFileRequest, GeneratePlaylistRequest, GetFileInfoRequest, GetPublicDirsRequest, MoveRequest, ReadFileRequest, RemovePublicDirRequest, SaveFileRequest, StartProcessAudioRequest, StartProcessVideoRequest, UploadFileRequest, UploadVideoRequest } from 'globular-web-client/file/file_pb';
 import { createArchive, deleteDir, deleteFile, downloadFileHttp, renameFile, uploadFiles } from 'globular-web-client/api';
 import { ApplicationView } from '../ApplicationView';
 import { Application } from '../Application';
@@ -3583,12 +3583,12 @@ export class FileIconViewSection extends HTMLElement {
 
 
                 refreshAudiosBtn.onclick = () => {
-                    let rqst = new StartProcessVideoRequest
+                    let rqst = new StartProcessAudioRequest
                     rqst.setPath(dir.path)
                     let globule = this._file_explorer_.globule
 
                     generatePeerToken(globule, token => {
-                        globule.fileService.startProcessVideo(rqst, {
+                        globule.fileService.startProcessAudio(rqst, {
                             token: token,
                             application: Model.application,
                             domain: globule.domain,
