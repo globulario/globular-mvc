@@ -430,6 +430,10 @@ export class MessengerMenu extends Menu {
     // Display base conversation info
     appendConversation(conversation) {
         let conversationUuid = conversation.getUuid()
+
+        // set the conversation in the conversation manager.
+        ConversationManager.conversations.set(conversation.getUuid(), conversation)
+
         if (this.conversationsLst.querySelector("#conversation_" + conversationUuid + "_infos") != undefined) {
             return;
         }
@@ -805,8 +809,11 @@ export class ConversationInfos extends HTMLElement {
             },
             (evt) => {
                 if (evt.conversation.getUuid() == this.conversation.getUuid()) {
-                    this.joinBtn.style.display = "none"
-                    this.leaveBtn.style.display = "flex"
+                    if (this.joinBtn)
+                        this.joinBtn.style.display = "none"
+                    if (this.leaveBtn)
+                        this.leaveBtn.style.display = "flex"
+
                     this.shadowRoot.querySelector("paper-progress").style.display = "none"
                 }
             }, true)
@@ -817,8 +824,10 @@ export class ConversationInfos extends HTMLElement {
             },
             (evt) => {
                 if (evt == this.conversation.getUuid()) {
-                    this.joinBtn.style.display = "flex"
-                    this.leaveBtn.style.display = "none"
+                    if (this.joinBtn)
+                        this.joinBtn.style.display = "flex"
+                    if (this.leaveBtn)
+                        this.leaveBtn.style.display = "none"
                     this.shadowRoot.querySelector("paper-progress").style.display = "none"
                 }
             }, true)
@@ -898,8 +907,11 @@ export class ConversationInfos extends HTMLElement {
 
 
                     // network event.
-                    this.joinBtn.style.display = "none"
-                    this.leaveBtn.style.display = "flex"
+                    if (this.joinBtn)
+                        this.joinBtn.style.display = "none"
+
+                    if (this.leaveBtn)
+                        this.leaveBtn.style.display = "flex"
 
                     this.shadowRoot.querySelector("paper-progress").style.display = "none"
                 },
