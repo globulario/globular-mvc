@@ -301,10 +301,15 @@ function __getAudioInfo__(globule, file, callback) {
     let rqst = new GetFileAudiosRequest
     rqst.setIndexpath(globule.config.DataPath + "/search/audios")
     rqst.setFilepath(file.path)
+    
     generatePeerToken(globule, token => {
         globule.titleService.getFileAudios(rqst, { application: Application.application, domain: globule.domain, token: token })
             .then(rsp => {
                 let audios = rsp.getAudios().getAudiosList()
+
+                // set the globule.
+                audios.forEach(a=>a.globule = globule)
+
                 callback(audios)
             })
             .catch(err => {
