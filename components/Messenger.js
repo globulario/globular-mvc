@@ -16,9 +16,9 @@ import '@polymer/paper-tabs/paper-tabs.js';
 import '@polymer/paper-tabs/paper-tab.js';
 import '@polymer/iron-autogrow-textarea/iron-autogrow-textarea.js';
 import { Menu } from './Menu';
-
+import { File as File__ } from "../File"; // File object already exist in js and I need to use it...
 import { Account } from "../Account"
-import { Model } from "../Model"
+import { generatePeerToken, getUrl, Model } from "../Model"
 import { PermissionManager } from '../Permission';
 import { ConversationManager } from '../Conversation';
 import { Invitation } from 'globular-web-client/conversation/conversation_pb';
@@ -29,6 +29,9 @@ import { getCoords, mobileCheck } from "./utility.js"
 import { Application } from '../Application';
 import { setMoveable } from './moveable'
 import { setResizeable } from './rezieable'
+import { createThumbmail } from './BlogPost';
+import { Link } from './Link';
+import { getAudioInfo, getTitleInfo, getVideoInfo } from './File';
 
 /**
  * Communication with your contact's
@@ -1166,6 +1169,7 @@ export class Messenger extends HTMLElement {
 
         container.name = "messenger"
 
+
         setMoveable(header, container, (left, top) => {
             /** */
         }, this, offsetTop)
@@ -2210,6 +2214,12 @@ export class MessageEditor extends HTMLElement {
                 padding: 3px;
             }
 
+            #files-buffer {
+                display: flex;
+                flex-wrap: wrap;
+                background: var(--palette-background-default);
+            }
+
             @media (max-width: 500px) {
                 .container{
                     position: fixed;
@@ -2242,14 +2252,15 @@ export class MessageEditor extends HTMLElement {
                 </div>
             </div>
             <div class="toolbar">
-                <iron-autogrow-textarea id="text-writer-box"></iron-autogrow-textarea>
-                <div class="btn_" >
-                    <iron-icon  id="send-btn" icon="send"></iron-icon>
-                    <paper-ripple class="circle" recenters=""></paper-ripple>
-                </div>
-                <div class="btn_">
-                    <iron-icon  id="attach-file-btn" icon="editor:insert-drive-file"></iron-icon>
-                    <paper-ripple class="circle" recenters=""></paper-ripple>
+                <div style="display: flex; flex-direction: column; width: 100%;">
+                    <div id="files-buffer"></div>
+                    <div style="display: flex;width: 100%;">
+                        <iron-autogrow-textarea id="text-writer-box"></iron-autogrow-textarea>
+                        <div class="btn_" >
+                            <iron-icon  id="send-btn" icon="send"></iron-icon>
+                            <paper-ripple class="circle" recenters=""></paper-ripple>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2257,6 +2268,114 @@ export class MessageEditor extends HTMLElement {
 
         this.send = this.shadowRoot.querySelector("#send-btn")
         this.textWriterBox = this.shadowRoot.querySelector("#text-writer-box")
+
+        this.textWriterBox.ondragenter = (evt) => {
+            evt.stopPropagation();
+            evt.preventDefault();
+            this.textWriterBox.style.filter = "invert(10%)"
+        }
+
+        this.textWriterBox.ondragleave = (evt) => {
+            evt.preventDefault()
+            this.textWriterBox.style.filter = ""
+        }
+
+        this.textWriterBox.ondragover = (evt) => {
+            evt.stopPropagation();
+            evt.preventDefault();
+        }
+
+        this.textWriterBox.ondrop = (evt) => {
+            evt.stopPropagation();
+            evt.preventDefault();
+
+            this.textWriterBox.style.filter = ""
+            if (evt.dataTransfer.files.length > 0) {
+
+                var file = evt.dataTransfer.files[0], reader = new FileReader();
+                /*
+                reader.onload = (event) => {
+                    let dataUrl = event.target.result
+                    this.deleteBtn.style.display = "block"
+                    this.imageUrl = dataUrl
+                    this.image.src = dataUrl
+                    if (this.onselectimage) {
+                        this.onselectimage(dataUrl)
+                    }
+                };
+                reader.readAsDataURL(file);
+                */
+                console.log("2298 drop file ", file)
+
+            } else if (evt.dataTransfer.getData('files')) {
+
+                // So here I will try to get the image from drop files from the file-explorer.
+                let paths = JSON.parse(evt.dataTransfer.getData('files'))
+                let domain = evt.dataTransfer.getData('domain')
+
+                // keep track
+                paths.forEach(path => {
+                    // so here I will read the file
+                    let globule = Model.getGlobule(domain)
+                    File__.getFile(globule, path, -1, -1,
+                        f => {
+                            generatePeerToken(globule, token => {
+                                let url = getUrl(globule)
+                                f.path.split("/").forEach(item => {
+                                    let component = encodeURIComponent(item.trim())
+                                    if (component.length > 0) {
+                                        url += "/" + component
+                                    }
+                                })
+
+                                url += "?application=" + Model.application;
+                                url += "&token=" + token
+          
+                                if (f.mime.startsWith("image")) {
+                                    createThumbmail(url, 500, dataUrl => {
+                                        console.log(dataUrl)
+                                        let lnk = new Link(f.path, dataUrl, globule.domain, true)
+                                        this.shadowRoot.querySelector("#files-buffer").appendChild(lnk)
+
+                                    })
+                                } else if (f.mime.startsWith("video")) {
+                                    getTitleInfo(f, titles => {
+                                        if (titles.length > 0) {
+                                            let lnk = new Link(f.path, titles[0].getPoster().getContenturl(), globule.domain, true, titles[0].getName())
+                                            this.shadowRoot.querySelector("#files-buffer").appendChild(lnk)
+                                        } else {
+                                            getVideoInfo(f, videos => {
+                                                if (videos.length > 0) {
+                                                    let lnk = new Link(f.path, videos[0].getPoster().getContenturl(), globule.domain, true, videos[0].getDescription())
+                                                    this.shadowRoot.querySelector("#files-buffer").appendChild(lnk)
+                                                } else {
+                                                    ApplicationView.displayMessage("no video or title found for file </br>" + f.path, 3500)
+                                                }
+                                            })
+                                        }
+                                    })
+
+                                } else if (f.mime.startsWith("audio")) {
+                                    getAudioInfo(f, audios => {
+                                        if (audios.length > 0) {
+                                            let lnk = new Link(f.path, audios[0].getPoster().getContenturl(), globule.domain, true,  audios[0].getTitle())
+                                            this.shadowRoot.querySelector("#files-buffer").appendChild(lnk)
+                                        } else {
+                                            ApplicationView.displayMessage("no video or title found for file </br>" + f.path, 3500)
+
+                                        }
+                                    })
+
+                                }
+
+                                console.log("file from file explorer ", f)
+                                console.log(url)
+                            })
+                        }, err => ApplicationView.displayMessage(err, 3000))
+                })
+            }
+
+        }
 
         Model.eventHub.subscribe("__answer_message_evt__",
             uuid => {
@@ -2300,8 +2419,21 @@ export class MessageEditor extends HTMLElement {
         }
 
         this.send.onclick = () => {
+
             let txt = this.textWriterBox.value;
+            if(!txt){
+                txt = ""
+            }
+
+            let filesBuffer = this.shadowRoot.querySelector("#files-buffer")
+            if (filesBuffer.children.length > 0) {
+                txt = `<div style="display: flex; flex-direction: column; width: 100%;"><div style="display: flex; width: 100%; flex-wrap: wrap;">${filesBuffer.innerHTML}</div><p>${txt}</p></div>`
+            }
+
+            // clear the editor.
             this.textWriterBox.value = ""
+            filesBuffer.innerHTML = ""
+
             let replyTo = ""
             if (this.replyTo != undefined) {
                 replyTo = this.replyTo.getUuid();

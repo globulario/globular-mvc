@@ -1,3 +1,4 @@
+import { TargetsRequest } from "globular-web-client/monitoring/monitoring_pb";
 import { GetFileAudiosRequest, GetFileTitlesRequest, GetFileVideosRequest } from "globular-web-client/title/title_pb";
 import * as getUuidByString from "uuid-by-string";
 import { Application } from "../Application";
@@ -64,19 +65,37 @@ export class Link extends HTMLElement {
     // attributes.
 
     // Create the applicaiton view.
-    constructor() {
+    constructor(path, thumbnail, domain, deleteable, alias = "") {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
 
-        let path = this.getAttribute("path")
-        let thumbnail = this.getAttribute("thumbnail")
-        let domain = this.getAttribute("domain")
-        let alias = this.getAttribute("alias")
-        if(!alias){
-            alias = ""
+        if (!path){
+            path = this.getAttribute("path")
+        }else{
+            this.setAttribute("path", path)
         }
-        
+
+        if (!thumbnail){
+            thumbnail = this.getAttribute("thumbnail")
+        }else{
+            this.setAttribute("thumbnail", thumbnail)
+        }
+
+        if (!domain){
+            domain = this.getAttribute("domain")
+        }else{
+            this.setAttribute("domain", domain)
+        }
+
+        if (alias == "" && this.hasAttribute("alias")){
+            alias = this.getAttribute("alias")
+        }else{
+            this.setAttribute("alias", alias)
+        }
+
+
+
         let name = path.split("/")[path.split("/").length - 1]
         this.ondelete = null;
         let id = "_" + randomUUID()
@@ -188,10 +207,20 @@ export class Link extends HTMLElement {
                 </div> 
                 <paper-ripple></paper-ripple>
             </div>
-            <span id="link-name">${alias.length>0?alias:name}</span>
+            <span id="link-name">${alias.length > 0 ? alias : name}</span>
            
         </div>
         `
+
+        if (!deleteable && this.hasAttribute("deleteable")) {
+            deleteable = true
+        } else if (deleteable) {
+            this.setAttribute("deleteable", "true")
+            this.setDeleteable()
+        } else {
+            this.removeAttribute("deleteable")
+            this.resetDeleteable()
+        }
 
         let lnk = this.shadowRoot.querySelector(`#content`)
         lnk.onclick = () => {
