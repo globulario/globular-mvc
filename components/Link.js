@@ -145,10 +145,10 @@ export class Link extends HTMLElement {
                 background-color: var(--palette-background-paper);
                 display: flex; 
                 flex-direction: column; 
+                justify-content: center;
                 border: 1px solid var(--palette-divider); 
                 padding: 5px; 
                 border-radius: 2.5px; 
-                width: 100%;
             }
 
             #content:hover{
@@ -160,6 +160,7 @@ export class Link extends HTMLElement {
             img {
                 max-height: 64px;
                 object-fit: cover;
+                max-width: 96px;
             }
 
             span{
@@ -167,7 +168,7 @@ export class Link extends HTMLElement {
                 padding: 2px; 
                 display: block; 
                 word-break: break-all;
-                max-width: 96px;
+                max-width: 128px;
             }
 
             #delete-lnk-btn {
@@ -193,7 +194,7 @@ export class Link extends HTMLElement {
 
         </style>
 
-        <div id="${id}-link-div" style="margin: 25px 10px 5px 10px; display: flex; flex-direction: column; align-items: center; width: fit-content; height: fit-content; position: relative;">
+        <div id="${id}-link-div" style="margin: ${deleteable==true?"25px":"5px"} 10px 5px 10px; display: flex; flex-direction: column; align-items: center; width: fit-content; height: fit-content; position: relative;">
             <div style="position: absolute; top: -25px; left: -10px;">
                 <div class="btn-div" style="visibility: hidden;">
                     <iron-icon  id="delete-lnk-btn"  icon="close"></iron-icon>
@@ -212,6 +213,36 @@ export class Link extends HTMLElement {
         </div>
         `
 
+        let lnk = this.shadowRoot.querySelector(`#content`)
+        lnk.onclick = () => {
+            Model.eventHub.publish("follow_link_event_", { path: path, domain: domain }, true)
+        }
+
+        lnk.draggable = true;
+        this.shadowRoot.querySelector(`img`).draggable = false;
+
+        lnk.ondragstart = (evt) => {
+            // set the file path...
+            let files = [path];
+
+            evt.dataTransfer.setData('files', JSON.stringify(files));
+            evt.dataTransfer.setData('id', id);
+            evt.dataTransfer.setData('domain', domain);
+        }
+
+        lnk.ondragend = (evt) => {
+            evt.stopPropagation();
+        }
+
+        // Here I will append the interation.
+        lnk.onmouseover = (evt) => {
+            evt.stopPropagation();
+        }
+
+        lnk.onmouseleave = (evt) => {
+            evt.stopPropagation();
+        }
+
         if (!deleteable && this.hasAttribute("deleteable")) {
             deleteable = true
         } else if (deleteable) {
@@ -220,11 +251,6 @@ export class Link extends HTMLElement {
         } else {
             this.removeAttribute("deleteable")
             this.resetDeleteable()
-        }
-
-        let lnk = this.shadowRoot.querySelector(`#content`)
-        lnk.onclick = () => {
-            Model.eventHub.publish("follow_link_event_", { path: path, domain: domain }, true)
         }
 
         this.shadowRoot.querySelector(".btn-div").onclick = (evt) => {

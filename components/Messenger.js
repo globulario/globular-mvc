@@ -32,6 +32,9 @@ import { setResizeable } from './rezieable'
 import { createThumbmail } from './BlogPost';
 import { Link } from './Link';
 import { getAudioInfo, getTitleInfo, getVideoInfo } from './File';
+import { playAudios } from './Audio';
+import { playVideos } from './Video';
+import * as getUuidByString from 'uuid-by-string';
 
 /**
  * Communication with your contact's
@@ -1097,6 +1100,10 @@ export class Messenger extends HTMLElement {
                 width: 100%;
             }
 
+            globular-attached-files-list{
+                width: 100%;
+            }
+
             @media (max-width: 500px) {
 
                 .conversations-detail{
@@ -1263,7 +1270,7 @@ export class Messenger extends HTMLElement {
 
         let filesTab = this.shadowRoot.querySelector("#attached-files-tab")
         filesTab.onclick = () => {
-            this.attachedFilesList.style.display = "block"
+            this.attachedFilesList.style.display = "flex"
             this.participantsList.style.display = "none"
         }
 
@@ -1358,6 +1365,9 @@ export class Messenger extends HTMLElement {
         // Set the participant list.
         this.participantsList.setConversation(conversation, messages)
 
+        // Set the list of files.
+        this.attachedFilesList.setConversation(conversation, messages)
+
     }
 
     // Here I will open the conversation.
@@ -1420,6 +1430,9 @@ export class Messenger extends HTMLElement {
 
                 // Here I will unsubscribe to each event from it...
                 this.participantsList.setConversation(this.conversations[conversationUuid].conversation, this.conversations[conversationUuid].messages)
+
+                // set the attached files.
+                this.attachedFilesList.setConversation(this.conversations[evt.conversationUuid].conversation, this.conversations[evt.conversationUuid].messages)
             },
             false);
 
@@ -1462,6 +1475,9 @@ export class Messenger extends HTMLElement {
 
                     // Here I will unsubscribe to each event from it...
                     this.participantsList.setConversation(this.conversations[evt.conversationUuid].conversation, this.conversations[evt.conversationUuid].messages)
+
+                    // set the attached files.
+                    this.attachedFilesList.setConversation(this.conversations[evt.conversationUuid].conversation, this.conversations[evt.conversationUuid].messages)
                 }
             },
             false);
@@ -1478,6 +1494,9 @@ export class Messenger extends HTMLElement {
         // Set the participant list.
         this.participantsList.setConversation(conversation, messages)
 
+        // set the attached files.
+        this.attachedFilesList.setConversation(conversation, messages)
+
     }
 
 
@@ -1492,6 +1511,9 @@ export class Messenger extends HTMLElement {
 
         // close the conversation in the participant list.
         this.participantsList.clear()
+
+        // Close the attached file panel.
+        this.attachedFilesList.clear()
 
         // close the conversation in the conversation list.
         this.conversationsList.closeConversation(conversation)
@@ -1712,6 +1734,8 @@ export class ParticipantsList extends HTMLElement {
         this.participantList = this.shadowRoot.querySelector("#paticipants-lst")
     }
 
+
+
     /**
      * Here I will set paticipant from the conversation.
      * @param {*} conversation 
@@ -1903,42 +1927,6 @@ export class ParticipantsList extends HTMLElement {
 }
 
 customElements.define('globular-paticipants-list', ParticipantsList)
-
-/**
- * Display the list of file attached with that conversation.
- */
-export class AttachedFilesList extends HTMLElement {
-
-    constructor() {
-        super();
-        this.account = null;
-
-        // Set the shadow dom.
-        this.attachShadow({ mode: "open" });
-
-        this.shadowRoot.innerHTML = `
-        <style>
-           
-
-            .container{
-                
-            }
-
-        </style>
-
-        <div class="container">
-  
-        </div>
-        `
-    }
-
-    setAccount(account) {
-        this.account = account
-    }
-}
-
-
-customElements.define('globular-attached-files-list', AttachedFilesList)
 
 
 /**
@@ -2319,9 +2307,13 @@ export class MessageEditor extends HTMLElement {
                     let globule = Model.getGlobule(domain)
                     File__.getFile(globule, path, -1, -1,
                         f => {
+                            let path = f.path
+                            console.log(f.path, f.lnk)
+
                             generatePeerToken(globule, token => {
+
                                 let url = getUrl(globule)
-                                f.path.split("/").forEach(item => {
+                                path.split("/").forEach(item => {
                                     let component = encodeURIComponent(item.trim())
                                     if (component.length > 0) {
                                         url += "/" + component
@@ -2330,23 +2322,23 @@ export class MessageEditor extends HTMLElement {
 
                                 url += "?application=" + Model.application;
                                 url += "&token=" + token
-          
+
                                 if (f.mime.startsWith("image")) {
                                     createThumbmail(url, 500, dataUrl => {
                                         console.log(dataUrl)
-                                        let lnk = new Link(f.path, dataUrl, globule.domain, true)
+                                        let lnk = new Link(path, dataUrl, globule.domain, true)
                                         this.shadowRoot.querySelector("#files-buffer").appendChild(lnk)
 
                                     })
                                 } else if (f.mime.startsWith("video")) {
                                     getTitleInfo(f, titles => {
                                         if (titles.length > 0) {
-                                            let lnk = new Link(f.path, titles[0].getPoster().getContenturl(), globule.domain, true, titles[0].getName())
+                                            let lnk = new Link(path, titles[0].getPoster().getContenturl(), globule.domain, true, titles[0].getName())
                                             this.shadowRoot.querySelector("#files-buffer").appendChild(lnk)
                                         } else {
                                             getVideoInfo(f, videos => {
                                                 if (videos.length > 0) {
-                                                    let lnk = new Link(f.path, videos[0].getPoster().getContenturl(), globule.domain, true, videos[0].getDescription())
+                                                    let lnk = new Link(path, videos[0].getPoster().getContenturl(), globule.domain, true, videos[0].getDescription())
                                                     this.shadowRoot.querySelector("#files-buffer").appendChild(lnk)
                                                 } else {
                                                     ApplicationView.displayMessage("no video or title found for file </br>" + f.path, 3500)
@@ -2358,10 +2350,10 @@ export class MessageEditor extends HTMLElement {
                                 } else if (f.mime.startsWith("audio")) {
                                     getAudioInfo(f, audios => {
                                         if (audios.length > 0) {
-                                            let lnk = new Link(f.path, audios[0].getPoster().getContenturl(), globule.domain, true,  audios[0].getTitle())
+                                            let lnk = new Link(path, audios[0].getPoster().getContenturl(), globule.domain, true, audios[0].getTitle())
                                             this.shadowRoot.querySelector("#files-buffer").appendChild(lnk)
                                         } else {
-                                            ApplicationView.displayMessage("no video or title found for file </br>" + f.path, 3500)
+                                            ApplicationView.displayMessage("no audio or title found for file </br>" + path, 3500)
 
                                         }
                                     })
@@ -2421,13 +2413,13 @@ export class MessageEditor extends HTMLElement {
         this.send.onclick = () => {
 
             let txt = this.textWriterBox.value;
-            if(!txt){
+            if (!txt) {
                 txt = ""
             }
 
             let filesBuffer = this.shadowRoot.querySelector("#files-buffer")
             if (filesBuffer.children.length > 0) {
-                txt = `<div style="display: flex; flex-direction: column; width: 100%;"><div style="display: flex; width: 100%; flex-wrap: wrap;">${filesBuffer.innerHTML}</div><p>${txt}</p></div>`
+                txt = `<div style="display: flex; flex-direction: column; width: 100%;"><div style="display: flex; width: 100%; flex-wrap: wrap;">${filesBuffer.innerHTML.replaceAll(`deleteable="true"`, "")}</div><p>${txt}</p></div>`
             }
 
             // clear the editor.
@@ -3125,5 +3117,359 @@ export class GlobularMessagePanel extends HTMLElement {
 }
 
 customElements.define('globular-message-panel', GlobularMessagePanel)
+
+
+/**
+ * Display the list of attached files.
+ */
+export class AttachedFiles extends HTMLElement {
+    // attributes.
+
+    // Create the applicaiton view.
+    constructor() {
+        super()
+        // Set the shadow dom.
+        this.attachShadow({ mode: 'open' });
+
+        this.account = null;
+        this.conversation = null;
+        this.listener = null;
+
+        this.name = "";
+
+        // Innitialisation of the layout.
+        this.shadowRoot.innerHTML = `
+        <style>
+           
+            #container{
+                background-color: var(--palette-background-paper);
+                color: var(--palette-text-primary);
+                display: flex; 
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .section{
+                display: flex;
+                flex-direction: column;
+                width: 100%;
+                margin-bottom: 15px;
+                font-size: 1rem;
+            }
+
+            .section iron-icon:hover {
+                cursor:pointer;
+            }
+
+        </style>
+        <div id="container">
+            <div class="section">
+                <div style="display: flex; width: 100%; align-items:center; border-bottom: 1px solid var(--palette-divider);">
+                    <span style="flex-grow: 1; margin-left: 10px;">Audio(s)</span>
+                    <iron-icon style="margin-right: 10px;" id="play-audios-btn" icon="av:queue-music" title="play audio files"></iron-icon>
+                </div>
+                <div style="display: flex; width: 100%; margin-top: 5px; flex-wrap: wrap;">
+                    <slot name="audio"></slot>
+                </div>
+            </div>
+            <div class="section">
+                <div style="display: flex; width: 100%; align-items:center; border-bottom: 1px solid var(--palette-divider);">
+                    <span style="flex-grow: 1; margin-left: 10px;">Video(s)</span>
+                    <iron-icon style="margin-right: 10px;" id="play-videos-btn" icon="av:queue-music" title="play video files"></iron-icon>
+                </div>
+                <div style="display: flex; width: 100%; margin-top: 5px; flex-wrap: wrap;">
+                    <slot name="video"></slot>
+                </div>
+            </div>
+            <div class="section">
+                <div style="display: flex; width: 100%; margin-top: 5px; flex-wrap: wrap;">
+                    <slot name="text"></slot>
+                </div>
+            </div>
+            <div class="section">
+                <div style="display: flex; width: 100%; margin-top: 5px; flex-wrap: wrap;">
+                    <slot name="inode"></slot>
+                </div>
+            </div>
+        </div>
+        `
+
+        // Now i will set the actions
+        this.shadowRoot.querySelector("#play-audios-btn").onclick = () => {
+            // I will get the slotted audio element.
+            let files = []
+            for (var i = 0; i < this.children.length; i++) {
+                let a = this.children[i]
+                if (a.file.mime.startsWith("audio"))
+                    files.push(a.file)
+            }
+
+            let audios = []
+
+            // Now from file I will get audios titles.
+            let getAudios = (index) => {
+                let f = files[index]
+                index++
+                getAudioInfo(f, audios_ => {
+                    if (audios_.length > 0) {
+                        audios.push(audios_[0])
+                    }
+                    if (index < files.length) {
+                        getAudios(index)
+                    } else {
+                        // Now I have list of titles.
+                        playAudios(audios, this.name + " audios")
+                    }
+                })
+            }
+
+            if (files.length > 0) {
+                let index = 0;
+                getAudios(index)
+            }
+        }
+
+
+        // Now i will set the actions
+        this.shadowRoot.querySelector("#play-videos-btn").onclick = () => {
+            // I will get the slotted audio element.
+            let files = []
+            for (var i = 0; i < this.children.length; i++) {
+                let a = this.children[i]
+                if (a.file.mime.startsWith("video"))
+                    files.push(a.file)
+            }
+
+            let videos = []
+
+            // Now from file I will get audios titles.
+            let getVideos = (index) => {
+                let f = files[index]
+                index++
+                getVideoInfo(f, videos_ => {
+                    if (videos_.length > 0) {
+                        videos.push(videos_[0])
+                    }
+                    if (index < files.length) {
+                        getVideos(index)
+                    } else {
+                        // Now I have list of titles.
+                        playVideos(videos, this.name + " videos")
+                    }
+                })
+            }
+
+            if (files.length > 0) {
+                let index = 0;
+                getVideos(index)
+            }
+        }
+    }
+
+    // Call search event.
+    setConversation(conversation, messages) {
+
+        // simply reset the messages...
+        this.clear();
+
+        this.conversation = conversation
+        Model.eventHub.subscribe(`__received_message_${conversation.getUuid()}_evt__`,
+            (uuid) => {
+                this.listener = uuid;
+            },
+            (msg) => {
+                this.appendMessage(msg)
+            }, true)
+
+        this.name = conversation.getName()
+        let attached_files = []
+
+        // So Here I must get files information from message.
+        messages.forEach(m => {
+            let msg_text = m.getText()
+            if (msg_text.indexOf("globular-link") > 0) {
+                // The message contain link...
+                let range = document.createRange()
+                let fragment = range.createContextualFragment(msg_text)
+                let attached_files_ = fragment.querySelectorAll("globular-link")
+                for (var i = 0; i < attached_files_.length; i++) {
+                    attached_files.push(attached_files_[i])
+                }
+            }
+
+            Model.getGlobule(conversation.getMac()).eventHub.subscribe(`delete_message_${m.getUuid()}_evt`,
+                uuid => { },
+                () => {
+                    this.deleteMessage(m)
+                }, false)
+        })
+
+        // display the attached files.
+        let readFileInfo = (index) => {
+            let attached_files_panel = attached_files[index]
+            index++
+            let globule = Model.getGlobule(attached_files_panel.getAttribute("domain"))
+            File__.getFile(globule, attached_files_panel.getAttribute("path"), -1, -1,
+                f => {
+
+                    // keep the file object...
+                    attached_files_panel.file = f;
+
+                    // put the file in it slot...
+                    if (f.mime.startsWith("audio")) {
+                        attached_files_panel.slot = "audio"
+                    } else if (f.mime.startsWith("video")) {
+                        attached_files_panel.slot = "video"
+                    } if (f.mime.startsWith("text")) {
+                        attached_files_panel.slot = "text"
+                    } if (f.mime.startsWith("inode")) {
+                        attached_files_panel.slot = "inode"
+                    }
+
+                    // append the file
+                    let id = "_" + getUuidByString(f.path) + "-file-lnk"
+                    if (!this.querySelector(`#${id}`)) {
+                        attached_files_panel.id = id;
+                        // append the file
+                        this.appendChild(attached_files_panel)
+                    }
+
+                    if (index < attached_files.length) {
+                        readFileInfo(index)
+                    }
+                },
+                err => {
+                    if (index < attached_files.length) {
+                        readFileInfo(index)
+                    }
+                })
+
+        }
+
+        // read files infos
+        if (attached_files.length > 0) {
+            let index = 0
+            readFileInfo(index)
+        }
+
+    }
+
+
+
+    /** Append message files if there so... */
+    appendMessage(msg) {
+
+        let attached_files = []
+        Model.getGlobule(this.conversation.getMac()).eventHub.subscribe(`delete_message_${msg.getUuid()}_evt`,
+            uuid => { },
+            () => {
+                this.deleteMessage(msg)
+            }, false)
+
+        let msg_text = msg.getText()
+        if (msg_text.indexOf("globular-link") > 0) {
+            // The message contain link...
+            let range = document.createRange()
+            let fragment = range.createContextualFragment(msg_text)
+            let attached_files_ = fragment.querySelectorAll("globular-link")
+            for (var i = 0; i < attached_files_.length; i++) {
+                attached_files.push(attached_files_[i])
+            }
+        }
+
+        // display the attached files.
+        let readFileInfo = (index) => {
+            let attached_files_panel = attached_files[index]
+            index++
+            let globule = Model.getGlobule(attached_files_panel.getAttribute("domain"))
+            File__.getFile(globule, attached_files_panel.getAttribute("path"), -1, -1,
+                f => {
+
+                    // keep the file object...
+                    attached_files_panel.file = f;
+
+                    // put the file in it slot...
+                    if (f.mime.startsWith("audio")) {
+                        attached_files_panel.slot = "audio"
+                    } else if (f.mime.startsWith("video")) {
+                        attached_files_panel.slot = "video"
+                    } if (f.mime.startsWith("text")) {
+                        attached_files_panel.slot = "text"
+                    } if (f.mime.startsWith("inode")) {
+                        attached_files_panel.slot = "inode"
+                    }
+
+                    let id = "_" + getUuidByString(f.path) + "-file-lnk"
+                    if (!this.querySelector(`#${id}`)) {
+                        attached_files_panel.id = id;
+                        // append the file
+                        this.appendChild(attached_files_panel)
+                    }
+
+                    if (index < attached_files.length) {
+                        readFileInfo(index)
+                    }
+                },
+                err => {
+                    if (index < attached_files.length) {
+                        readFileInfo(index)
+                    }
+                })
+
+        }
+
+        // read files infos
+        if (attached_files.length > 0) {
+            let index = 0
+            readFileInfo(index)
+        }
+
+    }
+
+    deleteMessage(msg){
+        
+        let attached_files = []
+        let msg_text = msg.getText()
+        if (msg_text.indexOf("globular-link") > 0) {
+            // The message contain link...
+            let range = document.createRange()
+            let fragment = range.createContextualFragment(msg_text)
+            let attached_files_ = fragment.querySelectorAll("globular-link")
+            for (var i = 0; i < attached_files_.length; i++) {
+                attached_files.push(attached_files_[i])
+            }
+        }
+
+        attached_files.forEach(attached_file=>{
+            let id = "_" + getUuidByString(attached_file.getAttribute("path")) + "-file-lnk"
+            let attached_file_ = this.querySelector(`#${id}`)
+            if (attached_file_) {
+                if(attached_file_.parentNode){
+
+                    // remove the file.
+                    attached_file_.parentNode.removeChild(attached_file_)
+
+                }
+            }
+        })
+
+    }
+
+    clear() {
+        this.innerHTML = "";
+
+        if (this.listener != null) {
+            Model.eventHub.unSubscribe(`__received_message_${this.conversation.getUuid()}_evt__`, this.listener)
+        }
+    }
+
+
+    setAccount(account) {
+        this.account = account
+    }
+}
+
+customElements.define('globular-attached-files-list', AttachedFiles)
+
 
 

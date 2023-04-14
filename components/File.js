@@ -2219,9 +2219,7 @@ export class FilesView extends HTMLElement {
             // So here I will simply upload the files...
             Model.eventHub.publish("__upload_files_event__", { dir: this.__dir__, files: evt.dataTransfer.files, lnk: lnk, globule: this._file_explorer_.globule }, true)
         } else {
-
-
-
+            
             let html = `
             <style>
                 paper-card{
@@ -3935,8 +3933,6 @@ export class FilesIconView extends FilesView {
 
                         fileIconView.draggable = true;
                         fileIconView.ondragstart = (evt) => {
-                            console.log(fileIconView.tagName)
-                            console.log(evt)
 
                             // set the file path...
                             let files = [];
