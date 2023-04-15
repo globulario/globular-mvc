@@ -258,11 +258,13 @@ export class SharedResources extends HTMLElement {
             #you-share-with-div{
                 display: flex;
                 flex-wrap: wrap;
+                margin-top: 10px;
             }
 
             #share-with-you-div{
                 display: flex;
                 flex-wrap: wrap;
+                margin-top: 10px;
             }
 
             globular-link{

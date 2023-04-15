@@ -288,7 +288,7 @@ export class ConversationManager {
           let participants = conversation.getParticipantsList()
 
           // network event.
-          Model.publish(`ready_conversation_${conversationUuid}_evt`, JSON.stringify({ "participants": participants, "participant": Application.account.id + "@" + Application.account.domain }), false)
+          Model.getGlobule(conversation.getMac()).eventHub.publish(`ready_conversation_${conversationUuid}_evt`, JSON.stringify({ "participants": participants, "participant": Application.account.id + "@" + Application.account.domain }), false)
 
         } else {
           // No message found...
@@ -296,7 +296,7 @@ export class ConversationManager {
             succesCallback(conversation, messages)
             let participants = conversation.getParticipantsList()
             // network event.
-            Model.publish(`leave_conversation_${conversationUuid}_evt`, JSON.stringify({ "conversationUuid": conversation.getUuid(), "participants": participants, "participant": Application.account.id + "@" + Application.account.domain }), false)
+            Model.getGlobule(conversation.getMac()).eventHub.publish(`leave_conversation_${conversationUuid}_evt`, JSON.stringify({ "conversationUuid": conversation.getUuid(), "participants": participants, "participant": Application.account.id + "@" + Application.account.domain }), false)
             return
           }
           // An error happen
@@ -330,7 +330,7 @@ export class ConversationManager {
         let participants = rsp.getConversation().getParticipantsList()
 
         // network event.
-        Model.publish(`leave_conversation_${conversationUuid}_evt`, JSON.stringify({ "conversationUuid": conversation.getUuid(), "participants": participants, "participant": Application.account.id + "@" + Application.account.domain }), false)
+        Model.getGlobule(conversation.getMac()).eventHub.publish(`leave_conversation_${conversationUuid}_evt`, JSON.stringify({ "conversationUuid": conversation.getUuid(), "participants": participants, "participant": Application.account.id + "@" + Application.account.domain }), false)
 
       }).catch(errorCallback)
     }, errorCallback)

@@ -1412,7 +1412,7 @@ export class ApplicationView extends View {
         // Publish the list of participant with the account removed from it.
         let participants = conversation.getParticipantsList()
         participants.splice(participants.indexOf(Application.account.id + "@" + Application.account.domain), 1)
-        Model.publish(`leave_conversation_${conversation.getUuid()}_evt`, JSON.stringify({ "conversationUuid": conversation.getUuid(), "participants": participants, "participant": Application.account.id + "@" + Application.account.domain }), false)
+        Model.getGlobule(conversation.getMac()).eventHub.publish(`leave_conversation_${conversation.getUuid()}_evt`, JSON.stringify({ "conversationUuid": conversation.getUuid(), "participants": participants, "participant": Application.account.id + "@" + Application.account.domain }), false)
         ApplicationView.displayMessage(
           "<iron-icon icon='communication:message' style='margin-right: 10px;'></iron-icon><div>Conversation named " +
           conversation.getName() +

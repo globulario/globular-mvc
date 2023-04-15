@@ -70,35 +70,46 @@ export class Link extends HTMLElement {
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
 
-        if (!path){
+        if (!path) {
             path = this.getAttribute("path")
-        }else{
+        } else {
             this.setAttribute("path", path)
         }
 
-        if (!thumbnail){
+        if (!thumbnail) {
             thumbnail = this.getAttribute("thumbnail")
-        }else{
+        } else {
             this.setAttribute("thumbnail", thumbnail)
         }
 
-        if (!domain){
+        if (!domain) {
             domain = this.getAttribute("domain")
-        }else{
+        } else {
             this.setAttribute("domain", domain)
         }
 
-        if (alias == "" && this.hasAttribute("alias")){
-            alias = this.getAttribute("alias")
-        }else{
+        if (alias != undefined) {
             this.setAttribute("alias", alias)
+        } else if (this.hasAttribute("alias")) {
+            alias = this.getAttribute("alias")
         }
 
+        // get the deleteable attribute.
+        if (deleteable == undefined) {
+            deleteable = this.getAttribute("deleteable")
+            if (deleteable) {
+                if (deleteable.length == 0) {
+                    deleteable = true
+                } else {
+                    deleteable = deleteable == "true"
+                }
+            }
+        }
 
 
         let name = path.split("/")[path.split("/").length - 1]
         this.ondelete = null;
-        let id = "_" + randomUUID()
+        let uuid = "_" + randomUUID()
 
         // Connect observer, so the attribute can be dynamic...
         var observer = new MutationObserver((mutations) => {
@@ -194,7 +205,7 @@ export class Link extends HTMLElement {
 
         </style>
 
-        <div id="${id}-link-div" style="margin: ${deleteable==true?"25px":"5px"} 10px 5px 10px; display: flex; flex-direction: column; align-items: center; width: fit-content; height: fit-content; position: relative;">
+        <div id="${uuid}-link-div" style="margin: ${deleteable == true ? "25px" : "5px"} 10px 5px 10px; display: flex; flex-direction: column; align-items: center; width: fit-content; height: fit-content; position: relative;">
             <div style="position: absolute; top: -25px; left: -10px;">
                 <div class="btn-div" style="visibility: hidden;">
                     <iron-icon  id="delete-lnk-btn"  icon="close"></iron-icon>
@@ -213,6 +224,8 @@ export class Link extends HTMLElement {
         </div>
         `
 
+        this.uuid = uuid;
+
         let lnk = this.shadowRoot.querySelector(`#content`)
         lnk.onclick = () => {
             Model.eventHub.publish("follow_link_event_", { path: path, domain: domain }, true)
@@ -226,7 +239,7 @@ export class Link extends HTMLElement {
             let files = [path];
 
             evt.dataTransfer.setData('files', JSON.stringify(files));
-            evt.dataTransfer.setData('id', id);
+            evt.dataTransfer.setData('id', uuid);
             evt.dataTransfer.setData('domain', domain);
         }
 
@@ -256,7 +269,7 @@ export class Link extends HTMLElement {
         this.shadowRoot.querySelector(".btn-div").onclick = (evt) => {
             evt.stopPropagation()
 
-            if (document.getElementById(`${id}-yes-no-link-delete-box`)) {
+            if (document.getElementById(`${uuid}-yes-no-link-delete-box`)) {
                 return
             }
 
@@ -281,7 +294,7 @@ export class Link extends HTMLElement {
               }
 
             </style>
-            <div id="${id}-yes-no-link-delete-box">
+            <div id="${uuid}-yes-no-link-delete-box">
               <div>Your about to delete link</div>
               <div style="display: flex; align-items; center; justify-content: center;">
                 ${this.outerHTML}
@@ -296,7 +309,7 @@ export class Link extends HTMLElement {
                 60000 // 1 min...
             );
 
-            let yesNoDiv = document.getElementById(`${id}-yes-no-link-delete-box`)
+            let yesNoDiv = document.getElementById(`${uuid}-yes-no-link-delete-box`)
             let yesBtn = yesNoDiv.querySelector("#yes-delete-link")
             let noBtn = yesNoDiv.querySelector("#no-delete-link")
             yesNoDiv.querySelector("globular-link").removeAttribute("deleteable")
@@ -316,7 +329,7 @@ export class Link extends HTMLElement {
                 toast.dismiss();
             }
 
-            toast.id = id
+            toast.id = uuid
         }
 
         let globule = Model.getGlobule(domain)
@@ -354,10 +367,12 @@ export class Link extends HTMLElement {
     }
 
     setDeleteable() {
+        this.shadowRoot.querySelector(`#${this.uuid}-link-div`).style.marginTop = "25px"
         this.shadowRoot.querySelector(".btn-div").style.visibility = "visible";
     }
 
     resetDeleteable() {
+        this.shadowRoot.querySelector(`#${this.uuid}-link-div`).style.marginTop = "5px"
         this.shadowRoot.querySelector(".btn-div").style.visibility = "hidden";
     }
 }

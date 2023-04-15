@@ -35,6 +35,8 @@ import { getAudioInfo, getTitleInfo, getVideoInfo } from './File';
 import { playAudios } from './Audio';
 import { playVideos } from './Video';
 import * as getUuidByString from 'uuid-by-string';
+import { FileMetaDataInfo } from './Informations';
+import { GetResourcePermissionsRqst, Permission, SetResourcePermissionRsp, SetResourcePermissionsRqst } from 'globular-web-client/rbac/rbac_pb';
 
 /**
  * Communication with your contact's
@@ -2279,22 +2281,7 @@ export class MessageEditor extends HTMLElement {
 
             this.textWriterBox.style.filter = ""
             if (evt.dataTransfer.files.length > 0) {
-
-                var file = evt.dataTransfer.files[0], reader = new FileReader();
-                /*
-                reader.onload = (event) => {
-                    let dataUrl = event.target.result
-                    this.deleteBtn.style.display = "block"
-                    this.imageUrl = dataUrl
-                    this.image.src = dataUrl
-                    if (this.onselectimage) {
-                        this.onselectimage(dataUrl)
-                    }
-                };
-                reader.readAsDataURL(file);
-                */
-                console.log("2298 drop file ", file)
-
+                ApplicationView.displayMessage("You can't append local file in message.</br>Upload the file(s) on the server and then share it.")
             } else if (evt.dataTransfer.getData('files')) {
 
                 // So here I will try to get the image from drop files from the file-explorer.
@@ -3194,6 +3181,7 @@ export class AttachedFiles extends HTMLElement {
         </div>
         `
 
+
         // Now i will set the actions
         this.shadowRoot.querySelector("#play-audios-btn").onclick = () => {
             // I will get the slotted audio element.
@@ -3281,6 +3269,7 @@ export class AttachedFiles extends HTMLElement {
                 this.appendMessage(msg)
             }, true)
 
+
         this.name = conversation.getName()
         let attached_files = []
 
@@ -3332,6 +3321,8 @@ export class AttachedFiles extends HTMLElement {
                         attached_files_panel.id = id;
                         // append the file
                         this.appendChild(attached_files_panel)
+
+                        this.setFilePermissions(f)
                     }
 
                     if (index < attached_files.length) {
@@ -3354,7 +3345,81 @@ export class AttachedFiles extends HTMLElement {
 
     }
 
+    // Set the file permissions...
+    setFilePermissions(file) {
 
+        let getFilePermission = (file, callback) => {
+            let rqst = new GetResourcePermissionsRqst
+            rqst.setPath(file.path)
+            let globule = file.globule
+            generatePeerToken(globule, token => {
+                globule.rbacService.getResourcePermissions(rqst, { token: token, application: Model.application, domain: globule.domain })
+                    .then(rsp => {
+                        let permissions = rsp.getPermissions()
+                        callback(permissions)
+                    })
+                    .catch(err => console.log(err))
+            })
+        }
+
+        // Get the file permissions.
+        getFilePermission(file, permissions => {
+            let owners = permissions.getOwners()
+            if (owners) {
+                if (owners.getAccountsList().indexOf(this.account.id + "@" + this.account.domain) != -1) {
+
+                    // Now I will get the list of all participant and append it to read permissions...
+                    let readPermission = null
+                    let allowed = permissions.getAllowedList()
+                    if (allowed == null) {
+                        allowed = []
+                    }
+
+                    allowed.forEach(permission => {
+                        if (permission.getName() == "read") {
+                            readPermission = permission;
+                        }
+                    })
+
+                    if (!readPermission) {
+                        readPermission = new Permission
+                        readPermission.setName("read")
+                        readPermission.setAccountsList([])
+                    }
+
+                    // So here I will iterate over conversation participant and set their permissions to read...
+                    let accounts = readPermission.getAccountsList()
+                    let needSave = false
+                    this.conversation.getParticipantsList().forEach(participant => {
+                        if (owners.getAccountsList().indexOf(participant) == -1) {
+                            if (accounts.indexOf(participant) == -1) {
+                                accounts.push(participant)
+                                needSave = true
+                            }
+                        }
+                    })
+
+                    readPermission.setAccountsList(accounts)
+                    allowed.push(readPermission)
+                    permissions.setAllowedList(allowed)
+
+                    if (needSave) {
+                        let rqst = new SetResourcePermissionsRqst
+                        rqst.setPath(file.path)
+                        rqst.setResourcetype("file")
+                        rqst.setPermissions(permissions)
+                        let globule = file.globule
+                        generatePeerToken(globule, token => {
+                            globule.rbacService.setResourcePermissions(rqst, { token: token, application: Model.application, domain: globule.domain })
+                                .then(rsp => {
+                                    console.log("permissions was update!")
+                                }).catch(err=>ApplicationView.displayMessage(err, 3000))
+                        })
+                    }
+                }
+            }
+        })
+    }
 
     /** Append message files if there so... */
     appendMessage(msg) {
@@ -3404,6 +3469,8 @@ export class AttachedFiles extends HTMLElement {
                         attached_files_panel.id = id;
                         // append the file
                         this.appendChild(attached_files_panel)
+                        // set file permissions
+                        this.setFilePermissions(f)
                     }
 
                     if (index < attached_files.length) {
@@ -3423,11 +3490,9 @@ export class AttachedFiles extends HTMLElement {
             let index = 0
             readFileInfo(index)
         }
-
     }
 
-    deleteMessage(msg){
-        
+    deleteMessage(msg) {
         let attached_files = []
         let msg_text = msg.getText()
         if (msg_text.indexOf("globular-link") > 0) {
@@ -3440,11 +3505,11 @@ export class AttachedFiles extends HTMLElement {
             }
         }
 
-        attached_files.forEach(attached_file=>{
+        attached_files.forEach(attached_file => {
             let id = "_" + getUuidByString(attached_file.getAttribute("path")) + "-file-lnk"
             let attached_file_ = this.querySelector(`#${id}`)
             if (attached_file_) {
-                if(attached_file_.parentNode){
+                if (attached_file_.parentNode) {
 
                     // remove the file.
                     attached_file_.parentNode.removeChild(attached_file_)
@@ -3452,21 +3517,19 @@ export class AttachedFiles extends HTMLElement {
                 }
             }
         })
-
     }
 
     clear() {
         this.innerHTML = "";
-
         if (this.listener != null) {
             Model.eventHub.unSubscribe(`__received_message_${this.conversation.getUuid()}_evt__`, this.listener)
         }
     }
 
-
     setAccount(account) {
         this.account = account
     }
+
 }
 
 customElements.define('globular-attached-files-list', AttachedFiles)
