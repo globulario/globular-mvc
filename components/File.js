@@ -3475,6 +3475,7 @@ export class FileIconViewSection extends HTMLElement {
         // set reference
         this.div = view.div
         this._file_explorer_ = view._file_explorer_
+        this.menu = view.menu
 
         let copyUrl = (path) => {
             let globule = this._file_explorer_.globule
