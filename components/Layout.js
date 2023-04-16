@@ -368,12 +368,33 @@ export class Layout extends HTMLElement {
         <style>
           #waiting_div_text div{
             text-align: center;
-            color: var(--palette-text-primary);
+
+
           }
+
+          #content_div{
+            background-color: var(--palette-primary-accent);
+            color: var(--palette-text-accent);
+            padding: 30px; 
+            border-radius: 10px; 
+            border: 2px solid var(--palette-divider);
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            flex-direction: column; 
+            min-width: 250px;
+            box-shadow: 0px 6px 14px -1px rgba(0,0,0,0.75);
+            -webkit-box-shadow: 0px 6px 14px -1px rgba(0,0,0,0.75);
+            -moz-box-shadow: 0px 6px 14px -1px rgba(0,0,0,0.75);
+          }
+
         </style>
-        <div id="waiting_div" style="position: fixed; background-color: rgba(0, 0, 0, 0.6); top:0px; left: 0px; right: 0px; bottom:0px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-          <paper-spinner style="width: 4.5rem; height: 4.5rem;" active></paper-spinner>
-          <span id="waiting_div_text" style="font-size: 1.6rem; margin-top: 4.5rem; display: flex; flex-direction: column; justify-content: center; align-items: center;">${msg}</span>
+        <div id="waiting_div" style="position: fixed; background-color: rgba(0, 0, 0, 0.45); top:0px; left: 0px; right: 0px; bottom:0px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+          
+          <div id="content_div">
+            <paper-spinner style="width: 4.5rem; height: 4.5rem;" active></paper-spinner>
+            <span id="waiting_div_text" style="font-size: 1.6rem; margin-top: 4.5rem; display: flex; flex-direction: column; justify-content: center; align-items: center;">${msg}</span>
+          </div>
         </div>
       `;
       this.shadowRoot.appendChild(

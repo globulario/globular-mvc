@@ -697,7 +697,7 @@ export class ProcessesManager extends HTMLElement {
             if (status.code === 0) {
                 /** */
             } else {
-                ApplicationView.displayMessage(err, 3000)
+                ApplicationView.displayMessage(status.details, 3000)
             }
         })
 
