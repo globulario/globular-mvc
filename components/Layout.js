@@ -383,9 +383,9 @@ export class Layout extends HTMLElement {
             justify-content: center; 
             flex-direction: column; 
             min-width: 250px;
-            box-shadow: 0px 6px 14px -1px rgba(0,0,0,0.75);
-            -webkit-box-shadow: 0px 6px 14px -1px rgba(0,0,0,0.75);
-            -moz-box-shadow: 0px 6px 14px -1px rgba(0,0,0,0.75);
+            box-shadow: 0px 6px 14px -1px rgba(0,0,0,0.65);
+            -webkit-box-shadow: 0px 6px 14px -1px rgba(0,0,0,0.65);
+            -moz-box-shadow: 0px 6px 14px -1px rgba(0,0,0,0.65);
           }
 
         </style>
