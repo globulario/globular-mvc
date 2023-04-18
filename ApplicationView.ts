@@ -771,6 +771,11 @@ export class ApplicationView extends View {
 
         if (this.isLogin) {
 
+          
+          // Append the content manager.
+          this.getSideMenu().appendChild(this.contentManager);
+          this.contentManager.setVertical()
+
 
           this.getSideMenu().appendChild(this.blogEditingMenu);
           this.blogEditingMenu.shrink()
@@ -817,6 +822,10 @@ export class ApplicationView extends View {
           this.applicationsMenu.expand()
         }
         if (this.isLogin) {
+
+          // set back to the navigation div.
+          ApplicationView.layout.navigation().appendChild(this.contentManager);
+          this.contentManager.setHorizontal()
 
           // set back menu item to toolbar...
           ApplicationView.layout.toolbar().appendChild(this.systemInfosMenu);

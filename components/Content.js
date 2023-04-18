@@ -311,14 +311,18 @@ export class ContentManager extends HTMLElement {
 
             #container{
                 display: flex;
-                align-items: center;
+               
             }
 
             .vertical{
                 flex-direction: column-reverse;
+                margin-left: 10px;
+                border-bottom: 1px solid var(--palette-divider);
+                margin-bottom: 15px;
             }
 
             .horizontal{
+                align-items: center;
                 flex-grow: 1;
                 border-right: 1px solid var(--palette-divider);
                 margin-left: 10px;

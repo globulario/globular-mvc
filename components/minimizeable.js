@@ -18,8 +18,10 @@ export function setMinimizeable(header, element, id, name, icon, onMinimize, onM
 
     // first of all I will find the close button
     let buttons = header.querySelectorAll("paper-icon-button")
+
     for (var i = 0; i < buttons.length; i++) {
         if (buttons[i].icon) {
+            
             if (buttons[i].icon == "icons:close") {
 
                 // append minimizeable element to the bar...
@@ -34,12 +36,15 @@ export function setMinimizeable(header, element, id, name, icon, onMinimize, onM
                 }
 
                 let maximizeBtn = document.createElement("paper-icon-button")
-                maximizeBtn.icon = "icons:add"
+               
                 maximizeBtn.style.position = "absolute"
                 maximizeBtn.style.top = "0px"
                 maximizeBtn.style.right = "0px"
                 maximizeBtn.style.display = "none"
+                maximizeBtn.style.setProperty("--iron-icon-fill-color", "var(--palette-text-accent)")
+                maximizeBtn.setAttribute("icon", "icons:add")
 
+          
                 let closeBtn = buttons[i];
                 closeBtn.insertAdjacentHTML('afterend', `<paper-icon-button id="minimize-btn" icon="icons:remove" style="min-width: 40px; --iron-icon-fill-color: var(--palette-text-accent);"></paper-icon-button>`)
                 closeBtn.addEventListener("click", (evt) => {
@@ -66,6 +71,13 @@ export function setMinimizeable(header, element, id, name, icon, onMinimize, onM
                             }
                         }
 
+                        closeBtn.style.background = ""
+                        maximizeBtn.style.background = ""
+                        minimizeBtn.style.background = ""
+                        closeBtn.style.fill = ""
+                        maximizeBtn.style.fill = ""
+                        minimizeBtn.style.fill = ""
+
                         if(onMaximize){
                             onMaximize()
                         }
@@ -75,9 +87,12 @@ export function setMinimizeable(header, element, id, name, icon, onMinimize, onM
 
                 // The onclick event...
                 let minimizeBtn = header.querySelector("#minimize-btn")
+         
                 minimizeBtn.onclick = () => {
                     maximizeBtn.style.display = "block"
+                  
                     group.parentNode.style.display = ""
+
                     mininizeableBar.minimize(id, name)
 
                     // set the close btn
@@ -86,8 +101,17 @@ export function setMinimizeable(header, element, id, name, icon, onMinimize, onM
                     closeBtn.style.left = "0px"
                     element.appendChild(closeBtn)
 
+                    closeBtn.style.background = "rgba(0, 0, 0, .5)"
+                    maximizeBtn.style.background = "rgba(0, 0, 0, .5)"
+                    minimizeBtn.style.background = "rgba(0, 0, 0, .5)"
+
+                    closeBtn.style.fill = "white"
+                    maximizeBtn.style.fill = "white"
+                    minimizeBtn.style.fill = "white"
+
                     if(onMinimize){
                         onMinimize()
+
                     }
                 }
 
@@ -245,6 +269,7 @@ export class MinimizeableGroup extends HTMLElement {
                 position: absolute;
             }
 
+      
         </style>
         <div id="container">
             <div style="position: relative;">

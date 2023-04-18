@@ -205,13 +205,6 @@ export class Layout extends HTMLElement {
         sideMenu_.style.width = "auto";
         sideMenu_.style.display = "block";
         sideMenu_.style.overflow = "auto";
-       
-        // put the naviagtion content into it default slot.
-        let navigation = this.querySelector("#navigation")
-        navigation.slot = "navigation"
-        let contentManager = navigation.querySelector("globular-content-manager")
-        if (contentManager)
-          contentManager.setHorizontal()
 
       } else {
       
@@ -227,13 +220,6 @@ export class Layout extends HTMLElement {
         sideMenu_.style.width = "100%";
         sideMenu_.style.marginTop = "24px";
 
-
-        // put the navigation in the the side menu...
-        let navigation = this.querySelector("#navigation")
-        navigation.slot = "navigation"
-        let contentManager = navigation.querySelector("globular-content-manager")
-        if (contentManager)
-          contentManager.setVertical()
       }
 
 
@@ -368,8 +354,7 @@ export class Layout extends HTMLElement {
         <style>
           #waiting_div_text div{
             text-align: center;
-
-
+            
           }
 
           #content_div{
@@ -383,13 +368,14 @@ export class Layout extends HTMLElement {
             justify-content: center; 
             flex-direction: column; 
             min-width: 250px;
+            min-height: 250px;
             box-shadow: 0px 6px 14px -1px rgba(0,0,0,0.65);
             -webkit-box-shadow: 0px 6px 14px -1px rgba(0,0,0,0.65);
             -moz-box-shadow: 0px 6px 14px -1px rgba(0,0,0,0.65);
           }
 
         </style>
-        <div id="waiting_div" style="position: fixed; background-color: rgba(0, 0, 0, 0.45); top:0px; left: 0px; right: 0px; bottom:0px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+        <div id="waiting_div" style="position: fixed; background-color: rgba(0, 0, 0, 0.8); top:0px; left: 0px; right: 0px; bottom:0px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
           
           <div id="content_div">
             <paper-spinner style="width: 4.5rem; height: 4.5rem;" active></paper-spinner>
