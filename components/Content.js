@@ -569,7 +569,7 @@ export class ContentManager extends HTMLElement {
                         this.deleteScript(this.scriptManager.toDelete.pop(), () => {
                             if (this.styleManager.toDelete.length > 0) {
                                 this.deleteStyle(this.styleManager.toDelete.pop(), () => {
-                                    
+
                                 }, err => ApplicationView.displayMessage(err, 3000))
                             } else {
                                 console.log("all scipt are delete...")
@@ -590,6 +590,12 @@ export class ContentManager extends HTMLElement {
         createPageBtn.onclick = () => {
             Model.eventHub.publish("_create_page_event_", {}, true)
         }
+    }
+
+    // Enter edit mode...
+    enterEditMode() {
+        let setCreateModeBtn = this.shadowRoot.querySelector("#set-create-mode-btn")
+        setCreateModeBtn.click()
     }
 
     // Load existing css styles...
@@ -1669,9 +1675,7 @@ export class NavigationPageLink extends HTMLElement {
 
         // enter edit mode.
         this.span.addEventListener('dblclick', () => {
-            if (!this.edit) {
-                this.setEditMode()
-            }
+            this.setEditMode()
         });
 
         // set initial values.
@@ -1742,19 +1746,20 @@ export class NavigationPageLink extends HTMLElement {
             this.input.setSelectionRange(0, this.input.value.length)
         }, 100)
 
-        // also set it page to edit mode...
-        this.webPage.edit = true
-        this.webPage.setEditMode()
+
+        if (!this.webPage.edit) {
+            document.querySelector("globular-content-manager").enterEditMode()
+            // also set it page to edit mode...
+            this.webPage.setEditMode()
+        }
 
     }
 
     resetEditMode() {
-
         this.setInputWidth()
         this.editor.style.display = "none"
         this.span.style.visibility = "visible"
         this.span.style.position = ""
-        this.webPage.edit = false
     }
 
     save(callback, errorCallback) {
