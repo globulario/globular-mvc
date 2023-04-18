@@ -1669,9 +1669,9 @@ export class NavigationPageLink extends HTMLElement {
 
         // enter edit mode.
         this.span.addEventListener('dblclick', () => {
-            //if (!this.edit) {
+            if (!this.edit) {
                 this.setEditMode()
-            //}
+            }
         });
 
         // set initial values.
@@ -1977,8 +1977,11 @@ export class WebPage extends HTMLElement {
             style = `
 /** Page style here */
 #${this.id}{
+    
+    position: relative;
     width: 100%;
-    min-height: 500px;
+    min-height: calc(100vh - 60px);
+    
 }`
         }
         this.style_.innerText = style

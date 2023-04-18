@@ -161,6 +161,11 @@ export class LoginBox extends HTMLElement {
                 font-size: 1rem;
               }
 
+              .card-content {
+                display: flex;
+                flex-direction: column;
+              }
+
               paper-button {
                 font-size: 1rem;
               }
@@ -176,6 +181,15 @@ export class LoginBox extends HTMLElement {
                 word-wrap: break-word;
               }
              
+              #reset-password-lnk{
+                font-size: 1rem;
+                align-self: flex-end;
+              }
+
+              #reset-password-lnk:hover{
+                text-decoration: underline;
+                cursor: pointer;
+              }
 
         </style>
 
@@ -189,11 +203,13 @@ export class LoginBox extends HTMLElement {
                     <iron-icon icon="lock" slot="prefix"></iron-icon>
                 </paper-input>
                 <paper-checkbox id="remember_me">Remember me</paper-checkbox>
+                <span id="reset-password-lnk">Forgot password?</span>
             </div>
             <div class="card-actions">
                 <paper-button id="login_btn">login</paper-button>
                 <paper-button id="cancel_btn">cancel</paper-button>
             </div>
+           
         </paper-card>
         `
 

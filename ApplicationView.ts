@@ -543,7 +543,10 @@ export class ApplicationView extends View {
 
           },
           (evt) => {
-            this.getWorkspace().appendChild(this.messenger)
+            // Append the messenger in the workspace div and not the workspace component.
+            document.getElementById("workspace").appendChild(this.messenger)
+            this.messenger.style.zIndex = "1000"
+
           }, true)
 
         Model.eventHub.subscribe("__create_new_conversation_event__",

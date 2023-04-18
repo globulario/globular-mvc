@@ -233,11 +233,7 @@ paper-card .card-actions {
 }
 
 /** overide those rules to set page **/
-globular-web-page{
-   position: relative;
-   width: 100%;
-   min-height: calc(100vh - 60px);
-}
+
 
 /**
  * That bar is use to minimize dialog.
