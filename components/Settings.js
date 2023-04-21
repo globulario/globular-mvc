@@ -9,15 +9,18 @@ import '@polymer/paper-input/paper-textarea.js';
 import '@polymer/paper-dropdown-menu/paper-dropdown-menu.js'
 import '@polymer/iron-collapse/iron-collapse.js';
 import "@polymer/iron-icons/image-icons";
-
+import * as jwt from "jwt-decode";
 import { v4 as uuidv4 } from "uuid";
 import { ImageCropper } from "./Image";
 import { Camera } from "./Camera";
 import { FileExplorer } from "./File"
-
-import { Model } from "../Model";
+import { PasswordInput } from "./Password"
+import { generatePeerToken, Model } from "../Model";
 import { ApplicationView } from "../ApplicationView";
 import * as getUuidByString from "uuid-by-string";
+import { SetPasswordRequest, SetRootPasswordRequest } from 'globular-web-client/authentication/authentication_pb';
+import { Application } from '../Application';
+import { Connection, CreateConnectionRqst, DisconnectRqst, StoreType } from 'globular-web-client/persistence/persistence_pb';
 
 /**
  * This is the side menu that will be set on left when the user wants to change it settings
@@ -1593,6 +1596,165 @@ export class ImageSetting extends Setting {
 customElements.define("globular-image-setting", ImageSetting);
 
 
+export class PasswordSetting extends Setting {
+  constructor(name, description) {
+    super(name, description);
+
+    this.itemsArray = []
+
+    let html = `
+      <style>
+     
+        #setting-input{
+          flex-grow: 1;
+          font-size: 1rem;
+        }
+
+        #content{
+          display: flex;
+          flex-direction: column;
+          width: 100%;
+          padding: 0px 20px;
+        }
+
+        globular-password-input{
+          margin-bottom: 20px;
+        }
+
+      </style>
+      <div id="content">
+        <globular-password-input id="actual-password" label="actual password"></globular-password-input>
+        <globular-password-input id="new-password" label="new password"></globular-password-input>
+        <globular-password-input id="confirm-new-password" label="confirm new password"></globular-password-input>
+        <div style="display: flex;">
+          <span style="flex-grow: 1;"></span>
+          <paper-button id="submit-btn" disabled>Submit</paper-button>
+        </div>
+      </div>
+    `
+
+    let range = document.createRange();
+    let content = range.createContextualFragment(html)
+
+    this.shadowRoot.insertBefore(content, this.description)
+
+    this.actualPasswordInput = this.shadowRoot.getElementById("actual-password");
+    this.newPasswordInput = this.shadowRoot.getElementById("new-password");
+    this.confirmNewPassword = this.shadowRoot.getElementById("confirm-new-password");
+    this.submitBtn = this.shadowRoot.querySelector("#submit-btn")
+
+    // now show the actual description.
+    this.description.style.display = "none";
+
+    // test if the password match...
+    this.newPasswordInput.onkeyup = this.confirmNewPassword.onkeyup = () => {
+
+      // disabled the submit button
+      this.submitBtn.setAttribute("disabled", "")
+
+      if (this.actualPasswordInput.getPassword().length > 0 &&
+        this.newPasswordInput.getPassword().length > 0 &&
+        this.confirmNewPassword.getPassword().length > 0 && this.confirmNewPassword.getPassword() == this.newPasswordInput.getPassword()) {
+        this.submitBtn.removeAttribute("disabled")
+      }
+    }
+
+    this.submitBtn.onclick = () => {
+
+
+      let globule = Model.getGlobule(Application.account.domain)
+      generatePeerToken(globule, token => {
+
+        let setUserConnection = (token, callback, errorCallback) => {
+
+          let decoded = jwt(token);
+          let id = decoded.id;
+          let userName = decoded.username;
+          let email = decoded.email;
+          let domain = decoded.user_domain;
+
+          // here I will save the user token and user_name in the local storage.
+          localStorage.setItem("user_token", token);
+          localStorage.setItem("token_expired", decoded.exp);
+          localStorage.setItem("user_id", id);
+          localStorage.setItem("user_name", userName);
+          localStorage.setItem("user_email", email);
+          localStorage.setItem("user_domain", domain);
+          let connectionId = userName.split("@").join("_").split(".").join("_");
+
+          let rqst = new DisconnectRqst
+          rqst.setConnectionid(connectionId)
+          globule.persistenceService.disconnect(rqst, { token: token, application: Model.application, domain: globule.domain })
+            .then(rsp => {
+
+              // Create connection.
+              let rqst = new CreateConnectionRqst
+
+              // So here i will open the use database connection.
+              let connection = new Connection
+              connection.setId(connectionId)
+              connection.setUser(connectionId)
+              connection.setPassword(this.newPasswordInput.getPassword())
+              connection.setStore(StoreType.MONGO)
+              connection.setName(id)
+              connection.setPort(27017)
+              connection.setTimeout(60)
+              connection.setHost(domain)
+              rqst.setConnection(connection)
+              globule.persistenceService.createConnection(rqst, {
+                token: token,
+                application: Model.application,
+                domain: globule.domain
+              }).then(callback)
+                .catch(errorCallback(err))
+            })
+
+        }
+
+        // If the user is the root I will also change the root password.
+        if (Application.account.id == "sa") {
+          let rqst = new SetRootPasswordRequest
+          rqst.setNewpassword(this.newPasswordInput.getPassword())
+          rqst.setOldpassword(this.actualPasswordInput.getPassword())
+          globule.authenticationService.setRootPassword(rqst, { token: token, application: Model.application, domain: globule.domain })
+            .then(rsp => setUserConnection(rsp.getToken(), () => {
+                ApplicationView.displayMessage("Password was updated!", 3000)
+                ApplicationView.resume()
+              }, err => { ApplicationView.displayMessage(err, 3000); ApplicationView.resume() }))
+            .catch(err => { ApplicationView.displayMessage(err, 3000); ApplicationView.resume() })
+        } else {
+          let rqst = new SetPasswordRequest
+          rqst.setOldpassword(this.actualPasswordInput.getPassword())
+          rqst.setNewpassword(this.newPasswordInput.getPassword())
+          rqst.setAccountid(Application.account.id + "@" + Application.account.domain)
+          globule.authenticationService.setPassword(rqst, { token: token, application: Model.application, domain: globule.domain })
+            .then(rsp =>setUserConnection(rsp.getToken(), () => {
+                ApplicationView.displayMessage("Password was updated!", 3000)
+                ApplicationView.resume()
+              }, err => { ApplicationView.displayMessage(err, 3000); ApplicationView.resume() })
+            ).catch(err => { ApplicationView.displayMessage(err, 3000); ApplicationView.resume() })
+        }
+      })
+    }
+
+  }
+
+  getElement() {
+    return this.shadowRoot.querySelector("#content");
+  }
+
+  getValue() {
+    return ""
+  }
+
+  setValue(value) {
+    this.input.value = value;
+  }
+
+}
+
+customElements.define("globular-password-setting", PasswordSetting);
+
 /**
  * Set string setting...
  */
@@ -1835,7 +1997,7 @@ export class StringListSetting extends Setting {
   setValues(valueArray) {
     // Remove previous values...
     let inputs = this.shadowRoot.querySelectorAll("paper-input");
-    for(var i=0; i < inputs.length; i++){
+    for (var i = 0; i < inputs.length; i++) {
       inputs[i].parentNode.parentNode.removeChild(inputs[i].parentNode)
     }
 
@@ -1964,19 +2126,19 @@ customElements.define("globular-action-setting", ActionSetting);
 /**
  * display a video convertion error
  */
- export class VideoConversionError extends HTMLElement {
+export class VideoConversionError extends HTMLElement {
   // attributes.
 
   // Create the applicaiton view.
   constructor(err) {
-      super()
-      // Set the shadow dom.
-      this.attachShadow({ mode: 'open' });
+    super()
+    // Set the shadow dom.
+    this.attachShadow({ mode: 'open' });
 
-      let uuid = "_" + getUuidByString(err.getPath())
+    let uuid = "_" + getUuidByString(err.getPath())
 
-      // Innitialisation of the layout.
-      this.shadowRoot.innerHTML = `
+    // Innitialisation of the layout.
+    this.shadowRoot.innerHTML = `
       <style>
          
       </style>
@@ -1993,8 +2155,8 @@ customElements.define("globular-action-setting", ActionSetting);
       </div>
       `
 
-      // test create offer...
-      this.deleteBtn = this.shadowRoot.querySelector(`#${uuid}_delete_btn`)
+    // test create offer...
+    this.deleteBtn = this.shadowRoot.querySelector(`#${uuid}_delete_btn`)
   }
 
 }
@@ -2004,17 +2166,17 @@ customElements.define('globular-video-conversion-error', VideoConversionError)
 /**
  * Video Convertion error
  */
- export class VideoConversionErrorsManager extends HTMLElement {
+export class VideoConversionErrorsManager extends HTMLElement {
   // attributes.
 
   // Create the applicaiton view.
   constructor(ondeleteerror, onclear, onrefresh) {
-      super()
-      // Set the shadow dom.
-      this.attachShadow({ mode: 'open' });
+    super()
+    // Set the shadow dom.
+    this.attachShadow({ mode: 'open' });
 
-      // Innitialisation of the layout.
-      this.shadowRoot.innerHTML = `
+    // Innitialisation of the layout.
+    this.shadowRoot.innerHTML = `
       <style>
          
 
@@ -2042,57 +2204,57 @@ customElements.define('globular-video-conversion-error', VideoConversionError)
       </div>
       `
 
-      // List of handler.
-      this.ondeleteerror = ondeleteerror
-      this.onclear = onclear
-      this.onrefresh = onrefresh
+    // List of handler.
+    this.ondeleteerror = ondeleteerror
+    this.onclear = onclear
+    this.onrefresh = onrefresh
 
-      // Clear the content.
-      this.shadowRoot.querySelector("#clear-btn").onclick = ()=>{
-        if(this.onclear != undefined){
+    // Clear the content.
+    this.shadowRoot.querySelector("#clear-btn").onclick = () => {
+      if (this.onclear != undefined) {
+        this.innerHTML = "" // reset the content...
+        this.onclear()
+      }
+    }
+
+    // Refresh the the content
+    this.shadowRoot.querySelector("#refresh-btn").onclick = () => {
+      if (this.onrefresh != null) {
+        this.onrefresh(errors => {
           this.innerHTML = "" // reset the content...
-          this.onclear()
-        }
+          this.setErrors(errors)
+        })
       }
-
-      // Refresh the the content
-      this.shadowRoot.querySelector("#refresh-btn").onclick = ()=>{
-        if(this.onrefresh != null){
-          this.onrefresh(errors=>{
-            this.innerHTML = "" // reset the content...
-            this.setErrors(errors)
-          })
-        }
-      }
-  }
-
-  // Use by addSetting...
-  getElement(){
-    return null
-  }
-
-  setError(err){
-    let videoConversionError = new VideoConversionError(err)
-    this.appendChild(videoConversionError)
-    if(videoConversionError.deleteBtn){
-      videoConversionError.deleteBtn.onclick = ()=>{this.deleteError(err, videoConversionError)}
     }
   }
 
-  setErrors(errors){
-    errors.forEach(err=>{
+  // Use by addSetting...
+  getElement() {
+    return null
+  }
+
+  setError(err) {
+    let videoConversionError = new VideoConversionError(err)
+    this.appendChild(videoConversionError)
+    if (videoConversionError.deleteBtn) {
+      videoConversionError.deleteBtn.onclick = () => { this.deleteError(err, videoConversionError) }
+    }
+  }
+
+  setErrors(errors) {
+    errors.forEach(err => {
       this.setError(err)
     })
   }
 
   // Delete error...
-  deleteError(err, videoConversionError){
-    if(videoConversionError){
-      if(videoConversionError.parentNode!=undefined){
+  deleteError(err, videoConversionError) {
+    if (videoConversionError) {
+      if (videoConversionError.parentNode != undefined) {
         videoConversionError.parentNode.removeChild(videoConversionError)
       }
     }
-    if(this.ondeleteerror){
+    if (this.ondeleteerror) {
       this.ondeleteerror(err)
     }
   }
@@ -2104,19 +2266,19 @@ customElements.define('globular-video-conversion-errors-manager', VideoConversio
 /**
  * display a video convertion error
  */
- export class VideoConversionLog extends HTMLElement {
+export class VideoConversionLog extends HTMLElement {
   // attributes.
 
   // Create the applicaiton view.
   constructor(log) {
-      super()
-      // Set the shadow dom.
-      this.attachShadow({ mode: 'open' });
+    super()
+    // Set the shadow dom.
+    this.attachShadow({ mode: 'open' });
 
-      let uuid = "_" + getUuidByString(log.getLogTime().toString())
-      let date = new Date(log.getLogTime() * 1000)
-      // Innitialisation of the layout.
-      this.shadowRoot.innerHTML = `
+    let uuid = "_" + getUuidByString(log.getLogTime().toString())
+    let date = new Date(log.getLogTime() * 1000)
+    // Innitialisation of the layout.
+    this.shadowRoot.innerHTML = `
       <style>
          
       </style>
@@ -2131,7 +2293,7 @@ customElements.define('globular-video-conversion-errors-manager', VideoConversio
       `
   }
 
-  setStatus(value){
+  setStatus(value) {
     this.shadowRoot.querySelector(`#status_span`).innerHTML = value
   }
 }
@@ -2142,17 +2304,17 @@ customElements.define('globular-video-conversion-log', VideoConversionLog)
 /**
  * Video Convertion error
  */
- export class VideoConversionLogsManager extends HTMLElement {
+export class VideoConversionLogsManager extends HTMLElement {
   // attributes.
 
   // Create the applicaiton view.
   constructor(onclear, onrefresh) {
-      super()
-      // Set the shadow dom.
-      this.attachShadow({ mode: 'open' });
+    super()
+    // Set the shadow dom.
+    this.attachShadow({ mode: 'open' });
 
-      // Innitialisation of the layout.
-      this.shadowRoot.innerHTML = `
+    // Innitialisation of the layout.
+    this.shadowRoot.innerHTML = `
       <style>
          
 
@@ -2180,40 +2342,40 @@ customElements.define('globular-video-conversion-log', VideoConversionLog)
       </div>
       `
 
-      // List of handler.
-      this.onclear = onclear
-      this.onrefresh = onrefresh
+    // List of handler.
+    this.onclear = onclear
+    this.onrefresh = onrefresh
 
-      // Clear the content.
-      this.shadowRoot.querySelector("#clear-btn").onclick = ()=>{
-        if(this.onclear != undefined){
+    // Clear the content.
+    this.shadowRoot.querySelector("#clear-btn").onclick = () => {
+      if (this.onclear != undefined) {
+        this.innerHTML = "" // reset the content...
+        this.onclear()
+      }
+    }
+
+    // Refresh the the content
+    this.shadowRoot.querySelector("#refresh-btn").onclick = () => {
+      if (this.onrefresh != null) {
+        this.onrefresh(logs => {
           this.innerHTML = "" // reset the content...
-          this.onclear()
-        }
+          this.setLogs(logs)
+        })
       }
-
-      // Refresh the the content
-      this.shadowRoot.querySelector("#refresh-btn").onclick = ()=>{
-        if(this.onrefresh != null){
-          this.onrefresh(logs=>{
-            this.innerHTML = "" // reset the content...
-            this.setLogs(logs)
-          })
-        }
-      }
+    }
   }
 
   // Use by addSetting...
-  getElement(){
+  getElement() {
     return null
   }
 
-  setLog(log){
+  setLog(log) {
     let uuid = "_" + getUuidByString(log.getLogTime().toString())
     let videoConversionLog = this.querySelector("#" + uuid)
-    if(videoConversionLog){
+    if (videoConversionLog) {
       videoConversionLog.setStatus(log.getStatus())
-    }else{
+    } else {
       videoConversionLog = new VideoConversionLog(log)
       videoConversionLog.id = uuid
       this.appendChild(videoConversionLog)
@@ -2221,8 +2383,8 @@ customElements.define('globular-video-conversion-log', VideoConversionLog)
 
   }
 
-  setLogs(logs){
-    logs.forEach(l=>{
+  setLogs(logs) {
+    logs.forEach(l => {
       this.setLog(l)
     })
   }

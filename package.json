@@ -31,6 +31,7 @@
   },
   "homepage": "https://github.com/davecourtois/globular-mvc#readme",
   "dependencies": {
+    "@mistio/mist-password": "^2.0.1",
     "@modern-dev/namegen": "^0.1.0",
     "@polymer/app-layout": "^3.1.0",
     "@polymer/iron-autogrow-textarea": "^3.0.3",

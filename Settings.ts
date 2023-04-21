@@ -5,7 +5,7 @@ import { Application } from "./Application";
 import { ApplicationView } from "./ApplicationView";
 import { RoleManager } from "./components/Role"
 import { GroupManager } from "./components/Group"
-import { ImageCropperSetting, SettingsMenu, SettingsPanel, ComplexSetting, EmailSetting, StringSetting, RadioGroupSetting, OnOffSetting, NumberSetting, ActionSetting, VideoConversionErrorsManager, VideoConversionLogsManager } from "./components/Settings";
+import { ImageCropperSetting, SettingsMenu, SettingsPanel, ComplexSetting, EmailSetting, StringSetting, RadioGroupSetting, OnOffSetting, NumberSetting, ActionSetting, VideoConversionErrorsManager, VideoConversionLogsManager, PasswordSetting } from "./components/Settings";
 import { Model } from "./Model";
 import "@polymer/iron-icons/maps-icons";
 import "@polymer/iron-icons/social-icons";
@@ -88,10 +88,20 @@ export class UserSettings extends Settings {
 
         generalSettings.addSetting(userNameSetting)
 
+        // Change the password.
+        let userPasswordSetting = new ComplexSetting("Password", "Change account password")
+        generalSettings.addSetting(userPasswordSetting)
+
+        let passowrdSetting = new PasswordSetting("Password", "Change account password")
+        userPasswordSetting.addSetting(passowrdSetting)
+
+        generalSettings.addSetting(userPasswordSetting)
+
         // The user email address.
         let userEmailSetting = new EmailSetting("Email", "Change the user email")
         userEmailSetting.setValue(account.email)
         generalSettings.addSetting(userEmailSetting)
+
 
         // The set the application mode...
         let displayModeSelector = new RadioGroupSetting("Theme", "Ligth mode or dark mode")
@@ -118,6 +128,7 @@ export class UserSettings extends Settings {
                 html.setAttribute("theme", value)
             }
         }
+
         let theme = localStorage.getItem(account.id + "_theme")
         let html = document.querySelector("html")
         if (theme != null) {

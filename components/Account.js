@@ -11,9 +11,10 @@ import "@polymer/paper-button/paper-button.js";
 import "@polymer/paper-checkbox/paper-checkbox.js";
 import "./Session"
 import "./DiskSpace.js"
+import { PasswordInput } from "./Password"
 
 import { Menu } from "./Menu";
-import { Model } from "../Model";
+import { generatePeerToken, Model } from "../Model";
 
 import { Account, AddAccountRoleRqst, AddGroupMemberAccountRqst, AddOrganizationAccountRqst, DeleteAccountRqst, GetAccountsRqst, RegisterAccountRqst, RemoveAccountRoleRqst, RemoveGroupMemberAccountRqst, RemoveOrganizationAccountRqst } from "globular-web-client/resource/resource_pb";
 import { getAllGroups, getAllRoles } from 'globular-web-client/api';
@@ -22,6 +23,9 @@ import { SearchableGroupList, SearchableOrganizationList, SearchableRoleList } f
 import { ApplicationView } from "../ApplicationView";
 import { localToGlobal } from "./utility";
 import { Picker } from "emoji-picker-element";
+import { Application } from "../Application";
+import { Connection } from "globular-web-client/persistence/persistence_pb";
+import { SetPasswordRequest } from "globular-web-client/authentication/authentication_pb";
 
 
 function getAllAccountsInfo_(globule, callback, errorCallback) {
@@ -283,7 +287,7 @@ export class AccountMenu extends Menu {
     let range = document.createRange();
     this.getMenuDiv().innerHTML = ""; // remove existing elements.
     this.getMenuDiv().appendChild(range.createContextualFragment(html));
-    this.getMenuDiv().querySelector("#close-btn").onclick = ()=>{
+    this.getMenuDiv().querySelector("#close-btn").onclick = () => {
       this.getMenuDiv().parentNode.removeChild(this.getMenuDiv())
     }
 
@@ -600,7 +604,7 @@ export class AccountPanel extends HTMLElement {
     // Keep account informations.
     this.account = a;
     let profilePicture = this.account.getProfilepicture()
-    if(!profilePicture){
+    if (!profilePicture) {
       profilePicture = ""
     }
 
@@ -619,6 +623,7 @@ export class AccountPanel extends HTMLElement {
 
             #content{
                 padding: 0px;
+                padding-top: 16px;
                 min-width: 728px;
                 font-size: 1rem;
             }
@@ -676,6 +681,12 @@ export class AccountPanel extends HTMLElement {
               --paper-tab-ink: var(--palette-action-disabled);
             }
 
+            .password-div{
+              display: flex;
+              flex-direction: column;
+              padding: 0px 20px
+            }
+
         </style>
         <div id="container">
             <div class="header">
@@ -683,19 +694,32 @@ export class AccountPanel extends HTMLElement {
             <iron-icon icon="account-circle" style="width: 32px; height: 32px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${profilePicture.length > 0 ? "none" : "block"};"></iron-icon>
             <span class="title">${this.account.getName() + "@" + this.account.getDomain()}</span>
             <globular-disk-space-manager editable="true" account="${this.account.getId() + "@" + this.account.getDomain()}"></globular-disk-space-manager>
-            <paper-button id="delete-account-btn">Delete</paper-button>
+           
             <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
                 <iron-icon  id="hide-btn"  icon="unfold-less" style="flex-grow: 1; --iron-icon-fill-color:var(--palette-text-primary);" icon="add"></iron-icon>
                 <paper-ripple class="circle" recenters=""></paper-ripple>
             </div>
             </div>
             <iron-collapse id="collapse-panel"  >
+                <div class="password-div" style="display:${this.account.getDomain() == Model.domain && Application.account.id == "sa" && this.account.getId() != "sa" ? 'block' : 'none'};">
+                  <span>set password</span>
+                  <globular-password-input id="new-password" label="new password"></globular-password-input>
+                  <globular-password-input id="confirm-new-password" label="confirm new password"></globular-password-input>
+                  <div style="display: flex;">
+                    <span style="flex-grow: 1;"></span>
+                    <paper-button id="submit-btn" disabled>Submit</paper-button>
+                  </div>
+                </div>
                 <paper-tabs selected="0">
                     <paper-tab id="account-organizations-tab">Organizations</paper-tab>
                     <paper-tab id="account-roles-tab">Roles</paper-tab>
                     <paper-tab id="account-groups-tab">Groups</paper-tab>
                 </paper-tabs>
                 <div id="content">
+                </div>
+                <div style="display: flex; padding-bottom: 10px;">
+                  <span style="flex-grow: 1;"></span>
+                  <paper-button id="delete-account-btn"  style="display:${this.account.getDomain() == Model.domain && this.account.getId() != "sa" ? 'block' : 'none'};">Delete</paper-button>
                 </div>
             </iron-collapse>
         </div>
@@ -704,8 +728,41 @@ export class AccountPanel extends HTMLElement {
     let content = this.shadowRoot.querySelector("#content")
     this.hideBtn = this.shadowRoot.querySelector("#hide-btn")
 
+    // The password change
+    this.newPasswordInput = this.shadowRoot.getElementById("new-password");
+    this.confirmNewPassword = this.shadowRoot.getElementById("confirm-new-password");
+    this.submitBtn = this.shadowRoot.querySelector("#submit-btn")
+
+    // test if the password match...
+    this.newPasswordInput.onkeyup = this.confirmNewPassword.onkeyup = () => {
+
+      // disabled the submit button
+      this.submitBtn.setAttribute("disabled", "")
+
+      if (this.newPasswordInput.getPassword().length > 0 &&
+        this.confirmNewPassword.getPassword().length > 0 && this.confirmNewPassword.getPassword() == this.newPasswordInput.getPassword()) {
+        this.submitBtn.removeAttribute("disabled")
+      }
+    }
+
+    this.submitBtn.onclick = () => {
+      let globule = Model.getGlobule(this.account.getDomain())
+      generatePeerToken(globule, token => {
+        let rqst = new SetPasswordRequest
+        rqst.setOldpassword("")
+        rqst.setNewpassword(this.newPasswordInput.getPassword())
+        rqst.setAccountid(this.account.getId() + "@" + this.account.getDomain())
+        globule.authenticationService.setPassword(rqst, { token: token, application: Model.application, domain: globule.domain })
+          .then(rsp => {
+            ApplicationView.displayMessage(this.account.getName() + " password was updated!", 3000)
+            ApplicationView.resume()
+          }).catch(err => { ApplicationView.displayMessage(err, 3000); ApplicationView.resume() })
+      })
+    }
+
+
     this.shadowRoot.querySelector("globular-disk-space-manager").account = this.account;
-    
+
     // Aggregations
     this.organizationsList = null
     this.rolesList = null
@@ -758,7 +815,7 @@ export class AccountPanel extends HTMLElement {
 
         this.organizationsList = new SearchableOrganizationList("Organizations", list,
           o => {
-          
+
             let rqst = new RemoveOrganizationAccountRqst
             rqst.setOrganizationid(o.getId() + "@" + o.getDomain())
             rqst.setAccountid(a.getId() + "@" + a.getDomain())
@@ -871,7 +928,7 @@ export class AccountPanel extends HTMLElement {
           },
           g => {
             let rqst = new AddGroupMemberAccountRqst
-            rqst.setAccountid(a.getId()+ "@" + a.getDomain())
+            rqst.setAccountid(a.getId() + "@" + a.getDomain())
             rqst.setGroupid(g.getId() + "@" + g.getDomain())
             Model.globular.resourceService.addGroupMemberAccount(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
               .then(rsp => {
@@ -994,7 +1051,7 @@ export class ExternalAccountManager extends HTMLElement {
           #container{
             display: flex;
             flex-direction: column;
-            margin-top: 24px;
+            margin-top: 64px;
           }
 
           .title{

@@ -174,9 +174,6 @@ export class Layout extends HTMLElement {
     this.sideMenuSlot = this.shadowRoot.getElementById("side-menu");
 
     this.header = this.shadowRoot.querySelector("app-header")
-
-    this.hideSideBar();
-
     window.addEventListener("resize", () => {
       if (this.workspace() == null) {
         return;
@@ -268,7 +265,7 @@ export class Layout extends HTMLElement {
       },
       (data) => {
         // Here the user is log in...
-        this.showSideBar();
+        //this.showSideBar();
       },
       true, this
     );
@@ -279,7 +276,7 @@ export class Layout extends HTMLElement {
       },
       (data) => {
         // Here the user is log out...
-        this.hideSideBar();
+        //this.hideSideBar();
       },
       true, this
     );
