@@ -227,15 +227,18 @@ export class Account extends Model {
                             // here I will initialyse groups...
                             account.groups_ = data.getGroupsList();
 
+                            if(!Application.account){
+                                successCallback(account)
+                                return
+                            }
+
                             if (account.id == Application.account.id) {
                                 account.initData(() => {
                                     successCallback(account)
                                 }, errorCallback)
                             } else {
-
                                 // I will keep the account in the cache...
                                 localStorage.setItem(account.id + "@" + account.domain, account.toString())
-
                                 successCallback(account)
                             }
 

@@ -9,6 +9,10 @@ import '@polymer/paper-button/paper-button.js';
 import '@polymer/paper-checkbox/paper-checkbox.js';
 
 import { Model } from '../Model';
+import { ApplicationView } from '../ApplicationView';
+import { Account } from '../Account';
+import { Notification, NotificationType } from '../Notification';
+import { Application } from '../Application';
 
 /**
  * Login/Register functionality.
@@ -249,6 +253,49 @@ export class LoginBox extends HTMLElement {
             if(evt.key == "Enter" ){
                 loginBtn.click();
             }
+        }
+
+        this.shadowRoot.querySelector("#reset-password-lnk").onclick = ()=>{
+            if(userInput.value.length == 0){
+                userInput.focus()
+                ApplicationView.displayMessage("Please enter your user id or email and click again", 3500)
+                return
+            }
+
+            Account.getAccount(userInput.value, account=>{
+
+                Account.getAccount("sa", sa=>{
+            
+                    let notification = new Notification(
+                        Model.getGlobule(sa.domain).config.Mac,
+                        account.id + "@" + account.domain,
+                        NotificationType.User,
+                        sa.id + "@" + sa.domain,
+                        `
+                        <div style="display: flex; flex-direction: column;">
+                          <p>
+                            User ${account.name} (id: ${account.id + "@" + account.domain}) forgot it password.
+                            <br>Can you change it password and send it new password at <a href="mailto:${account.email}">${account.email}</a>
+                          </p>
+                        </div>`
+                      );
+                  
+                      // Send the notification.
+                      Application.sendNotifications(
+                        notification,
+                        () => {
+                            ApplicationView.displayMessage(`<p>Notification was sent to the system administrator.</br>An email answer will be sent to you soon at address ${account.email}.</br>You can also contact the administrator directly at <a href="mailto:${sa.email}">${sa.email}</a></p>`, 15000)
+                        },
+                        err => {
+                          ApplicationView.displayMessage(err, 3000);
+                        }
+                      );
+                }, err=>{})
+            }, err=>{
+                ApplicationView.displayMessage(err, 3000)
+                userInput.value = ""
+                userInput.focus()
+            })
         }
 
         // And you remember me, with a lot of rum!

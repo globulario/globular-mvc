@@ -585,7 +585,7 @@ export class Application extends Model {
           (account: Account) => {
             // send a refresh token event.
             // Model.eventHub.publish("refresh_token_event", account, true);
-            
+
             Model.eventHub.publish("login_event", account, true);
 
             // When new contact is accepted.
@@ -1333,7 +1333,7 @@ export class Application extends Model {
    * Send application notifications.
    * @param notification The notification can contain html text.
    */
-  sendNotifications(
+  static sendNotifications(
     notification: Notification,
     callback: () => void,
     onError: (err: any) => void
@@ -1347,17 +1347,28 @@ export class Application extends Model {
     notification_.setDate(Math.floor(notification.date.getTime() / 1000))
     notification_.setMessage(notification.text)
     notification_.setRecipient(notification.recipient)
+
     if (notification.type == NotificationType.Application) {
       notification_.setSender(Model.application)
       notification_.setNotificationType(resource.NotificationType.APPLICATION_NOTIFICATION)
     } else {
+
       notification_.setNotificationType(resource.NotificationType.USER_NOTIFICATION)
-      notification_.setSender(Application.account.id + "@" + Application.account.domain)
-      notification_.setMac(Model.getGlobule(Application.account.domain).config.Mac)
+      
+      if (notification.sender.length == 0) {
+        notification_.setSender(Application.account.id + "@" + Application.account.domain)
+      } else {
+        notification_.setSender(notification.sender)
+      }
+
+      if (notification.mac.length == 0) {
+        notification_.setMac(Model.getGlobule(Application.account.domain).config.Mac)
+      } else {
+        notification_.setMac(notification.mac)
+      }
     }
 
     rqst.setNotification(notification_)
-
     let globule = Application.getGlobule(notification.recipient.split("@")[1])
 
     globule.resourceService
@@ -1509,7 +1520,7 @@ export class Application extends Model {
     );
 
     // Send the notification.
-    this.sendNotifications(
+    Application.sendNotifications(
       notification,
       () => {
         /** nothing special here... */
@@ -1544,7 +1555,7 @@ export class Application extends Model {
     );
 
     // Send the notification.
-    this.sendNotifications(
+    Application.sendNotifications(
       notification,
       () => {
         Account.setContact(Application.account, "sent", contact, "received",
@@ -1578,7 +1589,7 @@ export class Application extends Model {
     );
 
     // Send the notification.
-    this.sendNotifications(
+    Application.sendNotifications(
       notification,
       () => {
         Account.setContact(Application.account, "accepted", contact, "accepted",
@@ -1611,7 +1622,7 @@ export class Application extends Model {
     );
 
     // Send the notification.
-    this.sendNotifications(
+    Application.sendNotifications(
       notification,
       () => {
         Account.setContact(Application.account, "declined", contact, "declined",
@@ -1644,7 +1655,7 @@ export class Application extends Model {
     );
 
     // Send the notification.
-    this.sendNotifications(
+    Application.sendNotifications(
       notification,
       () => {
         Account.setContact(Application.account, "revoked", contact, "revoked",
@@ -1677,7 +1688,7 @@ export class Application extends Model {
     );
 
     // Send the notification.
-    this.sendNotifications(
+    Application.sendNotifications(
       notification,
       () => {
         Account.setContact(Application.account, "deleted", contact, "deleted",
