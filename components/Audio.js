@@ -473,6 +473,7 @@ export class AudioPlayer extends HTMLElement {
                     height: auto;
                     padding: 0px;
                     min-width: 0px;
+                    overflow-y: inherit;
                 }
 
                 .vz-wrapper img {
