@@ -48,11 +48,11 @@ export function getUrl(globule: GlobularWebClient.Globular): string {
  * @param {*} errorCallback 
  */
 export function generatePeerToken(globule: GlobularWebClient.Globular, callback: (token: string) => void, errorCallback: (err: any) => void) {
-    if(!globule){
+    if (!globule) {
         errorCallback("the globule was not initialyse")
         return
     }
-    
+
     let mac = globule.config.Mac
     if (Model.globular.config.Mac == mac) {
         callback(localStorage.getItem("user_token"))
@@ -278,7 +278,7 @@ export class Model {
             // set the event hub.
             Model.eventHub = Model._globular.eventHub;
 
-            
+
             Model.eventHub.subscribe("start_peer_evt", uuid => { }, evt => {
 
                 let obj = JSON.parse(evt)
@@ -317,20 +317,32 @@ export class Model {
             Model.eventHub.subscribe("update_peers_evt", uuid => { },
                 evt => {
                     let obj = JSON.parse(evt)
-                    let peer = new Peer
-                    peer.setDomain(obj.domain)
-                    peer.setHostname(obj.hostname)
-                    peer.setMac(obj.mac)
-                    peer.setPorthttp(obj.portHttp)
-                    peer.setPorthttps(obj.portHttps)
-                    obj.actions.forEach((a: string) => {
-                        peer.getActionsList().push(a)
-                    })
+                    if (obj) {
+                        let peer = new Peer
+                        peer.setDomain(obj.domain)
+                        peer.setHostname(obj.hostname)
+                        peer.setMac(obj.mac)
+                        peer.setPorthttp(obj.portHttp)
+                        peer.setPorthttps(obj.portHttps)
 
-                    this.initPeer(peer, () => {
-                        // dispatch the event locally...
-                        Model.eventHub.publish("update_peers_evt_", peer, true)
-                    }, err => console.log(err))
+                        let actions = new Array<string>()
+
+                        if (obj.actions) {
+                            obj.actions.forEach((a: string) => {
+                                actions.push(a)
+                            })
+                        }
+
+                        peer.setActionsList(actions)
+
+                        this.initPeer(peer, () => {
+                            // dispatch the event locally...
+                            Model.eventHub.publish("update_peers_evt_", peer, true)
+                        }, err => console.log(err))
+
+                    } else {
+                        console.log("fail to parse ", evt)
+                    }
                 }, false)
 
             // So here I will create connection to peers know by globular...
@@ -381,6 +393,8 @@ export class Model {
                                     initCallback();
                                 }
                             })
+                    } else {
+                        initCallback();
                     }
                 }
 
