@@ -28,7 +28,7 @@ import { v4 as uuidv4 } from "uuid";
 
 // Menu to set action on files.
 import { DropdownMenu } from './dropdownMenu.js';
-import { AddPublicDirRequest, ConvertVideoToHlsRequest, ConvertVideoToMpeg4H264Request, CopyRequest, CreateDirRequest, CreateLnkRequest, CreateVideoPreviewRequest, CreateVideoTimeLineRequest, DeleteDirRequest, DeleteFileRequest, GeneratePlaylistRequest, GetFileInfoRequest, GetPublicDirsRequest, MoveRequest, ReadFileRequest, RemovePublicDirRequest, SaveFileRequest, StartProcessAudioRequest, StartProcessVideoRequest, UploadFileRequest, UploadVideoRequest } from 'globular-web-client/file/file_pb';
+import { AddPublicDirRequest, ConvertVideoToHlsRequest, ConvertVideoToMpeg4H264Request, CopyRequest, CreateDirRequest, CreateLnkRequest, CreateVideoPreviewRequest, CreateVideoTimeLineRequest, DeleteDirRequest, DeleteFileRequest, GetFileInfoRequest, GetPublicDirsRequest, MoveRequest, ReadFileRequest, RemovePublicDirRequest, SaveFileRequest, StartProcessAudioRequest, StartProcessVideoRequest, UploadFileRequest, UploadVideoRequest } from 'globular-web-client/file/file_pb';
 import { createArchive, deleteDir, deleteFile, downloadFileHttp, renameFile, uploadFiles } from 'globular-web-client/api';
 import { ApplicationView } from '../ApplicationView';
 import { Application } from '../Application';
