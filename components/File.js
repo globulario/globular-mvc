@@ -301,14 +301,14 @@ function __getAudioInfo__(globule, file, callback) {
     let rqst = new GetFileAudiosRequest
     rqst.setIndexpath(globule.config.DataPath + "/search/audios")
     rqst.setFilepath(file.path)
-    
+
     generatePeerToken(globule, token => {
         globule.titleService.getFileAudios(rqst, { application: Application.application, domain: globule.domain, token: token })
             .then(rsp => {
                 let audios = rsp.getAudios().getAudiosList()
 
                 // set the globule.
-                audios.forEach(a=>a.globule = globule)
+                audios.forEach(a => a.globule = globule)
 
                 callback(audios)
             })
@@ -549,7 +549,7 @@ function _publishSetDirEvent(path, file_explorer_) {
 }
 
 // the paper tray
-var paperTray = null;
+var paperTray = [];
 var editMode = "";
 
 /**
@@ -723,9 +723,7 @@ export class FilesView extends HTMLElement {
         }
 
         this.copyMenuItem.action = () => {
-
             // So here I will display choice to the user and set the edit mode penpending it response.
-
             paperTray = [];
             for (var key in this.selected) {
                 paperTray.push(this.selected[key].path)
@@ -745,6 +743,7 @@ export class FilesView extends HTMLElement {
         }
 
         this.pasteMenuItem.action = () => {
+            paperTray = [];
 
             if (editMode == "copy") {
                 // Here I will call move on the file manager
@@ -754,6 +753,9 @@ export class FilesView extends HTMLElement {
                 // Here I will call copy
                 this.move(this.menu.file.path)
             }
+
+            // empty the selection.
+            this.selected = {}
 
             // Remove it from it parent... 
             this.menu.close()
@@ -1637,7 +1639,7 @@ export class FilesView extends HTMLElement {
                                 titleInfo.globule = globule
                                 file.titles = [titleInfo]
                                 callback(titleInfo)
-                                
+
                             }).catch(err => ApplicationView.displayMessage(err, 3000))
 
 
@@ -1808,9 +1810,11 @@ export class FilesView extends HTMLElement {
 
         // The drop file event.
         Model.eventHub.subscribe(`drop_file_${this._file_explorer_.id}_event`, (uuid) => { }, infos => {
-            if (!this._active_) {
-                return
-            }
+            
+            // be sure the parent file explorer has the focus.
+           if(this._file_explorer_.style.zIndex != "1000"){
+                return;
+           }
 
             // Hide the icon parent div.
             let div = this.div.querySelector("#" + infos.id)
@@ -2219,7 +2223,7 @@ export class FilesView extends HTMLElement {
             // So here I will simply upload the files...
             Model.eventHub.publish("__upload_files_event__", { dir: this.__dir__, files: evt.dataTransfer.files, lnk: lnk, globule: this._file_explorer_.globule }, true)
         } else {
-            
+
             let html = `
             <style>
                 paper-card{
@@ -2309,18 +2313,9 @@ export class FilesView extends HTMLElement {
             let fct = () => {
                 if (id.length > 0) {
 
-                    paperTray = [];
                     for (var key in this.selected) {
                         paperTray.push(this.selected[key].path)
                     }
-
-                    // Append file to file menu
-                    if (paperTray.length == 0) {
-                        paperTray.push(this.menu.file.path)
-                    }
-
-                    // empty the selection.
-                    this.selected = {}
 
                     files.forEach(f => {
                         Model.eventHub.publish(`drop_file_${this._file_explorer_.id}_event`, { file: f, dir: this.__dir__.path, id: id, domain: domain }, true)
@@ -3250,10 +3245,13 @@ export class FileIconView extends HTMLElement {
                     let files = JSON.parse(evt.dataTransfer.getData('files'))
                     let id = evt.dataTransfer.getData('id')
                     fileIconDiv.children[0].icon = "icons:folder"
-
+                    let domain = evt.dataTransfer.getData('domain')
+               
                     // Create drop_file_event...
                     if (file != undefined && id.length > 0) {
-                        Model.eventHub.publish(`drop_file_${this._file_explorer_.id}_event`, { files: files, dir: file.path, id: id }, true)
+                        files.forEach(f=>{
+                            Model.eventHub.publish(`drop_file_${this._file_explorer_.id}_event`, { file: f, dir: file.path, id: id, domain: domain }, true)
+                        })
                     }
                 }
             }
@@ -4692,10 +4690,12 @@ export class FileNavigator extends HTMLElement {
                 evt.stopPropagation();
                 let files = JSON.parse(evt.dataTransfer.getData('files'))
                 let id = evt.dataTransfer.getData('id')
+                let domain = evt.dataTransfer.getData('domain')
+                this.selected = {}
                 dirIco.icon = "icons:folder"
                 if (id.length > 0) {
                     files.forEach(f => {
-                        Model.eventHub.publish(`drop_file_${id}_event`, { file: f, dir: dir.path, id: id }, true)
+                        Model.eventHub.publish(`drop_file_${id}_event`, { file: f, dir: dir.path, id: id, domain: domain }, true)
                     })
                 }
             }
@@ -5097,8 +5097,6 @@ export class FileExplorer extends HTMLElement {
         this.upwardNavigationBtn = undefined
         this.lstNavigationBtn = undefined
 
-        // The paper tray
-        paperTray = undefined;
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `

@@ -266,12 +266,17 @@ function search(query, contexts_, offset) {
         offset = 0;
     }
 
+    let index = 0
+
     let search_in_globule = (globules) => {
         let contexts = [...contexts_];
-        let g = globules.pop()
-        if (g) {
-            // Search recursively...
 
+        if (index < globules.length) {
+
+            let g = globules[index]
+            index++
+
+            // Search recursively...
             let search_in_context_ = (contexts) => {
                 let context = contexts.pop()
                 if (context) {
@@ -339,9 +344,9 @@ function searchTitles(globule, query, contexts, indexPath, offset, max, callback
     let hits = []
 
     generatePeerToken(globule, token => {
+
         let stream = globule.titleService.searchTitles(rqst, { application: Application.application, domain: Application.domain, token: token })
         stream.on("data", (rsp) => {
-
             if (rsp.hasSummary() && !fields) {
                 Model.eventHub.publish("_display_search_results_", {}, true)
                 Model.eventHub.publish("__new_search_event__", { query: query, summary: rsp.getSummary(), contexts: contexts, offset: offset }, true)
@@ -368,6 +373,7 @@ function searchTitles(globule, query, contexts, indexPath, offset, max, callback
                         Model.eventHub.publish(`${uuid}_search_hit_event__`, { hit: hit, context: indexPath.substring(indexPath.lastIndexOf("/") + 1) }, true)
                     })
                 } else {
+                    console.log(globule, hit)
                     // keep it
                     hits.push(hit)
                 }
@@ -1479,8 +1485,10 @@ export class SearchResultsPage extends HTMLElement {
                 let hits = []
                 for (var i = 0; i < this.hits_by_context[context].length; i++) {
                     let hit = this.hits_by_context[context][i]
-                    if (!hit.hidden && hit.enable) {
-                        hits.push(hit)
+                    if (hit) {
+                        if (!hit.hidden && hit.enable) {
+                            hits.push(hit)
+                        }
                     }
                 }
 
@@ -2181,10 +2189,10 @@ export class SearchAudioCard extends HTMLElement {
         this.shadowRoot.querySelector("#title").innerHTML = audio.getTitle()
         this.shadowRoot.querySelector("#album").innerHTML = audio.getAlbum().trim()
 
-        if(audio.getAlbum().length == 0){
+        if (audio.getAlbum().length == 0) {
             this.shadowRoot.querySelector(".album-header-bar").style.display = "none"
-        }else{
-            if(audio.getAlbum()=="<Inconnu>"){
+        } else {
+            if (audio.getAlbum() == "<Inconnu>") {
                 this.shadowRoot.querySelector(".album-header-bar").style.display = "none"
             }
         }
