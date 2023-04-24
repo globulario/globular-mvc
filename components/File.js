@@ -1810,12 +1810,13 @@ export class FilesView extends HTMLElement {
 
         // The drop file event.
         Model.eventHub.subscribe(`drop_file_${this._file_explorer_.id}_event`, (uuid) => { }, infos => {
-            
+
             // be sure the parent file explorer has the focus.
            if(this._file_explorer_.style.zIndex != "1000"){
                 return;
            }
 
+        
             // Hide the icon parent div.
             let div = this.div.querySelector("#" + infos.id)
             if (div != undefined) {
@@ -1829,11 +1830,12 @@ export class FilesView extends HTMLElement {
             }
 
             paperTray = [];
+            this.selected = {}
+
             for (var key in this.selected) {
                 paperTray.push(this.selected[key].path)
             }
 
-            // Append file to file menu
             if (paperTray.length == 0) {
                 paperTray.push(infos.file)
             }
@@ -6052,10 +6054,15 @@ export class FileExplorer extends HTMLElement {
                 (uuid) => {
                     this.listeners[`reload_dir_${this.globule.domain}_event`] = uuid
                 }, (path) => {
-
                     if (this.path && path) {
                         if (path.endsWith(this.path)) {
                             this.displayWaitMessage("load " + path)
+
+                            // clear previous selection.
+                            paperTray = []
+                            this.filesIconView.selected = {}
+                            this.filesListView.selected = {}
+
                             _readDir(path, (dir) => {
                                 this.fileNavigator.reload(dir, () => {
                                     // reload dir to be sure if it's public that change will be applied.
