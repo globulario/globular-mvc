@@ -367,17 +367,17 @@ export class ApplicationView extends View {
     this.login_.init();
     this.accountMenu.init();
     this.applicationsMenu.init();
-
-
+    this.contentManager.init();
     ApplicationView.layout.navigation().appendChild(this.contentManager)
 
-    this.contentManager.init();
+    if (!this.contentManager.hasContent()) {
+      ApplicationView.layout.hideSideBar()
+    }
 
     // Set the current webpage...
     Model.eventHub.subscribe("_set_web_page_",
       uuid => { },
       page => {
-
 
         // remove actual nodes
         this.hideContent()
@@ -772,10 +772,15 @@ export class ApplicationView extends View {
         // Append the content manager.
         this.getSideMenu().appendChild(this.contentManager);
         this.contentManager.setVertical()
-        ApplicationView.layout.showSideBar()
+
+        if (this.contentManager.hasContent()) {
+          ApplicationView.layout.showSideBar()
+        }
 
         if (this.isLogin) {
 
+          ApplicationView.layout.showSideBar()
+          
           this.getSideMenu().appendChild(this.blogEditingMenu);
           this.blogEditingMenu.shrink()
 

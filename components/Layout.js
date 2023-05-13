@@ -204,8 +204,7 @@ export class Layout extends HTMLElement {
         sideMenu_.style.overflow = "auto";
 
       } else {
-      
-
+        
         // Set the menu in the toolbar.
         this.appToolbar.appendChild(this.sideMenuSlot);
         this.hamburger.style.display = "";

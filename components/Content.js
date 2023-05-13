@@ -409,11 +409,15 @@ export class ContentManager extends HTMLElement {
         this.toolbar.parentNode.removeChild(this.toolbar)
     }
 
+
+
     init() {
         this.navigation = new Navigation()
         this.appendChild(this.navigation)
 
         this.navigation.init()
+
+
 
         // load style...
         this.loadStyles(styles => {
@@ -448,6 +452,11 @@ export class ContentManager extends HTMLElement {
                 // set need save...
                 getActiveWebPage().needSave = true;
             }, true)
+    }
+
+    hasContent(){
+        let lnks = document.getElementsByTagName("globular-page-link")
+        return lnks.length > 0
     }
 
     setVertical() {
