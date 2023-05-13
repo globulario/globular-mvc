@@ -165,7 +165,7 @@ export class VideoConversation extends HTMLElement {
         let container = this.shadowRoot.querySelector("#container")
 
         this.shadowRoot.querySelector("#video-close-btn").onclick = () => {
-            this.eventHub.publish(`leave_conversation_${conversationUuid}_evt`, JSON.stringify({ "conversationUuid": conversationUuid, "participants": [], "participant": Application.account.id }), false)
+            Model.publish(`leave_conversation_${conversationUuid}_evt`, JSON.stringify({ "conversationUuid": conversationUuid, "participants": [], "participant": Application.account.id }), false)
         }
 
         let optionsBtn = this.shadowRoot.querySelector("#video-options-btn")
@@ -452,7 +452,7 @@ export class VideoConversation extends HTMLElement {
                                     .createOffer(offerOptions)
                                     .then((offer) => {
                                         rtcPeerConnection.setLocalDescription(offer).then(() => {
-                                            this.eventHub.publish(`on_webrtc_offer_${connectionId}_evt`, JSON.stringify({ "offer": offer, "connectionId": this.conversationUuid + "_" + Application.account._id }), false);
+                                            Model.publish(`on_webrtc_offer_${connectionId}_evt`, JSON.stringify({ "offer": offer, "connectionId": this.conversationUuid + "_" + Application.account._id }), false);
                                         })
                                     })
                                     .catch((err) => {
@@ -520,7 +520,7 @@ export class VideoConversation extends HTMLElement {
                                 .createAnswer()
                                 .then(answer => {
                                     rtcPeerConnection.setLocalDescription(answer).then(() => {
-                                        this.eventHub.publish(`on_webrtc_answer_${connectionId}_evt`, JSON.stringify({ "answer": answer, "connectionId": this.conversationUuid + "_" + Application.account._id }), false);
+                                        Model.publish(`on_webrtc_answer_${connectionId}_evt`, JSON.stringify({ "answer": answer, "connectionId": this.conversationUuid + "_" + Application.account._id }), false);
                                     })
                                 })
                                 .catch((err) => {
@@ -571,6 +571,7 @@ export class VideoConversation extends HTMLElement {
 
     closeConnection(connectionId) {
 
+        console.log("close connection: ", connectionId)
         let peerVideo = this.peersVideo.querySelector("#_" + connectionId + "_video")
         if (peerVideo != undefined) {
             this.peersVideo.removeChild(peerVideo)
@@ -602,10 +603,7 @@ export class VideoConversation extends HTMLElement {
             this.parentNode.removeChild(this)
         }
 
-        this.eventHub.publish(`video_conversation_close_${connectionId}_evt`, {}, false);
-
-        if (this.conversationUuid != connectionId)
-            this.eventHub.publish(`video_conversation_close_${this.conversationUuid}_evt`, {}, false);
+        Model.publish(`video_conversation_close_${connectionId}_evt`, {}, false);
     }
 
     // init a new peer connections.
@@ -633,7 +631,7 @@ export class VideoConversation extends HTMLElement {
 
             rtcPeerConnection.onicecandidate = (evt) => {
                 if (evt.candidate) {
-                    this.eventHub.publish(`on_webrtc_candidate_${connectionId}_evt`, JSON.stringify({ "candidate": evt.candidate.toJSON(), "connectionId": this.conversationUuid + "_" + Application.account._id }), false);
+                    Model.publish(`on_webrtc_candidate_${connectionId}_evt`, JSON.stringify({ "candidate": evt.candidate.toJSON(), "connectionId": this.conversationUuid + "_" + Application.account._id }), false);
                 }
             }
 
@@ -645,23 +643,32 @@ export class VideoConversation extends HTMLElement {
 
             // connections state handler.
             rtcPeerConnection.oniceconnectionstatechange = (event) => {
+                console.log(event)
                 switch (rtcPeerConnection.iceConnectionState) {
                     case "connected":
+
                         // The connection has become fully connected
                         if (onconnected != undefined) {
                             onconnected(rtcPeerConnection)
                         }
 
-                        this.eventHub.publish(`video_conversation_open_${connectionId}_evt`, {}, false);
-
-                        if (this.conversationUuid + "_" + Application.account._id != connectionId)
-                            this.eventHub.publish(`video_conversation_open_${this.conversationUuid + "_" + Application.account._id}_evt`, {}, false);
+                        Model.publish.publish(`video_conversation_open_${connectionId}_evt`, {}, false);
 
                         break;
                     case "disconnected":
-                    case "failed":
-                    case "closed":
+                        console.log("connection was disconnected", connectionId)
+                        this.closeConnection(connectionId)
 
+                        break;
+
+                    case "failed":
+                        console.log("connection has fail", connectionId)
+                        this.closeConnection(connectionId)
+
+                        break;
+
+                    case "closed":
+                        console.log("connection has fail", connectionId)
                         // The connection has been closed
                         this.closeConnection(connectionId)
 

@@ -14,6 +14,7 @@ import {
   Connection,
   StoreType
 } from "globular-web-client/persistence/persistence_pb";
+
 import { v4 as uuidv4 } from "uuid";
 import { mergeTypedArrays, uint8arrayToStringMethod } from "./Utility";
 import { ConversationManager } from "./Conversation";

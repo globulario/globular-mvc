@@ -89,6 +89,10 @@ export class Model {
 
     // That function will return a 
     public static getGlobule(address: string): GlobularWebClient.Globular {
+        if(address == "localhost"){
+            return Model.globular;
+        }
+        
         return Model.globules.get(address);
     }
 
