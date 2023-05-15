@@ -72,7 +72,7 @@ export function playAudios(audios, name) {
                 path.forEach(item => {
                     item = item.trim()
                     if (item.length > 0)
-                        url += "/" + item // encodeURIComponent(item) * fail to parse if the value is encoded...
+                        url += "/" + encodeURIComponent(item) //* fail to parse if the value is encoded...
                 })
 
                 audio_playList += url + "\n\n"

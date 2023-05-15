@@ -77,7 +77,7 @@ export function playVideos(videos, name) {
                 path.forEach(item => {
                     item = item.trim()
                     if (item.length > 0)
-                        url += "/" + item // encodeURIComponent(item) * fail to parse if the item is encoded...
+                        url += "/" + encodeURIComponent(item) //* fail to parse if the item is encoded...
                 })
 
                 video_playList += url + "\n\n"
