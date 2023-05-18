@@ -1697,7 +1697,7 @@ export class PasswordSetting extends Setting {
               connection.setPassword(this.newPasswordInput.getPassword())
               connection.setStore(StoreType.MONGO)
               connection.setName(id)
-              connection.setPort(27017)
+              connection.setPort(globule.config.BackendPort)
               connection.setTimeout(60)
               connection.setHost(domain)
               rqst.setConnection(connection)

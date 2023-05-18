@@ -652,7 +652,7 @@ export class VideoConversation extends HTMLElement {
                             onconnected(rtcPeerConnection)
                         }
 
-                        Model.publish.publish(`video_conversation_open_${connectionId}_evt`, {}, false);
+                        Model.publish(`video_conversation_open_${connectionId}_evt`, {}, false);
 
                         break;
                     case "disconnected":

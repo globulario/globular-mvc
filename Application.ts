@@ -902,6 +902,10 @@ export class Application extends Model {
         let rqst = new CreateConnectionRqst
         let connectionId = name.split("@").join("_").split(".").join("_");
 
+        let address = (<any>decoded).address;
+        let domain = (<any>decoded).domain;
+        let globule = Model.getGlobule(address) 
+        
         // So here i will open the use database connection.
         let connection = new Connection
         connection.setId(connectionId)
@@ -909,16 +913,12 @@ export class Application extends Model {
         connection.setPassword(password)
         connection.setStore(StoreType.MONGO)
         connection.setName(name)
-        connection.setPort(27017)
+        connection.setPort(globule.config.BackendPort)
         connection.setTimeout(60)
-
-        rqst.setConnection(connection)
-
-        let address = (<any>decoded).address;
-        let domain = (<any>decoded).domain;
         connection.setHost(domain)
-
-        Model.getGlobule(address).persistenceService.createConnection(rqst, {
+        rqst.setConnection(connection)
+    
+        globule.persistenceService.createConnection(rqst, {
           token: localStorage.getItem("user_token"),
           application: Model.application,
           domain: domain,
@@ -1075,7 +1075,7 @@ export class Application extends Model {
         connection.setPassword(password)
         connection.setStore(StoreType.MONGO)
         connection.setName(id)
-        connection.setPort(27017)
+        connection.setPort(globule.config.BackendPort)
         connection.setTimeout(60)
         connection.setHost(userDomain)
         rqst.setConnection(connection)
