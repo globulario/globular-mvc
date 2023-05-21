@@ -6156,38 +6156,7 @@ export class FileExplorer extends HTMLElement {
 
         this.displayWaitMessage("load " + Model.application + "dir")
 
-        _readDir("/applications/" + Model.application, (dir) => {
-
-            // set interface with the given directory.
-            this.resume()
-
-            // Load the application dir.
-            if (this.fileNavigator != null) {
-                this.fileNavigator.setDir(dir)
-            } else {
-                console.log("no file navigator!")
-            }
-
-            if (this.pathNavigator != null) {
-                this.pathNavigator.setDir(dir)
-            } else {
-                console.log("no path navigator!")
-            }
-
-            if (this.filesListView != null) {
-                this.filesListView.setDir(dir)
-            } else {
-                console.log("no file list view!")
-            }
-
-            if (this.filesIconView) {
-                this.filesIconView.setDir(dir)
-            } else {
-                console.log("no file icon view!")
-            }
-
-            this.displayWaitMessage("load " + root)
-
+        let readRootDir = () => {
             _readDir(root, (dir) => {
 
                 // set interface with the given directory.
@@ -6227,8 +6196,48 @@ export class FileExplorer extends HTMLElement {
 
             }, () => { this.onerror; this.resume() }, this.globule)
 
+        }
 
-        }, () => { this.onerror; this.resume() }, this.globule)
+        _readDir("/applications/" + Model.application, (dir) => {
+
+            // set interface with the given directory.
+            this.resume()
+
+            // Load the application dir.
+            if (this.fileNavigator != null) {
+                this.fileNavigator.setDir(dir)
+            } else {
+                console.log("no file navigator!")
+            }
+
+            if (this.pathNavigator != null) {
+                this.pathNavigator.setDir(dir)
+            } else {
+                console.log("no path navigator!")
+            }
+
+            if (this.filesListView != null) {
+                this.filesListView.setDir(dir)
+            } else {
+                console.log("no file list view!")
+            }
+
+            if (this.filesIconView) {
+                this.filesIconView.setDir(dir)
+            } else {
+                console.log("no file icon view!")
+            }
+
+            this.displayWaitMessage("load " + root)
+
+            // read the root dir...
+            readRootDir()
+
+        }, () => { 
+            this.onerror;  
+            this.resume(); 
+            readRootDir(); 
+        }, this.globule)
 
     }
 
@@ -6853,6 +6862,7 @@ export class FilesUploader extends Menu {
 
     // Create the applicaiton view.
     constructor() {
+        console.log("------------> create file uploader...")
 
         super("file_uploader", "icons:file-upload", "Files Uploader")
 
@@ -6870,6 +6880,7 @@ export class FilesUploader extends Menu {
 
     init() {
 
+        console.log("------------> init files uploader...")
         // Innitialisation of the layout.
         let html = `
         <style>
@@ -7175,7 +7186,7 @@ export class FilesUploader extends Menu {
 
 
         // Connect events...
-        Model.globules.forEach(globule => {
+        Model.getGlobules().forEach(globule => {
             this.getTorrentLnks(globule, lnks => {
 
             })
@@ -7722,7 +7733,7 @@ export class FilesUploader extends Menu {
     * A loop that get torrent info from the server...
     */
     getTorrentsInfo(globule) {
-
+        console.log("-------------------> get torrent infos for ", globule.domain)
         generatePeerToken(globule, token => {
             let rqst = new GetTorrentInfosRequest
             let stream = globule.torrentService.getTorrentInfos(rqst, { application: Application.application, domain: globule.domain, token: token })

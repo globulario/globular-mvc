@@ -20,6 +20,33 @@ export function setAudio(audio) {
     __audios__[audio.getId()] = audio
 }
 
+function replaceURLs(inputString, newURL) {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    return inputString.replace(urlRegex, newURL);
+}
+
+// Return the list of urls from a given m3u file.
+function parseM3U(m3uContent) {
+    const lines = m3uContent.split('\n');
+    const urls = [];
+
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+
+        // Skip empty lines and comments
+        if (line.length === 0 || line.startsWith('#')) {
+            continue;
+        }
+
+        // Extract URLs
+        if (line.startsWith('http')) {
+            urls.push(line);
+        }
+    }
+
+    return urls;
+}
+
 
 // retreive video with a given id.
 function getVideoInfo(globule, id, callback) {
@@ -51,7 +78,7 @@ function getAudioInfo(globule, id, callback) {
         callback(__audios__[id])
         return
     }
-    
+
     generatePeerToken(globule, token => {
         let rqst = new GetAudioByIdRequest
         rqst.setIndexpath(globule.config.DataPath + "/search/audios")
@@ -262,7 +289,20 @@ export class PlayList extends HTMLElement {
         generatePeerToken(globule, token => {
             // if a playlist is given directly...
             if (txt.startsWith("#EXTM3U")) {
+                console.log("Parsing playlist...", txt)
+
+                // remove caracter not digest by the parser...
+                const urls = parseM3U(txt);
+
+                // replace the urls to please the parser...
+                txt = replaceURLs(txt, "http://localhost:8080/")
                 const result = parser.parse(txt)
+
+                // set back the original urls...
+                result.items.forEach((item, index) => {
+                    item.url = urls[index]
+                })
+
                 this.playlist = result;
                 this.refresh(callback)
                 fireResize()
@@ -288,7 +328,20 @@ export class PlayList extends HTMLElement {
                 xhr.open("GET", url);
                 xhr.overrideMimeType("audio/x-mpegurl"); // Needed, see below.
                 xhr.onload = (evt) => {
-                    const result = parser.parse(evt.target.response)
+
+                    // remove caracter not digest by the parser...
+                    let txt = evt.target.response
+                    const urls = parseM3U(txt);
+
+                    // replace the urls to please the parser...
+                    txt = replaceURLs(txt, "http://localhost:8080/")
+                    const result = parser.parse(txt)
+
+                    // set back the original urls...
+                    result.items.forEach((item, index) => {
+                        item.url = urls[index]
+                    })
+
                     this.playlist = result;
                     this.refresh(callback)
                     fireResize()

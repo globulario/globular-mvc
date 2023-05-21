@@ -1987,7 +1987,7 @@ export class BlogPosts extends HTMLElement {
 
     // Retreive all blog from all connected peers...
     getBlogs(authors, callback) {
-        let connections = Array.from(Model.globules.values())
+        let connections = Array.from(Model.getGlobules())
         let blogs_ = []
 
         let _getBlogs_ = () => {
