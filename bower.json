@@ -1,5 +1,6 @@
 {
     "name": "globular-mvc",
+    "version": "1.0.82",
     "homepage": "https://github.com/globulario/globular-mvc",
     "authors": [
       "davecourtois <dave.courtois60@gmail.com>"
