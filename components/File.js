@@ -7733,7 +7733,6 @@ export class FilesUploader extends Menu {
     * A loop that get torrent info from the server...
     */
     getTorrentsInfo(globule) {
-        console.log("-------------------> get torrent infos for ", globule.domain)
         generatePeerToken(globule, token => {
             let rqst = new GetTorrentInfosRequest
             let stream = globule.torrentService.getTorrentInfos(rqst, { application: Application.application, domain: globule.domain, token: token })

@@ -1,0 +1,32 @@
+{
+    "name": "globular-mvc",
+    "homepage": "https://github.com/globulario/globular-mvc",
+    "authors": [
+      "davecourtois <dave.courtois60@gmail.com>"
+    ],
+    "description": "A collection of web components created with Polymer 3 and following Material Design guidelines",
+    "main": "",
+    "keywords": [
+      "element-collection",
+      "table",
+      "menu",
+      "growl",
+      "autocomplete",
+      "filter",
+      "sorter",
+      "login",
+      "dialog",
+      "language",
+      "file"
+    ],
+    "license": "Apache-2.0",
+    "ignore": [
+      "**/.*",
+      "node_modules",
+      "bower_components",
+      "test",
+      "tests"
+    ],
+    "dependencies": {
+    }
+  }

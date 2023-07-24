@@ -65,7 +65,7 @@ export class Login extends HTMLElement {
       `
         // The login panel.
         this.shadowRoot.getElementById("login_btn").onclick = () => {
-            if(this.registerBox.parentNode != undefined){
+            if (this.registerBox.parentNode != undefined) {
                 this.registerBox.parentNode.removeChild(this.registerBox)
             }
             // Append the login box in the workspace.
@@ -73,7 +73,7 @@ export class Login extends HTMLElement {
         }
 
         this.shadowRoot.getElementById("register_btn").onclick = () => {
-            if(this.loginBox.parentNode != undefined){
+            if (this.loginBox.parentNode != undefined) {
                 this.loginBox.parentNode.removeChild(this.loginBox)
             }
             // Append the login box in the workspace.
@@ -85,7 +85,7 @@ export class Login extends HTMLElement {
         this.loginBtn = this.shadowRoot.getElementById("login_btn")
     }
 
-    init(){
+    init() {
 
         // Here I will connect the event listener's
     }
@@ -218,12 +218,12 @@ export class LoginBox extends HTMLElement {
         `
 
         // give the focus to the input.
-        let userInput = this.shadowRoot.getElementById("user_input")     
- 
-        setTimeout(()=>{
+        let userInput = this.shadowRoot.getElementById("user_input")
+
+        setTimeout(() => {
             userInput.focus()
         }, 100)
-        
+
 
         let passwordInput = this.shadowRoot.getElementById("pwd_input")
         let cancelBtn = this.shadowRoot.getElementById("cancel_btn")
@@ -249,23 +249,23 @@ export class LoginBox extends HTMLElement {
             Model.eventHub.publish("login_event_", { userId: userId, pwd: pwd }, true)
         }
 
-        passwordInput.onkeyup = (evt)=>{
-            if(evt.key == "Enter" ){
+        passwordInput.onkeyup = (evt) => {
+            if (evt.key == "Enter") {
                 loginBtn.click();
             }
         }
 
-        this.shadowRoot.querySelector("#reset-password-lnk").onclick = ()=>{
-            if(userInput.value.length == 0){
+        this.shadowRoot.querySelector("#reset-password-lnk").onclick = () => {
+            if (userInput.value.length == 0) {
                 userInput.focus()
                 ApplicationView.displayMessage("Please enter your user id or email and click again", 3500)
                 return
             }
 
-            Account.getAccount(userInput.value, account=>{
+            Account.getAccount(userInput.value, account => {
 
-                Account.getAccount("sa", sa=>{
-            
+                Account.getAccount("sa", sa => {
+
                     let notification = new Notification(
                         Model.getGlobule(sa.domain).config.Mac,
                         account.id + "@" + account.domain,
@@ -278,20 +278,20 @@ export class LoginBox extends HTMLElement {
                             <br>Can you change it password and send it new password at <a href="mailto:${account.email}">${account.email}</a>
                           </p>
                         </div>`
-                      );
-                  
-                      // Send the notification.
-                      Application.sendNotifications(
+                    );
+
+                    // Send the notification.
+                    Application.sendNotifications(
                         notification,
                         () => {
                             ApplicationView.displayMessage(`<p>Notification was sent to the system administrator.</br>An email answer will be sent to you soon at address ${account.email}.</br>You can also contact the administrator directly at <a href="mailto:${sa.email}">${sa.email}</a></p>`, 15000)
                         },
                         err => {
-                          ApplicationView.displayMessage(err, 3000);
+                            ApplicationView.displayMessage(err, 3000);
                         }
-                      );
-                }, err=>{})
-            }, err=>{
+                    );
+                }, err => { })
+            }, err => {
                 ApplicationView.displayMessage(err, 3000)
                 userInput.value = ""
                 userInput.focus()
@@ -430,11 +430,11 @@ export class RegisterBox extends HTMLElement {
         let registerBtn = this.shadowRoot.getElementById("register_btn")
         let userInput = this.shadowRoot.getElementById("user_input")
 
-        setTimeout(()=>{
+        setTimeout(() => {
             userInput.focus()
             userInput.setSelectionRange(0, userInput.value.length)
         }, 100)
-  
+
         let emailInput = this.shadowRoot.getElementById("email_input")
 
         let passwordInput = this.shadowRoot.getElementById("pwd_input")
@@ -460,7 +460,7 @@ export class RegisterBox extends HTMLElement {
             this.parentNode.removeChild(this)
 
             // so here I will throw a event.
-            Model.eventHub.publish("register_event_", { userId: userId, email: email, pwd: pwd, repwd: repwd, domain:domain }, true)
+            Model.eventHub.publish("register_event_", { userId: userId, email: email, pwd: pwd, repwd: repwd, domain: domain }, true)
         }
     }
 
