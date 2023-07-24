@@ -7,7 +7,14 @@
     "description": "A collection of web components created with Polymer 3 and following Material Design guidelines",
     "main": "",
     "keywords": [
-      "element-collection"
+      "element-collection",
+      "web components",
+      "table",
+      "menu",
+      "autocomplete",
+      "login",
+      "dialog",
+      "file explorer"
     ],
     "license": "apache-2.0",
     "ignore": [
