@@ -1,4 +1,2 @@
 # Globular-MVC web-components
 Here I will present you web-components that you can use in your web-application. Most of those component made use of [PolymerElements](https://www.webcomponents.org/author/PolymerElements), so there look follow material desing principle. By using those web-component your application will almost look native on android device. 
-
-?editing 
