@@ -1,2 +1,2 @@
-# globular-mvc
-Generic template to create web-application that made use of globular as backend and materialize as css (wrap in web-component's)
+# Globular-MVC
+Globular-MVC is a framework designed to facilitate the rapid creation of web applications using Globular, a backend framework built around gRPC. Following the Model View Control Pattern, like most frontend frameworks, Globular-MVC contains all the essential code to streamline web application development without the need to reinvent the wheel. All graphical user interface elements are web-components, allowing seamless reuse in your projects, even if you opt not to use Globular as your backend.
