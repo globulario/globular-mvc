@@ -63,6 +63,7 @@ export class Login extends HTMLElement {
             <paper-button id="login_btn">login</paper-button>
         </span>
       `
+      
         // The login panel.
         this.shadowRoot.getElementById("login_btn").onclick = () => {
             if (this.registerBox.parentNode != undefined) {

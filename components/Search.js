@@ -594,9 +594,13 @@ export class SearchBar extends HTMLElement {
 
             }
 
+            #search_icon:hover{
+                cursor: pointer;
+            }
+
         </style>
         <div id="search-bar">
-            <iron-icon icon="search" style="--iron-icon-fill-color: var(--palette-text-accent);" ></iron-icon>
+            <iron-icon id='search_icon' icon="search" style="--iron-icon-fill-color: var(--palette-text-accent);" ></iron-icon>
             <input id='search_input' placeholder="Search"></input>
             <paper-icon-button id="change-search-context" icon="icons:expand-more" style="--iron-icon-fill-color: var(--palette-text-accent); margin-right: 2px; height: 36px;" ></paper-icon-button>
             <paper-card id="context-search-selector">
@@ -624,6 +628,7 @@ export class SearchBar extends HTMLElement {
 
         // give the focus to the input.
         let searchInput = this.shadowRoot.getElementById("search_input")
+        let searchIcon = this.shadowRoot.getElementById("search_icon")
         let div = this.shadowRoot.getElementById("search-bar")
 
         let changeSearchContextBtn = this.shadowRoot.getElementById("change-search-context")
@@ -666,48 +671,7 @@ export class SearchBar extends HTMLElement {
 
         searchInput.onkeydown = (evt) => {
             if (evt.key == "Enter") {
-                let contexts = []
-                let checkboxs = this.shadowRoot.querySelectorAll(".context")
-                for (var i = 0; i < checkboxs.length; i++) {
-                    let c = checkboxs[i]
-                    if (c.checked) {
-                        if (!contexts.includes(c.name))
-                            contexts.push(c.name)
-                    }
-                }
-
-                if (contexts.length > 0) {
-                    let query = searchInput.value
-
-                    // remove unwanted results...
-                    if (!this.adultCheckbox.checked) {
-                        query += " -adult"
-                    }
-
-                    if (!this.youtubeCheckbox.checked) {
-                        query += " -youtube"
-                    }
-
-                    if (!this.moviesCheckbox.checked) {
-                        query += " -Movie"
-                    }
-
-                    if (!this.tvEpisodesCheckbox.checked) {
-                        query += " -TVEpisode"
-                    }
-
-                    if (!this.tvSeriesCheckbox.checked) {
-                        query += " -TVSerie"
-                    }
-
-                    search(query, contexts, 0)
-                    searchInput.value = ""
-                    Model.eventHub.publish("_display_search_results_", {}, true)
-
-                } else {
-                    ApplicationView.displayMessage("You must selected a search context, Blog, Video or Title...", 3000)
-                    contextSearchSelector.style.display = "flex"
-                }
+                this.search()
 
             } else if (evt.key == "Escape") {
                 Model.eventHub.publish("_hide_search_results_", {}, true)
@@ -745,6 +709,57 @@ export class SearchBar extends HTMLElement {
             } else {
                 contextSearchSelector.style.display = "none"
             }
+        }
+
+        searchIcon.onclick = () => {    
+            this.search()
+        }
+    }
+
+    search(){
+        let contextSearchSelector = this.shadowRoot.getElementById("context-search-selector")
+        let searchInput = this.shadowRoot.getElementById("search_input")
+        let contexts = []
+        let checkboxs = this.shadowRoot.querySelectorAll(".context")
+        for (var i = 0; i < checkboxs.length; i++) {
+            let c = checkboxs[i]
+            if (c.checked) {
+                if (!contexts.includes(c.name))
+                    contexts.push(c.name)
+            }
+        }
+
+        if (contexts.length > 0) {
+            let query = searchInput.value
+
+            // remove unwanted results...
+            if (!this.adultCheckbox.checked) {
+                query += " -adult"
+            }
+
+            if (!this.youtubeCheckbox.checked) {
+                query += " -youtube"
+            }
+
+            if (!this.moviesCheckbox.checked) {
+                query += " -Movie"
+            }
+
+            if (!this.tvEpisodesCheckbox.checked) {
+                query += " -TVEpisode"
+            }
+
+            if (!this.tvSeriesCheckbox.checked) {
+                query += " -TVSerie"
+            }
+
+            search(query, contexts, 0)
+            searchInput.value = ""
+            Model.eventHub.publish("_display_search_results_", {}, true)
+
+        } else {
+            ApplicationView.displayMessage("You must selected a search context, Blog, Video or Title...", 3000)
+            contextSearchSelector.style.display = "flex"
         }
     }
 }
