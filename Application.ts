@@ -9,20 +9,16 @@ import { NotificationType, Notification } from "./Notification";
 
 import {
   UpdateOneRsp,
-  DeleteOneRqst,
   CreateConnectionRqst,
   Connection,
   StoreType
 } from "globular-web-client/persistence/persistence_pb";
 
 import { v4 as uuidv4 } from "uuid";
-import { mergeTypedArrays, uint8arrayToStringMethod } from "./Utility";
 import { ConversationManager } from "./Conversation";
-import { Conversation, Conversations } from "globular-web-client/conversation/conversation_pb";
+import { Conversation } from "globular-web-client/conversation/conversation_pb";
 import { LogInfo, LogLevel, LogRqst, LogRsp, Occurence } from "globular-web-client/log/log_pb";
-import { Session, SessionState } from "./Session";
-import { formatBoolean } from "./components/utility";
-import { DomPlatform } from "chart.js";
+import { SessionState } from "./Session";
 import { File } from "./File";
 import { playVideo } from "./components/Video";
 import { playAudio } from "./components/Audio";

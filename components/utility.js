@@ -50,8 +50,7 @@ export function fireResize() {
     var event = document.createEventObject();
     element.fireEvent("onresize", event);
   }
-}
-;
+};
 
 Array.prototype.removeDuplicates = function () {
   var temp = new Array();
@@ -80,8 +79,6 @@ Array.prototype.removeDuplicates = function () {
  *  Should have O(n) operations, where n is 
  *    n = MIN(a.length(), b.length())
  */
-
-
 export function intersectSafe(a, b) {
   var ai = 0,
       bi = 0;

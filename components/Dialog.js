@@ -4,6 +4,7 @@ import '@polymer/iron-icons/iron-icons.js';
 import '@polymer/paper-icon-button/paper-icon-button.js';
 
 import { setResizeable } from "./rezieable.js";
+
 /*
  * Menu item represent element contain inside a menu.
  */
@@ -46,7 +47,6 @@ export class Dialog extends PolymerElement {
     return html`
             <style>
            
-            
             /** Dialog style **/
             .dialog{
                 position: absolute;
@@ -55,7 +55,6 @@ export class Dialog extends PolymerElement {
                 left: 0px;
                 z-index: 1;
             }
-            
 
             /** The title **/
             .dialog_title{
@@ -225,7 +224,6 @@ export class Dialog extends PolymerElement {
 
       document.body.addEventListener("mousemove", this.mouseMoveListener);
     } // Close handler function.
-
 
     var closeHandler = function (dialog) {
       return function (evt) {

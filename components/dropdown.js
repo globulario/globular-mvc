@@ -102,8 +102,6 @@ export class Dropdown extends HTMLElement {
         </div>
 
         <div id="list-box"  class="listbox">
-                
-            
                       <div id="data-automation-list" style:"font-size: 14px;">
                       <slot></slot>
                       </div>

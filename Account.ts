@@ -6,7 +6,6 @@ import { Group } from "./Group";
 import { Session } from "./Session"
 import { ApplicationView } from "./ApplicationView";
 import { Application } from "./Application";
-import * as jwt from "jwt-decode";
 import { Globular } from "globular-web-client";
 
 /**
@@ -23,6 +22,7 @@ export class Account extends Model {
     public get session(): Session {
         return this.session_;
     }
+
     public set session(value: Session) {
         this.session_ = value;
     }

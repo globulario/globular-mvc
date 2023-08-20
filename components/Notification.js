@@ -786,12 +786,7 @@ export class NotificationMenu extends Menu {
         if (isHidden) {
             this.shadowRoot.removeChild(this.getMenuDiv())
         }
-
-
     }
-
-
-
 }
 
 customElements.define('globular-notification-menu', NotificationMenu)

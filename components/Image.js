@@ -8,7 +8,6 @@ import { createThumbmail } from './BlogPost';
 import * as Masonry from 'masonry-layout'
 import domtoimage from 'dom-to-image';
 import { fireResize } from './utility';
-import { GetItemDefinitionRequest } from 'globular-web-client/catalog/catalog_pb';
 
 export class ImageCropper extends HTMLElement {
   constructor() {
@@ -117,8 +116,6 @@ export class ImageCropper extends HTMLElement {
     var top = centerContainer.offsetTop - imageContainer.offsetTop;
     var width = centerContainer.offsetWidth;
     var height = centerContainer.offsetHeight;
-    var newTop = centerContainer.offsetTop;
-    var newLeft = centerContainer.offsetLeft;
 
     var crop_canvas = document.createElement('canvas');
     crop_canvas.width = width;
@@ -323,6 +320,8 @@ export class ImageCropper extends HTMLElement {
 
 window.customElements.define('globular-image-cropper', ImageCropper);
 
+
+
 /**
  * Classic image viewer
  */
@@ -364,6 +363,7 @@ export class ImageViewer extends HTMLElement {
           justify-content:center;
           align-items: center;
         }
+
         #info {
           background-color:#2196F3;
           left:88px;
@@ -373,6 +373,7 @@ export class ImageViewer extends HTMLElement {
           margin-top:8px;
           padding: 5px 16px;
         }
+
         #leftA {
           position:absolute;
           top:53%;
@@ -382,6 +383,7 @@ export class ImageViewer extends HTMLElement {
           background-color: #3e3c3c99;
           color:white;
         }
+
         #rightA {
           position:absolute;
           top:53%;
@@ -391,6 +393,7 @@ export class ImageViewer extends HTMLElement {
           background-color: #3e3c3c99;
           color:white;
         }
+
         .btn, .button {
           border: none;
           display: inline-block;
@@ -404,6 +407,7 @@ export class ImageViewer extends HTMLElement {
           cursor: pointer;
           white-space: nowrap;
         }
+
         .btn, .button {
           -webkit-touch-callout: none;
           -webkit-user-select: none;
@@ -412,11 +416,13 @@ export class ImageViewer extends HTMLElement {
           -ms-user-select: none;
           user-select: none;
         }
+
         .display-topright {
           position: absolute;
           right: 0;
           top: 0;
         }
+
         .display-topleft {
           position: absolute;
           left: 20px;
@@ -426,17 +432,21 @@ export class ImageViewer extends HTMLElement {
           color:white;
           margin-top:5px;
         }
+
         .container, .w3-panel {
           padding: 0.01em 16px;
         }
+
         .image {
           max-width: 100%;
           height: auto;
         }
+
         img {
           vertical-align: middle;
           border-style: none;
         }
+        
         @media (max-width:768px){
           .modal{
             padding-top:50px;
@@ -532,8 +542,10 @@ export class ImageViewer extends HTMLElement {
 
   addImage(e) {
     e.slot = "images"
+
     this.appendChild(e);
     this.populateChildren();
+
     //show the arrows
     this.shadowRoot.querySelector('#leftA').style.display = 'block';
     this.shadowRoot.querySelector('#rightA').style.display = 'block';

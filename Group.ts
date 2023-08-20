@@ -1,4 +1,4 @@
-import { FindOneRqst, ReplaceOneRqst, ReplaceOneRsp } from "globular-web-client/persistence/persistence_pb";
+import { ReplaceOneRsp } from "globular-web-client/persistence/persistence_pb";
 import { Model } from "./Model";
 import { Account } from "./Account"
 import * as resource from "globular-web-client/resource/resource_pb";
@@ -6,10 +6,11 @@ import { getAllGroups } from "globular-web-client/api";
 import { Globular } from "globular-web-client";
 
 /**
- * Group are use to aggregate accounts.
+ * Represents a group that aggregates accounts.
  */
 export class Group extends Model {
-    private static listeners: any;
+
+    // keep the map of all groups by id.
     private static groups: any;
 
     // The id
@@ -27,10 +28,12 @@ export class Group extends Model {
         this._name = value;
     }
 
+    // the domain
     private _domain: string;
     public get domain(): string {
         return this._domain;
     }
+
     public set domain(value: string) {
         this._domain = value;
     }
@@ -44,7 +47,7 @@ export class Group extends Model {
         this._id = id;
     }
 
-
+    // Initialyse the group.
     initData(initCallback: () => void, errorCallback: (err: any) => void) {
 
         let domain = Model.domain
@@ -78,7 +81,7 @@ export class Group extends Model {
         })
     }
 
-
+    // Retreive the list of all groups from all register peers.
     static getGroups(callback: (groups: Array<Group>) => void, errorCallback: (err: any) => void) {
         let groups_ = new Array<Group>()
         let connections = Model.getGlobules()
@@ -114,10 +117,10 @@ export class Group extends Model {
     }
 
     // Return the list of all groups.
-    static _getGroups(globule:Globular, callback: (callback: Group[]) => void, errorCallback: (err: any) => void){
+    static _getGroups(globule: Globular, callback: (callback: Group[]) => void, errorCallback: (err: any) => void) {
         let groups = new Array<Group>();
-        getAllGroups(globule, groups_ =>{
-            groups_.forEach(g=>{
+        getAllGroups(globule, groups_ => {
+            groups_.forEach(g => {
                 let g_ = new Group(g.getId())
                 g_.fromObject(g)
                 groups.push(g_)

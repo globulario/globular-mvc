@@ -3,8 +3,6 @@ import { GetFileInfoRequest, RunCmdRequest } from "globular-web-client/admin/adm
 import { Application } from "../Application";
 import { File } from "../File";
 
-
-
 /**
  * Command prompt to execute command on the server.
  */

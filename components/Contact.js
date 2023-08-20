@@ -76,9 +76,6 @@ export class ContactsMenu extends Menu {
     init(account) {
 
         this.account = account;
-
-
-
         let html = `
             <style>
                

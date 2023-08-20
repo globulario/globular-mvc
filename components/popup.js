@@ -58,17 +58,11 @@ export class Popup extends HTMLElement {
           <div id="popup" class="popup" style="z-index: 100;position: absolute;right: 0px;"></div>
           `;
 
-
-
-          
-
-       
-
     // give the focus to the input.
-   
-    this.popup = this.shadowRoot.querySelector("#popup");   
-    document.addEventListener("click", (evt) => {      
-      if(this.popup.children.length == 0){
+
+    this.popup = this.shadowRoot.querySelector("#popup");
+    document.addEventListener("click", (evt) => {
+      if (this.popup.children.length == 0) {
         return;
       }
 
@@ -77,7 +71,7 @@ export class Popup extends HTMLElement {
       // let xpop = parseInt(this.popup.style.marginLeft);
       // let ypop = parseInt(this.popup.style.marginTop);
       // if (x > xpop + 250 || y > ypop + 110 || y + 5 < ypop) {
-        
+
 
       //   // this.append(...this.popup.childNodes);
       //   // this.popup.parentNode.removeChild(this.popup);
@@ -90,14 +84,14 @@ export class Popup extends HTMLElement {
 
   }
 
-  
 
-  closePopup(){
+
+  closePopup() {
     this.append(...this.popup.childNodes);
     this.popup.parentNode.removeChild(this.popup);
     this.backdrop = document.querySelector("#backdrop");
-    this.backdrop.parentNode.removeChild(this.backdrop)    
-    if(this.onclose != null){
+    this.backdrop.parentNode.removeChild(this.backdrop)
+    if (this.onclose != null) {
       this.onclose()
     }
   }
@@ -139,7 +133,7 @@ export class Popup extends HTMLElement {
     //y = 0; // test
     // this.popup.parentNode.removeChild(this.popup);
 
-    let range = document.createRange()    
+    let range = document.createRange()
     let backdrop_html = `
             <div id="backdrop" style="position:absolute;right: 0px;top: 0;width: 240px;height: 100vh;background: rgba(0,0,0,0.75);opacity:1;pointer-events:all;"></div>         
             `;
@@ -152,9 +146,9 @@ export class Popup extends HTMLElement {
 
     let backdrop_ = document.querySelector("#backdrop");
     backdrop_.addEventListener("click", (evt) => {
-    
-    this.closePopup()
-    
+
+      this.closePopup()
+
     });
   }
 
@@ -164,7 +158,7 @@ export class Popup extends HTMLElement {
 
   setPosition(element, x, y) {
     let position = this.getScreenCordinates(element);
-    this.popup.style.right =  x + "px";
+    this.popup.style.right = x + "px";
     this.popup.style.marginTop = position.y + y + "px";
 
     if (this.frombtn === true) {
@@ -174,7 +168,7 @@ export class Popup extends HTMLElement {
         "none";
     }
   }
- 
+
 
 }
 

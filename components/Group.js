@@ -86,24 +86,24 @@ export class GroupManager extends HTMLElement {
         // give the focus to the input.
         let container = this.shadowRoot.querySelector("#container")
 
-        let displayGroups = ()=>{
+        let displayGroups = () => {
             content.innerHTML = ""
-        // Here I will get the list of all groups.
-        getAllGroups(Application.globular,
-            (groups) => {
-                groups.forEach(g => {
-                    if (g.getId() != "admin" && g.getId() != "guest") {
-                        let panel = new GroupPanel(g)
-                        content.appendChild(panel)
-                    }
-                })
-            }, err => { ApplicationView.displayMessage(err, 3000) })
+            // Here I will get the list of all groups.
+            getAllGroups(Application.globular,
+                (groups) => {
+                    groups.forEach(g => {
+                        if (g.getId() != "admin" && g.getId() != "guest") {
+                            let panel = new GroupPanel(g)
+                            content.appendChild(panel)
+                        }
+                    })
+                }, err => { ApplicationView.displayMessage(err, 3000) })
         }
-         
+
         // call once
         displayGroups()
 
-        Model.globular.eventHub.subscribe("refresh_group_evt", uuid=>{}, evt=>{
+        Model.globular.eventHub.subscribe("refresh_group_evt", uuid => { }, evt => {
             displayGroups()
         }, true)
 
@@ -157,16 +157,16 @@ export class GroupManager extends HTMLElement {
                 }
 
                 input = panel.querySelector("paper-input")
-                let createGroupButton =  panel.querySelector("paper-button")
+                let createGroupButton = panel.querySelector("paper-button")
 
                 // Create a new group.
-                createGroupButton.onclick = ()=>{
+                createGroupButton.onclick = () => {
                     let groupId = input.value;
-                    if(groupId.length == 0){
+                    if (groupId.length == 0) {
                         ApplicationView.displayMessage("No group name was given!", 3000)
                         setTimeout(() => {
                             input.focus()
-                          }, 100)
+                        }, 100)
                         return
                     }
 
@@ -177,26 +177,26 @@ export class GroupManager extends HTMLElement {
                     group.setDomain(Model.domain)
 
                     rqst.setGroup(group)
-                    Model.globular.resourceService.createGroup(rqst, { domain: Model.domain,address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
-                    .then(rsp => {
-                        ApplicationView.displayMessage("Group " + groupId + "@" + Model.domain + " was created!", 3000)
-                        panel.parentNode.removeChild(panel)
-                        displayGroups()
-                    }).catch(err => {
-                        ApplicationView.displayMessage(err, 3000)
-                        setTimeout(() => {
-                            input.focus()
-                          }, 100)
-                    })
-                   
+                    Model.globular.resourceService.createGroup(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") })
+                        .then(rsp => {
+                            ApplicationView.displayMessage("Group " + groupId + "@" + Model.domain + " was created!", 3000)
+                            panel.parentNode.removeChild(panel)
+                            displayGroups()
+                        }).catch(err => {
+                            ApplicationView.displayMessage(err, 3000)
+                            setTimeout(() => {
+                                input.focus()
+                            }, 100)
+                        })
+
                 }
-            }else{
+            } else {
                 input = panel.querySelector("paper-input")
             }
-            
+
             setTimeout(() => {
                 input.focus()
-              }, 100)
+            }, 100)
 
         }
 
@@ -274,7 +274,7 @@ export class GroupPanel extends HTMLElement {
         <div id="container">
             <div class="header">
                 <paper-icon-button id="delete-group-btn" icon="delete"></paper-icon-button>
-                <span class="title">${this.group.getName()  + "@" + this.group.getDomain()}</span>
+                <span class="title">${this.group.getName() + "@" + this.group.getDomain()}</span>
                 <div style="display: flex; width: 32px; height: 32px; justify-content: center; align-items: center;position: relative;">
                     <iron-icon  id="hide-btn"  icon="unfold-less" style="flex-grow: 1; --iron-icon-fill-color:var(--palette-text-primary);" icon="add"></iron-icon>
                     <paper-ripple class="circle" recenters=""></paper-ripple>
@@ -290,7 +290,7 @@ export class GroupPanel extends HTMLElement {
         this.hideBtn = this.shadowRoot.querySelector("#hide-btn")
 
         let deleteBtn = this.shadowRoot.querySelector("#delete-group-btn")
-        deleteBtn.onclick = ()=>{
+        deleteBtn.onclick = () => {
             this.onDeleteGroup(group)
         }
 
@@ -360,7 +360,7 @@ export class GroupPanel extends HTMLElement {
 
     onDeleteGroup(group) {
         let toast = ApplicationView.displayMessage(
-          `
+            `
           <style>
           
             #yes-no-contact-delete-box{
@@ -379,7 +379,7 @@ export class GroupPanel extends HTMLElement {
     
           </style>
           <div id="yes-no-contact-delete-box">
-            <div>Your about to delete the group ${group.getName()  + "@" + group.getDomain()}</div>
+            <div>Your about to delete the group ${group.getName() + "@" + group.getDomain()}</div>
             <div>Is it what you want to do? </div>
             <div style="justify-content: flex-end;">
               <paper-button id="yes-delete-contact">Yes</paper-button>
@@ -387,37 +387,37 @@ export class GroupPanel extends HTMLElement {
             </div>
           </div>
           `,
-          15000 // 15 sec...
+            15000 // 15 sec...
         );
-    
+
         let yesBtn = document.querySelector("#yes-delete-contact")
         let noBtn = document.querySelector("#no-delete-contact")
-    
+
         // On yes
         yesBtn.onclick = () => {
 
-          let rqst = new DeleteGroupRqst
-          rqst.setGroup(group.getId() + "@" + group.getDomain())
-          Model.globular.resourceService.deleteGroup(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") } ).then((rsp)=>{
-            ApplicationView.displayMessage(
-                "<iron-icon icon='communication:message' style='margin-right: 10px;'></iron-icon><div>Group named " +
-                group.getName() +
-                " was deleted!</div>",
-                3000
-              );
-              Model.globular.eventHub.publish("refresh_group_evt", {}, true)
-              toast.dismiss();
-          }).catch(e=>{
-            ApplicationView.displayMessage(e, 3000)
-            toast.dismiss();
-          })
-    
+            let rqst = new DeleteGroupRqst
+            rqst.setGroup(group.getId() + "@" + group.getDomain())
+            Model.globular.resourceService.deleteGroup(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") }).then((rsp) => {
+                ApplicationView.displayMessage(
+                    "<iron-icon icon='communication:message' style='margin-right: 10px;'></iron-icon><div>Group named " +
+                    group.getName() +
+                    " was deleted!</div>",
+                    3000
+                );
+                Model.globular.eventHub.publish("refresh_group_evt", {}, true)
+                toast.dismiss();
+            }).catch(e => {
+                ApplicationView.displayMessage(e, 3000)
+                toast.dismiss();
+            })
+
         }
-    
+
         noBtn.onclick = () => {
-          toast.dismiss();
+            toast.dismiss();
         }
-      }
+    }
 }
 
 customElements.define('globular-group-panel', GroupPanel)

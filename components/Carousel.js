@@ -248,7 +248,6 @@ export class Carousel extends HTMLElement {
     this.setupCarousel();
   }
 
-
   setEditable(editable) {
     this.editable = editable;
 

@@ -3,11 +3,9 @@ import { generatePeerToken, getUrl, Model } from '../Model';
 import { ApplicationView } from "../ApplicationView";
 import { setMoveable } from './moveable'
 import WaveSurfer from "wavesurfer.js";
-import { PlayList } from "./Playlist"
 import { setMinimizeable } from "./minimizeable"
 import { fireResize } from "./utility";
 import { File } from "../File";
-import { TargetsRequest } from 'globular-web-client/monitoring/monitoring_pb';
 import { Application } from '../Application';
 import { GetTitleFilesRequest } from 'globular-web-client/title/title_pb';
 

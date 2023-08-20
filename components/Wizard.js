@@ -50,8 +50,6 @@ export class Wizard extends HTMLElement {
             this.width = screen.width
         }
 
-
-
         // the current index.
         this.index = 0;
 

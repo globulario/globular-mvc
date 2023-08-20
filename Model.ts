@@ -3,7 +3,6 @@ import * as GlobularWebClient from "globular-web-client";
 import { getAllPeersInfo } from "globular-web-client/api";
 import { GeneratePeerTokenRequest } from "globular-web-client/authentication/authentication_pb";
 import { Peer } from "globular-web-client/resource/resource_pb";
-import { formatBoolean } from "./components/utility";
 import { View } from "./View";
 
 
