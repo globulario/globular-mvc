@@ -6,7 +6,6 @@ import '@polymer/iron-icons/image-icons';
 import '@polymer/iron-icons/av-icons';
 import '@polymer/paper-input/paper-input.js';
 
-import { dataURIToBlob } from './utility';
 export class Camera extends HTMLElement {
 
     constructor() {

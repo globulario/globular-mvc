@@ -2,10 +2,9 @@
 import parser from 'iptv-playlist-parser'
 import { GetAudioByIdRequest, GetVideoByIdRequest } from "globular-web-client/title/title_pb.js";
 import { Application } from "../Application";
-import { fireResize, formatBoolean } from "./utility.js";
+import { fireResize } from "./utility.js";
 import { secondsToTime } from "./Audio.js";
 import { generatePeerToken, getUrl, Model } from '../Model';
-import { SetVideoConversionRequest } from "globular-web-client/file/file_pb.js";
 import { File } from "../File";
 
 
@@ -70,7 +69,6 @@ function getVideoInfo(globule, id, callback) {
                 callback(null, null)
             })
     })
-
 }
 
 function getAudioInfo(globule, id, callback) {

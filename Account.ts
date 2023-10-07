@@ -186,7 +186,7 @@ export class Account extends Model {
 
 
             let rqst = new ResourceService.GetAccountsRqst
-            rqst.setQuery(`{"$or":[{"_id":"${id}"},{"name":"${id}"} ]}`); // search by name and not id... the id will be retreived.
+            rqst.setQuery(`{"_id":"${id}"}`); // search by name and not id... the id will be retreived.
             rqst.setOptions(`[{"Projection":{"_id":1, "email":1, "name":1, "groups":1, "organizations":1, "roles":1, "domain":1}}]`);
 
             let globule = Model.getGlobule(domain)
@@ -354,7 +354,6 @@ export class Account extends Model {
         errorCallback: (err: any) => void
     ) {
 
-
         let rqst = new FindOneRqst();
 
         // remove unwanted characters
@@ -387,7 +386,7 @@ export class Account extends Model {
                     if (err.code == 13) {
 
                         if (Application.account == null) {
-                            ApplicationView.displayMessage("no connection found on the server you need to login", 3000)
+                            ApplicationView.displayMessage("no connections found on the server you need to login", 3000)
                             setTimeout(() => {
                                 localStorage.removeItem("remember_me");
                                 localStorage.removeItem("user_token");
@@ -465,7 +464,7 @@ export class Account extends Model {
 
         // Retreive user data... 
         Account.readOneUserData(
-            `{"$or":[{"_id":"${this.id}"},{"name":"${this.id}"} ]}`, // The query is made on the user database and not local_ressource Accounts here so name is name_ here
+            `{"_id":"${this.id}"}`, // The query is made on the user database and not local_ressource Accounts here so name is name_ here
             userName, // The database to search into 
             this.domain,
             (data: any) => {
@@ -560,7 +559,7 @@ export class Account extends Model {
         // save only user data and not the how user info...
         let data = this.toString();
         rqst.setCollection(collection);
-        rqst.setQuery(`{"$or":[{"_id":"${this.id}"},{"name":"${this.id}"} ]}`);
+        rqst.setQuery(`{"_id":"${this.id}"}`);
         rqst.setValue(data);
         rqst.setOptions(`[{"upsert": true}]`);
 

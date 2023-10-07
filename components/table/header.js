@@ -151,7 +151,6 @@ export class TableHeaderCellElement extends PolymerElement {
         this.style.justifyContent = "center";
         this.style.textAlign = "center";
 
-        var index = 0
         for (var i = 0; i < this.children.length; i++) {
             // Here div contain the text value and must take avalaible space.
             if (this.children[i].tagName == "DIV") {

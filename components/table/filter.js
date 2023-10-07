@@ -11,6 +11,7 @@ import { fireResize, isNumeric, intersectSafe, isString, isBoolean, getCoords } 
 
 export class Expression {
   constructor(parent) {
+
     // Keep a link to the parent filter for that expression.
     this.parent = parent; // So here I will append the expression panel.
 
@@ -1062,6 +1063,7 @@ export class Filter {
       "style": "height: 18px; width: 18px; padding: 0px;",
       "title": "append a new exprssion"
     }).down();
+
     this.andOrBtn = this.operatorPanel.appendElement({
       "tag": "div",
       "innerHtml": "or",
@@ -1105,7 +1107,6 @@ export class Filter {
       };
     }(this); // Set the append/delete filter menu
 
-
     this.filterMenu = this.panel.appendElement({
       "tag": "div",
       "style": "z-index: 1; position: absolute; top:0px; -webkit-box-shadow: 0px 0px 5px -1px rgba(0,0,0,0.75);  -moz-box-shadow: 0px 0px 5px -1px rgba(0,0,0,0.75);  box-shadow: 0px 0px 5px -1px rgba(0,0,0,0.75); background-color: var(--palette-background-paper); color: var(--palette-text-primary);"
@@ -1117,12 +1118,14 @@ export class Filter {
       "style": "height: 18px; width: 18px; padding: 0px;",
       "title": "append new group of expression."
     }).down();
+
     this.clearFileterBtn = this.filterMenu.appendElement({
       "tag": "paper-icon-button",
       "icon": "close",
       "style": "height: 18px; width: 18px; padding: 0px; align-self: center;",
       "title": "clear the content of filter"
     }).down();
+
     this.deleteFileterBtn = this.filterMenu.appendElement({
       "tag": "paper-icon-button",
       "icon": "delete",
@@ -1137,7 +1140,6 @@ export class Filter {
     this.clearFileterBtn.element.onmouseout = this.addFilterBtn.element.onmouseout = function () {
       this.style.cursor = "default";
     }; // remove a given filter.
-
 
     this.deleteFileterBtn.element.onclick = function (filter) {
       return function () {

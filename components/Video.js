@@ -30,7 +30,7 @@ String.prototype.endsWith = function (suffix) {
     return this.indexOf(suffix, this.length - suffix.length) !== -1;
 };
 
-// get files associated with the titles, audios or videos...
+// get files associated with the titles, videos or videos...
 function getTitleFiles(id, indexPath, globule, callback) {
     let rqst = new GetTitleFilesRequest
     rqst.setTitleid(id)
@@ -47,19 +47,19 @@ function getTitleFiles(id, indexPath, globule, callback) {
 
 export function playVideos(videos, name) {
 
-    let videos_  = [...new Map(videos.map(v => [v.getId(), v])).values()]
+    let videos_ = [...new Map(videos.map(v => [v.getId(), v])).values()]
 
     ApplicationView.wait("loading videos playlist...")
     // here I will get the audi
     let video_playList = "#EXTM3U\n"
     video_playList += "#PLAYLIST: " + name + "\n\n"
 
-    // Generate the playlist with found audio items.
+    // Generate the playlist with found video items.
     let generateVideoPlaylist = () => {
         let video = videos_.pop();
         let globule = video.globule;
 
-        // set the audio info
+        // set the video info
         let indexPath = globule.config.DataPath + "/search/videos"
 
         // get the title file path...
@@ -1174,6 +1174,7 @@ export class VideoPlayer extends HTMLElement {
                 });
             }
         }
+
 
 
     }
