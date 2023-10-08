@@ -18,7 +18,7 @@ import { v4 as uuidv4 } from "uuid";
 import { ConversationManager } from "./Conversation";
 import { Conversation } from "globular-web-client/conversation/conversation_pb";
 import { LogInfo, LogLevel, LogRqst, LogRsp, Occurence } from "globular-web-client/log/log_pb";
-import { SessionState } from "./Session";
+import { Session, SessionState } from "./Session";
 import { File } from "./File";
 import { playVideo } from "./components/Video";
 import { playAudio } from "./components/Audio";
@@ -282,8 +282,8 @@ export class Application extends Model {
             evt.pwd,
             evt.repwd,
             evt.domain,
-            (data: any) => {
-
+            (account: Account) => {
+              account.session = new Session(account, SessionState.Online)
             },
             (err: any) => {
               ApplicationView.displayMessage(err, 4000);
@@ -908,7 +908,7 @@ export class Application extends Model {
         connection.setUser(connectionId)
         connection.setPassword(password)
         connection.setStore(StoreType.SQL)
-        connection.setName(name)
+        connection.setName(name + "_db")
         connection.setPort(globule.config.BackendPort)
         connection.setTimeout(60)
         connection.setHost(domain)
@@ -930,6 +930,7 @@ export class Application extends Model {
               this.initNotifications();
               this.startRefreshToken();
               ApplicationView.resume();
+
 
             },
             (err: any) => {
@@ -1070,7 +1071,7 @@ export class Application extends Model {
         connection.setUser(connectionId)
         connection.setPassword(password)
         connection.setStore(StoreType.SQL)
-        connection.setName(id)
+        connection.setName(id + "_db")
         connection.setPort(globule.config.BackendPort)
         connection.setTimeout(60)
         connection.setHost(userDomain)
