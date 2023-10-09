@@ -140,6 +140,7 @@ export class Ringtones extends HTMLElement {
                 if (contacts.length > 0) {
                     if (contacts[0].ringtone) {
                         this.account.ringtone = contacts[0].ringtone
+                        this.account.status = contacts[0].status // keep the status
                     }
 
 
@@ -295,7 +296,7 @@ export class Ringtones extends HTMLElement {
 
         let contact = new Contact
         contact.setId(this.account.id + "@" + this.account.domain)
-        contact.setStatus("accepted")
+        contact.setStatus(this.account.status)
         contact.setRingtone(this.account.ringtone)
         if (this.account.profilePicture)
             contact.setProfilepicture(this.account.profilePicture)
