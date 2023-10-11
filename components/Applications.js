@@ -183,30 +183,31 @@ export class ApplicationsPanel extends HTMLElement {
             let range = document.createRange()
             for (var i = 0; i < infos.length; i++) {
                 let application = infos[i]
+                let applicationId = "_" + application.getId()
                 let html = `
-                <div id="${application.getId()}_div" class="application-div">
+                <div id="${applicationId}_div" class="application-div">
                     <paper-ripple recenters></paper-ripple>
-                    <img id="${application.getId()}_img"></img>
-                    <span id="${application.getId()}_span"></span>
-                    <a id="${application.getId()}_lnk" style="display: none;"></a>
+                    <img id="${applicationId}_img"></img>
+                    <span id="${applicationId}_span"></span>
+                    <a id="${applicationId}_lnk" style="display: none;"></a>
                 </div>
-                <paper-tooltip for="${application.getId()}_div" style="font-size: .85rem;" role="tooltip" tabindex="-1">${application.getDescription()}</paper-tooltip>
+                <paper-tooltip for="${applicationId}_div" style="font-size: .85rem;" role="tooltip" tabindex="-1">${application.getDescription()}</paper-tooltip>
                 `
                 let container = this.shadowRoot.querySelector(".container")
                 container.appendChild(range.createContextualFragment(html))
-                let div_ = container.querySelector(`#${application.getId()}_div`)
+                let div_ = container.querySelector(`#${applicationId}_div`)
 
                 if (div_ != null) {
                     if (this.size == "normal") {
                         div_.classList.add("normal")
                     }
 
-                    let img = this.shadowRoot.getElementById(application.getId() + "_img")
-                    let lnk = this.shadowRoot.getElementById(application.getId() + "_lnk")
+                    let img = this.shadowRoot.getElementById(applicationId + "_img")
+                    let lnk = this.shadowRoot.getElementById(applicationId + "_lnk")
                     var currentLocation = window.location;
                     lnk.href = currentLocation.origin + application.getPath();
 
-                    let title = this.shadowRoot.getElementById(application.getId() + "_span")
+                    let title = this.shadowRoot.getElementById(applicationId + "_span")
                     img.src = application.getIcon();
                     title.innerHTML = application.getId();
                     title.title = application.getId();

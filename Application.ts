@@ -719,6 +719,8 @@ export class Application extends Model {
             }, false)
 
           Application.infos.set(applications[i].getId(), applications[i]);
+          Application.infos.set(applications[i].getName(), applications[i]);
+          
         }
 
         callback(applications);
