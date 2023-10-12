@@ -5,7 +5,7 @@ import { DeleteResourcePermissionsRqst, GetActionResourceInfosRqst, GetResourceP
 import { Account } from "../Account";
 import { ApplicationView } from "../ApplicationView";
 import { SearchableAccountList, SearchableApplicationList, SearchableGroupList, SearchableOrganizationList, SearchablePeerList } from "./List.js";
-import { getAllApplicationsInfo, getAllGroups, GetPackagesDescriptor } from "globular-web-client/api";
+import { getAllApplicationsInfo, getAllGroups } from "globular-web-client/api";
 import { randomUUID } from "./utility";
 import { getAllOrganizations, getOrganizationById } from "./Organization";
 import { GetAllActionsRequest } from "globular-web-client/services_manager/services_manager_pb";
@@ -13,7 +13,7 @@ import { Application } from "../Application";
 import { Group } from "../Group";
 import '@polymer/iron-icons/av-icons'
 import '@polymer/iron-icons/editor-icons'
-import { GetApplicationsRqst, GetPackagesDescriptorRequest, Organization, RejectPeerRqst } from "globular-web-client/resource/resource_pb";
+import { GetApplicationsRqst, GetPackagesDescriptorRequest } from "globular-web-client/resource/resource_pb";
 import { File } from "../File";
 import { ApplicationInfo, BlogPostInfo, ConversationInfo, DomainInfo, FileInfo, GroupInfo, OrganizationInfo, PackageInfo, RoleInfo, WebpageInfo } from "./Informations";
 import * as getUuidByString from "uuid-by-string";
@@ -1852,17 +1852,16 @@ function getPackage(id, callback, errorCallback) {
     // package descriptor.
     let infos = id.split("|")
     let publisherid = infos[0]
-    let id_ = infos[1]
-    let name = infos[2]
-    let version = infos[3]
+    let name = infos[1]
+    let version = infos[2]
 
     let address = Model.domain; // default domain
-    if (id_.indexOf("@") != -1) {
-        address = id_.split("@")[1] // take the domain given with the id.
+    if (name.indexOf("@") != -1) {
+        address = name.split("@")[1] // take the domain given with the id.
     }
 
     let rqst = new GetPackagesDescriptorRequest
-    rqst.setQuery(`{"$and":[{"id":"${id_}"},{"name":"${name}"},{"version":"${version}"},{"publisherid":"${publisherid}"}]}`);
+    rqst.setQuery(`{"$and":[{"name":"${name}"},{"version":"${version}"},{"publisherid":"${publisherid}"}]}`);
     let globule = Model.getGlobule(address)
 
     let stream = globule.resourceService.getPackagesDescriptor(rqst, { application: Application.application, domain: globule.domain, token: localStorage.getItem("user_token") })
@@ -2143,7 +2142,9 @@ export class ResourcesPermissionsType extends HTMLElement {
                     }, err => {
                         console.log(err)
                         // delete the permissions if the resource dosent exist.
-                        PermissionManager.deleteResourcePermissions(p.getPath(), err => ApplicationView.displayMessage(err, 3000))
+                        PermissionManager.deleteResourcePermissions(p.getPath(), ()=>{
+                            console.log("resource permissions was deleted!")
+                        }, err => ApplicationView.displayMessage(err, 3000))
                     })
                 }
             })
