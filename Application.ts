@@ -17,7 +17,7 @@ import {
 import { v4 as uuidv4 } from "uuid";
 import { ConversationManager } from "./Conversation";
 import { Conversation } from "globular-web-client/conversation/conversation_pb";
-import { LogInfo, LogLevel, LogRqst, LogRsp, Occurence } from "globular-web-client/log/log_pb";
+import { LogInfo, LogLevel, LogRqst, LogRsp } from "globular-web-client/log/log_pb";
 import { Session, SessionState } from "./Session";
 import { File } from "./File";
 import { playVideo } from "./components/Video";
@@ -189,26 +189,16 @@ export class Application extends Model {
         let info = new LogInfo
         info.setLevel(LogLevel.ERROR_MESSAGE)
 
-        let occurence = new Occurence
-        occurence.setDate(Math.trunc(Date.now() / 1000))
-        occurence.setApplication(Application.application)
-        occurence.setUserid("")
-        occurence.setUsername("")
-        if (Application.account != undefined) {
-          occurence.setUserid(Application.account.id)
-          occurence.setUsername(Application.account.name)
-        }
-
         if (error == undefined) {
           return
         }
 
         info.setMethod(error.name + " " + error.message)
         info.setMessage(error.stack.toString())
-
+        info.setApplication(Application.application)
+        info.setOccurences(0)
         let rqst = new LogRqst
         rqst.setInfo(info)
-        rqst.setOccurence(occurence)
 
         Model.globular.logService.log(rqst, {
           token: localStorage.getItem("user_token"),

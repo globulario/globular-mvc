@@ -4,6 +4,8 @@ import { getAllPeersInfo } from "globular-web-client/api";
 import { GeneratePeerTokenRequest } from "globular-web-client/authentication/authentication_pb";
 import { Peer } from "globular-web-client/resource/resource_pb";
 import { View } from "./View";
+import { Application } from "./Application";
+import { ApplicationView } from "./ApplicationView";
 
 
 // Keep the token in the map...
@@ -214,21 +216,27 @@ export class Model {
      */
     initPeer(peer: Peer, callback: () => void, errorCallback: (err: any) => void) {
         let port = 80
-        if (Model._globular.config.Protocol == "https") {
+        var currentProtocol = window.location.protocol;
+
+        if (currentProtocol == "https:") {
+
             port = 443
             if (peer.getProtocol() == "https") {
                 port = peer.getPorthttps()
+            }else{
+                errorCallback("The peer is not in https, the application is in https you need to access application in http")
+                return
             }
         } else {
-            port = peer.getPorthttps()
+            port = peer.getPorthttp()
         }
 
 
-        let url = Model._globular.config.Protocol + "://" + peer.getDomain() + ":" + port + "/config"
+        let url = currentProtocol + "//" + peer.getDomain() + ":" + port + "/config"
         let globule = new GlobularWebClient.Globular(url, () => {
 
             // append the globule to the list.
-            Model.globules.set(Model._globular.config.Protocol + "://" + peer.getDomain() + ":" + port, globule)
+            Model.globules.set(currentProtocol + "//" + peer.getDomain() + ":" + port, globule)
             Model.globules.set(url, globule)
 
             Model.globules.set(peer.getDomain(), globule)

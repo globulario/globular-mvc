@@ -1663,7 +1663,7 @@ export class GlobularSubjectsView extends HTMLElement {
             accountsSelector.click() // display list of account'(s)
 
 
-        }, err => ApplicationView.displayMessage("fail to retreive accouts with error: ", err))
+        }, err => {ApplicationView.displayMessage("fail to retreive accounts with error: ", err); console.log("1666---------->", err)})
 
         // Now the groups.
         Group.getGroups(groups => {

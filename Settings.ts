@@ -1,5 +1,5 @@
 //import { SetEmailResponse } from "globular-web-client/admin/admin_pb";
-import { ClearAllLogRqst, DeleteLogRqst, DeleteLogRsp, GetLogRqst, GetLogRsp, LogInfo, Occurence } from "globular-web-client/log/log_pb";
+import { ClearAllLogRqst, DeleteLogRqst, DeleteLogRsp, GetLogRqst, GetLogRsp, LogInfo } from "globular-web-client/log/log_pb";
 import { Account } from "./Account";
 import { Application } from "./Application";
 import { ApplicationView } from "./ApplicationView";
@@ -315,7 +315,7 @@ export class OrganizationSettings extends Settings {
             <div class="title">
                 Organizations 
             </div>
-            <span class="subtitle" style="font-size: 1rem;">Aggregation of accouts, groups, roles and applications used to manage permissions</span>
+            <span class="subtitle" style="font-size: 1rem;">Aggregation of accounts, groups, roles and applications used to manage permissions</span>
         `
 
         // Display the file explorer...
@@ -1019,52 +1019,55 @@ export class LogSettings extends Settings {
         this.infoCheckBox.onclick = this.warningCheckBox.onclick = this.errorCheckBox.onclick = () => {
             this.table.clear(); // remove all values...
             if (this.errorCheckBox.checked) {
-                this.getLogs("/error/*",
+                this.getLogs("error/" + Application.application + "/*",
                     (infos: Array<LogInfo>) => {
                         this.setInfos(infos)
-                        this.getLogs("/fatal/*",
-                            (infos: Array<LogInfo>) => {
-                                this.setInfos(infos)
-                            },
-                            (err: any) => {
-                                ApplicationView.displayMessage(err, 3000)
-                            })
                     },
                     (err: any) => {
-                        ApplicationView.displayMessage(err, 3000)
+                        console.log(err)
+                    })
+
+                this.getLogs("fatal/" + Application.application + "/*",
+                    (infos: Array<LogInfo>) => {
+                        this.setInfos(infos)
+                    },
+                    (err: any) => {
+                        console.log(err)
                     })
             }
             if (this.warningCheckBox.checked) {
-                this.getLogs("/warning/*",
+                this.getLogs("warning/" + Application.application + "/*",
                     (infos: Array<LogInfo>) => {
                         this.setInfos(infos)
                     },
                     (err: any) => {
-                        ApplicationView.displayMessage(err, 3000)
+                        console.log(err)
                     })
             }
 
             if (this.infoCheckBox.checked) {
-                this.getLogs("/info/*",
+                this.getLogs("info/" + Application.application + "/*",
                     (infos: Array<LogInfo>) => {
                         this.setInfos(infos)
-                        this.getLogs("/debug/*",
-                            (infos: Array<LogInfo>) => {
-                                this.setInfos(infos)
-                                this.getLogs("/trace/*",
-                                    (infos: Array<LogInfo>) => {
-                                        this.setInfos(infos)
-                                    },
-                                    (err: any) => {
-                                        ApplicationView.displayMessage(err, 3000)
-                                    })
-                            },
-                            (err: any) => {
-                                ApplicationView.displayMessage(err, 3000)
-                            })
                     },
                     (err: any) => {
-                        ApplicationView.displayMessage(err, 3000)
+                        console.log(err)
+                    })
+
+                this.getLogs("debug/" + Application.application + "/*",
+                    (infos: Array<LogInfo>) => {
+                        this.setInfos(infos)
+                    },
+                    (err: any) => {
+                       console.log(err)
+                    })
+
+                this.getLogs("trace/" + Application.application + "/*",
+                    (infos: Array<LogInfo>) => {
+                        this.setInfos(infos)
+                    },
+                    (err: any) => {
+                        console.log(err)
                     })
             }
 
@@ -1101,34 +1104,34 @@ export class LogSettings extends Settings {
             } else {
                 // Remove error/fatal logs.
                 if (this.errorCheckBox.checked) {
-                    this.clearLogs("/error/" + Application.application + "/*", () => {
+                    this.clearLogs("error/" + Application.application + "/*", () => {
                         this.table.clear();
                     }, (err: any) => { ApplicationView.displayMessage(err, 300) })
 
-                    this.clearLogs("/fatal/" + Application.application + "/*", () => {
+                    this.clearLogs("fatal/" + Application.application + "/*", () => {
                         this.table.clear();
                     }, (err: any) => { ApplicationView.displayMessage(err, 300) })
                 }
 
                 // Remove warnings
                 if (this.warningCheckBox.checked) {
-                    this.clearLogs("/warning/" + Application.application + "/*", () => {
+                    this.clearLogs("warning/" + Application.application + "/*", () => {
                         this.table.clear();
                     }, (err: any) => { ApplicationView.displayMessage(err, 300) })
                 }
 
                 // Remove debug, info and tace.
                 if (this.infoCheckBox.checked) {
-                    this.clearLogs("/info/" + Application.application + "/*", () => {
+                    this.clearLogs("info/" + Application.application + "/*", () => {
                         this.table.clear();
                     }, (err: any) => { ApplicationView.displayMessage(err, 300) })
 
-                    this.clearLogs("/debug/" + Application.application + "/*", () => {
+                    this.clearLogs("debug/" + Application.application + "/*", () => {
                         this.table.clear();
                     }, (err: any) => { ApplicationView.displayMessage(err, 300) })
 
 
-                    this.clearLogs("/trace/" + Application.application + "/*", () => {
+                    this.clearLogs("trace/" + Application.application + "/*", () => {
                         this.table.clear();
                     }, (err: any) => { ApplicationView.displayMessage(err, 300) })
                 }
@@ -1154,7 +1157,7 @@ export class LogSettings extends Settings {
             // Now I will set the way I will display the values.
             if (title == "Occurences") {
                 headerCell.width = 320;
-                headerCell.onrender = (div: any, occurences: Array<Occurence>, row: number, column: number) => {
+                headerCell.onrender = (div: any, occurences: number, row: number, column: number) => {
                     if (occurences != undefined) {
                         div.style.justifySelf = "flex-start"
                         div.style.display = "flex"
@@ -1169,7 +1172,7 @@ export class LogSettings extends Settings {
                                         <paper-ripple class="circle" recenters=""></paper-ripple>
                                     </div>
                                     <div style="flex-grow: 1;">
-                                        ${occurences.length}
+                                        ${occurences}
                                     </div>
                                 </div>
                                 <iron-collapse class="permissions" id="collapse-panel" style="display: flex; flex-direction: column; margin: 5px;">
@@ -1191,10 +1194,10 @@ export class LogSettings extends Settings {
                         }
 
                         let range = document.createRange()
-                        occurences.sort((a: Occurence, b: Occurence) => { return b.getDate() - a.getDate() })
 
                         // Now I will set the occurence infromations...
-                        occurences.forEach(o => {
+                        // TODO here I will get more infos about occurences...
+                        /**occurences.forEach(o => {
                             let html = `
                                 <div style="display: flex; padding: 2px;">
                                     <div>${new Date(o.getDate() * 1000).toLocaleString()} </div>
@@ -1203,7 +1206,7 @@ export class LogSettings extends Settings {
                             `
                             collapse_panel.appendChild(range.createContextualFragment(html))
 
-                        })
+                        })*/
 
                     }
                 }
@@ -1222,12 +1225,12 @@ export class LogSettings extends Settings {
         logSettingPage.appendChild(this.table);
         this.table.data = [];
 
-        this.getLogs("/error/*",
+        this.getLogs("error/"+Application.application+"/*",
             (infos: Array<LogInfo>) => {
                 this.setInfos(infos)
             },
             (err: any) => {
-                ApplicationView.displayMessage(err, 3000)
+                console.log(err)
             })
 
     }
@@ -1252,7 +1255,7 @@ export class LogSettings extends Settings {
             }
 
             this.infos.push(info) //keep in the array.
-            this.table.data.push([level, info.getOccurencesList(), info.getMethod(), info.getMessage()])
+            this.table.data.push([level, info.getOccurences(), info.getMethod(), info.getMessage()])
         })
         this.table.refresh()
     }
