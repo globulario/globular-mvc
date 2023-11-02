@@ -558,7 +558,7 @@ export class Application extends Model {
           let userInfo_ = JSON.parse(userInfo)
           userFirstName = userInfo_["first_name"]
           userLastName = userInfo_["last_name"]
-          usermiddle_name = userInfo_["middle_name_"]
+          usermiddle_name = userInfo_["middle_name"]
           userProfilePicture = userInfo_["profile_picture"]
         }
 
@@ -1083,7 +1083,7 @@ export class Application extends Model {
             let userInfo_ = JSON.parse(userInfo)
             userFirstName = userInfo_["first_name"]
             userLastName = userInfo_["last_name"]
-            usermiddle_name = userInfo_["middle_name_"]
+            usermiddle_name = userInfo_["middle_name"]
             userProfilePicture = userInfo_["profile_picture"]
           }
 

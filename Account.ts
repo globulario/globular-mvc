@@ -105,12 +105,12 @@ export class Account extends Model {
     }
 
     // The user middle name.
-    private middle_name_: string;
-    public get middle_name(): string {
-        return this.middle_name_;
+    private middle_name: string;
+    public get middleName(): string {
+        return this.middle_name;
     }
-    public set middle_name(value: string) {
-        this.middle_name_ = value;
+    public set middleName(value: string) {
+        this.middle_name = value;
     }
 
     public get userName(): string {
@@ -122,17 +122,17 @@ export class Account extends Model {
         return name + " " + this.lastName;
     }
 
-    constructor(id: string, email: string, name: string, domain: string, firstName: string, lastName: string, middle_name: string, profilePicture: string) {
+    constructor(id: string, email: string, name: string, domain: string, firstName: string, lastName: string, middleName: string, profilePicture: string) {
         super();
 
+        this.hasData = false;
         this._id = id;
-        this.name_ = name;
+        this.name = name;
         this.domain = domain;
         this.email_ = email;
-        this.hasData = false;
         this.first_name = firstName;
         this.last_name = lastName;
-        this.middle_name_ = middle_name;
+        this.middle_name = middleName;
         this.profile_picture = profilePicture
     }
 
@@ -430,20 +430,20 @@ export class Account extends Model {
     private setData(data: any) {
 
         this.hasData = true;
-        this.firstName = data["first_name"];
+        this.firstName = data["firstName"];
         if (this.firstName == undefined) {
             this.firstName = ""
         }
-        this.lastName = data["last_name"];
+        this.lastName = data["lastName"];
         if (this.lastName == undefined) {
             this.lastName = ""
         }
-        this.middle_name = data["middle_name_"];
+        this.middle_name = data["middleName"];
         if (this.middle_name == undefined) {
             this.middle_name = "";
         }
-        if (data["profile_picture"] != undefined) {
-            this.profilePicture = data["profile_picture"];
+        if (data["profilePicture"] != undefined) {
+            this.profilePicture = data["profilePicture"];
 
             // keep the user data into the localstore.
             localStorage.setItem(this.id + "@" + this.domain, JSON.stringify(data))
@@ -585,11 +585,11 @@ export class Account extends Model {
     }
 
     toString(): string {
-        return JSON.stringify({ _id: this.id, email: this.email, first_name: this.firstName, last_name: this.lastName, middle_name_: this.middle_name, profile_picture: this.profilePicture, domain:this.domain });
+        return JSON.stringify({ _id: this.id, email: this.email, first_name: this.firstName, last_name: this.lastName, middle_name: this.middle_name, profile_picture: this.profilePicture });
     }
 
     static fromObject(obj: any): any {
-        return new Account(obj._id, obj.email, obj.name, obj.domain, obj.first_name, obj.last_name, obj.middle_name_, obj.profile_picture)  
+        return new Account(obj._id, obj.email, obj.name, obj.domain, obj.first_name, obj.last_name, obj.middle_name, obj.profile_picture)  
     }
 
     static fromString(jsonStr:string):any{

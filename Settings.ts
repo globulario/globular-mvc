@@ -82,9 +82,9 @@ export class UserSettings extends Settings {
         lastNameSetting.setValue(account.lastName)
         userNameSetting.addSetting(lastNameSetting)
 
-        let middle_nameSetting = new StringSetting("Middle Name", "Enter middle letter/name")
-        middle_nameSetting.setValue(account.middle_name)
-        userNameSetting.addSetting(middle_nameSetting)
+        let middleNameSetting = new StringSetting("Middle Name", "Enter middle letter/name")
+        middleNameSetting.setValue(account.middleName)
+        userNameSetting.addSetting(middleNameSetting)
 
         generalSettings.addSetting(userNameSetting)
 
@@ -151,7 +151,7 @@ export class UserSettings extends Settings {
                     // set the change.
                     account.firstName = firstNameSetting.getValue();
                     account.lastName = lastNameSetting.getValue();
-                    account.middle_name = middle_nameSetting.getValue();
+                    account.middleName = middleNameSetting.getValue();
                     account.profilePicture = imageCropperSettings.getValue();
 
                     account.save(
@@ -165,7 +165,7 @@ export class UserSettings extends Settings {
                     // revert the change.
                     firstNameSetting.setValue(account.firstName)
                     lastNameSetting.setValue(account.lastName)
-                    middle_nameSetting.setValue(account.middle_name)
+                    middleNameSetting.setValue(account.middleName)
                     imageCropperSettings.setValue(account.profilePicture)
                 }
             }, true)
