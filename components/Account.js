@@ -48,9 +48,9 @@ function getAllAccountsInfo_(globule, callback, errorCallback) {
       // the data will be keep in the local storage if the user was once log on that computer.
       if (localStorage.getItem(a.getId()) != undefined) {
         let data = JSON.parse(localStorage.getItem(a.getId()))
-        a.profilePicture_ = data.profilePicture_
-        a.firstName_ = data.firstName_
-        a.lastName_ = data.lastName_
+        a.profile_picture = data.profile_picture
+        a.first_name = data.first_name
+        a.last_name = data.last_name
         a.globule = globule // keep reference to the parent globule.
       }
       accounts.push(a)
@@ -150,7 +150,7 @@ export class AccountMenu extends Menu {
         this.accountUpdateListener = uuid;
       },
       (data) => {
-        this.setProfilePicture(data.profilePicture_)
+        this.setProfilePicture(data.profile_picture)
       },
       true, this)
 
@@ -310,8 +310,8 @@ export class AccountMenu extends Menu {
     this.img = this.shadowRoot.getElementById("profile-picture");
     this.ico = this.shadowRoot.getElementById("profile-icon");
 
-    if (account.profilePicture_ != undefined) {
-      this.setProfilePicture(account.profilePicture_);
+    if (account.profile_picture != undefined) {
+      this.setProfilePicture(account.profile_picture);
     }
 
     this.shadowRoot.removeChild(this.getMenuDiv());

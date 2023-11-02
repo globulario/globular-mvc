@@ -552,21 +552,21 @@ export class Application extends Model {
         let userInfo = localStorage.getItem(userId);
         let userFirstName = ""
         let userLastName = ""
-        let userMiddleName = ""
+        let usermiddle_name = ""
         let userProfilePicture = ""
         if (userInfo) {
           let userInfo_ = JSON.parse(userInfo)
-          userFirstName = userInfo_["firstName_"]
-          userLastName = userInfo_["lastName_"]
-          userMiddleName = userInfo_["middleName_"]
-          userProfilePicture = userInfo_["profilePicture_"]
+          userFirstName = userInfo_["first_name"]
+          userLastName = userInfo_["last_name"]
+          usermiddle_name = userInfo_["middle_name_"]
+          userProfilePicture = userInfo_["profile_picture"]
         }
 
         ApplicationView.wait(
           "<div>log in</div><div>" + userName + "</div><div>...</div>"
         );
 
-        Application.account = new Account(userId, userEmail, userName, userDomain, userFirstName, userLastName, userMiddleName, userProfilePicture)
+        Application.account = new Account(userId, userEmail, userName, userDomain, userFirstName, userLastName, usermiddle_name, userProfilePicture)
 
         this.refreshToken(
           (account: Account) => {
@@ -899,7 +899,7 @@ export class Application extends Model {
         connection.setId(connectionId)
         connection.setUser(connectionId)
         connection.setPassword(password)
-        connection.setStore(StoreType.SQL)
+        connection.setStore(globule.config.BackendStore)
         connection.setName(name + "_db")
         connection.setPort(globule.config.BackendPort)
         connection.setTimeout(60)
@@ -1062,7 +1062,7 @@ export class Application extends Model {
         connection.setId(connectionId)
         connection.setUser(connectionId)
         connection.setPassword(password)
-        connection.setStore(StoreType.SQL)
+        connection.setStore(globule.config.BackendStore)
         connection.setName(id + "_db")
         connection.setPort(globule.config.BackendPort)
         connection.setTimeout(60)
@@ -1077,17 +1077,17 @@ export class Application extends Model {
           let userInfo = localStorage.getItem(id);
           let userFirstName = ""
           let userLastName = ""
-          let userMiddleName = ""
+          let usermiddle_name = ""
           let userProfilePicture = ""
           if (userInfo) {
             let userInfo_ = JSON.parse(userInfo)
-            userFirstName = userInfo_["firstName_"]
-            userLastName = userInfo_["lastName_"]
-            userMiddleName = userInfo_["middleName_"]
-            userProfilePicture = userInfo_["profilePicture_"]
+            userFirstName = userInfo_["first_name"]
+            userLastName = userInfo_["last_name"]
+            usermiddle_name = userInfo_["middle_name_"]
+            userProfilePicture = userInfo_["profile_picture"]
           }
 
-          Application.account = new Account(id, email, userName, userDomain, userFirstName, userLastName, userMiddleName, userProfilePicture);
+          Application.account = new Account(id, email, userName, userDomain, userFirstName, userLastName, usermiddle_name, userProfilePicture);
           Account.getAccount(userId + "@" + userDomain, (account: Account) => {
             Application.account = account;
 

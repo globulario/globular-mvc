@@ -1837,7 +1837,7 @@ export class ParticipantsList extends HTMLElement {
                         <iron-icon icon="account-circle" style="width: 48px; height: 48px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${p.profilePicture.length != 0 ? "none" : "block"};"></iron-icon>
                     </div>
                     <div class="participant-infos">
-                        <span><span style="font-style: italic;">${p.name_}</span> ${p.firstName_} ${p.lastName_}</span>
+                        <span><span style="font-style: italic;">${p.name_}</span> ${p.first_name} ${p.last_name}</span>
                         <globular-session-state account=${p._id + "@" + p.domain}></globular-session-state>
                     </div>
                     <paper-icon-button style="display: none;" icon="av:videocam"> </paper-icon-button>
@@ -1877,7 +1877,7 @@ export class ParticipantsList extends HTMLElement {
                     <iron-icon icon="account-circle" style="width: 48px; height: 48px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${p.profilePicture.length != 0 ? "none" : "block"};"></iron-icon>
                 </div>
                 <div style="flex-grow: 1;">
-                    <span style="padding-left: 20px;"><span style="font-style: italic;">${p.name_}</span> ${p.firstName_} ${p.lastName_}</span>
+                    <span style="padding-left: 20px;"><span style="font-style: italic;">${p.name_}</span> ${p.first_name} ${p.last_name}</span>
                     <span>Not available</span>
                 </div>
             </div>
@@ -1906,7 +1906,7 @@ export class ParticipantsList extends HTMLElement {
                     () => {
                         ApplicationView.displayMessage(`
                         <div style="display: flex; flex-direction: column;">
-                            <img style="height: 48px; width: 48px;" src="${user.profilePicture_}"></img>
+                            <img style="height: 48px; width: 48px;" src="${user.profile_picture}"></img>
                             <span>User <span style="font-style: italic;">${user.name_}</span> was kicked out of the conversation <span style="font-style:italic;">${conversation.getName()}</span>.</span>
                             <span> <span style="font-style: italic;">${user.name_}</span> will not be able to join the conversation without a new invitation.</span>
                         </div>

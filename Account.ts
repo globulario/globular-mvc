@@ -67,13 +67,13 @@ export class Account extends Model {
     private hasData: boolean;
 
     // The user profile picture.
-    private profilePicture_: string;
+    private profile_picture: string;
     public get profilePicture(): string {
-        return this.profilePicture_;
+        return this.profile_picture;
     }
 
     public set profilePicture(value: string) {
-        this.profilePicture_ = value;
+        this.profile_picture = value;
     }
 
     // The ringtone for that user...
@@ -87,42 +87,42 @@ export class Account extends Model {
     }
 
     // The user firt name
-    private firstName_: string;
+    private first_name: string;
     public get firstName(): string {
-        return this.firstName_;
+        return this.first_name;
     }
     public set firstName(value: string) {
-        this.firstName_ = value;
+        this.first_name = value;
     }
 
     // The user last name
-    private lastName_: string;
+    private last_name: string;
     public get lastName(): string {
-        return this.lastName_;
+        return this.last_name;
     }
     public set lastName(value: string) {
-        this.lastName_ = value;
+        this.last_name = value;
     }
 
     // The user middle name.
-    private middleName_: string;
-    public get middleName(): string {
-        return this.middleName_;
+    private middle_name_: string;
+    public get middle_name(): string {
+        return this.middle_name_;
     }
-    public set middleName(value: string) {
-        this.middleName_ = value;
+    public set middle_name(value: string) {
+        this.middle_name_ = value;
     }
 
     public get userName(): string {
         let name = this.firstName;
-        if (this.middleName.length > 0) {
-            name += " " + this.middleName;
+        if (this.middle_name.length > 0) {
+            name += " " + this.middle_name;
         }
 
         return name + " " + this.lastName;
     }
 
-    constructor(id: string, email: string, name: string, domain: string, firstName: string, lastName: string, middleName: string, profilePicture: string) {
+    constructor(id: string, email: string, name: string, domain: string, firstName: string, lastName: string, middle_name: string, profilePicture: string) {
         super();
 
         this._id = id;
@@ -130,10 +130,10 @@ export class Account extends Model {
         this.domain = domain;
         this.email_ = email;
         this.hasData = false;
-        this.firstName_ = firstName;
-        this.lastName_ = lastName;
-        this.middleName_ = middleName;
-        this.profilePicture_ = profilePicture
+        this.first_name = firstName;
+        this.last_name = lastName;
+        this.middle_name_ = middle_name;
+        this.profile_picture = profilePicture
     }
 
     /**
@@ -430,20 +430,20 @@ export class Account extends Model {
     private setData(data: any) {
 
         this.hasData = true;
-        this.firstName = data["firstName_"];
+        this.firstName = data["first_name"];
         if (this.firstName == undefined) {
             this.firstName = ""
         }
-        this.lastName = data["lastName_"];
+        this.lastName = data["last_name"];
         if (this.lastName == undefined) {
             this.lastName = ""
         }
-        this.middleName = data["middleName_"];
-        if (this.middleName == undefined) {
-            this.middleName = "";
+        this.middle_name = data["middle_name_"];
+        if (this.middle_name == undefined) {
+            this.middle_name = "";
         }
-        if (data["profilePicture_"] != undefined) {
-            this.profilePicture = data["profilePicture_"];
+        if (data["profile_picture"] != undefined) {
+            this.profilePicture = data["profile_picture"];
 
             // keep the user data into the localstore.
             localStorage.setItem(this.id + "@" + this.domain, JSON.stringify(data))
@@ -533,7 +533,7 @@ export class Account extends Model {
     changeProfilImage(
         dataUrl: string
     ) {
-        this.profilePicture_ = dataUrl;
+        this.profile_picture = dataUrl;
     }
 
     /**
@@ -585,11 +585,11 @@ export class Account extends Model {
     }
 
     toString(): string {
-        return JSON.stringify({ _id: this.id, email_: this.email, firstName_: this.firstName, lastName_: this.lastName, middleName_: this.middleName, profilePicture_: this.profilePicture, domain_:this.domain });
+        return JSON.stringify({ _id: this.id, email: this.email, first_name: this.firstName, last_name: this.lastName, middle_name_: this.middle_name, profile_picture: this.profilePicture, domain:this.domain });
     }
 
     static fromObject(obj: any): any {
-        return new Account(obj._id, obj.email_, obj.name_, obj.domain_, obj.firstName_, obj.lastName_, obj.middleName_, obj.profilePicture_)  
+        return new Account(obj._id, obj.email, obj.name, obj.domain, obj.first_name, obj.last_name, obj.middle_name_, obj.profile_picture)  
     }
 
     static fromString(jsonStr:string):any{

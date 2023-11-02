@@ -1018,7 +1018,7 @@ export class PermissionsViewer extends HTMLElement {
         </style>
         <div id="${uuid}" class="item-div" style="">
             <div style="display: flex; align-items: center; padding: 5px; width: 100%;"> 
-                <img style="width: 40px; height: 40px; display: ${account.profilePicture.length == 0 ? "none" : "block"};" src="${account.profilePicture_}"></img>
+                <img style="width: 40px; height: 40px; display: ${account.profilePicture.length == 0 ? "none" : "block"};" src="${account.profile_picture}"></img>
                 <iron-icon icon="account-circle" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${account.profilePicture.length != 0 ? "none" : "block"};"></iron-icon>
                 <div style="display: flex; flex-direction: column; width:250px; font-size: .85em; padding-left: 8px;">
                     <span>${account.name}</span>
@@ -1861,7 +1861,10 @@ function getPackage(id, callback, errorCallback) {
     }
 
     let rqst = new GetPackagesDescriptorRequest
-    rqst.setQuery(`{"$and":[{"name":"${name}"},{"version":"${version}"},{"publisherid":"${publisherid}"}]}`);
+    let q = `{"$and":[{"name":"${name}"},{"version":"${version}"},{"publisherid":"${publisherid}"}]}`
+    console.log("get package with query: " + q)
+    
+    rqst.setQuery(q);
     let globule = Model.getGlobule(address)
 
     let stream = globule.resourceService.getPackagesDescriptor(rqst, { application: Application.application, domain: globule.domain, token: localStorage.getItem("user_token") })
