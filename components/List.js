@@ -917,7 +917,7 @@ export class SearchableRoleList extends SearchableList {
             <div style="display: flex; align-items: center; padding: 5px; width: 100%;"> 
                 <iron-icon icon="notification:enhanced-encryption" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display:block"};"></iron-icon>
                 <div style="display: flex; flex-direction: column; width:200px; font-size: .85em; padding-left: 8px; flex-grow: 1;">
-                    <span>${role.getName()}</span>
+                    <span>${role.getId() + "@" + role.getDomain()}</span>
                 </div>
                 <paper-icon-button icon="delete" id="${role.getId()}_btn"></paper-icon-button>
             </div>
@@ -1101,7 +1101,7 @@ export class SearchableGroupList extends SearchableList {
             <div style="display: flex; align-items: center; padding: 5px; width: 100%;"> 
                 <iron-icon icon="social:people" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display:block"};"></iron-icon>
                 <div style="display: flex; flex-direction: column; width:200px; font-size: .85em; padding-left: 8px; flex-grow: 1;">
-                    <span>${group.getName() + "@" + group.getDomain()}</span>
+                    <span>${group.getId() + "@" + group.getDomain()}</span>
                 </div>
                 <paper-icon-button icon="delete" id="${group.getId()}_btn"></paper-icon-button>
             </div>
@@ -1287,7 +1287,7 @@ export class SearchableOrganizationList extends SearchableList {
             <div style="display: flex; align-items: center; padding: 5px; width: 100%;"> 
                 <iron-icon icon="social:domain" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display:block"};"></iron-icon>
                 <div style="display: flex; flex-direction: column; width:200px; font-size: .85em; padding-left: 8px; flex-grow: 1;">
-                    <span>${organization.getName()}</span>
+                    <span>${organization.getId()+ "@" + organization.getDomain()}</span>
                 </div>
                 <paper-icon-button icon="delete" id="${organization.getId()}_btn"></paper-icon-button>
             </div>
@@ -1472,7 +1472,7 @@ export class SearchablePeerList extends SearchableList {
             <div style="display: flex; align-items: center; padding: 5px; width: 100%;"> 
                 <iron-icon icon="hardware:computer" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display:block"};"></iron-icon>
                 <div style="display: flex; flex-direction: column; width:200px; font-size: .85em; padding-left: 8px; flex-grow: 1;">
-                    <span>${peer.getHostname()} (${peer.getMac()})</span>
+                    <span>${peer.getHostname() + "@" + peer.getDomain()} (${peer.getMac()})</span>
                 </div>
                 <paper-icon-button icon="delete" id="${peer.getMac()}_btn"></paper-icon-button>
             </div>

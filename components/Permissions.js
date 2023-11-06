@@ -1070,7 +1070,7 @@ export class PermissionsViewer extends HTMLElement {
                 <div style="display: flex; align-items: center; padding: 5px; width: 100%;"> 
                     <iron-icon icon="social:domain" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display:block"};"></iron-icon>
                     <div style="display: flex; flex-direction: column; width:250px; font-size: .85em; padding-left: 8px;">
-                        <span>${organization.getName()}</span>
+                        <span>${organization.getId() + "@" + organization.getDomain()}</span>
                     </div>
                 </div>
             </div>`
@@ -1090,7 +1090,7 @@ export class PermissionsViewer extends HTMLElement {
                 <div style="display: flex; align-items: center; padding: 5px; width: 100%;"> 
                     <iron-icon icon="hardware:computer" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display:block"};"></iron-icon>
                     <div style="display: flex; flex-direction: column; width:250px; font-size: .85em; padding-left: 8px;">
-                        <span>${peer.getHostname()} (${peer.getMac()})</span>
+                        <span>${peer.getHostname()+ "@" + peer.getDomain()} (${peer.getMac()})</span>
                     </div>
                 </div>
             </div>`
