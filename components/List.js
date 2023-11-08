@@ -381,7 +381,7 @@ export class SearchableList extends HTMLElement {
             if (this.filter(item) || this.filter_.length == 0) {
                 this.listDiv.appendChild(div)
             }
-
+            
         })
     }
 
@@ -542,8 +542,7 @@ export class SearchableAccountList extends SearchableList {
                 <img style="width: 40px; height: 40px; display: ${account.profilePicture.length == 0 ? "none" : "block"};" src="${account.profilePicture}"></img>
                 <iron-icon icon="account-circle" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${account.profilePicture.length != 0 ? "none" : "block"};"></iron-icon>
                 <div style="display: flex; flex-direction: column; width:200px; font-size: .85em; padding-left: 8px; flex-grow: 1;">
-                    <span>${account.name}</span>
-                    <span>${account.email_}</span>
+                    <span>${account.id + "@" + account.domain}</span>
                 </div>
                 <paper-icon-button icon="delete" id="${account._id}_btn"></paper-icon-button>
             </div>
@@ -732,7 +731,7 @@ export class SearchableApplicationList extends SearchableList {
                 <img style="width: 40px; height: 40px; display: ${application.getIcon() == undefined ? "none" : "block"};" src="${application.getIcon()}"></img>
                 <iron-icon icon="account-circle" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display: ${application.getIcon() != undefined ? "none" : "block"};"></iron-icon>
                 <div style="display: flex; flex-direction: column; width:200px; font-size: .85em; padding-left: 8px; flex-grow: 1;">
-                    <span>${application.getAlias()}</span>
+                    <span>${application.getAlias() + "@" + application.domain}</span>
                     <span>${application.getVersion()}</span>
                 </div>
                 <paper-icon-button icon="delete" id="${application._id}_btn"></paper-icon-button>
