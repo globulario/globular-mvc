@@ -219,7 +219,6 @@ export class Model {
         var currentProtocol = window.location.protocol;
 
         if (currentProtocol == "https:") {
-
             port = 443
             if (peer.getProtocol() == "https") {
                 port = peer.getPorthttps()
@@ -233,6 +232,7 @@ export class Model {
 
 
         let url = currentProtocol + "//" + peer.getDomain() + ":" + port + "/config"
+        
         let globule = new GlobularWebClient.Globular(url, () => {
 
             // append the globule to the list.
