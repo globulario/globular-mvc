@@ -903,7 +903,7 @@ export class Application extends Model {
         connection.setName(name + "_db")
         connection.setPort(globule.config.BackendPort)
         connection.setTimeout(60)
-        connection.setHost(domain)
+        connection.setHost(address)
         rqst.setConnection(connection)
     
         globule.persistenceService.createConnection(rqst, {
@@ -1066,7 +1066,7 @@ export class Application extends Model {
         connection.setName(id + "_db")
         connection.setPort(globule.config.BackendPort)
         connection.setTimeout(60)
-        connection.setHost(userDomain)
+        connection.setHost(address)
         rqst.setConnection(connection)
         globule.persistenceService.createConnection(rqst, {
           token: token,

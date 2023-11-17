@@ -4,9 +4,6 @@ import { getAllPeersInfo } from "globular-web-client/api";
 import { GeneratePeerTokenRequest } from "globular-web-client/authentication/authentication_pb";
 import { Peer } from "globular-web-client/resource/resource_pb";
 import { View } from "./View";
-import { Application } from "./Application";
-import { ApplicationView } from "./ApplicationView";
-
 
 // Keep the token in the map...
 let tokens: any = {}
@@ -20,8 +17,8 @@ let tokens: any = {}
 export function getUrl(globule: GlobularWebClient.Globular): string {
 
     // set the url for the image.
-    let url = globule.config.Protocol + "://" + globule.domain
-    if (window.location.hostname != globule.domain) {
+    let url = globule.config.Protocol + "://" + globule.address
+    if (window.location.hostname != globule.address) {
         // if no peers has the address at windows location I will test if is an alternate domain, if so I will keep the alternate domain.
         if (globule.config.Peers.filter((p) => { return p.Domain === window.location.hostname; }).length == 0) {
             if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
@@ -238,6 +235,7 @@ export class Model {
             // append the globule to the list.
             Model.globules.set(currentProtocol + "//" + peer.getDomain() + ":" + port, globule)
             Model.globules.set(url, globule)
+
 
             Model.globules.set(peer.getDomain(), globule)
             Model.globules.set(peer.getMac(), globule)

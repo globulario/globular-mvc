@@ -16,8 +16,7 @@ import { PeersManager } from "./components/Peers";
 import { OrganizationManager } from "./components/Organization";
 import { AccountManager, ExternalAccountManager } from "./components/Account";
 import { StartProcessVideoRequest, StopProcessVideoRequest, IsProcessVideoRequest, SetVideoConversionRequest, SetVideoStreamConversionRequest, SetStartVideoConversionHourRequest, SetMaximumVideoConversionDelayRequest, VideoConversionError, GetVideoConversionErrorsRequest, GetVideoConversionErrorsResponse, ClearVideoConversionErrorRequest, ClearVideoConversionErrorsRequest, VideoConversionLog, ClearVideoConversionLogsRequest, ClearVideoConversionLogsResponse, ClearVideoConversionErrorResponse, ClearVideoConversionErrorsResponse, GetVideoConversionLogsRequest, GetVideoConversionLogsResponse } from "globular-web-client/file/file_pb";
-import { GetServiceConfigurationByIdRequest } from "globular-web-client/config_manager/config_pb";
-import { PermissionsManager, ResourcesPermissionsManager } from "./components/Permissions";
+import { ResourcesPermissionsManager } from "./components/Permissions";
 
 export class Settings {
 
@@ -536,6 +535,9 @@ export class VideoSettings extends Settings {
         conversionSettings.addSetting(maxConversionDelay)
 
         let fileServerConfig = Model.globular.getConfigs("file.FileService")[0]
+
+        // Get the configuration for the file server.
+        /*
         let rqst_ = new GetServiceConfigurationByIdRequest
         rqst_.setId(fileServerConfig.Id)
 
@@ -551,10 +553,10 @@ export class VideoSettings extends Settings {
             enableStreamConversionSetting.setValue(this.config.AutomaticStreamConversion)
             startConversionHour.setValue(this.config.StartVideoConversionHour)
             maxConversionDelay.setValue(this.config.MaximumVideoConversionDelay)
-
         }).catch(err => {
             ApplicationView.displayMessage(err, 3000)
-        })
+        })*/
+        
 
 
         enableConversionSetting.onchange = () => {

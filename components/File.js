@@ -406,7 +406,7 @@ export function getImage(callback, images, files, index, globule) {
 
     } else {
         // Get image from the globule.
-        url = globule.config.Protocol + "://" + globule.domain
+        url = globule.config.Protocol + "://" + globule.address
         if (globule.config.Protocol == "https") {
             if (globule.config.PortHttps != 443)
                 url += ":" + globule.config.PortHttps
