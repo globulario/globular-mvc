@@ -181,10 +181,13 @@ export class PeersManager extends HTMLElement {
                 let address = panel.querySelector("#peer-address-input").value
                 // Here The peers must be both https or the peer at url must be https
                 let url = location.protocol + "//" + address + "/config"
+                
                 let globule = new GlobularWebClient.Globular(url, () => {
 
                     let peer = new Peer
                     peer.setDomain(globule.domain)
+                    peer.setMac(globule.config.Mac)
+                    peer.setHostname(globule.config.Name)
                     peer.setProtocol(globule.config.Protocol)
                     peer.setPorthttp(globule.config.PortHttp)
                     peer.setPorthttps(globule.config.PortHttps)
@@ -197,13 +200,13 @@ export class PeersManager extends HTMLElement {
 
                             if (location.protocol == "https:") {
                                 if (peer.getProtocol() == "https") {
-                                    Model.globules.set("https://" + peer.getDomain() + ":" + peer.getPorthttps(), globule)
+                                    Model.globules.set("https://" + globule.address + ":" + peer.getPorthttps(), globule)
                                 } else {
-                                    ApplicationView.displayMessage("fail to access peer with http protocol from https " + peer.getDomain(), 3000)
+                                    ApplicationView.displayMessage("fail to access peer with http protocol from https " + globule.address, 3000)
                                 }
                             } else {
                                 // Set http address
-                                Model.globules.set("http://" + peer.getDomain() + ":" + peer.getPorthttp(), globule)
+                                Model.globules.set("http://" + globule.address + ":" + peer.getPorthttp(), globule)
                             }
 
                             // Also keep the given address from the input.

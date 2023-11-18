@@ -4515,7 +4515,7 @@ export class FileNavigator extends HTMLElement {
         peers.forEach((p, index) => {
             let option = document.createElement("option")
             option.value = index
-            option.innerHTML = p.domain
+            option.innerHTML = p.address
             this.shadowRoot.querySelector("select").appendChild(option)
         })
 
@@ -4532,7 +4532,7 @@ export class FileNavigator extends HTMLElement {
         let index = 0
         let peers = Model.getGlobules()
         peers.forEach(p => {
-            if (p.domain == this._file_explorer_.globule.domain) {
+            if (p.address == this._file_explorer_.globule.address) {
                 this.shadowRoot.querySelector("select").value = index;
             }
             index++
