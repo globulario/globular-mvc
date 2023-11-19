@@ -508,7 +508,7 @@ export class WatchingMenu extends Menu {
             // stop peer event received.
             Model.eventHub.subscribe("stop_peer_evt_", uuid => { },
                 peer => {
-                    Model.eventHub.publish("remove_media_watching_card_" + peer.getDomain() + "_evt_", {}, true)
+                    Model.eventHub.publish("remove_media_watching_card_" + peer.getDomain()+ "." + peer.getDomain() + "_evt_", {}, true)
                 }, true)
 
             // Initialyse the watching content...

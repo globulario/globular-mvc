@@ -1471,7 +1471,7 @@ export class SearchablePeerList extends SearchableList {
             <div style="display: flex; align-items: center; padding: 5px; width: 100%;"> 
                 <iron-icon icon="hardware:computer" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display:block"};"></iron-icon>
                 <div style="display: flex; flex-direction: column; width:200px; font-size: .85em; padding-left: 8px; flex-grow: 1;">
-                    <span>${peer.getHostname() + "@" + peer.getDomain()} (${peer.getMac()})</span>
+                    <span>${peer.getHostname() + "." + peer.getDomain()} (${peer.getMac()})</span>
                 </div>
                 <paper-icon-button icon="delete" id="${peer.getMac()}_btn"></paper-icon-button>
             </div>

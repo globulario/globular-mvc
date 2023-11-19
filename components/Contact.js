@@ -894,7 +894,7 @@ export class ContactList extends HTMLElement {
 
         Model.eventHub.subscribe("stop_peer_evt_", uuid => { },
             peer => {
-                Model.eventHub.publish("remove_contact_card_" + peer.getDomain() + "_evt_", {}, true)
+                Model.eventHub.publish("remove_contact_card_"+  peer.getDomain() + "." + peer.getDomain() + "_evt_", {}, true)
             }, true)
 
         // So here I will get the list of sent invitation for the account.

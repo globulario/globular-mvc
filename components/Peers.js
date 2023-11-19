@@ -8,16 +8,16 @@ import { ApplicationView } from '../ApplicationView';
 import { SearchableList } from './List.js'
 import { GetAllActionsRequest } from 'globular-web-client/services_manager/services_manager_pb';
 
-export function getPeerById(id, callback, errorCallback){
+export function getPeerById(id, callback, errorCallback) {
     let p_ = null
-    getAllPeers(Model.globular, peers=>{
-        peers.forEach(p=>{
-            if(p.getMac() == id){
+    getAllPeers(Model.globular, peers => {
+        peers.forEach(p => {
+            if (p.getMac() == id) {
                 p_ = p
             }
         })
 
-        if(p_ != null){
+        if (p_ != null) {
             callback(p_)
             return
         }
@@ -30,7 +30,7 @@ export function getAllPeers(globule, callback, errorCallback) {
     rqst.setQuery("{}")
     let peers = [];
 
-    let stream = globule.resourceService.getPeers(rqst, { domain: Model.domain,address: Model.address, application: Model.application, token: localStorage.getItem("user_token") });
+    let stream = globule.resourceService.getPeers(rqst, { domain: Model.domain, address: Model.address, application: Model.application, token: localStorage.getItem("user_token") });
 
     // Get the stream and set event on it...
     stream.on("data", (rsp) => {
@@ -181,12 +181,11 @@ export class PeersManager extends HTMLElement {
                 let address = panel.querySelector("#peer-address-input").value
                 // Here The peers must be both https or the peer at url must be https
                 let url = location.protocol + "//" + address + "/config"
-                
+
                 let globule = new GlobularWebClient.Globular(url, () => {
 
                     let peer = new Peer
                     peer.setDomain(globule.domain)
-                    peer.setMac(globule.config.Mac)
                     peer.setHostname(globule.config.Name)
                     peer.setProtocol(globule.config.Protocol)
                     peer.setPorthttp(globule.config.PortHttp)
@@ -268,7 +267,9 @@ export class PeerPanel extends HTMLElement {
         // Keep group informations.
         this.peer = peer;
 
-        let address = peer.getDomain()
+        // The address.
+        let address = peer.getHostname() + "." + peer.getDomain()
+
         if (peer.getProtocol() == "https") {
             address += ":" + peer.getPorthttps()
         } else {
@@ -420,16 +421,16 @@ export class PeerPanel extends HTMLElement {
         let lnk = this.shadowRoot.querySelector(".title")
         if (peer.getProtocol() == "https") {
             if (peer.getPorthttps() != 443) {
-                lnk.href = peer.getProtocol() + '://' + peer.getDomain() + ":" + peer.getPorthttps() + "/console"
+                lnk.href = peer.getProtocol() + '://' + peer.getHostname() + "." + peer.getDomain() + ":" + peer.getPorthttps() + "/console"
             } else {
-                lnk.href = peer.getProtocol() + '://' + peer.getDomain() + "/console"
+                lnk.href = peer.getProtocol() + '://' + peer.getHostname() + "." + peer.getDomain() + "/console"
             }
 
         } else {
             if (peer.getPorthttp() != 80) {
-                lnk.href = peer.getProtocol() + '://' + peer.getDomain() + ":" + peer.getPorthttp() + "/console"
+                lnk.href = peer.getProtocol() + '://' + peer.getHostname() + "." + peer.getDomain() + ":" + peer.getPorthttp() + "/console"
             } else {
-                lnk.href = peer.getProtocol() + '://' + peer.getDomain() + "/console"
+                lnk.href = peer.getProtocol() + '://' + peer.getHostname() + "." + peer.getDomain() + "/console"
             }
         }
 
@@ -505,12 +506,7 @@ export class PeerPanel extends HTMLElement {
                 rejectBtn.style.display = "none"
                 acceptBtn.style.display = "none"
             }
-
-
-
         })
-
-
 
 
         // Here I will create the searchable actions list.
@@ -643,7 +639,7 @@ export class PeerPanel extends HTMLElement {
 
     getRemoteState(callback) {
         let rqst = new GetPeerApprovalStateRqst
-        let address = this.peer.getDomain()
+        let address = this.peer.getHostname() + "." + this.peer.getDomain()
         if (this.peer.getProtocol() == "https") {
             address += ":" + this.peer.getPorthttps()
         } else {
@@ -661,7 +657,6 @@ export class PeerPanel extends HTMLElement {
             })
 
     }
-
 
     getState(state) {
         if (state == 0) {

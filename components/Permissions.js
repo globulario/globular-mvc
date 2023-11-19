@@ -1090,7 +1090,7 @@ export class PermissionsViewer extends HTMLElement {
                 <div style="display: flex; align-items: center; padding: 5px; width: 100%;"> 
                     <iron-icon icon="hardware:computer" style="width: 40px; height: 40px; --iron-icon-fill-color:var(--palette-action-disabled); display:block"};"></iron-icon>
                     <div style="display: flex; flex-direction: column; width:250px; font-size: .85em; padding-left: 8px;">
-                        <span>${peer.getHostname()+ "@" + peer.getDomain()} (${peer.getMac()})</span>
+                        <span>${peer.getHostname()+ "." + peer.getDomain()} (${peer.getMac()})</span>
                     </div>
                 </div>
             </div>`
@@ -1612,7 +1612,7 @@ function getApplication(id, callback, errorCallback) {
 
     let rqst = new GetApplicationsRqst
 
-    let address = Model.domain; // default domain
+    let address = Model.address; // default domain
     let path = id
     if (id.indexOf("@") != -1) {
         address = id.split("@")[1] // take the domain given with the id.
@@ -1660,7 +1660,7 @@ function getApplication(id, callback, errorCallback) {
  */
 function getBlog(id, callback, errorCallback) {
 
-    let address = Model.domain; // default domain
+    let address = Model.address; // default domain
     if (id.indexOf("@") != -1) {
         address = id.split("@")[1] // take the domain given with the id.
         id = id.split("@")[0]
@@ -1732,7 +1732,7 @@ function getDomain(domain, callback, errorCallback) {
  */
 function getConversation(id, callback, errorCallback) {
     let rqst = new GetConversationRequest
-    let address = Model.domain; // default domain
+    let address = Model.address; // default domain
     if (id.indexOf("@") != -1) {
         address = id.split("@")[1] // take the domain given with the id.
         id = id.split("@")[0]
@@ -1854,8 +1854,8 @@ function getPackage(id, callback, errorCallback) {
     let publisherid = infos[0]
     let name = infos[1]
     let version = infos[2]
-
-    let address = Model.domain; // default domain
+    
+    let address = Model.address; // default domain
     if (name.indexOf("@") != -1) {
         address = name.split("@")[1] // take the domain given with the id.
     }

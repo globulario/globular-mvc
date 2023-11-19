@@ -228,16 +228,16 @@ export class Model {
         }
 
 
-        let url = currentProtocol + "//" + peer.getDomain() + ":" + port + "/config"
+        let url = currentProtocol + "//"+ peer.getHostname() + "." + peer.getDomain() + ":" + port + "/config"
         
         let globule = new GlobularWebClient.Globular(url, () => {
 
             // append the globule to the list.
-            Model.globules.set(currentProtocol + "//" + peer.getDomain() + ":" + port, globule)
+            Model.globules.set(currentProtocol + "//"+ peer.getHostname() + "."  + peer.getDomain() + ":" + port, globule)
             Model.globules.set(url, globule)
 
 
-            Model.globules.set(peer.getDomain(), globule)
+            Model.globules.set(peer.getHostname() + "." +peer.getDomain(), globule)
             Model.globules.set(peer.getMac(), globule)
 
             callback()
@@ -263,12 +263,12 @@ export class Model {
             port = peer.getPorthttps()
         }
 
-        let url = Model._globular.config.Protocol + "://" + peer.getDomain() + ":" + port + "/config"
+        let url = Model._globular.config.Protocol + "://"+ peer.getHostname() + "."  + peer.getDomain() + ":" + port + "/config"
 
         // append the globule to the list.
-        Model.globules.delete(Model._globular.config.Protocol + "://" + peer.getDomain() + ":" + port)
+        Model.globules.delete(Model._globular.config.Protocol + "://" + peer.getHostname() + "."  + peer.getDomain() + ":" + port)
         Model.globules.delete(url)
-        Model.globules.delete(peer.getDomain())
+        Model.globules.delete(peer.getHostname() + "." + peer.getDomain())
         Model.globules.delete(peer.getMac())
 
     }
@@ -297,6 +297,7 @@ export class Model {
                 peer.setMac(obj.mac)
                 peer.setPorthttp(obj.portHttp)
                 peer.setPorthttps(obj.portHttps)
+                peer.setProtocol(obj.protocol)
 
                 this.initPeer(peer, () => {
                     // dispatch the event locally...
