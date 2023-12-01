@@ -84,7 +84,7 @@ export function getAllAccountsInfo(callback, errorCallback, external) {
     getAllAccountsInfo_(globule,
       (accounts) => {
         if (external) {
-          if (globules[index].config.Mac != Model.globular.config.Mac) {
+          if (globules[index].config.Domain != Model.globular.config.Domain) {
             accounts_ = accounts_.concat(accounts)
           }
         } else {

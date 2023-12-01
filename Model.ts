@@ -359,10 +359,18 @@ export class Model {
             Model.globules = new Map<string, GlobularWebClient.Globular>();
             Model.globules.set(Model.address, Model._globular)
             Model.domain = Model._globular.domain;
-            Model.globules.set(Model.domain, Model._globular)
-            Model.globules.set(Model.domain + ":" + Model._globular.config.PortHttp, Model._globular)
-            Model.globules.set(Model.domain + ":" + Model._globular.config.PortHttps, Model._globular)
-            Model.globules.set(Model._globular.config.Mac, Model._globular)
+            
+            // Set the globule for the domain.
+            Model.globules.set( Model.domain, Model._globular)
+            Model.globules.set( Model.domain + ":" + Model._globular.config.PortHttp, Model._globular)
+            Model.globules.set( Model.domain + ":" + Model._globular.config.PortHttps, Model._globular)
+            Model.globules.set( Model._globular.config.Mac, Model._globular)
+
+            // Set the globule for the address.
+            Model.globules.set(Model._globular.config.Name + "." + Model.domain, Model._globular)
+            Model.globules.set(Model._globular.config.Name + "." +Model.domain + ":" + Model._globular.config.PortHttp, Model._globular)
+            Model.globules.set(Model._globular.config.Name + "." + Model.domain + ":" + Model._globular.config.PortHttps, Model._globular)
+            Model.globules.set(Model._globular.config.Name + "." + Model._globular.config.Mac, Model._globular)
 
             // I will also set the globule to other address...
             Model._globular.config.AlternateDomains.forEach(alternateDomain => {
