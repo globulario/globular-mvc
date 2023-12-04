@@ -807,7 +807,8 @@ export class AccountPanel extends HTMLElement {
         // I will get the account object whit the given id.
         let list = []
         this.account.getOrganizationsList().forEach(organizationId => {
-          let o_ = organizations.find(o => o.getId() + "@" + o.getDomain() === organizationId);
+          //let o_ = organizations.find(o => o.getId() + "@" + o.getDomain() === organizationId);
+          let o_ = organizations.find(o => o.getId()  === organizationId);
           if (o_ != undefined) {
             list.push(o_)
           }
@@ -857,7 +858,8 @@ export class AccountPanel extends HTMLElement {
         // I will get the account object whit the given id.
         let list = []
         this.account.getRolesList().forEach(roleId => {
-          let r_ = roles.find(r => r.getId() + "@" + r.getDomain() === roleId);
+          // let r_ = roles.find(r => r.getId() + "@" + r.getDomain() === roleId);
+          let r_ = roles.find(r => r.getId() === roleId);
           if (r_ != undefined) {
             list.push(r_)
           }
@@ -905,7 +907,8 @@ export class AccountPanel extends HTMLElement {
         // I will get the account object whit the given id.
         let list = []
         this.account.getGroupsList().forEach(groupId => {
-          let g_ = groups.find(g => g.getId() + "@" + g.getDomain() === groupId);
+          //let g_ = groups.find(g => g.getId() + "@" + g.getDomain() === groupId);
+          let g_ = groups.find(g => g.getId() === groupId);
           if (g_ != undefined) {
             list.push(g_)
           }

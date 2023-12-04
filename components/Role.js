@@ -442,7 +442,8 @@ export class RolePanel extends HTMLElement {
                 // I will get the account object whit the given id.
                 let list = []
                 this.role_.getMembersList().forEach(accountId => {
-                    let a_ = accounts.find(a => a.getId() + "@" + a.getDomain() === accountId);
+                    //let a_ = accounts.find(a => a.getId() + "@" + a.getDomain() === accountId);
+                    let a_ = accounts.find(a => a.getId() === accountId);
                     if (a_ != undefined) {
                         list.push(a_)
                     }

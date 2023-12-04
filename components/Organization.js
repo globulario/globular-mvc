@@ -406,7 +406,8 @@ export class OrganizationPanel extends HTMLElement {
                 // I will get the account object whit the given id.
                 let list = []
                 this.organization.getAccountsList().forEach(accountId => {
-                    let a_ = accounts.find(a => a.getId() + "@" + a.getDomain() === accountId);
+                    //let a_ = accounts.find(a => a.getId() + "@" + a.getDomain() === accountId);
+                    let a_ = accounts.find(a => a.getId() === accountId);
                     if (a_ != undefined) {
                         list.push(a_)
                     }
@@ -454,7 +455,8 @@ export class OrganizationPanel extends HTMLElement {
                 // I will get the account object whit the given id.
                 let list = []
                 this.organization.getApplicationsList().forEach(applicationId => {
-                    let a_ = applications.find(a => a.getId() + "@" + a.getDomain() === applicationId);
+                    // let a_ = applications.find(a => a.getId() + "@" + a.getDomain() === applicationId);
+                    let a_ = applications.find(a => a.getId() === applicationId);
                     if (a_ != undefined) {
                         list.push(a_)
                     }
@@ -502,7 +504,8 @@ export class OrganizationPanel extends HTMLElement {
                 // I will get the account object whit the given id.
                 let list = []
                 this.organization.getRolesList().forEach(roleId => {
-                    let r_ = roles.find(r => r.getId() + "@" + r.getDomain() === roleId);
+                    // let r_ = roles.find(r => r.getId() + "@" + r.getDomain() === roleId);
+                    let r_ = roles.find(r => r.getId() === roleId);
                     if (r_ != undefined) {
                         list.push(r_)
                     }
@@ -550,7 +553,8 @@ export class OrganizationPanel extends HTMLElement {
                 // I will get the account object whit the given id.
                 let list = []
                 this.organization.getGroupsList().forEach(groupId => {
-                    let g_ = groups.find(g => g.getId() + "@" + g.getDomain() === groupId);
+                    //let g_ = groups.find(g => g.getId() + "@" + g.getDomain() === groupId);
+                    let g_ = groups.find(g => g.getId() === groupId);
                     if (g_ != undefined) {
                         list.push(g_)
                     }

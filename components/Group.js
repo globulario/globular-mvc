@@ -301,7 +301,8 @@ export class GroupPanel extends HTMLElement {
                 // I will get the account object whit the given id.
                 let list = []
                 this.group.getMembersList().forEach(accountId => {
-                    let a_ = accounts.find(a => a.getId() + "@" + a.getDomain() === accountId);
+                    //let a_ = accounts.find(a => a.getId() + "@" + a.getDomain() === accountId);
+                    let a_ = accounts.find(a => a.getId() === accountId);
                     if (a_ != undefined) {
                         list.push(a_)
                     }

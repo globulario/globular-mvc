@@ -21,9 +21,11 @@ export function getUrl(globule: GlobularWebClient.Globular): string {
     if (window.location.hostname != globule.address) {
         // if no peers has the address at windows location I will test if is an alternate domain, if so I will keep the alternate domain.
         if (globule.config.Peers.filter((p) => { return p.Domain === window.location.hostname; }).length == 0) {
-            if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
-                // keep the given url...
-                url = globule.config.Protocol + "://" + window.location.host
+            if (globule.config.AlternateDomains) {
+                if (globule.config.AlternateDomains.indexOf(window.location.host) != -1) {
+                    // keep the given url...
+                    url = globule.config.Protocol + "://" + window.location.host
+                }
             }
         }
     }
@@ -87,10 +89,9 @@ export class Model {
 
     // That function will return a 
     public static getGlobule(address: string): GlobularWebClient.Globular {
-        if(address == "localhost"){
+        if (address == "localhost") {
             return Model.globular;
         }
-        
         return Model.globules.get(address);
     }
 
@@ -219,7 +220,7 @@ export class Model {
             port = 443
             if (peer.getProtocol() == "https") {
                 port = peer.getPorthttps()
-            }else{
+            } else {
                 errorCallback("The peer is not in https, the application is in https you need to access application in http")
                 return
             }
@@ -228,16 +229,16 @@ export class Model {
         }
 
 
-        let url = currentProtocol + "//"+ peer.getHostname() + "." + peer.getDomain() + ":" + port + "/config"
-        
+        let url = currentProtocol + "//" + peer.getHostname() + "." + peer.getDomain() + ":" + port + "/config"
+
         let globule = new GlobularWebClient.Globular(url, () => {
 
             // append the globule to the list.
-            Model.globules.set(currentProtocol + "//"+ peer.getHostname() + "."  + peer.getDomain() + ":" + port, globule)
+            Model.globules.set(currentProtocol + "//" + peer.getHostname() + "." + peer.getDomain() + ":" + port, globule)
             Model.globules.set(url, globule)
 
 
-            Model.globules.set(peer.getHostname() + "." +peer.getDomain(), globule)
+            Model.globules.set(peer.getHostname() + "." + peer.getDomain(), globule)
             Model.globules.set(peer.getMac(), globule)
 
             callback()
@@ -263,10 +264,10 @@ export class Model {
             port = peer.getPorthttps()
         }
 
-        let url = Model._globular.config.Protocol + "://"+ peer.getHostname() + "."  + peer.getDomain() + ":" + port + "/config"
+        let url = Model._globular.config.Protocol + "://" + peer.getHostname() + "." + peer.getDomain() + ":" + port + "/config"
 
         // append the globule to the list.
-        Model.globules.delete(Model._globular.config.Protocol + "://" + peer.getHostname() + "."  + peer.getDomain() + ":" + port)
+        Model.globules.delete(Model._globular.config.Protocol + "://" + peer.getHostname() + "." + peer.getDomain() + ":" + port)
         Model.globules.delete(url)
         Model.globules.delete(peer.getHostname() + "." + peer.getDomain())
         Model.globules.delete(peer.getMac())
@@ -359,35 +360,37 @@ export class Model {
             Model.globules = new Map<string, GlobularWebClient.Globular>();
             Model.globules.set(Model.address, Model._globular)
             Model.domain = Model._globular.domain;
-            
+
             // Set the globule for the domain.
-            Model.globules.set( Model.domain, Model._globular)
-            Model.globules.set( Model.domain + ":" + Model._globular.config.PortHttp, Model._globular)
-            Model.globules.set( Model.domain + ":" + Model._globular.config.PortHttps, Model._globular)
-            Model.globules.set( Model._globular.config.Mac, Model._globular)
+            Model.globules.set(Model.domain, Model._globular)
+            Model.globules.set(Model.domain + ":" + Model._globular.config.PortHttp, Model._globular)
+            Model.globules.set(Model.domain + ":" + Model._globular.config.PortHttps, Model._globular)
+            Model.globules.set(Model._globular.config.Mac, Model._globular)
 
             // Set the globule for the address.
             Model.globules.set(Model._globular.config.Name + "." + Model.domain, Model._globular)
-            Model.globules.set(Model._globular.config.Name + "." +Model.domain + ":" + Model._globular.config.PortHttp, Model._globular)
+            Model.globules.set(Model._globular.config.Name + "." + Model.domain + ":" + Model._globular.config.PortHttp, Model._globular)
             Model.globules.set(Model._globular.config.Name + "." + Model.domain + ":" + Model._globular.config.PortHttps, Model._globular)
             Model.globules.set(Model._globular.config.Name + "." + Model._globular.config.Mac, Model._globular)
 
             // I will also set the globule to other address...
-            Model._globular.config.AlternateDomains.forEach(alternateDomain => {
-                // I will set alternate domain only if no peer has it domain.
-                if (Model._globular.config.Peers.filter((p) => { return p.Domain === alternateDomain; }).length == 0) {
-                    Model.globules.set(alternateDomain, Model._globular)
-                    let address = alternateDomain + ":" + window.location.port
-                    if (address.endsWith(":")) {
-                        if (Model._globular.config.Protocol == "https") {
-                            address += "443"
-                        } else {
-                            address += "80"
+            if (Model._globular.config.AlternateDomains) {
+                Model._globular.config.AlternateDomains.forEach(alternateDomain => {
+                    // I will set alternate domain only if no peer has it domain.
+                    if (Model._globular.config.Peers.filter((p) => { return p.Domain === alternateDomain; }).length == 0) {
+                        Model.globules.set(alternateDomain, Model._globular)
+                        let address = alternateDomain + ":" + window.location.port
+                        if (address.endsWith(":")) {
+                            if (Model._globular.config.Protocol == "https") {
+                                address += "443"
+                            } else {
+                                address += "80"
+                            }
                         }
+                        Model.globules.set(address, Model._globular)
                     }
-                    Model.globules.set(address, Model._globular)
-                }
-            });
+                });
+            }
 
             // Retreive peer's infos and register peers.
             getAllPeersInfo(Model.globular, (peers: Peer[]) => {
