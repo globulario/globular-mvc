@@ -295,7 +295,12 @@ export class File extends Model {
             }
 
             readDir(globule, path, recursive, (dir: FileInfo) => {
-                callback(File.fromObject(dir.toObject(), false, globule))
+                try {
+                    let f = File.fromObject(dir.toObject(), false, globule)
+                    callback(f)
+                } catch (e) {
+                    errorCallback(e)
+                }
             }, errorCallback, 80, 80, token)
         }, errorCallback)
     }
