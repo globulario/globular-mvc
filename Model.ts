@@ -96,6 +96,7 @@ export class Model {
     }
 
     public static getGlobules(): Array<GlobularWebClient.Globular> {
+       
         let connections_ = Array.from(Model.globules.values())
         let connections = new Array<GlobularWebClient.Globular>()
         // Remove duplicat
@@ -241,6 +242,7 @@ export class Model {
             Model.globules.set(peer.getHostname() + "." + peer.getDomain(), globule)
             Model.globules.set(peer.getMac(), globule)
 
+            // console.log("------------> ", Model.globules)
             callback()
 
         }, (err: any) => {

@@ -10,10 +10,7 @@ export class Empty extends HTMLElement {
         super()
         // Set the shadow dom.
         this.attachShadow({ mode: 'open' });
-    }
 
-    // The connection callback.
-    connectedCallback() {
 
         // Innitialisation of the layout.
         this.shadowRoot.innerHTML = `
@@ -32,9 +29,11 @@ export class Empty extends HTMLElement {
 
     }
 
-    // Call search event.
-    hello(){
 
+
+    // The connection callback.
+    connectedCallback() {
+        
     }
 }
 

@@ -262,6 +262,7 @@ function search(query, contexts_, offset) {
 
     // Connections can contain many time the same address....
     let globules = Model.getGlobules()
+ 
     if (offset == undefined) {
         offset = 0;
     }
