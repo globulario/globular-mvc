@@ -89,26 +89,30 @@ export class Group extends Model {
         let _getGroups_ = () => {
             let globule = connections.pop()
 
-            if (connections.length == 0) {
-                Group._getGroups(globule, (groups: Array<Group>) => {
-                    for (var i = 0; i < groups.length; i++) {
-                        let g = groups[i]
-                        if (groups_.filter(g_ => { return g.id == g_.id && g.domain == g_.domain; }).length == 0) {
-                            groups_.push(g)
+            if (globule != undefined) {
+                if (connections.length == 0) {
+                    Group._getGroups(globule, (groups: Array<Group>) => {
+                        for (var i = 0; i < groups.length; i++) {
+                            let g = groups[i]
+                            if (groups_.filter(g_ => { return g.id == g_.id && g.domain == g_.domain; }).length == 0) {
+                                groups_.push(g)
+                            }
                         }
-                    }
-                    callback(groups_)
-                }, errorCallback)
-            } else {
-                Group._getGroups(globule, (groups: Array<Group>) => {
-                    for (var i = 0; i < groups.length; i++) {
-                        let g = groups[i]
-                        if (groups_.filter(g_ => { return g.id == g_.id && g.domain == g_.domain; }).length == 0) {
-                            groups_.push(g)
+                        callback(groups_)
+                    }, errorCallback)
+                } else {
+                    Group._getGroups(globule, (groups: Array<Group>) => {
+                        for (var i = 0; i < groups.length; i++) {
+                            let g = groups[i]
+                            if (groups_.filter(g_ => { return g.id == g_.id && g.domain == g_.domain; }).length == 0) {
+                                groups_.push(g)
+                            }
                         }
-                    }
-                    _getGroups_() // get the account from the next globule.
-                }, errorCallback)
+                        _getGroups_() // get the account from the next globule.
+                    }, errorCallback)
+                }
+            }else{
+                callback(groups_)
             }
         }
 

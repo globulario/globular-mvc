@@ -28,7 +28,8 @@ import { v4 as uuidv4 } from "uuid";
 
 // Menu to set action on files.
 import { DropdownMenu } from './dropdownMenu.js';
-import { AddPublicDirRequest, ConvertVideoToHlsRequest, ConvertVideoToMpeg4H264Request, CopyRequest, CreateDirRequest, CreateLnkRequest, CreateVideoPreviewRequest, CreateVideoTimeLineRequest, DeleteDirRequest, DeleteFileRequest, GetFileInfoRequest, GetPublicDirsRequest, MoveRequest, ReadFileRequest, RemovePublicDirRequest, SaveFileRequest, StartProcessAudioRequest, StartProcessVideoRequest, UploadFileRequest, UploadVideoRequest } from 'globular-web-client/file/file_pb';
+import { AddPublicDirRequest, CopyRequest, CreateDirRequest, CreateLnkRequest, DeleteDirRequest, DeleteFileRequest, GetFileInfoRequest, GetPublicDirsRequest, MoveRequest, ReadFileRequest, RemovePublicDirRequest, SaveFileRequest, UploadFileRequest } from 'globular-web-client/file/file_pb';
+import { ConvertVideoToHlsRequest, ConvertVideoToMpeg4H264Request, CreateVideoPreviewRequest, CreateVideoTimeLineRequest, StartProcessAudioRequest, StartProcessVideoRequest, UploadVideoRequest } from 'globular-web-client/media/media_pb';
 import { createArchive, deleteDir, deleteFile, downloadFileHttp, renameFile, uploadFiles } from 'globular-web-client/api';
 import { ApplicationView } from '../ApplicationView';
 import { Application } from '../Application';
@@ -690,7 +691,7 @@ export class FilesView extends HTMLElement {
             let globule = this._file_explorer_.globule
 
             generatePeerToken(globule, token => {
-                globule.fileService.startProcessVideo(rqst, { application: Application.application, domain: globule.domain, token: token }).then(() => {
+                globule.mediaService.startProcessVideo(rqst, { application: Application.application, domain: globule.domain, token: token }).then(() => {
                     ApplicationView.displayMessage("informations are now updated", 3000)
                 })
                     .catch(err => ApplicationView.displayMessage(err, 3000))
@@ -1287,7 +1288,7 @@ export class FilesView extends HTMLElement {
             rqst.setPath(path)
             ApplicationView.displayMessage("Create timeline for file at path </br>" + path, 3500)
             generatePeerToken(globule, token => {
-                globule.fileService.createVideoTimeLine(rqst, { application: Application.application, domain: globule.domain, token: token })
+                globule.mediaService.createVideoTimeLine(rqst, { application: Application.application, domain: globule.domain, token: token })
                     .then(rsp => {
                         ApplicationView.displayMessage("Timeline is created </br>" + path, 3500)
                     })
@@ -1320,7 +1321,7 @@ export class FilesView extends HTMLElement {
             rqst.setPath(path)
             ApplicationView.displayMessage("Create preview for file at path </br>" + path, 3500)
             generatePeerToken(globule, token => {
-                globule.fileService.createVideoPreview(rqst, { application: Application.application, domain: globule.domain, token: token })
+                globule.mediaService.createVideoPreview(rqst, { application: Application.application, domain: globule.domain, token: token })
                     .then(rsp => {
                         ApplicationView.displayMessage("Preview are created </br>" + path, 3500)
                         Model.publish("refresh_dir_evt", file.path.substring(0, file.path.lastIndexOf("/")), false);
@@ -1348,7 +1349,7 @@ export class FilesView extends HTMLElement {
 
             ApplicationView.displayMessage("Convert file at path </br>" + path, 3500)
             generatePeerToken(globule, token => {
-                globule.fileService.convertVideoToMpeg4H264(rqst, { application: Application.application, domain: globule.domain, token: token })
+                globule.mediaService.convertVideoToMpeg4H264(rqst, { application: Application.application, domain: globule.domain, token: token })
                     .then(rsp => {
                         ApplicationView.displayMessage("Conversion done </br>" + path, 3500)
                         globule.eventHub.publish("refresh_dir_evt", file.path.substring(0, file.path.lastIndexOf("/")), false);
@@ -1376,7 +1377,7 @@ export class FilesView extends HTMLElement {
 
             ApplicationView.displayMessage("Convert file at path </br>" + path, 3500)
             generatePeerToken(globule, token => {
-                globule.fileService.convertVideoToHls(rqst, { application: Application.application, domain: globule.domain, token: token })
+                globule.mediaService.convertVideoToHls(rqst, { application: Application.application, domain: globule.domain, token: token })
                     .then(rsp => {
                         ApplicationView.displayMessage("Conversion done </br>" + path, 3500)
                         Model.publish("refresh_dir_evt", file.path.substring(0, file.path.lastIndexOf("/")), false);
@@ -2188,7 +2189,7 @@ export class FilesView extends HTMLElement {
 
                     generatePeerToken(this._file_explorer_.globule, token => {
 
-                        let stream = this._file_explorer_.globule.fileService.uploadVideo(rqst, { application: Application.application, domain: this._file_explorer_.globule.domain, token: token })
+                        let stream = this._file_explorer_.globule.mediaService.uploadVideo(rqst, { application: Application.application, domain: this._file_explorer_.globule.domain, token: token })
                         let pid = -1;
 
                         // Here I will create a local event to be catch by the file uploader...
@@ -3562,7 +3563,7 @@ export class FileIconViewSection extends HTMLElement {
                         rqst.setFormat(playlist.format)
                         rqst.setUrl(playlist.url)
 
-                        let stream = this._file_explorer_.globule.fileService.uploadVideo(rqst, { application: Application.application, domain: this._file_explorer_.globule.domain, token: token })
+                        let stream = this._file_explorer_.globule.mediaService.uploadVideo(rqst, { application: Application.application, domain: this._file_explorer_.globule.domain, token: token })
                         let pid = -1;
 
                         // Here I will create a local event to be catch by the file uploader...
@@ -3592,7 +3593,7 @@ export class FileIconViewSection extends HTMLElement {
                     let globule = this._file_explorer_.globule
 
                     generatePeerToken(globule, token => {
-                        globule.fileService.startProcessAudio(rqst, {
+                        globule.mediaService.startProcessAudio(rqst, {
                             token: token,
                             application: Model.application,
                             domain: globule.domain,
@@ -3683,7 +3684,7 @@ export class FileIconViewSection extends HTMLElement {
                         rqst.setFormat(playlist.format)
                         rqst.setUrl(playlist.url)
 
-                        let stream = this._file_explorer_.globule.fileService.uploadVideo(rqst, { application: Application.application, domain: this._file_explorer_.globule.domain, token: token })
+                        let stream = this._file_explorer_.globule.mediaService.uploadVideo(rqst, { application: Application.application, domain: this._file_explorer_.globule.domain, token: token })
                         let pid = -1;
 
                         // Here I will create a local event to be catch by the file uploader...
@@ -3712,7 +3713,7 @@ export class FileIconViewSection extends HTMLElement {
                     let globule = this._file_explorer_.globule
 
                     generatePeerToken(globule, token => {
-                        globule.fileService.startProcessVideo(rqst, {
+                        globule.mediaService.startProcessVideo(rqst, {
                             token: token,
                             application: Model.application,
                             domain: globule.domain,

@@ -15,7 +15,7 @@ import { ApplicationManager } from "./components/Applications";
 import { PeersManager } from "./components/Peers";
 import { OrganizationManager } from "./components/Organization";
 import { AccountManager, ExternalAccountManager } from "./components/Account";
-import { StartProcessVideoRequest, StopProcessVideoRequest, IsProcessVideoRequest, SetVideoConversionRequest, SetVideoStreamConversionRequest, SetStartVideoConversionHourRequest, SetMaximumVideoConversionDelayRequest, VideoConversionError, GetVideoConversionErrorsRequest, GetVideoConversionErrorsResponse, ClearVideoConversionErrorRequest, ClearVideoConversionErrorsRequest, VideoConversionLog, ClearVideoConversionLogsRequest, ClearVideoConversionLogsResponse, ClearVideoConversionErrorResponse, ClearVideoConversionErrorsResponse, GetVideoConversionLogsRequest, GetVideoConversionLogsResponse } from "globular-web-client/file/file_pb";
+import { StartProcessVideoRequest, StopProcessVideoRequest, IsProcessVideoRequest, SetVideoConversionRequest, SetVideoStreamConversionRequest, SetStartVideoConversionHourRequest, SetMaximumVideoConversionDelayRequest, VideoConversionError, GetVideoConversionErrorsRequest, GetVideoConversionErrorsResponse, ClearVideoConversionErrorRequest, ClearVideoConversionErrorsRequest, VideoConversionLog, ClearVideoConversionLogsRequest, ClearVideoConversionLogsResponse, ClearVideoConversionErrorResponse, ClearVideoConversionErrorsResponse, GetVideoConversionLogsRequest, GetVideoConversionLogsResponse } from "globular-web-client/media/media_pb";
 import { ResourcesPermissionsManager } from "./components/Permissions";
 
 export class Settings {
@@ -467,7 +467,7 @@ export class ResourcesPermissionsSettings extends Settings {
 function getConversionErrors(callback: (errors: Array<VideoConversionError>) => void) {
 
     let rqst = new GetVideoConversionErrorsRequest
-    Model.globular.fileService.getVideoConversionErrors(rqst, {
+    Model.globular.mediaService.getVideoConversionErrors(rqst, {
         token: localStorage.getItem("user_token"),
         application: Model.application,
         domain: Model.domain,
@@ -481,7 +481,7 @@ function getConversionErrors(callback: (errors: Array<VideoConversionError>) => 
 
 function getConversionLogs(callback: (errors: Array<VideoConversionLog>) => void) {
     let rqst = new GetVideoConversionLogsRequest
-    Model.globular.fileService.getVideoConversionLogs(rqst, {
+    Model.globular.mediaService.getVideoConversionLogs(rqst, {
         token: localStorage.getItem("user_token"),
         application: Model.application,
         domain: Model.domain,
@@ -613,7 +613,7 @@ export class VideoSettings extends Settings {
         let startConvertVideoAction = new ActionSetting("Start", "Convert video to MP4 or HLS", () => {
             // Application.globular.ldapService.
             let rqst = new StartProcessVideoRequest
-            Model.globular.fileService.startProcessVideo(rqst, {
+            Model.globular.mediaService.startProcessVideo(rqst, {
                 token: localStorage.getItem("user_token"),
                 application: Model.application,
                 domain: Model.domain,
@@ -634,7 +634,7 @@ export class VideoSettings extends Settings {
         let stopConvertVideoAction = new ActionSetting("Stop", "Stop video conversion...", () => {
             // Application.globular.ldapService.
             let rqst = new StopProcessVideoRequest
-            Model.globular.fileService.stopProcessVideo(rqst, {
+            Model.globular.mediaService.stopProcessVideo(rqst, {
                 token: localStorage.getItem("user_token"),
                 application: Model.application,
                 domain: Model.domain,
@@ -651,7 +651,7 @@ export class VideoSettings extends Settings {
         conversionSettings.addSetting(stopConvertVideoAction)
 
         let rqst = new IsProcessVideoRequest
-        Model.globular.fileService.isProcessVideo(rqst, {
+        Model.globular.mediaService.isProcessVideo(rqst, {
             token: localStorage.getItem("user_token"),
             application: Model.application,
             domain: Model.domain,
@@ -741,7 +741,7 @@ export class VideoSettings extends Settings {
 
     clearVideoConversionLogs() {
         let rqst = new ClearVideoConversionLogsRequest
-        Model.globular.fileService.clearVideoConversionLogs(rqst, {
+        Model.globular.mediaService.clearVideoConversionLogs(rqst, {
             token: localStorage.getItem("user_token"),
             application: Model.application,
             domain: Model.domain,
@@ -756,7 +756,7 @@ export class VideoSettings extends Settings {
     deletVideoConversionError(err: VideoConversionError) {
         let rqst = new ClearVideoConversionErrorRequest
         rqst.setPath(err.getPath())
-        Model.globular.fileService.clearVideoConversionError(rqst, {
+        Model.globular.mediaService.clearVideoConversionError(rqst, {
             token: localStorage.getItem("user_token"),
             application: Model.application,
             domain: Model.domain,
@@ -776,7 +776,7 @@ export class VideoSettings extends Settings {
 
     clearVideoConversionErrors() {
         let rqst = new ClearVideoConversionErrorsRequest
-        Model.globular.fileService.clearVideoConversionErrors(rqst, {
+        Model.globular.mediaService.clearVideoConversionErrors(rqst, {
             token: localStorage.getItem("user_token"),
             application: Model.application,
             domain: Model.domain,
@@ -793,7 +793,7 @@ export class VideoSettings extends Settings {
         // Set video Conversion parameter...
         let rqst = new SetVideoConversionRequest;
         rqst.setValue(value);
-        Model.globular.fileService.setVideoConversion(rqst, {
+        Model.globular.mediaService.setVideoConversion(rqst, {
             token: localStorage.getItem("user_token"),
             application: Model.application,
             domain: Model.domain,
@@ -810,7 +810,7 @@ export class VideoSettings extends Settings {
         // Set video Conversion parameter...
         let rqst = new SetVideoStreamConversionRequest;
         rqst.setValue(value);
-        Model.globular.fileService.setVideoStreamConversion(rqst, {
+        Model.globular.mediaService.setVideoStreamConversion(rqst, {
             token: localStorage.getItem("user_token"),
             application: Model.application,
             domain: Model.domain,
@@ -827,7 +827,7 @@ export class VideoSettings extends Settings {
         // Set video Conversion parameter...
         let rqst = new SetStartVideoConversionHourRequest;
         rqst.setValue(value);
-        Model.globular.fileService.setStartVideoConversionHour(rqst, {
+        Model.globular.mediaService.setStartVideoConversionHour(rqst, {
             token: localStorage.getItem("user_token"),
             application: Model.application,
             domain: Model.domain,
@@ -845,7 +845,7 @@ export class VideoSettings extends Settings {
         // Set video Conversion parameter...
         let rqst = new SetMaximumVideoConversionDelayRequest;
         rqst.setValue(value);
-        Model.globular.fileService.setMaximumVideoConversionDelay(rqst, {
+        Model.globular.mediaService.setMaximumVideoConversionDelay(rqst, {
             token: localStorage.getItem("user_token"),
             application: Model.application,
             domain: Model.domain,

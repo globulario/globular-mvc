@@ -96,13 +96,15 @@ export class Model {
     }
 
     public static getGlobules(): Array<GlobularWebClient.Globular> {
-       
+
         let connections_ = Array.from(Model.globules.values())
         let connections = new Array<GlobularWebClient.Globular>()
         // Remove duplicat
         connections_.forEach(c => {
-            if (connections.filter(c_ => { return c.config.Name == c_.config.Name && c_.config.Domain == c_.config.Domain; }).length == 0) {
-                connections.push(c)
+            if (c) {
+                if (connections.filter(c_ => { return c.config.Name == c_.config.Name && c_.config.Domain == c_.config.Domain; }).length == 0) {
+                    connections.push(c)
+                }
             }
         })
 

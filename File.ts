@@ -258,8 +258,8 @@ export class File extends Model {
 
             let rqst = new GetFileInfoRequest()
             rqst.setPath(path)
-            rqst.setThumnailheight(thumbnailHeight)
-            rqst.setThumnailwidth(thumbnailWith)
+            rqst.setThumbnailheight(thumbnailHeight)
+            rqst.setThumbnailwidth(thumbnailWith)
             globule.fileService.getFileInfo(rqst, { application: Application.application, domain: globule.domain, token: token })
                 .then(rsp => {
                     let f = File.fromObject(rsp.getInfo().toObject())
