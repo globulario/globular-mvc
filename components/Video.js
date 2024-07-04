@@ -164,23 +164,16 @@ export function playVideo(path, onplay, onclose, title, globule) {
     return videoPlayer
 }
 
-
 function getSubtitlesFiles(globule, path, callback) {
     let subtitlesPath = path.substr(0, path.lastIndexOf("."))
     subtitlesPath = subtitlesPath.substring(0, subtitlesPath.lastIndexOf("/") + 1) + ".hidden" + subtitlesPath.substring(subtitlesPath.lastIndexOf("/")) + "/__subtitles__"
-
-
     File.readDir(subtitlesPath, false, callback, err => console.log(err), globule)
-
 }
 
 function getThumbnailFiles(globule, path, callback) {
     let subtitlesPath = path.substr(0, path.lastIndexOf("."))
     subtitlesPath = subtitlesPath.substring(0, subtitlesPath.lastIndexOf("/") + 1) + ".hidden" + subtitlesPath.substring(subtitlesPath.lastIndexOf("/")) + "/__thumbnail__"
-
-
     File.readDir(subtitlesPath, false, callback, err => console.log(err), globule)
-
 }
 
 /**
