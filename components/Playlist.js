@@ -57,7 +57,7 @@ function getVideoInfo(globule, id, callback) {
     generatePeerToken(globule, token => {
         let rqst = new GetVideoByIdRequest
         rqst.setIndexpath(globule.config.DataPath + "/search/videos")
-        rqst.setVidoeid(id)
+        rqst.setVideoid(id)
 
         globule.titleService.getVideoById(rqst, { application: Application.application, domain: globule.domain, token: token })
             .then(rsp => {
