@@ -230,7 +230,7 @@ function _getVideos(globule, id, callback) {
     let indexPath = globule.config.DataPath + "/search/videos"
 
     rqst.setIndexpath(indexPath)
-    rqst.setVidoeid(id)
+    rqst.setVideoid(id)
 
     globule.titleService
         .getVideoById(rqst, {
